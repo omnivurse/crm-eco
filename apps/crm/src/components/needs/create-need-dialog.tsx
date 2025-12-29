@@ -22,11 +22,18 @@ import {
   Textarea,
   Separator,
 } from '@crm-eco/ui';
-import { Plus, HeartPulse, User, DollarSign } from 'lucide-react';
+import { Plus, HeartPulse, User, DollarSign, Clock } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 
 type Member = Database['public']['Tables']['members']['Row'];
 type NeedInsert = Database['public']['Tables']['needs']['Insert'];
+
+// Helper to calculate SLA target date from today
+function getSlaTargetDate(daysFromNow: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  return date.toISOString().split('T')[0];
+}
 
 export function CreateNeedDialog() {
   const router = useRouter();
@@ -41,7 +48,8 @@ export function CreateNeedDialog() {
     description: string;
     incidentDate: string;
     totalAmount: string;
-    urgencyLight: 'green' | 'orange' | 'red';
+    slaPreset: string;
+    slaTargetDate: string;
     status: 'open' | 'in_review' | 'processing' | 'paid' | 'closed';
   }>({
     memberId: '',
@@ -49,7 +57,8 @@ export function CreateNeedDialog() {
     description: '',
     incidentDate: '',
     totalAmount: '',
-    urgencyLight: 'green',
+    slaPreset: '7',
+    slaTargetDate: getSlaTargetDate(7),
     status: 'open',
   });
 
@@ -59,6 +68,18 @@ export function CreateNeedDialog() {
       loadMembers();
     }
   }, [open]);
+
+  // Update SLA target date when preset changes
+  const handleSlaPresetChange = (preset: string) => {
+    let targetDate = '';
+    if (preset === 'custom') {
+      // Keep current custom date or set to 7 days
+      targetDate = formData.slaTargetDate || getSlaTargetDate(7);
+    } else {
+      targetDate = getSlaTargetDate(parseInt(preset));
+    }
+    setFormData({ ...formData, slaPreset: preset, slaTargetDate: targetDate });
+  };
 
   const loadMembers = async () => {
     const supabase = createClient();
@@ -97,6 +118,8 @@ export function CreateNeedDialog() {
         throw new Error('Please select a member');
       }
 
+      // Note: urgency_light is now computed automatically by the database trigger
+      // based on status and sla_target_date
       const insertData: NeedInsert = {
         organization_id: profile.organization_id,
         member_id: formData.memberId,
@@ -104,8 +127,9 @@ export function CreateNeedDialog() {
         description: formData.description,
         incident_date: formData.incidentDate || null,
         total_amount: parseFloat(formData.totalAmount) || 0,
-        urgency_light: formData.urgencyLight,
+        sla_target_date: formData.slaTargetDate || null,
         status: formData.status,
+        // urgency_light will be set by the database trigger
       };
 
       const { error: insertError } = await supabase.from('needs').insert(insertData as any);
@@ -119,7 +143,8 @@ export function CreateNeedDialog() {
         description: '',
         incidentDate: '',
         totalAmount: '',
-        urgencyLight: 'green',
+        slaPreset: '7',
+        slaTargetDate: getSlaTargetDate(7),
         status: 'open',
       });
       router.refresh();
@@ -130,6 +155,28 @@ export function CreateNeedDialog() {
       setLoading(false);
     }
   };
+
+  // Calculate what urgency will be shown based on SLA
+  const getPreviewUrgency = () => {
+    if (!formData.slaTargetDate) return { label: 'No SLA', color: 'bg-slate-400' };
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(formData.slaTargetDate);
+    target.setHours(0, 0, 0, 0);
+    
+    const diffDays = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 0) {
+      return { label: 'Must Complete (Red)', color: 'bg-red-500' };
+    } else if (diffDays <= 3) {
+      return { label: 'Near Deadline (Orange)', color: 'bg-amber-500' };
+    } else {
+      return { label: 'On Track (Green)', color: 'bg-emerald-500' };
+    }
+  };
+
+  const urgencyPreview = getPreviewUrgency();
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -237,57 +284,80 @@ export function CreateNeedDialog() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="status">Initial Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: 'open' | 'in_review' | 'processing' | 'paid' | 'closed') => 
+                      setFormData({ ...formData, status: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open">Open</SelectItem>
+                      <SelectItem value="in_review">In Review</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* SLA Settings */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-slate-400" />
+                <h3 className="text-sm font-medium text-slate-700">SLA Target</h3>
+              </div>
+              <div className="grid gap-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="urgencyLight">Urgency Level *</Label>
+                    <Label htmlFor="slaPreset">Processing Time</Label>
                     <Select
-                      value={formData.urgencyLight}
-                      onValueChange={(value: 'green' | 'orange' | 'red') => 
-                        setFormData({ ...formData, urgencyLight: value })
-                      }
+                      value={formData.slaPreset}
+                      onValueChange={handleSlaPresetChange}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select urgency" />
+                        <SelectValue placeholder="Select SLA" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="green">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                            Normal
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="orange">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-amber-500" />
-                            Medium Priority
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="red">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-red-500" />
-                            Urgent
-                          </div>
-                        </SelectItem>
+                        <SelectItem value="3">3 Days</SelectItem>
+                        <SelectItem value="7">7 Days (Standard)</SelectItem>
+                        <SelectItem value="14">14 Days</SelectItem>
+                        <SelectItem value="30">30 Days</SelectItem>
+                        <SelectItem value="custom">Custom Date</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="status">Initial Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value: 'open' | 'in_review' | 'processing' | 'paid' | 'closed') => 
-                        setFormData({ ...formData, status: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="in_review">In Review</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="slaTargetDate">Target Date</Label>
+                    <Input
+                      id="slaTargetDate"
+                      type="date"
+                      value={formData.slaTargetDate}
+                      onChange={(e) => setFormData({ 
+                        ...formData, 
+                        slaPreset: 'custom',
+                        slaTargetDate: e.target.value 
+                      })}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
                   </div>
+                </div>
+                
+                {/* Urgency Preview */}
+                <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                  <p className="text-xs text-slate-500 mb-1">Urgency will be set to:</p>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-3 h-3 rounded-full ${urgencyPreview.color}`} />
+                    <span className="font-medium text-sm">{urgencyPreview.label}</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Urgency is automatically calculated based on SLA target date
+                  </p>
                 </div>
               </div>
             </div>
@@ -332,4 +402,3 @@ export function CreateNeedDialog() {
     </Dialog>
   );
 }
-
