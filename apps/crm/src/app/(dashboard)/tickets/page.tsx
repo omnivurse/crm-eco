@@ -1,12 +1,13 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@crm-eco/ui';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { CreateTicketDialog } from '@/components/tickets/create-ticket-dialog';
 import { format } from 'date-fns';
+import { Search, Ticket, Filter } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 
-type Ticket = Database['public']['Tables']['tickets']['Row'];
+type TicketRow = Database['public']['Tables']['tickets']['Row'];
 
-interface TicketWithRelations extends Ticket {
+interface TicketWithRelations extends TicketRow {
   created_by?: { full_name: string } | null;
   assigned_to?: { full_name: string } | null;
   members?: { first_name: string; last_name: string } | null;
@@ -33,60 +34,126 @@ async function getTickets(): Promise<TicketWithRelations[]> {
   return (data ?? []) as TicketWithRelations[];
 }
 
-function getStatusBadgeVariant(status: string) {
-  switch (status) {
-    case 'open':
-      return 'default';
-    case 'in_progress':
-      return 'warning';
-    case 'waiting':
-      return 'secondary';
-    case 'resolved':
-      return 'success';
-    case 'closed':
-      return 'outline';
-    default:
-      return 'outline';
-  }
-}
+const statusColors: Record<string, string> = {
+  open: 'bg-blue-100 text-blue-700 border-blue-200',
+  in_progress: 'bg-amber-100 text-amber-700 border-amber-200',
+  waiting: 'bg-slate-100 text-slate-600 border-slate-200',
+  resolved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  closed: 'bg-slate-100 text-slate-500 border-slate-200',
+};
 
-function getPriorityBadgeVariant(priority: string) {
-  switch (priority) {
-    case 'urgent':
-      return 'destructive';
-    case 'high':
-      return 'warning';
-    case 'normal':
-      return 'secondary';
-    case 'low':
-      return 'outline';
-    default:
-      return 'outline';
-  }
-}
+const priorityColors: Record<string, string> = {
+  urgent: 'bg-red-100 text-red-700 border-red-200',
+  high: 'bg-orange-100 text-orange-700 border-orange-200',
+  normal: 'bg-slate-100 text-slate-600 border-slate-200',
+  low: 'bg-slate-50 text-slate-500 border-slate-200',
+};
+
+const categoryColors: Record<string, string> = {
+  need: 'bg-purple-100 text-purple-700',
+  enrollment: 'bg-blue-100 text-blue-700',
+  billing: 'bg-green-100 text-green-700',
+  service: 'bg-cyan-100 text-cyan-700',
+  other: 'bg-slate-100 text-slate-600',
+};
 
 export default async function TicketsPage() {
   const tickets = await getTickets();
+  
+  const openCount = tickets.filter(t => t.status === 'open').length;
+  const inProgressCount = tickets.filter(t => t.status === 'in_progress').length;
+  const urgentCount = tickets.filter(t => t.priority === 'urgent').length;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tickets</h1>
-          <p className="text-slate-600">Manage support tickets and requests</p>
+          <p className="text-slate-500">Manage support tickets and service requests</p>
         </div>
         <CreateTicketDialog />
       </div>
 
+      {/* Stats Row */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">{tickets.length}</div>
+            <p className="text-sm text-slate-500">Total Tickets</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">{openCount}</div>
+            <p className="text-sm text-slate-500">Open</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">{inProgressCount}</div>
+            <p className="text-sm text-slate-500">In Progress</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-red-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">{urgentCount}</div>
+            <p className="text-sm text-slate-500">Urgent</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tickets Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>All Tickets</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Ticket className="w-5 h-5 text-slate-400" />
+            All Tickets
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <Select defaultValue="all">
+                <SelectTrigger className="w-32 h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="waiting">Waiting</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                  <SelectItem value="closed">Closed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select defaultValue="all">
+                <SelectTrigger className="w-32 h-9">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="need">Need</SelectItem>
+                  <SelectItem value="enrollment">Enrollment</SelectItem>
+                  <SelectItem value="billing">Billing</SelectItem>
+                  <SelectItem value="service">Service</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <Input 
+                placeholder="Search tickets..." 
+                className="pl-9 h-9"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {tickets.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <p className="mb-2">No tickets found</p>
-              <p className="text-sm">Click "Create Ticket" to create your first ticket</p>
+            <div className="text-center py-16 text-slate-500">
+              <Ticket className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p className="font-medium">No tickets found</p>
+              <p className="text-sm text-slate-400 mt-1">Click &quot;Create Ticket&quot; to create your first ticket</p>
             </div>
           ) : (
             <Table>
@@ -103,30 +170,50 @@ export default async function TicketsPage() {
               </TableHeader>
               <TableBody>
                 {tickets.map((ticket) => (
-                  <TableRow key={ticket.id}>
-                    <TableCell className="font-medium max-w-[200px] truncate">
-                      {ticket.subject}
-                    </TableCell>
-                    <TableCell className="capitalize">{ticket.category}</TableCell>
+                  <TableRow key={ticket.id} className="cursor-pointer hover:bg-slate-50">
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(ticket.status)}>
+                      <div className="font-medium text-slate-900 max-w-[250px] truncate">
+                        {ticket.subject}
+                      </div>
+                      <div className="text-xs text-slate-400 truncate max-w-[250px]">
+                        {ticket.description}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="secondary"
+                        className={categoryColors[ticket.category] || categoryColors.other}
+                      >
+                        {ticket.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline"
+                        className={statusColors[ticket.status] || statusColors.closed}
+                      >
                         {ticket.status.replace('_', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getPriorityBadgeVariant(ticket.priority)}>
+                      <Badge 
+                        variant="outline"
+                        className={priorityColors[ticket.priority] || priorityColors.normal}
+                      >
                         {ticket.priority}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-slate-600">
                       {ticket.members
                         ? `${ticket.members.first_name} ${ticket.members.last_name}`
-                        : '-'}
+                        : '—'}
                     </TableCell>
-                    <TableCell>
-                      {ticket.assigned_to?.full_name ?? 'Unassigned'}
+                    <TableCell className="text-slate-600">
+                      {ticket.assigned_to?.full_name ?? (
+                        <span className="text-slate-400">Unassigned</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-slate-500">
+                    <TableCell className="text-slate-400 text-sm">
                       {format(new Date(ticket.created_at), 'MMM d, yyyy')}
                     </TableCell>
                   </TableRow>

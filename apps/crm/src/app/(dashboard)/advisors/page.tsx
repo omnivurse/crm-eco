@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@crm-eco/ui';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Button } from '@crm-eco/ui';
 import { AddAdvisorDialog } from '@/components/advisors/add-advisor-dialog';
+import { Search, UserCheck, Download } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 
 type Advisor = Database['public']['Tables']['advisors']['Row'];
@@ -40,77 +41,150 @@ async function getMemberCounts(): Promise<Record<string, number>> {
   return counts;
 }
 
-function getStatusBadgeVariant(status: string) {
-  switch (status) {
-    case 'active':
-      return 'success';
-    case 'pending':
-      return 'warning';
-    case 'inactive':
-    case 'terminated':
-      return 'secondary';
-    default:
-      return 'outline';
-  }
-}
+const statusColors: Record<string, string> = {
+  active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  pending: 'bg-amber-100 text-amber-700 border-amber-200',
+  paused: 'bg-slate-100 text-slate-600 border-slate-200',
+  inactive: 'bg-slate-100 text-slate-500 border-slate-200',
+  terminated: 'bg-red-100 text-red-700 border-red-200',
+};
 
 export default async function AdvisorsPage() {
   const [advisors, memberCounts] = await Promise.all([
     getAdvisors(),
     getMemberCounts(),
   ]);
+  
+  const activeCount = advisors.filter(a => a.status === 'active').length;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Advisors</h1>
-          <p className="text-slate-600">Manage your advisor network</p>
+          <p className="text-slate-500">Manage your advisor network</p>
         </div>
-        <AddAdvisorDialog />
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+          <AddAdvisorDialog />
+        </div>
       </div>
 
+      {/* Stats Row */}
+      <div className="grid grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">{advisors.length}</div>
+            <p className="text-sm text-slate-500">Total Advisors</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-emerald-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">{activeCount}</div>
+            <p className="text-sm text-slate-500">Active</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">
+              {advisors.filter(a => a.status === 'pending').length}
+            </div>
+            <p className="text-sm text-slate-500">Pending</p>
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-l-purple-500">
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-slate-900">
+              {Object.values(memberCounts).reduce((a, b) => a + b, 0)}
+            </div>
+            <p className="text-sm text-slate-500">Total Members Assigned</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Advisors Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>All Advisors</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-slate-400" />
+            All Advisors
+          </CardTitle>
+          <div className="relative w-64">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Input 
+              placeholder="Search advisors..." 
+              className="pl-9 h-9"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {advisors.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <p className="mb-2">No advisors found</p>
-              <p className="text-sm">Click "Add Advisor" to create your first advisor</p>
+            <div className="text-center py-16 text-slate-500">
+              <UserCheck className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+              <p className="font-medium">No advisors found</p>
+              <p className="text-sm text-slate-400 mt-1">Click &quot;Add Advisor&quot; to create your first advisor</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Agency</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>License States</TableHead>
-                  <TableHead>Total Members</TableHead>
-                  <TableHead>Commission Tier</TableHead>
+                  <TableHead>Members</TableHead>
+                  <TableHead>Channel</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {advisors.map((advisor) => (
-                  <TableRow key={advisor.id}>
-                    <TableCell className="font-medium">
-                      {advisor.first_name} {advisor.last_name}
-                    </TableCell>
-                    <TableCell>{advisor.email}</TableCell>
+                  <TableRow key={advisor.id} className="cursor-pointer hover:bg-slate-50">
                     <TableCell>
-                      <Badge variant={getStatusBadgeVariant(advisor.status)}>
+                      <div className="font-medium text-slate-900">
+                        {advisor.first_name} {advisor.last_name}
+                      </div>
+                      <div className="text-xs text-slate-400">{advisor.email}</div>
+                    </TableCell>
+                    <TableCell className="text-slate-600">
+                      {advisor.agency_name || '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant="outline"
+                        className={statusColors[advisor.status] || statusColors.inactive}
+                      >
                         {advisor.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {advisor.license_states && advisor.license_states.length > 0
-                        ? advisor.license_states.join(', ')
-                        : '-'}
+                      {advisor.license_states && advisor.license_states.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {advisor.license_states.slice(0, 3).map((state) => (
+                            <Badge key={state} variant="secondary" className="text-xs">
+                              {state}
+                            </Badge>
+                          ))}
+                          {advisor.license_states.length > 3 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{advisor.license_states.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
                     </TableCell>
-                    <TableCell>{memberCounts[advisor.id] ?? 0}</TableCell>
-                    <TableCell>{advisor.commission_tier ?? '-'}</TableCell>
+                    <TableCell>
+                      <span className="font-medium text-slate-900">
+                        {memberCounts[advisor.id] ?? 0}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-slate-600 capitalize">
+                      {advisor.primary_channel || '—'}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
