@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import type { Database } from '@crm-eco/lib/types';
+import type { UserRole } from '@/lib/auth';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -31,9 +32,22 @@ export default async function DashboardLayout({
 
   const profile = data as Profile;
 
+  // Get advisor ID if user is an advisor
+  let advisorId: string | null = null;
+  if (profile.role === 'advisor') {
+    const { data: advisorData } = await supabase
+      .from('advisors')
+      .select('id')
+      .eq('profile_id', profile.id)
+      .single();
+    
+    const advisor = advisorData as { id: string } | null;
+    advisorId = advisor?.id ?? null;
+  }
+
   return (
     <div className="flex h-screen bg-slate-50">
-      <Sidebar />
+      <Sidebar role={profile.role as UserRole} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           profile={{

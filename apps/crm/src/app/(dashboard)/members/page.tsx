@@ -4,6 +4,7 @@ import { AddMemberDialog } from '@/components/members/add-member-dialog';
 import { format } from 'date-fns';
 import { Search, Users, Download } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { getRoleQueryContext } from '@/lib/auth';
 
 type Member = Database['public']['Tables']['members']['Row'];
 
@@ -13,11 +14,24 @@ interface MemberWithAdvisor extends Member {
 
 async function getMembers(): Promise<MemberWithAdvisor[]> {
   const supabase = await createServerSupabaseClient();
+  const context = await getRoleQueryContext();
   
-  const { data, error } = await supabase
+  if (!context) {
+    console.error('No role context found');
+    return [];
+  }
+  
+  let query = supabase
     .from('members')
     .select('*, advisors(first_name, last_name)')
     .order('created_at', { ascending: false });
+
+  // Filter by advisor if user is an advisor
+  if (!context.isAdmin && context.role === 'advisor' && context.advisorId) {
+    query = query.eq('advisor_id', context.advisorId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching members:', error);

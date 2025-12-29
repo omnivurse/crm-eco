@@ -11,9 +11,23 @@ import {
   Ticket,
   HeartPulse,
   Building2,
+  Settings,
 } from 'lucide-react';
+import type { UserRole } from '@/lib/auth';
 
-const navSections = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles?: UserRole[]; // If undefined, visible to all roles
+}
+
+interface NavSection {
+  title: string | null;
+  items: NavItem[];
+}
+
+const navSections: NavSection[] = [
   {
     title: null,
     items: [
@@ -24,7 +38,7 @@ const navSections = [
     title: 'People',
     items: [
       { name: 'Members', href: '/members', icon: Users },
-      { name: 'Advisors', href: '/advisors', icon: UserCheck },
+      { name: 'Advisors', href: '/advisors', icon: UserCheck, roles: ['owner', 'admin', 'staff'] },
       { name: 'Leads', href: '/leads', icon: UserPlus },
     ],
   },
@@ -40,10 +54,33 @@ const navSections = [
       { name: 'Need Requests', href: '/needs', icon: HeartPulse },
     ],
   },
+  {
+    title: 'Admin',
+    items: [
+      { name: 'Settings', href: '/settings', icon: Settings, roles: ['owner', 'admin'] },
+    ],
+  },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  role: UserRole;
+}
+
+export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+
+  // Filter sections and items based on role
+  const filteredSections = navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        // If no roles specified, visible to all
+        if (!item.roles) return true;
+        // Check if current role is in the allowed roles
+        return item.roles.includes(role);
+      }),
+    }))
+    .filter((section) => section.items.length > 0); // Remove empty sections
 
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col">
@@ -62,7 +99,7 @@ export function Sidebar() {
       
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
-        {navSections.map((section, sectionIdx) => (
+        {filteredSections.map((section, sectionIdx) => (
           <div key={sectionIdx} className={cn(sectionIdx > 0 && 'mt-6')}>
             {section.title && (
               <h3 className="px-3 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">

@@ -1,8 +1,10 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Button } from '@crm-eco/ui';
-import { Plus, UserPlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@crm-eco/ui';
+import { UserPlus, Users, CheckCircle, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Database } from '@crm-eco/lib/types';
+import { CreateLeadDialog } from '@/components/leads/create-lead-dialog';
+import { getRoleQueryContext } from '@/lib/auth';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
 
@@ -12,11 +14,24 @@ interface LeadWithAdvisor extends Lead {
 
 async function getLeads(): Promise<LeadWithAdvisor[]> {
   const supabase = await createServerSupabaseClient();
+  const context = await getRoleQueryContext();
   
-  const { data, error } = await supabase
+  if (!context) {
+    console.error('No role context found');
+    return [];
+  }
+  
+  let query = supabase
     .from('leads')
     .select('*, advisors(first_name, last_name)')
     .order('created_at', { ascending: false });
+
+  // Filter by advisor if user is an advisor
+  if (!context.isAdmin && context.role === 'advisor' && context.advisorId) {
+    query = query.eq('advisor_id', context.advisorId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching leads:', error);
@@ -26,16 +41,49 @@ async function getLeads(): Promise<LeadWithAdvisor[]> {
   return (data ?? []) as LeadWithAdvisor[];
 }
 
+async function getLeadStats(advisorId: string | null, isAdmin: boolean) {
+  const supabase = await createServerSupabaseClient();
+  
+  // Build base queries with optional advisor filter
+  const buildQuery = (status?: string) => {
+    let query = supabase.from('leads').select('id', { count: 'exact', head: true });
+    if (!isAdmin && advisorId) {
+      query = query.eq('advisor_id', advisorId);
+    }
+    if (status) {
+      query = query.eq('status', status);
+    }
+    return query;
+  };
+
+  const [totalResult, newResult, qualifiedResult, convertedResult] = await Promise.all([
+    buildQuery(),
+    buildQuery('new'),
+    buildQuery('qualified'),
+    buildQuery('converted'),
+  ]);
+
+  return {
+    total: totalResult.count ?? 0,
+    new: newResult.count ?? 0,
+    qualified: qualifiedResult.count ?? 0,
+    converted: convertedResult.count ?? 0,
+  };
+}
+
 function getStatusBadgeVariant(status: string) {
   switch (status) {
     case 'new':
       return 'default';
     case 'contacted':
       return 'secondary';
-    case 'qualified':
+    case 'working':
       return 'warning';
+    case 'qualified':
+      return 'success';
     case 'converted':
       return 'success';
+    case 'unqualified':
     case 'lost':
       return 'destructive';
     default:
@@ -43,8 +91,36 @@ function getStatusBadgeVariant(status: string) {
   }
 }
 
+function getSourceLabel(source: string | null) {
+  if (!source) return '-';
+  const labels: Record<string, string> = {
+    website: 'Website',
+    referral: 'Referral',
+    call_center: 'Call Center',
+    social: 'Social Media',
+    event: 'Event',
+    partner: 'Partner',
+    other: 'Other',
+  };
+  return labels[source] || source;
+}
+
 export default async function LeadsPage() {
-  const leads = await getLeads();
+  const context = await getRoleQueryContext();
+  const advisorId = context?.advisorId ?? null;
+  const isAdmin = context?.isAdmin ?? false;
+  
+  const [leads, stats] = await Promise.all([
+    getLeads(),
+    getLeadStats(advisorId, isAdmin),
+  ]);
+
+  const statCards = [
+    { label: 'Total Leads', value: stats.total, icon: Users, color: 'text-slate-600' },
+    { label: 'New', value: stats.new, icon: UserPlus, color: 'text-blue-600' },
+    { label: 'Qualified', value: stats.qualified, icon: CheckCircle, color: 'text-amber-600' },
+    { label: 'Converted', value: stats.converted, icon: TrendingUp, color: 'text-emerald-600' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -53,12 +129,29 @@ export default async function LeadsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Leads</h1>
           <p className="text-slate-600">Track and convert potential members</p>
         </div>
-        <Button disabled>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Lead
-        </Button>
+        <CreateLeadDialog />
       </div>
 
+      {/* Stats Row */}
+      <div className="grid grid-cols-4 gap-4">
+        {statCards.map((stat) => (
+          <Card key={stat.label}>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-500">{stat.label}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                </div>
+                <div className={`p-3 rounded-full bg-slate-100 ${stat.color}`}>
+                  <stat.icon className="w-5 h-5" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Leads Table */}
       <Card>
         <CardHeader>
           <CardTitle>All Leads</CardTitle>
@@ -71,10 +164,7 @@ export default async function LeadsPage() {
               </div>
               <p className="text-slate-600 mb-2">No leads yet</p>
               <p className="text-sm text-slate-500">
-                Leads will appear here when captured from enrollment forms or manually added.
-              </p>
-              <p className="text-xs text-slate-400 mt-4">
-                Lead management features coming in Phase 2
+                Click "Add Lead" to create your first lead, or they will appear here when captured from enrollment forms.
               </p>
             </div>
           ) : (
@@ -84,6 +174,7 @@ export default async function LeadsPage() {
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
+                  <TableHead>State</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Advisor</TableHead>
@@ -98,7 +189,8 @@ export default async function LeadsPage() {
                     </TableCell>
                     <TableCell>{lead.email}</TableCell>
                     <TableCell>{lead.phone ?? '-'}</TableCell>
-                    <TableCell>{lead.source ?? '-'}</TableCell>
+                    <TableCell>{lead.state ?? '-'}</TableCell>
+                    <TableCell>{getSourceLabel(lead.source)}</TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(lead.status)}>
                         {lead.status}

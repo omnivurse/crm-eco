@@ -4,27 +4,53 @@ import { CreateNeedDialog } from '@/components/needs/create-need-dialog';
 import { Search, HeartPulse, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Database } from '@crm-eco/lib/types';
+import { getRoleQueryContext } from '@/lib/auth';
 
 type Need = Database['public']['Tables']['needs']['Row'];
 
 interface NeedWithMember extends Need {
-  members?: { first_name: string; last_name: string } | null;
+  members?: { first_name: string; last_name: string; advisor_id: string | null } | null;
 }
 
 async function getNeeds(): Promise<NeedWithMember[]> {
   const supabase = await createServerSupabaseClient();
+  const context = await getRoleQueryContext();
   
-  const { data, error } = await supabase
+  if (!context) {
+    console.error('No role context found');
+    return [];
+  }
+  
+  let query = supabase
     .from('needs')
-    .select('*, members(first_name, last_name)')
+    .select('*, members(first_name, last_name, advisor_id)')
     .order('created_at', { ascending: false });
+
+  // For advisors, filter to needs where they are the advisor or the member's advisor
+  if (!context.isAdmin && context.role === 'advisor' && context.advisorId) {
+    // Filter by advisor_id on the need itself, or filter by member's advisor_id
+    query = query.or(`advisor_id.eq.${context.advisorId},members.advisor_id.eq.${context.advisorId}`);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching needs:', error);
     return [];
   }
 
-  return (data ?? []) as NeedWithMember[];
+  // If advisor, also filter client-side for members that belong to them
+  // (since the members.advisor_id filter in Supabase might not work perfectly with nested filters)
+  let filteredData = data ?? [];
+  if (!context.isAdmin && context.role === 'advisor' && context.advisorId) {
+    filteredData = filteredData.filter(
+      (need: NeedWithMember) => 
+        need.advisor_id === context.advisorId || 
+        need.members?.advisor_id === context.advisorId
+    );
+  }
+
+  return filteredData as NeedWithMember[];
 }
 
 const statusColors: Record<string, string> = {
