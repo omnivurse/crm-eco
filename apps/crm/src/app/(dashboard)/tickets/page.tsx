@@ -1,20 +1,28 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { CreateTicketDialog } from '@/components/tickets/create-ticket-dialog';
 import { format } from 'date-fns';
 import { Search, Ticket, Filter } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 import { getRoleQueryContext } from '@/lib/auth';
+import { TicketStatusBadge } from '@/components/shared/status-badge';
+import { PriorityBadge } from '@/components/shared/priority-badge';
+import { CategoryBadge } from '@/components/shared/category-badge';
 
 type TicketRow = Database['public']['Tables']['tickets']['Row'];
 
 interface TicketWithRelations extends TicketRow {
   created_by?: { full_name: string } | null;
   assigned_to?: { full_name: string } | null;
-  members?: { first_name: string; last_name: string } | null;
+  members?: { id: string; first_name: string; last_name: string } | null;
 }
 
-async function getTickets(): Promise<TicketWithRelations[]> {
+interface PageProps {
+  searchParams: { status?: string; category?: string };
+}
+
+async function getTickets(statusFilter?: string, categoryFilter?: string): Promise<TicketWithRelations[]> {
   const supabase = await createServerSupabaseClient();
   const context = await getRoleQueryContext();
   
@@ -29,13 +37,20 @@ async function getTickets(): Promise<TicketWithRelations[]> {
       *,
       created_by:profiles!tickets_created_by_profile_id_fkey(full_name),
       assigned_to:profiles!tickets_assigned_to_profile_id_fkey(full_name),
-      members(first_name, last_name)
+      members(id, first_name, last_name)
     `)
     .order('created_at', { ascending: false });
 
+  // Apply filters
+  if (statusFilter && statusFilter !== 'all') {
+    query = query.eq('status', statusFilter);
+  }
+  if (categoryFilter && categoryFilter !== 'all') {
+    query = query.eq('category', categoryFilter);
+  }
+
   // For advisors, filter to their own tickets or tickets assigned to them or related to them
   if (!context.isAdmin && context.role === 'advisor') {
-    // Advisors can see tickets they created, are assigned to, or are linked to their advisor_id
     const filters = [`created_by_profile_id.eq.${context.profileId}`, `assigned_to_profile_id.eq.${context.profileId}`];
     if (context.advisorId) {
       filters.push(`advisor_id.eq.${context.advisorId}`);
@@ -53,31 +68,8 @@ async function getTickets(): Promise<TicketWithRelations[]> {
   return (data ?? []) as TicketWithRelations[];
 }
 
-const statusColors: Record<string, string> = {
-  open: 'bg-blue-100 text-blue-700 border-blue-200',
-  in_progress: 'bg-amber-100 text-amber-700 border-amber-200',
-  waiting: 'bg-slate-100 text-slate-600 border-slate-200',
-  resolved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  closed: 'bg-slate-100 text-slate-500 border-slate-200',
-};
-
-const priorityColors: Record<string, string> = {
-  urgent: 'bg-red-100 text-red-700 border-red-200',
-  high: 'bg-orange-100 text-orange-700 border-orange-200',
-  normal: 'bg-slate-100 text-slate-600 border-slate-200',
-  low: 'bg-slate-50 text-slate-500 border-slate-200',
-};
-
-const categoryColors: Record<string, string> = {
-  need: 'bg-purple-100 text-purple-700',
-  enrollment: 'bg-blue-100 text-blue-700',
-  billing: 'bg-green-100 text-green-700',
-  service: 'bg-cyan-100 text-cyan-700',
-  other: 'bg-slate-100 text-slate-600',
-};
-
-export default async function TicketsPage() {
-  const tickets = await getTickets();
+export default async function TicketsPage({ searchParams }: PageProps) {
+  const tickets = await getTickets(searchParams.status, searchParams.category);
   
   const openCount = tickets.filter(t => t.status === 'open').length;
   const inProgressCount = tickets.filter(t => t.status === 'in_progress').length;
@@ -131,32 +123,34 @@ export default async function TicketsPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Filter className="w-4 h-4 text-slate-400" />
-              <Select defaultValue="all">
-                <SelectTrigger className="w-32 h-9">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="waiting">Waiting</SelectItem>
-                  <SelectItem value="resolved">Resolved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select defaultValue="all">
-                <SelectTrigger className="w-32 h-9">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="need">Need</SelectItem>
-                  <SelectItem value="enrollment">Enrollment</SelectItem>
-                  <SelectItem value="billing">Billing</SelectItem>
-                  <SelectItem value="service">Service</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <form className="flex items-center gap-2">
+                <Select name="status" defaultValue={searchParams.status || 'all'}>
+                  <SelectTrigger className="w-32 h-9">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="open">Open</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="resolved">Resolved</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select name="category" defaultValue={searchParams.category || 'all'}>
+                  <SelectTrigger className="w-32 h-9">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="need">Need</SelectItem>
+                    <SelectItem value="enrollment">Enrollment</SelectItem>
+                    <SelectItem value="billing">Billing</SelectItem>
+                    <SelectItem value="service">Service</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </form>
             </div>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -191,41 +185,36 @@ export default async function TicketsPage() {
                 {tickets.map((ticket) => (
                   <TableRow key={ticket.id} className="cursor-pointer hover:bg-slate-50">
                     <TableCell>
-                      <div className="font-medium text-slate-900 max-w-[250px] truncate">
-                        {ticket.subject}
-                      </div>
-                      <div className="text-xs text-slate-400 truncate max-w-[250px]">
-                        {ticket.description}
-                      </div>
+                      <Link 
+                        href={`/tickets/${ticket.id}`}
+                        className="block"
+                      >
+                        <div className="font-medium text-blue-600 hover:text-blue-800 hover:underline max-w-[250px] truncate">
+                          {ticket.subject}
+                        </div>
+                        <div className="text-xs text-slate-400 truncate max-w-[250px]">
+                          {ticket.description}
+                        </div>
+                      </Link>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="secondary"
-                        className={categoryColors[ticket.category] || categoryColors.other}
-                      >
-                        {ticket.category}
-                      </Badge>
+                      <CategoryBadge category={ticket.category} />
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={statusColors[ticket.status] || statusColors.closed}
-                      >
-                        {ticket.status.replace('_', ' ')}
-                      </Badge>
+                      <TicketStatusBadge status={ticket.status} />
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={priorityColors[ticket.priority] || priorityColors.normal}
-                      >
-                        {ticket.priority}
-                      </Badge>
+                      <PriorityBadge priority={ticket.priority} />
                     </TableCell>
                     <TableCell className="text-slate-600">
-                      {ticket.members
-                        ? `${ticket.members.first_name} ${ticket.members.last_name}`
-                        : '—'}
+                      {ticket.members ? (
+                        <Link 
+                          href={`/members/${ticket.members.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {ticket.members.first_name} {ticket.members.last_name}
+                        </Link>
+                      ) : '—'}
                     </TableCell>
                     <TableCell className="text-slate-600">
                       {ticket.assigned_to?.full_name ?? (

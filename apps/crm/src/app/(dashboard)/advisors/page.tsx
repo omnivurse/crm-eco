@@ -1,8 +1,10 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Button } from '@crm-eco/ui';
 import { AddAdvisorDialog } from '@/components/advisors/add-advisor-dialog';
 import { Search, UserCheck, Download } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { AdvisorStatusBadge } from '@/components/shared/status-badge';
 
 type Advisor = Database['public']['Tables']['advisors']['Row'];
 
@@ -40,14 +42,6 @@ async function getMemberCounts(): Promise<Record<string, number>> {
   });
   return counts;
 }
-
-const statusColors: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-100 text-amber-700 border-amber-200',
-  paused: 'bg-slate-100 text-slate-600 border-slate-200',
-  inactive: 'bg-slate-100 text-slate-500 border-slate-200',
-  terminated: 'bg-red-100 text-red-700 border-red-200',
-};
 
 export default async function AdvisorsPage() {
   const [advisors, memberCounts] = await Promise.all([
@@ -141,34 +135,39 @@ export default async function AdvisorsPage() {
               </TableHeader>
               <TableBody>
                 {advisors.map((advisor) => (
-                  <TableRow key={advisor.id} className="cursor-pointer hover:bg-slate-50">
+                  <TableRow 
+                    key={advisor.id} 
+                    className="cursor-pointer hover:bg-slate-50"
+                    onClick={() => window.location.href = `/advisors/${advisor.id}`}
+                  >
                     <TableCell>
-                      <div className="font-medium text-slate-900">
-                        {advisor.first_name} {advisor.last_name}
-                      </div>
-                      <div className="text-xs text-slate-400">{advisor.email}</div>
+                      <Link 
+                        href={`/advisors/${advisor.id}`}
+                        className="block"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="font-medium text-blue-600 hover:underline">
+                          {advisor.first_name} {advisor.last_name}
+                        </div>
+                        <div className="text-xs text-slate-400">{advisor.email}</div>
+                      </Link>
                     </TableCell>
                     <TableCell className="text-slate-600">
                       {advisor.agency_name || '—'}
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={statusColors[advisor.status] || statusColors.inactive}
-                      >
-                        {advisor.status}
-                      </Badge>
+                      <AdvisorStatusBadge status={advisor.status} />
                     </TableCell>
                     <TableCell>
                       {advisor.license_states && advisor.license_states.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {advisor.license_states.slice(0, 3).map((state) => (
-                            <Badge key={state} variant="secondary" className="text-xs">
+                            <Badge key={state} variant="secondary" className="text-xs bg-blue-50 text-blue-700">
                               {state}
                             </Badge>
                           ))}
                           {advisor.license_states.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">
+                            <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
                               +{advisor.license_states.length - 3}
                             </Badge>
                           )}

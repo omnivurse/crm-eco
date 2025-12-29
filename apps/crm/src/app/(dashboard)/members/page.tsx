@@ -1,15 +1,17 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Button } from '@crm-eco/ui';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Input, Button } from '@crm-eco/ui';
 import { AddMemberDialog } from '@/components/members/add-member-dialog';
 import { format } from 'date-fns';
 import { Search, Users, Download } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 import { getRoleQueryContext } from '@/lib/auth';
+import { MemberStatusBadge } from '@/components/shared/status-badge';
 
 type Member = Database['public']['Tables']['members']['Row'];
 
 interface MemberWithAdvisor extends Member {
-  advisors?: { first_name: string; last_name: string } | null;
+  advisors?: { id: string; first_name: string; last_name: string } | null;
 }
 
 async function getMembers(): Promise<MemberWithAdvisor[]> {
@@ -23,7 +25,7 @@ async function getMembers(): Promise<MemberWithAdvisor[]> {
   
   let query = supabase
     .from('members')
-    .select('*, advisors(first_name, last_name)')
+    .select('*, advisors(id, first_name, last_name)')
     .order('created_at', { ascending: false });
 
   // Filter by advisor if user is an advisor
@@ -40,15 +42,6 @@ async function getMembers(): Promise<MemberWithAdvisor[]> {
 
   return (data ?? []) as MemberWithAdvisor[];
 }
-
-const statusColors: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  pending: 'bg-amber-100 text-amber-700 border-amber-200',
-  prospect: 'bg-blue-100 text-blue-700 border-blue-200',
-  paused: 'bg-slate-100 text-slate-600 border-slate-200',
-  inactive: 'bg-slate-100 text-slate-500 border-slate-200',
-  terminated: 'bg-red-100 text-red-700 border-red-200',
-};
 
 export default async function MembersPage() {
   const members = await getMembers();
@@ -138,31 +131,42 @@ export default async function MembersPage() {
               </TableHeader>
               <TableBody>
                 {members.map((member) => (
-                  <TableRow key={member.id} className="cursor-pointer hover:bg-slate-50">
+                  <TableRow 
+                    key={member.id} 
+                    className="cursor-pointer hover:bg-slate-50"
+                    onClick={() => window.location.href = `/members/${member.id}`}
+                  >
                     <TableCell>
-                      <div className="font-medium text-slate-900">
-                        {member.first_name} {member.last_name}
-                      </div>
-                      {member.member_number && (
-                        <div className="text-xs text-slate-400">#{member.member_number}</div>
-                      )}
+                      <Link 
+                        href={`/members/${member.id}`}
+                        className="block"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="font-medium text-blue-600 hover:underline">
+                          {member.first_name} {member.last_name}
+                        </div>
+                        {member.member_number && (
+                          <div className="text-xs text-slate-400">#{member.member_number}</div>
+                        )}
+                      </Link>
                     </TableCell>
                     <TableCell className="text-slate-600">{member.email}</TableCell>
                     <TableCell>
                       <span className="text-slate-600">{member.state ?? '—'}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant="outline"
-                        className={statusColors[member.status] || statusColors.inactive}
-                      >
-                        {member.status}
-                      </Badge>
+                      <MemberStatusBadge status={member.status} />
                     </TableCell>
                     <TableCell className="text-slate-600">
-                      {member.advisors
-                        ? `${member.advisors.first_name} ${member.advisors.last_name}`
-                        : '—'}
+                      {member.advisors ? (
+                        <Link 
+                          href={`/advisors/${member.advisors.id}`}
+                          className="text-blue-600 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {member.advisors.first_name} {member.advisors.last_name}
+                        </Link>
+                      ) : '—'}
                     </TableCell>
                     <TableCell className="text-slate-500">
                       {member.effective_date
