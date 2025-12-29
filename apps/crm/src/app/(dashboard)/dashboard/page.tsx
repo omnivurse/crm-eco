@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, 
 import { Users, UserCheck, Ticket, HeartPulse, TrendingUp, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Database } from '@crm-eco/lib/types';
+import { getRoleQueryContext, type RoleQueryContext } from '@/lib/auth';
 
 type ActivityRow = Database['public']['Tables']['activities']['Row'];
 
@@ -12,28 +13,58 @@ interface ActivityWithRelations extends ActivityRow {
   leads?: { first_name: string; last_name: string } | null;
 }
 
-async function getStats() {
+async function getStats(context: RoleQueryContext) {
   const supabase = await createServerSupabaseClient();
   
+  // Build queries based on role
+  const isAdvisor = !context.isAdmin && context.role === 'advisor' && context.advisorId;
+  
+  // Members query
+  let membersQuery = supabase.from('members').select('id', { count: 'exact', head: true }).eq('status', 'active');
+  if (isAdvisor) {
+    membersQuery = membersQuery.eq('advisor_id', context.advisorId!);
+  }
+  
+  // Advisors query (only for admin/owner)
+  const advisorsQuery = context.isAdmin 
+    ? supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('status', 'active')
+    : Promise.resolve({ count: 0 });
+  
+  // Tickets query
+  let ticketsQuery = supabase.from('tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress']);
+  if (isAdvisor) {
+    // For advisors, count tickets they created, are assigned to, or are linked to them
+    ticketsQuery = ticketsQuery.or(
+      `created_by_profile_id.eq.${context.profileId},assigned_to_profile_id.eq.${context.profileId},advisor_id.eq.${context.advisorId}`
+    );
+  }
+  
+  // Needs query
+  let needsQuery = supabase.from('needs').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_review']);
+  if (isAdvisor) {
+    needsQuery = needsQuery.eq('advisor_id', context.advisorId!);
+  }
+  
   const [membersResult, advisorsResult, ticketsResult, needsResult] = await Promise.all([
-    supabase.from('members').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('advisors').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress']),
-    supabase.from('needs').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_review']),
+    membersQuery,
+    advisorsQuery,
+    ticketsQuery,
+    needsQuery,
   ]);
 
   return {
     activeMembers: membersResult.count ?? 0,
-    activeAdvisors: advisorsResult.count ?? 0,
+    activeAdvisors: (advisorsResult as { count: number | null }).count ?? 0,
     openTickets: ticketsResult.count ?? 0,
     openNeeds: needsResult.count ?? 0,
+    isAdvisor,
   };
 }
 
-async function getRecentActivities(): Promise<ActivityWithRelations[]> {
+async function getRecentActivities(context: RoleQueryContext): Promise<ActivityWithRelations[]> {
   const supabase = await createServerSupabaseClient();
   
-  const { data } = await supabase
+  let query = supabase
     .from('activities')
     .select(`
       *,
@@ -43,6 +74,17 @@ async function getRecentActivities(): Promise<ActivityWithRelations[]> {
     `)
     .order('created_at', { ascending: false })
     .limit(10);
+
+  // For advisors, only show activities they created or related to their entities
+  if (!context.isAdmin && context.role === 'advisor') {
+    const filters = [`created_by_profile_id.eq.${context.profileId}`];
+    if (context.advisorId) {
+      filters.push(`advisor_id.eq.${context.advisorId}`);
+    }
+    query = query.or(filters.join(','));
+  }
+
+  const { data } = await query;
 
   return (data ?? []) as ActivityWithRelations[];
 }
@@ -58,28 +100,40 @@ const actionColors: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
-  const stats = await getStats();
-  const activities = await getRecentActivities();
+  const context = await getRoleQueryContext();
+  
+  if (!context) {
+    return (
+      <div className="text-center py-12 text-slate-500">
+        <p>Unable to load dashboard. Please try logging in again.</p>
+      </div>
+    );
+  }
 
+  const stats = await getStats(context);
+  const activities = await getRecentActivities(context);
+
+  // Build stat cards based on role
   const statCards = [
     {
-      title: 'Active Members',
+      title: stats.isAdvisor ? 'My Active Members' : 'Active Members',
       value: stats.activeMembers,
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       borderColor: 'border-l-blue-500',
     },
-    {
+    // Only show advisors count for admin/owner
+    ...(!stats.isAdvisor ? [{
       title: 'Active Advisors',
       value: stats.activeAdvisors,
       icon: UserCheck,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       borderColor: 'border-l-emerald-500',
-    },
+    }] : []),
     {
-      title: 'Open Tickets',
+      title: stats.isAdvisor ? 'My Open Tickets' : 'Open Tickets',
       value: stats.openTickets,
       icon: Ticket,
       color: 'text-amber-600',
@@ -87,7 +141,7 @@ export default async function DashboardPage() {
       borderColor: 'border-l-amber-500',
     },
     {
-      title: 'Open Needs',
+      title: stats.isAdvisor ? 'My Open Needs' : 'Open Needs',
       value: stats.openNeeds,
       icon: HeartPulse,
       color: 'text-rose-600',
@@ -111,7 +165,12 @@ export default async function DashboardPage() {
       {/* Welcome Section */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-slate-500">Overview of your healthshare management platform</p>
+          <p className="text-slate-500">
+            {stats.isAdvisor 
+              ? 'Overview of your assigned members and tasks' 
+              : 'Overview of your healthshare management platform'
+            }
+          </p>
         </div>
         <div className="flex items-center gap-2 text-sm text-slate-500">
           <TrendingUp className="w-4 h-4" />
@@ -120,7 +179,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${stats.isAdvisor ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
         {statCards.map((stat) => (
           <Card key={stat.title} className={`border-l-4 ${stat.borderColor} hover:shadow-md transition-shadow`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -143,7 +202,7 @@ export default async function DashboardPage() {
       <Card>
         <CardHeader className="flex flex-row items-center gap-2">
           <Activity className="w-5 h-5 text-slate-400" />
-          <CardTitle>Recent Activity</CardTitle>
+          <CardTitle>{stats.isAdvisor ? 'My Recent Activity' : 'Recent Activity'}</CardTitle>
         </CardHeader>
         <CardContent>
           {activities.length === 0 ? (

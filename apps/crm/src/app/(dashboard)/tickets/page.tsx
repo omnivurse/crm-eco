@@ -1,9 +1,10 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { CreateTicketDialog } from '@/components/tickets/create-ticket-dialog';
 import { format } from 'date-fns';
 import { Search, Ticket, Filter } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { getRoleQueryContext } from '@/lib/auth';
 
 type TicketRow = Database['public']['Tables']['tickets']['Row'];
 
@@ -15,8 +16,14 @@ interface TicketWithRelations extends TicketRow {
 
 async function getTickets(): Promise<TicketWithRelations[]> {
   const supabase = await createServerSupabaseClient();
+  const context = await getRoleQueryContext();
   
-  const { data, error } = await supabase
+  if (!context) {
+    console.error('No role context found');
+    return [];
+  }
+  
+  let query = supabase
     .from('tickets')
     .select(`
       *,
@@ -25,6 +32,18 @@ async function getTickets(): Promise<TicketWithRelations[]> {
       members(first_name, last_name)
     `)
     .order('created_at', { ascending: false });
+
+  // For advisors, filter to their own tickets or tickets assigned to them or related to them
+  if (!context.isAdmin && context.role === 'advisor') {
+    // Advisors can see tickets they created, are assigned to, or are linked to their advisor_id
+    const filters = [`created_by_profile_id.eq.${context.profileId}`, `assigned_to_profile_id.eq.${context.profileId}`];
+    if (context.advisorId) {
+      filters.push(`advisor_id.eq.${context.advisorId}`);
+    }
+    query = query.or(filters.join(','));
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('Error fetching tickets:', error);
