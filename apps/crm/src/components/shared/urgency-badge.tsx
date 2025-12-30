@@ -1,12 +1,10 @@
 import { cn } from '@crm-eco/ui';
-
-type UrgencyLevel = 'green' | 'orange' | 'red';
-
-const urgencyConfig: Record<UrgencyLevel, { bg: string; text: string; label: string }> = {
-  green: { bg: 'bg-emerald-500', text: 'text-white', label: 'On Track' },
-  orange: { bg: 'bg-amber-500', text: 'text-white', label: 'Near Deadline' },
-  red: { bg: 'bg-red-500', text: 'text-white', label: 'Must Complete' },
-};
+import {
+  getUrgencyLabelCRM,
+  getUrgencyBadgeClass,
+  getUrgencyDotClass,
+  type UrgencyLight,
+} from '@crm-eco/lib';
 
 interface UrgencyBadgeProps {
   urgency: string | null | undefined;
@@ -15,36 +13,37 @@ interface UrgencyBadgeProps {
 }
 
 export function UrgencyBadge({ urgency, className, showLabel = true }: UrgencyBadgeProps) {
-  const level = (urgency as UrgencyLevel) || 'green';
-  const config = urgencyConfig[level] || urgencyConfig.green;
+  const level = (urgency as UrgencyLight) || null;
+  const label = getUrgencyLabelCRM(level);
+  const badgeClass = getUrgencyBadgeClass(level);
   
   return (
     <span 
       className={cn(
         'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium',
-        config.bg,
-        config.text,
+        badgeClass,
         className
       )}
     >
-      {showLabel ? config.label : level.charAt(0).toUpperCase() + level.slice(1)}
+      {showLabel ? label : (level ? level.charAt(0).toUpperCase() + level.slice(1) : 'None')}
     </span>
   );
 }
 
 // Compact version for tight spaces
 export function UrgencyDot({ urgency, className }: { urgency: string | null | undefined; className?: string }) {
-  const level = (urgency as UrgencyLevel) || 'green';
-  const config = urgencyConfig[level] || urgencyConfig.green;
+  const level = (urgency as UrgencyLight) || null;
+  const dotClass = getUrgencyDotClass(level);
+  const label = getUrgencyLabelCRM(level);
   
   return (
     <span 
       className={cn(
         'inline-block w-3 h-3 rounded-full',
-        config.bg,
+        dotClass,
         className
       )}
-      title={config.label}
+      title={label}
     />
   );
 }
@@ -72,5 +71,3 @@ export function getUrgencyText(slaTargetDate: string | null | undefined): string
     return `${diffDays} days remaining`;
   }
 }
-
-

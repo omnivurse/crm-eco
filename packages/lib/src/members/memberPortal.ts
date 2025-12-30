@@ -412,3 +412,95 @@ export async function getMembershipForEnrollment(
   return membership;
 }
 
+/**
+ * Get a specific need for the member (with ownership check)
+ */
+export async function getNeedForMember(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  needId: string,
+  memberId: string,
+  organizationId: string
+) {
+  const { data: need, error } = await supabase
+    .from('needs')
+    .select(`
+      id,
+      organization_id,
+      member_id,
+      advisor_id,
+      need_type,
+      description,
+      total_amount,
+      iua_amount,
+      eligible_amount,
+      reimbursed_amount,
+      status,
+      urgency_light,
+      sla_target_date,
+      incident_date,
+      facility_name,
+      payment_method,
+      payment_status,
+      payment_date,
+      amount_paid,
+      reimbursement_method,
+      reimbursement_account_last4,
+      reimbursement_status,
+      has_member_consent,
+      custom_fields,
+      created_at,
+      updated_at
+    `)
+    .eq('id', needId)
+    .eq('member_id', memberId)
+    .eq('organization_id', organizationId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Failed to get need for member:', error);
+    return null;
+  }
+
+  return need;
+}
+
+/**
+ * Get events/timeline for a specific need
+ */
+export async function getNeedEvents(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  needId: string,
+  limit: number = 50
+) {
+  const { data: events, error } = await supabase
+    .from('need_events')
+    .select(`
+      id,
+      need_id,
+      event_type,
+      description,
+      note,
+      old_status,
+      new_status,
+      metadata,
+      created_by_profile_id,
+      created_at,
+      occurred_at
+    `)
+    .eq('need_id', needId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error('Failed to get need events:', error);
+    return [];
+  }
+
+  return events || [];
+}
+
+// Re-export MemberRow type for use in components
+export type { MemberRow };
+
