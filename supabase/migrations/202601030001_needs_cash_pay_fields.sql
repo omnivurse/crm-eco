@@ -48,7 +48,8 @@ CREATE INDEX IF NOT EXISTS idx_needs_reimbursement_status ON needs(reimbursement
 -- ============================================================================
 
 -- Allow members to view their own needs
-CREATE POLICY IF NOT EXISTS "Members can view their own needs"
+DROP POLICY IF EXISTS "Members can view their own needs" ON needs;
+CREATE POLICY "Members can view their own needs"
   ON needs FOR SELECT
   USING (
     organization_id = get_user_organization_id()
@@ -61,7 +62,8 @@ CREATE POLICY IF NOT EXISTS "Members can view their own needs"
   );
 
 -- Allow members to create their own needs
-CREATE POLICY IF NOT EXISTS "Members can create their own needs"
+DROP POLICY IF EXISTS "Members can create their own needs" ON needs;
+CREATE POLICY "Members can create their own needs"
   ON needs FOR INSERT
   WITH CHECK (
     organization_id = get_user_organization_id()
@@ -74,7 +76,8 @@ CREATE POLICY IF NOT EXISTS "Members can create their own needs"
   );
 
 -- Allow members to update their own needs (limited to certain fields via application logic)
-CREATE POLICY IF NOT EXISTS "Members can update their own needs"
+DROP POLICY IF EXISTS "Members can update their own needs" ON needs;
+CREATE POLICY "Members can update their own needs"
   ON needs FOR UPDATE
   USING (
     organization_id = get_user_organization_id()
@@ -87,7 +90,8 @@ CREATE POLICY IF NOT EXISTS "Members can update their own needs"
   );
 
 -- Allow members to create need events for their own needs
-CREATE POLICY IF NOT EXISTS "Members can create events for their own needs"
+DROP POLICY IF EXISTS "Members can create events for their own needs" ON need_events;
+CREATE POLICY "Members can create events for their own needs"
   ON need_events FOR INSERT
   WITH CHECK (
     need_id IN (
