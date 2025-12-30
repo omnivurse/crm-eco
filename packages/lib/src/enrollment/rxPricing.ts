@@ -1,10 +1,12 @@
 /**
  * Rx Pricing Types and Helper
  * 
- * This module provides types and a stub function for prescription medication
- * pricing estimates. Currently returns mock data; replace getRxPricingEstimate
- * implementation with real AI (e.g., Gemini) or Rx pricing API when ready.
+ * This module provides types and functions for prescription medication
+ * pricing estimates. Uses Gemini AI when GEMINI_API_KEY is configured,
+ * falls back to deterministic mock data otherwise.
  */
+
+import { callGeminiForRxPricing, isGeminiConfigured } from '../ai/geminiClient';
 
 // ============================================================================
 // Types
@@ -70,16 +72,8 @@ export interface GetRxPricingParams {
 /**
  * Get prescription pricing estimates for a list of medications.
  * 
- * **CURRENT IMPLEMENTATION: MOCK DATA**
- * 
- * This function returns deterministic mock data so the UI and DB wiring
- * are stable. Replace the implementation body with real AI (e.g., Gemini)
- * or external Rx pricing API when ready.
- * 
- * The mock logic:
- * - Uses the member's preferred pharmacy if specified, otherwise "Generic Pharmacy"
- * - Estimates 20% lower than current cost (minimum $5)
- * - If no current cost provided, assumes $100 baseline
+ * Uses Gemini AI when GEMINI_API_KEY is configured, otherwise falls back
+ * to deterministic mock data for development/testing.
  * 
  * @param params - Medications list and context (state, plan)
  * @returns Pricing result with options and summary
@@ -87,12 +81,9 @@ export interface GetRxPricingParams {
 export async function getRxPricingEstimate(
   params: GetRxPricingParams
 ): Promise<RxPricingResult> {
-  // TODO: Replace with real AI (e.g., Gemini) or Rx pricing API integration
-  // The types and return structure should remain stable.
-
   const { meds, memberState, planId } = params;
 
-  if (meds.length === 0) {
+  if (!meds || meds.length === 0) {
     return {
       options: [],
       summary: 'No medications provided for pricing.',
@@ -100,7 +91,98 @@ export async function getRxPricingEstimate(
     };
   }
 
-  // Generate mock pricing options
+  // Try Gemini AI if configured
+  if (isGeminiConfigured()) {
+    const aiResult = await tryGeminiRxPricing(meds, memberState, planId);
+    if (aiResult) {
+      return aiResult;
+    }
+    // Fall through to mock if AI fails
+    console.log('Gemini Rx pricing failed, falling back to mock');
+  }
+
+  // Fallback: Generate mock pricing options
+  return generateMockRxPricing(meds, memberState, planId);
+}
+
+/**
+ * Build and execute a Gemini prompt for Rx pricing
+ */
+async function tryGeminiRxPricing(
+  meds: MedicationInput[],
+  memberState?: string,
+  planId?: string
+): Promise<RxPricingResult | null> {
+  // Build a structured prompt for Gemini
+  const medsDescription = meds
+    .map(
+      (m, idx) =>
+        `${idx + 1}. Name: ${m.name}, Dosage: ${m.dosage}, Frequency: ${m.frequency}, ` +
+        `Current Monthly Cost: ${m.currentMonthlyCost !== undefined ? '$' + m.currentMonthlyCost : 'unknown'}, ` +
+        `Preferred Pharmacy: ${m.preferredPharmacy || 'none specified'}`
+    )
+    .join('\n');
+
+  const prompt = `You are helping estimate prescription costs for healthshare members.
+
+Return STRICTLY valid JSON with this exact shape (no markdown, no explanation, just JSON):
+
+{
+  "options": [
+    {
+      "medicationName": "string",
+      "pharmacy": "string",
+      "estimatedMonthlyCost": number,
+      "notes": "string (optional advice or context)"
+    }
+  ],
+  "summary": "string (brief overall summary)"
+}
+
+Context:
+- Member state: ${memberState || 'unknown'}
+- Plan ID: ${planId || 'unknown'}
+
+Medications to price:
+${medsDescription}
+
+For each medication, suggest a realistic estimated monthly cost based on:
+- Common pharmacy pricing (Costco, Walmart $4 generics, GoodRx discounts, etc.)
+- Whether it's likely generic or brand-name
+- Typical price ranges for the drug class
+
+Keep estimates realistic and conservative. If you're unsure, estimate higher rather than lower.`;
+
+  const aiResponse = await callGeminiForRxPricing(prompt);
+
+  if (!aiResponse || !aiResponse.options) {
+    return null;
+  }
+
+  // Map AI response to our RxOption type with source: 'ai'
+  const options: RxOption[] = aiResponse.options.map((opt) => ({
+    medicationName: opt.medicationName,
+    pharmacy: opt.pharmacy,
+    estimatedMonthlyCost: opt.estimatedMonthlyCost,
+    notes: opt.notes,
+    source: 'ai' as const,
+  }));
+
+  return {
+    options,
+    summary: aiResponse.summary || 'AI-generated Rx pricing estimates.',
+    generatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Generate mock Rx pricing (fallback when AI is unavailable)
+ */
+function generateMockRxPricing(
+  meds: MedicationInput[],
+  memberState?: string,
+  planId?: string
+): RxPricingResult {
   const options: RxOption[] = meds.map((med) => {
     const baseCost = med.currentMonthlyCost ?? 100;
     // Mock: 20% discount, minimum $5
@@ -130,15 +212,15 @@ export async function getRxPricingEstimate(
   );
   const savings = totalCurrentCost - totalEstimatedCost;
 
-  let summary = `Mock Rx pricing generated for ${meds.length} medication${meds.length > 1 ? 's' : ''}.`;
+  let summary = `Estimated pricing for ${meds.length} medication${meds.length > 1 ? 's' : ''}.`;
   if (savings > 0) {
     summary += ` Potential monthly savings: ~$${savings.toFixed(2)}.`;
   }
-  summary += ' Replace with real AI or API integration when ready.';
+  summary += ' (Mock estimates - configure GEMINI_API_KEY for AI-powered pricing)';
 
   // Include context in notes for future debugging
   if (memberState || planId) {
-    summary += ` (State: ${memberState || 'N/A'}, Plan: ${planId || 'N/A'})`;
+    summary += ` [State: ${memberState || 'N/A'}, Plan: ${planId || 'N/A'}]`;
   }
 
   return {
