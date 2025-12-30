@@ -77,3 +77,4 @@ set urgency_light = public.compute_need_urgency(status, sla_target_date)
 where urgency_light is null 
    or urgency_light != public.compute_need_urgency(status, sla_target_date);
 
+

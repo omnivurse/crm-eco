@@ -631,6 +631,395 @@ export interface Database {
           updated_at?: string;
         };
       };
+      // ============================================================================
+      // IMPORT TABLES
+      // ============================================================================
+      import_jobs: {
+        Row: {
+          id: string;
+          organization_id: string;
+          created_by_profile_id: string;
+          entity_type: 'member' | 'advisor' | 'lead';
+          source_name: string | null;
+          file_name: string | null;
+          total_rows: number;
+          processed_rows: number;
+          inserted_count: number;
+          updated_count: number;
+          skipped_count: number;
+          error_count: number;
+          status: 'pending' | 'processing' | 'completed' | 'failed';
+          error_message: string | null;
+          created_at: string;
+          started_at: string | null;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          created_by_profile_id: string;
+          entity_type: 'member' | 'advisor' | 'lead';
+          source_name?: string | null;
+          file_name?: string | null;
+          total_rows?: number;
+          processed_rows?: number;
+          inserted_count?: number;
+          updated_count?: number;
+          skipped_count?: number;
+          error_count?: number;
+          status?: 'pending' | 'processing' | 'completed' | 'failed';
+          error_message?: string | null;
+          created_at?: string;
+          started_at?: string | null;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          created_by_profile_id?: string;
+          entity_type?: 'member' | 'advisor' | 'lead';
+          source_name?: string | null;
+          file_name?: string | null;
+          total_rows?: number;
+          processed_rows?: number;
+          inserted_count?: number;
+          updated_count?: number;
+          skipped_count?: number;
+          error_count?: number;
+          status?: 'pending' | 'processing' | 'completed' | 'failed';
+          error_message?: string | null;
+          created_at?: string;
+          started_at?: string | null;
+          completed_at?: string | null;
+        };
+      };
+      import_job_rows: {
+        Row: {
+          id: string;
+          import_job_id: string;
+          row_index: number;
+          raw_data: Json;
+          normalized_data: Json | null;
+          entity_id: string | null;
+          status: 'pending' | 'inserted' | 'updated' | 'skipped' | 'error';
+          error_message: string | null;
+          created_at: string;
+          processed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          import_job_id: string;
+          row_index: number;
+          raw_data: Json;
+          normalized_data?: Json | null;
+          entity_id?: string | null;
+          status?: 'pending' | 'inserted' | 'updated' | 'skipped' | 'error';
+          error_message?: string | null;
+          created_at?: string;
+          processed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          import_job_id?: string;
+          row_index?: number;
+          raw_data?: Json;
+          normalized_data?: Json | null;
+          entity_id?: string | null;
+          status?: 'pending' | 'inserted' | 'updated' | 'skipped' | 'error';
+          error_message?: string | null;
+          created_at?: string;
+          processed_at?: string | null;
+        };
+      };
+      // ============================================================================
+      // ENROLLMENT ENGINE TABLES
+      // ============================================================================
+      plans: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          code: string;
+          external_vendor_code: string | null;
+          product_line: string | null;
+          coverage_category: string | null;
+          network_type: string | null;
+          tier: string | null;
+          description: string | null;
+          rating_area_state: string | null;
+          effective_start_date: string | null;
+          effective_end_date: string | null;
+          monthly_share: number | null;
+          enrollment_fee: number | null;
+          iua_amount: number | null;
+          max_annual_share: number | null;
+          is_active: boolean;
+          metadata: Json;
+          custom_fields: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          code: string;
+          external_vendor_code?: string | null;
+          product_line?: string | null;
+          coverage_category?: string | null;
+          network_type?: string | null;
+          tier?: string | null;
+          description?: string | null;
+          rating_area_state?: string | null;
+          effective_start_date?: string | null;
+          effective_end_date?: string | null;
+          monthly_share?: number | null;
+          enrollment_fee?: number | null;
+          iua_amount?: number | null;
+          max_annual_share?: number | null;
+          is_active?: boolean;
+          metadata?: Json;
+          custom_fields?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          code?: string;
+          external_vendor_code?: string | null;
+          product_line?: string | null;
+          coverage_category?: string | null;
+          network_type?: string | null;
+          tier?: string | null;
+          description?: string | null;
+          rating_area_state?: string | null;
+          effective_start_date?: string | null;
+          effective_end_date?: string | null;
+          monthly_share?: number | null;
+          enrollment_fee?: number | null;
+          iua_amount?: number | null;
+          max_annual_share?: number | null;
+          is_active?: boolean;
+          metadata?: Json;
+          custom_fields?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      memberships: {
+        Row: {
+          id: string;
+          organization_id: string;
+          member_id: string;
+          plan_id: string;
+          advisor_id: string | null;
+          membership_number: string | null;
+          external_vendor_membership_id: string | null;
+          status: 'pending' | 'active' | 'terminated' | 'paused';
+          effective_date: string;
+          end_date: string | null;
+          billing_amount: number | null;
+          billing_currency: string;
+          billing_frequency: string;
+          billing_status: 'ok' | 'delinquent' | 'cancelled';
+          funding_type: string | null;
+          primary_reason_for_joining: string | null;
+          cancellation_reason: string | null;
+          custom_fields: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          member_id: string;
+          plan_id: string;
+          advisor_id?: string | null;
+          membership_number?: string | null;
+          external_vendor_membership_id?: string | null;
+          status?: 'pending' | 'active' | 'terminated' | 'paused';
+          effective_date: string;
+          end_date?: string | null;
+          billing_amount?: number | null;
+          billing_currency?: string;
+          billing_frequency?: string;
+          billing_status?: 'ok' | 'delinquent' | 'cancelled';
+          funding_type?: string | null;
+          primary_reason_for_joining?: string | null;
+          cancellation_reason?: string | null;
+          custom_fields?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          member_id?: string;
+          plan_id?: string;
+          advisor_id?: string | null;
+          membership_number?: string | null;
+          external_vendor_membership_id?: string | null;
+          status?: 'pending' | 'active' | 'terminated' | 'paused';
+          effective_date?: string;
+          end_date?: string | null;
+          billing_amount?: number | null;
+          billing_currency?: string;
+          billing_frequency?: string;
+          billing_status?: 'ok' | 'delinquent' | 'cancelled';
+          funding_type?: string | null;
+          primary_reason_for_joining?: string | null;
+          cancellation_reason?: string | null;
+          custom_fields?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      enrollments: {
+        Row: {
+          id: string;
+          organization_id: string;
+          enrollment_number: string | null;
+          primary_member_id: string;
+          lead_id: string | null;
+          advisor_id: string | null;
+          enrollment_source: string | null;
+          channel: string | null;
+          status: 'draft' | 'in_progress' | 'submitted' | 'approved' | 'rejected' | 'cancelled';
+          selected_plan_id: string | null;
+          requested_effective_date: string | null;
+          effective_date: string | null;
+          household_size: number | null;
+          has_mandate_warning: boolean;
+          has_age65_warning: boolean;
+          external_vendor_enrollment_id: string | null;
+          snapshot: Json;
+          custom_fields: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          enrollment_number?: string | null;
+          primary_member_id: string;
+          lead_id?: string | null;
+          advisor_id?: string | null;
+          enrollment_source?: string | null;
+          channel?: string | null;
+          status?: 'draft' | 'in_progress' | 'submitted' | 'approved' | 'rejected' | 'cancelled';
+          selected_plan_id?: string | null;
+          requested_effective_date?: string | null;
+          effective_date?: string | null;
+          household_size?: number | null;
+          has_mandate_warning?: boolean;
+          has_age65_warning?: boolean;
+          external_vendor_enrollment_id?: string | null;
+          snapshot?: Json;
+          custom_fields?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          enrollment_number?: string | null;
+          primary_member_id?: string;
+          lead_id?: string | null;
+          advisor_id?: string | null;
+          enrollment_source?: string | null;
+          channel?: string | null;
+          status?: 'draft' | 'in_progress' | 'submitted' | 'approved' | 'rejected' | 'cancelled';
+          selected_plan_id?: string | null;
+          requested_effective_date?: string | null;
+          effective_date?: string | null;
+          household_size?: number | null;
+          has_mandate_warning?: boolean;
+          has_age65_warning?: boolean;
+          external_vendor_enrollment_id?: string | null;
+          snapshot?: Json;
+          custom_fields?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      enrollment_steps: {
+        Row: {
+          id: string;
+          organization_id: string;
+          enrollment_id: string;
+          step_key: string;
+          is_completed: boolean;
+          completed_at: string | null;
+          payload: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          enrollment_id: string;
+          step_key: string;
+          is_completed?: boolean;
+          completed_at?: string | null;
+          payload?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          enrollment_id?: string;
+          step_key?: string;
+          is_completed?: boolean;
+          completed_at?: string | null;
+          payload?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      enrollment_audit_log: {
+        Row: {
+          id: string;
+          organization_id: string;
+          enrollment_id: string;
+          actor_profile_id: string | null;
+          event_type: string;
+          old_status: string | null;
+          new_status: string | null;
+          message: string | null;
+          data_before: Json | null;
+          data_after: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          enrollment_id: string;
+          actor_profile_id?: string | null;
+          event_type: string;
+          old_status?: string | null;
+          new_status?: string | null;
+          message?: string | null;
+          data_before?: Json | null;
+          data_after?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          enrollment_id?: string;
+          actor_profile_id?: string | null;
+          event_type?: string;
+          old_status?: string | null;
+          new_status?: string | null;
+          message?: string | null;
+          data_before?: Json | null;
+          data_after?: Json | null;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -672,3 +1061,21 @@ export type TicketComment = Tables<'ticket_comments'>;
 export type Need = Tables<'needs'>;
 export type NeedEvent = Tables<'need_events'>;
 export type CustomFieldDefinition = Tables<'custom_field_definitions'>;
+
+// Import types
+export type ImportJob = Tables<'import_jobs'>;
+export type ImportJobRow = Tables<'import_job_rows'>;
+
+// Enrollment engine types
+export type Plan = Tables<'plans'>;
+export type Membership = Tables<'memberships'>;
+export type Enrollment = Tables<'enrollments'>;
+export type EnrollmentStep = Tables<'enrollment_steps'>;
+export type EnrollmentAuditLog = Tables<'enrollment_audit_log'>;
+
+// Status type helpers
+export type ImportJobStatus = ImportJob['status'];
+export type ImportRowStatus = ImportJobRow['status'];
+export type MembershipStatus = Membership['status'];
+export type EnrollmentStatus = Enrollment['status'];
+export type BillingStatus = Membership['billing_status'];

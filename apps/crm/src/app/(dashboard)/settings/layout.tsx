@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, Users, Settings, Layers } from 'lucide-react';
+import { Building2, Users, Settings, Layers, Upload } from 'lucide-react';
 import { cn } from '@crm-eco/ui';
 
 const settingsNavItems = [
@@ -23,6 +23,18 @@ const settingsNavItems = [
     label: 'Custom Fields',
     icon: Layers,
     description: 'Define custom fields for entities',
+  },
+  {
+    href: '/settings/plans',
+    label: 'Plans',
+    icon: Layers,
+    description: 'Manage available plans',
+  },
+  {
+    href: '/settings/imports',
+    label: 'Data Import',
+    icon: Upload,
+    description: 'Import members, advisors, and leads from CSV',
   },
 ];
 

@@ -23,3 +23,4 @@ CREATE INDEX IF NOT EXISTS idx_activities_org_occurred
 COMMENT ON COLUMN activities.ticket_id IS 'Reference to ticket if this activity is related to a ticket';
 COMMENT ON COLUMN activities.need_id IS 'Reference to need if this activity is related to a need';
 
+
