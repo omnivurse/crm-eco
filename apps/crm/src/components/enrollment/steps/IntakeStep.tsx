@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button } from '@crm-eco/ui';
-import { User, UserPlus, Building2 } from 'lucide-react';
-import { useEnrollmentWizard, WizardNavigation } from '../wizard';
+import { User, UserPlus, Building2, Users, Globe, Briefcase, Check } from 'lucide-react';
+import { useEnrollmentWizard, WizardNavigation, type EnrollmentMode } from '../wizard';
 import { completeIntakeStep } from '@/app/(dashboard)/enrollments/new/actions';
+import { cn } from '@crm-eco/ui';
 
 interface Member {
   id: string;
@@ -34,7 +35,30 @@ interface IntakeStepProps {
   advisors: Advisor[];
   currentAdvisorId?: string | null;
   isAdvisorRole: boolean;
+  userRole?: 'owner' | 'admin' | 'advisor' | 'staff';
 }
+
+const ENROLLMENT_MODES: { value: EnrollmentMode; label: string; description: string; icon: typeof Users; adminOnly?: boolean }[] = [
+  { 
+    value: 'advisor_assisted', 
+    label: 'Advisor-Assisted', 
+    description: 'Advisor guides member through enrollment',
+    icon: Users,
+  },
+  { 
+    value: 'member_self_serve', 
+    label: 'Member Self-Serve', 
+    description: 'Member completes enrollment independently',
+    icon: Globe,
+  },
+  { 
+    value: 'internal_ops', 
+    label: 'Internal Operations', 
+    description: 'Back-office staff enrollment (admin only)',
+    icon: Briefcase,
+    adminOnly: true,
+  },
+];
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN',
@@ -51,10 +75,11 @@ const ENROLLMENT_SOURCES = [
   { value: 'other', label: 'Other' },
 ];
 
-export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvisorRole }: IntakeStepProps) {
+export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvisorRole, userRole = 'staff' }: IntakeStepProps) {
   const {
     enrollmentId,
     snapshot,
+    enrollmentMode,
     setIsLoading,
     setError,
     markStepComplete,
@@ -62,14 +87,92 @@ export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvis
     updateSnapshot,
     setPrimaryMemberData,
     setEnrollmentId,
+    setEnrollmentMode,
   } = useEnrollmentWizard();
 
+  const isAdmin = userRole === 'owner' || userRole === 'admin';
+  
+  // Initialize mode based on role
+  const getDefaultMode = (): EnrollmentMode => {
+    if (isAdvisorRole) return 'advisor_assisted';
+    return snapshot.enrollmentMode || 'advisor_assisted';
+  };
+
+  const [selectedMode, setSelectedMode] = useState<EnrollmentMode>(snapshot.enrollmentMode || getDefaultMode());
   const [isNewMember, setIsNewMember] = useState(snapshot.intake?.isNewMember ?? false);
   const [selectedMemberId, setSelectedMemberId] = useState(snapshot.intake?.memberId || '');
   const [selectedLeadId, setSelectedLeadId] = useState(snapshot.intake?.leadId || '');
   const [advisorId, setAdvisorId] = useState(snapshot.intake?.advisorId || currentAdvisorId || '');
   const [enrollmentSource, setEnrollmentSource] = useState(snapshot.intake?.enrollmentSource || '');
   const [channel, setChannel] = useState(snapshot.intake?.channel || '');
+
+  // Derive enrollment source from mode if not set
+  useEffect(() => {
+    if (!enrollmentSource) {
+      switch (selectedMode) {
+        case 'advisor_assisted':
+          setEnrollmentSource('advisor');
+          break;
+        case 'member_self_serve':
+          setEnrollmentSource('web');
+          break;
+        case 'internal_ops':
+          setEnrollmentSource('other');
+          break;
+      }
+    }
+  }, [selectedMode, enrollmentSource]);
+
+  // Update context when mode changes
+  const handleModeChange = (mode: EnrollmentMode) => {
+    setSelectedMode(mode);
+    setEnrollmentMode(mode);
+    
+    // Auto-set enrollment source based on mode
+    switch (mode) {
+      case 'advisor_assisted':
+        setEnrollmentSource('advisor');
+        break;
+      case 'member_self_serve':
+        setEnrollmentSource('web');
+        // Clear advisor for self-serve
+        if (!isAdmin) {
+          setAdvisorId('');
+        }
+        break;
+      case 'internal_ops':
+        setEnrollmentSource('other');
+        break;
+    }
+  };
+
+  // Determine advisor field visibility/editability based on mode
+  const getAdvisorFieldConfig = () => {
+    switch (selectedMode) {
+      case 'advisor_assisted':
+        return {
+          visible: true,
+          disabled: isAdvisorRole, // Locked for advisors, editable for admins
+          helpText: isAdvisorRole ? 'Assigned to you as the advisor' : 'Select the advisor guiding this enrollment',
+        };
+      case 'member_self_serve':
+        return {
+          visible: isAdmin, // Only admins can assign advisor for self-serve
+          disabled: false,
+          helpText: 'Optionally assign an advisor (can be done later)',
+        };
+      case 'internal_ops':
+        return {
+          visible: true,
+          disabled: false,
+          helpText: 'Assign advisor for this back-office enrollment',
+        };
+      default:
+        return { visible: true, disabled: false, helpText: '' };
+    }
+  };
+
+  const advisorConfig = getAdvisorFieldConfig();
 
   // New member form state
   const [newMember, setNewMember] = useState({
@@ -130,6 +233,7 @@ export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvis
     try {
       const result = await completeIntakeStep({
         enrollmentId,
+        enrollmentMode: selectedMode,
         leadId: selectedLeadId || null,
         memberId: isNewMember ? null : selectedMemberId,
         isNewMember,
@@ -178,16 +282,86 @@ export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvis
     }
   };
 
+  // Get copy based on mode
+  const getMemberSectionCopy = () => {
+    switch (selectedMode) {
+      case 'member_self_serve':
+        return {
+          title: 'Your Information',
+          description: 'Please provide your details to begin enrollment. We\'ll guide you through each step.',
+        };
+      case 'internal_ops':
+        return {
+          title: 'Member Information',
+          description: 'Enter or select the member for this enrollment',
+        };
+      default:
+        return {
+          title: 'Primary Member',
+          description: 'Select an existing member or create a new one for this enrollment',
+        };
+    }
+  };
+
+  const memberCopy = getMemberSectionCopy();
+
   return (
     <div className="space-y-6">
+      {/* Enrollment Mode Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-slate-400" />
+            Enrollment Mode
+          </CardTitle>
+          <CardDescription>
+            How is this enrollment being conducted?
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {ENROLLMENT_MODES.filter(mode => !mode.adminOnly || isAdmin).map((mode) => {
+              const Icon = mode.icon;
+              const isSelected = selectedMode === mode.value;
+              return (
+                <button
+                  key={mode.value}
+                  type="button"
+                  onClick={() => handleModeChange(mode.value)}
+                  className={cn(
+                    'relative flex flex-col items-center gap-2 p-4 border-2 rounded-lg cursor-pointer transition-all text-left',
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  )}
+                >
+                  {isSelected && (
+                    <div className="absolute top-2 right-2">
+                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    </div>
+                  )}
+                  <Icon className={cn('w-6 h-6', isSelected ? 'text-blue-600' : 'text-slate-500')} />
+                  <span className={cn('font-medium text-sm', isSelected ? 'text-blue-900' : 'text-slate-700')}>
+                    {mode.label}
+                  </span>
+                  <span className="text-xs text-slate-500 text-center">{mode.description}</span>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5 text-slate-400" />
-            Primary Member
+            {memberCopy.title}
           </CardTitle>
           <CardDescription>
-            Select an existing member or create a new one for this enrollment
+            {memberCopy.description}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -349,12 +523,12 @@ export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvis
           <CardDescription>Associate this enrollment with an existing lead</CardDescription>
         </CardHeader>
         <CardContent>
-          <Select value={selectedLeadId} onValueChange={setSelectedLeadId}>
+          <Select value={selectedLeadId || '__none__'} onValueChange={(v) => setSelectedLeadId(v === '__none__' ? '' : v)}>
             <SelectTrigger>
               <SelectValue placeholder="No lead selected" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value="__none__">None</SelectItem>
               {leads.map((lead) => (
                 <SelectItem key={lead.id} value={lead.id}>
                   {lead.first_name} {lead.last_name} {lead.email && `(${lead.email})`}
@@ -375,29 +549,31 @@ export function IntakeStep({ members, leads, advisors, currentAdvisorId, isAdvis
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Advisor</Label>
-              <Select
-                value={advisorId}
-                onValueChange={setAdvisorId}
-                disabled={isAdvisorRole}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select advisor" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">None</SelectItem>
-                  {advisors.map((advisor) => (
-                    <SelectItem key={advisor.id} value={advisor.id}>
-                      {advisor.first_name} {advisor.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {isAdvisorRole && (
-                <p className="text-xs text-slate-500">Assigned to you as the advisor</p>
-              )}
-            </div>
+            {advisorConfig.visible && (
+              <div className="space-y-2">
+                <Label>Advisor</Label>
+                <Select
+                  value={advisorId || '__none__'}
+                  onValueChange={(v) => setAdvisorId(v === '__none__' ? '' : v)}
+                  disabled={advisorConfig.disabled}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedMode === 'member_self_serve' ? 'Assign later (optional)' : 'Select advisor'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{selectedMode === 'member_self_serve' ? 'Assign later' : 'None'}</SelectItem>
+                    {advisors.map((advisor) => (
+                      <SelectItem key={advisor.id} value={advisor.id}>
+                        {advisor.first_name} {advisor.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {advisorConfig.helpText && (
+                  <p className="text-xs text-slate-500">{advisorConfig.helpText}</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Enrollment Source</Label>

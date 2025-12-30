@@ -1,8 +1,9 @@
 'use server';
 
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { computeEnrollmentWarnings } from '@crm-eco/lib';
-import type { WizardSnapshot, HouseholdMember } from '@/components/enrollment/wizard';
+import { computeEnrollmentWarnings, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
+import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
+import type { WizardSnapshot, HouseholdMember, EnrollmentMode } from '@/components/enrollment/wizard';
 
 // Helper to get untyped Supabase client due to @supabase/ssr 0.5.x type inference limitations
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -22,6 +23,7 @@ interface ActionResult<T = unknown> {
 
 interface IntakeStepData {
   enrollmentId: string;
+  enrollmentMode?: EnrollmentMode;
   leadId?: string | null;
   memberId?: string | null;
   isNewMember: boolean;
@@ -39,6 +41,11 @@ interface IntakeStepData {
   advisorId?: string | null;
   enrollmentSource?: string;
   channel?: string;
+}
+
+interface RxPricingData {
+  enrollmentId: string;
+  medications: MedicationInput[];
 }
 
 interface HouseholdStepData {
@@ -183,6 +190,8 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
       return { success: false, error: 'Member ID is required' };
     }
 
+    const enrollmentMode = data.enrollmentMode || 'advisor_assisted';
+    
     const snapshotIntake: WizardSnapshot['intake'] = {
       leadId: data.leadId,
       memberId,
@@ -206,8 +215,9 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
           advisor_id: data.advisorId || null,
           enrollment_source: data.enrollmentSource || null,
           channel: data.channel || null,
+          enrollment_mode: enrollmentMode,
           status: 'draft',
-          snapshot: { intake: snapshotIntake },
+          snapshot: { enrollmentMode, intake: snapshotIntake },
         })
         .select('id')
         .single();
@@ -239,7 +249,8 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
           actor_profile_id: profile.id,
           event_type: 'created',
           new_status: 'draft',
-          message: 'Enrollment wizard started',
+          message: `Enrollment wizard started (mode: ${enrollmentMode})`,
+          data_after: { enrollmentMode },
         },
         {
           organization_id: profile.organization_id,
@@ -254,11 +265,13 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
       // Update existing enrollment
       const { data: enrollment } = await supabase
         .from('enrollments')
-        .select('snapshot')
+        .select('snapshot, enrollment_mode')
         .eq('id', enrollmentId)
         .single();
 
       const existingSnapshot = (enrollment?.snapshot as WizardSnapshot) || {};
+      const oldMode = enrollment?.enrollment_mode;
+      const modeChanged = oldMode !== enrollmentMode;
       
       const { error: updateError } = await supabase
         .from('enrollments')
@@ -268,10 +281,24 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
           advisor_id: data.advisorId || null,
           enrollment_source: data.enrollmentSource || null,
           channel: data.channel || null,
-          snapshot: { ...existingSnapshot, intake: snapshotIntake },
+          enrollment_mode: enrollmentMode,
+          snapshot: { ...existingSnapshot, enrollmentMode, intake: snapshotIntake },
           updated_at: new Date().toISOString(),
         })
         .eq('id', enrollmentId);
+
+      // Log mode change if different
+      if (modeChanged && !updateError) {
+        await supabase.from('enrollment_audit_log').insert({
+          organization_id: profile.organization_id,
+          enrollment_id: enrollmentId,
+          actor_profile_id: profile.id,
+          event_type: 'field_update',
+          message: `Enrollment mode changed from "${oldMode}" to "${enrollmentMode}"`,
+          data_before: { enrollmentMode: oldMode },
+          data_after: { enrollmentMode },
+        });
+      }
 
       if (updateError) {
         return { success: false, error: `Failed to update enrollment: ${updateError.message}` };
@@ -775,6 +802,101 @@ export async function submitEnrollment(enrollmentId: string, finalAcceptance: bo
     return { success: true, data: { membershipId: membership.id } };
   } catch (err) {
     console.error('Submit enrollment error:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
+// ============================================================================
+// Rx Pricing: Get medication pricing estimates
+// ============================================================================
+
+export async function runRxPricing(data: RxPricingData): Promise<ActionResult<RxPricingResult>> {
+  try {
+    const supabase = await getSupabase();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (!profile) {
+      return { success: false, error: 'Profile not found' };
+    }
+
+    // Validate medications
+    const validationError = validateMedications(data.medications);
+    if (validationError) {
+      return { success: false, error: validationError };
+    }
+
+    // Get enrollment with member data for pricing context
+    const { data: enrollment, error: enrollmentError } = await supabase
+      .from('enrollments')
+      .select(`
+        snapshot,
+        selected_plan_id,
+        members:primary_member_id (state)
+      `)
+      .eq('id', data.enrollmentId)
+      .single();
+
+    if (enrollmentError || !enrollment) {
+      return { success: false, error: 'Enrollment not found' };
+    }
+
+    const member = enrollment.members as { state: string | null } | null;
+
+    // Call the pricing estimate function
+    const pricingResult = await getRxPricingEstimate({
+      meds: data.medications,
+      memberState: member?.state || undefined,
+      planId: enrollment.selected_plan_id || undefined,
+    });
+
+    // Update enrollment with medications and pricing result
+    const existingSnapshot = (enrollment.snapshot as WizardSnapshot) || {};
+    
+    await supabase
+      .from('enrollments')
+      .update({
+        rx_medications: data.medications,
+        rx_pricing_result: pricingResult,
+        snapshot: {
+          ...existingSnapshot,
+          plan_selection: {
+            ...existingSnapshot.plan_selection,
+            selectedPlanId: existingSnapshot.plan_selection?.selectedPlanId || '',
+            requestedEffectiveDate: existingSnapshot.plan_selection?.requestedEffectiveDate || '',
+            rxMedications: data.medications,
+            rxPricingResult: pricingResult,
+          },
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', data.enrollmentId);
+
+    // Log audit event
+    await supabase.from('enrollment_audit_log').insert({
+      organization_id: profile.organization_id,
+      enrollment_id: data.enrollmentId,
+      actor_profile_id: profile.id,
+      event_type: 'field_update',
+      message: `Rx pricing estimate generated for ${data.medications.length} medication(s)`,
+      data_after: {
+        medicationCount: data.medications.length,
+        pricingSummary: pricingResult.summary,
+      },
+    });
+
+    return { success: true, data: pricingResult };
+  } catch (err) {
+    console.error('Run Rx pricing error:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }

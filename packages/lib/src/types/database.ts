@@ -911,6 +911,10 @@ export interface Database {
           external_vendor_enrollment_id: string | null;
           snapshot: Json;
           custom_fields: Json;
+          // Mode + Rx fields
+          enrollment_mode: 'advisor_assisted' | 'member_self_serve' | 'internal_ops';
+          rx_medications: Json;
+          rx_pricing_result: Json;
           created_at: string;
           updated_at: string;
         };
@@ -933,6 +937,10 @@ export interface Database {
           external_vendor_enrollment_id?: string | null;
           snapshot?: Json;
           custom_fields?: Json;
+          // Mode + Rx fields
+          enrollment_mode?: 'advisor_assisted' | 'member_self_serve' | 'internal_ops';
+          rx_medications?: Json;
+          rx_pricing_result?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -955,6 +963,10 @@ export interface Database {
           external_vendor_enrollment_id?: string | null;
           snapshot?: Json;
           custom_fields?: Json;
+          // Mode + Rx fields
+          enrollment_mode?: 'advisor_assisted' | 'member_self_serve' | 'internal_ops';
+          rx_medications?: Json;
+          rx_pricing_result?: Json;
           created_at?: string;
           updated_at?: string;
         };
@@ -1096,4 +1108,5 @@ export type ImportJobStatus = ImportJob['status'];
 export type ImportRowStatus = ImportJobRow['status'];
 export type MembershipStatus = Membership['status'];
 export type EnrollmentStatus = Enrollment['status'];
+export type EnrollmentMode = Enrollment['enrollment_mode'];
 export type BillingStatus = Membership['billing_status'];

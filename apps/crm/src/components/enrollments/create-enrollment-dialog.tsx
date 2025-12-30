@@ -233,14 +233,14 @@ export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrol
             <div className="space-y-2">
               <Label htmlFor="advisorId">Advisor (Optional)</Label>
               <Select
-                value={formData.advisorId}
-                onValueChange={(v) => setFormData({ ...formData, advisorId: v })}
+                value={formData.advisorId || '__none__'}
+                onValueChange={(v) => setFormData({ ...formData, advisorId: v === '__none__' ? '' : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select an advisor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="__none__">None</SelectItem>
                   {advisors.map((advisor) => (
                     <SelectItem key={advisor.id} value={advisor.id}>
                       {advisor.first_name} {advisor.last_name}
@@ -253,14 +253,14 @@ export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrol
             <div className="space-y-2">
               <Label htmlFor="planId">Plan (Optional)</Label>
               <Select
-                value={formData.planId}
-                onValueChange={(v) => setFormData({ ...formData, planId: v })}
+                value={formData.planId || '__none__'}
+                onValueChange={(v) => setFormData({ ...formData, planId: v === '__none__' ? '' : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Not selected yet</SelectItem>
+                  <SelectItem value="__none__">Not selected yet</SelectItem>
                   {plans.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
                       {plan.name} ({plan.code})

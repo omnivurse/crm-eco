@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 
 export type WizardStep = 
   | 'intake' 
@@ -9,6 +10,8 @@ export type WizardStep =
   | 'compliance' 
   | 'payment' 
   | 'confirmation';
+
+export type EnrollmentMode = 'advisor_assisted' | 'member_self_serve' | 'internal_ops';
 
 export const WIZARD_STEPS: { key: WizardStep; label: string; description: string }[] = [
   { key: 'intake', label: 'Intake', description: 'Basic enrollment information' },
@@ -29,6 +32,8 @@ export interface HouseholdMember {
 }
 
 export interface WizardSnapshot {
+  // Top-level enrollment mode (set in intake, affects all steps)
+  enrollmentMode?: EnrollmentMode;
   intake?: {
     leadId?: string | null;
     memberId?: string | null;
@@ -57,6 +62,9 @@ export interface WizardSnapshot {
     requestedEffectiveDate: string;
     hasMandateWarning?: boolean;
     hasAge65Warning?: boolean;
+    // Rx medications capture
+    rxMedications?: MedicationInput[];
+    rxPricingResult?: RxPricingResult | null;
   };
   compliance?: {
     healthshareAcknowledgement: boolean;
@@ -98,6 +106,9 @@ interface EnrollmentWizardContextType {
   isLoading: boolean;
   error: string | null;
 
+  // Enrollment mode (advisor-assisted / member self-serve / internal ops)
+  enrollmentMode: EnrollmentMode;
+
   // Member data from intake
   primaryMemberId: string | null;
   primaryMemberState: string | null;
@@ -110,10 +121,15 @@ interface EnrollmentWizardContextType {
   hasMandateWarning: boolean;
   hasAge65Warning: boolean;
 
+  // Rx data
+  rxMedications: MedicationInput[];
+  rxPricingResult: RxPricingResult | null;
+
   // Actions
   setEnrollmentId: (id: string) => void;
   setCurrentStep: (step: WizardStep) => void;
   updateSnapshot: (stepKey: WizardStep, data: WizardSnapshot[WizardStep]) => void;
+  updateSnapshotField: <K extends keyof WizardSnapshot>(key: K, value: WizardSnapshot[K]) => void;
   markStepComplete: (step: WizardStep) => void;
   goToStep: (step: WizardStep) => void;
   nextStep: () => void;
@@ -123,6 +139,9 @@ interface EnrollmentWizardContextType {
   setPrimaryMemberData: (id: string, state: string | null, dob: string | null) => void;
   setSelectedPlanId: (planId: string | null) => void;
   setWarnings: (mandate: boolean, age65: boolean) => void;
+  setEnrollmentMode: (mode: EnrollmentMode) => void;
+  setRxMedications: (meds: MedicationInput[]) => void;
+  setRxPricingResult: (result: RxPricingResult | null) => void;
   canProceed: () => boolean;
   isStepAccessible: (step: WizardStep) => boolean;
 }
@@ -135,6 +154,7 @@ interface EnrollmentWizardProviderProps {
   initialStep?: WizardStep;
   initialSnapshot?: WizardSnapshot;
   initialStepStatuses?: Record<WizardStep, StepStatus>;
+  initialEnrollmentMode?: EnrollmentMode;
 }
 
 export function EnrollmentWizardProvider({
@@ -143,6 +163,7 @@ export function EnrollmentWizardProvider({
   initialStep = 'intake',
   initialSnapshot = {},
   initialStepStatuses,
+  initialEnrollmentMode = 'advisor_assisted',
 }: EnrollmentWizardProviderProps) {
   const [enrollmentId, setEnrollmentId] = useState<string | null>(initialEnrollmentId);
   const [currentStep, setCurrentStep] = useState<WizardStep>(initialStep);
@@ -160,6 +181,11 @@ export function EnrollmentWizardProvider({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Enrollment mode state
+  const [enrollmentMode, setEnrollmentModeState] = useState<EnrollmentMode>(
+    initialSnapshot.enrollmentMode || initialEnrollmentMode
+  );
+
   // Member and plan state
   const [primaryMemberId, setPrimaryMemberId] = useState<string | null>(null);
   const [primaryMemberState, setPrimaryMemberState] = useState<string | null>(null);
@@ -167,6 +193,14 @@ export function EnrollmentWizardProvider({
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [hasMandateWarning, setHasMandateWarning] = useState(false);
   const [hasAge65Warning, setHasAge65Warning] = useState(false);
+
+  // Rx medications state
+  const [rxMedications, setRxMedicationsState] = useState<MedicationInput[]>(
+    initialSnapshot.plan_selection?.rxMedications || []
+  );
+  const [rxPricingResult, setRxPricingResultState] = useState<RxPricingResult | null>(
+    initialSnapshot.plan_selection?.rxPricingResult || null
+  );
 
   const currentStepIndex = useMemo(
     () => WIZARD_STEPS.findIndex((s) => s.key === currentStep),
@@ -177,6 +211,49 @@ export function EnrollmentWizardProvider({
     setSnapshot((prev) => ({
       ...prev,
       [stepKey]: data,
+    }));
+  }, []);
+
+  const updateSnapshotField = useCallback(<K extends keyof WizardSnapshot>(key: K, value: WizardSnapshot[K]) => {
+    setSnapshot((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }, []);
+
+  const setEnrollmentMode = useCallback((mode: EnrollmentMode) => {
+    setEnrollmentModeState(mode);
+    setSnapshot((prev) => ({
+      ...prev,
+      enrollmentMode: mode,
+    }));
+  }, []);
+
+  const setRxMedications = useCallback((meds: MedicationInput[]) => {
+    setRxMedicationsState(meds);
+    // Also update in snapshot for persistence
+    setSnapshot((prev) => ({
+      ...prev,
+      plan_selection: {
+        ...prev.plan_selection,
+        selectedPlanId: prev.plan_selection?.selectedPlanId || '',
+        requestedEffectiveDate: prev.plan_selection?.requestedEffectiveDate || '',
+        rxMedications: meds,
+      },
+    }));
+  }, []);
+
+  const setRxPricingResult = useCallback((result: RxPricingResult | null) => {
+    setRxPricingResultState(result);
+    // Also update in snapshot for persistence
+    setSnapshot((prev) => ({
+      ...prev,
+      plan_selection: {
+        ...prev.plan_selection,
+        selectedPlanId: prev.plan_selection?.selectedPlanId || '',
+        requestedEffectiveDate: prev.plan_selection?.requestedEffectiveDate || '',
+        rxPricingResult: result,
+      },
     }));
   }, []);
 
@@ -249,15 +326,19 @@ export function EnrollmentWizardProvider({
       stepStatuses,
       isLoading,
       error,
+      enrollmentMode,
       primaryMemberId,
       primaryMemberState,
       primaryMemberDob,
       selectedPlanId,
       hasMandateWarning,
       hasAge65Warning,
+      rxMedications,
+      rxPricingResult,
       setEnrollmentId,
       setCurrentStep,
       updateSnapshot,
+      updateSnapshotField,
       markStepComplete,
       goToStep,
       nextStep,
@@ -267,6 +348,9 @@ export function EnrollmentWizardProvider({
       setPrimaryMemberData,
       setSelectedPlanId,
       setWarnings,
+      setEnrollmentMode,
+      setRxMedications,
+      setRxPricingResult,
       canProceed,
       isStepAccessible,
     }),
@@ -278,19 +362,26 @@ export function EnrollmentWizardProvider({
       stepStatuses,
       isLoading,
       error,
+      enrollmentMode,
       primaryMemberId,
       primaryMemberState,
       primaryMemberDob,
       selectedPlanId,
       hasMandateWarning,
       hasAge65Warning,
+      rxMedications,
+      rxPricingResult,
       updateSnapshot,
+      updateSnapshotField,
       markStepComplete,
       goToStep,
       nextStep,
       prevStep,
       setPrimaryMemberData,
       setWarnings,
+      setEnrollmentMode,
+      setRxMedications,
+      setRxPricingResult,
       canProceed,
       isStepAccessible,
     ]
