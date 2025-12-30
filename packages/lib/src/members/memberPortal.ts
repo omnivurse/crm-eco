@@ -192,8 +192,10 @@ export async function getMemberNeeds(
       eligible_amount,
       reimbursed_amount,
       status,
+      urgency_light,
       incident_date,
-      created_at
+      created_at,
+      updated_at
     `)
     .eq('member_id', memberId)
     .eq('organization_id', organizationId)
