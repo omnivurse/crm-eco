@@ -27,3 +27,4 @@ export function CategoryBadge({ category, className }: CategoryBadgeProps) {
   );
 }
 
+

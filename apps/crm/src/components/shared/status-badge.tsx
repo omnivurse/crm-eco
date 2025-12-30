@@ -103,3 +103,4 @@ export function LeadStatusBadge({ status, className }: { status: string; classNa
   return <StatusBadge status={status} entityType="lead" className={className} />;
 }
 
+
