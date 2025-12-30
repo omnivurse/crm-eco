@@ -156,14 +156,14 @@ function renderField(
       const options = Array.isArray(field.options) ? field.options as string[] : [];
       return (
         <Select
-          value={value || ''}
-          onValueChange={(v) => onChange(v || null)}
+          value={value || '__none__'}
+          onValueChange={(v) => onChange(v === '__none__' ? null : v)}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select an option" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">None</SelectItem>
+            <SelectItem value="__none__">None</SelectItem>
             {options.map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
