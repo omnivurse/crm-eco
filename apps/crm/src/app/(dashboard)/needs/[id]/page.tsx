@@ -26,10 +26,12 @@ import {
   AlertTriangle,
   CheckCircle,
   ArrowRight,
+  Activity,
 } from 'lucide-react';
 import { getRoleQueryContext } from '@/lib/auth';
 import { NeedStatusBadge } from '@/components/shared/status-badge';
 import { UrgencyBadge, getUrgencyText } from '@/components/shared/urgency-badge';
+import { ActivityTable } from '@/components/shared/activity-table';
 import type { Database } from '@crm-eco/lib/types';
 
 type Need = Database['public']['Tables']['needs']['Row'];
@@ -107,6 +109,20 @@ async function getNeedEvents(needId: string): Promise<NeedEventWithProfile[]> {
   return data as NeedEventWithProfile[];
 }
 
+async function getNeedActivities(needId: string) {
+  const supabase = await createServerSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*, profiles:created_by_profile_id(full_name)')
+    .eq('need_id', needId)
+    .order('occurred_at', { ascending: false })
+    .limit(25);
+
+  if (error) return [];
+  return data || [];
+}
+
 function formatCurrency(amount: number | string | null): string {
   if (amount === null) return '$0';
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -138,7 +154,10 @@ export default async function NeedDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const events = await getNeedEvents(params.id);
+  const [events, activities] = await Promise.all([
+    getNeedEvents(params.id),
+    getNeedActivities(params.id),
+  ]);
 
   // Calculate financial progress
   const totalAmount = parseFloat(String(need.total_amount)) || 0;
@@ -438,6 +457,22 @@ export default async function NeedDetailPage({ params }: PageProps) {
                   </Link>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Activity History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-slate-400" />
+                Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityTable 
+                activities={activities} 
+                emptyMessage="No activity recorded"
+              />
             </CardContent>
           </Card>
         </div>

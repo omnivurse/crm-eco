@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Button, Label, Textarea } from '@crm-eco/ui';
 import { Send, Lock } from 'lucide-react';
+import { logActivityForTicket, ActivityTypes } from '@crm-eco/lib';
 
 interface AddCommentFormProps {
   ticketId: string;
@@ -33,11 +34,11 @@ export function AddCommentForm({ ticketId }: AddCommentFormProps) {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, organization_id, full_name')
         .eq('user_id', user.id)
         .single();
 
-      const profile = profileData as { id: string } | null;
+      const profile = profileData as { id: string; organization_id: string; full_name: string } | null;
       if (!profile) throw new Error('Profile not found');
 
       // Insert comment
@@ -51,6 +52,16 @@ export function AddCommentForm({ ticketId }: AddCommentFormProps) {
         } as any);
 
       if (insertError) throw insertError;
+
+      // Log activity
+      await logActivityForTicket({
+        organizationId: profile.organization_id,
+        createdByProfileId: profile.id,
+        ticketId: ticketId,
+        type: ActivityTypes.TICKET_COMMENT_ADDED,
+        subject: `Comment added by ${profile.full_name}`,
+        description: isInternal ? 'Internal note added' : 'Comment added to ticket',
+      });
 
       // Clear form and refresh
       setBody('');

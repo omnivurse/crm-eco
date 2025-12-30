@@ -23,6 +23,8 @@ import {
 } from '@crm-eco/ui';
 import { Plus, User, MapPin, Shield } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { logActivityForMember, ActivityTypes } from '@crm-eco/lib';
+import { CustomFieldsForm } from '@/components/shared/custom-fields-form';
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -66,6 +68,8 @@ export function AddMemberDialog() {
     coverageType: '',
   });
 
+  const [customFields, setCustomFields] = useState<Record<string, any>>({});
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -80,11 +84,11 @@ export function AddMemberDialog() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
-      const profile = profileData as { organization_id: string } | null;
+      const profile = profileData as { id: string; organization_id: string } | null;
       if (!profile) throw new Error('Profile not found');
 
       const insertData: MemberInsert = {
@@ -100,11 +104,28 @@ export function AddMemberDialog() {
         status: formData.status,
         program_type: formData.programType || null,
         coverage_type: formData.coverageType || null,
+        custom_fields: Object.keys(customFields).length > 0 ? customFields : null,
       };
 
-      const { error: insertError } = await supabase.from('members').insert(insertData as any);
+      const { data: insertedMember, error: insertError } = await supabase
+        .from('members')
+        .insert(insertData as any)
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      // Log activity
+      if (insertedMember) {
+        await logActivityForMember({
+          organizationId: profile.organization_id,
+          createdByProfileId: profile.id,
+          memberId: (insertedMember as { id: string }).id,
+          type: ActivityTypes.MEMBER_CREATED,
+          subject: `New member: ${formData.firstName} ${formData.lastName}`,
+          description: `Created new member with email ${formData.email}`,
+        });
+      }
 
       setOpen(false);
       setFormData({
@@ -120,6 +141,7 @@ export function AddMemberDialog() {
         programType: '',
         coverageType: '',
       });
+      setCustomFields({});
       router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create member';
@@ -334,6 +356,13 @@ export function AddMemberDialog() {
                 </div>
               </div>
             </div>
+
+            {/* Custom Fields */}
+            <CustomFieldsForm
+              entityType="member"
+              values={customFields}
+              onChange={setCustomFields}
+            />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">

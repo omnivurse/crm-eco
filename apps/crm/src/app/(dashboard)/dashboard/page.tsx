@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@crm-eco/ui';
 import { Users, UserCheck, Ticket, HeartPulse, TrendingUp, Activity } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -9,8 +10,9 @@ type ActivityRow = Database['public']['Tables']['activities']['Row'];
 
 interface ActivityWithRelations extends ActivityRow {
   profiles?: { full_name: string } | null;
-  members?: { first_name: string; last_name: string } | null;
-  leads?: { first_name: string; last_name: string } | null;
+  members?: { id: string; first_name: string; last_name: string } | null;
+  leads?: { id: string; first_name: string; last_name: string } | null;
+  advisors?: { id: string; first_name: string; last_name: string } | null;
 }
 
 async function getStats(context: RoleQueryContext) {
@@ -33,7 +35,6 @@ async function getStats(context: RoleQueryContext) {
   // Tickets query
   let ticketsQuery = supabase.from('tickets').select('id', { count: 'exact', head: true }).in('status', ['open', 'in_progress']);
   if (isAdvisor) {
-    // For advisors, count tickets they created, are assigned to, or are linked to them
     ticketsQuery = ticketsQuery.or(
       `created_by_profile_id.eq.${context.profileId},assigned_to_profile_id.eq.${context.profileId},advisor_id.eq.${context.advisorId}`
     );
@@ -69,11 +70,12 @@ async function getRecentActivities(context: RoleQueryContext): Promise<ActivityW
     .select(`
       *,
       profiles:created_by_profile_id(full_name),
-      members:member_id(first_name, last_name),
-      leads:lead_id(first_name, last_name)
+      members:member_id(id, first_name, last_name),
+      leads:lead_id(id, first_name, last_name),
+      advisors:advisor_id(id, first_name, last_name)
     `)
-    .order('created_at', { ascending: false })
-    .limit(10);
+    .order('occurred_at', { ascending: false })
+    .limit(15);
 
   // For advisors, only show activities they created or related to their entities
   if (!context.isAdmin && context.role === 'advisor') {
@@ -89,15 +91,44 @@ async function getRecentActivities(context: RoleQueryContext): Promise<ActivityW
   return (data ?? []) as ActivityWithRelations[];
 }
 
-const actionColors: Record<string, string> = {
-  created: 'bg-green-100 text-green-700',
-  updated: 'bg-blue-100 text-blue-700',
-  deleted: 'bg-red-100 text-red-700',
-  note: 'bg-yellow-100 text-yellow-700',
-  call: 'bg-purple-100 text-purple-700',
-  email: 'bg-indigo-100 text-indigo-700',
-  meeting: 'bg-cyan-100 text-cyan-700',
+const typeColors: Record<string, string> = {
+  member_created: 'bg-green-100 text-green-700',
+  member_updated: 'bg-blue-100 text-blue-700',
+  advisor_created: 'bg-emerald-100 text-emerald-700',
+  advisor_updated: 'bg-blue-100 text-blue-700',
+  lead_created: 'bg-cyan-100 text-cyan-700',
+  lead_updated: 'bg-blue-100 text-blue-700',
+  ticket_created: 'bg-amber-100 text-amber-700',
+  ticket_updated: 'bg-blue-100 text-blue-700',
+  ticket_comment_added: 'bg-purple-100 text-purple-700',
+  need_created: 'bg-rose-100 text-rose-700',
+  need_updated: 'bg-blue-100 text-blue-700',
+  need_status_changed: 'bg-indigo-100 text-indigo-700',
+  note_added: 'bg-yellow-100 text-yellow-700',
+  call_logged: 'bg-purple-100 text-purple-700',
+  email_sent: 'bg-indigo-100 text-indigo-700',
 };
+
+function getTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    member_created: 'New Member',
+    member_updated: 'Updated',
+    advisor_created: 'New Advisor',
+    advisor_updated: 'Updated',
+    lead_created: 'New Lead',
+    lead_updated: 'Updated',
+    ticket_created: 'Ticket Created',
+    ticket_updated: 'Updated',
+    ticket_comment_added: 'Comment',
+    need_created: 'Need Created',
+    need_updated: 'Updated',
+    need_status_changed: 'Status Change',
+    note_added: 'Note',
+    call_logged: 'Call',
+    email_sent: 'Email',
+  };
+  return labels[type] || type.replace(/_/g, ' ');
+}
 
 export default async function DashboardPage() {
   const context = await getRoleQueryContext();
@@ -150,14 +181,35 @@ export default async function DashboardPage() {
     },
   ];
 
-  const getEntityName = (activity: ActivityWithRelations) => {
+  const getEntityLink = (activity: ActivityWithRelations) => {
+    // Get entity type from the activity type
+    const type = activity.type || '';
+    
+    if (type.startsWith('member') && activity.member_id) {
+      return { href: `/members/${activity.member_id}`, label: activity.members ? `${activity.members.first_name} ${activity.members.last_name}` : 'Member' };
+    }
+    if (type.startsWith('advisor') && activity.advisor_id) {
+      return { href: `/advisors/${activity.advisor_id}`, label: activity.advisors ? `${activity.advisors.first_name} ${activity.advisors.last_name}` : 'Advisor' };
+    }
+    if (type.startsWith('lead') && activity.lead_id) {
+      return { href: `/leads`, label: activity.leads ? `${activity.leads.first_name} ${activity.leads.last_name}` : 'Lead' };
+    }
+    if (type.startsWith('ticket') && (activity as any).ticket_id) {
+      return { href: `/tickets/${(activity as any).ticket_id}`, label: 'Ticket' };
+    }
+    if (type.startsWith('need') && (activity as any).need_id) {
+      return { href: `/needs/${(activity as any).need_id}`, label: 'Need' };
+    }
+    
+    // Fallback to members/leads if present
     if (activity.members) {
-      return `${activity.members.first_name} ${activity.members.last_name}`;
+      return { href: `/members/${activity.members.id}`, label: `${activity.members.first_name} ${activity.members.last_name}` };
     }
     if (activity.leads) {
-      return `${activity.leads.first_name} ${activity.leads.last_name}`;
+      return { href: `/leads`, label: `${activity.leads.first_name} ${activity.leads.last_name}` };
     }
-    return activity.entity_type;
+    
+    return null;
   };
 
   return (
@@ -215,39 +267,53 @@ export default async function DashboardPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Subject</TableHead>
                   <TableHead>Entity</TableHead>
+                  <TableHead>By</TableHead>
                   <TableHead>Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {activities.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell className="font-medium">
-                      {activity.profiles?.full_name ?? 'System'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant="secondary" 
-                        className={actionColors[activity.action] || 'bg-slate-100 text-slate-700'}
-                      >
-                        {activity.type || activity.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{activity.subject || activity.description || '—'}</TableCell>
-                    <TableCell className="text-slate-500">
-                      <span className="capitalize">{activity.entity_type}</span>
-                      {(activity.members || activity.leads) && (
-                        <span className="text-slate-400"> · {getEntityName(activity)}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-slate-400 text-sm">
-                      {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {activities.map((activity) => {
+                  const entityLink = getEntityLink(activity);
+                  return (
+                    <TableRow key={activity.id}>
+                      <TableCell>
+                        <Badge 
+                          variant="secondary" 
+                          className={typeColors[activity.type || ''] || 'bg-slate-100 text-slate-700'}
+                        >
+                          {getTypeLabel(activity.type || '')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium max-w-[250px] truncate">
+                        {activity.subject || '—'}
+                      </TableCell>
+                      <TableCell>
+                        {entityLink ? (
+                          <Link 
+                            href={entityLink.href}
+                            className="text-blue-600 hover:underline"
+                          >
+                            {entityLink.label}
+                          </Link>
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {activity.profiles?.full_name ?? 'System'}
+                      </TableCell>
+                      <TableCell className="text-slate-400 text-sm">
+                        {activity.occurred_at 
+                          ? formatDistanceToNow(new Date(activity.occurred_at), { addSuffix: true })
+                          : formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })
+                        }
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

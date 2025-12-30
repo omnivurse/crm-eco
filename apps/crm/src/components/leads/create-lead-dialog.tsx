@@ -24,6 +24,7 @@ import {
 } from '@crm-eco/ui';
 import { Plus, User, MapPin, Target, FileText } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { logActivityForLead, ActivityTypes } from '@crm-eco/lib';
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -120,11 +121,11 @@ export function CreateLeadDialog() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
-      const profile = profileData as { organization_id: string } | null;
+      const profile = profileData as { id: string; organization_id: string } | null;
       if (!profile) throw new Error('Profile not found');
 
       const insertData: LeadInsert = {
@@ -144,9 +145,27 @@ export function CreateLeadDialog() {
         notes: formData.notes || null,
       };
 
-      const { error: insertError } = await supabase.from('leads').insert(insertData as any);
+      const { data: insertedLead, error: insertError } = await supabase
+        .from('leads')
+        .insert(insertData as any)
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      // Log activity
+      if (insertedLead) {
+        await logActivityForLead({
+          organizationId: profile.organization_id,
+          createdByProfileId: profile.id,
+          leadId: (insertedLead as { id: string }).id,
+          type: ActivityTypes.LEAD_CREATED,
+          subject: `New lead: ${formData.firstName} ${formData.lastName}`,
+          description: formData.source 
+            ? `Lead from ${formData.source} source`
+            : `Created new lead with email ${formData.email}`,
+        });
+      }
 
       setOpen(false);
       setFormData({

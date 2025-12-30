@@ -24,6 +24,7 @@ import {
 } from '@crm-eco/ui';
 import { Plus, Ticket, Link2 } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { logActivityForTicket, ActivityTypes } from '@crm-eco/lib';
 
 type Member = Database['public']['Tables']['members']['Row'];
 type TicketInsert = Database['public']['Tables']['tickets']['Insert'];
@@ -100,9 +101,26 @@ export function CreateTicketDialog() {
         member_id: formData.memberId || null,
       };
 
-      const { error: insertError } = await supabase.from('tickets').insert(insertData as any);
+      const { data: insertedTicket, error: insertError } = await supabase
+        .from('tickets')
+        .insert(insertData as any)
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      // Log activity
+      if (insertedTicket) {
+        await logActivityForTicket({
+          organizationId: profile.organization_id,
+          createdByProfileId: profile.id,
+          ticketId: (insertedTicket as { id: string }).id,
+          memberId: formData.memberId || undefined,
+          type: ActivityTypes.TICKET_CREATED,
+          subject: `Ticket opened: ${formData.subject}`,
+          description: `New ${formData.category} ticket with ${formData.priority} priority`,
+        });
+      }
 
       setOpen(false);
       setFormData({
