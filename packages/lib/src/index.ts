@@ -3,4 +3,6 @@ export * from './types';
 export * from './activities';
 export * from './imports';
 export * from './enrollment';
+export * from './ai';
+export * from './members';
 
