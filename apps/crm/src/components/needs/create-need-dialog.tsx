@@ -24,6 +24,7 @@ import {
 } from '@crm-eco/ui';
 import { Plus, HeartPulse, User, DollarSign, Clock } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { logActivityForNeed, ActivityTypes } from '@crm-eco/lib';
 
 type Member = Database['public']['Tables']['members']['Row'];
 type NeedInsert = Database['public']['Tables']['needs']['Insert'];
@@ -107,11 +108,11 @@ export function CreateNeedDialog() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
-      const profile = profileData as { organization_id: string } | null;
+      const profile = profileData as { id: string; organization_id: string } | null;
       if (!profile) throw new Error('Profile not found');
 
       if (!formData.memberId) {
@@ -132,9 +133,32 @@ export function CreateNeedDialog() {
         // urgency_light will be set by the database trigger
       };
 
-      const { error: insertError } = await supabase.from('needs').insert(insertData as any);
+      const { data: insertedNeed, error: insertError } = await supabase
+        .from('needs')
+        .insert(insertData as any)
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      // Log activity
+      if (insertedNeed) {
+        // Find the member name for the activity log
+        const selectedMember = members.find(m => m.id === formData.memberId);
+        const memberName = selectedMember 
+          ? `${selectedMember.first_name} ${selectedMember.last_name}`
+          : 'Unknown member';
+
+        await logActivityForNeed({
+          organizationId: profile.organization_id,
+          createdByProfileId: profile.id,
+          needId: (insertedNeed as { id: string }).id,
+          memberId: formData.memberId,
+          type: ActivityTypes.NEED_CREATED,
+          subject: `Need created for ${memberName}`,
+          description: `New ${formData.needType.replace(/_/g, ' ')} need - $${formData.totalAmount}`,
+        });
+      }
 
       setOpen(false);
       setFormData({

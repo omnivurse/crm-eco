@@ -23,6 +23,8 @@ import {
 } from '@crm-eco/ui';
 import { Plus, User, Building2, FileText } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
+import { logActivityForAdvisor, ActivityTypes } from '@crm-eco/lib';
+import { CustomFieldsForm } from '@/components/shared/custom-fields-form';
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -79,11 +81,11 @@ export function AddAdvisorDialog() {
 
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
-      const profile = profileData as { organization_id: string } | null;
+      const profile = profileData as { id: string; organization_id: string } | null;
       if (!profile) throw new Error('Profile not found');
 
       const insertData: AdvisorInsert = {
@@ -101,9 +103,27 @@ export function AddAdvisorDialog() {
         comp_level: formData.compLevel || null,
       };
 
-      const { error: insertError } = await supabase.from('advisors').insert(insertData as any);
+      const { data: insertedAdvisor, error: insertError } = await supabase
+        .from('advisors')
+        .insert(insertData as any)
+        .select('id')
+        .single();
 
       if (insertError) throw insertError;
+
+      // Log activity
+      if (insertedAdvisor) {
+        await logActivityForAdvisor({
+          organizationId: profile.organization_id,
+          createdByProfileId: profile.id,
+          advisorId: (insertedAdvisor as { id: string }).id,
+          type: ActivityTypes.ADVISOR_CREATED,
+          subject: `New advisor: ${formData.firstName} ${formData.lastName}`,
+          description: formData.agencyName 
+            ? `Created new advisor from ${formData.agencyName}`
+            : `Created new advisor with email ${formData.email}`,
+        });
+      }
 
       setOpen(false);
       setFormData({

@@ -30,11 +30,13 @@ import {
   HeartPulse,
   Shield,
   Calendar,
+  Activity,
 } from 'lucide-react';
 import { getRoleQueryContext } from '@/lib/auth';
 import { AdvisorStatusBadge, MemberStatusBadge, NeedStatusBadge, TicketStatusBadge } from '@/components/shared/status-badge';
 import { UrgencyBadge } from '@/components/shared/urgency-badge';
 import { PriorityBadge } from '@/components/shared/priority-badge';
+import { ActivityTable } from '@/components/shared/activity-table';
 import type { Database } from '@crm-eco/lib/types';
 
 type Advisor = Database['public']['Tables']['advisors']['Row'];
@@ -106,6 +108,20 @@ async function getAdvisorNeeds(advisorId: string): Promise<Need[]> {
   return data as Need[];
 }
 
+async function getAdvisorActivities(advisorId: string) {
+  const supabase = await createServerSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*, profiles:created_by_profile_id(full_name)')
+    .eq('advisor_id', advisorId)
+    .order('occurred_at', { ascending: false })
+    .limit(50);
+
+  if (error) return [];
+  return data || [];
+}
+
 function formatCurrency(amount: number | string | null): string {
   if (amount === null) return '$0';
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -124,10 +140,11 @@ export default async function AdvisorDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const [members, tickets, needs] = await Promise.all([
+  const [members, tickets, needs, activities] = await Promise.all([
     getAdvisorMembers(params.id),
     getAdvisorTickets(params.id),
     getAdvisorNeeds(params.id),
+    getAdvisorActivities(params.id),
   ]);
 
   // Calculate KPIs
@@ -280,6 +297,10 @@ export default async function AdvisorDetailPage({ params }: PageProps) {
           <TabsTrigger value="needs" className="gap-2">
             <HeartPulse className="w-4 h-4" />
             Needs ({needs.length})
+          </TabsTrigger>
+          <TabsTrigger value="activity" className="gap-2">
+            <Activity className="w-4 h-4" />
+            Activity ({activities.length})
           </TabsTrigger>
         </TabsList>
 
@@ -444,6 +465,22 @@ export default async function AdvisorDetailPage({ params }: PageProps) {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Activity History</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityTable 
+                activities={activities} 
+                showEntity={true}
+                emptyMessage="No activity recorded for this advisor"
+              />
             </CardContent>
           </Card>
         </TabsContent>

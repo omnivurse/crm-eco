@@ -19,12 +19,14 @@ import {
   Lock,
   Users,
   UserCheck,
+  Activity,
 } from 'lucide-react';
 import { getRoleQueryContext } from '@/lib/auth';
 import { TicketStatusBadge } from '@/components/shared/status-badge';
 import { PriorityBadge } from '@/components/shared/priority-badge';
 import { CategoryBadge } from '@/components/shared/category-badge';
 import { AddCommentForm } from '@/components/tickets/add-comment-form';
+import { ActivityTable } from '@/components/shared/activity-table';
 import type { Database } from '@crm-eco/lib/types';
 
 type TicketRow = Database['public']['Tables']['tickets']['Row'];
@@ -95,6 +97,20 @@ async function getTicketComments(ticketId: string): Promise<CommentWithProfile[]
   return data as CommentWithProfile[];
 }
 
+async function getTicketActivities(ticketId: string) {
+  const supabase = await createServerSupabaseClient();
+  
+  const { data, error } = await supabase
+    .from('activities')
+    .select('*, profiles:created_by_profile_id(full_name)')
+    .eq('ticket_id', ticketId)
+    .order('occurred_at', { ascending: false })
+    .limit(25);
+
+  if (error) return [];
+  return data || [];
+}
+
 export default async function TicketDetailPage({ params }: PageProps) {
   const ticket = await getTicket(params.id);
   
@@ -102,7 +118,10 @@ export default async function TicketDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const comments = await getTicketComments(params.id);
+  const [comments, activities] = await Promise.all([
+    getTicketComments(params.id),
+    getTicketActivities(params.id),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -302,6 +321,22 @@ export default async function TicketDetailPage({ params }: PageProps) {
               </CardContent>
             </Card>
           )}
+
+          {/* Activity History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Activity className="w-5 h-5 text-slate-400" />
+                Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ActivityTable 
+                activities={activities} 
+                emptyMessage="No activity recorded"
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
