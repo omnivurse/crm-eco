@@ -31,7 +31,7 @@ export type {
 export type UserRole = 'owner' | 'admin' | 'advisor' | 'staff';
 export type MemberStatus = 'pending' | 'active' | 'inactive' | 'terminated';
 export type AdvisorStatus = 'pending' | 'active' | 'inactive' | 'terminated';
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
+export type LeadStatus = 'new' | 'contacted' | 'working' | 'qualified' | 'converted' | 'unqualified' | 'lost';
 export type TicketStatus = 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type TicketCategory = 'need' | 'enrollment' | 'billing' | 'service' | 'other';
