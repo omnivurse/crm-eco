@@ -19,21 +19,27 @@ import {
   Input,
   Textarea,
   Label,
+  cn,
 } from '@crm-eco/ui';
-import { MoreHorizontal, Calendar, CheckCircle, FileText, Loader2 } from 'lucide-react';
-import { type NeedStatus, getNeedStatusLabel } from '@crm-eco/lib';
+import { MoreHorizontal, Calendar, CheckCircle, FileText, Loader2, UserPlus, User } from 'lucide-react';
+import { type NeedStatus } from '@crm-eco/lib';
 import {
   updateNeedStatus,
   updateNeedTargetDate,
   toggleNeedIuaMet,
   addNeedOpsNote,
+  assignNeedToMe,
+  assignNeedToProfile,
 } from '@/app/(dashboard)/needs/command-center/actions';
+import type { AssignableProfile } from '@/app/(dashboard)/needs/command-center/page';
 
 interface NeedActionsMenuProps {
   needId: string;
   currentStatus: NeedStatus;
   currentTargetDate: string | null;
   currentIuaMet: boolean;
+  assignableProfiles: AssignableProfile[];
+  currentProfileId: string;
 }
 
 // Status options for the dropdown
@@ -55,6 +61,8 @@ export function NeedActionsMenu({
   currentStatus,
   currentTargetDate,
   currentIuaMet,
+  assignableProfiles,
+  currentProfileId,
 }: NeedActionsMenuProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -62,8 +70,10 @@ export function NeedActionsMenu({
   // Dialog states
   const [showDateDialog, setShowDateDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [targetDate, setTargetDate] = useState(currentTargetDate || '');
   const [noteText, setNoteText] = useState('');
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleStatusChange = async (newStatus: NeedStatus) => {
@@ -119,6 +129,38 @@ export function NeedActionsMenu({
     });
   };
 
+  const handleAssignToMe = async () => {
+    startTransition(async () => {
+      const result = await assignNeedToMe(needId);
+      if (!result.success) {
+        setError(result.error || 'Failed to assign need');
+      } else {
+        router.refresh();
+      }
+    });
+  };
+
+  const handleAssignToProfile = async () => {
+    if (!selectedAssigneeId) return;
+    
+    startTransition(async () => {
+      const result = await assignNeedToProfile(needId, selectedAssigneeId);
+      if (!result.success) {
+        setError(result.error || 'Failed to assign need');
+      } else {
+        setSelectedAssigneeId(null);
+        setShowAssignDialog(false);
+        router.refresh();
+      }
+    });
+  };
+
+  const openAssignDialog = () => {
+    setSelectedAssigneeId(null);
+    setError(null);
+    setShowAssignDialog(true);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -148,6 +190,18 @@ export function NeedActionsMenu({
           ))}
           
           <DropdownMenuSeparator />
+
+          <DropdownMenuLabel>Assignment</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleAssignToMe} disabled={isPending}>
+            <User className="w-4 h-4 mr-2" />
+            Assign to me
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={openAssignDialog} disabled={isPending}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Assign to...
+          </DropdownMenuItem>
+          
+          <DropdownMenuSeparator />
           
           <DropdownMenuItem onClick={() => setShowDateDialog(true)}>
             <Calendar className="w-4 h-4 mr-2" />
@@ -167,6 +221,59 @@ export function NeedActionsMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Assign Dialog */}
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Need</DialogTitle>
+            <DialogDescription>
+              Select an Ops team member to own this Need.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-2 max-h-64 overflow-y-auto">
+            {assignableProfiles.map((profile) => {
+              const isCurrentUser = profile.id === currentProfileId;
+              const isSelected = selectedAssigneeId === profile.id;
+              return (
+                <button
+                  key={profile.id}
+                  type="button"
+                  onClick={() => setSelectedAssigneeId(profile.id)}
+                  className={cn(
+                    'w-full flex items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors',
+                    isSelected
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  )}
+                >
+                  <span className="font-medium">
+                    {profile.full_name}
+                    {isCurrentUser && (
+                      <span className="ml-2 text-xs text-slate-500">(you)</span>
+                    )}
+                  </span>
+                  <span className="text-xs text-slate-500 uppercase">
+                    {profile.role}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {error && (
+            <p className="text-sm text-red-600">{error}</p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssignToProfile} disabled={isPending || !selectedAssigneeId}>
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Assign
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Target Date Dialog */}
       <Dialog open={showDateDialog} onOpenChange={setShowDateDialog}>
@@ -239,4 +346,3 @@ export function NeedActionsMenu({
     </>
   );
 }
-

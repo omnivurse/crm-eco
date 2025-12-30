@@ -4,7 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import { ShieldAlert } from 'lucide-react';
 import { NeedsCommandCenterShell } from '@/components/needs/command-center';
 import type { NeedStatus } from '@crm-eco/lib';
-import { OPEN_NEED_STATUSES } from '@crm-eco/lib';
+import {
+  OPEN_NEED_STATUSES,
+  NEEDS_COMMAND_CENTER_CONTEXT,
+  type NeedsCommandCenterSavedView,
+  type NeedsCommandCenterSavedFilters,
+} from '@crm-eco/lib';
 import type { NeedWithMember } from '@/components/needs/command-center/NeedsTable';
 
 // Ops roles that can access this page
@@ -41,6 +46,14 @@ interface RawMember {
 interface RawProfile {
   id: string;
   full_name: string;
+  role?: string;
+}
+
+// Assignable profile type (exported for components)
+export interface AssignableProfile {
+  id: string;
+  full_name: string;
+  role: string;
 }
 
 // Workload bucket type (exported for shell component)
@@ -223,11 +236,70 @@ export default async function NeedsCommandCenterPage() {
     (a, b) => b.total - a.total
   );
 
+  // Fetch all Ops profiles in this organization for assignment picker
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: opsProfilesData } = await (supabase as any)
+    .from('profiles')
+    .select('id, full_name, role')
+    .eq('organization_id', profile.organization_id)
+    .in('role', OPS_ROLES)
+    .order('full_name', { ascending: true });
+
+  const assignableProfiles: AssignableProfile[] = (opsProfilesData || []).map(
+    (p: RawProfile & { role: string }) => ({
+      id: p.id,
+      full_name: p.full_name,
+      role: p.role,
+    })
+  );
+
+  // Fetch saved views for this user in the Needs Command Center context
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: savedViewsData } = await (supabase as any)
+    .from('saved_views')
+    .select('id, organization_id, owner_profile_id, context, name, is_default, filters, created_at, updated_at')
+    .eq('organization_id', profile.organization_id)
+    .eq('owner_profile_id', profile.id)
+    .eq('context', NEEDS_COMMAND_CENTER_CONTEXT)
+    .order('created_at', { ascending: true });
+
+  // Parse saved views
+  const savedViews: NeedsCommandCenterSavedView[] = (savedViewsData || []).map(
+    (v: {
+      id: string;
+      organization_id: string;
+      owner_profile_id: string;
+      context: string;
+      name: string;
+      is_default: boolean;
+      filters: NeedsCommandCenterSavedFilters;
+      created_at: string;
+      updated_at: string;
+    }) => ({
+      id: v.id,
+      organization_id: v.organization_id,
+      owner_profile_id: v.owner_profile_id,
+      context: v.context,
+      name: v.name,
+      is_default: v.is_default,
+      filters: v.filters as NeedsCommandCenterSavedFilters,
+      created_at: v.created_at,
+      updated_at: v.updated_at,
+    })
+  );
+
+  // Find the default view if any
+  const defaultSavedView = savedViews.find(v => v.is_default) ?? null;
+
   return (
     <NeedsCommandCenterShell 
       needs={enrichedNeeds} 
       slaCounts={slaCounts}
       workload={workload}
+      assignableProfiles={assignableProfiles}
+      currentProfileId={profile.id}
+      savedViews={savedViews}
+      defaultSavedViewId={defaultSavedView?.id ?? null}
     />
   );
 }

@@ -3,7 +3,12 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getCurrentProfile } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { getNeedStatusLabel, type NeedStatus } from '@crm-eco/lib';
+import {
+  getNeedStatusLabel,
+  type NeedStatus,
+  type NeedsCommandCenterSavedFilters,
+  NEEDS_COMMAND_CENTER_CONTEXT,
+} from '@crm-eco/lib';
 
 // Ops roles that can access the command center
 const OPS_ROLES = ['owner', 'admin', 'staff'];
@@ -274,6 +279,354 @@ export async function addNeedOpsNote(
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+/**
+ * Assign a Need to the current user (Ops only)
+ */
+export async function assignNeedToMe(needId: string): Promise<ActionResult> {
+  try {
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+    
+    // Verify ownership
+    await verifyNeedOwnership(supabase, needId, profile.organization_id);
+    
+    // Update assignee to current user
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
+      .from('needs')
+      .update({ assigned_to_profile_id: profile.id })
+      .eq('id', needId);
+    
+    if (updateError) {
+      throw new Error(`Failed to assign need: ${updateError.message}`);
+    }
+    
+    // Insert audit event
+    await insertNeedEvent(supabase, {
+      needId,
+      organizationId: profile.organization_id,
+      profileId: profile.id,
+      eventType: 'field_update',
+      description: `Assigned to ${profile.full_name}`,
+    });
+    
+    revalidatePath('/needs/command-center');
+    revalidatePath('/needs');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('assignNeedToMe error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+/**
+ * Assign a Need to a specific Ops user
+ */
+export async function assignNeedToProfile(
+  needId: string,
+  assigneeProfileId: string
+): Promise<ActionResult> {
+  try {
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+    
+    // Verify need ownership
+    await verifyNeedOwnership(supabase, needId, profile.organization_id);
+    
+    // Verify assignee is a valid Ops profile in the same org
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: assignee, error: assigneeError } = await (supabase as any)
+      .from('profiles')
+      .select('id, full_name, role, organization_id')
+      .eq('id', assigneeProfileId)
+      .single();
+    
+    if (assigneeError || !assignee) {
+      throw new Error('Assignee not found');
+    }
+    
+    if (assignee.organization_id !== profile.organization_id) {
+      throw new Error('Cross-org assignment not allowed');
+    }
+    
+    if (!OPS_ROLES.includes(assignee.role)) {
+      throw new Error('Assignee must be an Ops role (owner, admin, or staff)');
+    }
+    
+    // Update assignee
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
+      .from('needs')
+      .update({ assigned_to_profile_id: assignee.id })
+      .eq('id', needId);
+    
+    if (updateError) {
+      throw new Error(`Failed to assign need: ${updateError.message}`);
+    }
+    
+    // Insert audit event
+    await insertNeedEvent(supabase, {
+      needId,
+      organizationId: profile.organization_id,
+      profileId: profile.id,
+      eventType: 'field_update',
+      description: `Assigned to ${assignee.full_name}`,
+    });
+    
+    revalidatePath('/needs/command-center');
+    revalidatePath('/needs');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('assignNeedToProfile error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+// ============================================================================
+// SAVED VIEWS ACTIONS
+// ============================================================================
+
+export interface SavedViewResult {
+  success: boolean;
+  error?: string;
+  viewId?: string;
+}
+
+/**
+ * Create a new saved view for the current user in the Needs Command Center
+ */
+export async function createNeedsSavedView(params: {
+  name: string;
+  filters: NeedsCommandCenterSavedFilters;
+  setAsDefault?: boolean;
+}): Promise<SavedViewResult> {
+  try {
+    if (!params.name.trim()) {
+      return { success: false, error: 'View name is required' };
+    }
+
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+
+    // If setting as default, first clear other defaults for this user/context
+    if (params.setAsDefault) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('saved_views')
+        .update({ is_default: false })
+        .eq('owner_profile_id', profile.id)
+        .eq('context', NEEDS_COMMAND_CENTER_CONTEXT);
+    }
+
+    // Insert the new view
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('saved_views')
+      .insert({
+        organization_id: profile.organization_id,
+        owner_profile_id: profile.id,
+        context: NEEDS_COMMAND_CENTER_CONTEXT,
+        name: params.name.trim(),
+        filters: params.filters,
+        is_default: params.setAsDefault ?? false,
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create saved view: ${error.message}`);
+    }
+
+    revalidatePath('/needs/command-center');
+    return { success: true, viewId: data?.id };
+  } catch (error) {
+    console.error('createNeedsSavedView error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Set a saved view as the default for the current user
+ */
+export async function setNeedsSavedViewDefault(viewId: string): Promise<ActionResult> {
+  try {
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+
+    // First, verify the view belongs to this user
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: view, error: viewError } = await (supabase as any)
+      .from('saved_views')
+      .select('id')
+      .eq('id', viewId)
+      .eq('owner_profile_id', profile.id)
+      .eq('context', NEEDS_COMMAND_CENTER_CONTEXT)
+      .single();
+
+    if (viewError || !view) {
+      throw new Error('Saved view not found or access denied');
+    }
+
+    // Clear other defaults for this user/context
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('saved_views')
+      .update({ is_default: false })
+      .eq('owner_profile_id', profile.id)
+      .eq('context', NEEDS_COMMAND_CENTER_CONTEXT);
+
+    // Set this one as default
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
+      .from('saved_views')
+      .update({ is_default: true })
+      .eq('id', viewId);
+
+    if (updateError) {
+      throw new Error(`Failed to set default view: ${updateError.message}`);
+    }
+
+    revalidatePath('/needs/command-center');
+    return { success: true };
+  } catch (error) {
+    console.error('setNeedsSavedViewDefault error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Clear the default view for the current user (no view will load by default)
+ */
+export async function clearNeedsSavedViewDefault(): Promise<ActionResult> {
+  try {
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+
+    // Clear all defaults for this user/context
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .from('saved_views')
+      .update({ is_default: false })
+      .eq('owner_profile_id', profile.id)
+      .eq('context', NEEDS_COMMAND_CENTER_CONTEXT);
+
+    revalidatePath('/needs/command-center');
+    return { success: true };
+  } catch (error) {
+    console.error('clearNeedsSavedViewDefault error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Delete a saved view owned by the current user
+ */
+export async function deleteNeedsSavedView(viewId: string): Promise<ActionResult> {
+  try {
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+
+    // Delete the view (RLS will enforce ownership, but we double-check)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('saved_views')
+      .delete()
+      .eq('id', viewId)
+      .eq('owner_profile_id', profile.id)
+      .eq('context', NEEDS_COMMAND_CENTER_CONTEXT);
+
+    if (error) {
+      throw new Error(`Failed to delete saved view: ${error.message}`);
+    }
+
+    revalidatePath('/needs/command-center');
+    return { success: true };
+  } catch (error) {
+    console.error('deleteNeedsSavedView error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Update an existing saved view's filters (optionally rename it)
+ */
+export async function updateNeedsSavedView(params: {
+  viewId: string;
+  name?: string;
+  filters?: NeedsCommandCenterSavedFilters;
+}): Promise<ActionResult> {
+  try {
+    const profile = await verifyOpsAccess();
+    const supabase = await createServerSupabaseClient();
+
+    // Verify ownership
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: view, error: viewError } = await (supabase as any)
+      .from('saved_views')
+      .select('id')
+      .eq('id', params.viewId)
+      .eq('owner_profile_id', profile.id)
+      .eq('context', NEEDS_COMMAND_CENTER_CONTEXT)
+      .single();
+
+    if (viewError || !view) {
+      throw new Error('Saved view not found or access denied');
+    }
+
+    // Build update payload
+    const updatePayload: Record<string, unknown> = {};
+    if (params.name !== undefined) {
+      updatePayload.name = params.name.trim();
+    }
+    if (params.filters !== undefined) {
+      updatePayload.filters = params.filters;
+    }
+
+    if (Object.keys(updatePayload).length === 0) {
+      return { success: true }; // Nothing to update
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: updateError } = await (supabase as any)
+      .from('saved_views')
+      .update(updatePayload)
+      .eq('id', params.viewId);
+
+    if (updateError) {
+      throw new Error(`Failed to update saved view: ${updateError.message}`);
+    }
+
+    revalidatePath('/needs/command-center');
+    return { success: true };
+  } catch (error) {
+    console.error('updateNeedsSavedView error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

@@ -17,6 +17,7 @@ import { type NeedStatus, getNeedStatusLabel } from '@crm-eco/lib';
 import { NeedStatusBadge } from '@/components/shared/status-badge';
 import { UrgencyBadge } from '@/components/shared/urgency-badge';
 import { NeedActionsMenu } from './NeedActionsMenu';
+import type { AssignableProfile } from '@/app/(dashboard)/needs/command-center/page';
 
 export interface NeedWithMember {
   id: string;
@@ -42,6 +43,8 @@ export interface NeedWithMember {
 
 interface NeedsTableProps {
   needs: NeedWithMember[];
+  assignableProfiles: AssignableProfile[];
+  currentProfileId: string;
 }
 
 function formatCurrency(amount: number | null | undefined): string {
@@ -54,7 +57,7 @@ function formatCurrency(amount: number | null | undefined): string {
   }).format(amount);
 }
 
-export function NeedsTable({ needs }: NeedsTableProps) {
+export function NeedsTable({ needs, assignableProfiles, currentProfileId }: NeedsTableProps) {
   if (needs.length === 0) {
     return (
       <Card>
@@ -171,6 +174,8 @@ export function NeedsTable({ needs }: NeedsTableProps) {
                     currentStatus={need.status}
                     currentTargetDate={need.sla_target_date}
                     currentIuaMet={need.iua_met}
+                    assignableProfiles={assignableProfiles}
+                    currentProfileId={currentProfileId}
                   />
                 </TableCell>
               </TableRow>
