@@ -1,14 +1,59 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Card, CardContent, Button } from '@crm-eco/ui';
-import { CheckCircle, Clock, AlertTriangle, HeartPulse, CalendarDays, CalendarClock, Calendar, LayoutGrid } from 'lucide-react';
-import { startOfWeek, subDays, startOfDay, isSameDay } from 'date-fns';
-import { type NeedStatus, getUrgencyLabelCRM, OPEN_NEED_STATUSES } from '@crm-eco/lib';
+import { useState, useMemo, useEffect, useRef, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Card,
+  CardContent,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@crm-eco/ui';
+import {
+  CheckCircle,
+  Clock,
+  AlertTriangle,
+  HeartPulse,
+  CalendarDays,
+  CalendarClock,
+  LayoutGrid,
+  Save,
+  Bookmark,
+  ChevronDown,
+  Star,
+  Trash2,
+  Loader2,
+} from 'lucide-react';
+import { startOfWeek, subDays, startOfDay } from 'date-fns';
+import {
+  type NeedStatus,
+  getUrgencyLabelCRM,
+  OPEN_NEED_STATUSES,
+  type NeedsCommandCenterSavedView,
+  type NeedsCommandCenterSavedFilters,
+} from '@crm-eco/lib';
 import { NeedsFiltersBar, type SlaFilter } from './NeedsFiltersBar';
 import { NeedsTable, type NeedWithMember } from './NeedsTable';
 import { WorkloadPanel } from './WorkloadPanel';
-import type { WorkloadBucket } from '@/app/(dashboard)/needs/command-center/page';
+import type { WorkloadBucket, AssignableProfile } from '@/app/(dashboard)/needs/command-center/page';
+import {
+  createNeedsSavedView,
+  setNeedsSavedViewDefault,
+  deleteNeedsSavedView,
+  clearNeedsSavedViewDefault,
+} from '@/app/(dashboard)/needs/command-center/actions';
 
 interface SlaCounts {
   overdue: number;
@@ -16,26 +61,170 @@ interface SlaCounts {
   onTrack: number;
 }
 
-// Saved view keys
+// Saved view keys (built-in presets)
 export type SavedViewKey = 'all' | 'today_overdue' | 'new_this_week' | 'new_last_7_days';
 
 interface NeedsCommandCenterShellProps {
   needs: NeedWithMember[];
   slaCounts: SlaCounts;
   workload: WorkloadBucket[];
+  assignableProfiles: AssignableProfile[];
+  currentProfileId: string;
+  savedViews: NeedsCommandCenterSavedView[];
+  defaultSavedViewId: string | null;
 }
 
-export function NeedsCommandCenterShell({ needs, slaCounts, workload }: NeedsCommandCenterShellProps) {
+export function NeedsCommandCenterShell({ 
+  needs, 
+  slaCounts, 
+  workload,
+  assignableProfiles,
+  currentProfileId,
+  savedViews,
+  defaultSavedViewId,
+}: NeedsCommandCenterShellProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  
   // Filter state
   const [selectedSlaFilter, setSelectedSlaFilter] = useState<SlaFilter>('all');
   const [selectedStatuses, setSelectedStatuses] = useState<NeedStatus[]>([]);
   const [search, setSearch] = useState('');
   
-  // Saved view state
+  // Saved view state (built-in presets)
   const [savedView, setSavedView] = useState<SavedViewKey>('all');
   
   // Assignee filter state
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | 'all'>('all');
+  
+  // Personal saved view state
+  const [activeSavedViewId, setActiveSavedViewId] = useState<string | null>(null);
+  const hasAppliedDefaultRef = useRef(false);
+  
+  // Save View Dialog state
+  const [isSaveDialogOpen, setIsSaveDialogOpen] = useState(false);
+  const [newViewName, setNewViewName] = useState('');
+  const [setAsDefault, setSetAsDefault] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  
+  // Apply default saved view on initial load
+  useEffect(() => {
+    if (hasAppliedDefaultRef.current) return;
+    if (!defaultSavedViewId) return;
+    
+    const defaultView = savedViews.find(v => v.id === defaultSavedViewId);
+    if (!defaultView) return;
+    
+    applySavedFiltersToState(defaultView.filters);
+    setActiveSavedViewId(defaultView.id);
+    hasAppliedDefaultRef.current = true;
+  }, [defaultSavedViewId, savedViews]);
+  
+  /**
+   * Apply a saved view's filters to local state
+   */
+  function applySavedFiltersToState(filters: NeedsCommandCenterSavedFilters) {
+    setSavedView(filters.savedView ?? 'all');
+    setSelectedSlaFilter(filters.selectedSlaFilter ?? 'all');
+    setSelectedStatuses((filters.selectedStatuses ?? []) as NeedStatus[]);
+    setSearch(filters.search ?? '');
+    setSelectedAssigneeId(filters.selectedAssigneeId ?? 'all');
+  }
+  
+  /**
+   * Build current filters as a saveable object
+   */
+  function buildCurrentFilters(): NeedsCommandCenterSavedFilters {
+    return {
+      savedView,
+      selectedSlaFilter,
+      selectedStatuses,
+      search,
+      selectedAssigneeId,
+    };
+  }
+  
+  /**
+   * Handle applying a personal saved view
+   */
+  function handleApplyPersonalSavedView(viewId: string) {
+    const view = savedViews.find(v => v.id === viewId);
+    if (!view) return;
+    
+    applySavedFiltersToState(view.filters);
+    setActiveSavedViewId(view.id);
+  }
+  
+  /**
+   * Handle saving current filters as a new view
+   */
+  function handleSaveView() {
+    if (!newViewName.trim()) {
+      setSaveError('Please enter a view name');
+      return;
+    }
+    
+    const filters = buildCurrentFilters();
+    startTransition(async () => {
+      const result = await createNeedsSavedView({
+        name: newViewName.trim(),
+        filters,
+        setAsDefault,
+      });
+      
+      if (!result.success) {
+        setSaveError(result.error || 'Failed to save view');
+      } else {
+        setIsSaveDialogOpen(false);
+        setNewViewName('');
+        setSetAsDefault(false);
+        setSaveError(null);
+        if (result.viewId) {
+          setActiveSavedViewId(result.viewId);
+        }
+        router.refresh();
+      }
+    });
+  }
+  
+  /**
+   * Handle setting a view as default
+   */
+  function handleSetDefault(viewId: string) {
+    startTransition(async () => {
+      const result = await setNeedsSavedViewDefault(viewId);
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
+  
+  /**
+   * Handle clearing default view
+   */
+  function handleClearDefault() {
+    startTransition(async () => {
+      const result = await clearNeedsSavedViewDefault();
+      if (result.success) {
+        router.refresh();
+      }
+    });
+  }
+  
+  /**
+   * Handle deleting a saved view
+   */
+  function handleDeleteView(viewId: string) {
+    startTransition(async () => {
+      const result = await deleteNeedsSavedView(viewId);
+      if (result.success) {
+        if (activeSavedViewId === viewId) {
+          setActiveSavedViewId(null);
+        }
+        router.refresh();
+      }
+    });
+  }
 
   // Filter needs based on current filters
   const filteredNeeds = useMemo(() => {
@@ -110,9 +299,10 @@ export function NeedsCommandCenterShell({ needs, slaCounts, workload }: NeedsCom
     return filtered;
   }, [needs, savedView, selectedSlaFilter, selectedStatuses, selectedAssigneeId, search]);
 
-  // Handle saved view change
+  // Handle saved view change (built-in presets)
   const handleSavedViewChange = (view: SavedViewKey) => {
     setSavedView(view);
+    setActiveSavedViewId(null); // Clear personal view when switching to built-in
     // Reset other filters when changing saved view (optional, keeps it clean)
     if (view !== 'all') {
       setSelectedSlaFilter('all');
@@ -120,29 +310,130 @@ export function NeedsCommandCenterShell({ needs, slaCounts, workload }: NeedsCom
     }
   };
 
-  // Saved views configuration
-  const savedViews: { key: SavedViewKey; label: string; icon: React.ElementType }[] = [
+  // Built-in saved views configuration
+  const builtInViews: { key: SavedViewKey; label: string; icon: React.ElementType }[] = [
     { key: 'all', label: 'All Needs', icon: LayoutGrid },
     { key: 'today_overdue', label: "Today's Overdue", icon: AlertTriangle },
     { key: 'new_this_week', label: 'New This Week', icon: CalendarDays },
     { key: 'new_last_7_days', label: 'Last 7 Days', icon: CalendarClock },
   ];
+  
+  // Find active personal view name (if any)
+  const activePersonalView = savedViews.find(v => v.id === activeSavedViewId);
+  const defaultView = savedViews.find(v => v.is_default);
 
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Needs Command Center</h1>
-        <p className="text-slate-500 mt-1">
-          SLA-driven queue for Needs and sharing operations
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Needs Command Center</h1>
+          <p className="text-slate-500 mt-1">
+            SLA-driven queue for Needs and sharing operations
+          </p>
+        </div>
+        
+        {/* My Views & Save View */}
+        <div className="flex items-center gap-2">
+          {/* My Views Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2" disabled={isPending}>
+                <Bookmark className="w-4 h-4" />
+                <span>
+                  {activePersonalView ? activePersonalView.name : 'My Views'}
+                </span>
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Personal Views</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              
+              {savedViews.length === 0 ? (
+                <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                  No saved views yet.
+                  <br />
+                  Save your current filters to create one.
+                </div>
+              ) : (
+                savedViews.map((view) => (
+                  <DropdownMenuItem
+                    key={view.id}
+                    onClick={() => handleApplyPersonalSavedView(view.id)}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="flex items-center gap-2">
+                      {view.is_default && (
+                        <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                      )}
+                      <span className={activeSavedViewId === view.id ? 'font-medium' : ''}>
+                        {view.name}
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                ))
+              )}
+              
+              {savedViews.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">
+                    Manage
+                  </DropdownMenuLabel>
+                  
+                  {activeSavedViewId && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => handleSetDefault(activeSavedViewId)}
+                        disabled={isPending || activePersonalView?.is_default}
+                      >
+                        <Star className="w-4 h-4 mr-2" />
+                        {activePersonalView?.is_default ? 'Default view' : 'Set as default'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteView(activeSavedViewId)}
+                        disabled={isPending}
+                        className="text-red-600 focus:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete view
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  
+                  {defaultView && (
+                    <DropdownMenuItem
+                      onClick={handleClearDefault}
+                      disabled={isPending}
+                    >
+                      Clear default
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {/* Save View Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => setIsSaveDialogOpen(true)}
+            disabled={isPending}
+          >
+            <Save className="w-4 h-4" />
+            <span>Save View</span>
+          </Button>
+        </div>
       </div>
 
-      {/* Saved Views Row */}
+      {/* Saved Views Row (Built-in Presets) */}
       <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg w-fit">
-        {savedViews.map((view) => {
+        {builtInViews.map((view) => {
           const Icon = view.icon;
-          const isActive = savedView === view.key;
+          const isActive = savedView === view.key && !activeSavedViewId;
           return (
             <button
               key={view.key}
@@ -161,6 +452,68 @@ export function NeedsCommandCenterShell({ needs, slaCounts, workload }: NeedsCom
           );
         })}
       </div>
+      
+      {/* Save View Dialog */}
+      <Dialog open={isSaveDialogOpen} onOpenChange={setIsSaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Current Filters</DialogTitle>
+            <DialogDescription>
+              Save your current filters as a personal view for quick access.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="view-name" className="text-sm font-medium">
+                View Name
+              </label>
+              <Input
+                id="view-name"
+                value={newViewName}
+                onChange={(e) => setNewViewName(e.target.value)}
+                placeholder="e.g., My high-priority queue"
+                disabled={isPending}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="set-default"
+                checked={setAsDefault}
+                onCheckedChange={(checked) => setSetAsDefault(Boolean(checked))}
+                disabled={isPending}
+              />
+              <label htmlFor="set-default" className="text-sm text-muted-foreground">
+                Set as my default view
+              </label>
+            </div>
+            
+            {saveError && (
+              <p className="text-sm text-red-600">{saveError}</p>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsSaveDialogOpen(false);
+                setNewViewName('');
+                setSetAsDefault(false);
+                setSaveError(null);
+              }}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSaveView} disabled={isPending || !newViewName.trim()}>
+              {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save View
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* SLA Summary Cards */}
       <div className="grid grid-cols-4 gap-4">
@@ -247,7 +600,11 @@ export function NeedsCommandCenterShell({ needs, slaCounts, workload }: NeedsCom
       </div>
 
       {/* Needs Table */}
-      <NeedsTable needs={filteredNeeds} />
+      <NeedsTable 
+        needs={filteredNeeds} 
+        assignableProfiles={assignableProfiles}
+        currentProfileId={currentProfileId}
+      />
     </div>
   );
 }
