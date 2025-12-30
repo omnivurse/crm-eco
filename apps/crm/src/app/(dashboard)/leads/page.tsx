@@ -1,26 +1,33 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@crm-eco/ui';
-import { UserPlus, Users, CheckCircle, TrendingUp } from 'lucide-react';
-import { format } from 'date-fns';
 import type { Database } from '@crm-eco/lib/types';
+import { getRoleQueryContext, getCurrentProfile } from '@/lib/auth';
 import { CreateLeadDialog } from '@/components/leads/create-lead-dialog';
-import { getRoleQueryContext } from '@/lib/auth';
+import {
+  LeadsBoardShell,
+  type LeadWithAdvisor,
+  type AdvisorOption,
+} from '@/components/leads/LeadsBoardShell';
+import {
+  LEADS_BOARD_CONTEXT,
+  type LeadsBoardSavedView,
+  type LeadsBoardSavedFilters,
+} from '@crm-eco/lib';
 
 type Lead = Database['public']['Tables']['leads']['Row'];
 
-interface LeadWithAdvisor extends Lead {
+interface RawLeadWithAdvisor extends Lead {
   advisors?: { first_name: string; last_name: string } | null;
 }
 
 async function getLeads(): Promise<LeadWithAdvisor[]> {
   const supabase = await createServerSupabaseClient();
   const context = await getRoleQueryContext();
-  
+
   if (!context) {
     console.error('No role context found');
     return [];
   }
-  
+
   let query = supabase
     .from('leads')
     .select('*, advisors(first_name, last_name)')
@@ -38,13 +45,25 @@ async function getLeads(): Promise<LeadWithAdvisor[]> {
     return [];
   }
 
-  return (data ?? []) as LeadWithAdvisor[];
+  return ((data ?? []) as RawLeadWithAdvisor[]).map((l) => ({
+    id: l.id,
+    first_name: l.first_name,
+    last_name: l.last_name,
+    email: l.email,
+    phone: l.phone,
+    state: l.state,
+    status: l.status,
+    source: l.source,
+    advisor_id: l.advisor_id,
+    created_at: l.created_at,
+    updated_at: l.updated_at,
+    advisors: l.advisors,
+  }));
 }
 
 async function getLeadStats(advisorId: string | null, isAdmin: boolean) {
   const supabase = await createServerSupabaseClient();
-  
-  // Build base queries with optional advisor filter
+
   const buildQuery = (status?: string) => {
     let query = supabase.from('leads').select('id', { count: 'exact', head: true });
     if (!isAdmin && advisorId) {
@@ -71,146 +90,106 @@ async function getLeadStats(advisorId: string | null, isAdmin: boolean) {
   };
 }
 
-function getStatusBadgeVariant(status: string) {
-  switch (status) {
-    case 'new':
-      return 'default';
-    case 'contacted':
-      return 'secondary';
-    case 'working':
-      return 'warning';
-    case 'qualified':
-      return 'success';
-    case 'converted':
-      return 'success';
-    case 'unqualified':
-    case 'lost':
-      return 'destructive';
-    default:
-      return 'outline';
-  }
-}
+async function getAdvisors(): Promise<AdvisorOption[]> {
+  const supabase = await createServerSupabaseClient();
+  const profile = await getCurrentProfile();
 
-function getSourceLabel(source: string | null) {
-  if (!source) return '-';
-  const labels: Record<string, string> = {
-    website: 'Website',
-    referral: 'Referral',
-    call_center: 'Call Center',
-    social: 'Social Media',
-    event: 'Event',
-    partner: 'Partner',
-    other: 'Other',
-  };
-  return labels[source] || source;
+  if (!profile) return [];
+
+  const { data } = await supabase
+    .from('advisors')
+    .select('id, first_name, last_name')
+    .eq('organization_id', profile.organization_id)
+    .order('first_name', { ascending: true });
+
+  return (data ?? []).map((a: { id: string; first_name: string; last_name: string }) => ({
+    id: a.id,
+    first_name: a.first_name,
+    last_name: a.last_name,
+  }));
 }
 
 export default async function LeadsPage() {
+  const profile = await getCurrentProfile();
   const context = await getRoleQueryContext();
-  const advisorId = context?.advisorId ?? null;
-  const isAdmin = context?.isAdmin ?? false;
-  
-  const [leads, stats] = await Promise.all([
+
+  if (!profile || !context) {
+    return (
+      <div className="text-center py-12 text-slate-500">
+        Please log in to view leads.
+      </div>
+    );
+  }
+
+  const advisorId = context.advisorId ?? null;
+  const isAdmin = context.isAdmin ?? false;
+
+  const [leads, stats, advisors] = await Promise.all([
     getLeads(),
     getLeadStats(advisorId, isAdmin),
+    getAdvisors(),
   ]);
 
-  const statCards = [
-    { label: 'Total Leads', value: stats.total, icon: Users, color: 'text-slate-600' },
-    { label: 'New', value: stats.new, icon: UserPlus, color: 'text-blue-600' },
-    { label: 'Qualified', value: stats.qualified, icon: CheckCircle, color: 'text-amber-600' },
-    { label: 'Converted', value: stats.converted, icon: TrendingUp, color: 'text-emerald-600' },
-  ];
+  // Fetch saved views for this user
+  const supabase = await createServerSupabaseClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: savedViewsData } = await (supabase as any)
+    .from('saved_views')
+    .select(
+      'id, organization_id, owner_profile_id, context, name, is_default, filters, created_at, updated_at'
+    )
+    .eq('organization_id', profile.organization_id)
+    .eq('owner_profile_id', profile.id)
+    .eq('context', LEADS_BOARD_CONTEXT)
+    .order('created_at', { ascending: true });
+
+  // Parse saved views
+  const savedViews: LeadsBoardSavedView[] = (savedViewsData || []).map(
+    (v: {
+      id: string;
+      organization_id: string;
+      owner_profile_id: string;
+      context: 'leads_board';
+      name: string;
+      is_default: boolean;
+      filters: LeadsBoardSavedFilters;
+      created_at: string;
+      updated_at: string;
+    }) => ({
+      id: v.id,
+      organization_id: v.organization_id,
+      owner_profile_id: v.owner_profile_id,
+      context: v.context,
+      name: v.name,
+      is_default: v.is_default,
+      filters: v.filters as LeadsBoardSavedFilters,
+      created_at: v.created_at,
+      updated_at: v.updated_at,
+    })
+  );
+
+  // Find the default view if any
+  const defaultSavedView = savedViews.find((v) => v.is_default) ?? null;
 
   return (
     <div className="space-y-6">
+      {/* Header with Create Button */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Leads</h1>
-          <p className="text-slate-600">Track and convert potential members</p>
         </div>
         <CreateLeadDialog />
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
-        {statCards.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-500">{stat.label}</p>
-                  <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-full bg-slate-100 ${stat.color}`}>
-                  <stat.icon className="w-5 h-5" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Leads Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Leads</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {leads.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UserPlus className="w-8 h-8 text-slate-400" />
-              </div>
-              <p className="text-slate-600 mb-2">No leads yet</p>
-              <p className="text-sm text-slate-500">
-                Click "Add Lead" to create your first lead, or they will appear here when captured from enrollment forms.
-              </p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Advisor</TableHead>
-                  <TableHead>Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {leads.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell className="font-medium">
-                      {lead.first_name} {lead.last_name}
-                    </TableCell>
-                    <TableCell>{lead.email}</TableCell>
-                    <TableCell>{lead.phone ?? '-'}</TableCell>
-                    <TableCell>{lead.state ?? '-'}</TableCell>
-                    <TableCell>{getSourceLabel(lead.source)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(lead.status)}>
-                        {lead.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {lead.advisors
-                        ? `${lead.advisors.first_name} ${lead.advisors.last_name}`
-                        : '-'}
-                    </TableCell>
-                    <TableCell className="text-slate-500">
-                      {format(new Date(lead.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      {/* Board Shell */}
+      <LeadsBoardShell
+        leads={leads}
+        savedViews={savedViews}
+        defaultSavedViewId={defaultSavedView?.id ?? null}
+        advisors={advisors}
+        stats={stats}
+      />
     </div>
   );
 }

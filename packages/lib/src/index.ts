@@ -6,4 +6,5 @@ export * from './enrollment';
 export * from './ai';
 export * from './members';
 export * from './needs';
+export * from './views';
 
