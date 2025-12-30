@@ -29,13 +29,25 @@ const ticketStatusColors: Record<string, string> = {
   closed: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
-// Need status colors
+// Need status colors - expanded for granular workflow states
 const needStatusColors: Record<string, string> = {
+  // Active/Open statuses
+  new: 'bg-blue-100 text-blue-700 border-blue-200',
   open: 'bg-blue-100 text-blue-700 border-blue-200',
-  in_review: 'bg-amber-100 text-amber-700 border-amber-200',
+  submitted: 'bg-blue-100 text-blue-700 border-blue-200',
+  intake: 'bg-cyan-100 text-cyan-700 border-cyan-200',
+  awaiting_member_docs: 'bg-amber-100 text-amber-700 border-amber-200',
+  awaiting_provider_docs: 'bg-amber-100 text-amber-700 border-amber-200',
+  in_review: 'bg-purple-100 text-purple-700 border-purple-200',
+  pricing: 'bg-violet-100 text-violet-700 border-violet-200',
+  approved: 'bg-green-100 text-green-700 border-green-200',
+  reimbursement_pending: 'bg-teal-100 text-teal-700 border-teal-200',
   processing: 'bg-purple-100 text-purple-700 border-purple-200',
+  // Terminal statuses
   paid: 'bg-emerald-100 text-emerald-700 border-emerald-200',
   closed: 'bg-slate-100 text-slate-500 border-slate-200',
+  denied: 'bg-red-100 text-red-700 border-red-200',
+  cancelled: 'bg-slate-100 text-slate-500 border-slate-200',
 };
 
 // Lead status colors

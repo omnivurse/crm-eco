@@ -3,10 +3,11 @@ import { getMemberForUser, getMemberNeeds } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, PlusCircle } from 'lucide-react';
 import {
   NeedsSummaryStrip,
   NeedsListCard,
+  SLALegend,
 } from '../../components/needs';
 
 // Type for needs from the database
@@ -103,12 +104,23 @@ export default async function NeedsPage() {
       </Link>
 
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Needs & Sharing</h1>
-        <p className="text-slate-600 mt-1">
-          View the status of your submitted Needs and sharing activity.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Needs & Sharing</h1>
+          <p className="text-slate-600 mt-1">
+            View the status of your submitted Needs and sharing activity.
+          </p>
+        </div>
+        <Link href="/needs/new">
+          <Button>
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Submit a Need
+          </Button>
+        </Link>
       </div>
+
+      {/* SLA Legend */}
+      <SLALegend />
 
       {/* Summary Strip */}
       <NeedsSummaryStrip
