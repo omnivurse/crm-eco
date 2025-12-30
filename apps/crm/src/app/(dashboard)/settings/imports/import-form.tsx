@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useFormState, useFormStatus } from 'react-dom';
 import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { createImportJob, type ImportFormState } from './actions';
@@ -9,8 +9,28 @@ import Link from 'next/link';
 
 const initialState: ImportFormState = {};
 
+function SubmitButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+  
+  return (
+    <Button type="submit" disabled={pending || disabled} className="gap-2">
+      {pending ? (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Importing...
+        </>
+      ) : (
+        <>
+          <Upload className="w-4 h-4" />
+          Upload &amp; Import
+        </>
+      )}
+    </Button>
+  );
+}
+
 export function ImportForm() {
-  const [state, formAction, isPending] = useActionState(createImportJob, initialState);
+  const [state, formAction] = useFormState(createImportJob, initialState);
   const [entityType, setEntityType] = useState<string>('');
   const [fileName, setFileName] = useState<string>('');
 
@@ -125,19 +145,7 @@ export function ImportForm() {
       </div>
       
       <div className="flex justify-end">
-        <Button type="submit" disabled={isPending || !entityType} className="gap-2">
-          {isPending ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Importing...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4" />
-              Upload &amp; Import
-            </>
-          )}
-        </Button>
+        <SubmitButton disabled={!entityType} />
       </div>
     </form>
   );

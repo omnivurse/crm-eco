@@ -11,12 +11,18 @@ export type ImportFormState = {
   result?: ImportResult;
 };
 
+// Helper to get untyped Supabase client due to @supabase/ssr 0.5.x type inference limitations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getSupabase(): Promise<any> {
+  return await createServerSupabaseClient();
+}
+
 export async function createImportJob(
   prevState: ImportFormState,
   formData: FormData
 ): Promise<ImportFormState> {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = await getSupabase();
     
     // Get current user's profile
     const { data: { user } } = await supabase.auth.getUser();

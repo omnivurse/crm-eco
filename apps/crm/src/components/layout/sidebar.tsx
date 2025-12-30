@@ -13,6 +13,7 @@ import {
   Building2,
   Settings,
   ClipboardCheck,
+  FilePlus,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth';
 
@@ -59,6 +60,7 @@ const navSections: NavSection[] = [
     title: 'Enrollment',
     items: [
       { name: 'Enrollments', href: '/enrollments', icon: ClipboardCheck },
+      { name: 'New Enrollment', href: '/enrollments/new', icon: FilePlus, roles: ['owner', 'admin', 'advisor'] },
     ],
   },
   {
@@ -141,7 +143,7 @@ export function Sidebar({ role }: SidebarProps) {
       <div className="p-4 border-t border-slate-200">
         <div className="px-3 py-2.5 bg-slate-50 rounded-lg">
           <p className="text-xs font-medium text-slate-400 uppercase tracking-wide">Platform</p>
-          <p className="text-sm font-semibold text-slate-700">Phase 1 · v0.9.0</p>
+          <p className="text-sm font-semibold text-slate-700">Phase 1 · v1.0.0</p>
         </div>
       </div>
     </aside>

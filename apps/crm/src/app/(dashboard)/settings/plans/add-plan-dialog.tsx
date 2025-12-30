@@ -3,6 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+
+// Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getSupabase(): any {
+  return createClient();
+}
 import {
   Button,
   Dialog,
@@ -66,7 +72,7 @@ export function AddPlanDialog() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      const supabase = getSupabase();
 
       // Get current user's profile
       const { data: { user } } = await supabase.auth.getUser();

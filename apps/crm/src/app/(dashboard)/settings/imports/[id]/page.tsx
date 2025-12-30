@@ -46,7 +46,9 @@ export default async function ImportDetailPage({ params }: ImportDetailPageProps
     redirect('/dashboard');
   }
   
-  const supabase = await createServerSupabaseClient();
+  // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createServerSupabaseClient() as any;
   
   // Fetch import job
   const { data: job, error: jobError } = await supabase
@@ -61,12 +63,22 @@ export default async function ImportDetailPage({ params }: ImportDetailPageProps
   }
   
   // Fetch import rows
-  const { data: rows, error: rowsError } = await supabase
+  interface ImportRow {
+    id: string;
+    row_index: number;
+    status: string;
+    error_message: string | null;
+    raw_data: Record<string, unknown>;
+    normalized_data: Record<string, string> | null;
+    entity_id: string | null;
+  }
+  const { data: rowsData, error: rowsError } = await supabase
     .from('import_job_rows')
     .select('*')
     .eq('import_job_id', id)
     .order('row_index', { ascending: true })
     .limit(100);
+  const rows = rowsData as ImportRow[] | null;
   
   if (rowsError) {
     console.error('Error fetching import rows:', rowsError);
@@ -169,7 +181,7 @@ export default async function ImportDetailPage({ params }: ImportDetailPageProps
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row) => {
+                  {rows.map((row: any) => {
                     const normalized = row.normalized_data as Record<string, string> | null;
                     const name = normalized 
                       ? `${normalized.first_name || ''} ${normalized.last_name || ''}`.trim() 

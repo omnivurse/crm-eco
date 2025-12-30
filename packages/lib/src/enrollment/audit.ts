@@ -33,7 +33,8 @@ export async function logEnrollmentAudit(params: LogEnrollmentAuditParams): Prom
     dataAfter,
   } = params;
 
-  const auditEntry: EnrollmentAuditLogInsert = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const auditEntry: any = {
     organization_id: organizationId,
     enrollment_id: enrollmentId,
     actor_profile_id: actorProfileId || null,

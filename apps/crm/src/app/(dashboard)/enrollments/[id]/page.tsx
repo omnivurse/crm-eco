@@ -46,7 +46,9 @@ export default async function EnrollmentDetailPage({ params }: EnrollmentDetailP
     redirect('/login');
   }
   
-  const supabase = await createServerSupabaseClient();
+  // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createServerSupabaseClient() as any;
   
   // Fetch enrollment with related data
   const { data: enrollment, error: enrollmentError } = await supabase
@@ -74,7 +76,16 @@ export default async function EnrollmentDetailPage({ params }: EnrollmentDetailP
     .order('created_at');
   
   // Fetch audit log
-  const { data: auditLogs } = await supabase
+  interface AuditLogRecord {
+    id: string;
+    created_at: string;
+    event_type: string;
+    message: string | null;
+    old_status: string | null;
+    new_status: string | null;
+    profiles: { full_name: string } | null;
+  }
+  const { data: auditLogsData } = await supabase
     .from('enrollment_audit_log')
     .select(`
       *,
@@ -83,13 +94,33 @@ export default async function EnrollmentDetailPage({ params }: EnrollmentDetailP
     .eq('enrollment_id', id)
     .order('created_at', { ascending: false })
     .limit(50);
+  const auditLogs = auditLogsData as AuditLogRecord[] | null;
 
   const member = enrollment.members as { id: string; first_name: string; last_name: string; email: string; phone: string | null; state: string | null; date_of_birth: string | null } | null;
   const advisor = enrollment.advisors as { id: string; first_name: string; last_name: string; email: string } | null;
   const plan = enrollment.plans as { id: string; name: string; code: string; monthly_share: number | null; iua_amount: number | null } | null;
 
   // Build step completion map
-  const stepMap = new Map(steps?.map(s => [s.step_key, s]) || []);
+  interface StepRecord {
+    step_key: string;
+    is_completed: boolean;
+    completed_at: string | null;
+  }
+  const stepMap = new Map<string, StepRecord>(
+    (steps as StepRecord[] | null)?.map((s) => [s.step_key, s]) || []
+  );
+
+  // Type for audit log entries
+  interface AuditLogRecord {
+    id: string;
+    created_at: string;
+    event_type: string;
+    message: string | null;
+    old_status: string | null;
+    new_status: string | null;
+    profiles: { full_name: string } | null;
+  }
+  const typedAuditLogs = (auditLogs as AuditLogRecord[] | null) || [];
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null) return '—';
@@ -358,7 +389,7 @@ export default async function EnrollmentDetailPage({ params }: EnrollmentDetailP
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {!auditLogs || auditLogs.length === 0 ? (
+              {typedAuditLogs.length === 0 ? (
                 <div className="text-center py-12 text-slate-500">
                   <History className="w-12 h-12 mx-auto text-slate-300 mb-3" />
                   <p>No audit events yet</p>
@@ -375,8 +406,8 @@ export default async function EnrollmentDetailPage({ params }: EnrollmentDetailP
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {auditLogs.map((log) => {
-                      const profile = log.profiles as { full_name: string } | null;
+                    {typedAuditLogs.map((log) => {
+                      const profile = log.profiles;
                       
                       return (
                         <TableRow key={log.id}>
