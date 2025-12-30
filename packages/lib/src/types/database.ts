@@ -34,6 +34,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       profiles: {
         Row: {
@@ -81,6 +82,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       advisors: {
         Row: {
@@ -155,6 +157,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       members: {
         Row: {
@@ -259,6 +262,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       leads: {
         Row: {
@@ -321,6 +325,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       activities: {
         Row: {
@@ -386,6 +391,7 @@ export interface Database {
           custom_fields?: Json;
           created_at?: string;
         };
+        Relationships: [];
       };
       tickets: {
         Row: {
@@ -439,6 +445,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       ticket_comments: {
         Row: {
@@ -465,6 +472,7 @@ export interface Database {
           body?: string;
           created_at?: string;
         };
+        Relationships: [];
       };
       needs: {
         Row: {
@@ -530,6 +538,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       need_events: {
         Row: {
@@ -574,6 +583,7 @@ export interface Database {
           metadata?: Json;
           created_at?: string;
         };
+        Relationships: [];
       };
       custom_field_definitions: {
         Row: {
@@ -630,6 +640,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       // ============================================================================
       // IMPORT TABLES
@@ -692,6 +703,7 @@ export interface Database {
           started_at?: string | null;
           completed_at?: string | null;
         };
+        Relationships: [];
       };
       import_job_rows: {
         Row: {
@@ -730,6 +742,7 @@ export interface Database {
           created_at?: string;
           processed_at?: string | null;
         };
+        Relationships: [];
       };
       // ============================================================================
       // ENROLLMENT ENGINE TABLES
@@ -807,6 +820,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       memberships: {
         Row: {
@@ -875,6 +889,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       enrollments: {
         Row: {
@@ -943,6 +958,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       enrollment_steps: {
         Row: {
@@ -978,6 +994,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       enrollment_audit_log: {
         Row: {
@@ -1019,6 +1036,7 @@ export interface Database {
           data_after?: Json | null;
           created_at?: string;
         };
+        Relationships: [];
       };
     };
     Views: {

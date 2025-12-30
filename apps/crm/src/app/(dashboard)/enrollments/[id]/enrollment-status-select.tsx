@@ -11,14 +11,17 @@ import {
   SelectValue,
 } from '@crm-eco/ui';
 import { Loader2 } from 'lucide-react';
+import type { Database } from '@crm-eco/lib/types';
+
+type EnrollmentStatus = Database['public']['Tables']['enrollments']['Row']['status'];
 
 interface EnrollmentStatusSelectProps {
   enrollmentId: string;
-  currentStatus: string;
+  currentStatus: EnrollmentStatus;
   organizationId: string;
 }
 
-const statuses = [
+const statuses: { value: EnrollmentStatus; label: string }[] = [
   { value: 'draft', label: 'Draft' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'submitted', label: 'Submitted' },
@@ -36,14 +39,16 @@ export function EnrollmentStatusSelect({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: EnrollmentStatus) => {
     if (newStatus === currentStatus) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const supabase = createClient();
+      // Note: Using type assertions due to @supabase/ssr 0.5.x type inference limitations
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const supabase = createClient() as any;
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -94,7 +99,7 @@ export function EnrollmentStatusSelect({
   return (
     <div className="flex items-center gap-2">
       {loading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
-      <Select value={currentStatus} onValueChange={handleStatusChange} disabled={loading}>
+      <Select value={currentStatus} onValueChange={(value) => handleStatusChange(value as EnrollmentStatus)} disabled={loading}>
         <SelectTrigger className="w-[180px]">
           <SelectValue />
         </SelectTrigger>
@@ -110,4 +115,3 @@ export function EnrollmentStatusSelect({
     </div>
   );
 }
-

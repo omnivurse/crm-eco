@@ -26,7 +26,9 @@ export default async function EnrollmentsPage() {
     );
   }
   
-  const supabase = await createServerSupabaseClient();
+  // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createServerSupabaseClient() as any;
   
   // Build query based on role
   let query = supabase
@@ -46,7 +48,21 @@ export default async function EnrollmentsPage() {
     query = query.or(`advisor_id.eq.${context.advisorId},primary_member_id.in.(select id from members where advisor_id='${context.advisorId}')`);
   }
   
-  const { data: enrollments, error } = await query;
+  // Type definition for enrollment data
+  interface EnrollmentData {
+    id: string;
+    enrollment_number: string | null;
+    status: string;
+    requested_effective_date: string | null;
+    has_mandate_warning: boolean;
+    has_age65_warning: boolean;
+    created_at: string;
+    members: { id: string; first_name: string; last_name: string } | null;
+    advisors: { id: string; first_name: string; last_name: string } | null;
+    plans: { id: string; name: string; code: string } | null;
+  }
+  const { data: enrollmentsData, error } = await query;
+  const enrollments = enrollmentsData as EnrollmentData[] | null;
   
   if (error) {
     console.error('Error fetching enrollments:', error);
@@ -118,7 +134,7 @@ export default async function EnrollmentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {enrollments.map((enrollment) => {
+                {enrollments.map((enrollment: any) => {
                   const member = enrollment.members as { id: string; first_name: string; last_name: string } | null;
                   const advisor = enrollment.advisors as { id: string; first_name: string; last_name: string } | null;
                   const plan = enrollment.plans as { id: string; name: string; code: string } | null;
