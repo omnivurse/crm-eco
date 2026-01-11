@@ -10,7 +10,7 @@ import {
   Shield, 
   Activity, 
   Stethoscope, 
-  HandHeart,
+  HeartHandshake,
   UserCheck,
   HeartPulse,
   Loader2,
@@ -151,7 +151,7 @@ export default function LoginPage() {
         <FloatingIcon icon={Shield} className="w-14 h-14 top-[60%] left-[8%]" delay={2} duration={6} />
         <FloatingIcon icon={Activity} className="w-12 h-12 top-[75%] right-[15%]" delay={0.5} duration={7} />
         <FloatingIcon icon={Stethoscope} className="w-18 h-18 top-[25%] left-[15%]" delay={1.5} duration={9} />
-        <FloatingIcon icon={HandHeart} className="w-16 h-16 top-[45%] right-[5%]" delay={2.5} duration={6} />
+        <FloatingIcon icon={HeartHandshake} className="w-16 h-16 top-[45%] right-[5%]" delay={2.5} duration={6} />
         <FloatingIcon icon={UserCheck} className="w-14 h-14 bottom-[15%] left-[12%]" delay={3} duration={8} />
         <FloatingIcon icon={HeartPulse} className="w-20 h-20 bottom-[20%] right-[8%]" delay={1} duration={7} />
         <FloatingIcon icon={Users} className="w-10 h-10 top-[5%] left-[40%]" delay={2} duration={6} />
@@ -162,7 +162,7 @@ export default function LoginPage() {
           {/* Brand header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-4">
-              <HandHeart className="w-10 h-10 text-white" />
+              <HeartHandshake className="w-10 h-10 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight font-heading">
               Pay It Forward

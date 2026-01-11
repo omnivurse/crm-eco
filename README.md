@@ -137,13 +137,121 @@ NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
+## Enterprise CRM Application
+
+The CRM includes a separate, enterprise-grade CRM application with Zoho-style customization capabilities.
+
+### CRM Features
+
+- **Separate Login Surface** - Dedicated CRM login at `/crm-login`
+- **Configurable Modules** - Create custom modules (Contacts, Leads, Deals, etc.)
+- **Custom Fields** - Define text, number, date, select, multiselect, boolean, email, phone, URL, currency, lookup, and user fields
+- **Dynamic Layouts** - Organize fields into collapsible sections
+- **Saved Views** - Create filtered, sorted views with custom column configurations
+- **Import Wizard** - 5-step CSV import with auto-mapping and validation
+- **Activity Timeline** - Notes, tasks, and audit history on records
+- **Role-Based Access** - CRM-specific roles (Admin, Manager, Agent, Viewer)
+- **Command Palette** - Quick actions with ⌘K
+
+### CRM Roles
+
+| Role | Permissions |
+|------|-------------|
+| `crm_admin` | Full CRM access, manage modules/fields/layouts |
+| `crm_manager` | Create/edit/delete records, run imports |
+| `crm_agent` | Create/edit records, add notes/tasks |
+| `crm_viewer` | Read-only access |
+
+### CRM Setup
+
+1. **Run the CRM migration:**
+```bash
+supabase db push
+```
+
+2. **Seed default modules and fields:**
+```bash
+psql $DATABASE_URL -f supabase/seed/crm_seed.sql
+```
+
+3. **Grant CRM access to a user:**
+```sql
+UPDATE profiles 
+SET crm_role = 'crm_admin' 
+WHERE email = 'your-email@example.com';
+```
+
+4. **Access the CRM:**
+- Navigate to `/crm-login`
+- Sign in with your credentials
+- You'll be redirected to the CRM dashboard
+
+### CRM Database Schema
+
+The CRM uses these additional tables:
+
+| Table | Purpose |
+|-------|---------|
+| `crm_modules` | Configurable CRM modules |
+| `crm_fields` | Field definitions per module |
+| `crm_layouts` | Page layout configurations |
+| `crm_views` | Saved list views |
+| `crm_records` | Flexible record storage with jsonb |
+| `crm_notes` | Notes on records |
+| `crm_tasks` | Tasks linked to records |
+| `crm_attachments` | File attachments |
+| `crm_relations` | Record-to-record links |
+| `crm_audit_log` | Change history |
+| `crm_import_jobs` | Import job tracking |
+| `crm_import_rows` | Individual row status |
+| `crm_import_mappings` | Reusable field mappings |
+
+### CRM API Endpoints
+
+```
+POST   /api/crm/records          # Create record
+PATCH  /api/crm/records/:id      # Update record
+DELETE /api/crm/records/:id      # Delete record
+POST   /api/crm/notes            # Add note
+POST   /api/crm/import           # Run CSV import
+POST   /api/crm/modules          # Create module (admin)
+PATCH  /api/crm/modules/:id      # Update module (admin)
+POST   /api/crm/fields           # Create field (admin)
+DELETE /api/crm/fields/:id       # Delete field (admin)
+```
+
+### Importing Zoho CRM Data
+
+The import wizard supports Zoho CRM CSV exports:
+
+1. Export your Leads/Contacts from Zoho CRM
+2. Go to `/import` in the CRM
+3. Upload the CSV file
+4. Select target module (Contacts, Leads, etc.)
+5. Map columns (auto-detection supported)
+6. Preview and validate
+7. Execute import
+
+Default field mappings recognize common Zoho column names like `First Name`, `Last Name`, `Email`, `Lead Status`, etc.
+
+### Integration with Enrollment Data
+
+The CRM can access enrollment data through read-only views:
+
+- `crm_ext.members` - View member records
+- `crm_ext.enrollments` - View enrollment records
+- `crm_ext.advisors` - View advisor records
+
+These views respect existing RLS policies.
+
 ## Roadmap
 
 - [x] Phase 1: Core CRM (Members, Advisors, Tickets)
-- [ ] Phase 2: Needs management with AI pricing
-- [ ] Phase 3: Enrollment flows and landing pages
-- [ ] Phase 4: Commission trees and billing
-- [ ] Phase 5: Analytics and reporting
+- [x] Phase 2: Enterprise CRM with Zoho-style customization
+- [ ] Phase 3: Needs management with AI pricing
+- [ ] Phase 4: Enrollment flows and landing pages
+- [ ] Phase 5: Commission trees and billing
+- [ ] Phase 6: Analytics and reporting
 
 ## License
 
