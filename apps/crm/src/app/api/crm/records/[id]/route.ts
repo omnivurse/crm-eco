@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
+import { getModuleBlueprint } from '@/lib/blueprints';
+import { getRecordPendingApproval } from '@/lib/approvals';
 import type { CrmRecord } from '@/lib/crm/types';
 
 async function createClient() {
@@ -56,14 +58,50 @@ export async function PATCH(
       .eq('id', id)
       .single();
 
+    if (!previousRecord) {
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+    }
+
     const body = await request.json();
     const updates: Record<string, unknown> = {};
 
     if (body.data !== undefined) updates.data = body.data;
     if (body.owner_id !== undefined) updates.owner_id = body.owner_id;
     if (body.status !== undefined) updates.status = body.status;
-    if (body.stage !== undefined) updates.stage = body.stage;
     if (body.title !== undefined) updates.title = body.title;
+
+    // BLUEPRINT PROTECTION: Block direct stage changes when blueprint exists
+    if (body.stage !== undefined && body.stage !== previousRecord.stage) {
+      // Check if module has a blueprint
+      const blueprint = await getModuleBlueprint(previousRecord.module_id);
+      
+      if (blueprint) {
+        return NextResponse.json({
+          error: 'Stage changes must go through the transition API when a blueprint is active',
+          code: 'BLUEPRINT_STAGE_PROTECTION',
+          hint: 'Use POST /api/crm/transition instead',
+        }, { status: 400 });
+      }
+      
+      // No blueprint - allow direct stage change
+      updates.stage = body.stage;
+    } else if (body.stage !== undefined) {
+      // Same stage, just include it
+      updates.stage = body.stage;
+    }
+
+    // APPROVAL PROTECTION: Block updates when pending approval exists
+    const pendingApproval = await getRecordPendingApproval(id);
+    if (pendingApproval && pendingApproval.context.action_type === 'stage_transition') {
+      // Block stage-related changes while approval is pending
+      if (body.stage !== undefined && body.stage !== previousRecord.stage) {
+        return NextResponse.json({
+          error: 'Cannot modify stage while an approval is pending',
+          code: 'PENDING_APPROVAL',
+          approvalId: pendingApproval.id,
+        }, { status: 400 });
+      }
+    }
 
     const { data: record, error } = await supabase
       .from('crm_records')

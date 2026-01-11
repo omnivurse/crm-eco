@@ -20,8 +20,11 @@ import type {
   StartCadenceConfig,
   StopCadenceConfig,
   CreateEnrollmentDraftConfig,
+  SendEmailConfig,
+  SendSmsConfig,
   CrmAssignmentRule,
 } from './types';
+import { dispatchMessage } from '../comms';
 import { executeAssignment } from './assignment';
 
 // ============================================================================
@@ -704,6 +707,144 @@ async function executeCreateEnrollmentDraft(
 }
 
 // ============================================================================
+// Communication Actions
+// ============================================================================
+
+async function executeSendEmail(
+  config: SendEmailConfig,
+  record: CrmRecord,
+  context: AutomationContext
+): Promise<ActionResult> {
+  if (context.dryRun) {
+    return {
+      actionId: 'send_email',
+      type: 'send_email',
+      status: 'success',
+      output: {
+        wouldSend: {
+          channel: 'email',
+          to: config.to || record.email || record.data?.email,
+          templateId: config.templateId,
+          subject: config.subject,
+        },
+      },
+    };
+  }
+
+  try {
+    const result = await dispatchMessage(
+      {
+        recordId: record.id,
+        channel: 'email',
+        templateId: config.templateId,
+        subject: config.subject,
+        body: config.body,
+        to: config.to,
+      },
+      context.profileId
+    );
+
+    if (result.blocked) {
+      return {
+        actionId: 'send_email',
+        type: 'send_email',
+        status: 'skipped',
+        output: { reason: result.blockReason },
+      };
+    }
+
+    if (!result.success) {
+      return {
+        actionId: 'send_email',
+        type: 'send_email',
+        status: 'failed',
+        error: result.error,
+      };
+    }
+
+    return {
+      actionId: 'send_email',
+      type: 'send_email',
+      status: 'success',
+      output: { messageId: result.messageId },
+    };
+  } catch (error) {
+    return {
+      actionId: 'send_email',
+      type: 'send_email',
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+async function executeSendSms(
+  config: SendSmsConfig,
+  record: CrmRecord,
+  context: AutomationContext
+): Promise<ActionResult> {
+  if (context.dryRun) {
+    return {
+      actionId: 'send_sms',
+      type: 'send_sms',
+      status: 'success',
+      output: {
+        wouldSend: {
+          channel: 'sms',
+          to: config.to || record.phone || record.data?.phone,
+          templateId: config.templateId,
+        },
+      },
+    };
+  }
+
+  try {
+    const result = await dispatchMessage(
+      {
+        recordId: record.id,
+        channel: 'sms',
+        templateId: config.templateId,
+        body: config.body,
+        to: config.to,
+      },
+      context.profileId
+    );
+
+    if (result.blocked) {
+      return {
+        actionId: 'send_sms',
+        type: 'send_sms',
+        status: 'skipped',
+        output: { reason: result.blockReason },
+      };
+    }
+
+    if (!result.success) {
+      return {
+        actionId: 'send_sms',
+        type: 'send_sms',
+        status: 'failed',
+        error: result.error,
+      };
+    }
+
+    return {
+      actionId: 'send_sms',
+      type: 'send_sms',
+      status: 'success',
+      output: { messageId: result.messageId },
+    };
+  } catch (error) {
+    return {
+      actionId: 'send_sms',
+      type: 'send_sms',
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// ============================================================================
 // Main Action Executor
 // ============================================================================
 
@@ -777,6 +918,20 @@ export async function executeAction(
           record,
           context,
           workflowCreatedBy || null
+        );
+
+      case 'send_email':
+        return await executeSendEmail(
+          action.config as SendEmailConfig,
+          record,
+          context
+        );
+
+      case 'send_sms':
+        return await executeSendSms(
+          action.config as SendSmsConfig,
+          record,
+          context
         );
 
       default:

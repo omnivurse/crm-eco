@@ -141,7 +141,7 @@ export function ActionBuilder({
               <Label>Task Title</Label>
               <Input
                 value={(config.title as string) || ''}
-                onChange={(e) => updateAction(action.id, { config: { ...config, title: e.target.value } })}
+                onChange={(e) => updateAction(action.id, { config: { ...config, title: e.target.value } as any })}
                 placeholder="Follow up with lead"
                 disabled={readOnly}
               />
@@ -152,7 +152,7 @@ export function ActionBuilder({
                 <Input
                   type="number"
                   value={(config.dueInDays as number) || 1}
-                  onChange={(e) => updateAction(action.id, { config: { ...config, dueInDays: parseInt(e.target.value) } })}
+                  onChange={(e) => updateAction(action.id, { config: { ...config, dueInDays: parseInt(e.target.value) } as any })}
                   min={0}
                   disabled={readOnly}
                 />
@@ -161,7 +161,7 @@ export function ActionBuilder({
                 <Label>Priority</Label>
                 <Select
                   value={(config.priority as string) || 'normal'}
-                  onValueChange={(value) => updateAction(action.id, { config: { ...config, priority: value } })}
+                  onValueChange={(value) => updateAction(action.id, { config: { ...config, priority: value } as any })}
                   disabled={readOnly}
                 >
                   <SelectTrigger>
@@ -180,7 +180,7 @@ export function ActionBuilder({
               <Label>Assign To</Label>
               <Select
                 value={(config.assignedTo as string) || 'owner'}
-                onValueChange={(value) => updateAction(action.id, { config: { ...config, assignedTo: value } })}
+                onValueChange={(value) => updateAction(action.id, { config: { ...config, assignedTo: value } as any })}
                 disabled={readOnly}
               >
                 <SelectTrigger>
@@ -201,7 +201,7 @@ export function ActionBuilder({
             <Label>Note Content</Label>
             <Textarea
               value={(config.body as string) || ''}
-              onChange={(e) => updateAction(action.id, { config: { ...config, body: e.target.value } })}
+              onChange={(e) => updateAction(action.id, { config: { ...config, body: e.target.value } as any })}
               placeholder="Note to add..."
               rows={3}
               disabled={readOnly}
@@ -216,7 +216,7 @@ export function ActionBuilder({
               <Label>Notification Title</Label>
               <Input
                 value={(config.title as string) || ''}
-                onChange={(e) => updateAction(action.id, { config: { ...config, title: e.target.value } })}
+                onChange={(e) => updateAction(action.id, { config: { ...config, title: e.target.value } as any })}
                 placeholder="New lead assigned"
                 disabled={readOnly}
               />
@@ -225,7 +225,7 @@ export function ActionBuilder({
               <Label>Body (optional)</Label>
               <Input
                 value={(config.body as string) || ''}
-                onChange={(e) => updateAction(action.id, { config: { ...config, body: e.target.value } })}
+                onChange={(e) => updateAction(action.id, { config: { ...config, body: e.target.value } as any })}
                 placeholder="Additional message..."
                 disabled={readOnly}
               />
@@ -234,7 +234,7 @@ export function ActionBuilder({
               <Label>Recipients</Label>
               <Select
                 value={((config.recipients as string[]) || ['owner'])[0]}
-                onValueChange={(value) => updateAction(action.id, { config: { ...config, recipients: [value] } })}
+                onValueChange={(value) => updateAction(action.id, { config: { ...config, recipients: [value] } as any })}
                 disabled={readOnly}
               >
                 <SelectTrigger>
@@ -268,7 +268,7 @@ export function ActionBuilder({
             <Label>Assignment Strategy</Label>
             <Select
               value={(config.strategy as string) || 'round_robin'}
-              onValueChange={(value) => updateAction(action.id, { config: { ...config, strategy: value } })}
+              onValueChange={(value) => updateAction(action.id, { config: { ...config, strategy: value } as any })}
               disabled={readOnly}
             >
               <SelectTrigger>
