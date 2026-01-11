@@ -8,8 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
-import type { CrmProfile, CrmAuditLog, CrmTask, CrmImportJob } from '@/lib/crm/types';
-import type { ModuleStats } from '@/lib/crm/queries';
+import type { CrmProfile, CrmAuditLog, CrmTask, CrmImportJob, ModuleStats } from '@/lib/crm/types';
 import {
   Users,
   UserPlus,
