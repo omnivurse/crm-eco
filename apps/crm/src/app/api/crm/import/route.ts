@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         let email: string | null = null;
         let phone: string | null = null;
 
-        for (const [sourceCol, targetField] of fieldMappings) {
+        fieldMappings.forEach((targetField, sourceCol) => {
           const value = row[sourceCol];
           if (value !== undefined && value !== '') {
             recordData[targetField] = value;
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
             if (targetField === 'email') email = value;
             if (targetField === 'phone' || targetField === 'mobile') phone = value;
           }
-        }
+        });
 
         // Insert the record
         const { data: record, error: insertError } = await supabase
