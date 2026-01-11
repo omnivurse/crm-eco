@@ -17,6 +17,7 @@ import type {
   CrmProfile,
   ViewFilter,
   ViewSort,
+  ModuleStats,
 } from './types';
 
 // ============================================================================
@@ -481,13 +482,6 @@ export async function getImportJob(jobId: string): Promise<CrmImportJob | null> 
 // ============================================================================
 // Dashboard Stats Queries
 // ============================================================================
-
-export interface ModuleStats {
-  moduleKey: string;
-  moduleName: string;
-  totalRecords: number;
-  createdThisWeek: number;
-}
 
 export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
   const supabase = await createCrmClient();
