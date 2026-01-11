@@ -12,7 +12,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@crm-eco/ui/components/dialog';
+} from '@crm-eco/ui/components/alert-dialog';
 import { UserCheck, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface ConvertLeadButtonProps {
