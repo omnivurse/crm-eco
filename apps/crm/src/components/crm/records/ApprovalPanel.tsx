@@ -1,14 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Card, CardContent, CardHeader, CardTitle } from '@ui/components/ui/card';
-import { Button } from '@ui/components/ui/button';
-import { Badge } from '@ui/components/ui/badge';
-import { Textarea } from '@ui/components/ui/textarea';
-import { Separator } from '@ui/components/ui/separator';
-import { Avatar, AvatarFallback } from '@ui/components/ui/avatar';
+import { createBrowserClient } from '@supabase/ssr';
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Badge,
+  Textarea,
+  Separator,
+  Avatar,
+  AvatarFallback,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -17,7 +21,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@ui/components/ui/alert-dialog';
+} from '@crm-eco/ui';
 import {
   ClipboardCheck,
   Check,
@@ -53,7 +57,10 @@ interface ActionWithActor extends CrmApprovalAction {
 }
 
 export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [loading, setLoading] = useState(true);
   const [approval, setApproval] = useState<ApprovalWithDetails | null>(null);
   const [history, setHistory] = useState<ActionWithActor[]>([]);

@@ -1,21 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui/components/ui/card';
-import { Button } from '@ui/components/ui/button';
-import { Badge } from '@ui/components/ui/badge';
-import { Textarea } from '@ui/components/ui/textarea';
-import { Input } from '@ui/components/ui/input';
-import { Label } from '@ui/components/ui/label';
+import { createBrowserClient } from '@supabase/ssr';
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Button,
+  Badge,
+  Textarea,
+  Input,
+  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ui/components/ui/select';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -23,9 +25,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@ui/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/components/ui/tabs';
-import { ScrollArea } from '@ui/components/ui/scroll-area';
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@crm-eco/ui';
 import { Mail, MessageSquare, Send, AlertCircle, CheckCircle, Clock, XCircle, Ban } from 'lucide-react';
 import type { CrmMessage, CrmMessageTemplate, CrmContactPreferences } from '@/lib/comms/types';
 
@@ -87,7 +91,10 @@ function MessageItem({ message }: { message: CrmMessage }) {
 }
 
 export function CommunicationsTab({ recordId, orgId, email, phone }: CommunicationsTabProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [messages, setMessages] = useState<CrmMessage[]>([]);
   const [templates, setTemplates] = useState<CrmMessageTemplate[]>([]);
   const [preferences, setPreferences] = useState<CrmContactPreferences | null>(null);
@@ -360,7 +367,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
               </TabsTrigger>
             </TabsList>
             <TabsContent value="email">
-              <ScrollArea className="h-[400px]">
+              <div className="h-[400px] overflow-y-auto">
                 {emailMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
                     <Mail className="h-8 w-8 mb-2" />
@@ -373,10 +380,10 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                     ))}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </TabsContent>
             <TabsContent value="sms">
-              <ScrollArea className="h-[400px]">
+              <div className="h-[400px] overflow-y-auto">
                 {smsMessages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
                     <MessageSquare className="h-8 w-8 mb-2" />
@@ -389,7 +396,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
                     ))}
                   </div>
                 )}
-              </ScrollArea>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

@@ -23,7 +23,7 @@ const SYSTEM_FIELDS = ['title', 'status', 'stage', 'email', 'phone', 'owner_id',
 export function resolveFieldValue(record: CrmRecord, fieldKey: string): unknown {
   // Check system-level indexed fields first
   if (SYSTEM_FIELDS.includes(fieldKey)) {
-    return (record as Record<string, unknown>)[fieldKey];
+    return (record as unknown as Record<string, unknown>)[fieldKey];
   }
 
   // Check system JSONB (for linked_member_id, etc.)

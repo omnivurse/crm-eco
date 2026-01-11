@@ -1,36 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui/components/ui/card';
-import { Button } from '@ui/components/ui/button';
-import { Badge } from '@ui/components/ui/badge';
-import { Input } from '@ui/components/ui/input';
-import { Textarea } from '@ui/components/ui/textarea';
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Button,
+  Badge,
+  Input,
+  Textarea,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@ui/components/ui/dialog';
-import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@ui/components/ui/table';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ui/components/ui/select';
+} from '@crm-eco/ui';
 import {
   ClipboardCheck,
   Check,
@@ -44,7 +44,10 @@ import {
 import type { PendingApproval } from '@/lib/approvals/types';
 
 export default function ApprovalsPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [pending, setPending] = useState<PendingApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -129,7 +132,7 @@ export default function ApprovalsPage() {
     ? pending
     : pending.filter(p => p.module_name.toLowerCase() === filter.toLowerCase());
 
-  const moduleOptions = [...new Set(pending.map(p => p.module_name))];
+  const moduleOptions = Array.from(new Set(pending.map(p => p.module_name)));
 
   if (loading) {
     return (

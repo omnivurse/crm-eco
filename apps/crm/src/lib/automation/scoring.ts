@@ -221,17 +221,19 @@ export async function getScoreDistribution(
   // Get all records with scores
   const { data: records } = await supabase
     .from('crm_records')
-    .select(`data->>${scoreFieldKey} as score`)
+    .select('data')
     .eq('org_id', orgId)
-    .eq('module_id', moduleId)
-    .not(`data->>${scoreFieldKey}`, 'is', null);
+    .eq('module_id', moduleId);
 
   if (!records || records.length === 0) {
     return { buckets: [], average: 0 };
   }
 
   const scores = records
-    .map(r => parseFloat(r.score as string))
+    .map(r => {
+      const scoreVal = (r.data as Record<string, unknown>)?.[scoreFieldKey];
+      return typeof scoreVal === 'number' ? scoreVal : parseFloat(String(scoreVal ?? ''));
+    })
     .filter(s => !isNaN(s));
 
   if (scores.length === 0) {
