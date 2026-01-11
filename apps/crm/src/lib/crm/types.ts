@@ -314,6 +314,17 @@ export interface CrmImportRow {
 }
 
 // ============================================================================
+// Dashboard Stats Queries
+// ============================================================================
+
+export interface ModuleStats {
+  moduleKey: string;
+  moduleName: string;
+  totalRecords: number;
+  createdThisWeek: number;
+}
+
+// ============================================================================
 // User & Profile Context
 // ============================================================================
 
@@ -351,4 +362,15 @@ export interface CrmUserContext {
     canImport: boolean;
     canManageSettings: boolean;
   };
+}
+
+// ============================================================================
+// Dashboard & Stats
+// ============================================================================
+
+export interface ModuleStats {
+  moduleKey: string;
+  moduleName: string;
+  totalRecords: number;
+  createdThisWeek: number;
 }

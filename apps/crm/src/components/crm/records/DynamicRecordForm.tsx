@@ -18,7 +18,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { CrmField, CrmLayout, LayoutSection } from '@/lib/crm/types';
+import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 interface DynamicRecordFormProps {
@@ -276,8 +276,10 @@ export function DynamicRecordForm({
 
   const sections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
 
+  const handleFormSubmit = onSubmit ? handleSubmit(onSubmit) : undefined;
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleFormSubmit} className="space-y-6">
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
         if (sectionFields.length === 0) return null;
