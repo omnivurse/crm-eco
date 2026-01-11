@@ -111,7 +111,6 @@ WITH (security_invoker = true) AS
     address_line1,
     city,
     state,
-    zip_code,
     status,
     plan_name,
     plan_type,
