@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes - no auth required
-  const publicRoutes = ['/crm-login', '/login'];
+  const publicRoutes = ['/crm-login', '/crm-access-denied', '/login'];
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     // If user is already authenticated, redirect to dashboard
     if (user) {
@@ -70,13 +70,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/crm-login', request.url));
   }
 
-  // Check if user has CRM access
-  if (!profile.crm_role) {
-    // User doesn't have CRM access
-    await supabase.auth.signOut();
-    const redirectUrl = new URL('/crm-login', request.url);
-    redirectUrl.searchParams.set('error', 'no_crm_access');
-    return NextResponse.redirect(redirectUrl);
+  // Check if user has CRM access for /crm/* routes
+  if (pathname.startsWith('/crm') && !profile.crm_role) {
+    // User doesn't have CRM access - redirect to access denied page
+    return NextResponse.redirect(new URL('/crm-access-denied', request.url));
   }
 
   return supabaseResponse;

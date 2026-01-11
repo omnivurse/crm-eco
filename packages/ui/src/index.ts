@@ -13,5 +13,6 @@ export * from './components/textarea';
 export * from './components/tabs';
 export * from './components/checkbox';
 export * from './components/switch';
+export * from './components/progress';
 export * from './lib/utils';
 
