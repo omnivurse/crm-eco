@@ -61,7 +61,7 @@ export default function CrmLoginPage() {
       }
 
       // Redirect to CRM dashboard
-      router.push('/');
+      router.push('/crm');
       router.refresh();
     } catch (err) {
       setError('An unexpected error occurred');
