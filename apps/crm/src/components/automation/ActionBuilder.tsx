@@ -69,7 +69,7 @@ export function ActionBuilder({
       order: actions.length,
     };
     onChange([...actions, newAction]);
-    setExpandedActions(prev => new Set([...prev, newAction.id]));
+    setExpandedActions(prev => new Set([...Array.from(prev), newAction.id]));
   }
 
   function removeAction(id: string) {
