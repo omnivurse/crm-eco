@@ -52,7 +52,9 @@ export type ActionType =
   | 'move_stage'
   | 'start_cadence'
   | 'stop_cadence'
-  | 'create_enrollment_draft';
+  | 'create_enrollment_draft'
+  | 'send_email'
+  | 'send_sms';
 
 export interface UpdateFieldsConfig {
   fields: Record<string, unknown>;
@@ -103,6 +105,19 @@ export interface CreateEnrollmentDraftConfig {
   additionalData?: Record<string, unknown>;
 }
 
+export interface SendEmailConfig {
+  templateId?: string;
+  subject?: string;
+  body?: string;
+  to?: string; // Override recipient, otherwise uses record email
+}
+
+export interface SendSmsConfig {
+  templateId?: string;
+  body?: string;
+  to?: string; // Override recipient, otherwise uses record phone
+}
+
 export interface WorkflowAction {
   id: string;
   type: ActionType;
@@ -115,7 +130,9 @@ export interface WorkflowAction {
     | MoveStageConfig
     | StartCadenceConfig
     | StopCadenceConfig
-    | CreateEnrollmentDraftConfig;
+    | CreateEnrollmentDraftConfig
+    | SendEmailConfig
+    | SendSmsConfig;
   order: number;
 }
 
