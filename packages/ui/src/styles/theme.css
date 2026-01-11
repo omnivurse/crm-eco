@@ -1,0 +1,116 @@
+/* Pay It Forward HealthShare Theme Tokens
+   Works with shadcn/ui (HSL variables) + Tailwind.
+   
+   Brand Colors (HEX reference):
+   - Navy: #003560
+   - Teal (accessible): #047474
+   - Teal (support): #069B9A
+   - Emerald: #027343
+   - Gold: #E9B61F
+   - Ink: #0B1220
+   - Background: #F8FAFC
+*/
+
+/* Google Fonts - Plus Jakarta Sans for headings, Inter for body */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700&display=swap');
+
+:root {
+  /* Surfaces */
+  --background: 210 40% 98%;          /* #F8FAFC */
+  --foreground: 220 49% 8%;           /* #0B1220 */
+  --card: 0 0% 100%;                  /* #FFFFFF */
+  --card-foreground: 220 49% 8%;      /* #0B1220 */
+  --popover: 0 0% 100%;               /* #FFFFFF */
+  --popover-foreground: 220 49% 8%;   /* #0B1220 */
+
+  /* Semantic - Primary (Teal - accessible) */
+  --primary: 180 93% 24%;             /* #047474 */
+  --primary-foreground: 210 40% 98%;  /* #F8FAFC */
+
+  /* Semantic - Secondary (Navy) */
+  --secondary: 207 100% 19%;          /* #003560 */
+  --secondary-foreground: 210 40% 98%; /* #F8FAFC */
+
+  /* Semantic - Accent (Emerald) */
+  --accent: 155 97% 23%;              /* #027343 */
+  --accent-foreground: 210 40% 98%;   /* #F8FAFC */
+
+  /* Semantic - Destructive */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Semantic - Success (Emerald) */
+  --success: 155 97% 23%;             /* #027343 */
+  --success-foreground: 210 40% 98%;
+
+  /* Semantic - Warning (Gold-based) */
+  --warning: 45 82% 52%;              /* #E9B61F */
+  --warning-foreground: 220 49% 8%;   /* Dark text on gold */
+
+  /* Muted */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 35%;    /* #475569 slate-ish */
+
+  /* Form elements */
+  --border: 214 32% 91%;              /* #E2E8F0 slate-200-ish */
+  --input: 214 32% 91%;
+  --ring: 180 93% 24%;                /* Teal focus ring */
+
+  /* Brand tokens (HEX via HSL reference) */
+  --brand-navy-500: 207 100% 19%;     /* #003560 */
+  --brand-teal-500: 180 93% 31%;      /* #069B9A */
+  --brand-teal-700: 180 93% 24%;      /* #047474 */
+  --brand-emerald-500: 155 97% 23%;   /* #027343 */
+  --brand-gold-500: 45 82% 52%;       /* #E9B61F */
+
+  /* Border radius */
+  --radius: 0.75rem;                  /* 12px for buttons/inputs */
+  --radius-card: 1rem;                /* 16px for cards */
+
+  /* Typography */
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+}
+
+.dark {
+  /* Surfaces */
+  --background: 220 49% 8%;           /* #0B1220 */
+  --foreground: 210 40% 98%;          /* #F8FAFC */
+  --card: 220 45% 10%;
+  --card-foreground: 210 40% 98%;
+  --popover: 220 45% 10%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Semantic - Primary (Teal lifts slightly in dark mode) */
+  --primary: 180 93% 28%;
+  --primary-foreground: 220 49% 8%;
+
+  /* Semantic - Secondary (Navy lifts slightly) */
+  --secondary: 207 100% 26%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Semantic - Accent (Emerald lifts) */
+  --accent: 155 97% 28%;
+  --accent-foreground: 220 49% 8%;
+
+  /* Semantic - Destructive */
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Semantic - Success */
+  --success: 155 97% 28%;
+  --success-foreground: 220 49% 8%;
+
+  /* Semantic - Warning */
+  --warning: 48 97% 53%;
+  --warning-foreground: 220 49% 8%;
+
+  /* Muted */
+  --muted: 220 35% 14%;
+  --muted-foreground: 215 20% 70%;
+
+  /* Form elements */
+  --border: 220 25% 18%;
+  --input: 220 25% 18%;
+  --ring: 180 93% 28%;
+}
