@@ -432,9 +432,9 @@ export async function loadFieldMapping(
   }
   
   // Convert stored format back to ColumnMapping[]
-  const mappingObject = data.mapping as Record<string, string>;
-  const sourceColumns = data.source_columns as string[];
-  const targetColumns = (data.target_columns as TargetColumn[]) || TARGET_COLUMNS[entityType];
+  const mappingObject = data.mapping as unknown as Record<string, string>;
+  const sourceColumns = data.source_columns as unknown as string[];
+  const targetColumns = (data.target_columns as unknown as TargetColumn[]) || TARGET_COLUMNS[entityType];
   
   const mappings: ColumnMapping[] = sourceColumns.map(source => ({
     sourceColumn: source,
