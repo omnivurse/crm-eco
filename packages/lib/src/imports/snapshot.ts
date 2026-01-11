@@ -307,7 +307,7 @@ export async function getRollbackStatus(
     .eq('is_rolled_back', true);
   
   return {
-    canRollback: job?.can_rollback && !job?.rollback_status,
+    canRollback: Boolean(job?.can_rollback && !job?.rollback_status),
     rollbackStatus: job?.rollback_status || null,
     snapshotCount: totalSnapshots || 0,
     rolledBackCount: rolledBackSnapshots || 0,
