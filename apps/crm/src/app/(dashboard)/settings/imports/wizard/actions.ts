@@ -15,6 +15,12 @@ import type { Json } from '@crm-eco/lib/types';
 // TYPES
 // ============================================================================
 
+interface ProfileResult {
+  id: string;
+  organization_id: string;
+  role: string;
+}
+
 interface ExecuteImportParams {
   entityType: EntityType;
   sourceName: string;
@@ -47,7 +53,9 @@ export async function validatePreview(
   rows: Array<{ index: number; data: Record<string, string> }>,
   duplicateStrategy: 'skip' | 'update' | 'error'
 ): Promise<BatchValidationResult> {
-  const supabase = await createServerSupabaseClient();
+  // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createServerSupabaseClient() as any;
   
   // Get current user's profile
   const { data: { user } } = await supabase.auth.getUser();
@@ -59,7 +67,7 @@ export async function validatePreview(
     .from('profiles')
     .select('id, organization_id, role')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: ProfileResult | null };
   
   if (!profile) {
     throw new Error('Profile not found');
@@ -72,7 +80,7 @@ export async function validatePreview(
   // Run validation
   const result = await validateBatch(
     {
-      supabase: supabase as Parameters<typeof validateBatch>[0]['supabase'],
+      supabase,
       organizationId: profile.organization_id,
       entityType,
       duplicateStrategy,
@@ -94,13 +102,14 @@ export async function executeImport(params: ExecuteImportParams): Promise<Execut
     sourceName, 
     fileName, 
     rows, 
-    mapping, 
     duplicateStrategy, 
     isIncremental,
     validationResult 
   } = params;
   
-  const supabase = await createServerSupabaseClient();
+  // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createServerSupabaseClient() as any;
   
   // Get current user's profile
   const { data: { user } } = await supabase.auth.getUser();
@@ -112,7 +121,7 @@ export async function executeImport(params: ExecuteImportParams): Promise<Execut
     .from('profiles')
     .select('id, organization_id, role')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: ProfileResult | null };
   
   if (!profile) {
     return { error: 'Profile not found' };
@@ -140,14 +149,14 @@ export async function executeImport(params: ExecuteImportParams): Promise<Execut
       started_at: new Date().toISOString(),
     })
     .select('id')
-    .single();
+    .single() as { data: { id: string } | null; error: { message: string } | null };
   
   if (jobError || !job) {
     return { error: `Failed to create import job: ${jobError?.message}` };
   }
   
   const snapshotContext: SnapshotContext = {
-    supabase: supabase as SnapshotContext['supabase'],
+    supabase,
     organizationId: profile.organization_id,
     importJobId: job.id,
   };
@@ -277,8 +286,9 @@ export async function executeImport(params: ExecuteImportParams): Promise<Execut
 // HELPER FUNCTIONS
 // ============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function recordRowResult(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  supabase: any,
   jobId: string,
   rowIndex: number,
   data: Record<string, string>,
@@ -298,8 +308,9 @@ async function recordRowResult(
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function insertEntity(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  supabase: any,
   organizationId: string,
   entityType: EntityType,
   data: Record<string, string>,
@@ -321,8 +332,9 @@ async function insertEntity(
   return { entityId: inserted.id, data: inserted as Record<string, unknown> };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function updateEntity(
-  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  supabase: any,
   entityType: EntityType,
   entityId: string,
   data: Record<string, string>,

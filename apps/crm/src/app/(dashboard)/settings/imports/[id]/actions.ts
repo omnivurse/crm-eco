@@ -3,8 +3,23 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { rollbackImportJob } from '@crm-eco/lib';
 
+interface ProfileResult {
+  id: string;
+  organization_id: string;
+  role: string;
+}
+
+interface ImportJobResult {
+  id: string;
+  organization_id: string;
+  can_rollback: boolean;
+  rollback_status: string | null;
+}
+
 export async function rollbackImport(importJobId: string): Promise<{ success?: boolean; error?: string }> {
-  const supabase = await createServerSupabaseClient();
+  // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = await createServerSupabaseClient() as any;
   
   // Get current user's profile
   const { data: { user } } = await supabase.auth.getUser();
@@ -16,7 +31,7 @@ export async function rollbackImport(importJobId: string): Promise<{ success?: b
     .from('profiles')
     .select('id, organization_id, role')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: ProfileResult | null };
   
   if (!profile) {
     return { error: 'Profile not found' };
@@ -31,7 +46,7 @@ export async function rollbackImport(importJobId: string): Promise<{ success?: b
     .from('import_jobs')
     .select('id, organization_id, can_rollback, rollback_status')
     .eq('id', importJobId)
-    .single();
+    .single() as { data: ImportJobResult | null };
   
   if (!job) {
     return { error: 'Import job not found' };
@@ -51,10 +66,7 @@ export async function rollbackImport(importJobId: string): Promise<{ success?: b
   
   // Perform rollback
   try {
-    const result = await rollbackImportJob(
-      supabase as Parameters<typeof rollbackImportJob>[0],
-      importJobId
-    );
+    const result = await rollbackImportJob(supabase, importJobId);
     
     if (!result.success) {
       return { 
