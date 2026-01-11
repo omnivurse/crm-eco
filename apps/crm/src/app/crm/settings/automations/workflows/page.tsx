@@ -1,0 +1,197 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Button } from '@crm-eco/ui/components/button';
+import { Switch } from '@crm-eco/ui/components/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@crm-eco/ui/components/table';
+import { Badge } from '@crm-eco/ui/components/badge';
+import {
+  GitBranch,
+  Plus,
+  ArrowLeft,
+  MoreHorizontal,
+  Play,
+  Pencil,
+  Trash2,
+  Loader2,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@crm-eco/ui/components/dropdown-menu';
+import type { CrmWorkflow } from '@/lib/automation/types';
+
+export default function WorkflowsPage() {
+  const router = useRouter();
+  const [workflows, setWorkflows] = useState<CrmWorkflow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modules, setModules] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchWorkflows();
+  }, []);
+
+  async function fetchWorkflows() {
+    try {
+      const res = await fetch('/api/crm/modules');
+      const modulesData = await res.json();
+      const moduleMap: Record<string, string> = {};
+      modulesData.forEach((m: { id: string; name: string }) => {
+        moduleMap[m.id] = m.name;
+      });
+      setModules(moduleMap);
+
+      // Fetch workflows - this would need a new API endpoint
+      // For now, showing empty state
+      setWorkflows([]);
+    } catch (error) {
+      console.error('Failed to fetch workflows:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const triggerLabels: Record<string, string> = {
+    on_create: 'On Create',
+    on_update: 'On Update',
+    scheduled: 'Scheduled',
+    webform: 'Webform',
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/crm/settings/automations">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
+            </Button>
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-teal-500/10 rounded-lg">
+              <GitBranch className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white">Workflows</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Automate actions when records change
+              </p>
+            </div>
+          </div>
+        </div>
+        <Button onClick={() => router.push('/crm/settings/automations/workflows/new')}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Workflow
+        </Button>
+      </div>
+
+      {/* Workflows Table */}
+      <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+          </div>
+        ) : workflows.length === 0 ? (
+          <div className="text-center py-12">
+            <GitBranch className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
+              No workflows yet
+            </h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-4">
+              Create your first workflow to automate CRM actions
+            </p>
+            <Button onClick={() => router.push('/crm/settings/automations/workflows/new')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Workflow
+            </Button>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Module</TableHead>
+                <TableHead>Trigger</TableHead>
+                <TableHead>Actions</TableHead>
+                <TableHead>Enabled</TableHead>
+                <TableHead className="w-12"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {workflows.map((workflow) => (
+                <TableRow key={workflow.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium text-slate-900 dark:text-white">
+                        {workflow.name}
+                      </div>
+                      {workflow.description && (
+                        <div className="text-sm text-slate-500 dark:text-slate-400">
+                          {workflow.description}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {modules[workflow.module_id] || 'Unknown'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {triggerLabels[workflow.trigger_type] || workflow.trigger_type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-slate-600 dark:text-slate-400">
+                      {workflow.actions.length} action{workflow.actions.length !== 1 ? 's' : ''}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Switch checked={workflow.is_enabled} />
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Play className="w-4 h-4 mr-2" />
+                          Test
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -9,6 +9,7 @@ import {
   Users,
   ChevronRight,
   Settings,
+  Zap,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 
@@ -18,9 +19,18 @@ interface SettingCard {
   href: string;
   icon: React.ReactNode;
   adminOnly?: boolean;
+  highlight?: boolean;
 }
 
 const settingsCards: SettingCard[] = [
+  {
+    title: 'Automations',
+    description: 'Workflows, assignment rules, scoring, cadences, and webforms',
+    href: '/crm/settings/automations',
+    icon: <Zap className="w-6 h-6" />,
+    adminOnly: true,
+    highlight: true,
+  },
   {
     title: 'Modules',
     description: 'Enable, disable, and configure CRM modules',
@@ -88,10 +98,10 @@ async function SettingsContent() {
             className="group glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 hover:border-teal-500/50 transition-all"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-teal-500/10 rounded-lg text-teal-600 dark:text-teal-400">
+              <div className={`p-3 rounded-lg ${card.highlight ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-teal-500/10 text-teal-600 dark:text-teal-400'}`}>
                 {card.icon}
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
+              <ChevronRight className={`w-5 h-5 text-slate-400 dark:text-slate-500 transition-colors ${card.highlight ? 'group-hover:text-amber-600 dark:group-hover:text-amber-400' : 'group-hover:text-teal-600 dark:group-hover:text-teal-400'}`} />
             </div>
             <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{card.title}</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm">{card.description}</p>

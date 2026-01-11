@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
+import type { CrmRecord } from '@/lib/crm/types';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -47,6 +49,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Get the previous record state for change detection
+    const { data: previousRecord } = await supabase
+      .from('crm_records')
+      .select('*')
+      .eq('id', id)
+      .single();
+
     const body = await request.json();
     const updates: Record<string, unknown> = {};
 
@@ -66,6 +75,35 @@ export async function PATCH(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    const typedRecord = record as CrmRecord;
+
+    // Execute on_update workflows (fire and forget for faster response)
+    if (previousRecord) {
+      executeMatchingWorkflows({
+        orgId: typedRecord.org_id,
+        moduleId: typedRecord.module_id,
+        record: typedRecord,
+        trigger: 'on_update',
+        previousRecord: previousRecord as CrmRecord,
+        dryRun: false,
+        userId: user.id,
+        profileId: profile.id,
+      }).catch(err => {
+        console.error('Workflow execution error:', err);
+      });
+    }
+
+    // Apply scoring rules
+    applyScoring(typedRecord, {
+      orgId: typedRecord.org_id,
+      moduleId: typedRecord.module_id,
+      record: typedRecord,
+      trigger: 'on_update',
+      dryRun: false,
+    }).catch(err => {
+      console.error('Scoring error:', err);
+    });
 
     return NextResponse.json(record);
   } catch (error) {
