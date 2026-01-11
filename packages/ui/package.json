@@ -6,7 +6,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./components/*": "./src/components/*.tsx"
+    "./components/*": "./src/components/*.tsx",
+    "./styles/theme.css": "./src/styles/theme.css",
+    "./tailwind.preset": "./tailwind.preset.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.0.4",
