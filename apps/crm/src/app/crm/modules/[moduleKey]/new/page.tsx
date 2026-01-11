@@ -44,11 +44,11 @@ async function NewRecordContent({ params }: PageProps) {
     if (!module) throw new Error('Module not found');
 
     const data: Record<string, unknown> = {};
-    for (const [key, value] of formData.entries()) {
+    formData.forEach((value, key) => {
       if (key !== '_action' && value !== '') {
         data[key] = value;
       }
-    }
+    });
 
     const input: CreateRecordInput = {
       org_id: profile.organization_id,
@@ -84,7 +84,7 @@ async function NewRecordContent({ params }: PageProps) {
         <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
           <DynamicRecordForm
             fields={fields}
-            layout={layout}
+            layout={layout || undefined}
             readOnly={false}
           />
         </div>

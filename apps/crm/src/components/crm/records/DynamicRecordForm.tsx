@@ -23,26 +23,31 @@ import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 interface DynamicRecordFormProps {
   fields: CrmField[];
-  layout: CrmLayout;
+  layout?: CrmLayout | null;
   defaultValues?: Record<string, unknown>;
-  onSubmit: (data: Record<string, unknown>) => Promise<void>;
+  record?: CrmRecord;
+  onSubmit?: (data: Record<string, unknown>) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
   mode?: 'create' | 'edit';
+  readOnly?: boolean;
 }
 
 export function DynamicRecordForm({
   fields,
   layout,
   defaultValues = {},
+  record,
   onSubmit,
   onCancel,
   isLoading = false,
   mode = 'create',
+  readOnly = false,
 }: DynamicRecordFormProps) {
+  const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(
-      (layout.config.sections || [])
+      (layoutConfig.sections || [])
         .filter((s: LayoutSection) => s.collapsed)
         .map((s: LayoutSection) => s.key)
     )
@@ -269,7 +274,7 @@ export function DynamicRecordForm({
     }
   };
 
-  const sections = layout.config.sections || [{ key: 'main', label: 'General', columns: 2 }];
+  const sections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
