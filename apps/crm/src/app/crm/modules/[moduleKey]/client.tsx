@@ -56,31 +56,31 @@ export function ModuleListClient({
   const canDelete = ['crm_admin', 'crm_manager'].includes(profile.crm_role || '');
 
   const handleSearch = () => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     if (searchQuery) {
       params.set('search', searchQuery);
     } else {
       params.delete('search');
     }
     params.set('page', '1');
-    router.push(`/modules/${module.key}?${params.toString()}`);
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
   };
 
   const handleViewChange = (viewId: string) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     if (viewId === 'default') {
       params.delete('view');
     } else {
       params.set('view', viewId);
     }
     params.set('page', '1');
-    router.push(`/modules/${module.key}?${params.toString()}`);
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
   };
 
   const handlePageChange = (page: number) => {
-    const params = new URLSearchParams(searchParams);
+    const params = new URLSearchParams(searchParams.toString());
     params.set('page', page.toString());
-    router.push(`/modules/${module.key}?${params.toString()}`);
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
   };
 
   const handleSort = (field: string, direction: 'asc' | 'desc') => {
