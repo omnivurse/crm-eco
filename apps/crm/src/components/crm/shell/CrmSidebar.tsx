@@ -79,17 +79,17 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       {/* Logo / Org Name */}
       <div className="flex items-center h-16 px-4">
         <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
-          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden gradient-primary p-[1px] glow-sm group-hover:glow-md transition-all duration-300">
-            <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-teal-400" />
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden gradient-primary p-[1px] group-hover:shadow-lg transition-all duration-300">
+            <div className="w-full h-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
           </div>
           {!collapsed && (
             <div className="min-w-0 animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
-              <h1 className="text-sm font-bold text-white truncate tracking-tight">
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">
                 {organizationName || 'Pay It Forward'}
               </h1>
-              <p className="text-[10px] font-medium text-teal-400 uppercase tracking-wider">
+              <p className="text-[10px] font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wider">
                 Healthshare CRM
               </p>
             </div>
@@ -105,16 +105,16 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             <Button
               variant="ghost"
               className={cn(
-                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                'hover:bg-white/5 rounded-xl h-11',
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-11',
                 isActive('/crm') && pathname === '/crm' && 
-                  'bg-gradient-to-r from-teal-500/20 to-emerald-500/10 text-white border border-teal-500/30 glow-sm',
+                  'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-emerald-500/10 text-teal-700 dark:text-white border border-teal-200 dark:border-teal-500/30',
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
             >
               <LayoutDashboard className={cn(
                 'w-5 h-5 flex-shrink-0 transition-colors',
-                isActive('/crm') && pathname === '/crm' && 'text-teal-400'
+                isActive('/crm') && pathname === '/crm' && 'text-teal-600 dark:text-teal-400'
               )} />
               {!collapsed && <span className="font-medium">Dashboard</span>}
             </Button>
@@ -138,10 +138,10 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
                 <Button
                   variant="ghost"
                   className={cn(
-                    'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                    'hover:bg-white/5 rounded-xl h-10',
+                    'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                    'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
                     isActive(path) && 
-                      'bg-gradient-to-r from-teal-500/20 to-transparent text-white border-l-2 border-teal-400',
+                      'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
                     collapsed ? 'justify-center px-2' : 'justify-start px-3'
                   )}
                   title={collapsed ? module.name : undefined}
@@ -149,7 +149,7 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
                 >
                   <Icon className={cn(
                     'w-5 h-5 flex-shrink-0 transition-colors',
-                    isActive(path) && 'text-teal-400'
+                    isActive(path) && 'text-teal-600 dark:text-teal-400'
                   )} />
                   {!collapsed && (
                     <span className="font-medium truncate">
@@ -176,17 +176,17 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             <Button
               variant="ghost"
               className={cn(
-                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                'hover:bg-white/5 rounded-xl h-10',
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
                 isActive('/crm/import') && 
-                  'bg-gradient-to-r from-emerald-500/20 to-transparent text-white border-l-2 border-emerald-400',
+                  'bg-emerald-50 dark:bg-gradient-to-r dark:from-emerald-500/20 dark:to-transparent text-emerald-700 dark:text-white border-l-2 border-emerald-500 dark:border-emerald-400',
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
               title={collapsed ? 'Import' : undefined}
             >
               <Upload className={cn(
                 'w-5 h-5 flex-shrink-0 transition-colors',
-                isActive('/crm/import') && 'text-emerald-400'
+                isActive('/crm/import') && 'text-emerald-600 dark:text-emerald-400'
               )} />
               {!collapsed && <span className="font-medium">Import Data</span>}
             </Button>
@@ -196,17 +196,17 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             <Button
               variant="ghost"
               className={cn(
-                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                'hover:bg-white/5 rounded-xl h-10',
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
                 isActive('/crm/pipeline') && 
-                  'bg-gradient-to-r from-teal-500/20 to-transparent text-white border-l-2 border-teal-400',
+                  'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
               title={collapsed ? 'Pipeline' : undefined}
             >
               <TrendingUp className={cn(
                 'w-5 h-5 flex-shrink-0 transition-colors',
-                isActive('/crm/pipeline') && 'text-teal-400'
+                isActive('/crm/pipeline') && 'text-teal-600 dark:text-teal-400'
               )} />
               {!collapsed && <span className="font-medium">Sales Pipeline</span>}
             </Button>
@@ -216,17 +216,17 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             <Button
               variant="ghost"
               className={cn(
-                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                'hover:bg-white/5 rounded-xl h-10',
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
                 isActive('/crm/reports') && 
-                  'bg-gradient-to-r from-violet-500/20 to-transparent text-white border-l-2 border-violet-400',
+                  'bg-violet-50 dark:bg-gradient-to-r dark:from-violet-500/20 dark:to-transparent text-violet-700 dark:text-white border-l-2 border-violet-500 dark:border-violet-400',
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
               title={collapsed ? 'Reports' : undefined}
             >
               <BarChart3 className={cn(
                 'w-5 h-5 flex-shrink-0 transition-colors',
-                isActive('/crm/reports') && 'text-violet-400'
+                isActive('/crm/reports') && 'text-violet-600 dark:text-violet-400'
               )} />
               {!collapsed && <span className="font-medium">Reports</span>}
             </Button>
@@ -247,17 +247,17 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             <Button
               variant="ghost"
               className={cn(
-                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                'hover:bg-white/5 rounded-xl h-10',
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
                 isActive('/crm/enrollment') && 
-                  'bg-gradient-to-r from-teal-500/20 to-transparent text-white border-l-2 border-teal-400',
+                  'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
               title={collapsed ? 'Enrollment' : undefined}
             >
               <ClipboardList className={cn(
                 'w-5 h-5 flex-shrink-0 transition-colors',
-                isActive('/crm/enrollment') && 'text-teal-400'
+                isActive('/crm/enrollment') && 'text-teal-600 dark:text-teal-400'
               )} />
               {!collapsed && <span className="font-medium">Enrollment</span>}
             </Button>
@@ -267,17 +267,17 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             <Button
               variant="ghost"
               className={cn(
-                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-                'hover:bg-white/5 rounded-xl h-10',
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
                 isActive('/crm/needs') && 
-                  'bg-gradient-to-r from-rose-500/20 to-transparent text-white border-l-2 border-rose-400',
+                  'bg-rose-50 dark:bg-gradient-to-r dark:from-rose-500/20 dark:to-transparent text-rose-700 dark:text-white border-l-2 border-rose-500 dark:border-rose-400',
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
               title={collapsed ? 'Needs' : undefined}
             >
               <Heart className={cn(
                 'w-5 h-5 flex-shrink-0 transition-colors',
-                isActive('/crm/needs') && 'text-rose-400'
+                isActive('/crm/needs') && 'text-rose-600 dark:text-rose-400'
               )} />
               {!collapsed && <span className="font-medium">Needs</span>}
             </Button>
@@ -286,15 +286,15 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-white/5 p-3 space-y-2">
+      <div className="border-t border-slate-200 dark:border-white/5 p-3 space-y-2">
         {/* Settings */}
         <Link href="/crm/settings">
           <Button
             variant="ghost"
             className={cn(
-              'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
-              'hover:bg-white/5 rounded-xl h-10',
-              isActive('/crm/settings') && 'bg-white/5 text-white',
+              'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+              'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
+              isActive('/crm/settings') && 'bg-slate-100 dark:bg-white/5 text-slate-900 dark:text-white',
               collapsed ? 'justify-center px-2' : 'justify-start px-3'
             )}
             title={collapsed ? 'Settings' : undefined}
@@ -310,8 +310,8 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
           size="sm"
           onClick={() => setCollapsed(!collapsed)}
           className={cn(
-            'w-full h-9 text-slate-500 hover:text-white transition-all duration-200',
-            'hover:bg-white/5 rounded-lg',
+            'w-full h-9 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+            'hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg',
             collapsed ? 'justify-center' : 'justify-center'
           )}
         >
