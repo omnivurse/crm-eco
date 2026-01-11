@@ -19,7 +19,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@crm-eco/ui/components/dialog';
+} from '@crm-eco/ui/components/alert-dialog';
 import { UserPlus, Tag, Trash2, Download, ChevronDown, X } from 'lucide-react';
 
 interface BulkActionsProps {
