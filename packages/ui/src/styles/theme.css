@@ -134,6 +134,7 @@
 
 /* ============================================================
    GLASSMORPHISM UTILITY CLASSES
+   Theme-aware glass effects for both light and dark modes
    ============================================================ */
 
 .glass {
@@ -144,45 +145,81 @@
   box-shadow: var(--glass-shadow);
 }
 
+/* Light mode glass variants */
 .glass-strong {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dark .glass-strong {
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .glass-subtle {
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-subtle {
+  background: rgba(15, 23, 42, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .glass-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.5) 100%);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .glass-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.5) 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 
     0 4px 16px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
   border-color: rgba(4, 116, 116, 0.3);
   box-shadow: 
+    0 4px 20px rgba(4, 116, 116, 0.1),
+    0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .glass-card:hover {
+  box-shadow: 
     0 8px 32px rgba(4, 116, 116, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transform: translateY(-2px);
 }
 
 /* ============================================================
    GRADIENT UTILITIES
    ============================================================ */
 
+/* Light mode gradient mesh */
 .gradient-mesh {
+  background: 
+    radial-gradient(at 20% 20%, rgba(4, 116, 116, 0.08) 0%, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(2, 115, 67, 0.06) 0%, transparent 50%),
+    radial-gradient(at 40% 60%, rgba(0, 53, 96, 0.04) 0%, transparent 50%),
+    linear-gradient(135deg, hsl(210, 40%, 98%) 0%, hsl(210, 40%, 96%) 100%);
+}
+
+/* Dark mode gradient mesh */
+.dark .gradient-mesh {
   background: 
     radial-gradient(at 20% 20%, rgba(4, 116, 116, 0.15) 0%, transparent 50%),
     radial-gradient(at 80% 80%, rgba(2, 115, 67, 0.1) 0%, transparent 50%),

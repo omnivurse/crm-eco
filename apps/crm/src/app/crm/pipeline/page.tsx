@@ -34,13 +34,13 @@ function DealCard({ deal }: { deal: CrmRecord }) {
   return (
     <Link 
       href={`/crm/r/${deal.id}`}
-      className="block p-4 glass-card rounded-xl border border-white/10 hover:border-teal-500/30 transition-all hover:scale-[1.02] cursor-pointer group"
+      className="block p-4 glass-card rounded-xl border border-slate-200 dark:border-white/10 hover:border-teal-500/30 transition-all hover:scale-[1.02] cursor-pointer group"
     >
       <div className="flex items-start justify-between mb-3">
-        <h4 className="text-white font-medium text-sm group-hover:text-teal-400 transition-colors line-clamp-2">
+        <h4 className="text-slate-900 dark:text-white font-medium text-sm group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors line-clamp-2">
           {deal.title || String(deal.data?.deal_name || 'Untitled Deal')}
         </h4>
-        <button className="p-1 text-slate-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all">
+        <button className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white opacity-0 group-hover:opacity-100 transition-all">
           <MoreHorizontal className="w-4 h-4" />
         </button>
       </div>
@@ -48,8 +48,8 @@ function DealCard({ deal }: { deal: CrmRecord }) {
       <div className="space-y-2">
         {amount > 0 && (
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-            <span className="text-lg font-bold text-white">
+            <DollarSign className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-lg font-bold text-slate-900 dark:text-white">
               ${amount.toLocaleString()}
             </span>
           </div>
@@ -57,7 +57,7 @@ function DealCard({ deal }: { deal: CrmRecord }) {
         
         <div className="flex items-center justify-between text-xs">
           {probability > 0 && (
-            <span className="text-slate-400">
+            <span className="text-slate-500 dark:text-slate-400">
               {probability}% likely
             </span>
           )}
@@ -70,9 +70,9 @@ function DealCard({ deal }: { deal: CrmRecord }) {
         </div>
         
         {deal.owner_id && (
-          <div className="flex items-center gap-1.5 pt-2 border-t border-white/5">
-            <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center">
-              <User className="w-3 h-3 text-slate-400" />
+          <div className="flex items-center gap-1.5 pt-2 border-t border-slate-200 dark:border-white/5">
+            <div className="w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+              <User className="w-3 h-3 text-slate-500 dark:text-slate-400" />
             </div>
             <span className="text-xs text-slate-500">Assigned</span>
           </div>
@@ -94,26 +94,26 @@ function PipelineColumn({
   return (
     <div className="flex flex-col min-w-[280px] max-w-[320px]">
       {/* Column Header */}
-      <div className="glass-card rounded-t-xl p-4 border border-white/10 border-b-0">
+      <div className="glass-card rounded-t-xl p-4 border border-slate-200 dark:border-white/10 border-b-0">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${stage.color}`} />
-            <h3 className="text-white font-semibold text-sm">{stage.label}</h3>
+            <h3 className="text-slate-900 dark:text-white font-semibold text-sm">{stage.label}</h3>
           </div>
-          <span className="px-2 py-0.5 text-xs rounded-full bg-slate-800 text-slate-400">
+          <span className="px-2 py-0.5 text-xs rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
             {deals.length}
           </span>
         </div>
-        <div className="text-sm text-emerald-400 font-medium">
+        <div className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">
           ${totalValue.toLocaleString()}
         </div>
       </div>
       
       {/* Cards Container */}
-      <div className="flex-1 glass rounded-b-xl border border-white/10 border-t-0 p-3 space-y-3 min-h-[400px] max-h-[600px] overflow-y-auto scrollbar-thin">
+      <div className="flex-1 glass rounded-b-xl border border-slate-200 dark:border-white/10 border-t-0 p-3 space-y-3 min-h-[400px] max-h-[600px] overflow-y-auto scrollbar-thin">
         {deals.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-center">
-            <p className="text-slate-600 text-sm">No deals in this stage</p>
+            <p className="text-slate-500 dark:text-slate-600 text-sm">No deals in this stage</p>
           </div>
         ) : (
           deals.map((deal) => (
@@ -122,7 +122,7 @@ function PipelineColumn({
         )}
         
         {/* Add Deal Button */}
-        <button className="w-full p-3 rounded-xl border border-dashed border-slate-700 text-slate-500 hover:text-teal-400 hover:border-teal-500/50 transition-all flex items-center justify-center gap-2 text-sm">
+        <button className="w-full p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 hover:border-teal-500/50 transition-all flex items-center justify-center gap-2 text-sm">
           <Plus className="w-4 h-4" />
           Add Deal
         </button>
@@ -177,12 +177,12 @@ async function PipelineContent() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-emerald-500/20 to-teal-500/20">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <span className="text-emerald-400 text-sm font-medium">Sales Pipeline</span>
+            <span className="text-emerald-600 dark:text-emerald-400 text-sm font-medium">Sales Pipeline</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Deal Pipeline</h1>
-          <p className="text-slate-400 mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Deal Pipeline</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-0.5">
             Track and manage your sales opportunities
           </p>
         </div>
@@ -190,20 +190,20 @@ async function PipelineContent() {
         <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
-            className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
           <Button 
             variant="outline" 
-            className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
           >
             <Settings2 className="w-4 h-4 mr-2" />
             Customize
           </Button>
           <Button 
-            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md"
+            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm hover:shadow-md"
             asChild
           >
             <Link href="/crm/modules/deals/new">
@@ -216,31 +216,31 @@ async function PipelineContent() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="glass-card rounded-xl p-4 border border-white/10">
-          <p className="text-slate-400 text-sm mb-1">Total Pipeline</p>
-          <p className="text-2xl font-bold text-white">${totalPipelineValue.toLocaleString()}</p>
-          <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Total Pipeline</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">${totalPipelineValue.toLocaleString()}</p>
+          <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-1 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
             {deals.filter(d => !['Closed Won', 'Closed Lost'].includes(String(d.data?.stage || ''))).length} active deals
           </p>
         </div>
-        <div className="glass-card rounded-xl p-4 border border-white/10">
-          <p className="text-slate-400 text-sm mb-1">Won This Month</p>
-          <p className="text-2xl font-bold text-emerald-400">${wonValue.toLocaleString()}</p>
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Won This Month</p>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">${wonValue.toLocaleString()}</p>
           <p className="text-slate-500 text-xs mt-1">
             {dealsByStage['Closed Won']?.length || 0} deals closed
           </p>
         </div>
-        <div className="glass-card rounded-xl p-4 border border-white/10">
-          <p className="text-slate-400 text-sm mb-1">In Negotiation</p>
-          <p className="text-2xl font-bold text-amber-400">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">In Negotiation</p>
+          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
             {dealsByStage['Negotiation']?.length || 0}
           </p>
           <p className="text-slate-500 text-xs mt-1">Ready to close</p>
         </div>
-        <div className="glass-card rounded-xl p-4 border border-white/10">
-          <p className="text-slate-400 text-sm mb-1">Win Rate</p>
-          <p className="text-2xl font-bold text-white">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Win Rate</p>
+          <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {totalDeals > 0 
               ? Math.round((dealsByStage['Closed Won']?.length || 0) / totalDeals * 100)
               : 0}%

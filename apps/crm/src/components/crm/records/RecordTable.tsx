@@ -52,17 +52,19 @@ interface RecordTableProps {
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
-  'Active': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'In-Active': { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' },
-  'New': { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30' },
-  'Contacted': { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30' },
-  'Hot Prospect - ready to move': { bg: 'bg-orange-500/10', text: 'text-orange-400', border: 'border-orange-500/30' },
-  'Qualified': { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30' },
-  'Working': { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
-  'Converted': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'Lost': { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30' },
-  'Closed Won': { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  'Closed Lost': { bg: 'bg-red-500/10', text: 'text-red-400', border: 'border-red-500/30' },
+  'Active': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
+  'In-Active': { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' },
+  'Inactive': { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' },
+  'Prospect': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
+  'New': { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/30' },
+  'Contacted': { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/30' },
+  'Hot Prospect - ready to move': { bg: 'bg-orange-500/10', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-500/30' },
+  'Qualified': { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400', border: 'border-violet-500/30' },
+  'Working': { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
+  'Converted': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
+  'Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
+  'Closed Won': { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
+  'Closed Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
 };
 
 export function RecordTable({
@@ -156,7 +158,7 @@ export function RecordTable({
       return (
         <Link
           href={`/crm/r/${record.id}`}
-          className="font-medium text-white hover:text-teal-400 transition-colors"
+          className="font-medium text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           {displayName}
@@ -166,13 +168,13 @@ export function RecordTable({
     
     if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone') {
       const value = record.data?.[col] as string | undefined;
-      if (!value) return <span className="text-slate-600">—</span>;
+      if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
       
       if (col === 'email') {
         return (
           <a 
             href={`mailto:${value}`}
-            className="text-slate-300 hover:text-teal-400 transition-colors"
+            className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             onClick={(e) => e.stopPropagation()}
           >
             {value}
@@ -180,14 +182,14 @@ export function RecordTable({
         );
       }
       
-      return <span className="text-slate-300">{value}</span>;
+      return <span className="text-slate-700 dark:text-slate-300">{value}</span>;
     }
     
     if (col === 'status' || col === 'lead_status' || col === 'contact_status') {
       const status = record.status || String(record.data?.[col] || record.data?.status || '');
-      if (!status) return <span className="text-slate-600">—</span>;
+      if (!status) return <span className="text-slate-400 dark:text-slate-600">—</span>;
       
-      const style = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30' };
+      const style = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
       
       return (
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
@@ -198,14 +200,14 @@ export function RecordTable({
     
     if (col === 'owner_id') {
       return record.owner_id ? (
-        <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
-          <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
+        <span className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+          <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
             <User className="w-3 h-3" />
           </div>
           Assigned
         </span>
       ) : (
-        <span className="text-slate-600">Unassigned</span>
+        <span className="text-slate-400 dark:text-slate-600">Unassigned</span>
       );
     }
     
@@ -221,8 +223,8 @@ export function RecordTable({
     const field = fieldMap[col];
     if (!field) {
       const value = record.data?.[col];
-      if (!value) return <span className="text-slate-600">—</span>;
-      return <span className="text-slate-300">{String(value)}</span>;
+      if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
+      return <span className="text-slate-700 dark:text-slate-300">{String(value)}</span>;
     }
 
     const value = record.data?.[col];
@@ -231,15 +233,15 @@ export function RecordTable({
 
   if (isLoading) {
     return (
-      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
         <div className="animate-pulse">
-          <div className="h-12 bg-slate-800/50 border-b border-white/5" />
+          <div className="h-12 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-white/5" />
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 border-b border-white/5 flex items-center px-4 gap-4">
-              <div className="w-5 h-5 bg-slate-700 rounded" />
-              <div className="flex-1 h-4 bg-slate-700 rounded" />
-              <div className="w-24 h-4 bg-slate-700 rounded" />
-              <div className="w-20 h-4 bg-slate-700 rounded" />
+            <div key={i} className="h-14 border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-4">
+              <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div className="flex-1 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div className="w-20 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
             </div>
           ))}
         </div>
@@ -248,11 +250,11 @@ export function RecordTable({
   }
 
   return (
-    <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+    <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-teal-500/10 border-b border-teal-500/30 px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-medium text-teal-400">
+        <div className="bg-teal-50 dark:bg-teal-500/10 border-b border-teal-200 dark:border-teal-500/30 px-4 py-3 flex items-center justify-between">
+          <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
             {selectedIds.size} record{selectedIds.size !== 1 ? 's' : ''} selected
           </span>
           <div className="flex items-center gap-2">
@@ -260,7 +262,7 @@ export function RecordTable({
               <Button 
                 variant="outline" 
                 size="sm"
-                className="h-8 bg-slate-900/50 border-white/10 text-slate-300 hover:text-white"
+                className="h-8 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               >
                 Update
               </Button>
@@ -269,7 +271,7 @@ export function RecordTable({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20"
+                className="h-8 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20"
                 onClick={() => onBulkDelete(Array.from(selectedIds))}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
@@ -279,7 +281,7 @@ export function RecordTable({
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-8 text-slate-400 hover:text-white"
+              className="h-8 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               onClick={() => setSelectedIds(new Set())}
             >
               Clear
@@ -290,23 +292,23 @@ export function RecordTable({
 
       <Table>
         <TableHeader>
-          <TableRow className="border-b border-white/5 hover:bg-transparent">
-            <TableHead className="w-12 bg-slate-900/30">
+          <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent">
+            <TableHead className="w-12 bg-slate-50 dark:bg-slate-900/30">
               <Checkbox
                 checked={allSelected}
                 ref={(el) => {
                   if (el) (el as HTMLButtonElement).dataset.state = someSelected ? 'indeterminate' : allSelected ? 'checked' : 'unchecked';
                 }}
                 onCheckedChange={handleSelectAll}
-                className="border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
               />
             </TableHead>
             {visibleColumns.map((col) => (
               <TableHead
                 key={col}
                 className={cn(
-                  'bg-slate-900/30 text-slate-400 font-medium text-xs uppercase tracking-wider',
-                  onSort && 'cursor-pointer hover:text-white transition-colors select-none'
+                  'bg-slate-50 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none'
                 )}
                 onClick={() => handleSort(col)}
               >
@@ -316,7 +318,7 @@ export function RecordTable({
                 </div>
               </TableHead>
             ))}
-            <TableHead className="w-12 bg-slate-900/30" />
+            <TableHead className="w-12 bg-slate-50 dark:bg-slate-900/30" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -324,17 +326,17 @@ export function RecordTable({
             <TableRow>
               <TableCell colSpan={visibleColumns.length + 2} className="h-64">
                 <div className="flex flex-col items-center justify-center text-center">
-                  <div className="p-4 rounded-full bg-slate-800/50 mb-4">
-                    <Inbox className="w-10 h-10 text-slate-600" />
+                  <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">
+                    <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
                   </div>
-                  <p className="text-lg font-medium text-white mb-1">No records found</p>
+                  <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
                   <p className="text-sm text-slate-500 mb-4">
                     Get started by creating a new record or importing data.
                   </p>
                   <div className="flex items-center gap-3">
                     <Button 
                       variant="outline"
-                      className="glass border-white/10 text-slate-300 hover:text-white"
+                      className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                       asChild
                     >
                       <Link href={`/crm/import?module=${moduleKey}`}>
@@ -360,9 +362,9 @@ export function RecordTable({
               <TableRow
                 key={record.id}
                 className={cn(
-                  'border-b border-white/5 cursor-pointer transition-colors',
-                  'hover:bg-white/5',
-                  selectedIds.has(record.id) && 'bg-teal-500/5'
+                  'border-b border-slate-100 dark:border-white/5 cursor-pointer transition-colors',
+                  'hover:bg-slate-50 dark:hover:bg-white/5',
+                  selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5'
                 )}
                 onClick={() => router.push(`/crm/r/${record.id}`)}
                 style={{ animationDelay: `${idx * 30}ms` }}
@@ -371,7 +373,7 @@ export function RecordTable({
                   <Checkbox
                     checked={selectedIds.has(record.id)}
                     onCheckedChange={() => handleSelectRow(record.id)}
-                    className="border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                    className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
                   />
                 </TableCell>
                 {visibleColumns.map((col) => (
@@ -385,29 +387,29 @@ export function RecordTable({
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8 text-slate-500 hover:text-white hover:bg-white/10"
+                        className="h-8 w-8 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
                       >
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="glass border-white/10">
+                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
                       <DropdownMenuItem 
                         onClick={() => router.push(`/crm/r/${record.id}`)}
-                        className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer"
+                        className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
                       >
                         <Eye className="w-4 h-4 mr-2" />
                         View
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => router.push(`/crm/r/${record.id}?edit=true`)}
-                        className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer"
+                        className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
                       >
                         <Pencil className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-white/10" />
+                      <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                       <DropdownMenuItem
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer"
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
                         onClick={() => onBulkDelete?.([record.id])}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />

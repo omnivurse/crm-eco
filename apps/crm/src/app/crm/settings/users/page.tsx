@@ -8,22 +8,22 @@ import type { CrmProfile, CrmRole } from '@/lib/crm/types';
 const ROLE_LABELS: Record<CrmRole, { label: string; color: string; description: string }> = {
   crm_admin: {
     label: 'Admin',
-    color: 'text-purple-400 bg-purple-500/10',
+    color: 'text-purple-600 dark:text-purple-400 bg-purple-500/10',
     description: 'Full access to all CRM features and settings',
   },
   crm_manager: {
     label: 'Manager',
-    color: 'text-blue-400 bg-blue-500/10',
+    color: 'text-blue-600 dark:text-blue-400 bg-blue-500/10',
     description: 'Can create, edit, delete records and import data',
   },
   crm_agent: {
     label: 'Agent',
-    color: 'text-emerald-400 bg-emerald-500/10',
+    color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
     description: 'Can create and edit records',
   },
   crm_viewer: {
     label: 'Viewer',
-    color: 'text-slate-400 bg-slate-500/10',
+    color: 'text-slate-600 dark:text-slate-400 bg-slate-500/10',
     description: 'Read-only access to CRM records',
   },
 };
@@ -32,25 +32,25 @@ function UserRow({ user }: { user: CrmProfile }) {
   const roleInfo = user.crm_role ? ROLE_LABELS[user.crm_role] : null;
 
   return (
-    <div className="flex items-center gap-4 p-4 hover:bg-slate-800/30 transition-colors">
-      <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+    <div className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
         {user.avatar_url ? (
           <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full" />
         ) : (
-          <User className="w-5 h-5 text-slate-400" />
+          <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
         )}
       </div>
       
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-white font-medium">{user.full_name}</span>
+          <span className="text-slate-900 dark:text-white font-medium">{user.full_name}</span>
           {!user.is_active && (
-            <span className="px-1.5 py-0.5 text-xs bg-red-500/10 text-red-400 rounded">
+            <span className="px-1.5 py-0.5 text-xs bg-red-500/10 text-red-600 dark:text-red-400 rounded">
               Inactive
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1 text-sm text-slate-400">
+        <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
           <Mail className="w-3 h-3" />
           {user.email}
         </div>
@@ -62,14 +62,14 @@ function UserRow({ user }: { user: CrmProfile }) {
             {roleInfo.label}
           </span>
         ) : (
-          <span className="px-2 py-1 text-xs bg-slate-700 text-slate-400 rounded">
+          <span className="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded">
             No CRM Access
           </span>
         )}
 
         <select
           defaultValue={user.crm_role || ''}
-          className="bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
         >
           <option value="">No Access</option>
           <option value="crm_viewer">Viewer</option>
@@ -115,13 +115,13 @@ async function UsersContent() {
         <div className="flex items-center gap-4">
           <Link
             href="/crm/settings"
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">CRM Users</h1>
-            <p className="text-slate-400 mt-1">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">CRM Users</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
               Manage who has access to the CRM
             </p>
           </div>
@@ -129,8 +129,8 @@ async function UsersContent() {
       </div>
 
       {/* Role Legend */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
-        <h3 className="text-sm font-medium text-slate-400 mb-3">Role Permissions</h3>
+      <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+        <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Role Permissions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(Object.entries(ROLE_LABELS) as [CrmRole, typeof ROLE_LABELS[CrmRole]][]).map(([role, info]) => (
             <div key={role}>
@@ -144,21 +144,21 @@ async function UsersContent() {
       </div>
 
       {/* CRM Users */}
-      <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50 flex items-center gap-2">
-          <Shield className="w-4 h-4 text-blue-400" />
-          <h2 className="text-sm font-medium text-white">
+      <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+          <Shield className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+          <h2 className="text-sm font-medium text-slate-900 dark:text-white">
             CRM Users ({crmUsers.length})
           </h2>
         </div>
         {crmUsers.length > 0 ? (
-          <div className="divide-y divide-slate-700/50">
+          <div className="divide-y divide-slate-200 dark:divide-slate-700/50">
             {crmUsers.map((user) => (
               <UserRow key={user.id} user={user} />
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-slate-400">
+          <div className="p-8 text-center text-slate-500 dark:text-slate-400">
             No users have CRM access yet
           </div>
         )}
@@ -166,13 +166,13 @@ async function UsersContent() {
 
       {/* Other Org Users */}
       {nonCrmUsers.length > 0 && (
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-            <h2 className="text-sm font-medium text-slate-400">
+        <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-sm font-medium text-slate-600 dark:text-slate-400">
               Other Organization Users ({nonCrmUsers.length})
             </h2>
           </div>
-          <div className="divide-y divide-slate-700/50">
+          <div className="divide-y divide-slate-200 dark:divide-slate-700/50">
             {nonCrmUsers.map((user) => (
               <UserRow key={user.id} user={user} />
             ))}

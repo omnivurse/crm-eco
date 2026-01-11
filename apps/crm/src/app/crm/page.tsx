@@ -37,10 +37,10 @@ const MODULE_GRADIENTS: Record<string, string> = {
 };
 
 const MODULE_COLORS: Record<string, string> = {
-  contacts: 'text-teal-400',
-  leads: 'text-violet-400',
-  deals: 'text-emerald-400',
-  accounts: 'text-amber-400',
+  contacts: 'text-teal-600 dark:text-teal-400',
+  leads: 'text-violet-600 dark:text-violet-400',
+  deals: 'text-emerald-600 dark:text-emerald-400',
+  accounts: 'text-amber-600 dark:text-amber-400',
 };
 
 const MODULE_BORDER_COLORS: Record<string, string> = {
@@ -53,7 +53,7 @@ const MODULE_BORDER_COLORS: Record<string, string> = {
 function ModuleCard({ stat, index }: { stat: ModuleStats; index: number }) {
   const icon = MODULE_ICONS[stat.moduleKey] || <Users className="w-6 h-6" />;
   const gradient = MODULE_GRADIENTS[stat.moduleKey] || 'from-teal-500/20 to-cyan-500/10';
-  const color = MODULE_COLORS[stat.moduleKey] || 'text-teal-400';
+  const color = MODULE_COLORS[stat.moduleKey] || 'text-teal-600 dark:text-teal-400';
   const borderColor = MODULE_BORDER_COLORS[stat.moduleKey] || 'border-teal-500/30';
   
   return (
@@ -74,27 +74,27 @@ function ModuleCard({ stat, index }: { stat: ModuleStats; index: number }) {
 
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-xl bg-slate-900/50 ${color}`}>
+          <div className={`p-3 rounded-xl bg-white/50 dark:bg-slate-900/50 ${color}`}>
             {icon}
           </div>
-          <ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
+          <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
         </div>
         
-        <h3 className="text-lg font-semibold text-white mb-2">{stat.moduleName}</h3>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{stat.moduleName}</h3>
         
         <div className="flex items-baseline gap-3">
-          <span className="text-4xl font-bold text-white tracking-tight">
+          <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
             {stat.totalRecords.toLocaleString()}
           </span>
           {stat.createdThisWeek > 0 && (
-            <span className="inline-flex items-center gap-1 text-sm text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
               <TrendingUp className="w-3 h-3" />
               +{stat.createdThisWeek}
             </span>
           )}
         </div>
         
-        <p className="text-slate-400 text-sm mt-2">Total records</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Total records</p>
       </div>
     </Link>
   );
@@ -116,16 +116,16 @@ function QuickActionCard({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 p-4 rounded-xl glass-card border border-white/5 hover:border-teal-500/30 transition-all duration-300"
+      className="group flex items-center gap-4 p-4 rounded-xl glass-card border border-slate-200 dark:border-white/5 hover:border-teal-500/30 transition-all duration-300"
     >
       <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient}`}>
         <Icon className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1">
-        <h3 className="text-white font-medium group-hover:text-teal-400 transition-colors">{title}</h3>
+        <h3 className="text-slate-900 dark:text-white font-medium group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">{title}</h3>
         <p className="text-slate-500 text-sm">{description}</p>
       </div>
-      <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-teal-400 transition-colors" />
+      <ArrowUpRight className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
     </Link>
   );
 }
@@ -136,10 +136,10 @@ function TaskItem({ task }: { task: CrmTask }) {
     new Date(task.due_at) < new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const statusConfig = {
-    completed: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    overdue: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-500/10' },
-    soon: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    normal: { icon: Clock, color: 'text-slate-400', bg: 'bg-slate-500/10' },
+    completed: { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+    overdue: { icon: AlertCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10' },
+    soon: { icon: Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10' },
+    normal: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/10' },
   };
 
   const status = task.status === 'completed' ? 'completed' 
@@ -150,12 +150,12 @@ function TaskItem({ task }: { task: CrmTask }) {
   const { icon: StatusIcon, color, bg } = statusConfig[status];
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-900/30 hover:bg-slate-900/50 border border-white/5 transition-all duration-200 group">
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-100 dark:bg-slate-900/30 hover:bg-slate-200 dark:hover:bg-slate-900/50 border border-slate-200 dark:border-white/5 transition-all duration-200 group">
       <div className={`p-2 rounded-lg ${bg}`}>
         <StatusIcon className={`w-4 h-4 ${color}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-medium truncate group-hover:text-teal-400 transition-colors">
+        <p className="text-slate-900 dark:text-white text-sm font-medium truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
           {task.title}
         </p>
         {task.due_at && (
@@ -170,25 +170,25 @@ function TaskItem({ task }: { task: CrmTask }) {
 
 function ActivityItem({ activity }: { activity: CrmAuditLog }) {
   const actionConfig: Record<string, { color: string; bg: string; icon: React.ElementType }> = {
-    create: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: Sparkles },
-    update: { color: 'text-blue-400', bg: 'bg-blue-500/10', icon: Activity },
-    delete: { color: 'text-red-400', bg: 'bg-red-500/10', icon: AlertCircle },
-    import: { color: 'text-violet-400', bg: 'bg-violet-500/10', icon: Upload },
+    create: { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', icon: Sparkles },
+    update: { color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', icon: Activity },
+    delete: { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10', icon: AlertCircle },
+    import: { color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10', icon: Upload },
   };
 
-  const config = actionConfig[activity.action] || { color: 'text-slate-400', bg: 'bg-slate-500/10', icon: Activity };
+  const config = actionConfig[activity.action] || { color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/10', icon: Activity };
   const Icon = config.icon;
 
   return (
-    <div className="flex items-center gap-3 p-3 border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+    <div className="flex items-center gap-3 p-3 border-b border-slate-200 dark:border-white/5 last:border-0 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
       <div className={`p-2 rounded-lg ${config.bg}`}>
         <Icon className={`w-4 h-4 ${config.color}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-slate-300 text-sm">
+        <p className="text-slate-600 dark:text-slate-300 text-sm">
           <span className={`font-medium ${config.color}`}>{activity.action}</span>
           {' '}
-          <span className="text-white">{activity.entity}</span>
+          <span className="text-slate-900 dark:text-white">{activity.entity}</span>
         </p>
         <p className="text-slate-500 text-xs mt-0.5">
           {new Date(activity.created_at).toLocaleString()}
@@ -212,20 +212,20 @@ async function DashboardContent() {
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="space-y-8">
       {/* Welcome Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 rounded-xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
-              <Sparkles className="w-5 h-5 text-teal-400" />
+              <Sparkles className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
-            <span className="text-teal-400 text-sm font-medium">Dashboard</span>
+            <span className="text-teal-600 dark:text-teal-400 text-sm font-medium">Dashboard</span>
           </div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
             {greeting}, {profile.full_name.split(' ')[0]} <span className="wave">👋</span>
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             Here&apos;s what&apos;s happening with your CRM today.
           </p>
         </div>
@@ -233,7 +233,7 @@ async function DashboardContent() {
         <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
-            className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20"
             asChild
           >
             <Link href="/crm/reports">
@@ -242,7 +242,7 @@ async function DashboardContent() {
             </Link>
           </Button>
           <Button 
-            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md transition-all"
+            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm hover:shadow-md transition-all"
             asChild
           >
             <Link href="/crm/import">
@@ -260,64 +260,35 @@ async function DashboardContent() {
             <ModuleCard key={stat.moduleKey} stat={stat} index={index} />
           ))
         ) : (
-          // Show placeholder cards when no modules exist yet
+          // Show loading state while auto-seed runs
           <>
-            <div className="glass-card rounded-2xl p-6 border border-white/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-teal-500/10 text-teal-400">
-                  <Users className="w-6 h-6" />
+            {[
+              { icon: Users, name: 'Contacts', color: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500/10' },
+              { icon: UserPlus, name: 'Leads', color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10' },
+              { icon: DollarSign, name: 'Deals', color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+              { icon: Building2, name: 'Accounts', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10' },
+            ].map((module, index) => (
+              <div key={module.name} className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10 animate-pulse">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className={`p-3 rounded-xl ${module.bg} ${module.color}`}>
+                    <module.icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-slate-900 dark:text-white font-semibold">{module.name}</h3>
+                    <p className="text-slate-500 text-sm">Initializing...</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-white font-semibold">Contacts</h3>
-                  <p className="text-slate-500 text-sm">Coming soon</p>
-                </div>
+                <div className="h-10 w-20 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
               </div>
-              <p className="text-slate-400 text-sm">Run the CRM seed to enable modules</p>
-            </div>
-            <div className="glass-card rounded-2xl p-6 border border-white/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-violet-500/10 text-violet-400">
-                  <UserPlus className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Leads</h3>
-                  <p className="text-slate-500 text-sm">Coming soon</p>
-                </div>
-              </div>
-              <p className="text-slate-400 text-sm">Run the CRM seed to enable modules</p>
-            </div>
-            <div className="glass-card rounded-2xl p-6 border border-white/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
-                  <DollarSign className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Deals</h3>
-                  <p className="text-slate-500 text-sm">Coming soon</p>
-                </div>
-              </div>
-              <p className="text-slate-400 text-sm">Run the CRM seed to enable modules</p>
-            </div>
-            <div className="glass-card rounded-2xl p-6 border border-white/10">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <div>
-                  <h3 className="text-white font-semibold">Accounts</h3>
-                  <p className="text-slate-500 text-sm">Coming soon</p>
-                </div>
-              </div>
-              <p className="text-slate-400 text-sm">Run the CRM seed to enable modules</p>
-            </div>
+            ))}
           </>
         )}
       </div>
 
       {/* Quick Actions */}
-      <div className="glass-card rounded-2xl p-6 border border-white/10">
-        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-400" />
+      <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+          <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -355,23 +326,23 @@ async function DashboardContent() {
       {/* Tasks & Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Upcoming Tasks */}
-        <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
-          <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-teal-400" />
-              <h2 className="text-lg font-semibold text-white">Upcoming Tasks</h2>
+              <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Upcoming Tasks</h2>
             </div>
-            <span className="text-sm text-slate-400 bg-slate-900/50 px-2.5 py-1 rounded-full">
+            <span className="text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900/50 px-2.5 py-1 rounded-full">
               {tasks.length} pending
             </span>
           </div>
           <div className="p-4 space-y-2 max-h-[360px] overflow-y-auto scrollbar-thin">
             {tasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="p-4 rounded-full bg-slate-900/50 mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+                <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-900/50 mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-500 dark:text-emerald-400" />
                 </div>
-                <p className="text-white font-medium">All caught up!</p>
+                <p className="text-slate-900 dark:text-white font-medium">All caught up!</p>
                 <p className="text-slate-500 text-sm mt-1">
                   No upcoming tasks for the next 7 days.
                 </p>
@@ -383,8 +354,8 @@ async function DashboardContent() {
             )}
           </div>
           {tasks.length > 5 && (
-            <div className="px-4 py-3 border-t border-white/5">
-              <Link href="/crm/tasks" className="text-teal-400 text-sm hover:text-teal-300 transition-colors">
+            <div className="px-4 py-3 border-t border-slate-200 dark:border-white/5">
+              <Link href="/crm/tasks" className="text-teal-600 dark:text-teal-400 text-sm hover:text-teal-500 dark:hover:text-teal-300 transition-colors">
                 View all {tasks.length} tasks →
               </Link>
             </div>
@@ -392,23 +363,23 @@ async function DashboardContent() {
         </div>
 
         {/* Recent Activity */}
-        <div className="glass-card rounded-2xl overflow-hidden border border-white/10">
-          <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-violet-400" />
-              <h2 className="text-lg font-semibold text-white">Recent Activity</h2>
+              <Activity className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
             </div>
-            <Link href="/crm/activity" className="text-sm text-slate-400 hover:text-white transition-colors">
+            <Link href="/crm/activity" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
               View all
             </Link>
           </div>
           <div className="max-h-[360px] overflow-y-auto scrollbar-thin">
             {activity.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="p-4 rounded-full bg-slate-900/50 mb-4">
-                  <Activity className="w-8 h-8 text-slate-500" />
+                <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-900/50 mb-4">
+                  <Activity className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                 </div>
-                <p className="text-white font-medium">No activity yet</p>
+                <p className="text-slate-900 dark:text-white font-medium">No activity yet</p>
                 <p className="text-slate-500 text-sm mt-1">
                   Activity will appear here as you use the CRM.
                 </p>
@@ -422,14 +393,14 @@ async function DashboardContent() {
         </div>
       </div>
 
-      {/* Performance Overview Placeholder */}
-      <div className="glass-card rounded-2xl p-6 border border-white/10">
+      {/* Performance Overview */}
+      <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-emerald-400" />
-            <h2 className="text-lg font-semibold text-white">Performance Overview</h2>
+            <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Performance Overview</h2>
           </div>
-          <select className="bg-slate-900/50 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500/50">
+          <select className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500/50">
             <option>Last 7 days</option>
             <option>Last 30 days</option>
             <option>Last 90 days</option>
@@ -437,27 +408,27 @@ async function DashboardContent() {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5">
-            <p className="text-slate-400 text-sm mb-1">Leads Created</p>
-            <p className="text-2xl font-bold text-white">-</p>
-            <p className="text-emerald-400 text-xs mt-1 flex items-center gap-1">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Leads Created</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">-</p>
+            <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-1 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
               Import data to see metrics
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5">
-            <p className="text-slate-400 text-sm mb-1">Conversion Rate</p>
-            <p className="text-2xl font-bold text-white">-</p>
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Conversion Rate</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">-</p>
             <p className="text-slate-500 text-xs mt-1">Lead to Contact</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5">
-            <p className="text-slate-400 text-sm mb-1">Deals Closed</p>
-            <p className="text-2xl font-bold text-white">-</p>
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Deals Closed</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">-</p>
             <p className="text-slate-500 text-xs mt-1">This period</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5">
-            <p className="text-slate-400 text-sm mb-1">Revenue</p>
-            <p className="text-2xl font-bold text-white">$-</p>
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Revenue</p>
+            <p className="text-2xl font-bold text-slate-900 dark:text-white">$-</p>
             <p className="text-slate-500 text-xs mt-1">This period</p>
           </div>
         </div>

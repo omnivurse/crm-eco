@@ -26,6 +26,7 @@ import {
   Plus,
   ChevronDown,
 } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 import type { CrmProfile } from '@/lib/crm/types';
 
 interface CrmHeaderProps {
@@ -94,7 +95,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 glass border-b border-white/5">
+    <header className="h-16 flex items-center justify-between px-6 glass border-b border-slate-200 dark:border-white/5">
       {/* Left side - Search */}
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         <form onSubmit={handleSearch} className="relative flex-1">
@@ -104,7 +105,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
           `}>
             <Search className={`
               absolute left-4 w-4 h-4 transition-colors duration-200
-              ${searchFocused ? 'text-teal-400' : 'text-slate-500'}
+              ${searchFocused ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400 dark:text-slate-500'}
             `} />
             <Input
               type="search"
@@ -115,15 +116,15 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
               onBlur={() => setSearchFocused(false)}
               className={`
                 pl-11 pr-20 h-11 rounded-xl border transition-all duration-200
-                bg-slate-900/50 text-white placeholder:text-slate-500
+                bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500
                 ${searchFocused 
-                  ? 'border-teal-500/50 ring-2 ring-teal-500/20 bg-slate-900' 
-                  : 'border-white/10 hover:border-white/20'
+                  ? 'border-teal-500 dark:border-teal-500/50 ring-2 ring-teal-500/20' 
+                  : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
                 }
               `}
             />
             <div className="absolute right-3 flex items-center gap-1">
-              <kbd className="hidden sm:inline-flex h-6 select-none items-center gap-1 rounded-md border border-white/10 bg-slate-800 px-2 font-mono text-[10px] font-medium text-slate-400">
+              <kbd className="hidden sm:inline-flex h-6 select-none items-center gap-1 rounded-md border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-slate-800 px-2 font-mono text-[10px] font-medium text-slate-500 dark:text-slate-400">
                 <span className="text-xs">⌘</span>K
               </kbd>
             </div>
@@ -134,7 +135,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="hidden md:flex h-10 w-10 rounded-xl bg-slate-900/50 border border-white/10 text-slate-400 hover:text-white hover:border-teal-500/30 hover:bg-slate-800 transition-all duration-200"
+          className="hidden md:flex h-10 w-10 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-teal-500/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200"
           onClick={onOpenCommandPalette}
           title="Command Palette (⌘K)"
         >
@@ -147,35 +148,38 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
         {/* Quick Create */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button className="h-9 px-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium transition-all duration-200 glow-sm hover:glow-md">
+            <Button className="h-9 px-4 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium transition-all duration-200 shadow-sm hover:shadow-md">
               <Plus className="w-4 h-4 mr-1.5" />
               Create
               <ChevronDown className="w-3 h-3 ml-1.5 opacity-70" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 glass border-white/10">
-            <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer">
+          <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer">
               New Contact
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer">
+            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer">
               New Lead
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer">
+            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer">
               New Deal
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer">
-              <Sparkles className="w-4 h-4 mr-2 text-teal-400" />
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer">
+              <Sparkles className="w-4 h-4 mr-2 text-teal-600 dark:text-teal-400" />
               Quick Import
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Notifications */}
         <Button 
           variant="ghost" 
           size="icon" 
-          className="relative h-10 w-10 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-200"
+          className="relative h-10 w-10 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-200"
         >
           <Bell className="w-5 h-5" />
           <span className="absolute top-2 right-2 w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
@@ -186,7 +190,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button 
               variant="ghost" 
-              className="flex items-center gap-3 h-10 px-2 rounded-xl hover:bg-white/5 transition-all duration-200"
+              className="flex items-center gap-3 h-10 px-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-200"
             >
               <div className="relative">
                 <Avatar className="w-8 h-8 border-2 border-teal-500/50">
@@ -196,16 +200,16 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
                   </AvatarFallback>
                 </Avatar>
                 {/* Online indicator */}
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-slate-900" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900" />
               </div>
               <div className="hidden lg:block text-left">
-                <p className="text-sm font-medium text-white leading-none">{profile.full_name}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">{profile.email}</p>
+                <p className="text-sm font-medium text-slate-900 dark:text-white leading-none">{profile.full_name}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{profile.email}</p>
               </div>
-              <ChevronDown className="w-3 h-3 text-slate-500 hidden lg:block" />
+              <ChevronDown className="w-3 h-3 text-slate-400 dark:text-slate-500 hidden lg:block" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 glass border-white/10">
+          <DropdownMenuContent align="end" className="w-64 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
             <DropdownMenuLabel className="pb-3">
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 border-2 border-teal-500/50">
@@ -214,8 +218,8 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{profile.full_name}</p>
-                  <p className="text-xs text-slate-400 truncate">{profile.email}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{profile.full_name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile.email}</p>
                 </div>
               </div>
               <div className="mt-3">
@@ -225,26 +229,26 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
                 </span>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer py-2.5">
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2.5">
               <User className="w-4 h-4 mr-3" />
               My Profile
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => router.push('/crm/settings')}
-              className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer py-2.5"
+              className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2.5"
             >
               <Settings className="w-4 h-4 mr-3" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-slate-300 hover:text-white hover:bg-white/5 cursor-pointer py-2.5">
+            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2.5">
               <HelpCircle className="w-4 h-4 mr-3" />
               Help & Support
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
             <DropdownMenuItem 
               onClick={handleSignOut} 
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer py-2.5"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer py-2.5"
             >
               <LogOut className="w-4 h-4 mr-3" />
               Sign Out

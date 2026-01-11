@@ -69,12 +69,12 @@ async function SettingsContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <div className="p-3 bg-slate-800 rounded-lg">
-          <Settings className="w-6 h-6 text-slate-400" />
+        <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <Settings className="w-6 h-6 text-slate-600 dark:text-slate-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">CRM Settings</h1>
-          <p className="text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">CRM Settings</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             Configure your CRM modules, fields, and preferences
           </p>
         </div>
@@ -85,16 +85,16 @@ async function SettingsContent() {
           <Link
             key={card.href}
             href={card.href}
-            className="group bg-slate-800/50 border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 hover:bg-slate-800 transition-all"
+            className="group glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 hover:border-teal-500/50 transition-all"
           >
             <div className="flex items-start justify-between mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg text-blue-400">
+              <div className="p-3 bg-teal-500/10 rounded-lg text-teal-600 dark:text-teal-400">
                 {card.icon}
               </div>
-              <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400 transition-colors" />
+              <ChevronRight className="w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-1">{card.title}</h3>
-            <p className="text-slate-400 text-sm">{card.description}</p>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">{card.title}</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">{card.description}</p>
           </Link>
         ))}
       </div>

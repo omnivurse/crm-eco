@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { CrmShell } from '@/components/crm/shell';
 import { getCurrentProfile, getModules } from '@/lib/crm/queries';
 import { createCrmClient } from '@/lib/crm/queries';
+import { ensureDefaultModules } from '@/lib/crm/seed';
 
 export default async function CrmLayout({
   children,
@@ -26,8 +27,19 @@ export default async function CrmLayout({
     .eq('id', profile.organization_id)
     .single();
 
-  // Get enabled modules
-  const modules = await getModules(profile.organization_id);
+  // Get enabled modules - auto-seed if none exist
+  let modules = await getModules(profile.organization_id);
+  
+  if (modules.length === 0) {
+    // Auto-seed default modules for this organization
+    try {
+      await ensureDefaultModules(profile.organization_id);
+      // Re-fetch modules after seeding
+      modules = await getModules(profile.organization_id);
+    } catch (error) {
+      console.error('Failed to auto-seed modules:', error);
+    }
+  }
 
   return (
     <CrmShell
