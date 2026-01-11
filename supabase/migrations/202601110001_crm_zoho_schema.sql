@@ -734,7 +734,6 @@ CREATE OR REPLACE VIEW crm_ext.members AS
     address_line1,
     city,
     state,
-    zip_code,
     status,
     plan_name,
     plan_type,
