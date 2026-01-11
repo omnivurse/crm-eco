@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
@@ -20,6 +21,10 @@ import {
   Target,
   Briefcase,
   Heart,
+  TrendingUp,
+  BarChart3,
+  ClipboardList,
+  HeartHandshake,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -35,6 +40,9 @@ const iconMap: Record<string, LucideIcon> = {
   'target': Target,
   'briefcase': Briefcase,
   'heart': Heart,
+  'trending-up': TrendingUp,
+  'bar-chart': BarChart3,
+  'clipboard': ClipboardList,
 };
 
 interface CrmSidebarProps {
@@ -51,8 +59,8 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   };
 
   const isActive = (path: string) => {
-    if (path === '/') {
-      return pathname === '/';
+    if (path === '/crm') {
+      return pathname === '/crm';
     }
     return pathname.startsWith(path);
   };
@@ -60,71 +68,94 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   return (
     <aside
       className={cn(
-        'flex flex-col bg-brand-navy-900 text-white transition-all duration-300 ease-in-out',
-        collapsed ? 'w-16' : 'w-64'
+        'relative flex flex-col transition-all duration-300 ease-in-out border-r',
+        'glass-strong',
+        collapsed ? 'w-[72px]' : 'w-[260px]'
       )}
     >
+      {/* Gradient accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2px] gradient-primary opacity-60" />
+
       {/* Logo / Org Name */}
-      <div className="flex items-center h-16 px-4 border-b border-brand-navy-700">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-brand-teal-500 to-brand-emerald-600 rounded-lg flex items-center justify-center">
-            <Heart className="w-4 h-4 text-white" />
+      <div className="flex items-center h-16 px-4">
+        <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden gradient-primary p-[1px] glow-sm group-hover:glow-md transition-all duration-300">
+            <div className="w-full h-full rounded-[10px] bg-slate-900 flex items-center justify-center">
+              <Heart className="w-5 h-5 text-teal-400" />
+            </div>
           </div>
           {!collapsed && (
-            <div className="min-w-0">
-              <h1 className="text-sm font-semibold text-white truncate">
-                {organizationName || 'CRM'}
+            <div className="min-w-0 animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
+              <h1 className="text-sm font-bold text-white truncate tracking-tight">
+                {organizationName || 'Pay It Forward'}
               </h1>
-              <p className="text-xs text-brand-teal-400">Enterprise CRM</p>
+              <p className="text-[10px] font-medium text-teal-400 uppercase tracking-wider">
+                Healthshare CRM
+              </p>
             </div>
           )}
-        </div>
+        </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
+      <nav className="flex-1 overflow-y-auto py-4 px-3 scrollbar-thin">
         {/* Dashboard */}
-        <div className="px-3 mb-4">
-          <Link href="/">
+        <div className="mb-6">
+          <Link href="/crm">
             <Button
               variant="ghost"
               className={cn(
-                'w-full justify-start gap-3 text-white/70 hover:text-white hover:bg-brand-navy-800',
-                isActive('/') && pathname === '/' && 'bg-brand-navy-800 text-white',
-                collapsed && 'justify-center px-2'
+                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                'hover:bg-white/5 rounded-xl h-11',
+                isActive('/crm') && pathname === '/crm' && 
+                  'bg-gradient-to-r from-teal-500/20 to-emerald-500/10 text-white border border-teal-500/30 glow-sm',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
             >
-              <LayoutDashboard className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Dashboard</span>}
+              <LayoutDashboard className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm') && pathname === '/crm' && 'text-teal-400'
+              )} />
+              {!collapsed && <span className="font-medium">Dashboard</span>}
             </Button>
           </Link>
         </div>
 
         {/* Modules Section */}
         {!collapsed && (
-          <div className="px-4 mb-2">
-            <p className="text-xs font-medium text-brand-navy-400 uppercase tracking-wider">
+          <div className="mb-3 px-1">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em]">
               Modules
             </p>
           </div>
         )}
-        <div className="px-3 space-y-1">
-          {modules.map((module) => {
+        <div className="space-y-1">
+          {modules.map((module, index) => {
             const Icon = getIcon(module.icon);
-            const path = `/modules/${module.key}`;
+            const path = `/crm/modules/${module.key}`;
             return (
               <Link key={module.id} href={path}>
                 <Button
                   variant="ghost"
                   className={cn(
-                    'w-full justify-start gap-3 text-white/70 hover:text-white hover:bg-brand-navy-800',
-                    isActive(path) && 'bg-brand-navy-800 text-white',
-                    collapsed && 'justify-center px-2'
+                    'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                    'hover:bg-white/5 rounded-xl h-10',
+                    isActive(path) && 
+                      'bg-gradient-to-r from-teal-500/20 to-transparent text-white border-l-2 border-teal-400',
+                    collapsed ? 'justify-center px-2' : 'justify-start px-3'
                   )}
                   title={collapsed ? module.name : undefined}
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!collapsed && <span>{module.name_plural || module.name + 's'}</span>}
+                  <Icon className={cn(
+                    'w-5 h-5 flex-shrink-0 transition-colors',
+                    isActive(path) && 'text-teal-400'
+                  )} />
+                  {!collapsed && (
+                    <span className="font-medium truncate">
+                      {module.name_plural || module.name + 's'}
+                    </span>
+                  )}
                 </Button>
               </Link>
             );
@@ -133,70 +164,166 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
 
         {/* Tools Section */}
         {!collapsed && (
-          <div className="px-4 mt-6 mb-2">
-            <p className="text-xs font-medium text-brand-navy-400 uppercase tracking-wider">
+          <div className="mt-8 mb-3 px-1">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em]">
               Tools
             </p>
           </div>
         )}
-        <div className="px-3 space-y-1">
-          <Link href="/import">
+        {collapsed && <div className="mt-6" />}
+        <div className="space-y-1">
+          <Link href="/crm/import">
             <Button
               variant="ghost"
               className={cn(
-                'w-full justify-start gap-3 text-white/70 hover:text-white hover:bg-brand-navy-800',
-                isActive('/import') && 'bg-brand-navy-800 text-white',
-                collapsed && 'justify-center px-2'
+                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                'hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/import') && 
+                  'bg-gradient-to-r from-emerald-500/20 to-transparent text-white border-l-2 border-emerald-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
               title={collapsed ? 'Import' : undefined}
             >
-              <Upload className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Import Data</span>}
+              <Upload className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/import') && 'text-emerald-400'
+              )} />
+              {!collapsed && <span className="font-medium">Import Data</span>}
+            </Button>
+          </Link>
+
+          <Link href="/crm/pipeline">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                'hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/pipeline') && 
+                  'bg-gradient-to-r from-teal-500/20 to-transparent text-white border-l-2 border-teal-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+              title={collapsed ? 'Pipeline' : undefined}
+            >
+              <TrendingUp className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/pipeline') && 'text-teal-400'
+              )} />
+              {!collapsed && <span className="font-medium">Sales Pipeline</span>}
+            </Button>
+          </Link>
+
+          <Link href="/crm/reports">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                'hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/reports') && 
+                  'bg-gradient-to-r from-violet-500/20 to-transparent text-white border-l-2 border-violet-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+              title={collapsed ? 'Reports' : undefined}
+            >
+              <BarChart3 className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/reports') && 'text-violet-400'
+              )} />
+              {!collapsed && <span className="font-medium">Reports</span>}
+            </Button>
+          </Link>
+        </div>
+
+        {/* Health Sharing Section */}
+        {!collapsed && (
+          <div className="mt-8 mb-3 px-1">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.15em]">
+              Health Sharing
+            </p>
+          </div>
+        )}
+        {collapsed && <div className="mt-6" />}
+        <div className="space-y-1">
+          <Link href="/crm/enrollment">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                'hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/enrollment') && 
+                  'bg-gradient-to-r from-teal-500/20 to-transparent text-white border-l-2 border-teal-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+              title={collapsed ? 'Enrollment' : undefined}
+            >
+              <ClipboardList className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/enrollment') && 'text-teal-400'
+              )} />
+              {!collapsed && <span className="font-medium">Enrollment</span>}
+            </Button>
+          </Link>
+
+          <Link href="/crm/needs">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+                'hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/needs') && 
+                  'bg-gradient-to-r from-rose-500/20 to-transparent text-white border-l-2 border-rose-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+              title={collapsed ? 'Needs' : undefined}
+            >
+              <Heart className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/needs') && 'text-rose-400'
+              )} />
+              {!collapsed && <span className="font-medium">Needs</span>}
             </Button>
           </Link>
         </div>
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-brand-navy-700">
+      <div className="border-t border-white/5 p-3 space-y-2">
         {/* Settings */}
-        <div className="px-3 py-3">
-          <Link href="/settings">
-            <Button
-              variant="ghost"
-              className={cn(
-                'w-full justify-start gap-3 text-white/70 hover:text-white hover:bg-brand-navy-800',
-                isActive('/settings') && 'bg-brand-navy-800 text-white',
-                collapsed && 'justify-center px-2'
-              )}
-              title={collapsed ? 'Settings' : undefined}
-            >
-              <Settings className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Settings</span>}
-            </Button>
-          </Link>
-        </div>
-
-        {/* Collapse Toggle */}
-        <div className="px-3 pb-3">
+        <Link href="/crm/settings">
           <Button
             variant="ghost"
-            size="sm"
-            onClick={() => setCollapsed(!collapsed)}
             className={cn(
-              'w-full justify-center text-white/50 hover:text-white hover:bg-brand-navy-800'
+              'w-full gap-3 text-slate-400 hover:text-white transition-all duration-200',
+              'hover:bg-white/5 rounded-xl h-10',
+              isActive('/crm/settings') && 'bg-white/5 text-white',
+              collapsed ? 'justify-center px-2' : 'justify-start px-3'
             )}
+            title={collapsed ? 'Settings' : undefined}
           >
-            {collapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <>
-                <ChevronLeft className="w-4 h-4 mr-2" />
-                <span className="text-xs">Collapse</span>
-              </>
-            )}
+            <Settings className="w-5 h-5 flex-shrink-0" />
+            {!collapsed && <span className="font-medium">Settings</span>}
           </Button>
-        </div>
+        </Link>
+
+        {/* Collapse Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(
+            'w-full h-9 text-slate-500 hover:text-white transition-all duration-200',
+            'hover:bg-white/5 rounded-lg',
+            collapsed ? 'justify-center' : 'justify-center'
+          )}
+        >
+          {collapsed ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <>
+              <ChevronLeft className="w-4 h-4 mr-2" />
+              <span className="text-xs font-medium">Collapse</span>
+            </>
+          )}
+        </Button>
       </div>
     </aside>
   );

@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Upload, FileSpreadsheet, Database } from 'lucide-react';
+import { ArrowLeft, Upload, FileSpreadsheet, Database, Sparkles, Users, UserPlus } from 'lucide-react';
 import { getCurrentProfile, getModules } from '@/lib/crm/queries';
 import { ImportWizard } from './import-wizard';
 
@@ -27,52 +27,79 @@ async function ImportPageContent({ searchParams }: PageProps) {
   const modules = await getModules(profile.organization_id);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
           href="/crm"
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
+              <Upload className="w-4 h-4 text-teal-400" />
+            </div>
+            <span className="text-teal-400 text-sm font-medium">Import</span>
+          </div>
           <h1 className="text-2xl font-bold text-white">Import Data</h1>
           <p className="text-slate-400 mt-1">
-            Import records from CSV files or paste data directly
+            Import records from CSV files into your CRM
           </p>
         </div>
       </div>
 
-      {/* Import Options */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-colors cursor-pointer">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-blue-500/10 rounded-lg">
-              <FileSpreadsheet className="w-6 h-6 text-blue-400" />
+      {/* Quick Import Options */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link 
+          href="/crm/import?module=contacts"
+          className="glass-card rounded-xl p-5 border border-white/10 hover:border-teal-500/30 transition-all group cursor-pointer"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-teal-500/10 group-hover:bg-teal-500/20 transition-colors">
+              <Users className="w-5 h-5 text-teal-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">CSV Import</h3>
-              <p className="text-sm text-slate-400">Upload a CSV file</p>
+              <h3 className="text-white font-semibold">Contacts</h3>
+              <p className="text-slate-500 text-xs">Members & customers</p>
             </div>
           </div>
           <p className="text-slate-400 text-sm">
-            Import records from a CSV file with column mapping and validation.
+            Import contact records with full member details.
           </p>
-        </div>
+        </Link>
 
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-colors cursor-pointer">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-purple-500/10 rounded-lg">
-              <Database className="w-6 h-6 text-purple-400" />
+        <Link 
+          href="/crm/import?module=leads"
+          className="glass-card rounded-xl p-5 border border-white/10 hover:border-violet-500/30 transition-all group cursor-pointer"
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-violet-500/10 group-hover:bg-violet-500/20 transition-colors">
+              <UserPlus className="w-5 h-5 text-violet-400" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">Paste Data</h3>
-              <p className="text-sm text-slate-400">Copy & paste from spreadsheet</p>
+              <h3 className="text-white font-semibold">Leads</h3>
+              <p className="text-slate-500 text-xs">Potential customers</p>
             </div>
           </div>
           <p className="text-slate-400 text-sm">
-            Paste data directly from Excel or Google Sheets.
+            Import leads and prospects for follow-up.
+          </p>
+        </Link>
+
+        <div className="glass-card rounded-xl p-5 border border-white/10 hover:border-amber-500/30 transition-all group cursor-pointer">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+              <Sparkles className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold">Smart Import</h3>
+              <p className="text-slate-500 text-xs">AI-powered</p>
+            </div>
+          </div>
+          <p className="text-slate-400 text-sm">
+            Auto-detect module and map fields intelligently.
           </p>
         </div>
       </div>
@@ -97,19 +124,26 @@ export default function ImportPage(props: PageProps) {
 
 function ImportSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+    <div className="max-w-5xl mx-auto space-y-6">
+      {/* Header skeleton */}
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-slate-800 rounded-lg" />
+        <div className="w-10 h-10 bg-slate-800/50 rounded-lg animate-pulse" />
         <div className="space-y-2">
-          <div className="h-8 w-40 bg-slate-800 rounded" />
-          <div className="h-4 w-60 bg-slate-800 rounded" />
+          <div className="h-5 w-24 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-8 w-40 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-4 w-60 bg-slate-800/50 rounded animate-pulse" />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="h-40 bg-slate-800/50 rounded-xl" />
-        <div className="h-40 bg-slate-800/50 rounded-xl" />
+      
+      {/* Quick options skeleton */}
+      <div className="grid grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-32 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+        ))}
       </div>
-      <div className="h-96 bg-slate-800/50 rounded-xl" />
+      
+      {/* Wizard skeleton */}
+      <div className="h-[500px] bg-slate-800/30 rounded-2xl border border-white/5 animate-pulse" />
     </div>
   );
 }

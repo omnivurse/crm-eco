@@ -1,12 +1,27 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-geist-sans' });
+const inter = Inter({ 
+  subsets: ['latin'], 
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const plusJakarta = Plus_Jakarta_Sans({ 
+  subsets: ['latin'], 
+  variable: '--font-plus-jakarta',
+  weight: ['600', '700'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'CRM-ECO | Healthshare Management Platform',
+  title: 'Pay It Forward CRM | Healthshare Management Platform',
   description: 'Modern CRM platform for healthshare and insurance organizations',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -15,8 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>{children}</body>
+    <html lang="en" className="dark">
+      <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
