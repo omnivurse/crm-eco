@@ -217,7 +217,7 @@ async function executeTransitionActions(
   }
   
   try {
-    await executeActions(transition.actions, record, context);
+    await executeActions(transition.actions as Parameters<typeof executeActions>[0], record, context);
   } catch (error) {
     console.error('Error executing transition actions:', error);
     // Don't fail the transition if actions fail
@@ -301,7 +301,7 @@ export async function executeTransition(
       record.module_id,
       fromStage,
       toStage
-    );
+    ) ?? undefined;
     requiresApproval = !!approvalProcessId;
   }
   

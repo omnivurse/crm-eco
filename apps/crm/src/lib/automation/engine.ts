@@ -194,7 +194,7 @@ export async function executeWorkflow(
   // Get workflow
   let workflow = providedWorkflow;
   if (!workflow && workflowId) {
-    workflow = await getWorkflowById(workflowId);
+    workflow = await getWorkflowById(workflowId) ?? undefined;
   }
 
   if (!workflow) {

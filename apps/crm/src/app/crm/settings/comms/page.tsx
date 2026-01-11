@@ -1,15 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@ui/components/ui/card';
-import { Button } from '@ui/components/ui/button';
-import { Input } from '@ui/components/ui/input';
-import { Label } from '@ui/components/ui/label';
-import { Textarea } from '@ui/components/ui/textarea';
-import { Switch } from '@ui/components/ui/switch';
-import { Badge } from '@ui/components/ui/badge';
+import { createBrowserClient } from '@supabase/ssr';
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Switch,
+  Badge,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -17,29 +21,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@ui/components/ui/dialog';
-import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@ui/components/ui/table';
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@ui/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ui/components/ui/tabs';
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@crm-eco/ui';
 import { Mail, MessageSquare, Plus, Pencil, Trash2, Check, X, Eye } from 'lucide-react';
 import type { CrmMessageProvider, CrmMessageTemplate } from '@/lib/comms/types';
 import { generatePreview } from '@/lib/comms/mergeFields';
 
 export default function CommsSettingsPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [providers, setProviders] = useState<CrmMessageProvider[]>([]);
   const [templates, setTemplates] = useState<CrmMessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);

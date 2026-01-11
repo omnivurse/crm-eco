@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (!record) {
       const { data: jsonbRecords } = await supabase
         .from('crm_records')
-        .select('id, org_id')
+        .select('id, org_id, phone')
         .or(`data->phone.eq."${from}",data->mobile.eq."${from}",data->phone.eq."${normalizedFrom}",data->mobile.eq."${normalizedFrom}"`)
         .limit(1);
       

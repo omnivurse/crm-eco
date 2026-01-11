@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import {
   Dialog,
   DialogContent,
@@ -9,13 +9,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@ui/components/ui/dialog';
-import { Button } from '@ui/components/ui/button';
-import { Input } from '@ui/components/ui/input';
-import { Textarea } from '@ui/components/ui/textarea';
-import { Label } from '@ui/components/ui/label';
-import { Badge } from '@ui/components/ui/badge';
-import { Alert, AlertDescription } from '@ui/components/ui/alert';
+  Button,
+  Input,
+  Textarea,
+  Label,
+  Badge,
+} from '@crm-eco/ui';
 import { CheckCircle, AlertCircle, Clock, ArrowRight } from 'lucide-react';
 
 interface TransitionModalProps {
@@ -52,7 +51,10 @@ export function TransitionModal({
   requiresApproval,
   onComplete,
 }: TransitionModalProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -229,10 +231,10 @@ export function TransitionModal({
         ) : (
           <>
             {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
+              <div className="flex items-center gap-2 p-3 border border-destructive/50 bg-destructive/10 rounded-md text-destructive text-sm">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
             )}
 
             <div className="space-y-4 py-4">
@@ -287,12 +289,10 @@ export function TransitionModal({
 
               {/* Approval Notice */}
               {requiresApproval && (
-                <Alert>
-                  <Clock className="h-4 w-4" />
-                  <AlertDescription>
-                    This transition requires approval. After submitting, an approval request will be created for review.
-                  </AlertDescription>
-                </Alert>
+                <div className="flex items-center gap-2 p-3 border rounded-md bg-muted text-sm">
+                  <Clock className="h-4 w-4 flex-shrink-0" />
+                  <span>This transition requires approval. After submitting, an approval request will be created for review.</span>
+                </div>
               )}
             </div>
 

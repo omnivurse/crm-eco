@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Button } from '@ui/components/ui/button';
-import { Badge } from '@ui/components/ui/badge';
-import { cn } from '@ui/lib/utils';
+import { createBrowserClient } from '@supabase/ssr';
+import { Button, Badge, cn } from '@crm-eco/ui';
 import { ChevronRight, Check, Lock, ArrowRight } from 'lucide-react';
 import { TransitionModal } from './TransitionModal';
 import type { BlueprintStage, AvailableTransition } from '@/lib/blueprints/types';
@@ -23,7 +21,10 @@ interface StageInfo extends BlueprintStage {
 }
 
 export function StageBar({ recordId, moduleId, currentStage, onStageChange }: StageBarProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [loading, setLoading] = useState(true);
   const [hasBlueprint, setHasBlueprint] = useState(false);
   const [stages, setStages] = useState<StageInfo[]>([]);
