@@ -377,7 +377,7 @@ export async function dispatchMessage(
   }
   
   // 7. Build merge context and render content
-  const mergeContext: MergeFieldContext = buildMergeContext(record, {
+  const mergeContext: MergeFieldContext = buildMergeContext(record as unknown as Record<string, unknown>, {
     orgId: record.org_id,
     owner: record.owner
       ? {
@@ -433,7 +433,7 @@ export async function dispatchMessage(
     next_retry_at: null,
     meta: {
       template_name: template?.name,
-      merge_context: mergeContext,
+      merge_context: mergeContext as unknown as Record<string, unknown>,
     },
     created_by: profileId || null,
     sent_at: null,
@@ -467,7 +467,7 @@ export async function sendMessageNow(
   
   // Get provider if not provided
   if (!provider) {
-    provider = await getDefaultProvider(message.org_id, message.channel);
+    provider = await getDefaultProvider(message.org_id, message.channel) ?? undefined;
     if (!provider) {
       await updateMessageStatus(message.id, 'failed', { error: 'No provider configured' });
       return {

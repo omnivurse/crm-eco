@@ -2,8 +2,24 @@
  * CRM Communications - Provider Registry
  */
 
-export * from './sendgrid';
-export * from './twilio';
+export {
+  sendEmail,
+  isConfigured as isSendGridConfigured,
+  isValidEmail,
+  mapSendGridEventToStatus,
+  shouldUpdateStatus,
+} from './sendgrid';
+
+export {
+  sendSms,
+  isConfigured as isTwilioConfigured,
+  normalizePhoneNumber,
+  isValidPhoneNumber,
+  mapTwilioStatusToMessageStatus,
+  isTerminalStatus,
+  getMessageEncoding,
+  calculateSegments,
+} from './twilio';
 
 import { sendEmail, isConfigured as isSendGridConfigured } from './sendgrid';
 import { sendSms, isConfigured as isTwilioConfigured } from './twilio';
