@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ModuleTabs } from './ModuleTabs';
+import { NotificationsPanel } from '../NotificationsPanel';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 interface CrmTopBarProps {
@@ -208,14 +209,7 @@ export function CrmTopBar({
         <ThemeToggle variant="icon" />
 
         {/* Notifications */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="relative h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-        >
-          <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-500 rounded-full" />
-        </Button>
+        <NotificationsPanel />
 
         {/* Settings Gear */}
         <Button 

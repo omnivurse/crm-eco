@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
@@ -23,13 +23,25 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@crm-eco/ui/components/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@crm-eco/ui/components/alert-dialog';
 import type { CrmWorkflow } from '@/lib/automation/types';
 
 export default function WorkflowsPage() {
@@ -37,28 +49,95 @@ export default function WorkflowsPage() {
   const [workflows, setWorkflows] = useState<CrmWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState<Record<string, string>>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchWorkflows();
-  }, []);
-
-  async function fetchWorkflows() {
+  const fetchWorkflows = useCallback(async () => {
     try {
-      const res = await fetch('/api/crm/modules');
-      const modulesData = await res.json();
+      // Fetch modules first
+      const modulesRes = await fetch('/api/crm/modules');
+      const modulesData = await modulesRes.json();
       const moduleMap: Record<string, string> = {};
       modulesData.forEach((m: { id: string; name: string }) => {
         moduleMap[m.id] = m.name;
       });
       setModules(moduleMap);
 
-      // Fetch workflows - this would need a new API endpoint
-      // For now, showing empty state
-      setWorkflows([]);
+      // Fetch workflows from API
+      const workflowsRes = await fetch('/api/automation/workflows');
+      if (workflowsRes.ok) {
+        const workflowsData = await workflowsRes.json();
+        setWorkflows(workflowsData);
+      }
     } catch (error) {
       console.error('Failed to fetch workflows:', error);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchWorkflows();
+  }, [fetchWorkflows]);
+
+  async function handleToggleWorkflow(workflowId: string, currentEnabled: boolean) {
+    setTogglingId(workflowId);
+    try {
+      const res = await fetch(`/api/automation/workflows/${workflowId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_enabled: !currentEnabled }),
+      });
+      if (res.ok) {
+        setWorkflows(workflows.map(w => 
+          w.id === workflowId ? { ...w, is_enabled: !currentEnabled } : w
+        ));
+      }
+    } catch (error) {
+      console.error('Failed to toggle workflow:', error);
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  async function handleDeleteWorkflow() {
+    if (!deleteId) return;
+    try {
+      const res = await fetch(`/api/automation/workflows/${deleteId}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setWorkflows(workflows.filter(w => w.id !== deleteId));
+      }
+    } catch (error) {
+      console.error('Failed to delete workflow:', error);
+    } finally {
+      setDeleteId(null);
+    }
+  }
+
+  async function handleDuplicateWorkflow(workflow: CrmWorkflow) {
+    try {
+      const res = await fetch('/api/automation/workflows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module_id: workflow.module_id,
+          name: `${workflow.name} (Copy)`,
+          description: workflow.description,
+          trigger_type: workflow.trigger_type,
+          trigger_config: workflow.trigger_config,
+          conditions: workflow.conditions,
+          actions: workflow.actions,
+          is_enabled: false, // Start disabled
+          priority: workflow.priority,
+        }),
+      });
+      if (res.ok) {
+        fetchWorkflows();
+      }
+    } catch (error) {
+      console.error('Failed to duplicate workflow:', error);
     }
   }
 
@@ -161,7 +240,11 @@ export default function WorkflowsPage() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Switch checked={workflow.is_enabled} />
+                    <Switch 
+                      checked={workflow.is_enabled} 
+                      onCheckedChange={() => handleToggleWorkflow(workflow.id, workflow.is_enabled)}
+                      disabled={togglingId === workflow.id}
+                    />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -171,15 +254,23 @@ export default function WorkflowsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/crm/settings/automations/workflows/${workflow.id}`)}>
                           <Pencil className="w-4 h-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicateWorkflow(workflow)}>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/crm/settings/automations/workflows/${workflow.id}/test`)}>
                           <Play className="w-4 h-4 mr-2" />
                           Test
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => setDeleteId(workflow.id)}
+                        >
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -192,6 +283,28 @@ export default function WorkflowsPage() {
           </Table>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Workflow</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this workflow? This action cannot be undone.
+              Any automation runs history will be preserved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteWorkflow}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

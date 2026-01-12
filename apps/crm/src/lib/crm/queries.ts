@@ -521,3 +521,98 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
 
   return stats;
 }
+
+// ============================================================================
+// Reporting Queries
+// ============================================================================
+
+export interface MonthlyRecordCounts {
+  month: string;
+  leads: number;
+  contacts: number;
+  deals: number;
+}
+
+export async function getMonthlyRecordCounts(orgId: string, monthsBack: number = 6): Promise<MonthlyRecordCounts[]> {
+  const supabase = await createCrmClient();
+
+  // Get module IDs
+  const { data: modules } = await supabase
+    .from('crm_modules')
+    .select('id, key')
+    .eq('org_id', orgId)
+    .in('key', ['leads', 'contacts', 'deals']);
+
+  if (!modules || modules.length === 0) {
+    return [];
+  }
+
+  const moduleMap: Record<string, string> = {};
+  modules.forEach(m => { moduleMap[m.key] = m.id; });
+
+  const results: MonthlyRecordCounts[] = [];
+  const now = new Date();
+
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+    const monthName = startOfMonth.toLocaleString('en-US', { month: 'short' });
+
+    const counts = { month: monthName, leads: 0, contacts: 0, deals: 0 };
+
+    // Count for each module type
+    for (const key of ['leads', 'contacts', 'deals'] as const) {
+      if (moduleMap[key]) {
+        const { count } = await supabase
+          .from('crm_records')
+          .select('*', { count: 'exact', head: true })
+          .eq('module_id', moduleMap[key])
+          .gte('created_at', startOfMonth.toISOString())
+          .lte('created_at', endOfMonth.toISOString());
+        counts[key] = count || 0;
+      }
+    }
+
+    results.push(counts);
+  }
+
+  return results;
+}
+
+export interface ReportSummary {
+  totalContacts: number;
+  totalLeads: number;
+  totalDeals: number;
+  totalAccounts: number;
+  leadsThisWeek: number;
+  contactsThisWeek: number;
+  dealsClosedThisWeek: number;
+  conversionRate: number;
+}
+
+export async function getReportSummary(orgId: string): Promise<ReportSummary> {
+  const stats = await getModuleStats(orgId);
+  
+  const totalContacts = stats.find(s => s.moduleKey === 'contacts')?.totalRecords || 0;
+  const totalLeads = stats.find(s => s.moduleKey === 'leads')?.totalRecords || 0;
+  const totalDeals = stats.find(s => s.moduleKey === 'deals')?.totalRecords || 0;
+  const totalAccounts = stats.find(s => s.moduleKey === 'accounts')?.totalRecords || 0;
+  
+  const leadsThisWeek = stats.find(s => s.moduleKey === 'leads')?.createdThisWeek || 0;
+  const contactsThisWeek = stats.find(s => s.moduleKey === 'contacts')?.createdThisWeek || 0;
+  const dealsClosedThisWeek = stats.find(s => s.moduleKey === 'deals')?.createdThisWeek || 0;
+  
+  // Calculate conversion rate (converted leads / total leads)
+  const conversionRate = totalLeads > 0 ? Math.round((totalContacts / totalLeads) * 100) : 0;
+
+  return {
+    totalContacts,
+    totalLeads,
+    totalDeals,
+    totalAccounts,
+    leadsThisWeek,
+    contactsThisWeek,
+    dealsClosedThisWeek,
+    conversionRate,
+  };
+}
