@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -24,13 +24,13 @@ import {
   History,
   ArrowLeft,
   Search,
-  Filter,
   Loader2,
   CheckCircle,
   XCircle,
   AlertCircle,
   PlayCircle,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
 import type { CrmAutomationRun } from '@/lib/automation/types';
 
@@ -39,21 +39,38 @@ export default function AutomationRunsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    fetchRuns();
-  }, [statusFilter, sourceFilter]);
-
-  async function fetchRuns() {
+  const fetchRuns = useCallback(async () => {
+    setLoading(true);
     try {
-      // This would need a new API endpoint
-      setRuns([]);
+      const params = new URLSearchParams();
+      if (statusFilter !== 'all') params.set('status', statusFilter);
+      if (sourceFilter !== 'all') params.set('source', sourceFilter);
+      params.set('limit', '100');
+
+      const res = await fetch(`/api/automation/runs?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRuns(data);
+      }
     } catch (error) {
       console.error('Failed to fetch runs:', error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [statusFilter, sourceFilter]);
+
+  useEffect(() => {
+    fetchRuns();
+  }, [fetchRuns]);
+
+  const filteredRuns = searchQuery
+    ? runs.filter(run => 
+        run.trigger.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        run.source.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : runs;
 
   function getStatusIcon(status: string) {
     switch (status) {
@@ -126,7 +143,12 @@ export default function AutomationRunsPage() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input placeholder="Search runs..." className="pl-10" />
+          <Input 
+            placeholder="Search runs..." 
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40">
@@ -155,6 +177,9 @@ export default function AutomationRunsPage() {
             <SelectItem value="webform">Webform</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" onClick={fetchRuns} disabled={loading}>
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
       </div>
 
       {/* Runs Table */}
@@ -163,7 +188,7 @@ export default function AutomationRunsPage() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
           </div>
-        ) : runs.length === 0 ? (
+        ) : filteredRuns.length === 0 ? (
           <div className="text-center py-12">
             <History className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
@@ -187,7 +212,7 @@ export default function AutomationRunsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {runs.map((run) => (
+              {filteredRuns.map((run) => (
                 <TableRow key={run.id} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50">
                   <TableCell>{getStatusBadge(run.status)}</TableCell>
                   <TableCell>

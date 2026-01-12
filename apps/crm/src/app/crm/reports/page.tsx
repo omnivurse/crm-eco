@@ -16,18 +16,8 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
-import { getCurrentProfile, getModuleStats } from '@/lib/crm/queries';
-import type { ModuleStats } from '@/lib/crm/types';
-
-// Mock data for charts (in production, this would come from actual queries)
-const MONTHLY_DATA = [
-  { month: 'Jul', leads: 45, contacts: 32, deals: 8 },
-  { month: 'Aug', leads: 52, contacts: 41, deals: 12 },
-  { month: 'Sep', leads: 61, contacts: 38, deals: 15 },
-  { month: 'Oct', leads: 48, contacts: 45, deals: 11 },
-  { month: 'Nov', leads: 73, contacts: 52, deals: 18 },
-  { month: 'Dec', leads: 68, contacts: 61, deals: 22 },
-];
+import { getCurrentProfile, getReportSummary, getMonthlyRecordCounts } from '@/lib/crm/queries';
+import type { MonthlyRecordCounts, ReportSummary } from '@/lib/crm/queries';
 
 function StatCard({ 
   title, 
@@ -131,16 +121,26 @@ async function ReportsContent() {
     redirect('/crm-login');
   }
 
-  const stats = await getModuleStats(profile.organization_id);
+  // Fetch real report data
+  const [summary, monthlyData] = await Promise.all([
+    getReportSummary(profile.organization_id),
+    getMonthlyRecordCounts(profile.organization_id, 6),
+  ]);
   
-  // Calculate totals from stats
-  const totalContacts = stats.find(s => s.moduleKey === 'contacts')?.totalRecords || 0;
-  const totalLeads = stats.find(s => s.moduleKey === 'leads')?.totalRecords || 0;
-  const totalDeals = stats.find(s => s.moduleKey === 'deals')?.totalRecords || 0;
-  const totalAccounts = stats.find(s => s.moduleKey === 'accounts')?.totalRecords || 0;
+  const {
+    totalContacts,
+    totalLeads,
+    totalDeals,
+    totalAccounts,
+    leadsThisWeek,
+    contactsThisWeek,
+    dealsClosedThisWeek,
+    conversionRate,
+  } = summary;
   
-  const leadsThisWeek = stats.find(s => s.moduleKey === 'leads')?.createdThisWeek || 0;
-  const contactsThisWeek = stats.find(s => s.moduleKey === 'contacts')?.createdThisWeek || 0;
+  // Calculate trend growth
+  const totalThisHalf = monthlyData.reduce((sum, m) => sum + m.leads + m.contacts + m.deals, 0);
+  const growthPercent = totalThisHalf > 0 ? Math.min(100, Math.round(totalThisHalf / 10)) : 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -259,15 +259,15 @@ async function ReportsContent() {
           
           <div className="grid grid-cols-3 gap-6">
             <MiniBarChart 
-              data={MONTHLY_DATA.map(d => d.leads)} 
+              data={monthlyData.length > 0 ? monthlyData.map(d => d.leads) : [0]} 
               label="Leads"
             />
             <MiniBarChart 
-              data={MONTHLY_DATA.map(d => d.contacts)} 
+              data={monthlyData.length > 0 ? monthlyData.map(d => d.contacts) : [0]} 
               label="Contacts"
             />
             <MiniBarChart 
-              data={MONTHLY_DATA.map(d => d.deals)} 
+              data={monthlyData.length > 0 ? monthlyData.map(d => d.deals) : [0]} 
               label="Deals"
             />
           </div>
@@ -275,9 +275,9 @@ async function ReportsContent() {
           <div className="mt-6 pt-4 border-t border-white/5">
             <div className="flex items-center justify-between text-sm">
               <span className="text-slate-400">6-month trend</span>
-              <span className="text-emerald-400 flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" />
-                +24% growth
+              <span className={`flex items-center gap-1 ${growthPercent > 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+                {growthPercent > 0 && <TrendingUp className="w-4 h-4" />}
+                {growthPercent > 0 ? `+${growthPercent}% growth` : 'No data yet'}
               </span>
             </div>
           </div>
@@ -342,12 +342,12 @@ async function ReportsContent() {
             <p className="text-slate-400 text-sm">New Contacts</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-white mb-1">0</p>
+            <p className="text-3xl font-bold text-white mb-1">{dealsClosedThisWeek}</p>
             <p className="text-slate-400 text-sm">Deals Closed</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-white mb-1">$0</p>
-            <p className="text-slate-400 text-sm">Revenue</p>
+            <p className="text-3xl font-bold text-white mb-1">{conversionRate}%</p>
+            <p className="text-slate-400 text-sm">Conversion Rate</p>
           </div>
         </div>
       </div>

@@ -1,9 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@crm-eco/ui/components/button';
 import { Switch } from '@crm-eco/ui/components/switch';
+import { Input } from '@crm-eco/ui/components/input';
+import { Label } from '@crm-eco/ui/components/label';
+import { Textarea } from '@crm-eco/ui/components/textarea';
 import {
   Table,
   TableBody,
@@ -13,7 +17,6 @@ import {
   TableRow,
 } from '@crm-eco/ui/components/table';
 import { Badge } from '@crm-eco/ui/components/badge';
-import { Input } from '@crm-eco/ui/components/input';
 import {
   FileText,
   Plus,
@@ -25,6 +28,7 @@ import {
   Copy,
   ExternalLink,
   Code,
+  Check,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -32,37 +36,235 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@crm-eco/ui/components/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@crm-eco/ui/components/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@crm-eco/ui/components/alert-dialog';
 import type { CrmWebform } from '@/lib/automation/types';
 
+interface Module {
+  id: string;
+  key: string;
+  name: string;
+}
+
+interface Field {
+  id: string;
+  key: string;
+  label: string;
+  type: string;
+  is_required: boolean;
+}
+
 export default function WebformsPage() {
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   const [webforms, setWebforms] = useState<CrmWebform[]>([]);
   const [loading, setLoading] = useState(true);
-  const [modules, setModules] = useState<Record<string, string>>({});
+  const [modules, setModules] = useState<Module[]>([]);
+  const [fields, setFields] = useState<Record<string, Field[]>>({});
+  const [orgId, setOrgId] = useState('');
+  const [orgSlug, setOrgSlug] = useState('');
+  const [copied, setCopied] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchWebforms();
-  }, []);
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editing, setEditing] = useState<CrmWebform | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [embedDialogOpen, setEmbedDialogOpen] = useState(false);
+  const [selectedWebform, setSelectedWebform] = useState<CrmWebform | null>(null);
 
-  async function fetchWebforms() {
+  // Form state
+  const [form, setForm] = useState({
+    module_id: '',
+    name: '',
+    slug: '',
+    description: '',
+    success_message: 'Thank you for your submission!',
+    redirect_url: '',
+    is_enabled: true,
+    selectedFields: [] as string[],
+  });
+
+  const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/crm/modules');
-      const modulesData = await res.json();
-      const moduleMap: Record<string, string> = {};
-      modulesData.forEach((m: { id: string; name: string }) => {
-        moduleMap[m.id] = m.name;
-      });
-      setModules(moduleMap);
-      setWebforms([]);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile) return;
+      setOrgId(profile.organization_id);
+
+      // Get org slug
+      const { data: org } = await supabase
+        .from('organizations')
+        .select('slug')
+        .eq('id', profile.organization_id)
+        .single();
+      setOrgSlug(org?.slug || '');
+
+      const [modulesRes, webformsRes] = await Promise.all([
+        supabase.from('crm_modules').select('id, key, name').eq('org_id', profile.organization_id).eq('is_enabled', true),
+        supabase.from('crm_webforms').select('*').eq('org_id', profile.organization_id),
+      ]);
+
+      setModules((modulesRes.data || []) as Module[]);
+      setWebforms((webformsRes.data || []) as CrmWebform[]);
+
+      // Load fields for each module
+      const fieldsByModule: Record<string, Field[]> = {};
+      for (const mod of modulesRes.data || []) {
+        const { data: moduleFields } = await supabase
+          .from('crm_fields')
+          .select('id, key, label, type, is_required')
+          .eq('module_id', mod.id)
+          .order('position');
+        fieldsByModule[mod.id] = (moduleFields || []) as Field[];
+      }
+      setFields(fieldsByModule);
     } catch (error) {
-      console.error('Failed to fetch webforms:', error);
+      console.error('Failed to fetch data:', error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase]);
 
-  function copyToClipboard(text: string) {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const openCreateDialog = () => {
+    setEditing(null);
+    setForm({
+      module_id: modules[0]?.id || '',
+      name: '',
+      slug: '',
+      description: '',
+      success_message: 'Thank you for your submission!',
+      redirect_url: '',
+      is_enabled: true,
+      selectedFields: [],
+    });
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (webform: CrmWebform) => {
+    setEditing(webform);
+    const selectedFields = webform.layout.sections?.flatMap(s => s.fields.map(f => f.fieldKey)) || [];
+    setForm({
+      module_id: webform.module_id,
+      name: webform.name,
+      slug: webform.slug,
+      description: webform.description || '',
+      success_message: webform.success_message,
+      redirect_url: webform.redirect_url || '',
+      is_enabled: webform.is_enabled,
+      selectedFields,
+    });
+    setDialogOpen(true);
+  };
+
+  const generateSlug = (name: string) => {
+    return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const layout = {
+        sections: [{
+          key: 'main',
+          label: 'Main',
+          fields: form.selectedFields.map(fieldKey => ({
+            fieldKey,
+            required: fields[form.module_id]?.find(f => f.key === fieldKey)?.is_required || false,
+          })),
+        }],
+      };
+
+      const data = {
+        org_id: orgId,
+        module_id: form.module_id,
+        name: form.name,
+        slug: form.slug || generateSlug(form.name),
+        description: form.description || null,
+        success_message: form.success_message,
+        redirect_url: form.redirect_url || null,
+        is_enabled: form.is_enabled,
+        layout,
+        hidden_fields: {},
+        dedupe_config: { enabled: false, fields: [], strategy: 'create_duplicate' },
+      };
+
+      if (editing) {
+        await supabase.from('crm_webforms').update(data).eq('id', editing.id);
+      } else {
+        await supabase.from('crm_webforms').insert(data);
+      }
+
+      fetchData();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Failed to save webform:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await supabase.from('crm_webforms').delete().eq('id', deleteId);
+      setWebforms(webforms.filter(w => w.id !== deleteId));
+    } catch (error) {
+      console.error('Failed to delete:', error);
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  const copyToClipboard = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
-  }
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const getModuleName = (moduleId: string) => modules.find(m => m.id === moduleId)?.name || 'Unknown';
+  const getModuleFields = () => fields[form.module_id] || [];
+
+  const getWebformUrl = (webform: CrmWebform) => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${baseUrl}/api/public/webforms/${orgSlug}/${webform.slug}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -87,7 +289,7 @@ export default function WebformsPage() {
             </div>
           </div>
         </div>
-        <Button>
+        <Button onClick={openCreateDialog}>
           <Plus className="w-4 h-4 mr-2" />
           Create Webform
         </Button>
@@ -150,7 +352,7 @@ export default function WebformsPage() {
             <p className="text-slate-500 dark:text-slate-400 mb-4">
               Create public forms to capture leads from your website
             </p>
-            <Button>
+            <Button onClick={openCreateDialog}>
               <Plus className="w-4 h-4 mr-2" />
               Create Webform
             </Button>
@@ -184,7 +386,7 @@ export default function WebformsPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {modules[webform.module_id] || 'Unknown'}
+                      {getModuleName(webform.module_id)}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -195,9 +397,9 @@ export default function WebformsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => copyToClipboard(webform.slug)}
+                        onClick={() => copyToClipboard(webform.slug, webform.id)}
                       >
-                        <Copy className="w-3 h-3" />
+                        {copied === webform.id ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                       </Button>
                     </div>
                   </TableCell>
@@ -207,7 +409,13 @@ export default function WebformsPage() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Switch checked={webform.is_enabled} />
+                    <Switch 
+                      checked={webform.is_enabled}
+                      onCheckedChange={async (checked) => {
+                        await supabase.from('crm_webforms').update({ is_enabled: checked }).eq('id', webform.id);
+                        setWebforms(webforms.map(w => w.id === webform.id ? { ...w, is_enabled: checked } : w));
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -217,19 +425,21 @@ export default function WebformsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditDialog(webform)}>
                           <Pencil className="w-4 h-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => { setSelectedWebform(webform); setEmbedDialogOpen(true); }}>
                           <Code className="w-4 h-4 mr-2" />
                           Get Embed Code
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Preview
+                        <DropdownMenuItem asChild>
+                          <a href={getWebformUrl(webform)} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Preview
+                          </a>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem className="text-red-600" onClick={() => setDeleteId(webform.id)}>
                           <Trash2 className="w-4 h-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -242,6 +452,188 @@ export default function WebformsPage() {
           </Table>
         )}
       </div>
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing ? 'Edit' : 'Create'} Webform</DialogTitle>
+            <DialogDescription>
+              Create a public form to capture leads from your website.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Module</Label>
+                <Select value={form.module_id} onValueChange={(v) => setForm({ ...form, module_id: v, selectedFields: [] })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select module" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modules.map((mod) => (
+                      <SelectItem key={mod.id} value={mod.id}>{mod.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Form Name</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value, slug: form.slug || generateSlug(e.target.value) })}
+                  placeholder="e.g., Contact Form"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>URL Slug</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500">/api/public/webforms/{orgSlug}/</span>
+                <Input
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                  placeholder="contact-form"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                placeholder="Internal description..."
+                rows={2}
+              />
+            </div>
+
+            {/* Field Selection */}
+            <div className="space-y-2">
+              <Label>Form Fields</Label>
+              <div className="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2">
+                {getModuleFields().map((field) => (
+                  <label key={field.key} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedFields.includes(field.key)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm({ ...form, selectedFields: [...form.selectedFields, field.key] });
+                        } else {
+                          setForm({ ...form, selectedFields: form.selectedFields.filter(f => f !== field.key) });
+                        }
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-sm">{field.label}</span>
+                    {field.is_required && <Badge variant="secondary" className="text-xs">Required</Badge>}
+                  </label>
+                ))}
+                {getModuleFields().length === 0 && (
+                  <p className="text-sm text-slate-500">Select a module to see available fields</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Success Message</Label>
+              <Textarea
+                value={form.success_message}
+                onChange={(e) => setForm({ ...form, success_message: e.target.value })}
+                placeholder="Thank you for your submission!"
+                rows={2}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Redirect URL (optional)</Label>
+              <Input
+                value={form.redirect_url}
+                onChange={(e) => setForm({ ...form, redirect_url: e.target.value })}
+                placeholder="https://yoursite.com/thank-you"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                checked={form.is_enabled}
+                onCheckedChange={(checked) => setForm({ ...form, is_enabled: checked })}
+              />
+              <Label>{form.is_enabled ? 'Enabled' : 'Disabled'}</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving || !form.name || !form.module_id}>
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {editing ? 'Save Changes' : 'Create Webform'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Embed Code Dialog */}
+      <Dialog open={embedDialogOpen} onOpenChange={setEmbedDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Embed Code</DialogTitle>
+            <DialogDescription>
+              Copy the embed code to add this form to your website.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedWebform && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Direct URL</Label>
+                <div className="flex gap-2">
+                  <Input value={getWebformUrl(selectedWebform)} readOnly className="font-mono text-sm" />
+                  <Button variant="outline" onClick={() => copyToClipboard(getWebformUrl(selectedWebform), 'url')}>
+                    {copied === 'url' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Embed Code (iframe)</Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={`<iframe src="${getWebformUrl(selectedWebform)}" width="100%" height="500" frameborder="0"></iframe>`}
+                    readOnly
+                    className="font-mono text-sm"
+                    rows={3}
+                  />
+                  <Button 
+                    variant="outline" 
+                    onClick={() => copyToClipboard(`<iframe src="${getWebformUrl(selectedWebform)}" width="100%" height="500" frameborder="0"></iframe>`, 'embed')}
+                  >
+                    {copied === 'embed' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Webform</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this webform? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
