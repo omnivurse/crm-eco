@@ -329,7 +329,7 @@ export default function CrmLoginPage() {
             <div className="text-center lg:text-left">
               <div className="flex justify-center lg:justify-start mb-6">
                 <Image
-                  src="/logo-pif.png"
+                  src="/logo-pif.jpg"
                   alt="Pay It Forward HealthShare"
                   width={200}
                   height={80}
