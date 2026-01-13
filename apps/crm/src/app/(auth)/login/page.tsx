@@ -314,7 +314,7 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="flex items-center justify-center p-8 bg-gradient-to-br from-brand-navy-950 via-brand-navy-900 to-brand-navy-950 text-white">
+        <div className="flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
               <div className="flex justify-center lg:justify-start mb-6">
@@ -327,10 +327,10 @@ export default function LoginPage() {
                   priority
                 />
               </div>
-              <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold tracking-tight text-brand-navy-800">
                 Welcome back
               </h2>
-              <p className="mt-2 text-brand-navy-300">
+              <p className="mt-2 text-brand-navy-500">
                 Sign in to access your member portal
               </p>
             </div>
@@ -344,12 +344,12 @@ export default function LoginPage() {
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-brand-navy-200 text-sm font-medium">
+                  <Label htmlFor="email" className="text-brand-navy-700 text-sm font-medium">
                     Email Address
                   </Label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-400 transition-colors z-10" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-600 transition-colors z-10" />
                     <Input
                       id="email"
                       type="email"
@@ -358,14 +358,14 @@ export default function LoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       autoComplete="email"
-                      className="relative pl-12 h-14 bg-brand-navy-800/50 border-brand-navy-700/50 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500/50 focus:ring-brand-teal-500/20 rounded-xl transition-all"
+                      className="relative pl-12 h-14 bg-white border-brand-navy-200 text-brand-navy-900 placeholder:text-brand-navy-400 focus:border-brand-teal-500 focus:ring-brand-teal-500/20 rounded-xl transition-all shadow-sm"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-brand-navy-200 text-sm font-medium">
+                    <Label htmlFor="password" className="text-brand-navy-700 text-sm font-medium">
                       Password
                     </Label>
                     <button 
@@ -377,7 +377,7 @@ export default function LoginPage() {
                   </div>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-400 transition-colors z-10" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-600 transition-colors z-10" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
