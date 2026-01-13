@@ -337,7 +337,7 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} className="space-y-6">
               {error && (
-                <div className="p-3 text-sm text-red-200 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl">
                   {error}
                 </div>
               )}
@@ -413,7 +413,7 @@ export default function LoginPage() {
                 </button>
                 <label 
                   onClick={() => setRememberMe(!rememberMe)}
-                  className="text-sm text-brand-navy-300 cursor-pointer select-none"
+                  className="text-sm text-brand-navy-600 cursor-pointer select-none"
                 >
                   Remember me for 30 days
                 </label>
@@ -440,10 +440,10 @@ export default function LoginPage() {
 
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-brand-navy-800"></div>
+                  <div className="w-full border-t border-brand-navy-200"></div>
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-brand-navy-900 px-4 text-brand-navy-500 text-xs uppercase tracking-widest">
+                  <span className="bg-white px-4 text-brand-navy-400 text-xs uppercase tracking-widest">
                     New Member?
                   </span>
                 </div>
@@ -452,7 +452,7 @@ export default function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-14 border-brand-navy-700/50 bg-brand-navy-800/30 text-brand-navy-200 hover:bg-brand-navy-800/50 hover:text-white hover:border-brand-navy-600 rounded-xl transition-all"
+                className="w-full h-14 border-brand-navy-200 bg-white text-brand-navy-700 hover:bg-brand-navy-50 hover:text-brand-navy-900 hover:border-brand-navy-300 rounded-xl transition-all shadow-sm"
                 onClick={() => router.push('/enroll')}
               >
                 Start your enrollment
@@ -460,11 +460,11 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-8 text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 text-brand-teal-400/70 text-xs font-medium">
+              <div className="flex items-center justify-center gap-2 text-brand-teal-600 text-xs font-medium">
                 <Shield className="w-3.5 h-3.5" />
                 <span>Secured with enterprise-grade encryption</span>
               </div>
-              <p className="text-brand-navy-600 text-xs">
+              <p className="text-brand-navy-400 text-xs">
                 © 2026 Pay It Forward HealthShare. All rights reserved.
               </p>
             </div>
