@@ -24,6 +24,7 @@ import {
   Zap
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Premium Healthcare Orbit Animation
 function PremiumOrbitAnimation() {
@@ -317,12 +318,14 @@ export default function LoginPage() {
           <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
               <div className="flex justify-center lg:justify-start mb-6">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-brand-teal-500 rounded-2xl blur-xl opacity-30 animate-pulse" />
-                  <div className="relative w-16 h-16 bg-gradient-to-br from-brand-teal-500 to-brand-emerald-600 rounded-2xl flex items-center justify-center shadow-[0_0_30px_10px_rgba(6,155,154,0.2)]">
-                    <Heart className="w-8 h-8 text-white" />
-                  </div>
-                </div>
+                <Image
+                  src="/logo-pif.png"
+                  alt="Pay It Forward HealthShare"
+                  width={200}
+                  height={80}
+                  className="h-16 w-auto object-contain"
+                  priority
+                />
               </div>
               <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                 Welcome back
