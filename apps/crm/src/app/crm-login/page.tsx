@@ -324,7 +324,7 @@ export default function CrmLoginPage() {
         </div>
 
         {/* Right Side - Login Form */}
-        <div className="flex items-center justify-center p-8 bg-gradient-to-br from-brand-navy-950 via-brand-navy-900 to-brand-navy-950 text-white">
+        <div className="flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
               <div className="flex justify-center lg:justify-start mb-6">
@@ -337,29 +337,29 @@ export default function CrmLoginPage() {
                   priority
                 />
               </div>
-              <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+              <h2 className="text-3xl font-bold tracking-tight text-brand-navy-800">
                 Welcome back
               </h2>
-              <p className="mt-2 text-brand-navy-300">
+              <p className="mt-2 text-brand-navy-500">
                 Sign in to access your CRM dashboard
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="p-3 text-sm text-red-200 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl">
                   {error}
                 </div>
               )}
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-brand-navy-200 text-sm font-medium">
+                  <Label htmlFor="email" className="text-brand-navy-700 text-sm font-medium">
                     Email Address
                   </Label>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-400 transition-colors z-10" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-600 transition-colors z-10" />
                     <Input
                       id="email"
                       type="email"
@@ -368,26 +368,26 @@ export default function CrmLoginPage() {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       autoComplete="email"
-                      className="relative pl-12 h-14 bg-brand-navy-800/50 border-brand-navy-700/50 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500/50 focus:ring-brand-teal-500/20 rounded-xl transition-all"
+                      className="relative pl-12 h-14 bg-white border-brand-navy-200 text-brand-navy-900 placeholder:text-brand-navy-400 focus:border-brand-teal-500 focus:ring-brand-teal-500/20 rounded-xl transition-all shadow-sm"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-brand-navy-200 text-sm font-medium">
+                    <Label htmlFor="password" className="text-brand-navy-700 text-sm font-medium">
                       Password
                     </Label>
                     <button 
                       type="button"
-                      className="text-sm text-brand-teal-400 hover:text-brand-teal-300 transition-colors"
+                      className="text-sm text-brand-teal-600 hover:text-brand-teal-700 transition-colors"
                     >
                       Forgot password?
                     </button>
                   </div>
                   <div className="relative group">
                     <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-400 transition-colors z-10" />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-600 transition-colors z-10" />
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -396,12 +396,12 @@ export default function CrmLoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
-                      className="relative pl-12 pr-12 h-14 bg-brand-navy-800/50 border-brand-navy-700/50 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500/50 focus:ring-brand-teal-500/20 rounded-xl transition-all"
+                      className="relative pl-12 pr-12 h-14 bg-white border-brand-navy-200 text-brand-navy-900 placeholder:text-brand-navy-400 focus:border-brand-teal-500 focus:ring-brand-teal-500/20 rounded-xl transition-all shadow-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-navy-400 hover:text-brand-navy-300 z-10"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-navy-400 hover:text-brand-navy-600 z-10"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -416,14 +416,14 @@ export default function CrmLoginPage() {
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                     rememberMe 
                       ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,155,154,0.3)]' 
-                      : 'border-brand-navy-600 bg-brand-navy-800/50 hover:border-brand-navy-500'
+                      : 'border-brand-navy-300 bg-white hover:border-brand-navy-400'
                   }`}
                 >
                   {rememberMe && <Square className="w-2.5 h-2.5 text-white fill-current" />}
                 </button>
                 <label 
                   onClick={() => setRememberMe(!rememberMe)}
-                  className="text-sm text-brand-navy-300 cursor-pointer select-none"
+                  className="text-sm text-brand-navy-600 cursor-pointer select-none"
                 >
                   Remember me for 30 days
                 </label>
@@ -450,10 +450,10 @@ export default function CrmLoginPage() {
 
               <div className="relative my-8">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-brand-navy-800"></div>
+                  <div className="w-full border-t border-brand-navy-200"></div>
                 </div>
                 <div className="relative flex justify-center">
-                  <span className="bg-brand-navy-900 px-4 text-brand-navy-500 text-xs uppercase tracking-widest">
+                  <span className="bg-white px-4 text-brand-navy-400 text-xs uppercase tracking-widest">
                     Need CRM Access?
                   </span>
                 </div>
@@ -462,7 +462,7 @@ export default function CrmLoginPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="w-full h-14 border-brand-navy-700/50 bg-brand-navy-800/30 text-brand-navy-200 hover:bg-brand-navy-800/50 hover:text-white hover:border-brand-navy-600 rounded-xl transition-all"
+                className="w-full h-14 border-brand-navy-200 bg-white text-brand-navy-700 hover:bg-brand-navy-50 hover:text-brand-navy-900 hover:border-brand-navy-300 rounded-xl transition-all shadow-sm"
                 onClick={() => window.location.href = 'mailto:support@payitforwardhealthshare.com'}
               >
                 Contact Administrator
@@ -470,11 +470,11 @@ export default function CrmLoginPage() {
             </form>
 
             <div className="mt-8 text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 text-brand-teal-400/70 text-xs font-medium">
+              <div className="flex items-center justify-center gap-2 text-brand-teal-600 text-xs font-medium">
                 <Shield className="w-3.5 h-3.5" />
                 <span>Secured with enterprise-grade encryption</span>
               </div>
-              <p className="text-brand-navy-600 text-xs">
+              <p className="text-brand-navy-400 text-xs">
                 © 2026 Pay It Forward HealthShare. All rights reserved.
               </p>
             </div>
