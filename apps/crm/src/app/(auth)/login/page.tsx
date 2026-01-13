@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { Button, Input, Label, Card, CardContent } from '@crm-eco/ui';
+import { Button, Input, Label } from '@crm-eco/ui';
 import { 
   Heart, 
   Users, 
@@ -14,30 +14,75 @@ import {
   UserCheck,
   HeartPulse,
   Loader2,
-  Lock
+  Lock,
+  Atom,
+  Eye,
+  EyeOff,
+  Mail,
+  Square
 } from 'lucide-react';
+import Link from 'next/link';
 
-// Floating icon component with animation
-function FloatingIcon({ 
-  icon: Icon, 
-  className, 
-  delay = 0,
-  duration = 6
-}: { 
-  icon: React.ElementType; 
-  className?: string;
-  delay?: number;
-  duration?: number;
-}) {
+// Orbit animation component
+function OrbitAnimation() {
   return (
-    <div 
-      className={`absolute opacity-20 text-white ${className}`}
-      style={{
-        animation: `float ${duration}s ease-in-out infinite`,
-        animationDelay: `${delay}s`,
-      }}
-    >
-      <Icon className="w-full h-full" />
+    <div className="relative w-[600px] h-[600px] flex items-center justify-center">
+      {/* Core */}
+      <div className="absolute w-32 h-32 bg-brand-teal-500/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute w-16 h-16 bg-brand-teal-400/10 rounded-full border border-brand-teal-400/30 flex items-center justify-center backdrop-blur-sm z-10">
+        <Atom className="w-8 h-8 text-brand-teal-300 animate-spin-slow" />
+      </div>
+
+      {/* Orbit Rings */}
+      {/* Ring 1 */}
+      <div className="absolute w-[280px] h-[280px] border border-white/5 rounded-full animate-[spin_20s_linear_infinite]" />
+      <div className="absolute w-[280px] h-[280px] animate-[spin_20s_linear_infinite]">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Heart className="w-4 h-4 text-brand-teal-400" />
+        </div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Activity className="w-4 h-4 text-brand-purple-400" />
+        </div>
+      </div>
+
+      {/* Ring 2 */}
+      <div className="absolute w-[420px] h-[420px] border border-white/5 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
+      <div className="absolute w-[420px] h-[420px] animate-[spin_30s_linear_infinite_reverse]">
+        <div className="absolute top-1/4 left-[10%] bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Users className="w-5 h-5 text-blue-400" />
+        </div>
+        <div className="absolute bottom-1/4 right-[10%] bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Stethoscope className="w-5 h-5 text-emerald-400" />
+        </div>
+      </div>
+
+      {/* Ring 3 */}
+      <div className="absolute w-[560px] h-[560px] border border-white/5 rounded-full animate-[spin_40s_linear_infinite]" />
+      <div className="absolute w-[560px] h-[560px] animate-[spin_40s_linear_infinite]">
+        <div className="absolute top-1/2 -right-3 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Shield className="w-4 h-4 text-amber-400" />
+        </div>
+        <div className="absolute top-1/2 -left-3 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <HeartHandshake className="w-4 h-4 text-rose-400" />
+        </div>
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-white/20 rounded-full"
+            style={{
+              width: Math.random() * 3 + 1 + 'px',
+              height: Math.random() * 3 + 1 + 'px',
+              top: Math.random() * 100 + '%',
+              left: Math.random() * 100 + '%',
+              animation: `pulse ${Math.random() * 3 + 2}s infinite`,
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -49,6 +94,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,180 +140,181 @@ export default function LoginPage() {
 
   return (
     <>
-      {/* CSS for floating animation */}
       <style jsx global>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          25% {
-            transform: translateY(-20px) rotate(5deg);
-          }
-          50% {
-            transform: translateY(-10px) rotate(-3deg);
-          }
-          75% {
-            transform: translateY(-25px) rotate(3deg);
-          }
-        }
-        
-        @keyframes pulse-slow {
-          0%, 100% {
-            opacity: 0.15;
-          }
-          50% {
-            opacity: 0.25;
-          }
-        }
-        
-        @keyframes gradient-shift {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
         }
       `}</style>
 
-      <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
-        {/* Animated gradient background */}
-        <div 
-          className="absolute inset-0 bg-gradient-to-br from-brand-navy-500 via-brand-teal-700 to-brand-emerald-500"
-          style={{
-            backgroundSize: '200% 200%',
-            animation: 'gradient-shift 15s ease infinite',
-          }}
-        />
-        
-        {/* Subtle overlay pattern */}
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)]" 
-          style={{ backgroundSize: '40px 40px' }} 
-        />
-
-        {/* Floating health icons */}
-        <FloatingIcon icon={Heart} className="w-16 h-16 top-[10%] left-[5%]" delay={0} duration={7} />
-        <FloatingIcon icon={Users} className="w-20 h-20 top-[15%] right-[10%]" delay={1} duration={8} />
-        <FloatingIcon icon={Shield} className="w-14 h-14 top-[60%] left-[8%]" delay={2} duration={6} />
-        <FloatingIcon icon={Activity} className="w-12 h-12 top-[75%] right-[15%]" delay={0.5} duration={7} />
-        <FloatingIcon icon={Stethoscope} className="w-18 h-18 top-[25%] left-[15%]" delay={1.5} duration={9} />
-        <FloatingIcon icon={HeartHandshake} className="w-16 h-16 top-[45%] right-[5%]" delay={2.5} duration={6} />
-        <FloatingIcon icon={UserCheck} className="w-14 h-14 bottom-[15%] left-[12%]" delay={3} duration={8} />
-        <FloatingIcon icon={HeartPulse} className="w-20 h-20 bottom-[20%] right-[8%]" delay={1} duration={7} />
-        <FloatingIcon icon={Users} className="w-10 h-10 top-[5%] left-[40%]" delay={2} duration={6} />
-        <FloatingIcon icon={Heart} className="w-12 h-12 bottom-[10%] left-[45%]" delay={0} duration={8} />
-
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-md">
-          {/* Brand header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-4">
-              <HeartHandshake className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight font-heading">
-              Pay It Forward
-            </h1>
-            <p className="text-brand-teal-100 mt-1 text-lg">HealthShare</p>
-            <p className="text-white/60 mt-3 text-sm">Your health, your way</p>
-          </div>
+      <div className="min-h-screen grid lg:grid-cols-2 bg-brand-navy-950">
+        {/* Left Side - Orbit Visuals */}
+        <div className="hidden lg:flex relative overflow-hidden bg-gradient-to-br from-brand-navy-900 via-brand-navy-800 to-brand-teal-900 items-center justify-center">
+          {/* Background Grid Pattern */}
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" />
           
-          {/* Glass card */}
-          <Card className="backdrop-blur-xl bg-white/10 border border-white/20 shadow-2xl">
-            <CardContent className="pt-6">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-white">Welcome back</h2>
-                <p className="text-white/60 text-sm mt-1">
-                  Enter your credentials to access the platform
-                </p>
-              </div>
+          <OrbitAnimation />
 
-              <form onSubmit={handleLogin} className="space-y-4">
-                {error && (
-                  <div className="p-3 text-sm text-red-200 bg-red-500/20 border border-red-400/30 rounded-xl backdrop-blur-sm">
-                    {error}
-                  </div>
-                )}
-                
+          {/* Bottom Text */}
+          <div className="absolute bottom-12 left-12 z-10">
+            <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+              <span className="text-brand-teal-400">MPB</span> Orbit
+            </h1>
+            <p className="text-brand-navy-200 text-lg max-w-md">
+              Your mission control center for healthcare excellence
+            </p>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="flex items-center justify-center p-8 bg-brand-navy-950 text-white">
+          <div className="w-full max-w-md space-y-8">
+            <div className="text-center lg:text-left">
+              <div className="flex justify-center lg:justify-start mb-6 lg:hidden">
+                 <Atom className="w-12 h-12 text-brand-teal-400" />
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight">
+                Welcome back, Commander
+              </h2>
+              <p className="mt-2 text-brand-navy-200">
+                Enter your credentials to access mission control
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-6">
+              {error && (
+                <div className="p-3 text-sm text-red-200 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white/80 text-sm">
+                  <Label htmlFor="email" className="text-brand-navy-100">
                     Email Address
                   </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    autoComplete="email"
-                    className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-brand-teal-400 focus:ring-brand-teal-400/30"
-                  />
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-5 w-5 text-brand-navy-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="vrt@mymb.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoComplete="email"
+                      className="pl-10 h-12 bg-brand-navy-900/50 border-brand-navy-700 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500 focus:ring-brand-teal-500/20"
+                    />
+                  </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-white/80 text-sm">
+                    <Label htmlFor="password" className="text-brand-navy-100">
                       Password
                     </Label>
                     <button 
                       type="button"
-                      className="text-xs text-brand-teal-300 hover:text-brand-teal-200 transition-colors"
+                      className="text-sm text-brand-teal-400 hover:text-brand-teal-300 transition-colors"
                     >
                       Forgot password?
                     </button>
                   </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete="current-password"
-                    className="h-12 bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-brand-teal-400 focus:ring-brand-teal-400/30"
-                  />
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-5 w-5 text-brand-navy-400" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="•••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoComplete="current-password"
+                      className="pl-10 pr-10 h-12 bg-brand-navy-900/50 border-brand-navy-700 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500 focus:ring-brand-teal-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 text-brand-navy-400 hover:text-brand-navy-300"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5" />
+                      ) : (
+                        <Eye className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
+              </div>
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="remember"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/30 bg-white/10 text-brand-teal-500 focus:ring-brand-teal-400/30"
-                  />
-                  <label htmlFor="remember" className="text-sm text-white/60">
-                    Remember me for 30 days
-                  </label>
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-base font-semibold bg-brand-teal-600 hover:bg-brand-teal-500 text-white border-0 transition-all duration-200 hover:shadow-lg hover:shadow-brand-teal-500/25"
-                  disabled={loading}
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setRememberMe(!rememberMe)}
+                  className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                    rememberMe 
+                      ? 'bg-brand-teal-600 border-brand-teal-600' 
+                      : 'border-brand-navy-600 bg-brand-navy-900/50 hover:border-brand-navy-500'
+                  }`}
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Signing in...
-                    </>
-                  ) : (
-                    'Sign in'
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-          
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <div className="flex items-center justify-center gap-2 text-white/40 text-xs">
-              <Lock className="w-3 h-3" />
-              <span>Secured with enterprise-grade encryption</span>
+                  {rememberMe && <Square className="w-3 h-3 text-white fill-current" />}
+                </button>
+                <label 
+                  onClick={() => setRememberMe(!rememberMe)}
+                  className="text-sm text-brand-navy-200 cursor-pointer select-none"
+                >
+                  Remember me for 30 days
+                </label>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full h-12 text-base font-semibold bg-brand-teal-500 hover:bg-brand-teal-400 text-white border-0 transition-all shadow-[0_0_20px_-5px_rgba(6,155,154,0.5)] hover:shadow-[0_0_25px_-5px_rgba(6,155,154,0.6)]"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Sign in to Mission Control
+                    <span className="ml-2">→</span>
+                  </>
+                )}
+              </Button>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-brand-navy-800"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-brand-navy-950 px-2 text-brand-navy-400 text-xs uppercase tracking-wider">
+                    New to Orbit?
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-12 border-brand-navy-700 bg-brand-navy-900/30 text-brand-navy-100 hover:bg-brand-navy-800 hover:text-white"
+                onClick={() => router.push('/signup')}
+              >
+                Create new account
+              </Button>
+            </form>
+
+            <div className="mt-8 text-center space-y-4">
+              <div className="flex items-center justify-center gap-2 text-brand-teal-500/80 text-xs font-medium">
+                <Shield className="w-3 h-3" />
+                <span>Secured with enterprise-grade encryption</span>
+              </div>
+              <p className="text-brand-navy-600 text-xs">
+                © 2026 MPB Health. All rights reserved.
+              </p>
             </div>
-            <p className="text-white/30 text-xs mt-4">
-              © 2026 Pay It Forward HealthShare. All rights reserved.
-            </p>
           </div>
         </div>
       </div>
