@@ -370,7 +370,7 @@ export default function LoginPage() {
                     </Label>
                     <button 
                       type="button"
-                      className="text-sm text-brand-teal-400 hover:text-brand-teal-300 transition-colors"
+                      className="text-sm text-brand-teal-600 hover:text-brand-teal-700 transition-colors"
                     >
                       Forgot password?
                     </button>
@@ -386,12 +386,12 @@ export default function LoginPage() {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       autoComplete="current-password"
-                      className="relative pl-12 pr-12 h-14 bg-brand-navy-800/50 border-brand-navy-700/50 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500/50 focus:ring-brand-teal-500/20 rounded-xl transition-all"
+                      className="relative pl-12 pr-12 h-14 bg-white border-brand-navy-200 text-brand-navy-900 placeholder:text-brand-navy-400 focus:border-brand-teal-500 focus:ring-brand-teal-500/20 rounded-xl transition-all shadow-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-navy-400 hover:text-brand-navy-300 z-10"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-navy-400 hover:text-brand-navy-600 z-10"
                     >
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
@@ -406,7 +406,7 @@ export default function LoginPage() {
                   className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
                     rememberMe 
                       ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,155,154,0.3)]' 
-                      : 'border-brand-navy-600 bg-brand-navy-800/50 hover:border-brand-navy-500'
+                      : 'border-brand-navy-300 bg-white hover:border-brand-navy-400'
                   }`}
                 >
                   {rememberMe && <Square className="w-2.5 h-2.5 text-white fill-current" />}
