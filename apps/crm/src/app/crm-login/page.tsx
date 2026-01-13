@@ -6,13 +6,97 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
+import { 
+  Heart, 
+  Users, 
+  Shield, 
+  Activity, 
+  Stethoscope, 
+  HeartHandshake,
+  Loader2,
+  Lock,
+  Atom,
+  Eye,
+  EyeOff,
+  Mail,
+  Square,
+  BarChart3,
+  Database,
+  Briefcase,
+  Target
+} from 'lucide-react';
+
+// Orbit animation component for CRM
+function OrbitAnimation() {
+  return (
+    <div className="relative w-[600px] h-[600px] flex items-center justify-center">
+      {/* Core */}
+      <div className="absolute w-32 h-32 bg-brand-teal-500/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute w-16 h-16 bg-brand-teal-400/10 rounded-full border border-brand-teal-400/30 flex items-center justify-center backdrop-blur-sm z-10">
+        <Atom className="w-8 h-8 text-brand-teal-300 animate-[spin_10s_linear_infinite]" />
+      </div>
+
+      {/* Orbit Rings */}
+      {/* Ring 1 - CRM Icons */}
+      <div className="absolute w-[280px] h-[280px] border border-white/5 rounded-full animate-[spin_20s_linear_infinite]" />
+      <div className="absolute w-[280px] h-[280px] animate-[spin_20s_linear_infinite]">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Users className="w-4 h-4 text-brand-teal-400" />
+        </div>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <BarChart3 className="w-4 h-4 text-violet-400" />
+        </div>
+      </div>
+
+      {/* Ring 2 */}
+      <div className="absolute w-[420px] h-[420px] border border-white/5 rounded-full animate-[spin_30s_linear_infinite_reverse]" />
+      <div className="absolute w-[420px] h-[420px] animate-[spin_30s_linear_infinite_reverse]">
+        <div className="absolute top-1/4 left-[10%] bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Briefcase className="w-5 h-5 text-blue-400" />
+        </div>
+        <div className="absolute bottom-1/4 right-[10%] bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Database className="w-5 h-5 text-emerald-400" />
+        </div>
+      </div>
+
+      {/* Ring 3 */}
+      <div className="absolute w-[560px] h-[560px] border border-white/5 rounded-full animate-[spin_40s_linear_infinite]" />
+      <div className="absolute w-[560px] h-[560px] animate-[spin_40s_linear_infinite]">
+        <div className="absolute top-1/2 -right-3 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <Target className="w-4 h-4 text-amber-400" />
+        </div>
+        <div className="absolute top-1/2 -left-3 bg-brand-navy-900 p-2 rounded-full border border-white/10">
+          <HeartHandshake className="w-4 h-4 text-rose-400" />
+        </div>
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute bg-white/20 rounded-full"
+            style={{
+              width: Math.random() * 3 + 1 + 'px',
+              height: Math.random() * 3 + 1 + 'px',
+              top: Math.random() * 100 + '%',
+              left: Math.random() * 100 + '%',
+              animation: `pulse ${Math.random() * 3 + 2}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function CrmLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const supabase = createBrowserClient(
@@ -70,127 +154,177 @@ export default function CrmLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-navy-900 via-brand-navy-800 to-brand-teal-900">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }} />
+    <div className="min-h-screen grid lg:grid-cols-2 bg-brand-navy-950">
+      {/* Left Side - Orbit Visuals */}
+      <div className="hidden lg:flex relative overflow-hidden bg-gradient-to-br from-brand-navy-900 via-brand-navy-800 to-brand-teal-900 items-center justify-center">
+        {/* Background Grid Pattern */}
+        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:20px_20px]" />
+        
+        <OrbitAnimation />
+
+        {/* Bottom Text */}
+        <div className="absolute bottom-12 left-12 z-10">
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
+            <span className="text-brand-teal-400">MPB</span> Orbit
+          </h1>
+          <p className="text-brand-navy-200 text-lg max-w-md">
+            Your mission control center for healthcare excellence
+          </p>
+        </div>
       </div>
 
-      <Card className="w-full max-w-md mx-4 shadow-2xl border-0 bg-white/95 backdrop-blur">
-        <CardHeader className="text-center pb-2">
-          {/* Logo */}
-          <div className="mx-auto mb-4 w-16 h-16 bg-gradient-to-br from-brand-teal-500 to-brand-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-8 h-8 text-white"
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+      {/* Right Side - Login Form */}
+      <div className="flex items-center justify-center p-8 bg-brand-navy-950 text-white">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center lg:text-left">
+            <div className="flex justify-center lg:justify-start mb-6">
+              <div className="w-14 h-14 bg-brand-teal-500/20 rounded-xl flex items-center justify-center border border-brand-teal-500/30">
+                <Users className="w-7 h-7 text-brand-teal-400" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold tracking-tight">
+              Welcome back, Commander
+            </h2>
+            <p className="mt-2 text-brand-navy-200">
+              Enter your credentials to access mission control
+            </p>
           </div>
-          <CardTitle className="text-2xl font-bold text-brand-navy-800">
-            CRM Portal
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Sign in to access your customer relationship management system
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+              <div className="p-3 text-sm text-red-200 bg-red-500/10 border border-red-500/20 rounded-lg">
                 {error}
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-brand-navy-700">
-                Email Address
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                className="h-11"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-brand-navy-100">
+                  Email Address
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-5 w-5 text-brand-navy-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="vrt@mympb.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="email"
+                    className="pl-10 h-12 bg-brand-navy-900/50 border-brand-navy-700 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500 focus:ring-brand-teal-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-brand-navy-100">
+                    Password
+                  </Label>
+                  <button 
+                    type="button"
+                    className="text-sm text-brand-teal-400 hover:text-brand-teal-300 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-5 w-5 text-brand-navy-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="•••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    className="pl-10 pr-10 h-12 bg-brand-navy-900/50 border-brand-navy-700 text-white placeholder:text-brand-navy-500 focus:border-brand-teal-500 focus:ring-brand-teal-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-brand-navy-400 hover:text-brand-navy-300"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-brand-navy-700">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="h-11"
-              />
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={() => setRememberMe(!rememberMe)}
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
+                  rememberMe 
+                    ? 'bg-brand-teal-600 border-brand-teal-600' 
+                    : 'border-brand-navy-600 bg-brand-navy-900/50 hover:border-brand-navy-500'
+                }`}
+              >
+                {rememberMe && <Square className="w-3 h-3 text-white fill-current" />}
+              </button>
+              <label 
+                onClick={() => setRememberMe(!rememberMe)}
+                className="text-sm text-brand-navy-200 cursor-pointer select-none"
+              >
+                Remember me for 30 days
+              </label>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-11 bg-brand-teal-600 hover:bg-brand-teal-700 text-white font-medium"
+            <Button 
+              type="submit" 
+              className="w-full h-12 text-base font-semibold bg-brand-teal-500 hover:bg-brand-teal-400 text-white border-0 transition-all shadow-[0_0_20px_-5px_rgba(6,155,154,0.5)] hover:shadow-[0_0_25px_-5px_rgba(6,155,154,0.6)]"
               disabled={loading}
             >
               {loading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   Signing in...
-                </span>
+                </>
               ) : (
-                'Sign In'
+                <>
+                  Sign in to Mission Control
+                  <span className="ml-2">→</span>
+                </>
               )}
             </Button>
 
-            <div className="text-center text-sm text-muted-foreground pt-2">
-              <p>
-                Need access?{' '}
-                <a href="mailto:support@payitforwardhealthshare.com" className="text-brand-teal-600 hover:underline">
-                  Contact your administrator
-                </a>
-              </p>
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-brand-navy-800"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-brand-navy-950 px-2 text-brand-navy-400 text-xs uppercase tracking-wider">
+                  Need Access?
+                </span>
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
 
-      {/* Footer */}
-      <div className="absolute bottom-4 text-center text-white/60 text-sm">
-        <p>Pay It Forward HealthShare &copy; {new Date().getFullYear()}</p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-12 border-brand-navy-700 bg-brand-navy-900/30 text-brand-navy-100 hover:bg-brand-navy-800 hover:text-white"
+              onClick={() => window.location.href = 'mailto:support@payitforwardhealthshare.com'}
+            >
+              Contact Administrator
+            </Button>
+          </form>
+
+          <div className="mt-8 text-center space-y-4">
+            <div className="flex items-center justify-center gap-2 text-brand-teal-500/80 text-xs font-medium">
+              <Shield className="w-3 h-3" />
+              <span>Secured with enterprise-grade encryption</span>
+            </div>
+            <p className="text-brand-navy-600 text-xs">
+              © 2026 MPB Health. All rights reserved.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
