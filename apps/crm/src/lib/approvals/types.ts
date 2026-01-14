@@ -173,3 +173,233 @@ export function isUserApprover(
       return false;
   }
 }
+
+// ============================================================================
+// W4: Approval Rules
+// ============================================================================
+
+export type ApprovalRuleTriggerType = 
+  | 'field_change'
+  | 'stage_transition'
+  | 'record_delete'
+  | 'record_create'
+  | 'field_threshold';
+
+export type ApprovalConditionOperator = 
+  | 'eq' 
+  | 'neq' 
+  | 'gt' 
+  | 'lt' 
+  | 'gte' 
+  | 'lte' 
+  | 'contains' 
+  | 'in'
+  | 'not_in'
+  | 'is_empty'
+  | 'is_not_empty';
+
+export interface ApprovalCondition {
+  field: string;
+  operator: ApprovalConditionOperator;
+  value: string | number | boolean | string[] | null;
+}
+
+export interface ApprovalRuleConditions {
+  logic: 'AND' | 'OR';
+  conditions: ApprovalCondition[];
+}
+
+export interface ApprovalRuleTriggerConfig {
+  field?: string;
+  stage_from?: string;
+  stage_to?: string;
+  threshold?: number;
+}
+
+export interface CrmApprovalRule {
+  id: string;
+  org_id: string;
+  module_id: string;
+  process_id: string;
+  name: string;
+  description: string | null;
+  trigger_type: ApprovalRuleTriggerType;
+  trigger_config: ApprovalRuleTriggerConfig;
+  conditions: ApprovalRuleConditions;
+  priority: number;
+  is_enabled: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// W4: Action Payload (for blocked actions)
+// ============================================================================
+
+export type ApprovalActionPayloadType = 
+  | 'update' 
+  | 'delete' 
+  | 'stage_change'
+  | 'field_update';
+
+export interface ApprovalActionPayload {
+  type: ApprovalActionPayloadType;
+  record_id: string;
+  module_id: string;
+  data?: Record<string, unknown>;
+  stage_from?: string | null;
+  stage_to?: string;
+  field_changes?: Record<string, { old: unknown; new: unknown }>;
+}
+
+// ============================================================================
+// W4: Extended Approval (with new fields)
+// ============================================================================
+
+export interface CrmApprovalExtended extends CrmApproval {
+  action_payload: ApprovalActionPayload | null;
+  applied_at: string | null;
+  idempotency_key: string | null;
+  rule_id: string | null;
+  entity_snapshot: Record<string, unknown> | null;
+}
+
+// ============================================================================
+// W4: Approval Decision
+// ============================================================================
+
+export type ApprovalDecisionType = 
+  | 'approve' 
+  | 'reject' 
+  | 'request_changes' 
+  | 'delegate' 
+  | 'escalate';
+
+export interface CrmApprovalDecision {
+  id: string;
+  org_id: string;
+  approval_id: string;
+  step_index: number;
+  decision: ApprovalDecisionType;
+  decided_by: string;
+  comment: string | null;
+  delegated_to: string | null;
+  decision_context: Record<string, unknown>;
+  decided_at: string;
+  time_to_decision_seconds: number | null;
+  created_at: string;
+}
+
+// ============================================================================
+// W4: Inbox Types
+// ============================================================================
+
+export interface ApprovalInboxItem {
+  id: string;
+  process_id: string;
+  process_name: string;
+  record_id: string;
+  record_title: string;
+  module_key: string;
+  module_name: string;
+  status: ApprovalStatus;
+  current_step: number;
+  total_steps: number;
+  context: ApprovalContext;
+  requested_by: string | null;
+  requested_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApprovalInboxFilters {
+  status?: ApprovalStatus | 'all';
+  entity_type?: string;
+  assigned_to_me?: boolean;
+  requested_by_me?: boolean;
+  date_from?: string;
+  date_to?: string;
+}
+
+// ============================================================================
+// W4: Approval Detail
+// ============================================================================
+
+export interface ApprovalDetailData {
+  id: string;
+  org_id: string;
+  process_id: string;
+  process_name: string;
+  process_description: string | null;
+  process_steps: ApprovalStep[];
+  record_id: string;
+  record_title: string;
+  record_data: Record<string, unknown>;
+  module_id: string;
+  module_key: string;
+  module_name: string;
+  status: ApprovalStatus;
+  current_step: number;
+  context: ApprovalContext;
+  action_payload: ApprovalActionPayload | null;
+  entity_snapshot: Record<string, unknown> | null;
+  requested_by: string | null;
+  requested_by_name: string | null;
+  resolved_by: string | null;
+  resolved_by_name: string | null;
+  resolved_at: string | null;
+  applied_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// W4: Create Approval Request Types
+// ============================================================================
+
+export interface CreateApprovalRequestInput {
+  orgId: string;
+  moduleId: string;
+  recordId: string;
+  processId: string;
+  ruleId?: string;
+  triggerType: ApprovalRuleTriggerType;
+  actionPayload: ApprovalActionPayload;
+  context: ApprovalContext;
+  requestedBy: string;
+  entitySnapshot?: Record<string, unknown>;
+}
+
+export interface CreateApprovalRequestResult {
+  success: boolean;
+  approvalId?: string;
+  error?: string;
+}
+
+// ============================================================================
+// W4: Apply Approved Action Types
+// ============================================================================
+
+export interface ApplyApprovedActionInput {
+  approvalId: string;
+  profileId: string;
+  userId: string;
+}
+
+export interface ApplyApprovedActionResult {
+  success: boolean;
+  applied: boolean;
+  error?: string;
+}
+
+// ============================================================================
+// W4: Rule Match Result
+// ============================================================================
+
+export interface RuleMatchResult {
+  ruleId: string;
+  processId: string;
+  ruleName: string;
+}

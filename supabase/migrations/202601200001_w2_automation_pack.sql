@@ -368,9 +368,7 @@ SET search_path = public;
 -- Function to generate webhook secret
 CREATE OR REPLACE FUNCTION generate_webhook_secret()
 RETURNS text AS $$
-BEGIN
-  RETURN encode(gen_random_bytes(32), 'hex');
-END;
+  SELECT encode(gen_random_bytes(32), 'hex');
 $$ LANGUAGE sql;
 
 -- ============================================================================

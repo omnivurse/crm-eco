@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getPendingApprovalsForUser, getApprovalHistory } from '@/lib/approvals';
+import { 
+  getPendingApprovalsForUser, 
+  getApprovalHistory,
+  getApprovalInbox,
+  getApprovalDetail,
+  getApprovalDecisions,
+  type ApprovalStatus,
+} from '@/lib/approvals';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -27,10 +34,16 @@ async function createClient() {
 
 /**
  * GET /api/approvals
- * Get pending approvals for current user
+ * Get approvals with filters
  * 
  * Query params:
- * - approvalId: Get specific approval history
+ * - approvalId: Get specific approval with history and decisions
+ * - recordId: Get approvals for a specific record
+ * - status: Filter by status (pending, approved, rejected, all)
+ * - entityType: Filter by module key (deals, leads, etc.)
+ * - assignedToMe: Filter to approvals assigned to current user
+ * - requestedByMe: Filter to approvals requested by current user
+ * - inbox: Use enhanced inbox query with all filters
  */
 export async function GET(request: NextRequest) {
   try {
@@ -55,29 +68,30 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const approvalId = searchParams.get('approvalId');
     const recordId = searchParams.get('recordId');
+    const useInbox = searchParams.get('inbox') === 'true';
+    
+    // Filter params
+    const status = searchParams.get('status') as ApprovalStatus | 'all' | null;
+    const entityType = searchParams.get('entityType');
+    const assignedToMe = searchParams.get('assignedToMe') === 'true';
+    const requestedByMe = searchParams.get('requestedByMe') === 'true';
 
-    // Get specific approval history
+    // Get specific approval with full details
     if (approvalId) {
-      const history = await getApprovalHistory(approvalId);
+      const [history, decisions, detail] = await Promise.all([
+        getApprovalHistory(approvalId),
+        getApprovalDecisions(approvalId),
+        getApprovalDetail(approvalId),
+      ]);
       
-      // Also get the approval details
-      const { data: approval } = await supabase
-        .from('crm_approvals')
-        .select(`
-          *,
-          process:crm_approval_processes(name, steps),
-          requester:profiles!crm_approvals_requested_by_fkey(full_name)
-        `)
-        .eq('id', approvalId)
-        .single();
-      
-      if (!approval || approval.org_id !== profile.organization_id) {
+      if (!detail || detail.org_id !== profile.organization_id) {
         return NextResponse.json({ error: 'Approval not found' }, { status: 404 });
       }
       
       return NextResponse.json({
-        approval,
+        approval: detail,
         history,
+        decisions,
       });
     }
 
@@ -97,7 +111,32 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ approvals: approvals || [] });
     }
 
-    // Get all pending approvals for user
+    // Use enhanced inbox query with filters
+    if (useInbox || status || entityType || assignedToMe || requestedByMe) {
+      const inbox = await getApprovalInbox(
+        profile.organization_id,
+        profile.id,
+        profile.crm_role,
+        {
+          status: status || undefined,
+          entity_type: entityType || undefined,
+          assigned_to_me: assignedToMe,
+          requested_by_me: requestedByMe,
+        }
+      );
+      
+      return NextResponse.json({ 
+        inbox,
+        filters: {
+          status,
+          entityType,
+          assignedToMe,
+          requestedByMe,
+        }
+      });
+    }
+
+    // Default: Get all pending approvals for user (legacy behavior)
     const pending = await getPendingApprovalsForUser(profile.id, profile.crm_role);
     
     return NextResponse.json({ pending });
