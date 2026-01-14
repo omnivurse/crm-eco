@@ -369,7 +369,7 @@ async function DashboardContent() {
               <Activity className="w-5 h-5 text-violet-600 dark:text-violet-400" />
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Activity</h2>
             </div>
-            <Link href="/crm/activity" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+            <Link href="/crm/activities" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
               View all
             </Link>
           </div>
