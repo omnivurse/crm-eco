@@ -16,4 +16,26 @@ export {
   executeApprovalAction,
   getRecordPendingApproval,
   cancelApproval,
+  // W4 additions
+  createApprovalRequest,
+  applyApprovedAction,
+  getApprovalInbox,
+  getApprovalDetail,
+  getApprovalDecisions,
+  recordApprovalDecision,
+  getApprovalProcesses,
+  createApprovalProcessRecord,
+  updateApprovalProcessRecord,
+  deleteApprovalProcess,
 } from './engine';
+
+// Rules Engine
+export {
+  getApprovalRulesForModule,
+  getApprovalRule,
+  evaluateApprovalRules,
+  checkApprovalRequired,
+  createApprovalRule,
+  updateApprovalRule,
+  deleteApprovalRule,
+} from './rules';

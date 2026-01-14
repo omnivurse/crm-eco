@@ -15,6 +15,10 @@ import {
   Clock,
   User,
   Filter,
+  ClipboardCheck,
+  Check,
+  X,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -203,8 +207,73 @@ function AuditEvent({ data }: { data: CrmAuditLogWithActor }) {
     bulk_update: 'Bulk update',
     stage_change: 'Changed stage',
     approval_request: 'Requested approval',
-    approval_action: 'Approval action',
+    approval_action: 'Approval decision',
+    approval_apply: 'Approved action applied',
+    rule_triggered: 'Rule triggered',
   };
+
+  // Special rendering for approval events
+  if (data.action === 'approval_action' && data.diff) {
+    const diff = data.diff as { action?: string; comment?: string; new_status?: string };
+    const actionIcon = diff.action === 'approve' 
+      ? <Check className="w-4 h-4 text-green-400" />
+      : diff.action === 'reject'
+      ? <X className="w-4 h-4 text-red-400" />
+      : <MessageSquare className="w-4 h-4 text-yellow-400" />;
+    
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          {actionIcon}
+          <span className="text-sm text-slate-300 capitalize">
+            {diff.action === 'request_changes' ? 'Requested changes' : diff.action || 'Decision made'}
+          </span>
+          {diff.new_status && (
+            <Badge 
+              variant="outline" 
+              className={cn(
+                'text-xs',
+                diff.new_status === 'approved' && 'bg-green-500/10 border-green-500/30 text-green-400',
+                diff.new_status === 'rejected' && 'bg-red-500/10 border-red-500/30 text-red-400',
+                diff.new_status === 'pending' && 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+              )}
+            >
+              {diff.new_status}
+            </Badge>
+          )}
+        </div>
+        {diff.comment && (
+          <p className="text-sm text-slate-400 italic">&ldquo;{diff.comment}&rdquo;</p>
+        )}
+      </div>
+    );
+  }
+
+  if (data.action === 'approval_request' && data.diff) {
+    const diff = data.diff as { trigger_type?: string; action_type?: string };
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <ClipboardCheck className="w-4 h-4 text-orange-400" />
+          <span className="text-sm text-slate-300">Approval requested</span>
+        </div>
+        {diff.action_type && (
+          <p className="text-xs text-slate-500">
+            Action type: <span className="capitalize">{diff.action_type.replace('_', ' ')}</span>
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (data.action === 'approval_apply') {
+    return (
+      <div className="flex items-center gap-2">
+        <Check className="w-4 h-4 text-green-400" />
+        <span className="text-sm text-slate-300">Approved action was applied</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-1">

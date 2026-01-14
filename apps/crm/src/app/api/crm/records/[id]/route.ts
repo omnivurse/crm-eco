@@ -3,7 +3,11 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
 import { getModuleBlueprint } from '@/lib/blueprints';
-import { getRecordPendingApproval } from '@/lib/approvals';
+import { 
+  getRecordPendingApproval, 
+  checkApprovalRequired,
+  createApprovalRequest,
+} from '@/lib/approvals';
 import type { CrmRecord } from '@/lib/crm/types';
 
 async function createClient() {
@@ -164,12 +168,68 @@ export async function DELETE(
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, crm_role')
+      .select('id, crm_role, organization_id')
       .eq('user_id', user.id)
       .single();
 
     if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Get the record to check approval rules
+    const { data: record } = await supabase
+      .from('crm_records')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!record) {
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+    }
+
+    // Check if deletion requires approval
+    const ruleMatch = await checkApprovalRequired(
+      profile.organization_id,
+      record.module_id,
+      'record_delete',
+      { ...(record.data || {}), stage: record.stage }
+    );
+
+    if (ruleMatch) {
+      // Create approval request instead of deleting
+      const result = await createApprovalRequest({
+        orgId: profile.organization_id,
+        moduleId: record.module_id,
+        recordId: id,
+        processId: ruleMatch.processId,
+        ruleId: ruleMatch.ruleId,
+        triggerType: 'record_delete',
+        actionPayload: {
+          type: 'delete',
+          record_id: id,
+          module_id: record.module_id,
+        },
+        context: {
+          action_type: 'record_delete',
+          record_title: record.title,
+        },
+        requestedBy: profile.id,
+        entitySnapshot: {
+          id: record.id,
+          title: record.title,
+          stage: record.stage,
+          data: record.data,
+        },
+      });
+
+      if (result.success) {
+        return NextResponse.json({
+          success: false,
+          requiresApproval: true,
+          approvalId: result.approvalId,
+          message: 'Deletion requires approval',
+        }, { status: 202 });
+      }
     }
 
     const { error } = await supabase

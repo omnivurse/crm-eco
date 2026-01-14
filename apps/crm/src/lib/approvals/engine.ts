@@ -543,3 +543,527 @@ export async function cancelApproval(
   
   return { success: true };
 }
+
+// ============================================================================
+// W4: Create Approval Request
+// ============================================================================
+
+import type {
+  CreateApprovalRequestInput,
+  CreateApprovalRequestResult,
+  ApplyApprovedActionInput,
+  ApplyApprovedActionResult,
+  ApprovalActionPayload,
+  ApprovalInboxItem,
+  ApprovalInboxFilters,
+  ApprovalDetailData,
+  CrmApprovalDecision,
+} from './types';
+
+/**
+ * Generate a unique idempotency key for an approval request
+ */
+function generateIdempotencyKey(
+  recordId: string,
+  actionType: string,
+  actionData?: Record<string, unknown>
+): string {
+  const timestamp = Date.now();
+  const dataHash = actionData ? JSON.stringify(actionData).substring(0, 50) : '';
+  return `${recordId}:${actionType}:${timestamp}:${dataHash}`;
+}
+
+/**
+ * Create a new approval request
+ */
+export async function createApprovalRequest(
+  input: CreateApprovalRequestInput
+): Promise<CreateApprovalRequestResult> {
+  const supabase = await createClient();
+  
+  // Generate idempotency key
+  const idempotencyKey = generateIdempotencyKey(
+    input.recordId,
+    input.actionPayload.type,
+    input.actionPayload.data
+  );
+  
+  // Get record data for snapshot
+  let entitySnapshot = input.entitySnapshot;
+  if (!entitySnapshot) {
+    const { data: record } = await supabase
+      .from('crm_records')
+      .select('*')
+      .eq('id', input.recordId)
+      .single();
+    
+    if (record) {
+      entitySnapshot = {
+        id: record.id,
+        title: record.title,
+        stage: record.stage,
+        data: record.data,
+        owner_id: record.owner_id,
+      };
+    }
+  }
+  
+  // Create the approval request
+  const { data: approval, error } = await supabase
+    .from('crm_approvals')
+    .insert({
+      org_id: input.orgId,
+      process_id: input.processId,
+      record_id: input.recordId,
+      status: 'pending',
+      current_step: 0,
+      context: input.context,
+      action_payload: input.actionPayload,
+      entity_snapshot: entitySnapshot,
+      idempotency_key: idempotencyKey,
+      rule_id: input.ruleId || null,
+      requested_by: input.requestedBy,
+    })
+    .select('id')
+    .single();
+  
+  if (error) {
+    // Check for duplicate idempotency key
+    if (error.code === '23505') {
+      return { success: false, error: 'An approval request already exists for this action' };
+    }
+    return { success: false, error: error.message };
+  }
+  
+  // Get the process to notify approvers
+  const process = await getApprovalProcess(input.processId);
+  if (process) {
+    await notifyApprovers(
+      { ...approval, org_id: input.orgId, record_id: input.recordId } as CrmApproval,
+      process,
+      0
+    );
+  }
+  
+  // Log to audit
+  await supabase.from('crm_audit_log').insert({
+    org_id: input.orgId,
+    actor_id: input.requestedBy,
+    action: 'approval_request',
+    entity: 'crm_approvals',
+    entity_id: approval.id,
+    diff: {
+      trigger_type: input.triggerType,
+      action_type: input.actionPayload.type,
+      process_id: input.processId,
+      rule_id: input.ruleId,
+    },
+  });
+  
+  return { success: true, approvalId: approval.id };
+}
+
+// ============================================================================
+// W4: Apply Approved Action
+// ============================================================================
+
+/**
+ * Apply an approved action (idempotent)
+ */
+export async function applyApprovedAction(
+  input: ApplyApprovedActionInput
+): Promise<ApplyApprovedActionResult> {
+  const supabase = await createClient();
+  
+  // Get the approval with its payload
+  const { data: approval } = await supabase
+    .from('crm_approvals')
+    .select('*')
+    .eq('id', input.approvalId)
+    .single();
+  
+  if (!approval) {
+    return { success: false, applied: false, error: 'Approval not found' };
+  }
+  
+  if (approval.status !== 'approved') {
+    return { success: false, applied: false, error: 'Approval is not approved' };
+  }
+  
+  // Check if already applied (idempotent)
+  if (approval.applied_at) {
+    return { success: true, applied: false }; // Already applied, not an error
+  }
+  
+  const payload = approval.action_payload as ApprovalActionPayload;
+  
+  if (!payload) {
+    return { success: false, applied: false, error: 'No action payload found' };
+  }
+  
+  try {
+    // Execute the action based on type
+    switch (payload.type) {
+      case 'stage_change': {
+        // Use the existing blueprint transition
+        const result = await executeApprovedTransition(input.approvalId, {
+          profileId: input.profileId,
+          userId: input.userId,
+        });
+        
+        if (!result.success) {
+          return { success: false, applied: false, error: result.error };
+        }
+        break;
+      }
+      
+      case 'update': {
+        // Apply field updates
+        if (payload.data) {
+          const { data: record } = await supabase
+            .from('crm_records')
+            .select('data')
+            .eq('id', payload.record_id)
+            .single();
+          
+          const { error } = await supabase
+            .from('crm_records')
+            .update({
+              data: { ...(record?.data || {}), ...payload.data },
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', payload.record_id);
+          
+          if (error) {
+            return { success: false, applied: false, error: error.message };
+          }
+        }
+        break;
+      }
+      
+      case 'delete': {
+        // Delete the record
+        const { error } = await supabase
+          .from('crm_records')
+          .delete()
+          .eq('id', payload.record_id);
+        
+        if (error) {
+          return { success: false, applied: false, error: error.message };
+        }
+        break;
+      }
+      
+      case 'field_update': {
+        // Apply specific field changes
+        if (payload.field_changes) {
+          const { data: record } = await supabase
+            .from('crm_records')
+            .select('data')
+            .eq('id', payload.record_id)
+            .single();
+          
+          const newData = { ...(record?.data || {}) };
+          for (const [field, change] of Object.entries(payload.field_changes)) {
+            newData[field] = change.new;
+          }
+          
+          const { error } = await supabase
+            .from('crm_records')
+            .update({
+              data: newData,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', payload.record_id);
+          
+          if (error) {
+            return { success: false, applied: false, error: error.message };
+          }
+        }
+        break;
+      }
+    }
+    
+    // Mark as applied
+    await supabase
+      .from('crm_approvals')
+      .update({
+        applied_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', input.approvalId);
+    
+    // Log to audit
+    await supabase.from('crm_audit_log').insert({
+      org_id: approval.org_id,
+      actor_id: input.profileId,
+      action: 'approval_apply',
+      entity: 'crm_records',
+      entity_id: payload.record_id,
+      diff: {
+        approval_id: input.approvalId,
+        action_type: payload.type,
+        payload,
+      },
+    });
+    
+    return { success: true, applied: true };
+  } catch (error) {
+    console.error('Error applying approved action:', error);
+    return { 
+      success: false, 
+      applied: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+}
+
+// ============================================================================
+// W4: Get Approval Inbox
+// ============================================================================
+
+/**
+ * Get approval inbox with filters
+ */
+export async function getApprovalInbox(
+  orgId: string,
+  profileId: string,
+  userRole: string | null,
+  filters: ApprovalInboxFilters = {}
+): Promise<ApprovalInboxItem[]> {
+  const supabase = await createClient();
+  
+  // Use the database function for optimized query
+  const { data, error } = await supabase.rpc('get_approval_inbox', {
+    p_org_id: orgId,
+    p_profile_id: profileId,
+    p_user_role: userRole,
+    p_status: filters.status === 'all' ? null : (filters.status || null),
+    p_entity_type: filters.entity_type || null,
+    p_assigned_to_me: filters.assigned_to_me || false,
+    p_requested_by_me: filters.requested_by_me || false,
+    p_limit: 100,
+    p_offset: 0,
+  });
+  
+  if (error) {
+    console.error('Error fetching approval inbox:', error);
+    return [];
+  }
+  
+  return (data || []) as ApprovalInboxItem[];
+}
+
+// ============================================================================
+// W4: Get Approval Detail
+// ============================================================================
+
+/**
+ * Get full approval details for detail page
+ */
+export async function getApprovalDetail(
+  approvalId: string
+): Promise<ApprovalDetailData | null> {
+  const supabase = await createClient();
+  
+  const { data, error } = await supabase.rpc('get_approval_detail', {
+    p_approval_id: approvalId,
+  });
+  
+  if (error || !data || data.length === 0) {
+    console.error('Error fetching approval detail:', error);
+    return null;
+  }
+  
+  return data[0] as ApprovalDetailData;
+}
+
+// ============================================================================
+// W4: Get Approval Decisions
+// ============================================================================
+
+/**
+ * Get all decisions for an approval
+ */
+export async function getApprovalDecisions(
+  approvalId: string
+): Promise<CrmApprovalDecision[]> {
+  const supabase = await createClient();
+  
+  const { data } = await supabase
+    .from('crm_approval_decisions')
+    .select(`
+      *,
+      decider:profiles!crm_approval_decisions_decided_by_fkey(full_name, email)
+    `)
+    .eq('approval_id', approvalId)
+    .order('created_at', { ascending: true });
+  
+  return (data || []) as CrmApprovalDecision[];
+}
+
+// ============================================================================
+// W4: Record Decision
+// ============================================================================
+
+/**
+ * Record a decision in the detailed decisions table
+ */
+export async function recordApprovalDecision(
+  orgId: string,
+  approvalId: string,
+  stepIndex: number,
+  decision: 'approve' | 'reject' | 'request_changes' | 'delegate' | 'escalate',
+  decidedBy: string,
+  comment?: string,
+  delegatedTo?: string,
+  stepStartedAt?: Date
+): Promise<{ success: boolean; decisionId?: string; error?: string }> {
+  const supabase = await createClient();
+  
+  const timeToDecision = stepStartedAt
+    ? Math.floor((Date.now() - stepStartedAt.getTime()) / 1000)
+    : null;
+  
+  const { data, error } = await supabase
+    .from('crm_approval_decisions')
+    .insert({
+      org_id: orgId,
+      approval_id: approvalId,
+      step_index: stepIndex,
+      decision,
+      decided_by: decidedBy,
+      comment,
+      delegated_to: delegatedTo,
+      time_to_decision_seconds: timeToDecision,
+    })
+    .select('id')
+    .single();
+  
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true, decisionId: data.id };
+}
+
+// ============================================================================
+// W4: Get All Approval Processes
+// ============================================================================
+
+/**
+ * Get all approval processes for an organization
+ */
+export async function getApprovalProcesses(
+  orgId: string,
+  moduleId?: string
+): Promise<CrmApprovalProcess[]> {
+  const supabase = await createClient();
+  
+  let query = supabase
+    .from('crm_approval_processes')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('name');
+  
+  if (moduleId) {
+    query = query.eq('module_id', moduleId);
+  }
+  
+  const { data } = await query;
+  
+  return (data || []) as CrmApprovalProcess[];
+}
+
+// ============================================================================
+// W4: Create/Update Approval Process
+// ============================================================================
+
+/**
+ * Create a new approval process
+ */
+export async function createApprovalProcessRecord(
+  data: Omit<CrmApprovalProcess, 'id' | 'created_at' | 'updated_at'>
+): Promise<{ success: boolean; process?: CrmApprovalProcess; error?: string }> {
+  const supabase = await createClient();
+  
+  const { data: process, error } = await supabase
+    .from('crm_approval_processes')
+    .insert({
+      org_id: data.org_id,
+      module_id: data.module_id,
+      name: data.name,
+      description: data.description,
+      is_enabled: data.is_enabled ?? true,
+      trigger_type: data.trigger_type,
+      trigger_config: data.trigger_config,
+      conditions: data.conditions,
+      steps: data.steps,
+      on_approve_actions: data.on_approve_actions || [],
+      on_reject_actions: data.on_reject_actions || [],
+      auto_approve_after_hours: data.auto_approve_after_hours,
+      created_by: data.created_by,
+    })
+    .select()
+    .single();
+  
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true, process: process as CrmApprovalProcess };
+}
+
+/**
+ * Update an approval process
+ */
+export async function updateApprovalProcessRecord(
+  processId: string,
+  data: Partial<CrmApprovalProcess>
+): Promise<{ success: boolean; process?: CrmApprovalProcess; error?: string }> {
+  const supabase = await createClient();
+  
+  const { data: process, error } = await supabase
+    .from('crm_approval_processes')
+    .update({
+      name: data.name,
+      description: data.description,
+      is_enabled: data.is_enabled,
+      trigger_type: data.trigger_type,
+      trigger_config: data.trigger_config,
+      conditions: data.conditions,
+      steps: data.steps,
+      on_approve_actions: data.on_approve_actions,
+      on_reject_actions: data.on_reject_actions,
+      auto_approve_after_hours: data.auto_approve_after_hours,
+    })
+    .eq('id', processId)
+    .select()
+    .single();
+  
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true, process: process as CrmApprovalProcess };
+}
+
+/**
+ * Delete an approval process
+ */
+export async function deleteApprovalProcess(
+  processId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  
+  const { error } = await supabase
+    .from('crm_approval_processes')
+    .delete()
+    .eq('id', processId);
+  
+  if (error) {
+    return { success: false, error: error.message };
+  }
+  
+  return { success: true };
+}

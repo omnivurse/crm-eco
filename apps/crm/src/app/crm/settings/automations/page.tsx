@@ -12,6 +12,7 @@ import {
   Bell,
   History,
   ChevronRight,
+  ClipboardCheck,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { getAutomationStats } from '@/lib/automation';
@@ -32,6 +33,13 @@ const automationCards: AutomationCard[] = [
     href: '/crm/settings/automations/workflows',
     icon: <GitBranch className="w-6 h-6" />,
     color: 'teal',
+  },
+  {
+    title: 'Approval Processes',
+    description: 'Multi-step approvals for sensitive actions',
+    href: '/crm/settings/automations/approvals',
+    icon: <ClipboardCheck className="w-6 h-6" />,
+    color: 'orange',
   },
   {
     title: 'Assignment Rules',
@@ -113,6 +121,11 @@ function getColorClasses(color: string) {
       bg: 'bg-slate-500/10',
       text: 'text-slate-600 dark:text-slate-400',
       border: 'hover:border-slate-500/50',
+    },
+    orange: {
+      bg: 'bg-orange-500/10',
+      text: 'text-orange-600 dark:text-orange-400',
+      border: 'hover:border-orange-500/50',
     },
   };
   return colors[color] || colors.teal;
@@ -219,7 +232,7 @@ function AutomationsSkeleton() {
     <div className="space-y-6 animate-pulse">
       <div className="h-20 bg-slate-200 dark:bg-slate-800/50 rounded-lg" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <div key={i} className="h-40 bg-slate-200 dark:bg-slate-800/50 rounded-xl" />
         ))}
       </div>

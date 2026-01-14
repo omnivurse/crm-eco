@@ -363,7 +363,19 @@ export interface CrmRelationWithRecords extends CrmRelation {
 // CRM Audit Log
 // ============================================================================
 
-export type AuditAction = 'create' | 'update' | 'delete' | 'import' | 'export' | 'bulk_update';
+export type AuditAction = 
+  | 'create' 
+  | 'update' 
+  | 'delete' 
+  | 'import' 
+  | 'export' 
+  | 'bulk_update'
+  | 'stage_change'
+  | 'approval_request'
+  | 'approval_action'
+  | 'approval_apply'
+  | 'message_sent'
+  | 'rule_triggered';
 
 export interface CrmAuditLog {
   id: string;
