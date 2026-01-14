@@ -100,64 +100,62 @@ function NeedCard({ need }: { need: typeof MOCK_NEEDS[0] }) {
   const isDueSoon = daysUntilSla <= 2 && daysUntilSla >= 0;
   
   return (
-    <div className="glass-card rounded-xl border border-white/10 hover:border-teal-500/30 transition-all group overflow-hidden">
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="text-white font-medium group-hover:text-teal-400 transition-colors">
-                {need.memberName}
-              </h4>
-              <span className={`px-2 py-0.5 rounded text-xs font-medium ${urgency.bg} ${urgency.color}`}>
-                {urgency.label}
-              </span>
+    <Link href={`/crm/needs/${need.id}`} className="block">
+      <div className="glass-card rounded-xl border border-white/10 hover:border-teal-500/30 transition-all group overflow-hidden">
+        <div className="p-5">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="text-white font-medium group-hover:text-teal-400 transition-colors">
+                  {need.memberName}
+                </h4>
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${urgency.bg} ${urgency.color}`}>
+                  {urgency.label}
+                </span>
+              </div>
+              <p className="text-slate-500 text-sm">{need.memberId} • {need.type}</p>
             </div>
-            <p className="text-slate-500 text-sm">{need.memberId} • {need.type}</p>
-          </div>
-          <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${status.bg} ${status.color} ${status.border}`}>
-            {status.label}
-          </span>
-        </div>
-        
-        <p className="text-slate-300 text-sm mb-4">{need.description}</p>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-emerald-400" />
-            <span className="text-xl font-bold text-white">${need.amount.toLocaleString()}</span>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${status.bg} ${status.color} ${status.border}`}>
+              {status.label}
+            </span>
           </div>
           
-          <div className={`flex items-center gap-1 text-xs ${
-            isOverdue ? 'text-red-400' : isDueSoon ? 'text-amber-400' : 'text-slate-500'
-          }`}>
-            {isOverdue ? (
-              <AlertTriangle className="w-3 h-3" />
-            ) : (
-              <Clock className="w-3 h-3" />
-            )}
-            {isOverdue 
-              ? `${Math.abs(daysUntilSla)} days overdue`
-              : `${daysUntilSla} days until SLA`
-            }
+          <p className="text-slate-300 text-sm mb-4">{need.description}</p>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-400" />
+              <span className="text-xl font-bold text-white">${need.amount.toLocaleString()}</span>
+            </div>
+            
+            <div className={`flex items-center gap-1 text-xs ${
+              isOverdue ? 'text-red-400' : isDueSoon ? 'text-amber-400' : 'text-slate-500'
+            }`}>
+              {isOverdue ? (
+                <AlertTriangle className="w-3 h-3" />
+              ) : (
+                <Clock className="w-3 h-3" />
+              )}
+              {isOverdue 
+                ? `${Math.abs(daysUntilSla)} days overdue`
+                : `${daysUntilSla} days until SLA`
+              }
+            </div>
           </div>
         </div>
+        
+        <div className="px-5 py-3 bg-slate-900/30 border-t border-white/5 flex items-center justify-between">
+          <span className="text-xs text-slate-500 flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            Submitted {new Date(need.submittedAt).toLocaleDateString()}
+          </span>
+          <span className="h-7 text-xs text-teal-400 flex items-center gap-1">
+            Review
+            <ArrowUpRight className="w-3 h-3" />
+          </span>
+        </div>
       </div>
-      
-      <div className="px-5 py-3 bg-slate-900/30 border-t border-white/5 flex items-center justify-between">
-        <span className="text-xs text-slate-500 flex items-center gap-1">
-          <Calendar className="w-3 h-3" />
-          Submitted {new Date(need.submittedAt).toLocaleDateString()}
-        </span>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-7 text-xs text-teal-400 hover:text-teal-300 hover:bg-teal-500/10"
-        >
-          Review
-          <ArrowUpRight className="w-3 h-3 ml-1" />
-        </Button>
-      </div>
-    </div>
+    </Link>
   );
 }
 
