@@ -3,6 +3,7 @@ import { CrmShell } from '@/components/crm/shell';
 import { getCurrentProfile, getModules } from '@/lib/crm/queries';
 import { createCrmClient } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
+import { Toaster } from '@/components/ui/sonner';
 
 export default async function CrmLayout({
   children,
@@ -42,12 +43,15 @@ export default async function CrmLayout({
   }
 
   return (
-    <CrmShell
-      modules={modules}
-      profile={profile}
-      organizationName={organization?.name}
-    >
-      {children}
-    </CrmShell>
+    <>
+      <CrmShell
+        modules={modules}
+        profile={profile}
+        organizationName={organization?.name}
+      >
+        {children}
+      </CrmShell>
+      <Toaster />
+    </>
   );
 }
