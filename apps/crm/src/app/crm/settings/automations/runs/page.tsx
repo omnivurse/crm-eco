@@ -31,7 +31,11 @@ import {
   PlayCircle,
   Eye,
   RefreshCw,
+  RotateCcw,
+  ExternalLink,
 } from 'lucide-react';
+import { RunDetailDialog } from '@/components/automation';
+import { toast } from 'sonner';
 import type { CrmAutomationRun } from '@/lib/automation/types';
 
 export default function AutomationRunsPage() {
@@ -40,6 +44,8 @@ export default function AutomationRunsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRun, setSelectedRun] = useState<CrmAutomationRun | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const fetchRuns = useCallback(async () => {
     setLoading(true);
@@ -112,7 +118,13 @@ export default function AutomationRunsPage() {
     cadence: 'Cadence',
     sla: 'SLA',
     webform: 'Webform',
+    macro: 'Macro',
   };
+
+  function handleRowClick(run: CrmAutomationRun) {
+    setSelectedRun(run);
+    setDetailOpen(true);
+  }
 
   return (
     <div className="space-y-6">
@@ -175,6 +187,7 @@ export default function AutomationRunsPage() {
             <SelectItem value="cadence">Cadence</SelectItem>
             <SelectItem value="sla">SLA</SelectItem>
             <SelectItem value="webform">Webform</SelectItem>
+            <SelectItem value="macro">Macro</SelectItem>
           </SelectContent>
         </Select>
         <Button variant="outline" onClick={fetchRuns} disabled={loading}>
@@ -209,11 +222,16 @@ export default function AutomationRunsPage() {
                 <TableHead>Actions</TableHead>
                 <TableHead>Started</TableHead>
                 <TableHead>Duration</TableHead>
+                <TableHead className="w-10"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredRuns.map((run) => (
-                <TableRow key={run.id} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <TableRow 
+                  key={run.id} 
+                  className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                  onClick={() => handleRowClick(run)}
+                >
                   <TableCell>{getStatusBadge(run.status)}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
@@ -228,8 +246,11 @@ export default function AutomationRunsPage() {
                       <Link
                         href={`/crm/r/${run.record_id}`}
                         className="text-teal-600 hover:underline"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        View Record
+                        <span className="flex items-center gap-1">
+                          View <ExternalLink className="w-3 h-3" />
+                        </span>
                       </Link>
                     ) : (
                       <span className="text-slate-400">-</span>
@@ -246,12 +267,35 @@ export default function AutomationRunsPage() {
                       ? `${Math.round((new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) / 1000)}s`
                       : '-'}
                   </TableCell>
+                  <TableCell>
+                    {run.status === 'failed' && run.workflow_id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRowClick(run);
+                        }}
+                        title="View details to retry"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
       </div>
+
+      {/* Run Detail Dialog */}
+      <RunDetailDialog
+        run={selectedRun}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onRetrySuccess={fetchRuns}
+      />
     </div>
   );
 }

@@ -56,6 +56,26 @@ export {
   getRecordEnrollments,
 } from './cadence';
 
+// Scheduler
+export {
+  scheduleJob,
+  scheduleWorkflowStep,
+  scheduleWorkflowRetry,
+  scheduleWorkflowExecution,
+  processScheduledJobs,
+  processScheduledWorkflows,
+  cancelSchedulerJob,
+  getPendingJobsForEntity,
+} from './scheduler';
+
+// Macros
+export {
+  executeMacro,
+  canExecuteMacro,
+  getMacrosForRecord,
+  getMacroRunsForRecord,
+} from './macros';
+
 // Queries
 export {
   getWorkflows,
@@ -72,6 +92,16 @@ export {
   getAutomationRuns,
   getAutomationRunById,
   getAutomationStats,
+  // Macro queries
+  getMacros,
+  getMacroById,
+  getMacrosForModule,
+  getMacroRuns,
+  // Workflow step queries
+  getWorkflowSteps,
+  getWorkflowRunLogs,
+  // Scheduler queries
+  getSchedulerJobs,
 } from './queries';
 
 // Mutations
@@ -98,4 +128,9 @@ export {
   markNotificationRead,
   markAllNotificationsRead,
   deleteNotification,
+  // Macro mutations
+  createMacro,
+  updateMacro,
+  deleteMacro,
+  toggleMacro,
 } from './mutations';

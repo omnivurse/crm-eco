@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { processPendingCadenceSteps } from '@/lib/automation';
+import { 
+  processPendingCadenceSteps,
+  processScheduledJobs,
+  processScheduledWorkflows,
+} from '@/lib/automation';
 
 /**
  * Creates a service role client for cron operations
@@ -50,11 +54,33 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // 2. Process SLA escalations (future implementation)
-    // results.sla = await processSlaEscalations();
+    // 2. Process scheduler jobs (delayed steps, retries, etc.)
+    try {
+      const schedulerResults = await processScheduledJobs(100);
+      results.schedulerJobs = {
+        processed: schedulerResults.processed,
+        completed: schedulerResults.completed,
+        failed: schedulerResults.failed,
+        retrying: schedulerResults.retrying,
+      };
+    } catch (error) {
+      results.schedulerJobs = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
 
-    // 3. Process scheduled workflows (future implementation)
-    // results.scheduled = await processScheduledWorkflows();
+    // 3. Process scheduled workflows (cron-like)
+    try {
+      const workflowResults = await processScheduledWorkflows();
+      results.scheduledWorkflows = workflowResults;
+    } catch (error) {
+      results.scheduledWorkflows = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // 4. Process SLA escalations (future implementation)
+    // results.sla = await processSlaEscalations();
 
     return NextResponse.json({
       success: true,

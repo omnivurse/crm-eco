@@ -11,6 +11,7 @@ import type {
   CrmCadence,
   CrmSlaPolicy,
   CrmWebform,
+  CrmMacro,
 } from './types';
 
 // ============================================================================
@@ -338,6 +339,74 @@ export async function deleteWebform(webformId: string): Promise<void> {
     .from('crm_webforms')
     .delete()
     .eq('id', webformId);
+
+  if (error) throw error;
+}
+
+// ============================================================================
+// Macro Mutations
+// ============================================================================
+
+export async function createMacro(
+  input: Omit<CrmMacro, 'id' | 'created_at' | 'updated_at'>
+): Promise<CrmMacro> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', user?.id)
+    .single();
+
+  const { data, error } = await supabase
+    .from('crm_macros')
+    .insert({
+      ...input,
+      created_by: profile?.id,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as CrmMacro;
+}
+
+export async function updateMacro(
+  macroId: string,
+  updates: Partial<CrmMacro>
+): Promise<CrmMacro> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('crm_macros')
+    .update(updates)
+    .eq('id', macroId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as CrmMacro;
+}
+
+export async function deleteMacro(macroId: string): Promise<void> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('crm_macros')
+    .delete()
+    .eq('id', macroId);
+
+  if (error) throw error;
+}
+
+export async function toggleMacro(macroId: string, isEnabled: boolean): Promise<void> {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('crm_macros')
+    .update({ is_enabled: isEnabled })
+    .eq('id', macroId);
 
   if (error) throw error;
 }

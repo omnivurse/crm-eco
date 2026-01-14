@@ -29,6 +29,9 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Globe,
+  Activity,
 } from 'lucide-react';
 import type { WorkflowAction, ActionType } from '@/lib/automation/types';
 
@@ -42,9 +45,12 @@ const ACTION_TYPES: { type: ActionType; label: string; icon: React.ReactNode; co
   { type: 'update_fields', label: 'Update Fields', icon: <Edit3 className="w-4 h-4" />, color: 'blue' },
   { type: 'assign_owner', label: 'Assign Owner', icon: <UserCheck className="w-4 h-4" />, color: 'green' },
   { type: 'create_task', label: 'Create Task', icon: <ListTodo className="w-4 h-4" />, color: 'amber' },
+  { type: 'create_activity', label: 'Create Activity', icon: <Activity className="w-4 h-4" />, color: 'cyan' },
   { type: 'add_note', label: 'Add Note', icon: <MessageSquare className="w-4 h-4" />, color: 'purple' },
   { type: 'notify', label: 'Send Notification', icon: <Bell className="w-4 h-4" />, color: 'rose' },
   { type: 'move_stage', label: 'Move Stage', icon: <ArrowRight className="w-4 h-4" />, color: 'teal' },
+  { type: 'delay_wait', label: 'Wait / Delay', icon: <Clock className="w-4 h-4" />, color: 'orange' },
+  { type: 'post_webhook', label: 'Webhook (Outbound)', icon: <Globe className="w-4 h-4" />, color: 'sky' },
   { type: 'start_cadence', label: 'Start Cadence', icon: <Timer className="w-4 h-4" />, color: 'violet' },
   { type: 'stop_cadence', label: 'Stop Cadence', icon: <StopCircle className="w-4 h-4" />, color: 'slate' },
   { type: 'create_enrollment_draft', label: 'Create Enrollment Draft', icon: <FileText className="w-4 h-4" />, color: 'emerald' },
@@ -109,12 +115,18 @@ export function ActionBuilder({
         return { strategy: 'round_robin' };
       case 'create_task':
         return { title: '', dueInDays: 1, priority: 'normal', assignedTo: 'owner' };
+      case 'create_activity':
+        return { activityType: 'call', subject: '', notes: '', dueInDays: 0, assignedTo: 'owner' };
       case 'add_note':
         return { body: '' };
       case 'notify':
         return { recipients: ['owner'], title: '', body: '' };
       case 'move_stage':
         return { stage: '' };
+      case 'delay_wait':
+        return { delaySeconds: 3600, delayType: 'fixed' };
+      case 'post_webhook':
+        return { url: '', method: 'POST', headers: {}, bodyTemplate: '' };
       case 'start_cadence':
         return { cadenceId: '' };
       case 'stop_cadence':
@@ -283,6 +295,171 @@ export function ActionBuilder({
           </div>
         );
 
+      case 'create_activity':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Activity Type</Label>
+              <Select
+                value={(config.activityType as string) || 'call'}
+                onValueChange={(value) => updateAction(action.id, { config: { ...config, activityType: value } as any })}
+                disabled={readOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="call">Call</SelectItem>
+                  <SelectItem value="meeting">Meeting</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="note">Note</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Subject</Label>
+              <Input
+                value={(config.subject as string) || ''}
+                onChange={(e) => updateAction(action.id, { config: { ...config, subject: e.target.value } as any })}
+                placeholder="Activity subject"
+                disabled={readOnly}
+              />
+            </div>
+            <div>
+              <Label>Notes (optional)</Label>
+              <Textarea
+                value={(config.notes as string) || ''}
+                onChange={(e) => updateAction(action.id, { config: { ...config, notes: e.target.value } as any })}
+                placeholder="Additional notes..."
+                rows={2}
+                disabled={readOnly}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Due in (days)</Label>
+                <Input
+                  type="number"
+                  value={(config.dueInDays as number) || 0}
+                  onChange={(e) => updateAction(action.id, { config: { ...config, dueInDays: parseInt(e.target.value) } as any })}
+                  min={0}
+                  disabled={readOnly}
+                />
+              </div>
+              <div>
+                <Label>Assign To</Label>
+                <Select
+                  value={(config.assignedTo as string) || 'owner'}
+                  onValueChange={(value) => updateAction(action.id, { config: { ...config, assignedTo: value } as any })}
+                  disabled={readOnly}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="owner">Record Owner</SelectItem>
+                    <SelectItem value="creator">Record Creator</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'delay_wait':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Delay Type</Label>
+              <Select
+                value={(config.delayType as string) || 'fixed'}
+                onValueChange={(value) => updateAction(action.id, { config: { ...config, delayType: value } as any })}
+                disabled={readOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixed Duration</SelectItem>
+                  <SelectItem value="until_field">Until Date Field</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {(config.delayType === 'fixed' || !config.delayType) && (
+              <div>
+                <Label>Delay Duration (seconds)</Label>
+                <Input
+                  type="number"
+                  value={(config.delaySeconds as number) || 3600}
+                  onChange={(e) => updateAction(action.id, { config: { ...config, delaySeconds: parseInt(e.target.value) } as any })}
+                  min={60}
+                  disabled={readOnly}
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  {Math.floor(((config.delaySeconds as number) || 3600) / 3600)}h {Math.floor((((config.delaySeconds as number) || 3600) % 3600) / 60)}m
+                </p>
+              </div>
+            )}
+            {config.delayType === 'until_field' && (
+              <div>
+                <Label>Date Field</Label>
+                <Input
+                  value={(config.delayField as string) || ''}
+                  onChange={(e) => updateAction(action.id, { config: { ...config, delayField: e.target.value } as any })}
+                  placeholder="e.g., due_date, follow_up_date"
+                  disabled={readOnly}
+                />
+              </div>
+            )}
+          </div>
+        );
+
+      case 'post_webhook':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label>Webhook URL</Label>
+              <Input
+                value={(config.url as string) || ''}
+                onChange={(e) => updateAction(action.id, { config: { ...config, url: e.target.value } as any })}
+                placeholder="https://api.example.com/webhook"
+                disabled={readOnly}
+              />
+            </div>
+            <div>
+              <Label>HTTP Method</Label>
+              <Select
+                value={(config.method as string) || 'POST'}
+                onValueChange={(value) => updateAction(action.id, { config: { ...config, method: value } as any })}
+                disabled={readOnly}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="POST">POST</SelectItem>
+                  <SelectItem value="PUT">PUT</SelectItem>
+                  <SelectItem value="PATCH">PATCH</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Body Template (JSON)</Label>
+              <Textarea
+                value={(config.bodyTemplate as string) || ''}
+                onChange={(e) => updateAction(action.id, { config: { ...config, bodyTemplate: e.target.value } as any })}
+                placeholder='{"recordId": "{{record.id}}", "title": "{{record.title}}"}'
+                rows={3}
+                disabled={readOnly}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Use {'{{record.field_name}}'} to insert record data
+              </p>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -375,7 +552,7 @@ export function ActionBuilder({
             Add an action
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
-            {ACTION_TYPES.slice(0, 6).map((actionType) => (
+            {ACTION_TYPES.slice(0, 9).map((actionType) => (
               <Button
                 key={actionType.type}
                 type="button"

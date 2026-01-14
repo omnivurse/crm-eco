@@ -360,17 +360,24 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
 // Notes Queries
 // ============================================================================
 
-export async function getNotesForRecord(recordId: string): Promise<CrmNote[]> {
+export async function getNotesForRecord(recordId: string): Promise<CrmNoteWithAuthor[]> {
   const supabase = await createCrmClient();
   
   const { data, error } = await supabase
     .from('crm_notes')
-    .select('*')
+    .select(`
+      *,
+      author:profiles!crm_notes_created_by_fkey(
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
     .eq('record_id', recordId)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return (data || []) as CrmNote[];
+  return (data || []) as CrmNoteWithAuthor[];
 }
 
 // ============================================================================

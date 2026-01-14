@@ -47,6 +47,7 @@ export type ActionType =
   | 'update_fields'
   | 'assign_owner'
   | 'create_task'
+  | 'create_activity'
   | 'add_note'
   | 'notify'
   | 'move_stage'
@@ -54,7 +55,9 @@ export type ActionType =
   | 'stop_cadence'
   | 'create_enrollment_draft'
   | 'send_email'
-  | 'send_sms';
+  | 'send_sms'
+  | 'delay_wait'
+  | 'post_webhook';
 
 export interface UpdateFieldsConfig {
   fields: Record<string, unknown>;
@@ -118,6 +121,40 @@ export interface SendSmsConfig {
   to?: string; // Override recipient, otherwise uses record phone
 }
 
+export interface DelayWaitConfig {
+  delaySeconds?: number;
+  delayMinutes?: number;
+  delayHours?: number;
+  delayDays?: number;
+  delayType?: 'fixed' | 'relative';
+  delayField?: string; // For relative delays based on record date field
+}
+
+export interface PostWebhookConfig {
+  url: string;
+  method?: 'POST' | 'PUT' | 'PATCH';
+  headers?: Record<string, string>;
+  includeRecord?: boolean;
+  bodyTemplate?: string; // JSON template with {{field}} placeholders
+  retryOnFailure?: boolean;
+}
+
+export interface CreateActivityConfig {
+  activityType: 'task' | 'call' | 'meeting' | 'email';
+  title: string;
+  description?: string;
+  dueInDays?: number;
+  dueInHours?: number;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  assignedTo?: 'owner' | 'creator' | string;
+  // Call-specific
+  callType?: 'outbound' | 'inbound';
+  // Meeting-specific
+  meetingType?: 'in_person' | 'video' | 'phone';
+  meetingLocation?: string;
+  attendees?: string[];
+}
+
 export interface WorkflowAction {
   id: string;
   type: ActionType;
@@ -125,6 +162,7 @@ export interface WorkflowAction {
     | UpdateFieldsConfig
     | AssignOwnerConfig
     | CreateTaskConfig
+    | CreateActivityConfig
     | AddNoteConfig
     | NotifyConfig
     | MoveStageConfig
@@ -132,7 +170,9 @@ export interface WorkflowAction {
     | StopCadenceConfig
     | CreateEnrollmentDraftConfig
     | SendEmailConfig
-    | SendSmsConfig;
+    | SendSmsConfig
+    | DelayWaitConfig
+    | PostWebhookConfig;
   order: number;
 }
 
@@ -140,7 +180,7 @@ export interface WorkflowAction {
 // Workflow Types
 // ============================================================================
 
-export type TriggerType = 'on_create' | 'on_update' | 'scheduled' | 'webform';
+export type TriggerType = 'on_create' | 'on_update' | 'on_stage_change' | 'scheduled' | 'webform' | 'inbound_webhook';
 
 export interface ScheduledTriggerConfig {
   cron?: string;
@@ -157,7 +197,25 @@ export interface WebformTriggerConfig {
   webformId?: string; // Specific webform or all
 }
 
-export type TriggerConfig = ScheduledTriggerConfig | UpdateTriggerConfig | WebformTriggerConfig | Record<string, unknown>;
+export interface StageChangeTriggerConfig {
+  fromStages?: string[]; // Trigger when changing from these stages (empty = any)
+  toStages?: string[]; // Trigger when changing to these stages (empty = any)
+  dealStageIds?: string[]; // Specific deal stage IDs to watch
+}
+
+export interface InboundWebhookTriggerConfig {
+  webhookPath?: string; // Custom path suffix
+  payloadMapping?: Record<string, string>; // Map webhook payload fields to record fields
+  validateSignature?: boolean;
+}
+
+export type TriggerConfig = 
+  | ScheduledTriggerConfig 
+  | UpdateTriggerConfig 
+  | WebformTriggerConfig 
+  | StageChangeTriggerConfig
+  | InboundWebhookTriggerConfig
+  | Record<string, unknown>;
 
 export interface CrmWorkflow {
   id: string;
@@ -171,9 +229,118 @@ export interface CrmWorkflow {
   conditions: ConditionGroup | Condition[];
   actions: WorkflowAction[];
   priority: number;
+  webhook_secret: string | null; // For inbound webhook validation
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================================================
+// Workflow Step Types (Multi-step workflows with delays)
+// ============================================================================
+
+export type DelayType = 'immediate' | 'fixed' | 'relative';
+
+export interface CrmWorkflowStep {
+  id: string;
+  workflow_id: string;
+  step_order: number;
+  name: string | null;
+  action_type: ActionType;
+  action_config: Record<string, unknown>;
+  delay_seconds: number;
+  delay_type: DelayType;
+  delay_field: string | null;
+  conditions: ConditionGroup | Condition[];
+  is_enabled: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// Workflow Run Log Types (Step-by-step execution logs)
+// ============================================================================
+
+export type RunLogStatus = 'pending' | 'running' | 'success' | 'failed' | 'skipped' | 'waiting';
+
+export interface CrmWorkflowRunLog {
+  id: string;
+  run_id: string;
+  step_id: string | null;
+  step_order: number;
+  action_type: string;
+  status: RunLogStatus;
+  started_at: string | null;
+  completed_at: string | null;
+  scheduled_for: string | null;
+  input: Record<string, unknown>;
+  output: Record<string, unknown>;
+  error: string | null;
+  retry_count: number;
+  created_at: string;
+}
+
+// ============================================================================
+// Macro Types (One-click action bundles)
+// ============================================================================
+
+export type CrmRole = 'crm_admin' | 'crm_manager' | 'crm_agent' | 'crm_viewer';
+
+export interface CrmMacro {
+  id: string;
+  org_id: string;
+  module_id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  actions: WorkflowAction[];
+  is_enabled: boolean;
+  display_order: number;
+  allowed_roles: CrmRole[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmMacroRun {
+  id: string;
+  org_id: string;
+  macro_id: string;
+  record_id: string;
+  status: 'running' | 'success' | 'failed' | 'partial';
+  executed_by: string | null;
+  actions_executed: ActionResult[];
+  error: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+// ============================================================================
+// Scheduler Job Types
+// ============================================================================
+
+export type SchedulerJobType = 'workflow_step' | 'scheduled_workflow' | 'retry' | 'cadence_step' | 'sla_escalation';
+export type SchedulerJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+
+export interface CrmSchedulerJob {
+  id: string;
+  org_id: string;
+  job_type: SchedulerJobType;
+  entity_type: string;
+  entity_id: string;
+  record_id: string | null;
+  run_at: string;
+  status: SchedulerJobStatus;
+  attempts: number;
+  max_attempts: number;
+  last_error: string | null;
+  last_attempt_at: string | null;
+  payload: Record<string, unknown>;
+  result: Record<string, unknown> | null;
+  idempotency_key: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 // ============================================================================
@@ -400,7 +567,7 @@ export interface CrmNotification {
 // Automation Run Types
 // ============================================================================
 
-export type AutomationSource = 'workflow' | 'assignment' | 'scoring' | 'cadence' | 'sla' | 'webform';
+export type AutomationSource = 'workflow' | 'assignment' | 'scoring' | 'cadence' | 'sla' | 'webform' | 'macro';
 export type AutomationRunStatus = 'running' | 'success' | 'failed' | 'skipped' | 'dry_run';
 
 export interface ActionResult {
