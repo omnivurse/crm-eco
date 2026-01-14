@@ -288,7 +288,7 @@ export default function CadencesPage() {
             <span className="font-medium text-slate-900 dark:text-white">Email</span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Send an email (coming soon)
+            Send an automated email
           </p>
         </div>
         <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-lg p-4">

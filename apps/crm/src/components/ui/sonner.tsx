@@ -1,7 +1,2 @@
-"use client";
-
-import { Toaster as Sonner } from "sonner";
-
-export function Toaster() {
-  return <Sonner richColors closeButton position="top-right" />;
-}
+// Re-export from shared UI package for centralized dependencies
+export { Toaster, toast } from "@crm-eco/ui/components/sonner";
