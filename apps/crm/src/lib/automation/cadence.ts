@@ -117,52 +117,140 @@ async function executeEmailStep(
 ): Promise<ActionResult> {
   const supabase = await createClient();
 
-  // For now, create an activity/note that an email should be sent
-  // Real email sending would integrate with SendGrid/etc.
-  const { data: note, error } = await supabase
-    .from('crm_notes')
-    .insert({
-      org_id: enrollment.org_id,
-      record_id: record.id,
-      body: `[Cadence Email Step]\nSubject: ${config.subject || 'No subject'}\n\n${config.body || 'Email body would go here'}`,
-      is_pinned: false,
-      created_by: enrollment.enrolled_by,
-    })
-    .select()
-    .single();
+  // Get the record's email address
+  const emailAddress = record.email || (record.data as Record<string, unknown>)?.email as string;
 
-  // Also notify the owner
-  if (record.owner_id) {
+  if (!emailAddress) {
+    // No email address - create a note and notify owner instead
     await supabase
-      .from('crm_notifications')
+      .from('crm_notes')
       .insert({
         org_id: enrollment.org_id,
-        user_id: record.owner_id,
-        title: 'Cadence Email Due',
-        body: `Email step ready for ${record.title}: ${config.subject || 'No subject'}`,
-        href: `/crm/r/${record.id}`,
-        meta: {
-          cadence_id: enrollment.cadence_id,
-          step_id: step.id,
-        },
+        record_id: record.id,
+        body: `[Cadence Email Skipped - No Email]\nSubject: ${config.subject || 'No subject'}\n\nRecord has no email address. Please update and re-enroll.`,
+        is_pinned: false,
+        created_by: enrollment.enrolled_by,
       });
-  }
 
-  if (error) {
+    if (record.owner_id) {
+      await supabase
+        .from('crm_notifications')
+        .insert({
+          org_id: enrollment.org_id,
+          user_id: record.owner_id,
+          title: 'Cadence Email Skipped',
+          body: `No email address for ${record.title} - cadence step skipped`,
+          href: `/crm/r/${record.id}`,
+          meta: {
+            cadence_id: enrollment.cadence_id,
+            step_id: step.id,
+          },
+        });
+    }
+
     return {
       actionId: step.id,
-      type: 'add_note',
-      status: 'failed',
-      error: error.message,
+      type: 'send_email',
+      status: 'skipped',
+      output: { reason: 'No email address on record' },
     };
   }
 
-  return {
-    actionId: step.id,
-    type: 'add_note',
-    status: 'success',
-    output: { noteId: note.id, type: 'email_placeholder' },
-  };
+  try {
+    // Use the communications dispatcher to send the email
+    const { dispatchMessage } = await import('../comms/dispatcher');
+
+    const result = await dispatchMessage({
+      recordId: record.id,
+      channel: 'email',
+      templateId: config.templateId,
+      subject: config.subject,
+      body: config.body,
+      to: emailAddress,
+    }, enrollment.enrolled_by || undefined);
+
+    if (result.success) {
+      // Log the sent email as a note for audit trail
+      await supabase
+        .from('crm_notes')
+        .insert({
+          org_id: enrollment.org_id,
+          record_id: record.id,
+          body: `[Cadence Email Sent]\nSubject: ${config.subject || 'No subject'}\nTo: ${emailAddress}\n\nEmail sent successfully via cadence automation.`,
+          is_pinned: false,
+          created_by: enrollment.enrolled_by,
+        });
+
+      return {
+        actionId: step.id,
+        type: 'send_email',
+        status: 'success',
+        output: { messageId: result.messageId, to: emailAddress },
+      };
+    } else {
+      // Email failed - notify owner
+      if (record.owner_id) {
+        await supabase
+          .from('crm_notifications')
+          .insert({
+            org_id: enrollment.org_id,
+            user_id: record.owner_id,
+            title: 'Cadence Email Failed',
+            body: `Failed to send email to ${record.title}: ${result.error || 'Unknown error'}`,
+            href: `/crm/r/${record.id}`,
+            meta: {
+              cadence_id: enrollment.cadence_id,
+              step_id: step.id,
+              error: result.error,
+            },
+          });
+      }
+
+      return {
+        actionId: step.id,
+        type: 'send_email',
+        status: 'failed',
+        error: result.error || 'Failed to send email',
+        output: { blockReason: result.blockReason },
+      };
+    }
+  } catch (error) {
+    // If email provider is not configured, fall back to note/notification
+    console.warn('Email sending failed, falling back to notification:', error);
+
+    await supabase
+      .from('crm_notes')
+      .insert({
+        org_id: enrollment.org_id,
+        record_id: record.id,
+        body: `[Cadence Email - Manual Send Required]\nSubject: ${config.subject || 'No subject'}\nTo: ${emailAddress}\n\n${config.body || 'Email body would go here'}\n\n---\nNote: Auto-send failed. Please send manually.`,
+        is_pinned: true,
+        created_by: enrollment.enrolled_by,
+      });
+
+    if (record.owner_id) {
+      await supabase
+        .from('crm_notifications')
+        .insert({
+          org_id: enrollment.org_id,
+          user_id: record.owner_id,
+          title: 'Cadence Email Ready',
+          body: `Manual email needed for ${record.title}: ${config.subject || 'No subject'}`,
+          href: `/crm/r/${record.id}`,
+          meta: {
+            cadence_id: enrollment.cadence_id,
+            step_id: step.id,
+          },
+        });
+    }
+
+    return {
+      actionId: step.id,
+      type: 'send_email',
+      status: 'success',
+      output: { fallback: 'note_created', to: emailAddress },
+    };
+  }
 }
 
 async function executeCallStep(

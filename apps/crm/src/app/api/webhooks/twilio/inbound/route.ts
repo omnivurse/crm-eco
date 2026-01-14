@@ -128,7 +128,75 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Trigger workflow for inbound SMS if configured
+    // Trigger workflows for inbound SMS
+    try {
+      // Get the full record data for workflow execution
+      const { data: fullRecord } = await supabase
+        .from('crm_records')
+        .select('*')
+        .eq('id', record.id)
+        .single();
+
+      if (fullRecord) {
+        // Find workflows with on_update trigger that listen for SMS events
+        const { data: workflows } = await supabase
+          .from('crm_workflows')
+          .select('*')
+          .eq('org_id', record.org_id)
+          .eq('module_id', fullRecord.module_id)
+          .eq('is_enabled', true)
+          .in('trigger_type', ['on_update', 'on_create'])
+          .order('priority', { ascending: true });
+
+        if (workflows && workflows.length > 0) {
+          // Execute matching workflows
+          for (const workflow of workflows) {
+            // Check if workflow has SMS-related trigger config
+            const triggerConfig = workflow.trigger_config as Record<string, unknown> || {};
+            const watchedEvents = triggerConfig.events as string[] || [];
+            
+            // Execute if workflow watches for 'sms_inbound' or has no specific event filter
+            if (watchedEvents.length === 0 || watchedEvents.includes('sms_inbound')) {
+              // Import and execute dynamically to avoid circular dependencies
+              const { executeWorkflow } = await import('@/lib/automation/engine');
+              
+              await executeWorkflow({
+                workflow: workflow as any,
+                record: {
+                  ...fullRecord,
+                  // Add inbound SMS context to record for condition evaluation
+                  _sms_context: {
+                    inbound_message: body,
+                    from_number: from,
+                    message_id: message!.id,
+                  },
+                } as any,
+                trigger: workflow.trigger_type,
+                idempotencyKey: `sms-inbound-${messageSid}-${workflow.id}`,
+              });
+            }
+          }
+        }
+
+        // Also create a notification for the record owner
+        if (fullRecord.owner_id) {
+          await supabase.from('crm_notifications').insert({
+            org_id: record.org_id,
+            user_id: fullRecord.owner_id,
+            title: 'New SMS Received',
+            body: `Inbound SMS from ${from}: "${body.substring(0, 100)}${body.length > 100 ? '...' : ''}"`,
+            href: `/crm/r/${record.id}`,
+            meta: {
+              message_id: message!.id,
+              from_number: from,
+            },
+          });
+        }
+      }
+    } catch (workflowError) {
+      // Log but don't fail the webhook
+      console.error('Failed to trigger workflows for inbound SMS:', workflowError);
+    }
 
     // Return TwiML response
     return new NextResponse(

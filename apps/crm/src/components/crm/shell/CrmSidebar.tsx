@@ -25,6 +25,8 @@ import {
   BarChart3,
   ClipboardList,
   HeartHandshake,
+  PieChart,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -229,6 +231,46 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
                 isActive('/crm/reports') && 'text-violet-600 dark:text-violet-400'
               )} />
               {!collapsed && <span className="font-medium">Reports</span>}
+            </Button>
+          </Link>
+
+          <Link href="/crm/analytics">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/analytics') && 
+                  'bg-indigo-50 dark:bg-gradient-to-r dark:from-indigo-500/20 dark:to-transparent text-indigo-700 dark:text-white border-l-2 border-indigo-500 dark:border-indigo-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+              title={collapsed ? 'Analytics' : undefined}
+            >
+              <PieChart className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/analytics') && 'text-indigo-600 dark:text-indigo-400'
+              )} />
+              {!collapsed && <span className="font-medium">Analytics</span>}
+            </Button>
+          </Link>
+
+          <Link href="/crm/commissions">
+            <Button
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
+                isActive('/crm/commissions') && 
+                  'bg-amber-50 dark:bg-gradient-to-r dark:from-amber-500/20 dark:to-transparent text-amber-700 dark:text-white border-l-2 border-amber-500 dark:border-amber-400',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+              title={collapsed ? 'Commissions' : undefined}
+            >
+              <Wallet className={cn(
+                'w-5 h-5 flex-shrink-0 transition-colors',
+                isActive('/crm/commissions') && 'text-amber-600 dark:text-amber-400'
+              )} />
+              {!collapsed && <span className="font-medium">Commissions</span>}
             </Button>
           </Link>
         </div>
