@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Settings,
   Zap,
+  Activity,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 
@@ -63,6 +64,13 @@ const settingsCards: SettingCard[] = [
     description: 'Manage CRM user access and roles',
     href: '/crm/settings/users',
     icon: <Users className="w-6 h-6" />,
+    adminOnly: true,
+  },
+  {
+    title: 'System Health',
+    description: 'Monitor system status, connectivity, and configuration',
+    href: '/crm/settings/system-health',
+    icon: <Activity className="w-6 h-6" />,
     adminOnly: true,
   },
 ];

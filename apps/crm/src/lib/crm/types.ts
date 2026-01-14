@@ -184,6 +184,11 @@ export interface CrmNoteWithAuthor extends CrmNote {
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type TaskStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
 
+export type ActivityType = 'task' | 'call' | 'meeting' | 'email';
+export type CallResult = 'connected' | 'left_voicemail' | 'no_answer' | 'busy' | 'wrong_number';
+export type CallType = 'outbound' | 'inbound';
+export type MeetingType = 'in_person' | 'video' | 'phone';
+
 export interface CrmTask {
   id: string;
   org_id: string;
@@ -198,6 +203,16 @@ export interface CrmTask {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  // Activity type fields
+  activity_type: ActivityType;
+  call_duration: number | null;
+  call_result: CallResult | null;
+  call_type: CallType | null;
+  meeting_location: string | null;
+  meeting_type: MeetingType | null;
+  attendees: string[] | null;
+  reminder_at: string | null;
+  outcome: string | null;
 }
 
 export interface CrmTaskWithAssignee extends CrmTask {
@@ -206,6 +221,122 @@ export interface CrmTaskWithAssignee extends CrmTask {
     full_name: string;
     avatar_url: string | null;
   };
+}
+
+// Alias for semantic clarity
+export type CrmActivity = CrmTask;
+export type CrmActivityWithAssignee = CrmTaskWithAssignee;
+
+// ============================================================================
+// CRM Deal Stages
+// ============================================================================
+
+export interface CrmDealStage {
+  id: string;
+  org_id: string;
+  name: string;
+  key: string;
+  color: string;
+  probability: number;
+  is_won: boolean;
+  is_lost: boolean;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// CRM Deal Stage History
+// ============================================================================
+
+export interface CrmStageHistory {
+  id: string;
+  org_id: string;
+  record_id: string;
+  from_stage: string | null;
+  to_stage: string;
+  from_stage_id: string | null;
+  to_stage_id: string | null;
+  duration_seconds: number | null;
+  changed_by: string | null;
+  reason: string | null;
+  meta: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface CrmStageHistoryWithUser extends CrmStageHistory {
+  changed_by_name: string | null;
+}
+
+// ============================================================================
+// CRM Record Links
+// ============================================================================
+
+export interface CrmRecordLink {
+  id: string;
+  org_id: string;
+  source_record_id: string;
+  target_record_id: string;
+  link_type: string;
+  is_primary: boolean;
+  meta: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface CrmLinkedRecord {
+  link_id: string;
+  link_type: string;
+  is_primary: boolean;
+  direction: 'outbound' | 'inbound';
+  record_id: string;
+  record_title: string | null;
+  record_module_key: string;
+  record_module_name: string;
+  created_at: string;
+}
+
+// ============================================================================
+// CRM Attachments (Extended)
+// ============================================================================
+
+export interface CrmAttachment {
+  id: string;
+  org_id: string;
+  record_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  meta: Record<string, unknown>;
+  bucket_path: string | null;
+  storage_bucket: string;
+  is_public: boolean;
+  description: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface CrmAttachmentWithAuthor extends CrmAttachment {
+  author?: {
+    id: string;
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
+// ============================================================================
+// CRM Timeline Events
+// ============================================================================
+
+export type TimelineEventType = 'stage_change' | 'activity' | 'note' | 'attachment' | 'audit' | 'message';
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  timestamp: string;
+  data: CrmStageHistoryWithUser | CrmTaskWithAssignee | CrmNoteWithAuthor | CrmAttachmentWithAuthor | CrmAuditLogWithActor;
 }
 
 // ============================================================================
