@@ -11,13 +11,24 @@ import type {
   CrmView,
   CrmRecord,
   CrmNote,
+  CrmNoteWithAuthor,
   CrmTask,
+  CrmTaskWithAssignee,
   CrmAuditLog,
+  CrmAuditLogWithActor,
   CrmImportJob,
   CrmProfile,
   ViewFilter,
   ViewSort,
   ModuleStats,
+  CrmDealStage,
+  CrmStageHistory,
+  CrmStageHistoryWithUser,
+  CrmRecordLink,
+  CrmLinkedRecord,
+  CrmAttachment,
+  CrmAttachmentWithAuthor,
+  TimelineEvent,
 } from './types';
 
 // ============================================================================
@@ -615,4 +626,399 @@ export async function getReportSummary(orgId: string): Promise<ReportSummary> {
     dealsClosedThisWeek,
     conversionRate,
   };
+}
+
+// ============================================================================
+// Deal Stages Queries
+// ============================================================================
+
+export async function getDealStages(orgId: string): Promise<CrmDealStage[]> {
+  const supabase = await createCrmClient();
+  
+  const { data, error } = await supabase
+    .from('crm_deal_stages')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('display_order');
+
+  if (error) throw error;
+  return (data || []) as CrmDealStage[];
+}
+
+export async function getDealStageByKey(orgId: string, key: string): Promise<CrmDealStage | null> {
+  const supabase = await createCrmClient();
+  
+  const { data, error } = await supabase
+    .from('crm_deal_stages')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('key', key)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data as CrmDealStage | null;
+}
+
+// ============================================================================
+// Stage History Queries
+// ============================================================================
+
+export async function getStageHistory(recordId: string): Promise<CrmStageHistoryWithUser[]> {
+  const supabase = await createCrmClient();
+  
+  const { data, error } = await supabase
+    .from('crm_deal_stage_history')
+    .select(`
+      *,
+      changed_by_profile:profiles!crm_deal_stage_history_changed_by_fkey(
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('record_id', recordId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  
+  return (data || []).map((item: Record<string, unknown>) => ({
+    ...item,
+    changed_by_name: (item.changed_by_profile as { full_name: string } | null)?.full_name || null,
+  })) as CrmStageHistoryWithUser[];
+}
+
+// ============================================================================
+// Record Links Queries
+// ============================================================================
+
+export async function getRecordLinks(recordId: string): Promise<CrmLinkedRecord[]> {
+  const supabase = await createCrmClient();
+  
+  // Get outbound links (this record -> other)
+  const { data: outbound, error: outboundError } = await supabase
+    .from('crm_record_links')
+    .select(`
+      id,
+      link_type,
+      is_primary,
+      created_at,
+      target_record:crm_records!crm_record_links_target_record_id_fkey(
+        id,
+        title,
+        module:crm_modules!crm_records_module_id_fkey(
+          key,
+          name
+        )
+      )
+    `)
+    .eq('source_record_id', recordId);
+
+  if (outboundError) throw outboundError;
+
+  // Get inbound links (other -> this record)
+  const { data: inbound, error: inboundError } = await supabase
+    .from('crm_record_links')
+    .select(`
+      id,
+      link_type,
+      is_primary,
+      created_at,
+      source_record:crm_records!crm_record_links_source_record_id_fkey(
+        id,
+        title,
+        module:crm_modules!crm_records_module_id_fkey(
+          key,
+          name
+        )
+      )
+    `)
+    .eq('target_record_id', recordId);
+
+  if (inboundError) throw inboundError;
+
+  const results: CrmLinkedRecord[] = [];
+
+  // Transform outbound links
+  for (const link of outbound || []) {
+    const record = link.target_record as unknown as { id: string; title: string; module: { key: string; name: string } };
+    if (record) {
+      results.push({
+        link_id: link.id,
+        link_type: link.link_type,
+        is_primary: link.is_primary,
+        direction: 'outbound',
+        record_id: record.id,
+        record_title: record.title,
+        record_module_key: record.module?.key || '',
+        record_module_name: record.module?.name || '',
+        created_at: link.created_at,
+      });
+    }
+  }
+
+  // Transform inbound links
+  for (const link of inbound || []) {
+    const record = link.source_record as unknown as { id: string; title: string; module: { key: string; name: string } };
+    if (record) {
+      results.push({
+        link_id: link.id,
+        link_type: link.link_type,
+        is_primary: link.is_primary,
+        direction: 'inbound',
+        record_id: record.id,
+        record_title: record.title,
+        record_module_key: record.module?.key || '',
+        record_module_name: record.module?.name || '',
+        created_at: link.created_at,
+      });
+    }
+  }
+
+  // Sort by created_at desc
+  return results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+}
+
+// ============================================================================
+// Attachments Queries
+// ============================================================================
+
+export async function getAttachmentsForRecord(recordId: string): Promise<CrmAttachmentWithAuthor[]> {
+  const supabase = await createCrmClient();
+  
+  const { data, error } = await supabase
+    .from('crm_attachments')
+    .select(`
+      *,
+      author:profiles!crm_attachments_created_by_fkey(
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('record_id', recordId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as CrmAttachmentWithAuthor[];
+}
+
+// ============================================================================
+// Timeline Queries
+// ============================================================================
+
+export async function getTimelineForRecord(recordId: string, limit = 50): Promise<TimelineEvent[]> {
+  const supabase = await createCrmClient();
+  
+  // Fetch all timeline sources in parallel
+  const [stageHistory, tasks, notes, attachments, auditLogs] = await Promise.all([
+    // Stage history
+    supabase
+      .from('crm_deal_stage_history')
+      .select(`
+        *,
+        changed_by_profile:profiles!crm_deal_stage_history_changed_by_fkey(
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('record_id', recordId)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    
+    // Tasks/Activities
+    supabase
+      .from('crm_tasks')
+      .select(`
+        *,
+        assignee:profiles!crm_tasks_assigned_to_fkey(
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('record_id', recordId)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    
+    // Notes
+    supabase
+      .from('crm_notes')
+      .select(`
+        *,
+        author:profiles!crm_notes_created_by_fkey(
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('record_id', recordId)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    
+    // Attachments
+    supabase
+      .from('crm_attachments')
+      .select(`
+        *,
+        author:profiles!crm_attachments_created_by_fkey(
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('record_id', recordId)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+    
+    // Audit logs
+    supabase
+      .from('crm_audit_log')
+      .select(`
+        *,
+        actor:profiles!crm_audit_log_actor_id_fkey(
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('entity', 'crm_records')
+      .eq('entity_id', recordId)
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  ]);
+
+  const events: TimelineEvent[] = [];
+
+  // Add stage history
+  if (stageHistory.data) {
+    for (const item of stageHistory.data) {
+      events.push({
+        id: item.id,
+        type: 'stage_change',
+        timestamp: item.created_at,
+        data: {
+          ...item,
+          changed_by_name: (item.changed_by_profile as { full_name: string } | null)?.full_name || null,
+        } as CrmStageHistoryWithUser,
+      });
+    }
+  }
+
+  // Add tasks/activities
+  if (tasks.data) {
+    for (const item of tasks.data) {
+      events.push({
+        id: item.id,
+        type: 'activity',
+        timestamp: item.created_at,
+        data: item as CrmTaskWithAssignee,
+      });
+    }
+  }
+
+  // Add notes
+  if (notes.data) {
+    for (const item of notes.data) {
+      events.push({
+        id: item.id,
+        type: 'note',
+        timestamp: item.created_at,
+        data: item as CrmNoteWithAuthor,
+      });
+    }
+  }
+
+  // Add attachments
+  if (attachments.data) {
+    for (const item of attachments.data) {
+      events.push({
+        id: item.id,
+        type: 'attachment',
+        timestamp: item.created_at,
+        data: item as CrmAttachmentWithAuthor,
+      });
+    }
+  }
+
+  // Add audit logs
+  if (auditLogs.data) {
+    for (const item of auditLogs.data) {
+      events.push({
+        id: item.id,
+        type: 'audit',
+        timestamp: item.created_at,
+        data: item as CrmAuditLogWithActor,
+      });
+    }
+  }
+
+  // Sort by timestamp descending and limit
+  return events
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .slice(0, limit);
+}
+
+// ============================================================================
+// Activities Queries
+// ============================================================================
+
+export async function getActivitiesForRecord(recordId: string): Promise<CrmTaskWithAssignee[]> {
+  const supabase = await createCrmClient();
+  
+  const { data, error } = await supabase
+    .from('crm_tasks')
+    .select(`
+      *,
+      assignee:profiles!crm_tasks_assigned_to_fkey(
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('record_id', recordId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return (data || []) as CrmTaskWithAssignee[];
+}
+
+export async function getAllActivities(orgId: string, options?: {
+  activityType?: string;
+  status?: string;
+  limit?: number;
+}): Promise<CrmTaskWithAssignee[]> {
+  const supabase = await createCrmClient();
+  
+  let query = supabase
+    .from('crm_tasks')
+    .select(`
+      *,
+      assignee:profiles!crm_tasks_assigned_to_fkey(
+        id,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('org_id', orgId);
+
+  if (options?.activityType) {
+    query = query.eq('activity_type', options.activityType);
+  }
+
+  if (options?.status) {
+    query = query.eq('status', options.status);
+  }
+
+  query = query.order('created_at', { ascending: false });
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+  return (data || []) as CrmTaskWithAssignee[];
 }
