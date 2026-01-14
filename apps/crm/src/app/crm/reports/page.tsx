@@ -85,21 +85,38 @@ function MiniBarChart({ data, label }: { data: number[]; label: string }) {
   );
 }
 
-function ReportCard({ 
-  title, 
-  description, 
+function ReportCard({
+  title,
+  description,
   href,
   icon: Icon,
   color,
-}: { 
+  comingSoon = false,
+}: {
   title: string;
   description: string;
   href: string;
   icon: React.ElementType;
   color: string;
+  comingSoon?: boolean;
 }) {
+  if (comingSoon) {
+    return (
+      <div className="glass-card rounded-xl p-5 border border-white/10 opacity-60 cursor-not-allowed">
+        <div className="flex items-start justify-between mb-3">
+          <div className={`p-2.5 rounded-xl ${color}`}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">Coming Soon</span>
+        </div>
+        <h3 className="text-white font-semibold mb-1">{title}</h3>
+        <p className="text-slate-500 text-sm">{description}</p>
+      </div>
+    );
+  }
+
   return (
-    <Link 
+    <Link
       href={href}
       className="glass-card rounded-xl p-5 border border-white/10 hover:border-teal-500/30 transition-all group"
     >
@@ -295,6 +312,7 @@ async function ReportsContent() {
             href="/crm/reports/sales"
             icon={DollarSign}
             color="bg-gradient-to-br from-emerald-500 to-green-600"
+            comingSoon
           />
           <ReportCard
             title="Lead Analytics"
@@ -302,6 +320,7 @@ async function ReportsContent() {
             href="/crm/reports/leads"
             icon={UserPlus}
             color="bg-gradient-to-br from-violet-500 to-purple-600"
+            comingSoon
           />
           <ReportCard
             title="Activity Report"
@@ -309,6 +328,7 @@ async function ReportsContent() {
             href="/crm/reports/activity"
             icon={Calendar}
             color="bg-gradient-to-br from-blue-500 to-cyan-600"
+            comingSoon
           />
           <ReportCard
             title="Pipeline Health"
@@ -316,6 +336,7 @@ async function ReportsContent() {
             href="/crm/reports/pipeline"
             icon={Target}
             color="bg-gradient-to-br from-amber-500 to-orange-600"
+            comingSoon
           />
         </div>
       </div>
