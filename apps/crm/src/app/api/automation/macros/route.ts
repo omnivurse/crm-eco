@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
-import { getWorkflows, createWorkflow } from '@/lib/automation';
+import { createMacro, getMacros } from '@/lib/automation';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -26,9 +26,46 @@ async function createClient() {
   );
 }
 
+const actionTypeSchema = z.enum([
+  'update_fields',
+  'assign_owner',
+  'create_task',
+  'create_activity',
+  'add_note',
+  'notify',
+  'move_stage',
+  'start_cadence',
+  'stop_cadence',
+  'create_enrollment_draft',
+]);
+
+const crmRoleSchema = z.enum([
+  'crm_admin',
+  'crm_manager',
+  'crm_agent',
+  'crm_viewer',
+]);
+
+const createMacroSchema = z.object({
+  module_id: z.string().uuid(),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
+  actions: z.array(z.object({
+    id: z.string(),
+    type: actionTypeSchema,
+    config: z.record(z.unknown()),
+    order: z.number(),
+  })),
+  is_enabled: z.boolean().optional(),
+  display_order: z.number().optional(),
+  allowed_roles: z.array(crmRoleSchema).optional(),
+});
+
 /**
- * GET /api/automation/workflows
- * List all workflows for the current organization
+ * GET /api/automation/macros
+ * List all macros for the current organization
  */
 export async function GET(request: NextRequest) {
   try {
@@ -41,44 +78,31 @@ export async function GET(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id, crm_role')
+      .select('organization_id')
       .eq('user_id', user.id)
       .single();
 
-    if (!profile || !profile.crm_role) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
     const { searchParams } = new URL(request.url);
-    const moduleId = searchParams.get('moduleId');
+    const moduleId = searchParams.get('module_id') || undefined;
 
-    const workflows = await getWorkflows(
-      profile.organization_id,
-      moduleId || undefined
-    );
-
-    return NextResponse.json(workflows);
+    const macros = await getMacros(profile.organization_id, moduleId);
+    return NextResponse.json(macros);
   } catch (error) {
-    console.error('Get workflows error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Failed to fetch macros:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
-const createWorkflowSchema = z.object({
-  module_id: z.string().uuid(),
-  name: z.string().min(1),
-  description: z.string().optional(),
-  trigger_type: z.enum(['on_create', 'on_update', 'scheduled', 'webform']),
-  trigger_config: z.record(z.unknown()).optional(),
-  conditions: z.unknown(),
-  actions: z.array(z.unknown()),
-  is_enabled: z.boolean().optional(),
-  priority: z.number().optional(),
-});
-
 /**
- * POST /api/automation/workflows
- * Create a new workflow
+ * POST /api/automation/macros
+ * Create a new macro
  */
 export async function POST(request: NextRequest) {
   try {
@@ -100,30 +124,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = createWorkflowSchema.safeParse(body);
+    const parsed = createMacroSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
     }
 
-    const workflow = await createWorkflow({
+    const macro = await createMacro({
       org_id: profile.organization_id,
       module_id: parsed.data.module_id,
       name: parsed.data.name,
       description: parsed.data.description || null,
-      trigger_type: parsed.data.trigger_type,
-      trigger_config: parsed.data.trigger_config || {},
-      conditions: parsed.data.conditions as any,
-      actions: parsed.data.actions as any,
+      icon: parsed.data.icon || 'zap',
+      color: parsed.data.color || 'teal',
+      actions: parsed.data.actions,
       is_enabled: parsed.data.is_enabled ?? true,
-      priority: parsed.data.priority || 100,
-      webhook_secret: null,
+      display_order: parsed.data.display_order || 100,
+      allowed_roles: (parsed.data.allowed_roles || ['crm_admin', 'crm_manager', 'crm_agent']) as ('crm_admin' | 'crm_manager' | 'crm_agent' | 'crm_viewer')[],
       created_by: profile.id,
     });
 
-    return NextResponse.json(workflow);
+    return NextResponse.json(macro, { status: 201 });
   } catch (error) {
-    console.error('Create workflow error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Failed to create macro:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

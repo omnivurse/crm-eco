@@ -14,6 +14,7 @@ import type {
   UpdateFieldsConfig,
   AssignOwnerConfig,
   CreateTaskConfig,
+  CreateActivityConfig,
   AddNoteConfig,
   NotifyConfig,
   MoveStageConfig,
@@ -22,6 +23,8 @@ import type {
   CreateEnrollmentDraftConfig,
   SendEmailConfig,
   SendSmsConfig,
+  DelayWaitConfig,
+  PostWebhookConfig,
   CrmAssignmentRule,
 } from './types';
 import { dispatchMessage } from '../comms';
@@ -707,6 +710,270 @@ async function executeCreateEnrollmentDraft(
 }
 
 // ============================================================================
+// Activity Actions
+// ============================================================================
+
+async function executeCreateActivity(
+  config: CreateActivityConfig,
+  record: CrmRecord,
+  context: AutomationContext
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  
+  // Resolve assigned user
+  let assignedTo: string | null = null;
+  if (config.assignedTo === 'owner') {
+    assignedTo = record.owner_id || null;
+  } else if (config.assignedTo === 'creator') {
+    assignedTo = record.created_by || null;
+  } else if (config.assignedTo) {
+    assignedTo = config.assignedTo;
+  }
+
+  // Calculate due date
+  let dueAt: string | null = null;
+  if (config.dueInDays) {
+    dueAt = new Date(Date.now() + config.dueInDays * 24 * 60 * 60 * 1000).toISOString();
+  } else if (config.dueInHours) {
+    dueAt = new Date(Date.now() + config.dueInHours * 60 * 60 * 1000).toISOString();
+  }
+
+  if (context.dryRun) {
+    return {
+      actionId: 'create_activity',
+      type: 'create_activity',
+      status: 'success',
+      output: {
+        wouldCreate: {
+          activity_type: config.activityType,
+          title: config.title,
+          description: config.description,
+          due_at: dueAt,
+          priority: config.priority || 'normal',
+          assigned_to: assignedTo,
+          call_type: config.callType,
+          meeting_type: config.meetingType,
+          meeting_location: config.meetingLocation,
+        },
+      },
+    };
+  }
+
+  const { data: activity, error } = await supabase
+    .from('crm_tasks')
+    .insert({
+      org_id: context.orgId,
+      record_id: record.id,
+      title: config.title,
+      description: config.description,
+      activity_type: config.activityType,
+      due_at: dueAt,
+      priority: config.priority || 'normal',
+      assigned_to: assignedTo,
+      call_type: config.callType,
+      meeting_type: config.meetingType,
+      meeting_location: config.meetingLocation,
+      attendees: config.attendees,
+      created_by: context.profileId,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return {
+      actionId: 'create_activity',
+      type: 'create_activity',
+      status: 'failed',
+      error: error.message,
+    };
+  }
+
+  return {
+    actionId: 'create_activity',
+    type: 'create_activity',
+    status: 'success',
+    output: { activityId: activity.id, activityType: config.activityType },
+  };
+}
+
+// ============================================================================
+// Delay/Wait Actions
+// ============================================================================
+
+async function executeDelayWait(
+  config: DelayWaitConfig,
+  record: CrmRecord,
+  context: AutomationContext
+): Promise<ActionResult> {
+  // Calculate total delay in seconds
+  let delaySeconds = config.delaySeconds || 0;
+  delaySeconds += (config.delayMinutes || 0) * 60;
+  delaySeconds += (config.delayHours || 0) * 60 * 60;
+  delaySeconds += (config.delayDays || 0) * 24 * 60 * 60;
+
+  if (delaySeconds <= 0) {
+    return {
+      actionId: 'delay_wait',
+      type: 'delay_wait',
+      status: 'skipped',
+      output: { reason: 'No delay configured' },
+    };
+  }
+
+  const scheduledFor = new Date(Date.now() + delaySeconds * 1000).toISOString();
+
+  if (context.dryRun) {
+    return {
+      actionId: 'delay_wait',
+      type: 'delay_wait',
+      status: 'success',
+      output: {
+        wouldSchedule: {
+          delaySeconds,
+          scheduledFor,
+        },
+      },
+    };
+  }
+
+  // In a real implementation, this would create a scheduler job
+  // For now, we return the scheduled time for the engine to handle
+  return {
+    actionId: 'delay_wait',
+    type: 'delay_wait',
+    status: 'success',
+    output: {
+      delaySeconds,
+      scheduledFor,
+      requiresScheduler: true,
+    },
+  };
+}
+
+// ============================================================================
+// Webhook Actions
+// ============================================================================
+
+async function executePostWebhook(
+  config: PostWebhookConfig,
+  record: CrmRecord,
+  context: AutomationContext
+): Promise<ActionResult> {
+  if (!config.url) {
+    return {
+      actionId: 'post_webhook',
+      type: 'post_webhook',
+      status: 'failed',
+      error: 'No webhook URL configured',
+    };
+  }
+
+  // Build request body
+  let body: Record<string, unknown> = {};
+  
+  if (config.includeRecord !== false) {
+    body = {
+      record: {
+        id: record.id,
+        title: record.title,
+        status: record.status,
+        stage: record.stage,
+        email: record.email,
+        phone: record.phone,
+        data: record.data,
+      },
+      trigger: context.trigger,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Apply body template if provided
+  if (config.bodyTemplate) {
+    try {
+      let templateStr = config.bodyTemplate;
+      // Replace {{field}} placeholders with record values
+      templateStr = templateStr.replace(/\{\{(\w+)\}\}/g, (_, field) => {
+        if (field in record) {
+          return String((record as unknown as Record<string, unknown>)[field] ?? '');
+        }
+        if (record.data && field in record.data) {
+          return String((record.data as Record<string, unknown>)[field] ?? '');
+        }
+        return '';
+      });
+      body = JSON.parse(templateStr);
+    } catch {
+      return {
+        actionId: 'post_webhook',
+        type: 'post_webhook',
+        status: 'failed',
+        error: 'Invalid body template',
+      };
+    }
+  }
+
+  if (context.dryRun) {
+    return {
+      actionId: 'post_webhook',
+      type: 'post_webhook',
+      status: 'success',
+      output: {
+        wouldPost: {
+          url: config.url,
+          method: config.method || 'POST',
+          body,
+        },
+      },
+    };
+  }
+
+  try {
+    const response = await fetch(config.url, {
+      method: config.method || 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...config.headers,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      return {
+        actionId: 'post_webhook',
+        type: 'post_webhook',
+        status: 'failed',
+        error: `Webhook returned ${response.status}: ${errorText.slice(0, 200)}`,
+      };
+    }
+
+    let responseData: unknown = null;
+    try {
+      responseData = await response.json();
+    } catch {
+      // Response may not be JSON
+    }
+
+    return {
+      actionId: 'post_webhook',
+      type: 'post_webhook',
+      status: 'success',
+      output: {
+        statusCode: response.status,
+        response: responseData,
+      },
+    };
+  } catch (error) {
+    return {
+      actionId: 'post_webhook',
+      type: 'post_webhook',
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+// ============================================================================
 // Communication Actions
 // ============================================================================
 
@@ -877,6 +1144,13 @@ export async function executeAction(
           context
         );
 
+      case 'create_activity':
+        return await executeCreateActivity(
+          action.config as CreateActivityConfig,
+          record,
+          context
+        );
+
       case 'add_note':
         return await executeAddNote(
           action.config as AddNoteConfig,
@@ -930,6 +1204,20 @@ export async function executeAction(
       case 'send_sms':
         return await executeSendSms(
           action.config as SendSmsConfig,
+          record,
+          context
+        );
+
+      case 'delay_wait':
+        return await executeDelayWait(
+          action.config as DelayWaitConfig,
+          record,
+          context
+        );
+
+      case 'post_webhook':
+        return await executePostWebhook(
+          action.config as PostWebhookConfig,
           record,
           context
         );

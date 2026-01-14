@@ -31,6 +31,7 @@ import {
 } from '@crm-eco/ui/components/dropdown-menu';
 import { ActionRail } from '@/components/layout/ActionRail';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { StageSelector } from '@/components/crm/blueprints';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage } from '@/lib/crm/types';
 
 interface RecordDetailShellProps {
@@ -230,11 +231,13 @@ export function RecordDetailShell({
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-slate-400">Pipeline Progress</span>
-                  {record.stage && (
-                    <span className="text-sm font-medium text-white">
-                      {stages.find(s => s.key === record.stage)?.name || record.stage}
-                    </span>
-                  )}
+                  <StageSelector
+                    recordId={record.id}
+                    currentStage={record.stage}
+                    currentStageLabel={stages.find(s => s.key === record.stage)?.name}
+                    currentStageColor={stages.find(s => s.key === record.stage)?.color}
+                    moduleId={record.module_id}
+                  />
                 </div>
                 <StageIndicator currentStage={record.stage} stages={stages} />
               </div>

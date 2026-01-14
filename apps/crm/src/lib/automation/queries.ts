@@ -14,6 +14,11 @@ import type {
   CrmWebform,
   CrmNotification,
   CrmAutomationRun,
+  CrmMacro,
+  CrmMacroRun,
+  CrmWorkflowStep,
+  CrmWorkflowRunLog,
+  CrmSchedulerJob,
 } from './types';
 
 // ============================================================================
@@ -173,6 +178,156 @@ export async function getSlaPolicies(orgId: string, moduleId?: string): Promise<
   const { data, error } = await query;
   if (error) throw error;
   return (data || []) as CrmSlaPolicy[];
+}
+
+// ============================================================================
+// Macro Queries
+// ============================================================================
+
+export async function getMacros(orgId: string, moduleId?: string): Promise<CrmMacro[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('crm_macros')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('display_order', { ascending: true });
+
+  if (moduleId) {
+    query = query.eq('module_id', moduleId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []) as CrmMacro[];
+}
+
+export async function getMacroById(macroId: string): Promise<CrmMacro | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('crm_macros')
+    .select('*')
+    .eq('id', macroId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data as CrmMacro | null;
+}
+
+export async function getMacrosForModule(orgId: string, moduleId: string): Promise<CrmMacro[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('crm_macros')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('module_id', moduleId)
+    .eq('is_enabled', true)
+    .order('display_order', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as CrmMacro[];
+}
+
+export async function getMacroRuns(
+  orgId: string,
+  options?: {
+    macroId?: string;
+    recordId?: string;
+    limit?: number;
+  }
+): Promise<CrmMacroRun[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('crm_macro_runs')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('started_at', { ascending: false });
+
+  if (options?.macroId) {
+    query = query.eq('macro_id', options.macroId);
+  }
+  if (options?.recordId) {
+    query = query.eq('record_id', options.recordId);
+  }
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []) as CrmMacroRun[];
+}
+
+// ============================================================================
+// Workflow Step Queries
+// ============================================================================
+
+export async function getWorkflowSteps(workflowId: string): Promise<CrmWorkflowStep[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('crm_workflow_steps')
+    .select('*')
+    .eq('workflow_id', workflowId)
+    .order('step_order', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as CrmWorkflowStep[];
+}
+
+// ============================================================================
+// Workflow Run Log Queries
+// ============================================================================
+
+export async function getWorkflowRunLogs(runId: string): Promise<CrmWorkflowRunLog[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('crm_workflow_run_logs')
+    .select('*')
+    .eq('run_id', runId)
+    .order('step_order', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as CrmWorkflowRunLog[];
+}
+
+// ============================================================================
+// Scheduler Job Queries
+// ============================================================================
+
+export async function getSchedulerJobs(
+  orgId: string,
+  options?: {
+    status?: string;
+    jobType?: string;
+    limit?: number;
+  }
+): Promise<CrmSchedulerJob[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('crm_scheduler_jobs')
+    .select('*')
+    .eq('org_id', orgId)
+    .order('run_at', { ascending: true });
+
+  if (options?.status) {
+    query = query.eq('status', options.status);
+  }
+  if (options?.jobType) {
+    query = query.eq('job_type', options.jobType);
+  }
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []) as CrmSchedulerJob[];
 }
 
 // ============================================================================

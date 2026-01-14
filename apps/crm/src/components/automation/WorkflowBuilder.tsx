@@ -104,8 +104,10 @@ export function WorkflowBuilder({
   const triggerOptions: { value: TriggerType; label: string; description: string }[] = [
     { value: 'on_create', label: 'On Create', description: 'When a new record is created' },
     { value: 'on_update', label: 'On Update', description: 'When a record is updated' },
+    { value: 'on_stage_change', label: 'On Stage Change', description: 'When a record moves to a new stage' },
     { value: 'scheduled', label: 'Scheduled', description: 'Run on a schedule' },
     { value: 'webform', label: 'Webform', description: 'When a webform is submitted' },
+    { value: 'inbound_webhook', label: 'Inbound Webhook', description: 'When an external webhook is received' },
   ];
 
   return (
