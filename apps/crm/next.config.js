@@ -3,7 +3,7 @@ const nextConfig = {
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib'],
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '50mb',
     },
   },
 };
