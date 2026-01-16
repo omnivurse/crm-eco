@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { 
-  Upload, 
-  ChevronRight, 
-  Check, 
-  AlertCircle, 
-  Loader2, 
+import {
+  Upload,
+  ChevronRight,
+  Check,
+  AlertCircle,
+  Loader2,
   FileSpreadsheet,
   Sparkles,
   ArrowRight,
@@ -91,11 +91,28 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   const currentStepIndex = steps.indexOf(step === 'importing' ? 'preview' : step);
   const progressPercent = ((currentStepIndex) / (steps.length - 1)) * 100;
 
+  // Fetch fields when component mounts with a preselected module
+  useEffect(() => {
+    async function fetchFieldsForPreselectedModule() {
+      if (selectedModule && fields.length === 0) {
+        try {
+          const res = await fetch(`/api/crm/modules/${selectedModule.id}/fields`);
+          if (!res.ok) throw new Error('Failed to fetch fields');
+          const data = await res.json();
+          setFields(data.fields || []);
+        } catch (err) {
+          setError('Failed to load module fields');
+        }
+      }
+    }
+    fetchFieldsForPreselectedModule();
+  }, [selectedModule?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Fetch fields when module is selected
   const handleModuleSelect = useCallback(async (module: CrmModule) => {
     setSelectedModule(module);
     setError(null);
-    
+
     try {
       const res = await fetch(`/api/crm/modules/${module.id}/fields`);
       if (!res.ok) throw new Error('Failed to fetch fields');
@@ -112,7 +129,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
-    
+
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       if (char === '"') {
@@ -131,22 +148,22 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   // Smart field matching
   const findBestFieldMatch = useCallback((header: string, fieldList: CrmField[]): CrmField | undefined => {
     const normalizedHeader = header.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
-    
+
     // Direct key match
     let match = fieldList.find(f => f.key === normalizedHeader);
     if (match) return match;
-    
+
     // Label match (case insensitive)
     match = fieldList.find(f => f.label.toLowerCase() === header.toLowerCase());
     if (match) return match;
-    
+
     // Partial label match
-    match = fieldList.find(f => 
+    match = fieldList.find(f =>
       f.label.toLowerCase().includes(header.toLowerCase()) ||
       header.toLowerCase().includes(f.label.toLowerCase())
     );
     if (match) return match;
-    
+
     // Common field aliases
     const aliases: Record<string, string[]> = {
       'first_name': ['first name', 'firstname', 'fname', 'given name'],
@@ -162,14 +179,14 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       'lead_source': ['source', 'lead source'],
       'date_of_birth': ['dob', 'birthdate', 'birth date', 'birthday'],
     };
-    
+
     for (const [fieldKey, aliasList] of Object.entries(aliases)) {
       if (aliasList.some(alias => normalizedHeader.includes(alias.replace(/\s+/g, '_')))) {
         match = fieldList.find(f => f.key === fieldKey);
         if (match) return match;
       }
     }
-    
+
     return undefined;
   }, []);
 
@@ -183,7 +200,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       try {
         const text = event.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
-        
+
         if (lines.length < 2) {
           setError('CSV must have at least a header row and one data row');
           return;
@@ -244,7 +261,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       processFile(e.dataTransfer.files[0]);
     }
@@ -252,7 +269,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
 
   // Update mapping
   const updateMapping = useCallback((sourceColumn: string, targetField: string | null) => {
-    setMappings(prev => prev.map(m => 
+    setMappings(prev => prev.map(m =>
       m.sourceColumn === sourceColumn ? { ...m, targetField, autoMapped: false } : m
     ));
   }, []);
@@ -260,7 +277,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   // Execute import
   const handleImport = useCallback(async () => {
     if (!selectedModule) return;
-    
+
     setImporting(true);
     setStep('importing');
     setError(null);
@@ -295,7 +312,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
 
       const result = await res.json();
       setImportResult(result);
-      
+
       setTimeout(() => {
         setStep('complete');
       }, 500);
@@ -337,7 +354,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
             Step {currentStepIndex + 1} of {steps.length}
           </span>
         </div>
-        
+
         {/* Step indicators */}
         <div className="flex items-center gap-1">
           {steps.map((s, idx) => (
@@ -345,9 +362,9 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               <div className={`
                 flex items-center justify-center w-8 h-8 rounded-full text-xs font-semibold transition-all
                 ${step === s || (step === 'importing' && s === 'preview')
-                  ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white glow-sm' 
-                  : currentStepIndex > idx 
-                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                  ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white glow-sm'
+                  : currentStepIndex > idx
+                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
                     : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border border-slate-300 dark:border-white/10'
                 }
               `}>
@@ -358,9 +375,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 )}
               </div>
               {idx < steps.length - 1 && (
-                <div className={`flex-1 h-0.5 mx-2 rounded ${
-                  currentStepIndex > idx ? 'bg-emerald-500/50' : 'bg-slate-300 dark:bg-slate-700'
-                }`} />
+                <div className={`flex-1 h-0.5 mx-2 rounded ${currentStepIndex > idx ? 'bg-emerald-500/50' : 'bg-slate-300 dark:bg-slate-700'
+                  }`} />
               )}
             </div>
           ))}
@@ -386,12 +402,12 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 Choose which module you want to import records into.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {modules.map((module) => {
                 const icon = MODULE_ICONS[module.key] || <FileText className="w-5 h-5" />;
                 const colors = MODULE_COLORS[module.key] || { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30' };
-                
+
                 return (
                   <button
                     key={module.id}
@@ -406,7 +422,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                   </button>
                 );
               })}
-              
+
               {modules.length === 0 && (
                 <div className="col-span-full text-center py-12">
                   <p className="text-slate-600 dark:text-slate-400">No modules available. Please run the CRM seed first.</p>
@@ -428,8 +444,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                   Upload a CSV file with your data. The first row should contain column headers.
                 </p>
               </div>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => {
                   setSelectedModule(null);
@@ -440,13 +456,13 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 Change Module
               </Button>
             </div>
-            
-            <label 
+
+            <label
               className={`
                 flex flex-col items-center justify-center w-full h-56 
                 border-2 border-dashed rounded-2xl transition-all cursor-pointer
-                ${dragActive 
-                  ? 'border-teal-500 bg-teal-500/10' 
+                ${dragActive
+                  ? 'border-teal-500 bg-teal-500/10'
                   : 'border-slate-300 dark:border-slate-700 hover:border-teal-500/50 hover:bg-slate-100 dark:hover:bg-slate-900/30'
                 }
               `}
@@ -495,13 +511,13 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 </span>
               </div>
             </div>
-            
+
             <div className="glass rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
               <div className="grid grid-cols-2 gap-4 p-3 bg-slate-100 dark:bg-slate-900/50 border-b border-slate-200 dark:border-white/5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <div>CSV Column</div>
                 <div>CRM Field</div>
               </div>
-              
+
               <div className="max-h-80 overflow-y-auto scrollbar-thin divide-y divide-slate-200 dark:divide-white/5">
                 {mappings.map((mapping) => (
                   <div key={mapping.sourceColumn} className="grid grid-cols-2 gap-4 p-3 items-center hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
@@ -521,8 +537,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                         onChange={(e) => updateMapping(mapping.sourceColumn, e.target.value || null)}
                         className={`
                           flex-1 bg-white dark:bg-slate-900/50 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50
-                          ${mapping.targetField 
-                            ? 'border-teal-500/30 text-slate-900 dark:text-white' 
+                          ${mapping.targetField
+                            ? 'border-teal-500/30 text-slate-900 dark:text-white'
                             : 'border-slate-300 dark:border-white/10 text-slate-500'
                           }
                         `}
@@ -611,7 +627,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                   <p className="text-slate-500 text-xs">Reuse this column mapping next time you import from the same source</p>
                 </div>
               </label>
-              
+
               {saveMapping && (
                 <div className="mt-3 ml-7">
                   <input
@@ -655,7 +671,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
             <p className="text-slate-600 dark:text-slate-400 mb-6">
               Please wait while we process your data
             </p>
-            
+
             <div className="max-w-md mx-auto space-y-2">
               <Progress value={importProgress} className="h-2" />
               <p className="text-sm text-slate-500">{Math.round(importProgress)}% complete</p>
@@ -673,7 +689,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
             <p className="text-slate-600 dark:text-slate-400 mb-8">
               Successfully imported {importResult.success.toLocaleString()} of {importResult.total.toLocaleString()} records
             </p>
-            
+
             <div className="flex justify-center gap-6 mb-8">
               <div className="px-6 py-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
                 <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{importResult.success.toLocaleString()}</span>
