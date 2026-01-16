@@ -451,30 +451,30 @@ function DashboardSkeleton() {
       {/* Header skeleton */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-2">
-          <div className="h-6 w-32 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-8 w-64 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-4 w-48 bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-6 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
         <div className="flex gap-3">
-          <div className="h-10 w-32 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-10 w-32 bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
       </div>
       
       {/* Stats grid skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-44 bg-slate-800/30 rounded-2xl animate-pulse border border-white/5" />
+          <div key={i} className="h-44 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
         ))}
       </div>
       
       {/* Quick actions skeleton */}
-      <div className="h-32 bg-slate-800/30 rounded-2xl animate-pulse border border-white/5" />
+      <div className="h-32 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
       
       {/* Tasks & Activity skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-96 bg-slate-800/30 rounded-2xl animate-pulse border border-white/5" />
-        <div className="h-96 bg-slate-800/30 rounded-2xl animate-pulse border border-white/5" />
+        <div className="h-96 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
+        <div className="h-96 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
       </div>
     </div>
   );
