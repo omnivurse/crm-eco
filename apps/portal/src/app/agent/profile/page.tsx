@@ -55,10 +55,23 @@ export default function AgentProfilePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Get profile first
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!userProfile) {
+      setLoading(false);
+      return;
+    }
+
+    // Get advisor using profile_id
     const { data, error } = await supabase
       .from('advisors')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('profile_id', userProfile.id)
       .single();
 
     if (!error && data) {

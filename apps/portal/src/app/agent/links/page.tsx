@@ -47,10 +47,20 @@ export default function AgentLinksPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Get profile first
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) return;
+
+    // Get advisor using profile_id
     const { data: advisor } = await supabase
       .from('advisors')
       .select('id, enrollment_code, organization_id')
-      .eq('user_id', user.id)
+      .eq('profile_id', profile.id)
       .single() as { data: { id: string; enrollment_code: string | null; organization_id: string } | null };
 
     if (advisor?.enrollment_code) {

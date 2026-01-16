@@ -40,12 +40,23 @@ export function SignInForm() {
     }
 
     if (data.user) {
-      // Check if user is an agent
-      const { data: advisor } = await supabase
-        .from('advisors')
-        .select('id, status')
+      // First get profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role')
         .eq('user_id', data.user.id)
-        .single() as { data: { id: string; status: string } | null };
+        .single();
+
+      // Check if user is an agent
+      let advisor = null;
+      if (profile && profile.role === 'advisor') {
+        const { data: advisorData } = await supabase
+          .from('advisors')
+          .select('id, status')
+          .eq('profile_id', profile.id)
+          .single() as { data: { id: string; status: string } | null };
+        advisor = advisorData;
+      }
 
       if (advisor) {
         if (advisor.status !== 'active') {

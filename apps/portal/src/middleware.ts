@@ -88,25 +88,27 @@ export async function middleware(request: NextRequest) {
     // This is a lightweight check - full verification happens in the layout
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('id, role')
       .eq('user_id', session.user.id)
       .single();
 
     if (!profile || profile.role !== 'advisor') {
-      // Check if they're an advisor directly
-      const { data: advisor } = await supabase
-        .from('advisors')
-        .select('id, status')
-        .eq('user_id', session.user.id)
-        .single();
+      return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
+    }
 
-      if (!advisor) {
-        return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
-      }
+    // Check if they have an active advisor record
+    const { data: advisor } = await supabase
+      .from('advisors')
+      .select('id, status')
+      .eq('profile_id', profile.id)
+      .single();
 
-      if (advisor.status !== 'active') {
-        return NextResponse.redirect(new URL('/access-denied?reason=agent_inactive', request.url));
-      }
+    if (!advisor) {
+      return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
+    }
+
+    if (advisor.status !== 'active') {
+      return NextResponse.redirect(new URL('/access-denied?reason=agent_inactive', request.url));
     }
   }
 
