@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign, Link as LinkIcon } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
 import { AgentCommissionTab } from '@/components/commissions/AgentCommissionTab';
+import { AgentEnrollmentTab } from '@/components/enrollment-links/AgentEnrollmentTab';
 
 async function getAgent(id: string) {
   const supabase = await createServerSupabaseClient();
@@ -131,6 +132,10 @@ export default async function AgentDetailPage({ params }: PageProps) {
           <TabsTrigger value="profile">
             <Users className="h-4 w-4 mr-2" />
             Profile
+          </TabsTrigger>
+          <TabsTrigger value="enrollment">
+            <LinkIcon className="h-4 w-4 mr-2" />
+            Enrollment Links
           </TabsTrigger>
           <TabsTrigger value="commissions">
             <DollarSign className="h-4 w-4 mr-2" />
@@ -394,6 +399,25 @@ export default async function AgentDetailPage({ params }: PageProps) {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Enrollment Links Tab */}
+        <TabsContent value="enrollment">
+          <AgentEnrollmentTab 
+            agent={{
+              id: agent.id,
+              first_name: agent.first_name,
+              last_name: agent.last_name,
+              enrollment_code: agent.enrollment_code,
+              primary_color: agent.primary_color,
+              logo_url: agent.logo_url,
+            }}
+            stats={{
+              totalMembers: members.length,
+              totalEnrollments: 0, // Would need to fetch this
+              monthlyEnrollments: 0,
+            }}
+          />
         </TabsContent>
 
         {/* Commissions Tab */}
