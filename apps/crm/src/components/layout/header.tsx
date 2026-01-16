@@ -45,7 +45,7 @@ const roleColors: Record<string, string> = {
 export function Header({ profile }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -58,12 +58,12 @@ export function Header({ profile }: HeaderProps) {
   const getPageTitle = () => {
     // Check exact match first
     if (pageTitles[pathname]) return pageTitles[pathname];
-    
+
     // Check for partial matches (e.g., /members/123)
     for (const [path, title] of Object.entries(pageTitles)) {
       if (pathname.startsWith(path)) return title;
     }
-    
+
     return 'Dashboard';
   };
 
@@ -80,7 +80,7 @@ export function Header({ profile }: HeaderProps) {
       <div>
         <h1 className="text-xl font-semibold text-slate-900">{getPageTitle()}</h1>
       </div>
-      
+
       {/* User Menu */}
       <div className="flex items-center gap-4">
         <DropdownMenu>
@@ -112,11 +112,11 @@ export function Header({ profile }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer">
               <User className="mr-2 h-4 w-4" />
               <span>My Profile</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer">
+            <DropdownMenuItem onClick={() => router.push('/settings')} className="cursor-pointer">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </DropdownMenuItem>
