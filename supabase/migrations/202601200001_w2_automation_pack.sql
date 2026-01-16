@@ -4,6 +4,9 @@
 -- webhook triggers, and enhanced run logging
 -- ============================================================================
 
+-- Enable pgcrypto extension for gen_random_bytes
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- ============================================================================
 -- EXTEND WORKFLOW TRIGGER TYPES
 -- Add on_stage_change and inbound_webhook triggers
@@ -366,10 +369,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public;
 
 -- Function to generate webhook secret
+-- Uses md5 of random uuid + timestamp as a fallback for environments without pgcrypto
 CREATE OR REPLACE FUNCTION generate_webhook_secret()
 RETURNS text AS $$
-  SELECT encode(gen_random_bytes(32), 'hex');
-$$ LANGUAGE sql;
+BEGIN
+  -- Try pgcrypto first, fallback to uuid-based approach
+  BEGIN
+    RETURN encode(gen_random_bytes(32), 'hex');
+  EXCEPTION WHEN undefined_function THEN
+    RETURN md5(gen_random_uuid()::text || now()::text || random()::text);
+  END;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ============================================================================
 -- COMPLETE
