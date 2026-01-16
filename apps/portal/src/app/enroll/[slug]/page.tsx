@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase-server';
+import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { PublicEnrollmentPage } from './client';
 
 interface PageProps {
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .select('name, headline')
     .eq('slug', slug)
     .eq('is_published', true)
-    .single();
+    .single() as { data: { name: string; headline: string | null } | null };
 
   if (!landingPage) {
     return { title: 'Enrollment' };
@@ -76,7 +76,7 @@ export default async function EnrollmentLandingPage({ params }: PageProps) {
   const typedLandingPage = landingPage as LandingPage;
 
   // Track page view
-  await supabase.from('landing_page_events').insert({
+  await (supabase as any).from('landing_page_events').insert({
     landing_page_id: typedLandingPage.id,
     organization_id: typedLandingPage.organization_id,
     event_type: 'view',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -36,6 +36,9 @@ import {
   Inbox,
   FileText,
   Plus,
+  Phone,
+  Mail,
+  CheckSquare,
 } from 'lucide-react';
 
 interface RecordTableProps {
@@ -49,6 +52,9 @@ interface RecordTableProps {
   onBulkUpdate?: (ids: string[], updates: Record<string, unknown>) => void;
   currentSort?: { field: string; direction: 'asc' | 'desc' };
   isLoading?: boolean;
+  onRowClick?: (recordId: string) => void;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
@@ -78,9 +84,31 @@ export function RecordTable({
   onBulkUpdate,
   currentSort,
   isLoading,
+  onRowClick,
+  selectedIds: externalSelectedIds,
+  onSelectionChange,
 }: RecordTableProps) {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
+  const [isScrolled, setIsScrolled] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Use external selection state if provided, otherwise use internal
+  const selectedIds = externalSelectedIds ?? internalSelectedIds;
+  const setSelectedIds = onSelectionChange ?? setInternalSelectedIds;
+
+  // Track scroll for sticky header shadow
+  useEffect(() => {
+    const container = tableContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      setIsScrolled(container.scrollTop > 0);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Create field lookup map
   const fieldMap = useMemo(() => {
@@ -249,51 +277,27 @@ export function RecordTable({
     );
   }
 
-  return (
-    <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-      {/* Bulk Actions Bar */}
-      {selectedIds.size > 0 && (
-        <div className="bg-teal-50 dark:bg-teal-500/10 border-b border-teal-200 dark:border-teal-500/30 px-4 py-3 flex items-center justify-between">
-          <span className="text-sm font-medium text-teal-700 dark:text-teal-400">
-            {selectedIds.size} record{selectedIds.size !== 1 ? 's' : ''} selected
-          </span>
-          <div className="flex items-center gap-2">
-            {onBulkUpdate && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="h-8 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-              >
-                Update
-              </Button>
-            )}
-            {onBulkDelete && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20"
-                onClick={() => onBulkDelete(Array.from(selectedIds))}
-              >
-                <Trash2 className="w-4 h-4 mr-1" />
-                Delete
-              </Button>
-            )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              onClick={() => setSelectedIds(new Set())}
-            >
-              Clear
-            </Button>
-          </div>
-        </div>
-      )}
+  // Handle row click - open drawer if callback provided, otherwise navigate
+  const handleRowClick = (record: CrmRecord) => {
+    if (onRowClick) {
+      onRowClick(record.id);
+    } else {
+      router.push(`/crm/r/${record.id}`);
+    }
+  };
 
+  return (
+    <div 
+      ref={tableContainerRef}
+      className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)]"
+    >
       <Table>
-        <TableHeader>
+        <TableHeader className={cn(
+          'sticky top-0 z-10 transition-shadow',
+          isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
+        )}>
           <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent">
-            <TableHead className="w-12 bg-slate-50 dark:bg-slate-900/30">
+            <TableHead className="w-12 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm">
               <Checkbox
                 checked={allSelected}
                 ref={(el) => {
@@ -307,7 +311,7 @@ export function RecordTable({
               <TableHead
                 key={col}
                 className={cn(
-                  'bg-slate-50 dark:bg-slate-900/30 text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  'bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
                   onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none'
                 )}
                 onClick={() => handleSort(col)}
@@ -318,7 +322,7 @@ export function RecordTable({
                 </div>
               </TableHead>
             ))}
-            <TableHead className="w-12 bg-slate-50 dark:bg-slate-900/30" />
+            <TableHead className="w-28 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" />
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -362,11 +366,11 @@ export function RecordTable({
               <TableRow
                 key={record.id}
                 className={cn(
-                  'border-b border-slate-100 dark:border-white/5 cursor-pointer transition-colors',
+                  'group border-b border-slate-100 dark:border-white/5 cursor-pointer transition-colors',
                   'hover:bg-slate-50 dark:hover:bg-white/5',
                   selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5'
                 )}
-                onClick={() => router.push(`/crm/r/${record.id}`)}
+                onClick={() => handleRowClick(record)}
                 style={{ animationDelay: `${idx * 30}ms` }}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
@@ -382,41 +386,92 @@ export function RecordTable({
                   </TableCell>
                 ))}
                 <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+                  {/* Row Quick Actions - visible on hover */}
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Call - only if phone exists */}
+                    {record.phone && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `tel:${record.phone}`;
+                        }}
+                        className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10"
+                        title="Call"
                       >
-                        <MoreHorizontal className="w-4 h-4" />
+                        <Phone className="w-3.5 h-3.5" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-                      <DropdownMenuItem 
-                        onClick={() => router.push(`/crm/r/${record.id}`)}
-                        className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                    )}
+
+                    {/* Email - only if email exists */}
+                    {record.email && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.location.href = `mailto:${record.email}`;
+                        }}
+                        className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10"
+                        title="Send Email"
                       >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => router.push(`/crm/r/${record.id}?edit=true`)}
-                        className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
-                      >
-                        <Pencil className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                      <DropdownMenuItem
-                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
-                        onClick={() => onBulkDelete?.([record.id])}
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <Mail className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+
+                    {/* Add Task */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Open add task dialog
+                        console.log('Add task for', record.id);
+                      }}
+                      className="h-7 w-7 text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:text-violet-400 dark:hover:bg-violet-500/10"
+                      title="Add Task"
+                    >
+                      <CheckSquare className="w-3.5 h-3.5" />
+                    </Button>
+
+                    {/* More Actions Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                        >
+                          <MoreHorizontal className="w-3.5 h-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+                        <DropdownMenuItem 
+                          onClick={() => router.push(`/crm/r/${record.id}`)}
+                          className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => router.push(`/crm/r/${record.id}?edit=true`)}
+                          className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                        >
+                          <Pencil className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                        <DropdownMenuItem
+                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
+                          onClick={() => onBulkDelete?.([record.id])}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             ))

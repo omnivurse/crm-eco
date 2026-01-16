@@ -9,3 +9,4 @@ export * from './needs';
 export * from './views';
 export * from './billing';
 export * from './commissions';
+export * from './email';
