@@ -645,12 +645,54 @@ export interface Database {
       // ============================================================================
       // IMPORT TABLES
       // ============================================================================
+      field_mappings: {
+        Row: {
+          id: string;
+          organization_id: string;
+          entity_type: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
+          source_name: string;
+          name: string;
+          mapping: Json;
+          source_columns: Json;
+          target_columns: Json;
+          is_default: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          entity_type: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
+          source_name: string;
+          name: string;
+          mapping: Json;
+          source_columns?: Json;
+          target_columns?: Json;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          entity_type?: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
+          source_name?: string;
+          name?: string;
+          mapping?: Json;
+          source_columns?: Json;
+          target_columns?: Json;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       import_jobs: {
         Row: {
           id: string;
           organization_id: string;
           created_by_profile_id: string;
-          entity_type: 'member' | 'advisor' | 'lead';
+          entity_type: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
           source_name: string | null;
           file_name: string | null;
           total_rows: number;
@@ -659,8 +701,17 @@ export interface Database {
           updated_count: number;
           skipped_count: number;
           error_count: number;
+          warnings_count: number;
           status: 'pending' | 'processing' | 'completed' | 'failed';
           error_message: string | null;
+          validation_errors: Json;
+          is_preview: boolean;
+          is_incremental: boolean;
+          can_rollback: boolean;
+          rollback_status: 'pending' | 'in_progress' | 'completed' | 'failed' | null;
+          rollback_at: string | null;
+          field_mapping_id: string | null;
+          duplicate_strategy: 'skip' | 'update' | 'error';
           created_at: string;
           started_at: string | null;
           completed_at: string | null;
@@ -669,7 +720,7 @@ export interface Database {
           id?: string;
           organization_id: string;
           created_by_profile_id: string;
-          entity_type: 'member' | 'advisor' | 'lead';
+          entity_type: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
           source_name?: string | null;
           file_name?: string | null;
           total_rows?: number;
@@ -678,8 +729,17 @@ export interface Database {
           updated_count?: number;
           skipped_count?: number;
           error_count?: number;
+          warnings_count?: number;
           status?: 'pending' | 'processing' | 'completed' | 'failed';
           error_message?: string | null;
+          validation_errors?: Json;
+          is_preview?: boolean;
+          is_incremental?: boolean;
+          can_rollback?: boolean;
+          rollback_status?: 'pending' | 'in_progress' | 'completed' | 'failed' | null;
+          rollback_at?: string | null;
+          field_mapping_id?: string | null;
+          duplicate_strategy?: 'skip' | 'update' | 'error';
           created_at?: string;
           started_at?: string | null;
           completed_at?: string | null;
@@ -688,7 +748,7 @@ export interface Database {
           id?: string;
           organization_id?: string;
           created_by_profile_id?: string;
-          entity_type?: 'member' | 'advisor' | 'lead';
+          entity_type?: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
           source_name?: string | null;
           file_name?: string | null;
           total_rows?: number;
@@ -697,8 +757,17 @@ export interface Database {
           updated_count?: number;
           skipped_count?: number;
           error_count?: number;
+          warnings_count?: number;
           status?: 'pending' | 'processing' | 'completed' | 'failed';
           error_message?: string | null;
+          validation_errors?: Json;
+          is_preview?: boolean;
+          is_incremental?: boolean;
+          can_rollback?: boolean;
+          rollback_status?: 'pending' | 'in_progress' | 'completed' | 'failed' | null;
+          rollback_at?: string | null;
+          field_mapping_id?: string | null;
+          duplicate_strategy?: 'skip' | 'update' | 'error';
           created_at?: string;
           started_at?: string | null;
           completed_at?: string | null;
@@ -715,6 +784,10 @@ export interface Database {
           entity_id: string | null;
           status: 'pending' | 'inserted' | 'updated' | 'skipped' | 'error';
           error_message: string | null;
+          validation_errors: Json;
+          warnings: Json;
+          linked_entity_ids: Json;
+          match_type: 'new' | 'exact_match' | 'fuzzy_match' | 'duplicate' | null;
           created_at: string;
           processed_at: string | null;
         };
@@ -727,6 +800,10 @@ export interface Database {
           entity_id?: string | null;
           status?: 'pending' | 'inserted' | 'updated' | 'skipped' | 'error';
           error_message?: string | null;
+          validation_errors?: Json;
+          warnings?: Json;
+          linked_entity_ids?: Json;
+          match_type?: 'new' | 'exact_match' | 'fuzzy_match' | 'duplicate' | null;
           created_at?: string;
           processed_at?: string | null;
         };
@@ -739,8 +816,57 @@ export interface Database {
           entity_id?: string | null;
           status?: 'pending' | 'inserted' | 'updated' | 'skipped' | 'error';
           error_message?: string | null;
+          validation_errors?: Json;
+          warnings?: Json;
+          linked_entity_ids?: Json;
+          match_type?: 'new' | 'exact_match' | 'fuzzy_match' | 'duplicate' | null;
           created_at?: string;
           processed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      import_snapshots: {
+        Row: {
+          id: string;
+          organization_id: string;
+          import_job_id: string;
+          import_job_row_id: string | null;
+          entity_type: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
+          entity_id: string;
+          action: 'insert' | 'update';
+          data_before: Json | null;
+          data_after: Json;
+          is_rolled_back: boolean;
+          rolled_back_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          import_job_id: string;
+          import_job_row_id?: string | null;
+          entity_type: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
+          entity_id: string;
+          action: 'insert' | 'update';
+          data_before?: Json | null;
+          data_after: Json;
+          is_rolled_back?: boolean;
+          rolled_back_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          import_job_id?: string;
+          import_job_row_id?: string | null;
+          entity_type?: 'member' | 'advisor' | 'lead' | 'plan' | 'membership';
+          entity_id?: string;
+          action?: 'insert' | 'update';
+          data_before?: Json | null;
+          data_after?: Json;
+          is_rolled_back?: boolean;
+          rolled_back_at?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -1093,8 +1219,10 @@ export type NeedEvent = Tables<'need_events'>;
 export type CustomFieldDefinition = Tables<'custom_field_definitions'>;
 
 // Import types
+export type FieldMapping = Tables<'field_mappings'>;
 export type ImportJob = Tables<'import_jobs'>;
 export type ImportJobRow = Tables<'import_job_rows'>;
+export type ImportSnapshot = Tables<'import_snapshots'>;
 
 // Enrollment engine types
 export type Plan = Tables<'plans'>;

@@ -1,4 +1,4 @@
-export type { Database } from './database';
+export type { Database, Json } from './database';
 
 // Re-export table types
 export type {
@@ -13,8 +13,10 @@ export type {
   Need,
   NeedEvent,
   CustomFieldDefinition,
+  FieldMapping,
   ImportJob,
   ImportJobRow,
+  ImportSnapshot,
   Plan,
   Membership,
   Enrollment,

@@ -1,0 +1,397 @@
+/* Pay It Forward HealthShare Theme Tokens
+   Works with shadcn/ui (HSL variables) + Tailwind.
+   
+   Brand Colors (HEX reference):
+   - Navy: #003560
+   - Teal (accessible): #047474
+   - Teal (support): #069B9A
+   - Emerald: #027343
+   - Gold: #E9B61F
+   - Ink: #0B1220
+   - Background: #F8FAFC
+
+   === GLASSMORPHISM DESIGN SYSTEM ===
+   Modern glass effects with gradients and blur
+*/
+
+/* Google Fonts - Plus Jakarta Sans for headings, Inter for body */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+  /* Surfaces */
+  --background: 210 40% 98%;          /* #F8FAFC */
+  --foreground: 220 49% 8%;           /* #0B1220 */
+  --card: 0 0% 100%;                  /* #FFFFFF */
+  --card-foreground: 220 49% 8%;      /* #0B1220 */
+  --popover: 0 0% 100%;               /* #FFFFFF */
+  --popover-foreground: 220 49% 8%;   /* #0B1220 */
+
+  /* Semantic - Primary (Teal - accessible) */
+  --primary: 180 93% 24%;             /* #047474 */
+  --primary-foreground: 210 40% 98%;  /* #F8FAFC */
+
+  /* Semantic - Secondary (Navy) */
+  --secondary: 207 100% 19%;          /* #003560 */
+  --secondary-foreground: 210 40% 98%; /* #F8FAFC */
+
+  /* Semantic - Accent (Emerald) */
+  --accent: 155 97% 23%;              /* #027343 */
+  --accent-foreground: 210 40% 98%;   /* #F8FAFC */
+
+  /* Semantic - Destructive */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Semantic - Success (Emerald) */
+  --success: 155 97% 23%;             /* #027343 */
+  --success-foreground: 210 40% 98%;
+
+  /* Semantic - Warning (Gold-based) */
+  --warning: 45 82% 52%;              /* #E9B61F */
+  --warning-foreground: 220 49% 8%;   /* Dark text on gold */
+
+  /* Muted */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 35%;    /* #475569 slate-ish */
+
+  /* Form elements */
+  --border: 214 32% 91%;              /* #E2E8F0 slate-200-ish */
+  --input: 214 32% 91%;
+  --ring: 180 93% 24%;                /* Teal focus ring */
+
+  /* Brand tokens (HEX via HSL reference) */
+  --brand-navy-500: 207 100% 19%;     /* #003560 */
+  --brand-teal-500: 180 93% 31%;      /* #069B9A */
+  --brand-teal-700: 180 93% 24%;      /* #047474 */
+  --brand-emerald-500: 155 97% 23%;   /* #027343 */
+  --brand-gold-500: 45 82% 52%;       /* #E9B61F */
+
+  /* Border radius */
+  --radius: 0.75rem;                  /* 12px for buttons/inputs */
+  --radius-card: 1rem;                /* 16px for cards */
+  --radius-lg: 1.5rem;                /* 24px for large elements */
+  --radius-xl: 2rem;                  /* 32px for hero elements */
+
+  /* Typography */
+  --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  /* Glassmorphism - Light Mode */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0, 53, 96, 0.1);
+  --glass-blur: 16px;
+}
+
+.dark {
+  /* Surfaces - Deep navy gradient base */
+  --background: 220 50% 6%;           /* Deep navy-black */
+  --foreground: 210 40% 98%;          /* #F8FAFC */
+  --card: 220 45% 8%;
+  --card-foreground: 210 40% 98%;
+  --popover: 220 45% 10%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Semantic - Primary (Teal - vibrant in dark mode) */
+  --primary: 174 100% 40%;            /* Brighter teal */
+  --primary-foreground: 220 49% 8%;
+
+  /* Semantic - Secondary (Navy lifts slightly) */
+  --secondary: 207 80% 35%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Semantic - Accent (Emerald - brighter) */
+  --accent: 155 100% 40%;
+  --accent-foreground: 220 49% 8%;
+
+  /* Semantic - Destructive */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Semantic - Success */
+  --success: 155 100% 40%;
+  --success-foreground: 220 49% 8%;
+
+  /* Semantic - Warning */
+  --warning: 48 100% 55%;
+  --warning-foreground: 220 49% 8%;
+
+  /* Muted */
+  --muted: 220 40% 12%;
+  --muted-foreground: 215 25% 65%;
+
+  /* Form elements */
+  --border: 220 30% 16%;
+  --input: 220 30% 14%;
+  --ring: 174 100% 40%;
+
+  /* Glassmorphism - Dark Mode */
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-blur: 20px;
+}
+
+/* ============================================================
+   GLASSMORPHISM UTILITY CLASSES
+   Theme-aware glass effects for both light and dark modes
+   ============================================================ */
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Light mode glass variants */
+.glass-strong {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dark .glass-strong {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-subtle {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .glass-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(15, 23, 42, 0.5) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(4, 116, 116, 0.3);
+  box-shadow: 
+    0 4px 20px rgba(4, 116, 116, 0.1),
+    0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.dark .glass-card:hover {
+  box-shadow: 
+    0 8px 32px rgba(4, 116, 116, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
+   GRADIENT UTILITIES
+   ============================================================ */
+
+/* Light mode gradient mesh */
+.gradient-mesh {
+  background: 
+    radial-gradient(at 20% 20%, rgba(4, 116, 116, 0.08) 0%, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(2, 115, 67, 0.06) 0%, transparent 50%),
+    radial-gradient(at 40% 60%, rgba(0, 53, 96, 0.04) 0%, transparent 50%),
+    linear-gradient(135deg, hsl(210, 40%, 98%) 0%, hsl(210, 40%, 96%) 100%);
+}
+
+/* Dark mode gradient mesh */
+.dark .gradient-mesh {
+  background: 
+    radial-gradient(at 20% 20%, rgba(4, 116, 116, 0.15) 0%, transparent 50%),
+    radial-gradient(at 80% 80%, rgba(2, 115, 67, 0.1) 0%, transparent 50%),
+    radial-gradient(at 40% 60%, rgba(0, 53, 96, 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, hsl(220, 50%, 6%) 0%, hsl(220, 45%, 10%) 100%);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #047474 0%, #069B9A 50%, #027343 100%);
+}
+
+.gradient-secondary {
+  background: linear-gradient(135deg, #003560 0%, #047474 100%);
+}
+
+.gradient-accent {
+  background: linear-gradient(135deg, #027343 0%, #069B9A 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #069B9A 0%, #027343 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(4, 116, 116, 0.5) 0%, rgba(2, 115, 67, 0.5) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* ============================================================
+   ANIMATION UTILITIES
+   ============================================================ */
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-8px) rotate(2deg); }
+  50% { transform: translateY(-4px) rotate(-1deg); }
+  75% { transform: translateY(-10px) rotate(1deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(4, 116, 116, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(4, 116, 116, 0.4); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+/* ============================================================
+   SCROLLBAR STYLING
+   ============================================================ */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* ============================================================
+   GLOW EFFECTS
+   ============================================================ */
+
+.glow-sm {
+  box-shadow: 0 0 15px rgba(4, 116, 116, 0.3);
+}
+
+.glow-md {
+  box-shadow: 0 0 25px rgba(4, 116, 116, 0.4);
+}
+
+.glow-lg {
+  box-shadow: 0 0 40px rgba(4, 116, 116, 0.5);
+}
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(4, 116, 116, 0.4), 0 0 40px rgba(4, 116, 116, 0.2);
+}
+
+.glow-accent {
+  box-shadow: 0 0 20px rgba(2, 115, 67, 0.4), 0 0 40px rgba(2, 115, 67, 0.2);
+}
+
+/* ============================================================
+   TEXT EFFECTS
+   ============================================================ */
+
+.text-shadow-sm {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.text-shadow-md {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.text-shadow-glow {
+  text-shadow: 0 0 20px rgba(4, 116, 116, 0.6);
+}
