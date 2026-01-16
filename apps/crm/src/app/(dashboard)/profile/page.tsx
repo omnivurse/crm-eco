@@ -53,11 +53,11 @@ export default function ProfilePage() {
                 return;
             }
 
-            const { data, error } = await supabase
-                .from('profiles')
+            const { data, error } = await (supabase
+                .from('profiles') as any)
                 .select('*')
                 .eq('id', user.id)
-                .single();
+                .single() as { data: Profile | null; error: any };
 
             if (error) {
                 console.error('Error loading profile:', error);
@@ -66,7 +66,7 @@ export default function ProfilePage() {
             }
 
             setProfile(data);
-            setFullName(data.full_name || '');
+            setFullName(data?.full_name || '');
             setLoading(false);
         }
 
@@ -80,8 +80,8 @@ export default function ProfilePage() {
         setMessage(null);
 
         const supabase = createClient();
-        const { error } = await supabase
-            .from('profiles')
+        const { error } = await (supabase
+            .from('profiles') as any)
             .update({ full_name: fullName })
             .eq('id', profile.id);
 
