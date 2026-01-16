@@ -90,7 +90,7 @@ export async function middleware(request: NextRequest) {
       .from('profiles')
       .select('id, role')
       .eq('user_id', session.user.id)
-      .single();
+      .single() as { data: { id: string; role: string } | null };
 
     if (!profile || profile.role !== 'advisor') {
       return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
@@ -101,7 +101,7 @@ export async function middleware(request: NextRequest) {
       .from('advisors')
       .select('id, status')
       .eq('profile_id', profile.id)
-      .single();
+      .single() as { data: { id: string; status: string } | null };
 
     if (!advisor) {
       return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));

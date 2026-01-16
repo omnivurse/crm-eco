@@ -45,7 +45,7 @@ export function SignInForm() {
         .from('profiles')
         .select('id, role')
         .eq('user_id', data.user.id)
-        .single();
+        .single() as { data: { id: string; role: string } | null };
 
       // Check if user is an agent
       let advisor = null;

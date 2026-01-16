@@ -50,7 +50,7 @@ export default function AgentDownlinePage() {
       .from('profiles')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { id: string } | null };
 
     if (!profile) return;
 
