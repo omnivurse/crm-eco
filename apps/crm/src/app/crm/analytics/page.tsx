@@ -80,17 +80,17 @@ function StatCard({
   color: 'teal' | 'violet' | 'emerald' | 'amber' | 'blue' | 'red';
 }) {
   const colorClasses = {
-    teal: { bg: 'bg-teal-500/10', text: 'text-teal-400' },
-    violet: { bg: 'bg-violet-500/10', text: 'text-violet-400' },
-    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-    amber: { bg: 'bg-amber-500/10', text: 'text-amber-400' },
-    blue: { bg: 'bg-blue-500/10', text: 'text-blue-400' },
-    red: { bg: 'bg-red-500/10', text: 'text-red-400' },
+    teal: { bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
+    violet: { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+    amber: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
+    blue: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+    red: { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400' },
   };
   const colors = colorClasses[color];
 
   return (
-    <Card className="glass-card border-white/10 hover:border-teal-500/30 transition-all">
+    <Card className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-500/30 transition-all">
       <CardContent className="pt-6">
         <div className="flex items-start justify-between">
           <div className={`p-3 rounded-xl ${colors.bg}`}>
@@ -98,7 +98,7 @@ function StatCard({
           </div>
           {change !== undefined && (
             <div className={`flex items-center gap-1 text-sm ${
-              trend === 'up' ? 'text-emerald-400' : trend === 'down' ? 'text-red-400' : 'text-slate-400'
+              trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : trend === 'down' ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'
             }`}>
               {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : trend === 'down' ? <ArrowDownRight className="w-4 h-4" /> : null}
               {change !== 0 && <span>{change > 0 ? '+' : ''}{change}%</span>}
@@ -106,8 +106,8 @@ function StatCard({
           )}
         </div>
         <div className="mt-4">
-          <p className="text-3xl font-bold text-white">{value}</p>
-          <p className="text-sm text-slate-400 mt-1">{title}</p>
+          <p className="text-3xl font-bold text-slate-900 dark:text-white">{value}</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{title}</p>
         </div>
       </CardContent>
     </Card>
@@ -146,10 +146,10 @@ function PipelineFunnel({ pipeline }: { pipeline: DashboardData['pipeline'] }) {
       {stages.map((stage, idx) => (
         <div key={stage.label} className="space-y-1">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-400">{stage.label}</span>
-            <span className="text-white font-medium">{stage.value}</span>
+            <span className="text-slate-600 dark:text-slate-400">{stage.label}</span>
+            <span className="text-slate-900 dark:text-white font-medium">{stage.value}</span>
           </div>
-          <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
             <div
               className={`h-full ${stage.color} transition-all duration-500`}
               style={{ width: `${(stage.value / maxValue) * 100}%` }}
@@ -200,7 +200,7 @@ export default function AnalyticsPage() {
 
   if (!data) {
     return (
-      <div className="text-center py-20 text-slate-400">
+      <div className="text-center py-20 text-slate-500 dark:text-slate-400">
         <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
         <p>Failed to load analytics</p>
         <Button onClick={handleRefresh} variant="outline" className="mt-4">
@@ -217,13 +217,13 @@ export default function AnalyticsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Analytics Dashboard</h1>
-          <p className="text-slate-400">Real-time insights into your organization</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h1>
+          <p className="text-slate-600 dark:text-slate-400">Real-time insights into your organization</p>
         </div>
         <Button 
           onClick={handleRefresh} 
           variant="outline" 
-          className="border-slate-700"
+          className="border-slate-300 dark:border-slate-700"
           disabled={refreshing}
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -264,31 +264,31 @@ export default function AnalyticsPage() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Activity Chart */}
-        <Card className="glass-card border-white/10 lg:col-span-2">
+        <Card className="glass-card border-slate-200 dark:border-white/10 lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-white">30-Day Activity</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-white">30-Day Activity</CardTitle>
             <CardDescription>New members, leads, and enrollments</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-400">New Members</span>
-                  <span className="text-sm text-white">{summary.newMembersThisMonth} this month</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">New Members</span>
+                  <span className="text-sm text-slate-900 dark:text-white">{summary.newMembersThisMonth} this month</span>
                 </div>
                 <MiniChart data={dailyActivity.map(d => d.members)} height={40} />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-400">New Leads</span>
-                  <span className="text-sm text-white">{summary.activeLeads} active</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">New Leads</span>
+                  <span className="text-sm text-slate-900 dark:text-white">{summary.activeLeads} active</span>
                 </div>
                 <MiniChart data={dailyActivity.map(d => d.leads)} height={40} />
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-400">Enrollments</span>
-                  <span className="text-sm text-white">{summary.pendingEnrollments} pending</span>
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Enrollments</span>
+                  <span className="text-sm text-slate-900 dark:text-white">{summary.pendingEnrollments} pending</span>
                 </div>
                 <MiniChart data={dailyActivity.map(d => d.enrollments)} height={40} />
               </div>
@@ -297,9 +297,9 @@ export default function AnalyticsPage() {
         </Card>
 
         {/* Pipeline Funnel */}
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Sales Pipeline</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-white">Sales Pipeline</CardTitle>
             <CardDescription>Lead progression</CardDescription>
           </CardHeader>
           <CardContent>
@@ -311,68 +311,68 @@ export default function AnalyticsPage() {
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Needs Overview */}
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Needs Management</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-white">Needs Management</CardTitle>
             <CardDescription>Healthcare needs status</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-lg bg-slate-800/50">
+              <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
-                  <span className="text-slate-400 text-sm">Urgent</span>
+                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  <span className="text-slate-600 dark:text-slate-400 text-sm">Urgent</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{needsBreakdown.urgent}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{needsBreakdown.urgent}</p>
               </div>
-              <div className="p-4 rounded-lg bg-slate-800/50">
+              <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-5 h-5 text-amber-400" />
-                  <span className="text-slate-400 text-sm">At Risk</span>
+                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-slate-600 dark:text-slate-400 text-sm">At Risk</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{needsBreakdown.atRisk}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{needsBreakdown.atRisk}</p>
               </div>
-              <div className="p-4 rounded-lg bg-slate-800/50">
+              <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-emerald-400" />
-                  <span className="text-slate-400 text-sm">On Track</span>
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <span className="text-slate-600 dark:text-slate-400 text-sm">On Track</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{needsBreakdown.onTrack}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{needsBreakdown.onTrack}</p>
               </div>
-              <div className="p-4 rounded-lg bg-slate-800/50">
+              <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-5 h-5 text-teal-400" />
-                  <span className="text-slate-400 text-sm">Reimbursed</span>
+                  <DollarSign className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                  <span className="text-slate-600 dark:text-slate-400 text-sm">Reimbursed</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{formatCurrency(summary.totalReimbursed)}</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(summary.totalReimbursed)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Quick Stats */}
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Quick Stats</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-white">Quick Stats</CardTitle>
             <CardDescription>Key performance indicators</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                <span className="text-slate-400">Total Members</span>
-                <span className="text-white font-bold">{summary.totalMembers}</span>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+                <span className="text-slate-600 dark:text-slate-400">Total Members</span>
+                <span className="text-slate-900 dark:text-white font-bold">{summary.totalMembers}</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                <span className="text-slate-400">Total Leads</span>
-                <span className="text-white font-bold">{summary.totalLeads}</span>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+                <span className="text-slate-600 dark:text-slate-400">Total Leads</span>
+                <span className="text-slate-900 dark:text-white font-bold">{summary.totalLeads}</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                <span className="text-slate-400">Completed Enrollments</span>
-                <span className="text-white font-bold">{summary.completedEnrollments}</span>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+                <span className="text-slate-600 dark:text-slate-400">Completed Enrollments</span>
+                <span className="text-slate-900 dark:text-white font-bold">{summary.completedEnrollments}</span>
               </div>
-              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50">
-                <span className="text-slate-400">Needs Amount Submitted</span>
-                <span className="text-white font-bold">{formatCurrency(summary.totalNeedsAmount)}</span>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100 dark:bg-slate-800/50">
+                <span className="text-slate-600 dark:text-slate-400">Needs Amount Submitted</span>
+                <span className="text-slate-900 dark:text-white font-bold">{formatCurrency(summary.totalNeedsAmount)}</span>
               </div>
             </div>
           </CardContent>
