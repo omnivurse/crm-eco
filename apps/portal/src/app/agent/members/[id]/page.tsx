@@ -57,7 +57,7 @@ async function getAgentInfo(supabase: any, userId: string) {
     .from('profiles')
     .select('id')
     .eq('user_id', userId)
-    .single();
+    .single() as { data: { id: string } | null };
 
   if (!profile) return null;
 
@@ -66,7 +66,7 @@ async function getAgentInfo(supabase: any, userId: string) {
     .from('advisors')
     .select('id, organization_id')
     .eq('profile_id', profile.id)
-    .single();
+    .single() as { data: { id: string; organization_id: string } | null };
   return advisor;
 }
 

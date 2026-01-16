@@ -10,7 +10,7 @@ async function getAgentForUser(supabase: any, userId: string) {
     .from('profiles')
     .select('id, user_id, organization_id, role')
     .eq('user_id', userId)
-    .single();
+    .single() as { data: { id: string; user_id: string; organization_id: string; role: string } | null };
 
   if (!profile || profile.role !== 'advisor') {
     return null;
