@@ -97,11 +97,22 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       if (selectedModule && fields.length === 0) {
         try {
           const res = await fetch(`/api/crm/modules/${selectedModule.id}/fields`);
-          if (!res.ok) throw new Error('Failed to fetch fields');
-          const data = await res.json();
+          const text = await res.text();
+
+          // Safely parse JSON
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch {
+            console.error('Non-JSON response:', text.substring(0, 200));
+            throw new Error('Server error. Please refresh and try again.');
+          }
+
+          if (!res.ok) throw new Error(data.error || 'Failed to fetch fields');
           setFields(data.fields || []);
         } catch (err) {
-          setError('Failed to load module fields');
+          console.error('Error loading fields:', err);
+          setError(err instanceof Error ? err.message : 'Failed to load module fields');
         }
       }
     }
