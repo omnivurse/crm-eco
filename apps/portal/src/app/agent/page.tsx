@@ -99,10 +99,20 @@ async function getAgentDashboardData(supabase: any, agentId: string, organizatio
 }
 
 async function getAgentInfo(supabase: any, userId: string) {
+  // First get the profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+
+  if (!profile) return null;
+
+  // Then get the advisor by profile_id
   const { data: advisor } = await supabase
     .from('advisors')
     .select('id, first_name, last_name, enrollment_code, organization_id')
-    .eq('user_id', userId)
+    .eq('profile_id', profile.id)
     .single();
   return advisor;
 }

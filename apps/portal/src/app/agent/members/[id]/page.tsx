@@ -52,10 +52,20 @@ async function getMemberDetails(supabase: any, memberId: string, agentId: string
 }
 
 async function getAgentInfo(supabase: any, userId: string) {
+  // Get profile first
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', userId)
+    .single();
+
+  if (!profile) return null;
+
+  // Get advisor using profile_id
   const { data: advisor } = await supabase
     .from('advisors')
     .select('id, organization_id')
-    .eq('user_id', userId)
+    .eq('profile_id', profile.id)
     .single();
   return advisor;
 }

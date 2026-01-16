@@ -16,7 +16,7 @@ async function getAgentForUser(supabase: any, userId: string) {
     return null;
   }
 
-  // Get the advisor record
+  // Get the advisor record using profile_id
   const { data: advisor } = await supabase
     .from('advisors')
     .select(`
@@ -34,7 +34,7 @@ async function getAgentForUser(supabase: any, userId: string) {
       secondary_color,
       organization_id
     `)
-    .eq('user_id', userId)
+    .eq('profile_id', profile.id)
     .single();
 
   return advisor;

@@ -59,10 +59,23 @@ export default function AgentCommissionsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
+    // Get profile first
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      setLoading(false);
+      return;
+    }
+
+    // Get advisor using profile_id
     const { data: advisor } = await supabase
       .from('advisors')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('profile_id', profile.id)
       .single() as { data: { id: string } | null };
 
     if (!advisor) {
