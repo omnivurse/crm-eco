@@ -49,10 +49,10 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const MODULE_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  contacts: { text: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-  leads: { text: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
-  deals: { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-  accounts: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  contacts: { text: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
+  leads: { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
+  deals: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  accounts: { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
 };
 
 const STEP_LABELS: Record<WizardStep, string> = {
@@ -328,12 +328,12 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   const autoMappedCount = mappings.filter(m => m.autoMapped).length;
 
   return (
-    <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+    <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
       {/* Progress Header */}
-      <div className="px-6 py-4 border-b border-white/5 bg-slate-900/30">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-900/30">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white font-semibold">Import Wizard</h3>
-          <span className="text-sm text-slate-400">
+          <h3 className="text-slate-900 dark:text-white font-semibold">Import Wizard</h3>
+          <span className="text-sm text-slate-600 dark:text-slate-400">
             Step {currentStepIndex + 1} of {steps.length}
           </span>
         </div>
@@ -347,8 +347,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 ${step === s || (step === 'importing' && s === 'preview')
                   ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white glow-sm' 
                   : currentStepIndex > idx 
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                    : 'bg-slate-800 text-slate-500 border border-white/10'
+                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                    : 'bg-slate-200 dark:bg-slate-800 text-slate-500 border border-slate-300 dark:border-white/10'
                 }
               `}>
                 {currentStepIndex > idx ? (
@@ -359,7 +359,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               </div>
               {idx < steps.length - 1 && (
                 <div className={`flex-1 h-0.5 mx-2 rounded ${
-                  currentStepIndex > idx ? 'bg-emerald-500/50' : 'bg-slate-700'
+                  currentStepIndex > idx ? 'bg-emerald-500/50' : 'bg-slate-300 dark:bg-slate-700'
                 }`} />
               )}
             </div>
@@ -381,8 +381,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         {step === 'module' && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Select Target Module</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Select Target Module</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Choose which module you want to import records into.
               </p>
             </div>
@@ -390,7 +390,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {modules.map((module) => {
                 const icon = MODULE_ICONS[module.key] || <FileText className="w-5 h-5" />;
-                const colors = MODULE_COLORS[module.key] || { text: 'text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30' };
+                const colors = MODULE_COLORS[module.key] || { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-500/10', border: 'border-slate-500/30' };
                 
                 return (
                   <button
@@ -401,7 +401,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                     <div className={`p-2 rounded-lg ${colors.bg} w-fit mb-3`}>
                       <span className={colors.text}>{icon}</span>
                     </div>
-                    <p className="text-white font-medium">{module.name}</p>
+                    <p className="text-slate-900 dark:text-white font-medium">{module.name}</p>
                     <p className="text-slate-500 text-xs">{module.name_plural || module.name}</p>
                   </button>
                 );
@@ -409,7 +409,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               
               {modules.length === 0 && (
                 <div className="col-span-full text-center py-12">
-                  <p className="text-slate-400">No modules available. Please run the CRM seed first.</p>
+                  <p className="text-slate-600 dark:text-slate-400">No modules available. Please run the CRM seed first.</p>
                 </div>
               )}
             </div>
@@ -421,10 +421,10 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
                   Upload CSV for {selectedModule?.name_plural}
                 </h3>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
                   Upload a CSV file with your data. The first row should contain column headers.
                 </p>
               </div>
@@ -435,7 +435,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                   setSelectedModule(null);
                   setStep('module');
                 }}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               >
                 Change Module
               </Button>
@@ -447,7 +447,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 border-2 border-dashed rounded-2xl transition-all cursor-pointer
                 ${dragActive 
                   ? 'border-teal-500 bg-teal-500/10' 
-                  : 'border-slate-700 hover:border-teal-500/50 hover:bg-slate-900/30'
+                  : 'border-slate-300 dark:border-slate-700 hover:border-teal-500/50 hover:bg-slate-100 dark:hover:bg-slate-900/30'
                 }
               `}
               onDragEnter={handleDrag}
@@ -455,14 +455,14 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               onDragOver={handleDrag}
               onDrop={handleDrop}
             >
-              <div className="p-4 rounded-full bg-slate-800/50 mb-4">
-                <Upload className={`w-8 h-8 ${dragActive ? 'text-teal-400' : 'text-slate-500'}`} />
+              <div className="p-4 rounded-full bg-slate-200 dark:bg-slate-800/50 mb-4">
+                <Upload className={`w-8 h-8 ${dragActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500'}`} />
               </div>
-              <span className="text-white font-medium">
+              <span className="text-slate-900 dark:text-white font-medium">
                 {dragActive ? 'Drop your file here' : 'Click to upload CSV'}
               </span>
               <span className="text-slate-500 text-sm mt-1">or drag and drop</span>
-              <span className="text-slate-600 text-xs mt-3">Supports .csv files up to 50MB</span>
+              <span className="text-slate-500 dark:text-slate-600 text-xs mt-3">Supports .csv files up to 50MB</span>
               <input
                 type="file"
                 accept=".csv"
@@ -478,52 +478,52 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-white mb-1">Map Columns to Fields</h3>
-                <p className="text-slate-400 text-sm">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Map Columns to Fields</h3>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
                   Match your CSV columns to {selectedModule?.name} fields
                 </p>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 {autoMappedCount > 0 && (
-                  <span className="flex items-center gap-1.5 text-emerald-400">
+                  <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                     <Sparkles className="w-4 h-4" />
                     {autoMappedCount} auto-mapped
                   </span>
                 )}
-                <span className="text-slate-400">
+                <span className="text-slate-600 dark:text-slate-400">
                   {csvData.length.toLocaleString()} rows • {mappedFieldsCount} fields mapped
                 </span>
               </div>
             </div>
             
-            <div className="glass rounded-xl border border-white/5 overflow-hidden">
-              <div className="grid grid-cols-2 gap-4 p-3 bg-slate-900/50 border-b border-white/5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            <div className="glass rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
+              <div className="grid grid-cols-2 gap-4 p-3 bg-slate-100 dark:bg-slate-900/50 border-b border-slate-200 dark:border-white/5 text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <div>CSV Column</div>
                 <div>CRM Field</div>
               </div>
               
-              <div className="max-h-80 overflow-y-auto scrollbar-thin divide-y divide-white/5">
+              <div className="max-h-80 overflow-y-auto scrollbar-thin divide-y divide-slate-200 dark:divide-white/5">
                 {mappings.map((mapping) => (
-                  <div key={mapping.sourceColumn} className="grid grid-cols-2 gap-4 p-3 items-center hover:bg-white/5 transition-colors">
+                  <div key={mapping.sourceColumn} className="grid grid-cols-2 gap-4 p-3 items-center hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                     <div className="flex items-center gap-2">
                       <FileSpreadsheet className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                      <span className="text-white truncate">{mapping.sourceColumn}</span>
+                      <span className="text-slate-900 dark:text-white truncate">{mapping.sourceColumn}</span>
                       {mapping.autoMapped && (
-                        <span className="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span className="px-1.5 py-0.5 text-[10px] rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
                           Auto
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <ArrowRight className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                      <ArrowRight className="w-4 h-4 text-slate-400 dark:text-slate-600 flex-shrink-0" />
                       <select
                         value={mapping.targetField || ''}
                         onChange={(e) => updateMapping(mapping.sourceColumn, e.target.value || null)}
                         className={`
-                          flex-1 bg-slate-900/50 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50
+                          flex-1 bg-white dark:bg-slate-900/50 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50
                           ${mapping.targetField 
-                            ? 'border-teal-500/30 text-white' 
-                            : 'border-white/10 text-slate-500'
+                            ? 'border-teal-500/30 text-slate-900 dark:text-white' 
+                            : 'border-slate-300 dark:border-white/10 text-slate-500'
                           }
                         `}
                       >
@@ -544,7 +544,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               <Button
                 variant="ghost"
                 onClick={() => setStep('upload')}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               >
                 Back
               </Button>
@@ -564,30 +564,30 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         {step === 'preview' && (
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-white mb-1">Preview Import</h3>
-              <p className="text-slate-400 text-sm">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">Preview Import</h3>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">
                 Review the first 5 rows before importing {csvData.length.toLocaleString()} records
               </p>
             </div>
 
-            <div className="glass rounded-xl border border-white/5 overflow-hidden">
+            <div className="glass rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-slate-900/50 border-b border-white/5">
+                    <tr className="bg-slate-100 dark:bg-slate-900/50 border-b border-slate-200 dark:border-white/5">
                       {mappings.filter(m => m.targetField).map((m) => (
-                        <th key={m.sourceColumn} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                        <th key={m.sourceColumn} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                           {fields.find(f => f.key === m.targetField)?.label || m.targetField}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-slate-200 dark:divide-white/5">
                     {csvData.slice(0, 5).map((row, idx) => (
-                      <tr key={idx} className="hover:bg-white/5 transition-colors">
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
                         {mappings.filter(m => m.targetField).map((m) => (
-                          <td key={m.sourceColumn} className="px-4 py-3 text-slate-300 truncate max-w-[200px]">
-                            {row[m.sourceColumn] || <span className="text-slate-600">—</span>}
+                          <td key={m.sourceColumn} className="px-4 py-3 text-slate-700 dark:text-slate-300 truncate max-w-[200px]">
+                            {row[m.sourceColumn] || <span className="text-slate-400 dark:text-slate-600">—</span>}
                           </td>
                         ))}
                       </tr>
@@ -598,16 +598,16 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
             </div>
 
             {/* Save Mapping Option */}
-            <div className="glass rounded-xl border border-white/5 p-4">
+            <div className="glass rounded-xl border border-slate-200 dark:border-white/5 p-4">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={saveMapping}
                   onChange={(e) => setSaveMapping(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500 focus:ring-teal-500/20"
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-teal-500 focus:ring-teal-500/20"
                 />
                 <div>
-                  <span className="text-white font-medium">Save mapping for future imports</span>
+                  <span className="text-slate-900 dark:text-white font-medium">Save mapping for future imports</span>
                   <p className="text-slate-500 text-xs">Reuse this column mapping next time you import from the same source</p>
                 </div>
               </label>
@@ -619,7 +619,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                     value={mappingName}
                     onChange={(e) => setMappingName(e.target.value)}
                     placeholder="Enter mapping name (e.g., Zoho Contacts Export)"
-                    className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                    className="w-full bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
                   />
                 </div>
               )}
@@ -629,7 +629,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               <Button
                 variant="ghost"
                 onClick={() => setStep('mapping')}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               >
                 Back
               </Button>
@@ -649,10 +649,10 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         {step === 'importing' && (
           <div className="text-center py-12">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-teal-500/20 to-emerald-500/20 mb-6 animate-pulse">
-              <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />
+              <Loader2 className="w-10 h-10 text-teal-600 dark:text-teal-400 animate-spin" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">Importing Records...</h3>
-            <p className="text-slate-400 mb-6">
+            <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Importing Records...</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
               Please wait while we process your data
             </p>
             
@@ -667,22 +667,22 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         {step === 'complete' && importResult && (
           <div className="text-center py-8">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500/20 to-green-500/20 mb-6 glow-accent">
-              <CheckCircle2 className="w-10 h-10 text-emerald-400" />
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-2">Import Complete!</h3>
-            <p className="text-slate-400 mb-8">
+            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Import Complete!</h3>
+            <p className="text-slate-600 dark:text-slate-400 mb-8">
               Successfully imported {importResult.success.toLocaleString()} of {importResult.total.toLocaleString()} records
             </p>
             
             <div className="flex justify-center gap-6 mb-8">
               <div className="px-6 py-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
-                <span className="text-3xl font-bold text-emerald-400">{importResult.success.toLocaleString()}</span>
-                <p className="text-sm text-slate-400 mt-1">Imported</p>
+                <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{importResult.success.toLocaleString()}</span>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Imported</p>
               </div>
               {importResult.errors > 0 && (
                 <div className="px-6 py-4 rounded-xl bg-red-500/10 border border-red-500/30">
-                  <span className="text-3xl font-bold text-red-400">{importResult.errors.toLocaleString()}</span>
-                  <p className="text-sm text-slate-400 mt-1">Errors</p>
+                  <span className="text-3xl font-bold text-red-600 dark:text-red-400">{importResult.errors.toLocaleString()}</span>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Errors</p>
                 </div>
               )}
             </div>
@@ -691,7 +691,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               <Button
                 variant="outline"
                 onClick={handleReset}
-                className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+                className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20"
               >
                 Import More
               </Button>

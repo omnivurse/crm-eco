@@ -67,17 +67,17 @@ function EnrollmentCard({ enrollment }: { enrollment: typeof MOCK_ENROLLMENTS[0]
   const status = ENROLLMENT_STATUSES.find(s => s.key === enrollment.status) || ENROLLMENT_STATUSES[0];
   
   return (
-    <div className="glass-card rounded-xl p-5 border border-white/10 hover:border-teal-500/30 transition-all group">
+    <div className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-teal-500/30 transition-all group">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-semibold">
             {enrollment.name.charAt(0)}
           </div>
           <div>
-            <h4 className="text-white font-medium group-hover:text-teal-400 transition-colors">
+            <h4 className="text-slate-900 dark:text-white font-medium group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
               {enrollment.name}
             </h4>
-            <p className="text-slate-500 text-sm">{enrollment.email}</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">{enrollment.email}</p>
           </div>
         </div>
         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${status.bg} ${status.color} ${status.border}`}>
@@ -87,17 +87,17 @@ function EnrollmentCard({ enrollment }: { enrollment: typeof MOCK_ENROLLMENTS[0]
       
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <p className="text-slate-500 text-xs mb-0.5">Product</p>
-          <p className="text-white text-sm">{enrollment.product}</p>
+          <p className="text-slate-500 dark:text-slate-500 text-xs mb-0.5">Product</p>
+          <p className="text-slate-900 dark:text-white text-sm">{enrollment.product}</p>
         </div>
         <div>
-          <p className="text-slate-500 text-xs mb-0.5">Coverage</p>
-          <p className="text-white text-sm">{enrollment.coverage}</p>
+          <p className="text-slate-500 dark:text-slate-500 text-xs mb-0.5">Coverage</p>
+          <p className="text-slate-900 dark:text-white text-sm">{enrollment.coverage}</p>
         </div>
       </div>
       
-      <div className="flex items-center justify-between pt-4 border-t border-white/5">
-        <div className="flex items-center gap-4 text-xs text-slate-500">
+      <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-white/5">
+        <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-500">
           <span className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
             {new Date(enrollment.submittedAt).toLocaleDateString()}
@@ -110,7 +110,7 @@ function EnrollmentCard({ enrollment }: { enrollment: typeof MOCK_ENROLLMENTS[0]
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-8 text-teal-400 hover:text-teal-300 hover:bg-teal-500/10"
+          className="h-8 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-500/10"
         >
           Review
           <ArrowRight className="w-4 h-4 ml-1" />
@@ -133,18 +133,18 @@ function WizardStep({
 }) {
   return (
     <div className={`flex items-start gap-4 p-4 rounded-xl transition-all ${
-      active ? 'glass border border-teal-500/30 bg-teal-500/5' : 'opacity-60'
+      active ? 'glass border border-teal-500/30 bg-teal-50 dark:bg-teal-500/5' : 'opacity-60'
     }`}>
       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold ${
         active 
           ? 'bg-gradient-to-br from-teal-500 to-emerald-500 text-white' 
-          : 'bg-slate-800 text-slate-500'
+          : 'bg-slate-200 dark:bg-slate-800 text-slate-500'
       }`}>
         {number}
       </div>
       <div>
-        <h4 className={`font-medium ${active ? 'text-white' : 'text-slate-400'}`}>{title}</h4>
-        <p className="text-slate-500 text-sm">{description}</p>
+        <h4 className={`font-medium ${active ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>{title}</h4>
+        <p className="text-slate-500 dark:text-slate-500 text-sm">{description}</p>
       </div>
     </div>
   );
@@ -168,12 +168,12 @@ async function EnrollmentContent() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-teal-500/20 to-emerald-500/20">
-              <ClipboardCheck className="w-4 h-4 text-teal-400" />
+              <ClipboardCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
             </div>
-            <span className="text-teal-400 text-sm font-medium">Health Sharing</span>
+            <span className="text-teal-600 dark:text-teal-400 text-sm font-medium">Health Sharing</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Enrollment Management</h1>
-          <p className="text-slate-400 mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Enrollment Management</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-0.5">
             Process and manage member enrollments
           </p>
         </div>
@@ -181,7 +181,7 @@ async function EnrollmentContent() {
         <div className="flex items-center gap-3">
           <Button 
             variant="outline" 
-            className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filter
@@ -197,47 +197,47 @@ async function EnrollmentContent() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="glass-card rounded-xl p-4 border border-white/10">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-amber-500/10">
-              <Clock className="w-5 h-5 text-amber-400" />
+              <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{pendingCount}</p>
-              <p className="text-slate-400 text-sm">Pending Review</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{pendingCount}</p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Pending Review</p>
             </div>
           </div>
         </div>
-        <div className="glass-card rounded-xl p-4 border border-white/10">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-blue-500/10">
-              <FileText className="w-5 h-5 text-blue-400" />
+              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{reviewCount}</p>
-              <p className="text-slate-400 text-sm">In Review</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{reviewCount}</p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">In Review</p>
             </div>
           </div>
         </div>
-        <div className="glass-card rounded-xl p-4 border border-white/10">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-emerald-500/10">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">{approvedCount}</p>
-              <p className="text-slate-400 text-sm">Approved</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">{approvedCount}</p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Approved</p>
             </div>
           </div>
         </div>
-        <div className="glass-card rounded-xl p-4 border border-white/10">
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-teal-500/10">
-              <Heart className="w-5 h-5 text-teal-400" />
+              <Heart className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">0</p>
-              <p className="text-slate-400 text-sm">Active Members</p>
+              <p className="text-2xl font-bold text-slate-900 dark:text-white">0</p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Active Members</p>
             </div>
           </div>
         </div>
@@ -247,12 +247,12 @@ async function EnrollmentContent() {
         {/* Enrollment Queue */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Recent Enrollments</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Enrollments</h2>
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <Input
                 placeholder="Search enrollments..."
-                className="pl-10 h-9 rounded-lg bg-slate-900/50 border-white/10 text-sm"
+                className="pl-10 h-9 rounded-lg bg-white dark:bg-slate-900/50 border-slate-300 dark:border-white/10 text-sm"
               />
             </div>
           </div>
@@ -263,12 +263,12 @@ async function EnrollmentContent() {
             ))}
             
             {MOCK_ENROLLMENTS.length === 0 && (
-              <div className="glass-card rounded-xl p-12 border border-white/10 text-center">
-                <div className="p-4 rounded-full bg-slate-800/50 w-fit mx-auto mb-4">
-                  <ClipboardCheck className="w-8 h-8 text-slate-600" />
+              <div className="glass-card rounded-xl p-12 border border-slate-200 dark:border-white/10 text-center">
+                <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 w-fit mx-auto mb-4">
+                  <ClipboardCheck className="w-8 h-8 text-slate-400 dark:text-slate-600" />
                 </div>
-                <p className="text-white font-medium mb-1">No enrollments yet</p>
-                <p className="text-slate-500 text-sm">New enrollment applications will appear here.</p>
+                <p className="text-slate-900 dark:text-white font-medium mb-1">No enrollments yet</p>
+                <p className="text-slate-500 dark:text-slate-500 text-sm">New enrollment applications will appear here.</p>
               </div>
             )}
           </div>
@@ -276,9 +276,9 @@ async function EnrollmentContent() {
 
         {/* Enrollment Wizard Overview */}
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-white">Enrollment Process</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Enrollment Process</h2>
           
-          <div className="glass-card rounded-xl p-4 border border-white/10 space-y-3">
+          <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10 space-y-3">
             <WizardStep
               number={1}
               title="Personal Information"
@@ -318,26 +318,26 @@ async function EnrollmentContent() {
           </div>
 
           {/* Quick Actions */}
-          <div className="glass-card rounded-xl p-4 border border-white/10">
-            <h3 className="text-white font-medium mb-3">Quick Actions</h3>
+          <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
+            <h3 className="text-slate-900 dark:text-white font-medium mb-3">Quick Actions</h3>
             <div className="space-y-2">
               <Button 
                 variant="outline" 
-                className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white"
+                className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               >
                 <Users className="w-4 h-4 mr-2" />
                 View All Members
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white"
+                className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               >
                 <FileText className="w-4 h-4 mr-2" />
                 Pending Documents
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white"
+                className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
               >
                 <AlertCircle className="w-4 h-4 mr-2" />
                 Review Exceptions
@@ -364,20 +364,20 @@ function EnrollmentSkeleton() {
       {/* Header skeleton */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <div className="h-5 w-32 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-8 w-64 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-4 w-48 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-5 w-32 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
         </div>
         <div className="flex gap-3">
-          <div className="h-10 w-24 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-10 w-36 bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-24 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-36 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
       </div>
       
       {/* Stats skeleton */}
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+          <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}
       </div>
       
@@ -385,10 +385,10 @@ function EnrollmentSkeleton() {
       <div className="grid grid-cols-3 gap-6">
         <div className="col-span-2 space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-40 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+            <div key={i} className="h-40 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
           ))}
         </div>
-        <div className="h-[500px] bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+        <div className="h-[500px] bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
       </div>
     </div>
   );

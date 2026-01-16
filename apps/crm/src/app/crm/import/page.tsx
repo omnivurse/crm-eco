@@ -127,23 +127,23 @@ function ImportSkeleton() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header skeleton */}
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-slate-800/50 rounded-lg animate-pulse" />
+        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         <div className="space-y-2">
-          <div className="h-5 w-24 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-8 w-40 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-4 w-60 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-5 w-24 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-8 w-40 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-4 w-60 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
         </div>
       </div>
       
       {/* Quick options skeleton */}
       <div className="grid grid-cols-3 gap-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-32 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+          <div key={i} className="h-32 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}
       </div>
       
       {/* Wizard skeleton */}
-      <div className="h-[500px] bg-slate-800/30 rounded-2xl border border-white/5 animate-pulse" />
+      <div className="h-[500px] bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
     </div>
   );
 }
