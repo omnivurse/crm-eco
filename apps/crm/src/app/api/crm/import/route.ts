@@ -13,6 +13,7 @@ interface ImportRequest {
   mappings: ColumnMapping[];
   data: Record<string, string>[];
   fileName?: string;
+  saveMappingAs?: string; // Optional: save mapping template for reuse
 }
 
 export async function POST(request: NextRequest) {
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ImportRequest = await request.json();
-    const { moduleId, organizationId, mappings, data, fileName } = body;
+    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs } = body;
 
     // Verify org matches
     if (organizationId !== profile.organization_id) {
@@ -174,11 +175,46 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', importJob.id);
 
+    // Save mapping if requested
+    let savedMappingId: string | null = null;
+    if (saveMappingAs && saveMappingAs.trim()) {
+      // Build mapping object from the column mappings
+      const mappingObject: Record<string, string> = {};
+      mappings.forEach(m => {
+        if (m.targetField) {
+          mappingObject[m.sourceColumn] = m.targetField;
+        }
+      });
+
+      const { data: savedMapping, error: mappingError } = await supabase
+        .from('crm_import_mappings')
+        .insert({
+          org_id: organizationId,
+          module_id: moduleId,
+          name: saveMappingAs.trim(),
+          mapping: mappingObject,
+          created_by: profile.id,
+        })
+        .select('id')
+        .single();
+
+      if (!mappingError && savedMapping) {
+        savedMappingId = savedMapping.id;
+        
+        // Update the import job with the mapping reference
+        await supabase
+          .from('crm_import_jobs')
+          .update({ mapping_id: savedMappingId })
+          .eq('id', importJob.id);
+      }
+    }
+
     return NextResponse.json({
       success,
       errors,
       total: data.length,
       jobId: importJob.id,
+      savedMappingId,
       errorDetails: errorDetails.slice(0, 10), // Return first 10 errors
     });
   } catch (err) {
