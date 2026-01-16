@@ -83,6 +83,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [saveMapping, setSaveMapping] = useState(false);
+  const [mappingName, setMappingName] = useState('');
 
   // Calculate step progress
   const steps: WizardStep[] = ['module', 'upload', 'mapping', 'preview', 'complete'];
@@ -279,6 +281,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
           mappings: mappings.filter(m => m.targetField),
           data: csvData,
           fileName,
+          saveMappingAs: saveMapping ? mappingName : undefined,
         }),
       });
 
@@ -317,6 +320,8 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     setImportResult(null);
     setImportProgress(0);
     setError(null);
+    setSaveMapping(false);
+    setMappingName('');
   }, []);
 
   const mappedFieldsCount = mappings.filter(m => m.targetField).length;
@@ -592,6 +597,34 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               </div>
             </div>
 
+            {/* Save Mapping Option */}
+            <div className="glass rounded-xl border border-white/5 p-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={saveMapping}
+                  onChange={(e) => setSaveMapping(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-teal-500 focus:ring-teal-500/20"
+                />
+                <div>
+                  <span className="text-white font-medium">Save mapping for future imports</span>
+                  <p className="text-slate-500 text-xs">Reuse this column mapping next time you import from the same source</p>
+                </div>
+              </label>
+              
+              {saveMapping && (
+                <div className="mt-3 ml-7">
+                  <input
+                    type="text"
+                    value={mappingName}
+                    onChange={(e) => setMappingName(e.target.value)}
+                    placeholder="Enter mapping name (e.g., Zoho Contacts Export)"
+                    className="w-full bg-slate-900/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-between pt-4">
               <Button
                 variant="ghost"
@@ -602,7 +635,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               </Button>
               <Button
                 onClick={handleImport}
-                disabled={importing}
+                disabled={importing || (saveMapping && !mappingName.trim())}
                 className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-white glow-sm hover:glow-md"
               >
                 {importing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
