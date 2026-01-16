@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { AdminSidebar, AdminTopNav } from '@/components/layout';
+import { AdminSidebar, AdminTopNav, Breadcrumbs } from '@/components/layout';
 import { isAdminRole } from '@/lib/auth';
 import type { Database } from '@crm-eco/lib/types';
 
@@ -50,7 +50,10 @@ export default async function DashboardLayout({
             role: profile.role,
           }}
         />
-        <main className="flex-1 overflow-auto p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-6">
+          <Breadcrumbs />
+          {children}
+        </main>
       </div>
     </div>
   );

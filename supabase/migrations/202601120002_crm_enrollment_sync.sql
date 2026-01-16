@@ -20,8 +20,11 @@ GRANT USAGE ON SCHEMA crm_ext TO authenticated;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'members') THEN
+    -- Drop existing view if it exists (to allow column changes)
+    DROP VIEW IF EXISTS crm_ext.members;
+    
     EXECUTE '
-      CREATE OR REPLACE VIEW crm_ext.members 
+      CREATE VIEW crm_ext.members 
       WITH (security_invoker = true) AS
       SELECT 
         m.id,
@@ -46,8 +49,11 @@ END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'enrollments') THEN
+    -- Drop existing view if it exists (to allow column changes)
+    DROP VIEW IF EXISTS crm_ext.enrollments;
+    
     EXECUTE '
-      CREATE OR REPLACE VIEW crm_ext.enrollments
+      CREATE VIEW crm_ext.enrollments
       WITH (security_invoker = true) AS
       SELECT 
         e.id,

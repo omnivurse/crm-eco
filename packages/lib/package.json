@@ -9,7 +9,8 @@
     "./supabase/client": "./src/supabase/client.ts",
     "./supabase/server": "./src/supabase/server.ts",
     "./supabase/middleware": "./src/supabase/middleware.ts",
-    "./types": "./src/types/index.ts"
+    "./types": "./src/types/index.ts",
+    "./billing": "./src/billing/index.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
