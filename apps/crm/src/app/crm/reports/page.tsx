@@ -35,24 +35,24 @@ function StatCard({
   color: 'teal' | 'violet' | 'emerald' | 'amber';
 }) {
   const colorClasses = {
-    teal: { bg: 'bg-teal-500/10', text: 'text-teal-400', border: 'border-teal-500/30' },
-    violet: { bg: 'bg-violet-500/10', text: 'text-violet-400', border: 'border-violet-500/30' },
-    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-    amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30' },
+    teal: { bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-500/30' },
+    violet: { bg: 'bg-violet-500/10', text: 'text-violet-600 dark:text-violet-400', border: 'border-violet-500/30' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/30' },
+    amber: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/30' },
   };
   
   const colors = colorClasses[color];
 
   return (
-    <div className="glass-card rounded-xl p-5 border border-white/10 hover:border-teal-500/20 transition-all">
+    <div className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-teal-500/20 transition-all">
       <div className="flex items-start justify-between mb-4">
         <div className={`p-2.5 rounded-xl ${colors.bg}`}>
           <Icon className={`w-5 h-5 ${colors.text}`} />
         </div>
         <div className={`flex items-center gap-1 text-sm ${
-          trend === 'up' ? 'text-emerald-400' : 
-          trend === 'down' ? 'text-red-400' : 
-          'text-slate-400'
+          trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 
+          trend === 'down' ? 'text-red-600 dark:text-red-400' : 
+          'text-slate-500 dark:text-slate-400'
         }`}>
           {trend === 'up' && <TrendingUp className="w-4 h-4" />}
           {trend === 'down' && <TrendingDown className="w-4 h-4" />}
@@ -60,8 +60,8 @@ function StatCard({
         </div>
       </div>
       
-      <p className="text-3xl font-bold text-white mb-1">{value}</p>
-      <p className="text-slate-400 text-sm">{title}</p>
+      <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{value}</p>
+      <p className="text-slate-600 dark:text-slate-400 text-sm">{title}</p>
     </div>
   );
 }
@@ -102,14 +102,14 @@ function ReportCard({
 }) {
   if (comingSoon) {
     return (
-      <div className="glass-card rounded-xl p-5 border border-white/10 opacity-60 cursor-not-allowed">
+      <div className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 opacity-60 cursor-not-allowed">
         <div className="flex items-start justify-between mb-3">
           <div className={`p-2.5 rounded-xl ${color}`}>
             <Icon className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">Coming Soon</span>
+          <span className="text-xs text-slate-500 bg-slate-200 dark:bg-slate-800 px-2 py-0.5 rounded">Coming Soon</span>
         </div>
-        <h3 className="text-white font-semibold mb-1">{title}</h3>
+        <h3 className="text-slate-900 dark:text-white font-semibold mb-1">{title}</h3>
         <p className="text-slate-500 text-sm">{description}</p>
       </div>
     );
@@ -118,15 +118,15 @@ function ReportCard({
   return (
     <Link
       href={href}
-      className="glass-card rounded-xl p-5 border border-white/10 hover:border-teal-500/30 transition-all group"
+      className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-teal-500/30 transition-all group"
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2.5 rounded-xl ${color}`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-slate-600 group-hover:text-teal-400 transition-colors" />
+        <ArrowUpRight className="w-4 h-4 text-slate-400 dark:text-slate-600 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors" />
       </div>
-      <h3 className="text-white font-semibold mb-1 group-hover:text-teal-400 transition-colors">{title}</h3>
+      <h3 className="text-slate-900 dark:text-white font-semibold mb-1 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">{title}</h3>
       <p className="text-slate-500 text-sm">{description}</p>
     </Link>
   );
@@ -166,18 +166,18 @@ async function ReportsContent() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
-              <BarChart3 className="w-4 h-4 text-violet-400" />
+              <BarChart3 className="w-4 h-4 text-violet-600 dark:text-violet-400" />
             </div>
-            <span className="text-violet-400 text-sm font-medium">Analytics</span>
+            <span className="text-violet-600 dark:text-violet-400 text-sm font-medium">Analytics</span>
           </div>
-          <h1 className="text-2xl font-bold text-white">Reports & Insights</h1>
-          <p className="text-slate-400 mt-0.5">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Reports & Insights</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-0.5">
             Track performance and gain insights into your CRM data
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          <select className="h-10 px-4 rounded-xl glass border border-white/10 text-sm text-slate-300 focus:outline-none focus:border-teal-500/50 bg-transparent">
+          <select className="h-10 px-4 rounded-xl glass border border-slate-300 dark:border-white/10 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:border-teal-500/50 bg-white dark:bg-transparent">
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
             <option value="90d">Last 90 days</option>
@@ -185,14 +185,14 @@ async function ReportsContent() {
           </select>
           <Button 
             variant="outline" 
-            className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20"
           >
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
           <Button 
             variant="outline" 
-            className="glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -238,9 +238,9 @@ async function ReportsContent() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lead Conversion Funnel */}
-        <div className="glass-card rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-            <Target className="w-5 h-5 text-violet-400" />
+        <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <Target className="w-5 h-5 text-violet-600 dark:text-violet-400" />
             Lead Conversion Funnel
           </h3>
           
@@ -253,10 +253,10 @@ async function ReportsContent() {
             ].map((item) => (
               <div key={item.stage} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-300">{item.stage}</span>
-                  <span className="text-white font-medium">{item.count.toLocaleString()}</span>
+                  <span className="text-slate-600 dark:text-slate-300">{item.stage}</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{item.count.toLocaleString()}</span>
                 </div>
-                <div className="h-3 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                   <div 
                     className={`h-full rounded-full bg-gradient-to-r ${item.color} transition-all`}
                     style={{ width: `${item.percent}%` }}
@@ -268,9 +268,9 @@ async function ReportsContent() {
         </div>
 
         {/* Activity Trends */}
-        <div className="glass-card rounded-2xl p-6 border border-white/10">
-          <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-emerald-400" />
+        <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             Activity Trends
           </h3>
           
@@ -289,10 +289,10 @@ async function ReportsContent() {
             />
           </div>
           
-          <div className="mt-6 pt-4 border-t border-white/5">
+          <div className="mt-6 pt-4 border-t border-slate-200 dark:border-white/5">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-400">6-month trend</span>
-              <span className={`flex items-center gap-1 ${growthPercent > 0 ? 'text-emerald-400' : 'text-slate-400'}`}>
+              <span className="text-slate-600 dark:text-slate-400">6-month trend</span>
+              <span className={`flex items-center gap-1 ${growthPercent > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
                 {growthPercent > 0 && <TrendingUp className="w-4 h-4" />}
                 {growthPercent > 0 ? `+${growthPercent}% growth` : 'No data yet'}
               </span>
@@ -303,7 +303,7 @@ async function ReportsContent() {
 
       {/* Report Types */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-white">Available Reports</h3>
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Available Reports</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <ReportCard
@@ -342,10 +342,10 @@ async function ReportsContent() {
       </div>
 
       {/* Recent Activity Summary */}
-      <div className="glass-card rounded-2xl p-6 border border-white/10">
+      <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-teal-400" />
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             This Week&apos;s Summary
           </h3>
           <span className="text-sm text-slate-500">
@@ -355,20 +355,20 @@ async function ReportsContent() {
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="text-center">
-            <p className="text-3xl font-bold text-white mb-1">{leadsThisWeek}</p>
-            <p className="text-slate-400 text-sm">New Leads</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{leadsThisWeek}</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">New Leads</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-white mb-1">{contactsThisWeek}</p>
-            <p className="text-slate-400 text-sm">New Contacts</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{contactsThisWeek}</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">New Contacts</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-white mb-1">{dealsClosedThisWeek}</p>
-            <p className="text-slate-400 text-sm">Deals Closed</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{dealsClosedThisWeek}</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">Deals Closed</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-white mb-1">{conversionRate}%</p>
-            <p className="text-slate-400 text-sm">Conversion Rate</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{conversionRate}%</p>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">Conversion Rate</p>
           </div>
         </div>
       </div>
@@ -390,27 +390,27 @@ function ReportsSkeleton() {
       {/* Header skeleton */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <div className="h-5 w-24 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-8 w-48 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-5 w-24 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-4 w-64 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
         </div>
         <div className="flex gap-3">
-          <div className="h-10 w-32 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-10 w-24 bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-24 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
       </div>
       
       {/* Stats skeleton */}
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-32 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+          <div key={i} className="h-32 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}
       </div>
       
       {/* Charts skeleton */}
       <div className="grid grid-cols-2 gap-6">
-        <div className="h-80 bg-slate-800/30 rounded-2xl border border-white/5 animate-pulse" />
-        <div className="h-80 bg-slate-800/30 rounded-2xl border border-white/5 animate-pulse" />
+        <div className="h-80 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
+        <div className="h-80 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
       </div>
     </div>
   );
