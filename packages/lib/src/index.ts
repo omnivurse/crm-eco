@@ -8,4 +8,4 @@ export * from './members';
 export * from './needs';
 export * from './views';
 export * from './billing';
-
+export * from './commissions';

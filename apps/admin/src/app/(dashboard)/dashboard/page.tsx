@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import { Users, UserCheck, FileText, TrendingUp, Clock, Activity, User, Package, Settings } from 'lucide-react';
+import { Users, UserCheck, FileText, TrendingUp, Clock, Activity, User, Package, Settings, DollarSign, Layers } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -59,11 +59,37 @@ async function getDashboardStats() {
         .eq('status', 'approved'),
     ]);
 
+  // Get commission stats
+  const [pendingCommissionsResult, paidCommissionsResult] = await Promise.all([
+    supabase
+      .from('commission_transactions')
+      .select('commission_amount')
+      .eq('organization_id', orgId)
+      .eq('status', 'pending') as unknown as { data: { commission_amount: number }[] | null },
+    supabase
+      .from('commission_transactions')
+      .select('commission_amount')
+      .eq('organization_id', orgId)
+      .eq('status', 'paid')
+      .gte('paid_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()) as unknown as { data: { commission_amount: number }[] | null },
+  ]);
+
+  const pendingCommissions = (pendingCommissionsResult.data || []).reduce(
+    (sum, t) => sum + (t.commission_amount || 0),
+    0
+  );
+  const paidThisMonth = (paidCommissionsResult.data || []).reduce(
+    (sum, t) => sum + (t.commission_amount || 0),
+    0
+  );
+
   return {
     totalMembers: membersResult.count ?? 0,
     totalAgents: agentsResult.count ?? 0,
     totalEnrollments: enrollmentsResult.count ?? 0,
     activeEnrollments: activeEnrollmentsResult.count ?? 0,
+    pendingCommissions,
+    paidThisMonth,
   };
 }
 
@@ -132,15 +158,21 @@ function getActionColor(action: string) {
     case 'create':
       return 'text-green-600 bg-green-100';
     case 'update':
+    case 'update_commission_tier':
       return 'text-blue-600 bg-blue-100';
     case 'delete':
       return 'text-red-600 bg-red-100';
     case 'approve':
+    case 'process_enrollment':
       return 'text-emerald-600 bg-emerald-100';
     case 'reject':
       return 'text-orange-600 bg-orange-100';
     case 'cancel':
       return 'text-gray-600 bg-gray-100';
+    case 'charge':
+    case 'refund':
+    case 'generate_payouts':
+      return 'text-purple-600 bg-purple-100';
     default:
       return 'text-slate-600 bg-slate-100';
   }
@@ -240,6 +272,46 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Commission Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Link href="/commissions/transactions?status=pending">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">
+                Pending Commissions
+              </CardTitle>
+              <div className="p-2 rounded-lg bg-yellow-100">
+                <Clock className="h-5 w-5 text-yellow-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-600">
+                ${(stats?.pendingCommissions ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Awaiting approval</p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/commissions">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-slate-500">
+                Commissions Paid This Month
+              </CardTitle>
+              <div className="p-2 rounded-lg bg-green-100">
+                <DollarSign className="h-5 w-5 text-green-600" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                ${(stats?.paidThisMonth ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Disbursed to agents</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Activity Feed and Quick Actions */}

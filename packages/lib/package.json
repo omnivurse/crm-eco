@@ -10,7 +10,8 @@
     "./supabase/server": "./src/supabase/server.ts",
     "./supabase/middleware": "./src/supabase/middleware.ts",
     "./types": "./src/types/index.ts",
-    "./billing": "./src/billing/index.ts"
+    "./billing": "./src/billing/index.ts",
+    "./commissions": "./src/commissions/index.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
