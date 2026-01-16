@@ -55,11 +55,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Update landing page stats
-    await supabase.rpc('increment_landing_page_submissions', { 
-      page_id: landingPage.id 
-    }).catch(() => {
+    try {
+      await supabase.rpc('increment_landing_page_submissions', { 
+        page_id: landingPage.id 
+      });
+    } catch {
       // RPC might not exist, ignore error
-    });
+    }
 
     // Check if member already exists
     const { data: existingMember } = await supabase

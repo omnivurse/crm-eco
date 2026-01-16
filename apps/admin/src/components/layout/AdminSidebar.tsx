@@ -14,7 +14,7 @@ import {
   BarChart3,
   Layers,
   Link as LinkIcon,
-  QrCode,
+  Mail,
 } from 'lucide-react';
 
 interface NavItem {
@@ -41,6 +41,17 @@ const navItems: NavItem[] = [
   },
   { label: 'Commissions', href: '/commissions', icon: <Layers className="h-5 w-5" /> },
   { label: 'Billing', href: '/billing', icon: <CreditCard className="h-5 w-5" /> },
+  { 
+    label: 'Communications', 
+    href: '/communications', 
+    icon: <Mail className="h-5 w-5" />,
+    children: [
+      { label: 'Dashboard', href: '/communications' },
+      { label: 'Templates', href: '/communications/templates' },
+      { label: 'History', href: '/communications/history' },
+      { label: 'Compose', href: '/communications/compose' },
+    ],
+  },
   { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
   { label: 'Settings', href: '/settings', icon: <Settings className="h-5 w-5" /> },
 ];

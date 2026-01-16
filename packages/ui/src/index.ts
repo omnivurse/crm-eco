@@ -14,6 +14,7 @@ export * from './components/progress';
 export * from './components/scroll-area';
 export * from './components/select';
 export * from './components/separator';
+export * from './components/sheet';
 export * from './components/switch';
 export * from './components/table';
 export * from './components/tabs';

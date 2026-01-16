@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
-import { Input } from '@crm-eco/ui/components/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@crm-eco/ui/components/avatar';
 import {
   DropdownMenu,
@@ -32,6 +31,8 @@ import {
 import { ThemeToggle } from './ThemeToggle';
 import { ModuleTabs } from './ModuleTabs';
 import { NotificationsPanel } from '../NotificationsPanel';
+import { GlobalSearchOverlay } from '@/components/zoho/GlobalSearchOverlay';
+import { QuickCreateDrawer } from '@/components/zoho/QuickCreateDrawer';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 interface CrmTopBarProps {
@@ -47,8 +48,8 @@ export function CrmTopBar({
   organizationName,
   onOpenCommandPalette 
 }: CrmTopBarProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const router = useRouter();
 
   const supabase = createBrowserClient(
@@ -60,13 +61,6 @@ export function CrmTopBar({
     await supabase.auth.signOut();
     router.push('/crm-login');
     router.refresh();
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/crm/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
   };
 
   const getInitials = (name: string) => {
@@ -125,85 +119,42 @@ export function CrmTopBar({
 
       {/* Right Section: Search + Actions */}
       <div className="flex items-center gap-2">
-        {/* Search */}
-        <form onSubmit={handleSearch} className="relative hidden md:block">
-          <div className={cn(
-            'relative flex items-center transition-all duration-200',
-            searchFocused ? 'w-64' : 'w-48'
-          )}>
-            <Search className={cn(
-              'absolute left-3 w-4 h-4 transition-colors',
-              searchFocused ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'
-            )} />
-            <Input
-              type="search"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              className={cn(
-                'pl-9 pr-8 h-9 rounded-lg border text-sm transition-all',
-                'bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white',
-                'placeholder:text-slate-400',
-                searchFocused 
-                  ? 'border-teal-500 ring-2 ring-teal-500/20' 
-                  : 'border-slate-200 dark:border-white/10'
-              )}
-            />
-            <kbd className="absolute right-2 hidden sm:inline-flex h-5 items-center rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 px-1.5 font-mono text-[10px] text-slate-400">
-              ⌘K
-            </kbd>
-          </div>
-        </form>
+        {/* Visible Search Button - Opens GlobalSearchOverlay */}
+        <button
+          onClick={() => setSearchOpen(true)}
+          className={cn(
+            'hidden md:flex items-center gap-2 px-3 h-9 rounded-lg border text-sm transition-all cursor-pointer',
+            'bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400',
+            'border-slate-200 dark:border-white/10',
+            'hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400'
+          )}
+        >
+          <Search className="w-4 h-4" />
+          <span className="hidden lg:inline">Search records...</span>
+          <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 px-1.5 font-mono text-[10px] text-slate-400 ml-4">
+            ⌘K
+          </kbd>
+        </button>
 
-        {/* Command Palette - Mobile */}
+        {/* Search - Mobile */}
         <Button
           variant="ghost"
           size="icon"
           className="md:hidden h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white"
-          onClick={onOpenCommandPalette}
+          onClick={() => setSearchOpen(true)}
         >
-          <Command className="w-4 h-4" />
+          <Search className="w-4 h-4" />
         </Button>
 
-        {/* Create Button */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              size="sm"
-              className="h-9 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium shadow-sm"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              <span className="hidden sm:inline">Create</span>
-              <ChevronDown className="w-3 h-3 ml-1 opacity-70" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-            <DropdownMenuItem asChild>
-              <Link href="/crm/modules/contacts/new" className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
-                New Contact
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/crm/modules/leads/new" className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
-                New Lead
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/crm/modules/deals/new" className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
-                New Deal
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-            <DropdownMenuItem asChild>
-              <Link href="/crm/import" className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300">
-                <Sparkles className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                Import Data
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Quick Create Button */}
+        <Button 
+          size="sm"
+          onClick={() => setQuickCreateOpen(true)}
+          className="h-9 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium shadow-sm"
+        >
+          <Plus className="w-4 h-4 mr-1" />
+          <span className="hidden sm:inline">Create</span>
+        </Button>
 
         {/* Theme Toggle */}
         <ThemeToggle variant="icon" />
@@ -284,6 +235,12 @@ export function CrmTopBar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Global Search Overlay */}
+      <GlobalSearchOverlay open={searchOpen} onOpenChange={setSearchOpen} />
+
+      {/* Quick Create Drawer */}
+      <QuickCreateDrawer open={quickCreateOpen} onOpenChange={setQuickCreateOpen} />
     </header>
   );
 }

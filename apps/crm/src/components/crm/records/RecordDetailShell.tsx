@@ -18,6 +18,7 @@ import {
   UserCircle,
   Clock,
   Link2,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
@@ -32,6 +33,7 @@ import {
 import { ActionRail } from '@/components/layout/ActionRail';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { StageSelector } from '@/components/crm/blueprints';
+import { ComposerBar } from '@/components/zoho/ComposerBar';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage } from '@/lib/crm/types';
 
 interface RecordDetailShellProps {
@@ -45,11 +47,13 @@ interface RecordDetailShellProps {
     timeline: React.ReactNode;
     notes?: React.ReactNode;
     attachments?: React.ReactNode;
+    communications?: React.ReactNode;
   };
   onEdit?: () => void;
   onAddTask?: () => void;
   onAddNote?: () => void;
   onUploadFile?: () => void;
+  onRefresh?: () => void;
   className?: string;
 }
 
@@ -119,9 +123,13 @@ export function RecordDetailShell({
   onAddTask,
   onAddNote,
   onUploadFile,
+  onRefresh,
   className,
 }: RecordDetailShellProps) {
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Check if we should show ComposerBar on timeline tab
+  const showComposer = activeTab === 'timeline';
   
   const icon = MODULE_ICONS[module.key] || <UserCircle className="w-5 h-5" />;
   const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
@@ -134,19 +142,19 @@ export function RecordDetailShell({
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-xl border-b border-white/5">
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
           <div className="max-w-6xl mx-auto px-6 py-4">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 mb-4">
               <Link 
                 href={backUrl}
-                className="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 {module.name_plural || module.name}
               </Link>
-              <span className="text-slate-600">/</span>
-              <span className="text-sm text-white truncate max-w-xs">
+              <span className="text-slate-300 dark:text-slate-600">/</span>
+              <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
                 {record.title || 'Untitled'}
               </span>
             </div>
@@ -158,14 +166,14 @@ export function RecordDetailShell({
                   {icon}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
                     {record.title || 'Untitled'}
                   </h1>
                   <div className="flex items-center gap-3 mt-1">
                     {record.email && (
                       <a 
                         href={`mailto:${record.email}`}
-                        className="flex items-center gap-1 text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                        className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
                       >
                         <Mail className="w-3.5 h-3.5" />
                         {record.email}
@@ -174,14 +182,14 @@ export function RecordDetailShell({
                     {record.phone && (
                       <a 
                         href={`tel:${record.phone}`}
-                        className="flex items-center gap-1 text-sm text-slate-400 hover:text-teal-400 transition-colors"
+                        className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
                       >
                         <Phone className="w-3.5 h-3.5" />
                         {record.phone}
                       </a>
                     )}
                     {record.status && (
-                      <Badge variant="outline" className="bg-slate-800/50 border-slate-600 text-slate-300">
+                      <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
                         {record.status}
                       </Badge>
                     )}
@@ -194,7 +202,7 @@ export function RecordDetailShell({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="glass border-white/10 text-slate-300 hover:text-white"
+                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   onClick={onEdit}
                 >
                   <Edit className="w-4 h-4 mr-1" />
@@ -205,20 +213,20 @@ export function RecordDetailShell({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="text-slate-400 hover:text-white"
+                      className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                     >
                       <MoreHorizontal className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="glass-card border-white/10">
-                    <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
+                  <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+                    <DropdownMenuItem className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10">
                       Clone Record
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-slate-300 focus:text-white focus:bg-white/10">
+                    <DropdownMenuItem className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10">
                       Print
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator className="bg-white/10" />
-                    <DropdownMenuItem className="text-red-400 focus:text-red-300 focus:bg-red-500/10">
+                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                    <DropdownMenuItem className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10">
                       Delete Record
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -230,7 +238,7 @@ export function RecordDetailShell({
             {isDeals && stages.length > 0 && (
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-slate-400">Pipeline Progress</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Pipeline Progress</span>
                   <StageSelector
                     recordId={record.id}
                     currentStage={record.stage}
@@ -246,23 +254,23 @@ export function RecordDetailShell({
             {/* Tabs */}
             <div className="mt-6 -mb-px">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="bg-transparent border-b border-white/5 w-full justify-start gap-0 h-auto p-0">
+                <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
                   <TabsTrigger 
                     value="overview"
-                    className="px-4 py-3 text-sm font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-white transition-colors"
+                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     Overview
                   </TabsTrigger>
                   <TabsTrigger 
                     value="related"
-                    className="px-4 py-3 text-sm font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-white transition-colors"
+                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     <Link2 className="w-4 h-4 mr-1.5" />
                     Related
                   </TabsTrigger>
                   <TabsTrigger 
                     value="timeline"
-                    className="px-4 py-3 text-sm font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-white transition-colors"
+                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     <Clock className="w-4 h-4 mr-1.5" />
                     Timeline
@@ -270,16 +278,25 @@ export function RecordDetailShell({
                   {children.notes && (
                     <TabsTrigger 
                       value="notes"
-                      className="px-4 py-3 text-sm font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-white transition-colors"
+                      className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
                     >
                       <StickyNote className="w-4 h-4 mr-1.5" />
                       Notes
                     </TabsTrigger>
                   )}
+                  {children.communications && (
+                    <TabsTrigger 
+                      value="communications"
+                      className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                    >
+                      <MessageSquare className="w-4 h-4 mr-1.5" />
+                      Communications
+                    </TabsTrigger>
+                  )}
                   {children.attachments && (
                     <TabsTrigger 
                       value="attachments"
-                      className="px-4 py-3 text-sm font-medium text-slate-400 data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-white transition-colors"
+                      className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
                     >
                       <Upload className="w-4 h-4 mr-1.5" />
                       Files
@@ -290,6 +307,18 @@ export function RecordDetailShell({
             </div>
           </div>
         </div>
+
+        {/* Composer Bar - shown on Timeline tab */}
+        {showComposer && (
+          <div className="max-w-6xl mx-auto px-6 pt-4">
+            <ComposerBar
+              recordId={record.id}
+              onNoteCreated={onRefresh}
+              onTaskCreated={onRefresh}
+              onCallLogged={onRefresh}
+            />
+          </div>
+        )}
 
         {/* Tab Content */}
         <div className="max-w-6xl mx-auto px-6 py-6">
@@ -308,6 +337,11 @@ export function RecordDetailShell({
                 {children.notes}
               </TabsContent>
             )}
+            {children.communications && (
+              <TabsContent value="communications" className="mt-0">
+                {children.communications}
+              </TabsContent>
+            )}
             {children.attachments && (
               <TabsContent value="attachments" className="mt-0">
                 {children.attachments}
@@ -322,7 +356,7 @@ export function RecordDetailShell({
         <div className="space-y-3">
           <Button
             variant="outline"
-            className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
             onClick={onEdit}
           >
             <Edit className="w-4 h-4 mr-2" />
@@ -331,7 +365,7 @@ export function RecordDetailShell({
           
           <Button
             variant="outline"
-            className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
             onClick={onAddTask}
           >
             <CheckSquare className="w-4 h-4 mr-2" />
@@ -340,7 +374,7 @@ export function RecordDetailShell({
           
           <Button
             variant="outline"
-            className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
             onClick={onAddNote}
           >
             <StickyNote className="w-4 h-4 mr-2" />
@@ -349,34 +383,34 @@ export function RecordDetailShell({
           
           <Button
             variant="outline"
-            className="w-full justify-start glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
             onClick={onUploadFile}
           >
             <Upload className="w-4 h-4 mr-2" />
             Upload File
           </Button>
 
-          <div className="border-t border-white/10 pt-3 mt-4">
+          <div className="border-t border-slate-200 dark:border-white/10 pt-3 mt-4">
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
               Record Info
             </h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Created</span>
-                <span className="text-slate-300">
+                <span className="text-slate-700 dark:text-slate-300">
                   {new Date(record.created_at).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Updated</span>
-                <span className="text-slate-300">
+                <span className="text-slate-700 dark:text-slate-300">
                   {new Date(record.updated_at).toLocaleDateString()}
                 </span>
               </div>
               {record.owner_id && (
                 <div className="flex justify-between">
                   <span className="text-slate-500">Owner</span>
-                  <span className="text-slate-300">Assigned</span>
+                  <span className="text-slate-700 dark:text-slate-300">Assigned</span>
                 </div>
               )}
             </div>

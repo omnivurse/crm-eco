@@ -11,14 +11,15 @@
     "./supabase/middleware": "./src/supabase/middleware.ts",
     "./types": "./src/types/index.ts",
     "./billing": "./src/billing/index.ts",
-    "./commissions": "./src/commissions/index.ts"
+    "./commissions": "./src/commissions/index.ts",
+    "./email": "./src/email/index.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.47.10"
+    "@supabase/supabase-js": "^2.47.10",
+    "resend": "^4.8.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
   }
 }
-
