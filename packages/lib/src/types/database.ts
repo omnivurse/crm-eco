@@ -105,6 +105,13 @@ export interface Database {
           primary_channel: string | null;
           comp_level: string | null;
           commission_tier: string | null;
+          // Commission-related columns
+          commission_tier_id: string | null;
+          commission_eligible: boolean | null;
+          override_rate_pct: number | null;
+          personal_production: number | null;
+          team_production: number | null;
+          lifetime_production: number | null;
           custom_fields: Json;
           created_at: string;
           updated_at: string;
@@ -129,6 +136,13 @@ export interface Database {
           primary_channel?: string | null;
           comp_level?: string | null;
           commission_tier?: string | null;
+          // Commission-related columns
+          commission_tier_id?: string | null;
+          commission_eligible?: boolean | null;
+          override_rate_pct?: number | null;
+          personal_production?: number | null;
+          team_production?: number | null;
+          lifetime_production?: number | null;
           custom_fields?: Json;
           created_at?: string;
           updated_at?: string;
@@ -153,6 +167,13 @@ export interface Database {
           primary_channel?: string | null;
           comp_level?: string | null;
           commission_tier?: string | null;
+          // Commission-related columns
+          commission_tier_id?: string | null;
+          commission_eligible?: boolean | null;
+          override_rate_pct?: number | null;
+          personal_production?: number | null;
+          team_production?: number | null;
+          lifetime_production?: number | null;
           custom_fields?: Json;
           created_at?: string;
           updated_at?: string;
@@ -1176,6 +1197,201 @@ export interface Database {
         };
         Relationships: [];
       };
+      // ============================================================================
+      // COMMISSION TABLES
+      // ============================================================================
+      commission_tiers: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          code: string;
+          level: number;
+          base_rate_pct: number;
+          bonus_rate_pct: number | null;
+          override_rate_pct: number | null;
+          min_personal_production: number | null;
+          min_team_production: number | null;
+          min_active_members: number | null;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          code: string;
+          level?: number;
+          base_rate_pct: number;
+          bonus_rate_pct?: number | null;
+          override_rate_pct?: number | null;
+          min_personal_production?: number | null;
+          min_team_production?: number | null;
+          min_active_members?: number | null;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          code?: string;
+          level?: number;
+          base_rate_pct?: number;
+          bonus_rate_pct?: number | null;
+          override_rate_pct?: number | null;
+          min_personal_production?: number | null;
+          min_team_production?: number | null;
+          min_active_members?: number | null;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      commission_transactions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          advisor_id: string;
+          enrollment_id: string | null;
+          member_id: string | null;
+          transaction_type: string;
+          period_start: string;
+          period_end: string;
+          gross_amount: number;
+          rate_pct: number;
+          commission_amount: number;
+          source_advisor_id: string | null;
+          override_level: number | null;
+          status: 'pending' | 'approved' | 'paid' | 'held' | 'reversed';
+          paid_at: string | null;
+          payout_id: string | null;
+          notes: string | null;
+          meta: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          advisor_id: string;
+          enrollment_id?: string | null;
+          member_id?: string | null;
+          transaction_type: string;
+          period_start: string;
+          period_end: string;
+          gross_amount?: number;
+          rate_pct?: number;
+          commission_amount?: number;
+          source_advisor_id?: string | null;
+          override_level?: number | null;
+          status?: 'pending' | 'approved' | 'paid' | 'held' | 'reversed';
+          paid_at?: string | null;
+          payout_id?: string | null;
+          notes?: string | null;
+          meta?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          advisor_id?: string;
+          enrollment_id?: string | null;
+          member_id?: string | null;
+          transaction_type?: string;
+          period_start?: string;
+          period_end?: string;
+          gross_amount?: number;
+          rate_pct?: number;
+          commission_amount?: number;
+          source_advisor_id?: string | null;
+          override_level?: number | null;
+          status?: 'pending' | 'approved' | 'paid' | 'held' | 'reversed';
+          paid_at?: string | null;
+          payout_id?: string | null;
+          notes?: string | null;
+          meta?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      commission_payouts: {
+        Row: {
+          id: string;
+          organization_id: string;
+          advisor_id: string;
+          period_start: string;
+          period_end: string;
+          total_commissions: number;
+          total_overrides: number | null;
+          total_bonuses: number | null;
+          total_chargebacks: number | null;
+          net_payout: number;
+          status: 'draft' | 'pending' | 'approved' | 'processing' | 'paid' | 'failed';
+          approved_by: string | null;
+          approved_at: string | null;
+          paid_at: string | null;
+          payment_method: string | null;
+          payment_reference: string | null;
+          notes: string | null;
+          meta: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          advisor_id: string;
+          period_start: string;
+          period_end: string;
+          total_commissions?: number;
+          total_overrides?: number | null;
+          total_bonuses?: number | null;
+          total_chargebacks?: number | null;
+          net_payout?: number;
+          status?: 'draft' | 'pending' | 'approved' | 'processing' | 'paid' | 'failed';
+          approved_by?: string | null;
+          approved_at?: string | null;
+          paid_at?: string | null;
+          payment_method?: string | null;
+          payment_reference?: string | null;
+          notes?: string | null;
+          meta?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          advisor_id?: string;
+          period_start?: string;
+          period_end?: string;
+          total_commissions?: number;
+          total_overrides?: number | null;
+          total_bonuses?: number | null;
+          total_chargebacks?: number | null;
+          net_payout?: number;
+          status?: 'draft' | 'pending' | 'approved' | 'processing' | 'paid' | 'failed';
+          approved_by?: string | null;
+          approved_at?: string | null;
+          paid_at?: string | null;
+          payment_method?: string | null;
+          payment_reference?: string | null;
+          notes?: string | null;
+          meta?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1231,6 +1447,11 @@ export type Enrollment = Tables<'enrollments'>;
 export type EnrollmentStep = Tables<'enrollment_steps'>;
 export type EnrollmentAuditLog = Tables<'enrollment_audit_log'>;
 
+// Commission types
+export type CommissionTier = Tables<'commission_tiers'>;
+export type CommissionTransaction = Tables<'commission_transactions'>;
+export type CommissionPayout = Tables<'commission_payouts'>;
+
 // Status type helpers
 export type ImportJobStatus = ImportJob['status'];
 export type ImportRowStatus = ImportJobRow['status'];
@@ -1238,3 +1459,5 @@ export type MembershipStatus = Membership['status'];
 export type EnrollmentStatus = Enrollment['status'];
 export type EnrollmentMode = Enrollment['enrollment_mode'];
 export type BillingStatus = Membership['billing_status'];
+export type CommissionTransactionStatus = CommissionTransaction['status'];
+export type CommissionPayoutStatus = CommissionPayout['status'];

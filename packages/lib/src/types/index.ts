@@ -22,11 +22,16 @@ export type {
   Enrollment,
   EnrollmentStep,
   EnrollmentAuditLog,
+  CommissionTier,
+  CommissionTransaction,
+  CommissionPayout,
   ImportJobStatus,
   ImportRowStatus,
   MembershipStatus,
   EnrollmentStatus,
   BillingStatus,
+  CommissionTransactionStatus,
+  CommissionPayoutStatus,
 } from './database';
 
 // Re-export common types for convenience
