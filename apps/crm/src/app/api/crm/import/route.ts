@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+
 interface ColumnMapping {
   sourceColumn: string;
   targetField: string | null;
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      
+
       try {
         // Transform row data according to mappings
         const recordData: Record<string, unknown> = {};
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
           const value = row[sourceCol];
           if (value !== undefined && value !== '') {
             recordData[targetField] = value;
-            
+
             // Extract system fields
             if (targetField === 'email') email = value;
             if (targetField === 'phone' || targetField === 'mobile') phone = value;
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
 
       if (!mappingError && savedMapping) {
         savedMappingId = savedMapping.id;
-        
+
         // Update the import job with the mapping reference
         await supabase
           .from('crm_import_jobs')

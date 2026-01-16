@@ -294,47 +294,67 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     setError(null);
     setImportProgress(0);
 
-    // Simulate progress updates
-    const progressInterval = setInterval(() => {
-      setImportProgress(prev => Math.min(prev + Math.random() * 15, 90));
-    }, 500);
-
     try {
-      const res = await fetch('/api/crm/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          moduleId: selectedModule.id,
-          organizationId,
-          mappings: mappings.filter(m => m.targetField),
-          data: csvData,
-          fileName,
-          saveMappingAs: saveMapping ? mappingName : undefined,
-        }),
-      });
+      // Batch size to stay under Vercel's payload limits
+      const BATCH_SIZE = 500;
+      const totalRows = csvData.length;
+      const batches = Math.ceil(totalRows / BATCH_SIZE);
 
-      clearInterval(progressInterval);
-      setImportProgress(100);
+      let totalSuccess = 0;
+      let totalErrors = 0;
+      let lastJobId: string | null = null;
+      let savedMappingId: string | null = null;
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || 'Import failed');
+      for (let i = 0; i < batches; i++) {
+        const start = i * BATCH_SIZE;
+        const end = Math.min(start + BATCH_SIZE, totalRows);
+        const batchData = csvData.slice(start, end);
+
+        // Update progress
+        setImportProgress(Math.round((i / batches) * 90));
+
+        const res = await fetch('/api/crm/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            moduleId: selectedModule.id,
+            organizationId,
+            mappings: mappings.filter(m => m.targetField),
+            data: batchData,
+            fileName: `${fileName} (batch ${i + 1}/${batches})`,
+            saveMappingAs: i === 0 && saveMapping ? mappingName : undefined, // Only save mapping on first batch
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Import failed' }));
+          throw new Error(err.error || `Batch ${i + 1} failed`);
+        }
+
+        const result = await res.json();
+        totalSuccess += result.success || 0;
+        totalErrors += result.errors || 0;
+        lastJobId = result.jobId;
+        if (result.savedMappingId) savedMappingId = result.savedMappingId;
       }
 
-      const result = await res.json();
-      setImportResult(result);
+      setImportProgress(100);
+      setImportResult({
+        success: totalSuccess,
+        errors: totalErrors,
+        total: totalRows,
+      });
 
       setTimeout(() => {
         setStep('complete');
       }, 500);
     } catch (err) {
-      clearInterval(progressInterval);
       setError(err instanceof Error ? err.message : 'Import failed');
       setStep('preview');
     } finally {
       setImporting(false);
     }
-  }, [selectedModule, organizationId, mappings, csvData, fileName]);
+  }, [selectedModule, organizationId, mappings, csvData, fileName, saveMapping, mappingName]);
 
   // Reset wizard
   const handleReset = useCallback(() => {
