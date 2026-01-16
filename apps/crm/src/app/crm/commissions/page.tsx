@@ -74,17 +74,17 @@ function HierarchyNode({ node, level = 0 }: { node: AdvisorNode; level?: number 
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer ${
-          level === 0 ? 'bg-slate-800/30' : ''
+        className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
+          level === 0 ? 'bg-slate-100 dark:bg-slate-800/30' : ''
         }`}
         style={{ marginLeft: level * 24 }}
         onClick={() => hasChildren && setExpanded(!expanded)}
       >
         {hasChildren ? (
           expanded ? (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDown className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           ) : (
-            <ChevronRight className="w-4 h-4 text-slate-400" />
+            <ChevronRight className="w-4 h-4 text-slate-500 dark:text-slate-400" />
           )
         ) : (
           <div className="w-4" />
@@ -92,28 +92,28 @@ function HierarchyNode({ node, level = 0 }: { node: AdvisorNode; level?: number 
 
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-white">
+            <span className="font-medium text-slate-900 dark:text-white">
               {node.firstName} {node.lastName}
             </span>
             {node.commissionTier && (
-              <span className="px-2 py-0.5 rounded text-xs bg-teal-500/20 text-teal-400">
+              <span className="px-2 py-0.5 rounded text-xs bg-teal-500/20 text-teal-600 dark:text-teal-400">
                 {node.commissionTier}
               </span>
             )}
             <span className={`px-2 py-0.5 rounded text-xs ${
               node.status === 'active' 
-                ? 'bg-emerald-500/20 text-emerald-400' 
-                : 'bg-slate-500/20 text-slate-400'
+                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                : 'bg-slate-500/20 text-slate-600 dark:text-slate-400'
             }`}>
               {node.status}
             </span>
           </div>
-          <div className="text-sm text-slate-400">{node.email}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">{node.email}</div>
         </div>
 
         <div className="text-right">
-          <div className="text-white font-medium">{formatCurrency(node.teamProduction)}</div>
-          <div className="text-xs text-slate-400">{node.memberCount} members</div>
+          <div className="text-slate-900 dark:text-white font-medium">{formatCurrency(node.teamProduction)}</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">{node.memberCount} members</div>
         </div>
       </div>
 
@@ -183,10 +183,10 @@ export default function CommissionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Commission Management</h1>
-          <p className="text-slate-400">Track advisor hierarchy and commission payouts</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Commission Management</h1>
+          <p className="text-slate-600 dark:text-slate-400">Track advisor hierarchy and commission payouts</p>
         </div>
-        <Button variant="outline" className="border-slate-700">
+        <Button variant="outline" className="border-slate-300 dark:border-slate-700">
           <Download className="w-4 h-4 mr-2" />
           Export Report
         </Button>
@@ -194,57 +194,57 @@ export default function CommissionsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-amber-500/10">
-                <Clock className="w-6 h-6 text-amber-400" />
+                <Clock className="w-6 h-6 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{formatCurrency(summary.totalPending)}</p>
-                <p className="text-sm text-slate-400">Pending</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(summary.totalPending)}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Pending</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-blue-500/10">
-                <CheckCircle className="w-6 h-6 text-blue-400" />
+                <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{formatCurrency(summary.totalApproved)}</p>
-                <p className="text-sm text-slate-400">Approved</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(summary.totalApproved)}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Approved</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-emerald-500/10">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{formatCurrency(summary.totalPaid)}</p>
-                <p className="text-sm text-slate-400">Paid Out</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{formatCurrency(summary.totalPaid)}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Paid Out</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-xl bg-violet-500/10">
-                <Users className="w-6 h-6 text-violet-400" />
+                <Users className="w-6 h-6 text-violet-600 dark:text-violet-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats.activeAdvisors}</p>
-                <p className="text-sm text-slate-400">Active Advisors</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.activeAdvisors}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">Active Advisors</p>
               </div>
             </div>
           </CardContent>
@@ -252,13 +252,13 @@ export default function CommissionsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-700">
+      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">
         <button
           onClick={() => setActiveTab('hierarchy')}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'hierarchy'
-              ? 'text-teal-400 border-b-2 border-teal-400'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-600 dark:border-teal-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <Building2 className="w-4 h-4 inline-block mr-2" />
@@ -268,8 +268,8 @@ export default function CommissionsPage() {
           onClick={() => setActiveTab('transactions')}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             activeTab === 'transactions'
-              ? 'text-teal-400 border-b-2 border-teal-400'
-              : 'text-slate-400 hover:text-white'
+              ? 'text-teal-600 dark:text-teal-400 border-b-2 border-teal-600 dark:border-teal-400'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           <DollarSign className="w-4 h-4 inline-block mr-2" />
@@ -279,9 +279,9 @@ export default function CommissionsPage() {
 
       {/* Content */}
       {activeTab === 'hierarchy' ? (
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
-            <CardTitle className="text-white">Advisor Tree</CardTitle>
+            <CardTitle className="text-slate-900 dark:text-white">Advisor Tree</CardTitle>
             <CardDescription>
               Total Production: {formatCurrency(stats.totalProduction)} • 
               Avg Team Size: {stats.avgTeamSize}
@@ -295,7 +295,7 @@ export default function CommissionsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No advisor hierarchy found</p>
                 <p className="text-sm">Set parent advisors to build the commission tree</p>
@@ -304,15 +304,15 @@ export default function CommissionsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="glass-card border-white/10">
+        <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">Commission Transactions</CardTitle>
+                <CardTitle className="text-slate-900 dark:text-white">Commission Transactions</CardTitle>
                 <CardDescription>{filteredTransactions.length} transactions</CardDescription>
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40 bg-slate-800 border-slate-700">
+                <SelectTrigger className="w-40 bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
                   <SelectValue placeholder="Filter status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -331,7 +331,7 @@ export default function CommissionsPage() {
                 {filteredTransactions.map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors"
+                    className="flex items-center justify-between p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
                   >
                     <div className="flex items-center gap-4">
                       <div className={`p-2 rounded-lg ${
@@ -343,32 +343,32 @@ export default function CommissionsPage() {
                       }`}>
                         <DollarSign className={`w-5 h-5 ${
                           tx.transaction_type === 'override' 
-                            ? 'text-violet-400' 
+                            ? 'text-violet-600 dark:text-violet-400' 
                             : tx.transaction_type === 'bonus'
-                            ? 'text-amber-400'
-                            : 'text-teal-400'
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-teal-600 dark:text-teal-400'
                         }`} />
                       </div>
                       <div>
-                        <div className="text-white font-medium">
+                        <div className="text-slate-900 dark:text-white font-medium">
                           {tx.advisors?.first_name} {tx.advisors?.last_name}
                         </div>
-                        <div className="text-sm text-slate-400">
+                        <div className="text-sm text-slate-600 dark:text-slate-400">
                           {tx.transaction_type.replace('_', ' ')} • {tx.rate_pct}% rate
                           {tx.members && ` • ${tx.members.first_name} ${tx.members.last_name}`}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-white font-bold">{formatCurrency(tx.commission_amount)}</div>
+                      <div className="text-slate-900 dark:text-white font-bold">{formatCurrency(tx.commission_amount)}</div>
                       <span className={`px-2 py-0.5 rounded text-xs ${
                         tx.status === 'paid' 
-                          ? 'bg-emerald-500/20 text-emerald-400'
+                          ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                           : tx.status === 'approved'
-                          ? 'bg-blue-500/20 text-blue-400'
+                          ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
                           : tx.status === 'pending'
-                          ? 'bg-amber-500/20 text-amber-400'
-                          : 'bg-slate-500/20 text-slate-400'
+                          ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
+                          : 'bg-slate-500/20 text-slate-600 dark:text-slate-400'
                       }`}>
                         {tx.status}
                       </span>
@@ -377,7 +377,7 @@ export default function CommissionsPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-400">
+              <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                 <DollarSign className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No commission transactions found</p>
               </div>
