@@ -113,7 +113,7 @@ export class CommissionService {
    * Gets the commission tier for an advisor
    */
   async getAdvisorTier(advisorId: string): Promise<CommissionTier | null> {
-    const { data: advisor } = await this.supabase
+    const { data: advisor } = await (this.supabase as any)
       .from('advisors')
       .select('commission_tier_id')
       .eq('id', advisorId)
@@ -121,7 +121,7 @@ export class CommissionService {
 
     if (!advisor?.commission_tier_id) return null;
 
-    const { data: tier } = await this.supabase
+    const { data: tier } = await (this.supabase as any)
       .from('commission_tiers')
       .select('*')
       .eq('id', advisor.commission_tier_id)
@@ -177,7 +177,7 @@ export class CommissionService {
     enrollmentId?: string,
     memberId?: string
   ): Promise<CommissionTransaction | null> {
-    const { data, error } = await this.supabase
+    const { data, error } = await (this.supabase as any)
       .from('commission_transactions')
       .insert({
         organization_id: this.organizationId,
@@ -226,7 +226,7 @@ export class CommissionService {
       if (!advisor?.parent_advisor_id) break;
 
       // Check if parent is commission eligible
-      const { data: parentAdvisor } = await this.supabase
+      const { data: parentAdvisor } = await (this.supabase as any)
         .from('advisors')
         .select('id, commission_eligible')
         .eq('id', advisor.parent_advisor_id)
@@ -277,7 +277,7 @@ export class CommissionService {
    */
   async processEnrollmentCommissions(enrollmentId: string): Promise<CommissionTransaction[]> {
     // Get enrollment details
-    const { data: enrollment } = await this.supabase
+    const { data: enrollment } = await (this.supabase as any)
       .from('enrollments')
       .select('id, advisor_id, member_id, premium, status, created_at')
       .eq('id', enrollmentId)
@@ -296,7 +296,7 @@ export class CommissionService {
     const transactions: CommissionTransaction[] = [];
 
     // Check if advisor is commission eligible
-    const { data: advisor } = await this.supabase
+    const { data: advisor } = await (this.supabase as any)
       .from('advisors')
       .select('commission_eligible')
       .eq('id', enrollment.advisor_id)
@@ -347,7 +347,7 @@ export class CommissionService {
     // Update upline team production
     let currentAdvisorId = enrollment.advisor_id;
     while (true) {
-      const { data: currentAdvisor } = await this.supabase
+      const { data: currentAdvisor } = await (this.supabase as any)
         .from('advisors')
         .select('parent_advisor_id')
         .eq('id', currentAdvisorId)
@@ -371,7 +371,7 @@ export class CommissionService {
    * Updates an advisor's production totals
    */
   async updateAdvisorProduction(update: AdvisorProductionUpdate): Promise<void> {
-    const { data: current } = await this.supabase
+    const { data: current } = await (this.supabase as any)
       .from('advisors')
       .select('personal_production, team_production, lifetime_production')
       .eq('id', update.advisorId)
@@ -383,7 +383,7 @@ export class CommissionService {
     const newTeam = (current.team_production || 0) + update.addTeam;
     const newLifetime = (current.lifetime_production || 0) + update.addPersonal;
 
-    await this.supabase
+    await (this.supabase as any)
       .from('advisors')
       .update({
         personal_production: newPersonal,
@@ -398,7 +398,7 @@ export class CommissionService {
    */
   async generatePayouts(periodStart: Date, periodEnd: Date): Promise<number> {
     // Get all approved transactions without a payout
-    const { data: transactions } = await this.supabase
+    const { data: transactions } = await (this.supabase as any)
       .from('commission_transactions')
       .select('advisor_id, commission_amount, transaction_type')
       .eq('organization_id', this.organizationId)
@@ -446,7 +446,7 @@ export class CommissionService {
 
       if (netPayout <= 0) continue;
 
-      const { error } = await this.supabase
+      const { error } = await (this.supabase as any)
         .from('commission_payouts')
         .insert({
           organization_id: this.organizationId,
@@ -482,28 +482,28 @@ export class CommissionService {
     monthStart.setHours(0, 0, 0, 0);
 
     const [pendingResult, approvedResult, paidResult, tiersResult, payoutsResult] = await Promise.all([
-      this.supabase
+      (this.supabase as any)
         .from('commission_transactions')
         .select('commission_amount')
         .eq('organization_id', this.organizationId)
         .eq('status', 'pending'),
-      this.supabase
+      (this.supabase as any)
         .from('commission_transactions')
         .select('commission_amount')
         .eq('organization_id', this.organizationId)
         .eq('status', 'approved'),
-      this.supabase
+      (this.supabase as any)
         .from('commission_transactions')
         .select('commission_amount')
         .eq('organization_id', this.organizationId)
         .eq('status', 'paid')
         .gte('paid_at', monthStart.toISOString()),
-      this.supabase
+      (this.supabase as any)
         .from('commission_tiers')
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', this.organizationId)
         .eq('is_active', true),
-      this.supabase
+      (this.supabase as any)
         .from('commission_payouts')
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', this.organizationId)

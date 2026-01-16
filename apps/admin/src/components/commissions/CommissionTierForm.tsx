@@ -122,21 +122,23 @@ export function CommissionTierForm({ tier, organizationId }: CommissionTierFormP
 
       // Log activity
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = user ? await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single() : { data: null };
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single() as { data: { id: string } | null };
 
-      if (profile) {
-        await (supabase as any).rpc('log_admin_activity', {
-          p_organization_id: organizationId,
-          p_actor_profile_id: profile.id,
-          p_entity_type: 'commission_tier',
-          p_entity_id: tier?.id || 'new',
-          p_action: isEdit ? 'update' : 'create',
-          p_metadata: { name: data.name, code: data.code },
-        });
+        if (profile) {
+          await (supabase as any).rpc('log_admin_activity', {
+            p_organization_id: organizationId,
+            p_actor_profile_id: profile.id,
+            p_entity_type: 'commission_tier',
+            p_entity_id: tier?.id || 'new',
+            p_action: isEdit ? 'update' : 'create',
+            p_metadata: { name: data.name, code: data.code },
+          });
+        }
       }
 
       router.push('/commissions/tiers');

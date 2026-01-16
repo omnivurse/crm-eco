@@ -112,8 +112,8 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
     setLoading(true);
     try {
       // Load tiers
-      const { data: tiersData } = await supabase
-        .from('commission_tiers')
+      const { data: tiersData } = await (supabase
+        .from('commission_tiers') as any)
         .select('*')
         .eq('organization_id', organizationId)
         .eq('is_active', true)
@@ -122,11 +122,11 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
       setTiers(tiersData || []);
 
       // Load agent production data
-      const { data: agentDataResult } = await supabase
-        .from('advisors')
+      const { data: agentDataResult } = await (supabase
+        .from('advisors') as any)
         .select('commission_tier_id, override_rate_pct, personal_production, team_production, lifetime_production, commission_eligible')
         .eq('id', agentId)
-        .single() as { data: Pick<Advisor, 'commission_tier_id' | 'override_rate_pct' | 'personal_production' | 'team_production' | 'lifetime_production' | 'commission_eligible'> | null };
+        .single();
 
       if (agentDataResult) {
         setAgentData({
@@ -141,8 +141,8 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
       }
 
       // Load recent transactions
-      const { data: txData } = await supabase
-        .from('commission_transactions')
+      const { data: txData } = await (supabase
+        .from('commission_transactions') as any)
         .select('*')
         .eq('advisor_id', agentId)
         .order('created_at', { ascending: false })
@@ -151,8 +151,8 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
       setTransactions((txData || []) as CommissionTransaction[]);
 
       // Load recent payouts
-      const { data: payoutData } = await supabase
-        .from('commission_payouts')
+      const { data: payoutData } = await (supabase
+        .from('commission_payouts') as any)
         .select('*')
         .eq('advisor_id', agentId)
         .order('created_at', { ascending: false })
@@ -170,29 +170,32 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
   async function saveTierAssignment() {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('advisors')
+      const { error } = await (supabase
+        .from('advisors') as any)
         .update({ commission_tier_id: selectedTierId || null })
         .eq('id', agentId);
 
       if (error) throw error;
 
       // Log activity
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single() as { data: { id: string } | null };
 
-      if (profile) {
-        await (supabase as any).rpc('log_admin_activity', {
-          p_organization_id: organizationId,
-          p_actor_profile_id: profile.id,
-          p_entity_type: 'advisor',
-          p_entity_id: agentId,
-          p_action: 'update_commission_tier',
-          p_metadata: { new_tier_id: selectedTierId },
-        });
+        if (profile) {
+          await (supabase as any).rpc('log_admin_activity', {
+            p_organization_id: organizationId,
+            p_actor_profile_id: profile.id,
+            p_entity_type: 'advisor',
+            p_entity_id: agentId,
+            p_action: 'update_commission_tier',
+            p_metadata: { new_tier_id: selectedTierId },
+          });
+        }
       }
 
       toast.success('Commission tier updated');
