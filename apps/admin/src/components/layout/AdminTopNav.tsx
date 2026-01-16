@@ -1,13 +1,14 @@
 'use client';
 
-import { Button } from '@crm-eco/ui';
-import {
+import { 
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  AppSwitcher,
 } from '@crm-eco/ui';
 import { Bell, User, LogOut, Settings, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -44,8 +45,10 @@ export function AdminTopNav({ profile }: AdminTopNavProps) {
 
   return (
     <header className="h-16 bg-white border-b flex items-center justify-between px-6">
-      {/* Left side - breadcrumb or title could go here */}
-      <div />
+      {/* Left side - App Switcher */}
+      <div className="flex items-center gap-4">
+        <AppSwitcher currentApp="admin" />
+      </div>
 
       {/* Right side - actions and user menu */}
       <div className="flex items-center gap-4">

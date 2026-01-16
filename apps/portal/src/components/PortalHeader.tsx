@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Heart, User, LogOut, Menu, X, ChevronDown } from 'lucide-react';
-import { Button } from '@crm-eco/ui';
+import { Button, AppSwitcher, cn } from '@crm-eco/ui';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -14,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
-import { cn } from '@crm-eco/ui';
 
 const navItems = [
   { label: 'Dashboard', href: '/' },
@@ -71,16 +70,20 @@ export function PortalHeader() {
     <header className="bg-white border-b shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm">
-              <Heart className="w-5 h-5 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <span className="font-bold text-slate-900">WealthShare</span>
-              <span className="text-sm text-slate-500 ml-2">Member Portal</span>
-            </div>
-          </Link>
+          {/* Left side - App Switcher + Logo */}
+          <div className="flex items-center gap-3">
+            {user && <AppSwitcher currentApp="portal" />}
+            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm">
+                <Heart className="w-5 h-5 text-white" />
+              </div>
+              <div className="hidden sm:block">
+                <span className="font-bold text-slate-900">WealthShare</span>
+                <span className="text-sm text-slate-500 ml-2">Member Portal</span>
+              </div>
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">

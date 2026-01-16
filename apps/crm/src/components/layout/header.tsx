@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
   Badge,
+  AppSwitcher,
 } from '@crm-eco/ui';
 import { LogOut, Settings, User, ChevronDown } from 'lucide-react';
 
@@ -76,9 +77,11 @@ export function Header({ profile }: HeaderProps) {
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-      {/* Page Title */}
-      <div>
-        <h1 className="text-xl font-semibold text-slate-900">{getPageTitle()}</h1>
+      {/* Left side - App Switcher + Page Title */}
+      <div className="flex items-center gap-4">
+        <AppSwitcher currentApp="crm" />
+        <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+        <h1 className="text-xl font-semibold text-slate-900 hidden sm:block">{getPageTitle()}</h1>
       </div>
 
       {/* User Menu */}
