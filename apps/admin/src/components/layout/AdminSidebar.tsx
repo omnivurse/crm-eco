@@ -12,6 +12,7 @@ import {
   Settings,
   CreditCard,
   BarChart3,
+  Layers,
 } from 'lucide-react';
 
 interface NavItem {
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { label: 'Agents', href: '/agents', icon: <UserCog className="h-5 w-5" /> },
   { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" /> },
   { label: 'Enrollments', href: '/enrollments', icon: <FileText className="h-5 w-5" /> },
+  { label: 'Commissions', href: '/commissions', icon: <Layers className="h-5 w-5" /> },
   { label: 'Billing', href: '/billing', icon: <CreditCard className="h-5 w-5" /> },
   { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
   { label: 'Settings', href: '/settings', icon: <Settings className="h-5 w-5" /> },

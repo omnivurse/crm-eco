@@ -337,6 +337,30 @@ export default async function BillingPage() {
               </div>
             </Link>
             <Link
+              href="/billing/invoices"
+              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Clock className="h-5 w-5 text-purple-600" />
+                <div>
+                  <p className="font-medium text-sm">Invoices</p>
+                  <p className="text-xs text-slate-500">View and manage invoices</p>
+                </div>
+              </div>
+            </Link>
+            <Link
+              href="/billing/schedules"
+              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <TrendingUp className="h-5 w-5 text-blue-600" />
+                <div>
+                  <p className="font-medium text-sm">Billing Schedules</p>
+                  <p className="text-xs text-slate-500">Manage recurring billing</p>
+                </div>
+              </div>
+            </Link>
+            <Link
               href="/billing/failures"
               className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
             >
