@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Heart, User, LogOut, Menu, X, ChevronDown } from 'lucide-react';
+import { Heart, User, LogOut, Menu, X, ChevronDown, FileText, Users, Settings, CreditCard, LifeBuoy } from 'lucide-react';
 import { Button, AppSwitcher, cn } from '@crm-eco/ui';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -66,21 +66,30 @@ export function PortalHeader() {
     router.push('/login');
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   return (
-    <header className="bg-white border-b shadow-sm sticky top-0 z-50">
+    <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Left side - App Switcher + Logo */}
           <div className="flex items-center gap-3">
             {user && <AppSwitcher currentApp="portal" />}
-            <div className="h-6 w-px bg-slate-200 hidden sm:block" />
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm">
+            {user && <div className="h-6 w-px bg-slate-200 hidden sm:block" />}
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
                 <Heart className="w-5 h-5 text-white" />
               </div>
               <div className="hidden sm:block">
-                <span className="font-bold text-slate-900">WealthShare</span>
-                <span className="text-sm text-slate-500 ml-2">Member Portal</span>
+                <span className="font-bold text-[#003560]">WealthShare</span>
+                <span className="text-xs text-[#E9B61F] font-semibold ml-2 tracking-wide">Member Portal</span>
               </div>
             </Link>
           </div>
@@ -96,10 +105,10 @@ export function PortalHeader() {
                   key={item.href}
                   href={item.href} 
                   className={cn(
-                    'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                    'px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
                     isActive
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-[#e1f3f3] text-[#047474]'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-[#003560]'
                   )}
                 >
                   {item.label}
@@ -109,52 +118,59 @@ export function PortalHeader() {
           </nav>
 
           {/* User Menu */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <User className="w-4 h-4 text-blue-600" />
+                  <Button variant="ghost" className="gap-2.5 hover:bg-slate-50 rounded-xl py-2 px-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-white font-semibold text-sm ring-2 ring-[#047474]/20">
+                      {memberName ? getInitials(memberName) : <User className="w-4 h-4" />}
                     </div>
-                    <span className="text-sm font-medium">{memberName || 'Account'}</span>
+                    <div className="text-left">
+                      <span className="text-sm font-semibold text-[#003560] block">{memberName || 'Account'}</span>
+                      <span className="text-xs text-[#047474]">Member</span>
+                    </div>
                     <ChevronDown className="h-4 w-4 text-slate-400" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg border-slate-200">
+                  <DropdownMenuLabel className="px-4 py-3">
                     <div className="flex flex-col">
-                      <span>{memberName}</span>
-                      <span className="text-xs font-normal text-slate-500">{user.email}</span>
+                      <span className="font-semibold text-[#003560]">{memberName}</span>
+                      <span className="text-xs text-slate-500">{user.email}</span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/profile')}>
-                    My Profile
+                  <DropdownMenuItem onClick={() => router.push('/profile')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
+                    <User className="mr-3 h-4 w-4 text-[#047474]" />
+                    <span className="font-medium">My Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/dependents')}>
-                    Dependents
+                  <DropdownMenuItem onClick={() => router.push('/dependents')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
+                    <Users className="mr-3 h-4 w-4 text-[#047474]" />
+                    <span className="font-medium">Dependents</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/documents')}>
-                    Documents
+                  <DropdownMenuItem onClick={() => router.push('/documents')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
+                    <FileText className="mr-3 h-4 w-4 text-[#047474]" />
+                    <span className="font-medium">Documents</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/settings')}>
-                    Settings
+                  <DropdownMenuItem onClick={() => router.push('/settings')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
+                    <Settings className="mr-3 h-4 w-4 text-[#047474]" />
+                    <span className="font-medium">Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
+                  <DropdownMenuItem onClick={handleSignOut} className="px-4 py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
+                    <LogOut className="mr-3 h-4 w-4" />
+                    <span className="font-medium">Sign Out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login">
-                  <Button variant="ghost" size="sm">Sign In</Button>
+                  <Button variant="ghost" size="sm" className="text-[#003560] hover:bg-slate-100">Sign In</Button>
                 </Link>
                 <Link href="/enroll">
-                  <Button size="sm">Enroll Now</Button>
+                  <Button size="sm" className="bg-[#047474] hover:bg-[#069B9A] text-white rounded-lg shadow-md">Enroll Now</Button>
                 </Link>
               </div>
             )}
@@ -164,7 +180,7 @@ export function PortalHeader() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="md:hidden"
+            className="md:hidden hover:bg-slate-100 rounded-lg"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -173,7 +189,7 @@ export function PortalHeader() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="md:hidden py-4 border-t border-slate-200">
             <nav className="flex flex-col gap-1">
               {navItems.map((item) => {
                 const isActive = pathname === item.href || 
@@ -184,9 +200,9 @@ export function PortalHeader() {
                     key={item.href}
                     href={item.href} 
                     className={cn(
-                      'px-4 py-2 text-sm font-medium rounded-lg',
+                      'px-4 py-2.5 text-sm font-medium rounded-lg',
                       isActive
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-[#e1f3f3] text-[#047474]'
                         : 'text-slate-600 hover:bg-slate-100'
                     )}
                     onClick={() => setMobileMenuOpen(false)}
@@ -196,43 +212,47 @@ export function PortalHeader() {
                 );
               })}
               
-              <hr className="my-2" />
+              <hr className="my-2 border-slate-200" />
               
               <Link 
                 href="/profile" 
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                <User className="w-4 h-4 text-[#047474]" />
                 My Profile
               </Link>
               <Link 
                 href="/dependents" 
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                <Users className="w-4 h-4 text-[#047474]" />
                 Dependents
               </Link>
               <Link 
                 href="/documents" 
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                <FileText className="w-4 h-4 text-[#047474]" />
                 Documents
               </Link>
               <Link 
                 href="/settings" 
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
+                <Settings className="w-4 h-4 text-[#047474]" />
                 Settings
               </Link>
               
-              <hr className="my-2" />
+              <hr className="my-2 border-slate-200" />
               
               {user ? (
                 <button 
                   onClick={handleSignOut}
-                  className="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg text-left flex items-center gap-2"
+                  className="px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg text-left flex items-center gap-3"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out
@@ -241,14 +261,14 @@ export function PortalHeader() {
                 <>
                   <Link 
                     href="/login" 
-                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                    className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link 
                     href="/enroll" 
-                    className="px-4 py-2 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-center"
+                    className="px-4 py-2.5 text-sm font-medium bg-[#047474] text-white hover:bg-[#069B9A] rounded-lg text-center"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Enroll Now

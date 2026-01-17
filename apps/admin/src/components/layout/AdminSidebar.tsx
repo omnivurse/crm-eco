@@ -15,6 +15,8 @@ import {
   Layers,
   Link as LinkIcon,
   Mail,
+  Shield,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavItem {
@@ -60,70 +62,96 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-slate-900 text-white flex flex-col">
-      {/* Logo / Brand */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-700">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center font-bold text-lg">
-            A
-          </div>
-          <span className="font-semibold text-lg">Admin Portal</span>
-        </Link>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-          const hasChildren = item.children && item.children.length > 0;
+    <aside className="w-64 bg-[#003560] text-white flex flex-col relative overflow-hidden">
+      {/* Subtle gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#003560] via-[#003560] to-[#002848] pointer-events-none" />
+      
+      {/* Content wrapper */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Logo with gradient accent stripe */}
+        <div className="relative">
+          {/* Gradient top stripe */}
+          <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
           
-          return (
-            <div key={item.href}>
-              <Link
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                )}
-              >
-                {item.icon}
-                {item.label}
-              </Link>
-              
-              {/* Child items */}
-              {hasChildren && isActive && (
-                <div className="ml-8 mt-1 space-y-1">
-                  {item.children!.map((child) => {
-                    const isChildActive = pathname === child.href;
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={cn(
-                          'block px-3 py-1.5 rounded-md text-sm transition-colors',
-                          isChildActive
-                            ? 'text-white bg-blue-500/50'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                        )}
-                      >
-                        {child.label}
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
+          <div className="h-16 flex items-center px-5 border-b border-white/10">
+            <Link href="/dashboard" className="flex items-center gap-3 group">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#047474] to-[#069B9A] rounded-xl flex items-center justify-center shadow-lg shadow-teal-900/30 group-hover:shadow-teal-800/40 transition-shadow">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-lg text-white tracking-tight">Admin</span>
+                <span className="text-[10px] text-[#E9B61F] font-semibold tracking-widest uppercase">Portal</span>
+              </div>
+            </Link>
+          </div>
+        </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-slate-700">
-        <p className="text-xs text-slate-400 text-center">
-          Health Insurance Enrollment
-        </p>
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const hasChildren = item.children && item.children.length > 0;
+            
+            return (
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-[#047474] text-white shadow-lg shadow-teal-900/20'
+                      : 'text-white/70 hover:bg-[#002848] hover:text-white'
+                  )}
+                >
+                  <span className={cn(
+                    'transition-colors',
+                    isActive ? 'text-white' : 'text-white/50'
+                  )}>
+                    {item.icon}
+                  </span>
+                  {item.label}
+                  {isActive && !hasChildren && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#E9B61F]" />
+                  )}
+                </Link>
+                
+                {/* Child items */}
+                {hasChildren && isActive && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.children!.map((child) => {
+                      const isChildActive = pathname === child.href;
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={cn(
+                            'block px-3 py-1.5 rounded-md text-sm transition-all duration-200',
+                            isChildActive
+                              ? 'text-white bg-[#047474]/50'
+                              : 'text-white/50 hover:text-white hover:bg-[#002848]'
+                          )}
+                        >
+                          {child.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-white/10">
+          <div className="px-3 py-3 bg-[#002848] rounded-xl border border-white/5">
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-[#E9B61F]" />
+              <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">System</p>
+            </div>
+            <p className="text-sm font-bold text-white">Admin <span className="text-[#069B9A]">· v1.0.0</span></p>
+          </div>
+        </div>
       </div>
     </aside>
   );

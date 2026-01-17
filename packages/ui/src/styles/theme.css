@@ -81,6 +81,17 @@
   --glass-border: rgba(255, 255, 255, 0.3);
   --glass-shadow: 0 8px 32px rgba(0, 53, 96, 0.1);
   --glass-blur: 16px;
+
+  /* Sidebar - Premium Navy Theme */
+  --sidebar-bg: #003560;
+  --sidebar-bg-dark: #002848;
+  --sidebar-active: #047474;
+  --sidebar-hover: #002848;
+  --sidebar-text: rgba(255, 255, 255, 0.7);
+  --sidebar-text-active: #ffffff;
+  --sidebar-accent: #E9B61F;
+  --sidebar-gradient: linear-gradient(135deg, #003560 0%, #002848 100%);
+  --accent-gradient: linear-gradient(135deg, #047474 0%, #069B9A 50%, #027343 100%);
 }
 
 .dark {
