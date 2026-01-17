@@ -1,3 +1,5 @@
+'use client';
+
 import { Package } from 'lucide-react';
 import { EmptyState } from '@/components/crm/lists';
 

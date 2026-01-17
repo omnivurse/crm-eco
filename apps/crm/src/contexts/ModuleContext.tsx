@@ -23,15 +23,13 @@ const STORAGE_KEY = 'crm_active_module';
 
 export function ModuleProvider({ children }: { children: ReactNode }) {
     const [activeModule, setActiveModuleState] = useState<TopModule>('crm');
-    const [isHydrated, setIsHydrated] = useState(false);
 
-    // Load from localStorage on mount
+    // Load from localStorage on mount (client-side only)
     useEffect(() => {
         const stored = localStorage.getItem(STORAGE_KEY) as TopModule | null;
         if (stored && isValidModule(stored)) {
             setActiveModuleState(stored);
         }
-        setIsHydrated(true);
     }, []);
 
     const setActiveModule = (module: TopModule) => {
@@ -39,11 +37,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(STORAGE_KEY, module);
     };
 
-    // Don't render until hydrated to avoid mismatch
-    if (!isHydrated) {
-        return null;
-    }
-
+    // Always render immediately with default/current value
     return (
         <ModuleContext.Provider value={{ activeModule, setActiveModule }}>
             {children}
