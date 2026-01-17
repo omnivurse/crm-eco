@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   Target,
   ListChecks,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Types
@@ -39,37 +41,39 @@ export default function PlaybooksPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    // Simulated data
-    setPlaybooks([
-      {
-        id: '1',
-        name: 'Enterprise Sales Playbook',
-        description: 'Complete playbook for enterprise deal cycles',
-        target_modules: ['Deals'],
-        is_active: true,
-        content: [
-          { section: 'Discovery', items: [{ type: 'task', title: 'Identify decision makers' }] },
-          { section: 'Demo', items: [{ type: 'task', title: 'Schedule product demo' }] },
-          { section: 'Proposal', items: [{ type: 'task', title: 'Send proposal' }] },
-        ],
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'SMB Qualification',
-        description: 'Quick qualification process for SMB leads',
-        target_modules: ['Leads'],
-        is_active: true,
-        content: [
-          { section: 'Initial Contact', items: [{ type: 'task', title: 'Send intro email' }] },
-          { section: 'Qualification', items: [{ type: 'question', title: 'Budget confirmed?' }] },
-        ],
-        created_at: new Date().toISOString(),
-      },
-    ]);
-    setLoading(false);
+  const fetchPlaybooks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/playbooks');
+      if (res.ok) {
+        const data = await res.json();
+        setPlaybooks(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch playbooks:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPlaybooks();
+  }, [fetchPlaybooks]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this playbook?')) return;
+
+    try {
+      const res = await fetch(`/api/playbooks/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Playbook deleted');
+        fetchPlaybooks();
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch (error) {
+      toast.error('Failed to delete playbook');
+    }
+  };
 
   const filteredPlaybooks = playbooks.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -119,9 +123,9 @@ export default function PlaybooksPage() {
       {/* Playbooks List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
-          [...Array(2)].map((_, i) => (
-            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800/50 rounded-xl animate-pulse" />
-          ))
+          <div className="col-span-full flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+          </div>
         ) : filteredPlaybooks.length === 0 ? (
           <div className="col-span-full text-center py-12 glass-card border border-slate-200 dark:border-slate-700 rounded-xl">
             <BookOpen className="w-12 h-12 mx-auto text-slate-400 mb-4" />
@@ -189,7 +193,10 @@ export default function PlaybooksPage() {
                   <Edit className="w-3.5 h-3.5" />
                   Edit
                 </Link>
-                <button className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg">
+                <button
+                  onClick={() => handleDelete(playbook.id)}
+                  className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg"
+                >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>

@@ -2,10 +2,10 @@ import { Suspense } from 'react';
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { 
+import {
   getCurrentProfile,
-  getModuleByKey, 
-  getFieldsForModule, 
+  getModuleByKey,
+  getFieldsForModule,
   getDefaultLayout,
 } from '@/lib/crm/queries';
 import { createRecord, type CreateRecordInput } from '@/lib/crm/mutations';
@@ -17,7 +17,7 @@ interface PageProps {
 
 async function NewRecordContent({ params }: PageProps) {
   const { moduleKey } = await params;
-  
+
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
 
@@ -36,7 +36,7 @@ async function NewRecordContent({ params }: PageProps) {
 
   async function handleSubmit(formData: FormData) {
     'use server';
-    
+
     const profile = await getCurrentProfile();
     if (!profile) throw new Error('Not authenticated');
 
@@ -67,13 +67,13 @@ async function NewRecordContent({ params }: PageProps) {
       <div className="flex items-center gap-4">
         <Link
           href={`/crm/modules/${moduleKey}`}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">New {module.name}</h1>
-          <p className="text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New {module.name}</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">
             Create a new {module.name.toLowerCase()} record
           </p>
         </div>
@@ -81,7 +81,7 @@ async function NewRecordContent({ params }: PageProps) {
 
       {/* Form */}
       <form action={handleSubmit} className="space-y-6">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6">
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
           <DynamicRecordForm
             fields={fields}
             layout={layout || undefined}
@@ -93,15 +93,15 @@ async function NewRecordContent({ params }: PageProps) {
         <div className="flex items-center justify-end gap-3">
           <Link
             href={`/crm/modules/${moduleKey}`}
-            className="px-4 py-2 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 rounded-lg transition-colors"
+            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 rounded-lg transition-colors"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+            className="px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors shadow-sm"
           >
-            Create {module.name}
+            Create Record
           </button>
         </div>
       </form>

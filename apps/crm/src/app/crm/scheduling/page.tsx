@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -14,7 +14,9 @@ import {
   MapPin,
   Users,
   Trash2,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Types
@@ -39,37 +41,44 @@ export default function SchedulingPage() {
   const [links, setLinks] = useState<SchedulingLink[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulated data for now
-    setLinks([
-      {
-        id: '1',
-        name: '30 Minute Meeting',
-        slug: '30min',
-        description: 'Quick sync call',
-        duration_minutes: 30,
-        meeting_type: 'video',
-        is_active: true,
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        name: 'Discovery Call',
-        slug: 'discovery',
-        description: 'Initial consultation',
-        duration_minutes: 60,
-        meeting_type: 'video',
-        is_active: true,
-        created_at: new Date().toISOString(),
-      },
-    ]);
-    setLoading(false);
+  const fetchLinks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/scheduling');
+      if (res.ok) {
+        const data = await res.json();
+        setLinks(data || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch scheduling links:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchLinks();
+  }, [fetchLinks]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this scheduling link?')) return;
+
+    try {
+      const res = await fetch(`/api/scheduling/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast.success('Scheduling link deleted');
+        fetchLinks();
+      } else {
+        throw new Error('Failed to delete');
+      }
+    } catch (error) {
+      toast.error('Failed to delete scheduling link');
+    }
+  };
 
   const copyLink = (slug: string) => {
     const url = `${window.location.origin}/book/${slug}`;
     navigator.clipboard.writeText(url);
-    alert('Link copied to clipboard!');
+    toast.success('Link copied to clipboard!');
   };
 
   const getMeetingIcon = (type: string) => {
@@ -108,9 +117,9 @@ export default function SchedulingPage() {
       {/* Links Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
-          [...Array(3)].map((_, i) => (
-            <div key={i} className="h-48 bg-slate-200 dark:bg-slate-800/50 rounded-xl animate-pulse" />
-          ))
+          <div className="col-span-full flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+          </div>
         ) : links.length === 0 ? (
           <div className="col-span-full text-center py-12 glass-card border border-slate-200 dark:border-slate-700 rounded-xl">
             <Calendar className="w-12 h-12 mx-auto text-slate-400 mb-4" />

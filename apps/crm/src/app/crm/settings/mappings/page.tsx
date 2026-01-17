@@ -31,20 +31,20 @@ async function MappingsContent() {
         <div className="flex items-center gap-4">
           <Link
             href="/crm/settings"
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Import Mappings</h1>
-            <p className="text-slate-400 mt-1">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Import Mappings</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
               Saved column mapping templates for quick imports
             </p>
           </div>
         </div>
         <Link
           href="/crm/import"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
           New Import
@@ -53,33 +53,33 @@ async function MappingsContent() {
 
       {/* Mappings List */}
       {mappings && mappings.length > 0 ? (
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50">
-            <h2 className="text-sm font-medium text-slate-400">
+        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+            <h2 className="text-sm font-medium text-slate-600 dark:text-slate-400">
               {mappings.length} Saved Mappings
             </h2>
           </div>
-          <div className="divide-y divide-slate-700/50">
+          <div className="divide-y divide-slate-200 dark:divide-slate-700/50">
             {mappings.map((mapping: CrmImportMapping) => {
               const module = moduleMap.get(mapping.module_id);
               const fieldCount = Object.keys(mapping.mapping || {}).length;
-              
+
               return (
-                <div key={mapping.id} className="flex items-center gap-4 p-4 hover:bg-slate-800/30 transition-colors">
-                  <div className="p-3 bg-slate-700/50 rounded-lg">
-                    <FileSpreadsheet className="w-5 h-5 text-slate-400" />
+                <div key={mapping.id} className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                  <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg">
+                    <FileSpreadsheet className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-medium">{mapping.name}</span>
+                      <span className="text-slate-900 dark:text-white font-medium">{mapping.name}</span>
                       {mapping.is_default && (
-                        <span className="px-1.5 py-0.5 text-xs bg-emerald-500/10 text-emerald-400 rounded">
+                        <span className="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded">
                           Default
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
+                    <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400">
                       <span>{module?.name || 'Unknown Module'}</span>
                       <span>•</span>
                       <span>{fieldCount} fields mapped</span>
@@ -92,10 +92,10 @@ async function MappingsContent() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <button className="p-2 text-slate-400 hover:text-white transition-colors" title="Use This Mapping">
+                    <button className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" title="Use This Mapping">
                       <Download className="w-4 h-4" />
                     </button>
-                    <button className="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Delete">
+                    <button className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Delete">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -105,15 +105,15 @@ async function MappingsContent() {
           </div>
         </div>
       ) : (
-        <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
-          <FileSpreadsheet className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400 mb-2">No saved import mappings</p>
+        <div className="text-center py-12 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+          <FileSpreadsheet className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-600 dark:text-slate-400 mb-2">No saved import mappings</p>
           <p className="text-sm text-slate-500 mb-4">
             Mappings are saved automatically when you complete an import
           </p>
           <Link
             href="/crm/import"
-            className="text-blue-400 hover:text-blue-300 text-sm"
+            className="text-teal-600 dark:text-teal-400 hover:text-teal-500 dark:hover:text-teal-300 text-sm"
           >
             Start an import
           </Link>
@@ -121,10 +121,10 @@ async function MappingsContent() {
       )}
 
       {/* Help */}
-      <div className="bg-slate-800/30 border border-slate-700 rounded-xl p-4">
-        <p className="text-sm text-slate-400">
-          <strong className="text-slate-300">Tip:</strong> Import mappings let you save 
-          column configurations for repeated imports. When you import from the same 
+      <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          <strong className="text-slate-700 dark:text-slate-300">Tip:</strong> Import mappings let you save
+          column configurations for repeated imports. When you import from the same
           source (like Zoho CRM), your mappings will be applied automatically.
         </p>
       </div>
