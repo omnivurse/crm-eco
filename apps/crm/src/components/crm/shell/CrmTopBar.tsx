@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
+import { SplitCreateButton } from './SplitCreateButton';
 import { NotificationsPanel } from '../NotificationsPanel';
 import { GlobalSearchOverlay } from '@/components/zoho/GlobalSearchOverlay';
 import { QuickCreateDrawer } from '@/components/zoho/QuickCreateDrawer';
@@ -152,15 +153,8 @@ export function CrmTopBar({
           <Search className="w-4 h-4" />
         </Button>
 
-        {/* Quick Create Button */}
-        <Button
-          size="sm"
-          onClick={() => setQuickCreateOpen(true)}
-          className="h-9 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium shadow-sm"
-        >
-          <Plus className="w-4 h-4 mr-1" />
-          <span className="hidden sm:inline">Create</span>
-        </Button>
+        {/* Split Create Button with Dropdown */}
+        <SplitCreateButton />
 
         {/* Theme Toggle */}
         <ThemeToggle variant="icon" />
