@@ -110,18 +110,13 @@ export function CrmTopBar({
     <header className="h-14 flex items-center justify-between px-4 glass border-b border-slate-200 dark:border-white/5">
       {/* Left Section: Brand + Module Tabs */}
       <div className="flex items-center gap-4">
-        {/* Brand */}
-        <Link href="/crm" className="flex items-center gap-2.5 mr-2 group">
-          <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden gradient-primary p-[1px] group-hover:shadow-lg transition-all duration-300">
-            <div className="w-full h-full rounded-[6px] bg-white dark:bg-slate-900 flex items-center justify-center">
-              <Heart className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-              {organizationName || 'Pay It Forward'}
-            </h1>
-          </div>
+        {/* Brand - Logo */}
+        <Link href="/crm" className="flex items-center gap-2 mr-2 group flex-shrink-0">
+          <img
+            src="/logo.jpg"
+            alt="Pay It Forward HealthShare"
+            className="h-10 w-auto object-contain"
+          />
         </Link>
 
         {/* Zoho-style Module Bar */}
