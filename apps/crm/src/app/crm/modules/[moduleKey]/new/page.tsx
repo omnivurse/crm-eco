@@ -121,13 +121,13 @@ function NewRecordSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-slate-800 rounded-lg" />
+        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg" />
         <div className="space-y-2">
-          <div className="h-8 w-40 bg-slate-800 rounded" />
-          <div className="h-4 w-60 bg-slate-800 rounded" />
+          <div className="h-8 w-40 bg-slate-200 dark:bg-slate-800 rounded" />
+          <div className="h-4 w-60 bg-slate-200 dark:bg-slate-800 rounded" />
         </div>
       </div>
-      <div className="h-96 bg-slate-800/50 rounded-xl" />
+      <div className="h-96 bg-slate-100 dark:bg-slate-800/50 rounded-xl" />
     </div>
   );
 }

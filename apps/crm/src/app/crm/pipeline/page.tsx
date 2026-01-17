@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Plus, 
-  TrendingUp, 
+import {
+  Plus,
+  TrendingUp,
   Filter,
   Settings2,
 } from 'lucide-react';
@@ -20,11 +20,11 @@ async function PipelineContent() {
 
   // Get deals module and stages
   const dealsModule = await getModuleByKey(profile.organization_id, 'deals');
-  
+
   let deals: CrmRecord[] = [];
   let stages: CrmDealStage[] = [];
   let totalDeals = 0;
-  
+
   if (dealsModule) {
     const [result, stagesResult] = await Promise.all([
       getRecords({
@@ -36,7 +36,7 @@ async function PipelineContent() {
       }),
       getDealStages(profile.organization_id),
     ]);
-    
+
     deals = result.records;
     totalDeals = result.total;
     stages = stagesResult;
@@ -104,23 +104,23 @@ async function PipelineContent() {
             Drag deals between stages to update their status
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
           >
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
           >
             <Settings2 className="w-4 h-4 mr-2" />
             Customize
           </Button>
-          <Button 
+          <Button
             className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm hover:shadow-md"
             asChild
           >
@@ -187,29 +187,29 @@ function PipelineSkeleton() {
       {/* Header skeleton */}
       <div className="flex justify-between items-start mb-6">
         <div className="space-y-2">
-          <div className="h-5 w-32 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-8 w-48 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-5 w-32 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-4 w-64 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
         </div>
         <div className="flex gap-3">
-          <div className="h-10 w-24 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-10 w-28 bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-24 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-28 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
       </div>
-      
+
       {/* Stats skeleton */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+          <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}
       </div>
-      
+
       {/* Kanban skeleton */}
       <div className="flex gap-4 flex-1">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="w-[300px] flex-shrink-0">
-            <div className="h-16 bg-slate-800/30 rounded-t-xl border border-white/5 animate-pulse" />
-            <div className="h-[400px] bg-slate-800/20 rounded-b-xl border border-white/5 border-t-0 animate-pulse" />
+            <div className="h-16 bg-slate-100 dark:bg-slate-800/30 rounded-t-xl border border-slate-200 dark:border-white/5 animate-pulse" />
+            <div className="h-[400px] bg-slate-50 dark:bg-slate-800/20 rounded-b-xl border border-slate-200 dark:border-white/5 border-t-0 animate-pulse" />
           </div>
         ))}
       </div>
