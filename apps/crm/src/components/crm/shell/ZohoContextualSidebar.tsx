@@ -12,6 +12,7 @@ import {
     DollarSign,
     Activity,
     CheckSquare,
+    CheckCircle,
     FileText,
     Package,
     FileCheck,
@@ -41,6 +42,7 @@ import {
     Settings,
     ChevronLeft,
     ChevronRight,
+    Video,
     type LucideIcon,
 } from 'lucide-react';
 import { useModule, getNavItemsForModule, TopModule } from '@/contexts/ModuleContext';
@@ -54,6 +56,7 @@ const iconMap: Record<string, LucideIcon> = {
     'dollar-sign': DollarSign,
     'activity': Activity,
     'check-square': CheckSquare,
+    'check-circle': CheckCircle,
     'file-text': FileText,
     'package': Package,
     'file-check': FileCheck,
@@ -82,6 +85,7 @@ const iconMap: Record<string, LucideIcon> = {
     'zap': Zap,
     'upload': Upload,
     'settings': Settings,
+    'video': Video,
 };
 
 function getIcon(iconName: string): LucideIcon {
@@ -96,14 +100,39 @@ interface ZohoContextualSidebarProps {
 export function ZohoContextualSidebar({ isOpen, onToggle }: ZohoContextualSidebarProps) {
     const pathname = usePathname();
 
-    // Determine active module from pathname
+    // Determine active module from pathname - order matters (more specific first)
     const getActiveFromPath = (): TopModule => {
+        // Settings routes (most specific)
         if (pathname.startsWith('/crm/settings')) return 'settings';
+
+        // Integrations
         if (pathname.startsWith('/crm/integrations')) return 'integrations';
-        if (pathname.startsWith('/crm/analytics') || pathname.startsWith('/crm/reports')) return 'analytics';
-        if (pathname.startsWith('/crm/operations') || pathname.startsWith('/crm/scheduling') || pathname.startsWith('/crm/playbooks') || pathname.startsWith('/crm/enrollment') || pathname.startsWith('/crm/needs')) return 'operations';
-        if (pathname.startsWith('/crm/revenue') || pathname.startsWith('/crm/pipeline') || pathname.startsWith('/crm/quotes') || pathname.startsWith('/crm/invoices') || pathname.startsWith('/crm/forecasting')) return 'revenue';
-        if (pathname.startsWith('/crm/communications') || pathname.startsWith('/crm/inbox')) return 'communications';
+
+        // Analytics & Reports
+        if (pathname.startsWith('/crm/analytics')) return 'analytics';
+
+        // Operations: scheduling, playbooks, enrollment, needs, approvals
+        if (pathname.startsWith('/crm/operations') ||
+            pathname.startsWith('/crm/scheduling') ||
+            pathname.startsWith('/crm/playbooks') ||
+            pathname.startsWith('/crm/enrollment') ||
+            pathname.startsWith('/crm/needs') ||
+            pathname.startsWith('/crm/approvals')) return 'operations';
+
+        // Revenue: products, quotes, invoices, documents, forecasting, commissions, revenue overview
+        if (pathname.startsWith('/crm/revenue') ||
+            pathname.startsWith('/crm/products') ||
+            pathname.startsWith('/crm/quotes') ||
+            pathname.startsWith('/crm/invoices') ||
+            pathname.startsWith('/crm/documents') ||
+            pathname.startsWith('/crm/forecasting') ||
+            pathname.startsWith('/crm/commissions')) return 'revenue';
+
+        // Communications: inbox, communications
+        if (pathname.startsWith('/crm/communications') ||
+            pathname.startsWith('/crm/inbox')) return 'communications';
+
+        // Default to CRM for: dashboard, modules (leads/contacts/deals), accounts, pipeline, activities, tasks, reports
         return 'crm';
     };
 
