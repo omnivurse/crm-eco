@@ -76,6 +76,9 @@ export const TOP_MODULES: {
 // CRM sidebar navigation items - Main record types
 export const CRM_NAV_ITEMS = [
     { key: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', href: '/crm' },
+    { key: 'organizer', label: 'Organizer', icon: 'calendar-check', href: '/crm/organizer' },
+    { key: 'calendar', label: 'Calendar', icon: 'calendar', href: '/crm/calendar' },
+    { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
     { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/accounts' },
