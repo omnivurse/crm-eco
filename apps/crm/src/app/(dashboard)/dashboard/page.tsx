@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@crm-eco/ui';
-import { Users, UserCheck, Ticket, HeartPulse, TrendingUp, Activity } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, StatCard } from '@crm-eco/ui';
+import { Users, UserCheck, Ticket, HeartPulse, TrendingUp, Activity, Sparkles, ArrowUpRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import type { Database } from '@crm-eco/lib/types';
 import { getRoleQueryContext, type RoleQueryContext } from '@/lib/auth';
@@ -92,21 +92,21 @@ async function getRecentActivities(context: RoleQueryContext): Promise<ActivityW
 }
 
 const typeColors: Record<string, string> = {
-  member_created: 'bg-green-100 text-green-700',
-  member_updated: 'bg-blue-100 text-blue-700',
-  advisor_created: 'bg-emerald-100 text-emerald-700',
-  advisor_updated: 'bg-blue-100 text-blue-700',
+  member_created: 'bg-[#e0f1ea] text-[#027343]',
+  member_updated: 'bg-[#e1f3f3] text-[#047474]',
+  advisor_created: 'bg-[#e0f1ea] text-[#027343]',
+  advisor_updated: 'bg-[#e1f3f3] text-[#047474]',
   lead_created: 'bg-cyan-100 text-cyan-700',
-  lead_updated: 'bg-blue-100 text-blue-700',
+  lead_updated: 'bg-[#e1f3f3] text-[#047474]',
   ticket_created: 'bg-amber-100 text-amber-700',
-  ticket_updated: 'bg-blue-100 text-blue-700',
+  ticket_updated: 'bg-[#e1f3f3] text-[#047474]',
   ticket_comment_added: 'bg-purple-100 text-purple-700',
   need_created: 'bg-rose-100 text-rose-700',
-  need_updated: 'bg-blue-100 text-blue-700',
-  need_status_changed: 'bg-indigo-100 text-indigo-700',
-  note_added: 'bg-yellow-100 text-yellow-700',
+  need_updated: 'bg-[#e1f3f3] text-[#047474]',
+  need_status_changed: 'bg-[#e0e7ec] text-[#003560]',
+  note_added: 'bg-[#fcf6e4] text-[#907113]',
   call_logged: 'bg-purple-100 text-purple-700',
-  email_sent: 'bg-indigo-100 text-indigo-700',
+  email_sent: 'bg-[#e0e7ec] text-[#003560]',
 };
 
 function getTypeLabel(type: string): string {
@@ -144,43 +144,6 @@ export default async function DashboardPage() {
   const stats = await getStats(context);
   const activities = await getRecentActivities(context);
 
-  // Build stat cards based on role
-  const statCards = [
-    {
-      title: stats.isAdvisor ? 'My Active Members' : 'Active Members',
-      value: stats.activeMembers,
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      borderColor: 'border-l-blue-500',
-    },
-    // Only show advisors count for admin/owner
-    ...(!stats.isAdvisor ? [{
-      title: 'Active Advisors',
-      value: stats.activeAdvisors,
-      icon: UserCheck,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-l-emerald-500',
-    }] : []),
-    {
-      title: stats.isAdvisor ? 'My Open Tickets' : 'Open Tickets',
-      value: stats.openTickets,
-      icon: Ticket,
-      color: 'text-amber-600',
-      bgColor: 'bg-amber-50',
-      borderColor: 'border-l-amber-500',
-    },
-    {
-      title: stats.isAdvisor ? 'My Open Needs' : 'Open Needs',
-      value: stats.openNeeds,
-      icon: HeartPulse,
-      color: 'text-rose-600',
-      bgColor: 'bg-rose-50',
-      borderColor: 'border-l-rose-500',
-    },
-  ];
-
   const getEntityLink = (activity: ActivityWithRelations) => {
     // Get entity type from the activity type
     const type = activity.type || '';
@@ -213,10 +176,17 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Welcome Section */}
       <div className="flex items-center justify-between">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-5 h-5 text-[#E9B61F]" />
+            <span className="text-sm font-medium text-[#047474]">Dashboard</span>
+          </div>
+          <h1 className="text-2xl font-bold text-[#003560] mb-1">
+            {stats.isAdvisor ? 'Your Overview' : 'Platform Overview'}
+          </h1>
           <p className="text-slate-500">
             {stats.isAdvisor 
               ? 'Overview of your assigned members and tasks' 
@@ -224,79 +194,107 @@ export default async function DashboardPage() {
             }
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <TrendingUp className="w-4 h-4" />
-          <span>Last updated just now</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <TrendingUp className="w-4 h-4 text-[#027343]" />
+          <span className="text-sm text-slate-600">Last updated just now</span>
         </div>
       </div>
 
       {/* Stat Cards */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 ${stats.isAdvisor ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-        {statCards.map((stat) => (
-          <Card key={stat.title} className={`border-l-4 ${stat.borderColor} hover:shadow-md transition-shadow`}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">
-                {stat.title}
-              </CardTitle>
-              <div className={`p-2.5 rounded-xl ${stat.bgColor}`}>
-                <stat.icon className={`h-5 w-5 ${stat.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-slate-900">{stat.value.toLocaleString()}</div>
-              <p className="text-xs text-slate-400 mt-1">Total count</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${stats.isAdvisor ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-5`}>
+        <StatCard
+          title={stats.isAdvisor ? 'My Active Members' : 'Active Members'}
+          value={stats.activeMembers}
+          subtitle="Total count"
+          icon={<Users className="w-5 h-5" />}
+          accent="teal"
+        />
+        
+        {!stats.isAdvisor && (
+          <StatCard
+            title="Active Advisors"
+            value={stats.activeAdvisors}
+            subtitle="Total count"
+            icon={<UserCheck className="w-5 h-5" />}
+            accent="emerald"
+          />
+        )}
+        
+        <StatCard
+          title={stats.isAdvisor ? 'My Open Tickets' : 'Open Tickets'}
+          value={stats.openTickets}
+          subtitle="Total count"
+          icon={<Ticket className="w-5 h-5" />}
+          accent="amber"
+        />
+        
+        <StatCard
+          title={stats.isAdvisor ? 'My Open Needs' : 'Open Needs'}
+          value={stats.openNeeds}
+          subtitle="Total count"
+          icon={<HeartPulse className="w-5 h-5" />}
+          accent="rose"
+        />
       </div>
 
       {/* Recent Activity */}
-      <Card>
-        <CardHeader className="flex flex-row items-center gap-2">
-          <Activity className="w-5 h-5 text-slate-400" />
-          <CardTitle>{stats.isAdvisor ? 'My Recent Activity' : 'Recent Activity'}</CardTitle>
+      <Card className="border-0 shadow-[0_1px_2px_rgba(2,6,23,0.06),0_8px_24px_rgba(2,6,23,0.08)] rounded-2xl overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
+        <CardHeader className="flex flex-row items-center gap-3 pb-4">
+          <div className="p-2 bg-[#e1f3f3] rounded-xl">
+            <Activity className="w-5 h-5 text-[#047474]" />
+          </div>
+          <div>
+            <CardTitle className="text-lg font-bold text-[#003560]">
+              {stats.isAdvisor ? 'My Recent Activity' : 'Recent Activity'}
+            </CardTitle>
+            <p className="text-sm text-slate-500">Latest actions across the platform</p>
+          </div>
         </CardHeader>
         <CardContent>
           {activities.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <Activity className="w-12 h-12 mx-auto text-slate-300 mb-3" />
-              <p className="font-medium">No recent activity</p>
-              <p className="text-sm text-slate-400 mt-1">Activities will appear here as you use the system</p>
+            <div className="text-center py-16">
+              <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-2xl flex items-center justify-center">
+                <Activity className="w-8 h-8 text-slate-300" />
+              </div>
+              <p className="font-semibold text-slate-700 mb-1">No recent activity</p>
+              <p className="text-sm text-slate-400">Activities will appear here as you use the system</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>By</TableHead>
-                  <TableHead>Time</TableHead>
+                <TableRow className="border-slate-100">
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Type</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Subject</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Entity</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">By</TableHead>
+                  <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {activities.map((activity) => {
                   const entityLink = getEntityLink(activity);
                   return (
-                    <TableRow key={activity.id}>
+                    <TableRow key={activity.id} className="border-slate-100 hover:bg-slate-50/50 transition-colors">
                       <TableCell>
                         <Badge 
                           variant="secondary" 
-                          className={typeColors[activity.type || ''] || 'bg-slate-100 text-slate-700'}
+                          className={`${typeColors[activity.type || ''] || 'bg-slate-100 text-slate-700'} font-medium`}
                         >
                           {getTypeLabel(activity.type || '')}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium max-w-[250px] truncate">
+                      <TableCell className="font-medium text-slate-700 max-w-[250px] truncate">
                         {activity.subject || '—'}
                       </TableCell>
                       <TableCell>
                         {entityLink ? (
                           <Link 
                             href={entityLink.href}
-                            className="text-blue-600 hover:underline"
+                            className="inline-flex items-center gap-1 text-[#047474] hover:text-[#069B9A] font-medium transition-colors"
                           >
                             {entityLink.label}
+                            <ArrowUpRight className="w-3 h-3" />
                           </Link>
                         ) : (
                           <span className="text-slate-400">—</span>

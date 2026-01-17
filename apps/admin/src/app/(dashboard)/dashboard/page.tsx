@@ -1,5 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@crm-eco/ui';
-import { Users, UserCheck, FileText, TrendingUp, Clock, Activity, User, Package, Settings, DollarSign, Layers } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatCard } from '@crm-eco/ui';
+import { Users, UserCheck, FileText, TrendingUp, Clock, Activity, User, Package, Settings, DollarSign, Sparkles, ArrowUpRight } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -156,19 +156,19 @@ function getEntityIcon(entityType: string) {
 function getActionColor(action: string) {
   switch (action) {
     case 'create':
-      return 'text-green-600 bg-green-100';
+      return 'text-[#027343] bg-[#e0f1ea]';
     case 'update':
     case 'update_commission_tier':
-      return 'text-blue-600 bg-blue-100';
+      return 'text-[#047474] bg-[#e1f3f3]';
     case 'delete':
       return 'text-red-600 bg-red-100';
     case 'approve':
     case 'process_enrollment':
-      return 'text-emerald-600 bg-emerald-100';
+      return 'text-[#027343] bg-[#e0f1ea]';
     case 'reject':
       return 'text-orange-600 bg-orange-100';
     case 'cancel':
-      return 'text-gray-600 bg-gray-100';
+      return 'text-slate-600 bg-slate-100';
     case 'charge':
     case 'refund':
     case 'generate_payouts':
@@ -211,118 +211,119 @@ export default async function DashboardPage() {
     getRecentActivity(),
   ]);
 
-  const cards = [
-    {
-      title: 'Total Members',
-      value: stats?.totalMembers ?? 0,
-      description: 'All registered members',
-      icon: Users,
-      color: 'text-blue-600',
-      bg: 'bg-blue-100',
-    },
-    {
-      title: 'Active Agents',
-      value: stats?.totalAgents ?? 0,
-      description: 'Licensed agents',
-      icon: UserCheck,
-      color: 'text-green-600',
-      bg: 'bg-green-100',
-    },
-    {
-      title: 'Total Enrollments',
-      value: stats?.totalEnrollments ?? 0,
-      description: 'All enrollment applications',
-      icon: FileText,
-      color: 'text-purple-600',
-      bg: 'bg-purple-100',
-    },
-    {
-      title: 'Active Enrollments',
-      value: stats?.activeEnrollments ?? 0,
-      description: 'Approved and active',
-      icon: TrendingUp,
-      color: 'text-orange-600',
-      bg: 'bg-orange-100',
-    },
-  ];
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-500">Welcome to the Admin Portal</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-5 h-5 text-[#E9B61F]" />
+            <span className="text-sm font-medium text-[#047474]">Admin Dashboard</span>
+          </div>
+          <h1 className="text-2xl font-bold text-[#003560]">Welcome to Admin Portal</h1>
+          <p className="text-slate-500">Manage your health insurance enrollment platform</p>
+        </div>
+        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <TrendingUp className="w-4 h-4 text-[#027343]" />
+          <span className="text-sm text-slate-600">Last updated just now</span>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((card) => (
-          <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">
-                {card.title}
-              </CardTitle>
-              <div className={`p-2 rounded-lg ${card.bg}`}>
-                <card.icon className={`h-5 w-5 ${card.color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{card.value.toLocaleString()}</div>
-              <p className="text-xs text-slate-500 mt-1">{card.description}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <StatCard
+          title="Total Members"
+          value={stats?.totalMembers ?? 0}
+          subtitle="All registered members"
+          icon={<Users className="w-5 h-5" />}
+          accent="teal"
+        />
+        <StatCard
+          title="Active Agents"
+          value={stats?.totalAgents ?? 0}
+          subtitle="Licensed agents"
+          icon={<UserCheck className="w-5 h-5" />}
+          accent="emerald"
+        />
+        <StatCard
+          title="Total Enrollments"
+          value={stats?.totalEnrollments ?? 0}
+          subtitle="All enrollment applications"
+          icon={<FileText className="w-5 h-5" />}
+          accent="purple"
+        />
+        <StatCard
+          title="Active Enrollments"
+          value={stats?.activeEnrollments ?? 0}
+          subtitle="Approved and active"
+          icon={<TrendingUp className="w-5 h-5" />}
+          accent="gold"
+        />
       </div>
 
       {/* Commission Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <Link href="/commissions/transactions?status=pending">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">
-                Pending Commissions
-              </CardTitle>
-              <div className="p-2 rounded-lg bg-yellow-100">
-                <Clock className="h-5 w-5 text-yellow-600" />
+          <div className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-[0_1px_2px_rgba(2,6,23,0.06),0_8px_24px_rgba(2,6,23,0.08)] hover:shadow-[0_4px_12px_rgba(2,6,23,0.08),0_12px_32px_rgba(2,6,23,0.12)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer border-l-4 border-l-amber-500">
+            <div className="h-1 bg-gradient-to-r from-amber-500 to-amber-400" />
+            <div className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium text-slate-500 tracking-wide">Pending Commissions</p>
+                <div className="p-2.5 rounded-xl bg-amber-50">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
-                ${(stats?.pendingCommissions ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-3xl font-bold text-amber-600 tracking-tight">
+                    ${(stats?.pendingCommissions ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">Awaiting approval</p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-amber-400" />
               </div>
-              <p className="text-xs text-slate-500 mt-1">Awaiting approval</p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </Link>
+        
         <Link href="/commissions">
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-slate-500">
-                Commissions Paid This Month
-              </CardTitle>
-              <div className="p-2 rounded-lg bg-green-100">
-                <DollarSign className="h-5 w-5 text-green-600" />
+          <div className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-[0_1px_2px_rgba(2,6,23,0.06),0_8px_24px_rgba(2,6,23,0.08)] hover:shadow-[0_4px_12px_rgba(2,6,23,0.08),0_12px_32px_rgba(2,6,23,0.12)] transition-all duration-300 hover:-translate-y-0.5 cursor-pointer border-l-4 border-l-[#027343]">
+            <div className="h-1 bg-gradient-to-r from-[#027343] to-[#358f69]" />
+            <div className="p-5">
+              <div className="flex items-start justify-between mb-3">
+                <p className="text-sm font-medium text-slate-500 tracking-wide">Commissions Paid This Month</p>
+                <div className="p-2.5 rounded-xl bg-[#e0f1ea]">
+                  <DollarSign className="w-5 h-5 text-[#027343]" />
+                </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">
-                ${(stats?.paidThisMonth ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-3xl font-bold text-[#027343] tracking-tight">
+                    ${(stats?.paidThisMonth ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">Disbursed to agents</p>
+                </div>
+                <ArrowUpRight className="w-5 h-5 text-[#358f69]" />
               </div>
-              <p className="text-xs text-slate-500 mt-1">Disbursed to agents</p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </Link>
       </div>
 
       {/* Activity Feed and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Latest actions in the system</CardDescription>
+        <Card className="border-0 shadow-[0_1px_2px_rgba(2,6,23,0.06),0_8px_24px_rgba(2,6,23,0.08)] rounded-2xl overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#e1f3f3] rounded-xl">
+                <Activity className="w-5 h-5 text-[#047474]" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold text-[#003560]">Recent Activity</CardTitle>
+                <CardDescription className="text-slate-500">Latest actions in the system</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {recentActivity.length > 0 ? (
@@ -330,21 +331,21 @@ export default async function DashboardPage() {
                 {recentActivity.map((activity) => (
                   <div
                     key={activity.id}
-                    className="flex items-start gap-3 py-2 border-b last:border-b-0"
+                    className="flex items-start gap-3 py-3 px-3 rounded-xl border border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 transition-all"
                   >
                     <div className={`p-2 rounded-lg ${getActionColor(activity.action)}`}>
                       {getEntityIcon(activity.entity_type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">
+                      <p className="text-sm font-medium text-slate-700 truncate">
                         {formatActivity(activity)}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-slate-400">
                         {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                       </p>
                     </div>
                     <span
-                      className={`px-2 py-0.5 text-xs font-medium rounded capitalize ${getActionColor(activity.action)}`}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-full capitalize ${getActionColor(activity.action)}`}
                     >
                       {activity.action}
                     </span>
@@ -352,67 +353,85 @@ export default async function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-slate-500 py-8 text-center">
-                <Clock className="h-8 w-8 mx-auto mb-2 text-slate-300" />
-                No recent activity to display
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-4 bg-slate-100 rounded-2xl flex items-center justify-center">
+                  <Clock className="w-8 h-8 text-slate-300" />
+                </div>
+                <p className="font-semibold text-slate-700 mb-1">No recent activity</p>
+                <p className="text-sm text-slate-400">Activities will appear here as you use the system</p>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Common tasks</CardDescription>
+        <Card className="border-0 shadow-[0_1px_2px_rgba(2,6,23,0.06),0_8px_24px_rgba(2,6,23,0.08)] rounded-2xl overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-[#003560] to-[#047474]" />
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-[#e0e7ec] rounded-xl">
+                <Sparkles className="w-5 h-5 text-[#003560]" />
+              </div>
+              <div>
+                <CardTitle className="text-lg font-bold text-[#003560]">Quick Actions</CardTitle>
+                <CardDescription className="text-slate-500">Common tasks</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-2">
             <Link
               href="/members/new"
-              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-[#047474]/30 hover:bg-[#e1f3f3]/30 transition-all group"
             >
-              <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-blue-600" />
-                <div>
-                  <p className="font-medium text-sm">Add New Member</p>
-                  <p className="text-xs text-slate-500">Register a new member</p>
-                </div>
+              <div className="p-2.5 rounded-xl bg-[#e1f3f3] group-hover:bg-[#047474] transition-colors">
+                <Users className="w-5 h-5 text-[#047474] group-hover:text-white transition-colors" />
               </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-slate-700">Add New Member</p>
+                <p className="text-xs text-slate-400">Register a new member</p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-[#047474] transition-colors" />
             </Link>
+            
             <Link
               href="/agents/new"
-              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-[#027343]/30 hover:bg-[#e0f1ea]/30 transition-all group"
             >
-              <div className="flex items-center gap-3">
-                <UserCheck className="h-5 w-5 text-green-600" />
-                <div>
-                  <p className="font-medium text-sm">Add New Agent</p>
-                  <p className="text-xs text-slate-500">Register a new agent</p>
-                </div>
+              <div className="p-2.5 rounded-xl bg-[#e0f1ea] group-hover:bg-[#027343] transition-colors">
+                <UserCheck className="w-5 h-5 text-[#027343] group-hover:text-white transition-colors" />
               </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-slate-700">Add New Agent</p>
+                <p className="text-xs text-slate-400">Register a new agent</p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-[#027343] transition-colors" />
             </Link>
+            
             <Link
               href="/enrollments"
-              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-purple-300 hover:bg-purple-50/50 transition-all group"
             >
-              <div className="flex items-center gap-3">
-                <FileText className="h-5 w-5 text-purple-600" />
-                <div>
-                  <p className="font-medium text-sm">View Enrollments</p>
-                  <p className="text-xs text-slate-500">Manage enrollment applications</p>
-                </div>
+              <div className="p-2.5 rounded-xl bg-purple-50 group-hover:bg-purple-600 transition-colors">
+                <FileText className="w-5 h-5 text-purple-600 group-hover:text-white transition-colors" />
               </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-slate-700">View Enrollments</p>
+                <p className="text-xs text-slate-400">Manage enrollment applications</p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-purple-600 transition-colors" />
             </Link>
+            
             <Link
               href="/settings"
-              className="block p-3 rounded-lg border hover:bg-slate-50 transition-colors"
+              className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 hover:border-[#003560]/30 hover:bg-[#e0e7ec]/30 transition-all group"
             >
-              <div className="flex items-center gap-3">
-                <Settings className="h-5 w-5 text-slate-600" />
-                <div>
-                  <p className="font-medium text-sm">System Settings</p>
-                  <p className="text-xs text-slate-500">Configure portal settings</p>
-                </div>
+              <div className="p-2.5 rounded-xl bg-[#e0e7ec] group-hover:bg-[#003560] transition-colors">
+                <Settings className="w-5 h-5 text-[#003560] group-hover:text-white transition-colors" />
               </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm text-slate-700">System Settings</p>
+                <p className="text-xs text-slate-400">Configure portal settings</p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-[#003560] transition-colors" />
             </Link>
           </CardContent>
         </Card>
