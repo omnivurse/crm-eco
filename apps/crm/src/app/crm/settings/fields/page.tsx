@@ -30,19 +30,19 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
 
 function FieldRow({ field }: { field: CrmField }) {
   return (
-    <div className="flex items-center gap-4 p-3 bg-slate-800/30 rounded-lg group">
-      <button className="text-slate-500 hover:text-white cursor-grab">
+    <div className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/30 rounded-lg group">
+      <button className="text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-grab">
         <GripVertical className="w-4 h-4" />
       </button>
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-white font-medium">{field.label}</span>
+          <span className="text-slate-900 dark:text-white font-medium">{field.label}</span>
           {field.required && (
-            <Star className="w-3 h-3 text-amber-400 fill-current" />
+            <Star className="w-3 h-3 text-amber-500 dark:text-amber-400 fill-current" />
           )}
           {field.is_system && (
-            <span className="px-1.5 py-0.5 text-xs bg-slate-700 text-slate-400 rounded">
+            <span className="px-1.5 py-0.5 text-xs bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded">
               System
             </span>
           )}
@@ -50,21 +50,21 @@ function FieldRow({ field }: { field: CrmField }) {
         <span className="text-sm text-slate-500">{field.key}</span>
       </div>
 
-      <span className="px-2 py-1 text-xs bg-slate-700 text-slate-300 rounded">
+      <span className="px-2 py-1 text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded">
         {FIELD_TYPE_LABELS[field.type] || field.type}
       </span>
 
-      <span className="text-sm text-slate-400 w-24 text-right">
+      <span className="text-sm text-slate-500 dark:text-slate-400 w-24 text-right">
         {field.section}
       </span>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {!field.is_system && (
           <>
-            <button className="p-1.5 text-slate-400 hover:text-white transition-colors">
+            <button className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
               <Pencil className="w-4 h-4" />
             </button>
-            <button className="p-1.5 text-slate-400 hover:text-red-400 transition-colors">
+            <button className="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
               <Trash2 className="w-4 h-4" />
             </button>
           </>
@@ -76,7 +76,7 @@ function FieldRow({ field }: { field: CrmField }) {
 
 async function FieldsContent({ searchParams }: PageProps) {
   const { module: moduleId } = await searchParams;
-  
+
   const profile = await getCurrentProfile();
   if (!profile) {
     redirect('/crm-login');
@@ -87,11 +87,11 @@ async function FieldsContent({ searchParams }: PageProps) {
   }
 
   const modules = await getAllModules(profile.organization_id);
-  const selectedModule = moduleId 
-    ? modules.find(m => m.id === moduleId) 
+  const selectedModule = moduleId
+    ? modules.find(m => m.id === moduleId)
     : modules[0];
-  
-  const fields = selectedModule 
+
+  const fields = selectedModule
     ? await getFieldsForModule(selectedModule.id)
     : [];
 
@@ -110,18 +110,18 @@ async function FieldsContent({ searchParams }: PageProps) {
         <div className="flex items-center gap-4">
           <Link
             href="/crm/settings"
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+            className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-white">Fields</h1>
-            <p className="text-slate-400 mt-1">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Fields</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">
               Customize fields for each module
             </p>
           </div>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors">
+        <button className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors">
           <Plus className="w-4 h-4" />
           New Field
         </button>
@@ -133,11 +133,10 @@ async function FieldsContent({ searchParams }: PageProps) {
           <Link
             key={module.id}
             href={`/crm/settings/fields?module=${module.id}`}
-            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              selectedModule?.id === module.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-slate-800 text-slate-400 hover:text-white'
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${selectedModule?.id === module.id
+                ? 'bg-teal-600 text-white'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
           >
             {module.name}
           </Link>
@@ -148,9 +147,9 @@ async function FieldsContent({ searchParams }: PageProps) {
       {selectedModule ? (
         <div className="space-y-6">
           {Object.entries(fieldsBySection).map(([section, sectionFields]) => (
-            <div key={section} className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-700 bg-slate-800/50 flex items-center justify-between">
-                <h2 className="text-sm font-medium text-white capitalize">
+            <div key={section} className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between">
+                <h2 className="text-sm font-medium text-slate-900 dark:text-white capitalize">
                   {section} ({sectionFields.length})
                 </h2>
               </div>
@@ -163,18 +162,18 @@ async function FieldsContent({ searchParams }: PageProps) {
           ))}
 
           {fields.length === 0 && (
-            <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
-              <AlertCircle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <p className="text-slate-400">No fields configured for this module</p>
-              <button className="mt-4 text-blue-400 hover:text-blue-300 text-sm">
+            <div className="text-center py-12 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <AlertCircle className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-600 dark:text-slate-400">No fields configured for this module</p>
+              <button className="mt-4 text-teal-600 dark:text-teal-400 hover:text-teal-500 dark:hover:text-teal-300 text-sm">
                 Add the first field
               </button>
             </div>
           )}
         </div>
       ) : (
-        <div className="text-center py-12 bg-slate-800/50 border border-slate-700 rounded-xl">
-          <p className="text-slate-400">Select a module to manage its fields</p>
+        <div className="text-center py-12 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+          <p className="text-slate-600 dark:text-slate-400">Select a module to manage its fields</p>
         </div>
       )}
     </div>

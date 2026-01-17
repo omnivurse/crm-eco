@@ -1,9 +1,9 @@
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Plus, 
-  Filter, 
+import {
+  Plus,
+  Filter,
   Search,
   Phone,
   Users,
@@ -54,21 +54,21 @@ function ActivityRow({ activity }: { activity: CrmTaskWithAssignee }) {
   const Icon = ACTIVITY_ICONS[activity.activity_type] || ACTIVITY_ICONS.task;
   const colorClass = ACTIVITY_COLORS[activity.activity_type] || ACTIVITY_COLORS.task;
   const statusClass = STATUS_COLORS[activity.status] || STATUS_COLORS.open;
-  
+
   return (
-    <div className="flex items-center gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition-colors">
+    <div className="flex items-center gap-4 p-4 border-b border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
       <div className={`p-2 rounded-lg ${colorClass}`}>
         {Icon}
       </div>
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-medium text-white truncate">{activity.title}</h3>
+          <h3 className="font-medium text-slate-900 dark:text-white truncate">{activity.title}</h3>
           <Badge variant="outline" className={statusClass}>
             {activity.status.replace('_', ' ')}
           </Badge>
         </div>
-        <div className="flex items-center gap-3 mt-1 text-sm text-slate-400">
+        <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400">
           <span className="capitalize">{activity.activity_type}</span>
           {activity.due_at && (
             <>
@@ -87,7 +87,7 @@ function ActivityRow({ activity }: { activity: CrmTaskWithAssignee }) {
           )}
         </div>
       </div>
-      
+
       <div className="text-sm text-slate-500">
         {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
       </div>
@@ -126,20 +126,20 @@ async function ActivitiesContent({ searchParams }: PageProps) {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400">
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 dark:text-blue-400">
             <Calendar className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Activities</h1>
-            <p className="text-slate-400 mt-0.5">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Activities</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-0.5">
               {total.toLocaleString()} {total === 1 ? 'activity' : 'activities'}
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Button 
-            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md transition-all"
+          <Button
+            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white transition-all"
           >
             <Plus className="w-4 h-4 mr-2" />
             New Activity
@@ -148,28 +148,27 @@ async function ActivitiesContent({ searchParams }: PageProps) {
       </div>
 
       {/* Toolbar with Filters */}
-      <div className="glass-card rounded-2xl p-4 border border-white/10">
+      <div className="glass-card rounded-2xl p-4 border border-slate-200 dark:border-white/10">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
               type="search"
               placeholder="Search activities..."
-              className="pl-11 h-10 rounded-xl bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20"
+              className="pl-11 h-10 rounded-xl bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-teal-500/50 focus:ring-2 focus:ring-teal-500/20"
             />
           </div>
-          
+
           <div className="flex items-center gap-3">
             {/* Activity Type Filters */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-900/50 border border-white/10">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
               <Link
                 href="/crm/activities"
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  !activityType 
-                    ? 'bg-white/10 text-white' 
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${!activityType
+                    ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                  }`}
               >
                 All ({total})
               </Link>
@@ -177,23 +176,22 @@ async function ActivitiesContent({ searchParams }: PageProps) {
                 <Link
                   key={type}
                   href={`/crm/activities?type=${type}`}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    activityType === type
-                      ? 'bg-white/10 text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center gap-1.5 ${activityType === type
+                      ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
+                    }`}
                 >
                   {ACTIVITY_ICONS[type]}
                   <span className="hidden sm:inline capitalize">{type}s</span>
-                  <span className="text-xs text-slate-500">({countByType[type] || 0})</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">({countByType[type] || 0})</span>
                 </Link>
               ))}
             </div>
 
             {/* Status Filter */}
-            <Button 
-              variant="outline" 
-              className="h-10 px-3 rounded-xl bg-slate-900/50 border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            <Button
+              variant="outline"
+              className="h-10 px-3 rounded-xl bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
             >
               <Filter className="w-4 h-4 mr-2" />
               Filters
@@ -203,17 +201,17 @@ async function ActivitiesContent({ searchParams }: PageProps) {
       </div>
 
       {/* Activities List */}
-      <div className="glass-card rounded-2xl border border-white/10 overflow-hidden">
+      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
         {paginatedActivities.length > 0 ? (
           paginatedActivities.map((activity) => (
             <ActivityRow key={activity.id} activity={activity} />
           ))
         ) : (
           <div className="p-12 text-center">
-            <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-1">No activities found</h3>
-            <p className="text-slate-400">
-              {activityType 
+            <Calendar className="w-12 h-12 text-slate-400 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No activities found</h3>
+            <p className="text-slate-500 dark:text-slate-400">
+              {activityType
                 ? `No ${activityType}s match your filters`
                 : 'Create your first activity to get started'}
             </p>
@@ -223,18 +221,18 @@ async function ActivitiesContent({ searchParams }: PageProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="glass-card rounded-xl p-4 border border-white/10 flex items-center justify-between">
-          <p className="text-sm text-slate-400">
-            Showing <span className="text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
-            <span className="text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
-            <span className="text-white font-medium">{total.toLocaleString()}</span> results
+        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
+            <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
+            <span className="text-slate-900 dark:text-white font-medium">{total.toLocaleString()}</span> results
           </p>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              className="h-9 px-3 rounded-lg bg-slate-900/50 border-white/10 text-slate-300 hover:text-white hover:border-white/20 disabled:opacity-50"
+              className="h-9 px-3 rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 disabled:opacity-50"
               disabled={page <= 1}
               asChild
             >
@@ -243,11 +241,11 @@ async function ActivitiesContent({ searchParams }: PageProps) {
                 Previous
               </Link>
             </Button>
-            
+
             <Button
               variant="outline"
               size="sm"
-              className="h-9 px-3 rounded-lg bg-slate-900/50 border-white/10 text-slate-300 hover:text-white hover:border-white/20 disabled:opacity-50"
+              className="h-9 px-3 rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 disabled:opacity-50"
               disabled={page >= totalPages}
               asChild
             >
