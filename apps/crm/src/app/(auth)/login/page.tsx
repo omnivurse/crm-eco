@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Button, Input, Label } from '@crm-eco/ui';
-import { 
-  Heart, 
-  Users, 
-  Shield, 
-  Activity, 
-  Stethoscope, 
+import {
+  Heart,
+  Users,
+  Shield,
+  Activity,
+  Stethoscope,
   HeartHandshake,
   UserCheck,
   HeartPulse,
@@ -29,7 +29,7 @@ import Image from 'next/image';
 // Premium Healthcare Orbit Animation
 function PremiumOrbitAnimation() {
   const [mounted, setMounted] = useState(false);
-  
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -42,7 +42,7 @@ function PremiumOrbitAnimation() {
       <div className="absolute w-[500px] h-[500px] bg-brand-teal-500/10 rounded-full blur-[120px] animate-pulse" />
       <div className="absolute w-[300px] h-[300px] bg-brand-emerald-500/15 rounded-full blur-[80px] animate-[pulse_4s_ease-in-out_infinite]" />
       <div className="absolute w-[200px] h-[200px] bg-brand-teal-400/20 rounded-full blur-[60px] animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
-      
+
       {/* Core nucleus - Healthcare heart */}
       <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-brand-teal-400/30 to-brand-emerald-500/20 backdrop-blur-xl border border-brand-teal-400/40 flex items-center justify-center z-20 shadow-[0_0_60px_20px_rgba(6,155,154,0.3)]">
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-teal-400/20 to-transparent animate-[spin_8s_linear_infinite]" />
@@ -202,7 +202,7 @@ export default function LoginPage() {
 
     try {
       const supabase = createClient();
-      
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -284,20 +284,20 @@ export default function LoginPage() {
         {/* Left Side - Premium Visuals */}
         <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-brand-navy-950">
           {/* Animated gradient background */}
-          <div 
+          <div
             className="absolute inset-0 bg-gradient-to-br from-brand-navy-900 via-brand-navy-950 to-brand-teal-950"
             style={{
               backgroundSize: '400% 400%',
               animation: 'gradient-flow 15s ease infinite',
             }}
           />
-          
+
           {/* Mesh gradient overlay */}
           <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,rgba(6,155,154,0.3),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(2,115,67,0.2),transparent_50%)]" />
-          
+
           {/* Grid pattern */}
           <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
-          
+
           <PremiumOrbitAnimation />
 
           {/* Bottom branding */}
@@ -319,7 +319,7 @@ export default function LoginPage() {
             <div className="text-center lg:text-left">
               <div className="flex justify-center lg:justify-start mb-6">
                 <Image
-                  src="/logo-pif.jpg"
+                  src="/logo.png"
                   alt="Pay It Forward HealthShare"
                   width={200}
                   height={80}
@@ -368,7 +368,7 @@ export default function LoginPage() {
                     <Label htmlFor="password" className="text-brand-navy-700 text-sm font-medium">
                       Password
                     </Label>
-                    <button 
+                    <button
                       type="button"
                       className="text-sm text-brand-teal-600 hover:text-brand-teal-700 transition-colors"
                     >
@@ -403,15 +403,14 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setRememberMe(!rememberMe)}
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                    rememberMe 
-                      ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,155,154,0.3)]' 
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${rememberMe
+                      ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,155,154,0.3)]'
                       : 'border-brand-navy-300 bg-white hover:border-brand-navy-400'
-                  }`}
+                    }`}
                 >
                   {rememberMe && <Square className="w-2.5 h-2.5 text-white fill-current" />}
                 </button>
-                <label 
+                <label
                   onClick={() => setRememberMe(!rememberMe)}
                   className="text-sm text-brand-navy-600 cursor-pointer select-none"
                 >
@@ -419,8 +418,8 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="relative w-full h-14 text-base font-semibold bg-gradient-to-r from-brand-teal-500 to-brand-emerald-500 hover:from-brand-teal-400 hover:to-brand-emerald-400 text-white border-0 rounded-xl transition-all overflow-hidden group"
                 disabled={loading}
               >

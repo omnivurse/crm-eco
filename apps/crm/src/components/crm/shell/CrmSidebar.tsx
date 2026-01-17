@@ -319,10 +319,12 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       {/* Logo / Org Name */}
       <div className="flex items-center h-16 px-4 border-b border-slate-200 dark:border-white/5">
         <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
-          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden gradient-primary p-[1px] group-hover:shadow-lg transition-all duration-300">
-            <div className="w-full h-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-            </div>
+          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300">
+            <img
+              src="/logo.png"
+              alt="Pay It Forward HealthShare"
+              className="w-full h-full object-contain"
+            />
           </div>
           {!collapsed && (
             <div className="min-w-0 animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
