@@ -34,6 +34,7 @@ import {
   Phone,
   Calendar,
   CalendarDays,
+  CalendarCheck,
   Bell,
   Zap,
   GitBranch,
@@ -116,6 +117,9 @@ const iconMap: Record<string, LucideIcon> = {
   'trending-up': TrendingUp,
   'bar-chart': BarChart3,
   'clipboard': ClipboardList,
+  'calendar-check': CalendarCheck,
+  'calendar': Calendar,
+  'inbox': Inbox,
 };
 
 interface NavItem {
