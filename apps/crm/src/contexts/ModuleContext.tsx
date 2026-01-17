@@ -73,19 +73,16 @@ export const TOP_MODULES: {
         { key: 'settings', label: 'Settings', icon: 'settings', href: '/crm/settings' },
     ];
 
-// CRM sidebar navigation items
+// CRM sidebar navigation items - Main record types
 export const CRM_NAV_ITEMS = [
     { key: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', href: '/crm' },
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
     { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/accounts' },
     { key: 'deals', label: 'Deals', icon: 'dollar-sign', href: '/crm/modules/deals' },
+    { key: 'pipeline', label: 'Pipeline', icon: 'trending-up', href: '/crm/pipeline' },
     { key: 'activities', label: 'Activities', icon: 'activity', href: '/crm/activities' },
     { key: 'tasks', label: 'Tasks', icon: 'check-square', href: '/crm/tasks' },
-    { key: 'documents', label: 'Documents', icon: 'file-text', href: '/crm/documents' },
-    { key: 'products', label: 'Products', icon: 'package', href: '/crm/products' },
-    { key: 'quotes', label: 'Quotes', icon: 'file-check', href: '/crm/quotes' },
-    { key: 'invoices', label: 'Invoices', icon: 'receipt', href: '/crm/invoices' },
     { key: 'reports', label: 'Reports', icon: 'pie-chart', href: '/crm/reports' },
 ];
 
@@ -93,32 +90,32 @@ export const CRM_NAV_ITEMS = [
 export const INTEGRATIONS_NAV_ITEMS = [
     { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/integrations' },
     { key: 'email', label: 'Email', icon: 'mail', href: '/crm/integrations/email' },
-    { key: 'sms-voice', label: 'SMS / Voice', icon: 'phone', href: '/crm/integrations/sms-voice' },
+    { key: 'sms-voice', label: 'SMS / Voice', icon: 'phone', href: '/crm/integrations/phone' },
     { key: 'calendar', label: 'Calendar', icon: 'calendar', href: '/crm/integrations/calendar' },
-    { key: 'whatsapp', label: 'WhatsApp', icon: 'message-circle', href: '/crm/integrations/whatsapp' },
-    { key: 'slack', label: 'Slack', icon: 'hash', href: '/crm/integrations/slack' },
+    { key: 'whatsapp', label: 'WhatsApp', icon: 'message-circle', href: '/crm/integrations/chat' },
+    { key: 'video', label: 'Video', icon: 'video', href: '/crm/integrations/video' },
     { key: 'webhooks', label: 'Webhooks', icon: 'webhook', href: '/crm/integrations/webhooks' },
     { key: 'logs', label: 'Logs', icon: 'scroll-text', href: '/crm/integrations/logs' },
 ];
 
 // Communications sidebar navigation items
 export const COMMUNICATIONS_NAV_ITEMS = [
-    { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/communications' },
     { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
-    { key: 'email', label: 'Email', icon: 'mail', href: '/crm/communications/new?type=email' },
-    { key: 'sms', label: 'SMS', icon: 'message-square', href: '/crm/communications/new?type=sms' },
-    { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/communications/templates' },
-    { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', href: '/crm/communications/campaigns' },
+    { key: 'email', label: 'Compose Email', icon: 'mail', href: '/crm/communications/new?type=email' },
+    { key: 'sms', label: 'Send SMS', icon: 'message-square', href: '/crm/communications/new?type=sms' },
+    { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/settings/comms' },
+    { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', href: '/crm/communications' },
 ];
 
-// Revenue sidebar navigation items
+// Revenue sidebar navigation items - Financial focused
 export const REVENUE_NAV_ITEMS = [
     { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/revenue' },
-    { key: 'pipeline', label: 'Pipeline', icon: 'trending-up', href: '/crm/pipeline' },
     { key: 'products', label: 'Products', icon: 'package', href: '/crm/products' },
     { key: 'quotes', label: 'Quotes', icon: 'file-check', href: '/crm/quotes' },
     { key: 'invoices', label: 'Invoices', icon: 'receipt', href: '/crm/invoices' },
+    { key: 'documents', label: 'Documents', icon: 'file-text', href: '/crm/documents' },
     { key: 'forecasting', label: 'Forecasting', icon: 'chart-line', href: '/crm/forecasting' },
+    { key: 'commissions', label: 'Commissions', icon: 'dollar-sign', href: '/crm/commissions' },
 ];
 
 // Operations sidebar navigation items
@@ -128,6 +125,7 @@ export const OPERATIONS_NAV_ITEMS = [
     { key: 'playbooks', label: 'Playbooks', icon: 'book-open', href: '/crm/playbooks' },
     { key: 'enrollment', label: 'Enrollment', icon: 'clipboard-check', href: '/crm/enrollment' },
     { key: 'needs', label: 'Needs', icon: 'heart', href: '/crm/needs' },
+    { key: 'approvals', label: 'Approvals', icon: 'check-circle', href: '/crm/approvals' },
 ];
 
 // Analytics sidebar navigation items  
@@ -162,3 +160,4 @@ export function getNavItemsForModule(module: TopModule) {
         default: return CRM_NAV_ITEMS;
     }
 }
+
