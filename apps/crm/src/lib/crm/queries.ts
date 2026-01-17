@@ -540,6 +540,95 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
   return stats;
 }
 
+export interface AtRiskDeal {
+  id: string;
+  name: string;
+  value: number;
+  stage: string;
+  daysInStage: number;
+  ownerId: string | null;
+  ownerName: string | null;
+  reason: 'stale' | 'overdue_task' | 'no_activity';
+}
+
+export async function getAtRiskDeals(orgId: string, limit: number = 5): Promise<AtRiskDeal[]> {
+  const supabase = await createCrmClient();
+
+  // Get deals module
+  const { data: dealsModule } = await supabase
+    .from('crm_modules')
+    .select('id')
+    .eq('org_id', orgId)
+    .eq('key', 'deals')
+    .single();
+
+  if (!dealsModule) return [];
+
+  // Get deals that have been in the same stage for more than 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+  const { data: records } = await supabase
+    .from('crm_records')
+    .select(`
+      id,
+      data,
+      owner_id,
+      stage_updated_at,
+      profiles:owner_id (full_name)
+    `)
+    .eq('module_id', dealsModule.id)
+    .lt('stage_updated_at', sevenDaysAgo.toISOString())
+    .not('data->stage', 'in', '("Closed Won","Closed Lost","closed_won","closed_lost")')
+    .order('stage_updated_at', { ascending: true })
+    .limit(limit);
+
+  if (!records) return [];
+
+  const now = new Date();
+  return records.map(record => {
+    const data = record.data as Record<string, unknown>;
+    const stageUpdated = record.stage_updated_at ? new Date(record.stage_updated_at) : new Date(record.stage_updated_at || now);
+    const daysInStage = Math.floor((now.getTime() - stageUpdated.getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      id: record.id,
+      name: (data.name || data.deal_name || 'Unnamed Deal') as string,
+      value: (data.value || data.amount || data.deal_value || 0) as number,
+      stage: (data.stage || data.deal_stage || 'Unknown') as string,
+      daysInStage,
+      ownerId: record.owner_id,
+      ownerName: (() => {
+        const profiles = record.profiles as { full_name: string } | { full_name: string }[] | null;
+        if (!profiles) return null;
+        if (Array.isArray(profiles)) return profiles[0]?.full_name || null;
+        return profiles.full_name || null;
+      })(),
+      reason: 'stale' as const,
+    };
+  });
+}
+
+export async function getTodaysTasks(userId: string): Promise<CrmTask[]> {
+  const supabase = await createCrmClient();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const { data } = await supabase
+    .from('crm_tasks')
+    .select('*')
+    .eq('assigned_to', userId)
+    .neq('status', 'completed')
+    .gte('due_at', today.toISOString())
+    .lt('due_at', tomorrow.toISOString())
+    .order('due_at', { ascending: true });
+
+  return (data || []) as CrmTask[];
+}
+
 // ============================================================================
 // Reporting Queries
 // ============================================================================

@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { 
-  Users, 
-  UserPlus, 
-  DollarSign, 
-  Building2, 
+import {
+  Users,
+  UserPlus,
+  DollarSign,
+  Building2,
   ArrowUpRight,
   Clock,
   CheckCircle2,
@@ -17,9 +17,17 @@ import {
   Zap,
   Calendar,
   BarChart3,
+  Sun,
+  Video,
+  Phone,
+  Mail,
+  AlertTriangle,
+  FileCheck,
+  Receipt,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
-import { getCurrentProfile, getModuleStats, getUpcomingTasks, getRecentActivity } from '@/lib/crm/queries';
+import { getCurrentProfile, getModuleStats, getUpcomingTasks, getRecentActivity, getAtRiskDeals, getTodaysTasks, type AtRiskDeal } from '@/lib/crm/queries';
 import type { ModuleStats, CrmTask, CrmAuditLog } from '@/lib/crm/types';
 
 const MODULE_ICONS: Record<string, React.ReactNode> = {
@@ -198,14 +206,233 @@ function ActivityItem({ activity }: { activity: CrmAuditLog }) {
   );
 }
 
+// My Day Section - Today's tasks and meetings
+function MyDaySection({ tasks }: { tasks: CrmTask[] }) {
+  const overdueTasks = tasks.filter(t => t.due_at && new Date(t.due_at) < new Date());
+  const upcomingTasks = tasks.filter(t => !overdueTasks.includes(t));
+
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sun className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">My Day</h2>
+          </div>
+          <span className="text-sm text-slate-500 dark:text-slate-400">
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4">
+        {tasks.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="w-12 h-12 mx-auto mb-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-slate-900 dark:text-white font-medium">All clear!</p>
+            <p className="text-slate-500 text-sm mt-1">No tasks scheduled for today</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Overdue Section */}
+            {overdueTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                    Overdue ({overdueTasks.length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {overdueTasks.slice(0, 3).map((task) => (
+                    <Link
+                      key={task.id}
+                      href={`/crm/tasks?id=${task.id}`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 hover:border-red-300 dark:hover:border-red-500/30 transition-colors"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-red-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{task.title}</p>
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          Due {task.due_at && new Date(task.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upcoming Section */}
+            {upcomingTasks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-4 h-4 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                    Today ({upcomingTasks.length})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {upcomingTasks.slice(0, 5).map((task) => (
+                    <Link
+                      key={task.id}
+                      href={`/crm/tasks?id=${task.id}`}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    >
+                      <div className="w-2 h-2 rounded-full bg-teal-500" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{task.title}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          {task.due_at && new Date(task.due_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 py-3 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-800/30">
+        <Link href="/crm/tasks" className="text-teal-600 dark:text-teal-400 text-sm hover:underline">
+          View all tasks →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// At-Risk Deals Section
+function AtRiskDealsSection({ deals }: { deals: AtRiskDeal[] }) {
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value.toLocaleString()}`;
+  };
+
+  return (
+    <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-gradient-to-r from-red-500/10 to-orange-500/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">At-Risk Deals</h2>
+          </div>
+          <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 rounded-full font-medium">
+            {deals.length} need attention
+          </span>
+        </div>
+      </div>
+
+      <div className="p-4">
+        {deals.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="w-12 h-12 mx-auto mb-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center">
+              <Target className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <p className="text-slate-900 dark:text-white font-medium">Pipeline healthy!</p>
+            <p className="text-slate-500 text-sm mt-1">No stale deals detected</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {deals.map((deal) => (
+              <Link
+                key={deal.id}
+                href={`/crm/r/${deal.id}`}
+                className="block p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors group"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                      {deal.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-1.5 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded">
+                        {deal.stage}
+                      </span>
+                      <span className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {deal.daysInStage}d in stage
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(deal.value)}
+                    </p>
+                    {deal.ownerName && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {deal.ownerName}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 py-3 border-t border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-slate-800/30">
+        <Link href="/crm/pipeline" className="text-teal-600 dark:text-teal-400 text-sm hover:underline">
+          View pipeline →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// Command Center Shortcuts
+function ShortcutsSection() {
+  const shortcuts = [
+    { icon: UserPlus, label: 'New Lead', href: '/crm/modules/leads/new', color: 'from-violet-500 to-purple-600' },
+    { icon: Users, label: 'New Contact', href: '/crm/modules/contacts/new', color: 'from-teal-500 to-cyan-600' },
+    { icon: DollarSign, label: 'New Deal', href: '/crm/modules/deals/new', color: 'from-emerald-500 to-green-600' },
+    { icon: FileCheck, label: 'New Quote', href: '/crm/quotes/new', color: 'from-blue-500 to-indigo-600' },
+    { icon: Receipt, label: 'New Invoice', href: '/crm/invoices/new', color: 'from-amber-500 to-orange-600' },
+    { icon: Upload, label: 'Import', href: '/crm/import', color: 'from-rose-500 to-pink-600' },
+    { icon: Target, label: 'Pipeline', href: '/crm/pipeline', color: 'from-cyan-500 to-blue-600' },
+    { icon: BarChart3, label: 'Reports', href: '/crm/reports', color: 'from-purple-500 to-violet-600' },
+  ];
+
+  return (
+    <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+        Shortcuts
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {shortcuts.map(({ icon: Icon, label, href, color }) => (
+          <Link
+            key={label}
+            href={href}
+            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+          >
+            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} shadow-sm group-hover:scale-110 transition-transform`}>
+              <Icon className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium text-center">{label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 async function DashboardContent() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
-  const [stats, tasks, activity] = await Promise.all([
+  const [stats, tasks, activity, todaysTasks, atRiskDeals] = await Promise.all([
     getModuleStats(profile.organization_id),
     getUpcomingTasks(profile.id, 7),
     getRecentActivity(profile.organization_id, 10),
+    getTodaysTasks(profile.id),
+    getAtRiskDeals(profile.organization_id, 5),
   ]);
 
   const currentHour = new Date().getHours();
@@ -285,42 +512,13 @@ async function DashboardContent() {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <QuickActionCard
-            icon={UserPlus}
-            title="New Lead"
-            description="Add a potential customer"
-            href="/crm/modules/leads/new"
-            gradient="from-violet-500 to-purple-600"
-          />
-          <QuickActionCard
-            icon={Users}
-            title="New Contact"
-            description="Add a contact record"
-            href="/crm/modules/contacts/new"
-            gradient="from-teal-500 to-cyan-600"
-          />
-          <QuickActionCard
-            icon={DollarSign}
-            title="New Deal"
-            description="Create a sales opportunity"
-            href="/crm/modules/deals/new"
-            gradient="from-emerald-500 to-green-600"
-          />
-          <QuickActionCard
-            icon={Upload}
-            title="Import Data"
-            description="Bulk import from CSV"
-            href="/crm/import"
-            gradient="from-amber-500 to-orange-600"
-          />
-        </div>
+      {/* Shortcuts */}
+      <ShortcutsSection />
+
+      {/* My Day & At-Risk Deals */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MyDaySection tasks={todaysTasks} />
+        <AtRiskDealsSection deals={atRiskDeals} />
       </div>
 
       {/* Tasks & Activity */}
