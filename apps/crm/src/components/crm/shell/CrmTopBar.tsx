@@ -114,7 +114,7 @@ export function CrmTopBar({
         {/* Brand - Logo */}
         <Link href="/crm" className="flex items-center gap-2 mr-2 group flex-shrink-0">
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Pay It Forward HealthShare"
             className="h-10 w-auto object-contain"
           />
@@ -209,7 +209,10 @@ export function CrmTopBar({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2">
+            <DropdownMenuItem
+              onClick={() => router.push('/crm/profile')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
               <User className="w-4 h-4 mr-3" />
               My Profile
             </DropdownMenuItem>

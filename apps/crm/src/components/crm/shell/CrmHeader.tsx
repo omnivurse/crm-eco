@@ -14,13 +14,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
-import { 
-  Search, 
-  Command, 
-  Bell, 
-  LogOut, 
-  User, 
-  Settings, 
+import {
+  Search,
+  Command,
+  Bell,
+  LogOut,
+  User,
+  Settings,
   HelpCircle,
   Sparkles,
   Plus,
@@ -117,8 +117,8 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
               className={`
                 pl-11 pr-20 h-11 rounded-xl border transition-all duration-200
                 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500
-                ${searchFocused 
-                  ? 'border-teal-500 dark:border-teal-500/50 ring-2 ring-teal-500/20' 
+                ${searchFocused
+                  ? 'border-teal-500 dark:border-teal-500/50 ring-2 ring-teal-500/20'
                   : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
                 }
               `}
@@ -176,9 +176,9 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
         <ThemeToggle />
 
         {/* Notifications */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="relative h-10 w-10 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-200"
         >
           <Bell className="w-5 h-5" />
@@ -188,8 +188,8 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="flex items-center gap-3 h-10 px-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-200"
             >
               <div className="relative">
@@ -230,11 +230,14 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2.5">
+            <DropdownMenuItem
+              onClick={() => router.push('/crm/profile')}
+              className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2.5"
+            >
               <User className="w-4 h-4 mr-3" />
               My Profile
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => router.push('/crm/settings')}
               className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2.5"
             >
@@ -246,8 +249,8 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
               Help & Support
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-            <DropdownMenuItem 
-              onClick={handleSignOut} 
+            <DropdownMenuItem
+              onClick={handleSignOut}
               className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer py-2.5"
             >
               <LogOut className="w-4 h-4 mr-3" />
