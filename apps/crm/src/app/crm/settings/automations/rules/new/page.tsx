@@ -162,7 +162,7 @@ export default function NewAutomationRulePage() {
   const selectedEvent = EVENT_TYPES.find(e => e.value === triggerConfig.event_type);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
