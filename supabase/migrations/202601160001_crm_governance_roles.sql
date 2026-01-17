@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS crm_roles (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_crm_roles_key ON crm_roles(key);
+CREATE INDEX IF NOT EXISTS idx_crm_roles_key ON crm_roles(key);
 
 -- ============================================================================
 -- CRM USER ROLES TABLE
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS crm_user_roles (
   UNIQUE(user_id, role_id)
 );
 
-CREATE INDEX idx_crm_user_roles_user ON crm_user_roles(user_id);
-CREATE INDEX idx_crm_user_roles_role ON crm_user_roles(role_id);
+CREATE INDEX IF NOT EXISTS idx_crm_user_roles_user ON crm_user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_crm_user_roles_role ON crm_user_roles(role_id);
 
 -- ============================================================================
 -- SEED DEFAULT ROLES
@@ -77,12 +77,14 @@ ALTER TABLE crm_user_roles ENABLE ROW LEVEL SECURITY;
 -- ============================================================================
 
 -- All authenticated users can view roles
+DROP POLICY IF EXISTS "Authenticated users can view CRM roles" ON crm_roles;
 CREATE POLICY "Authenticated users can view CRM roles"
   ON crm_roles FOR SELECT
   TO authenticated
   USING (true);
 
 -- Only admins can insert roles
+DROP POLICY IF EXISTS "Admins can insert CRM roles" ON crm_roles;
 CREATE POLICY "Admins can insert CRM roles"
   ON crm_roles FOR INSERT
   TO authenticated
@@ -92,6 +94,7 @@ CREATE POLICY "Admins can insert CRM roles"
   );
 
 -- Only admins can update roles
+DROP POLICY IF EXISTS "Admins can update CRM roles" ON crm_roles;
 CREATE POLICY "Admins can update CRM roles"
   ON crm_roles FOR UPDATE
   TO authenticated
@@ -101,6 +104,7 @@ CREATE POLICY "Admins can update CRM roles"
   );
 
 -- Only admins can delete non-system roles
+DROP POLICY IF EXISTS "Admins can delete non-system CRM roles" ON crm_roles;
 CREATE POLICY "Admins can delete non-system CRM roles"
   ON crm_roles FOR DELETE
   TO authenticated
@@ -117,6 +121,7 @@ CREATE POLICY "Admins can delete non-system CRM roles"
 -- ============================================================================
 
 -- Admins can view all role assignments; users can view their own
+DROP POLICY IF EXISTS "View CRM user roles" ON crm_user_roles;
 CREATE POLICY "View CRM user roles"
   ON crm_user_roles FOR SELECT
   TO authenticated
@@ -127,6 +132,7 @@ CREATE POLICY "View CRM user roles"
   );
 
 -- Only admins can assign roles
+DROP POLICY IF EXISTS "Admins can assign CRM roles" ON crm_user_roles;
 CREATE POLICY "Admins can assign CRM roles"
   ON crm_user_roles FOR INSERT
   TO authenticated
@@ -136,6 +142,7 @@ CREATE POLICY "Admins can assign CRM roles"
   );
 
 -- Only admins can update role assignments
+DROP POLICY IF EXISTS "Admins can update CRM role assignments" ON crm_user_roles;
 CREATE POLICY "Admins can update CRM role assignments"
   ON crm_user_roles FOR UPDATE
   TO authenticated
@@ -145,6 +152,7 @@ CREATE POLICY "Admins can update CRM role assignments"
   );
 
 -- Only admins can remove role assignments
+DROP POLICY IF EXISTS "Admins can remove CRM role assignments" ON crm_user_roles;
 CREATE POLICY "Admins can remove CRM role assignments"
   ON crm_user_roles FOR DELETE
   TO authenticated

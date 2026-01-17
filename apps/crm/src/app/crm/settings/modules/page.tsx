@@ -11,7 +11,7 @@ function ModuleRow({ module }: { module: CrmModule }) {
       <button className="text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-grab">
         <GripVertical className="w-5 h-5" />
       </button>
-      
+
       <div className="flex-1">
         <div className="flex items-center gap-2">
           <span className="text-slate-900 dark:text-white font-medium">{module.name}</span>
@@ -32,7 +32,7 @@ function ModuleRow({ module }: { module: CrmModule }) {
             <ToggleLeft className="w-8 h-8" />
           )}
         </button>
-        
+
         <Link
           href={`/crm/settings/fields?module=${module.id}`}
           className="p-2 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -40,7 +40,7 @@ function ModuleRow({ module }: { module: CrmModule }) {
         >
           <Pencil className="w-4 h-4" />
         </Link>
-        
+
         {!module.is_system && (
           <button
             className="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
@@ -107,8 +107,8 @@ async function ModulesContent() {
       {/* Help Text */}
       <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          <strong className="text-slate-700 dark:text-slate-300">Tip:</strong> System modules cannot be deleted, 
-          but they can be disabled. Disabling a module hides it from the sidebar but 
+          <strong className="text-slate-700 dark:text-slate-300">Tip:</strong> System modules cannot be deleted,
+          but they can be disabled. Disabling a module hides it from the sidebar but
           preserves all data.
         </p>
       </div>
@@ -129,15 +129,15 @@ function ModulesSkeleton() {
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 bg-slate-800 rounded-lg" />
+          <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg" />
           <div className="space-y-2">
-            <div className="h-8 w-32 bg-slate-800 rounded" />
-            <div className="h-4 w-48 bg-slate-800 rounded" />
+            <div className="h-8 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+            <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
           </div>
         </div>
-        <div className="h-10 w-32 bg-slate-800 rounded-lg" />
+        <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800 rounded-lg" />
       </div>
-      <div className="h-96 bg-slate-800/50 rounded-xl" />
+      <div className="h-96 bg-slate-100 dark:bg-slate-800/50 rounded-xl" />
     </div>
   );
 }

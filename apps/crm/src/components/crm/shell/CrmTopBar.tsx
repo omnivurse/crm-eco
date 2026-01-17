@@ -27,9 +27,20 @@ import {
   ChevronDown,
   Heart,
   Command,
+  UserPlus,
+  Users,
+  Building,
+  DollarSign,
+  CheckSquare,
+  StickyNote,
+  PhoneCall,
+  Calendar,
+  Mail,
+  FileCheck,
+  Receipt,
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
-import { ModuleTabs } from './ModuleTabs';
+import { ZohoModuleBar } from './ZohoModuleBar';
 import { NotificationsPanel } from '../NotificationsPanel';
 import { GlobalSearchOverlay } from '@/components/zoho/GlobalSearchOverlay';
 import { QuickCreateDrawer } from '@/components/zoho/QuickCreateDrawer';
@@ -42,11 +53,11 @@ interface CrmTopBarProps {
   onOpenCommandPalette?: () => void;
 }
 
-export function CrmTopBar({ 
-  modules, 
-  profile, 
+export function CrmTopBar({
+  modules,
+  profile,
   organizationName,
-  onOpenCommandPalette 
+  onOpenCommandPalette
 }: CrmTopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
@@ -113,8 +124,8 @@ export function CrmTopBar({
           </div>
         </Link>
 
-        {/* Module Tabs */}
-        <ModuleTabs modules={modules} />
+        {/* Zoho-style Module Bar */}
+        <ZohoModuleBar />
       </div>
 
       {/* Right Section: Search + Actions */}
@@ -147,7 +158,7 @@ export function CrmTopBar({
         </Button>
 
         {/* Quick Create Button */}
-        <Button 
+        <Button
           size="sm"
           onClick={() => setQuickCreateOpen(true)}
           className="h-9 px-3 rounded-lg bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium shadow-sm"
@@ -163,9 +174,9 @@ export function CrmTopBar({
         <NotificationsPanel />
 
         {/* Settings Gear */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
+        <Button
+          variant="ghost"
+          size="icon"
           className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
           onClick={() => router.push('/crm/settings')}
         >
@@ -175,8 +186,8 @@ export function CrmTopBar({
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
             >
               <Avatar className="w-7 h-7 border border-teal-500/50">
@@ -213,7 +224,7 @@ export function CrmTopBar({
               <User className="w-4 h-4 mr-3" />
               My Profile
             </DropdownMenuItem>
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={() => router.push('/crm/settings')}
               className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
             >
@@ -225,8 +236,8 @@ export function CrmTopBar({
               Help & Support
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-            <DropdownMenuItem 
-              onClick={handleSignOut} 
+            <DropdownMenuItem
+              onClick={handleSignOut}
               className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer py-2"
             >
               <LogOut className="w-4 h-4 mr-3" />

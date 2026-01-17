@@ -26,20 +26,20 @@ export interface CrmModule {
 // CRM Fields
 // ============================================================================
 
-export type FieldType = 
-  | 'text' 
-  | 'textarea' 
-  | 'number' 
-  | 'date' 
-  | 'datetime' 
-  | 'select' 
-  | 'multiselect' 
-  | 'boolean' 
-  | 'email' 
-  | 'phone' 
-  | 'url' 
-  | 'currency' 
-  | 'lookup' 
+export type FieldType =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'date'
+  | 'datetime'
+  | 'select'
+  | 'multiselect'
+  | 'boolean'
+  | 'email'
+  | 'phone'
+  | 'url'
+  | 'currency'
+  | 'lookup'
   | 'user';
 
 export interface FieldValidation {
@@ -62,6 +62,7 @@ export interface CrmField {
   is_system: boolean;
   is_indexed: boolean;
   is_title_field: boolean;
+  is_pinned: boolean; // Starred/pinned fields always show in forms & list views
   options: string[];
   validation: FieldValidation;
   default_value: string | null;
@@ -363,12 +364,12 @@ export interface CrmRelationWithRecords extends CrmRelation {
 // CRM Audit Log
 // ============================================================================
 
-export type AuditAction = 
-  | 'create' 
-  | 'update' 
-  | 'delete' 
-  | 'import' 
-  | 'export' 
+export type AuditAction =
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'import'
+  | 'export'
   | 'bulk_update'
   | 'stage_change'
   | 'approval_request'

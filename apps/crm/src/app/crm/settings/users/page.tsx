@@ -40,7 +40,7 @@ function UserRow({ user }: { user: CrmProfile }) {
           <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
         )}
       </div>
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-slate-900 dark:text-white font-medium">{user.full_name}</span>
@@ -93,7 +93,7 @@ async function UsersContent() {
   }
 
   const allProfiles = await getOrganizationProfiles(profile.organization_id);
-  
+
   // Get all users in org, not just CRM users
   const { createCrmClient } = await import('@/lib/crm/queries');
   const supabase = await createCrmClient();
@@ -195,14 +195,14 @@ function UsersSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-slate-800 rounded-lg" />
+        <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-lg" />
         <div className="space-y-2">
-          <div className="h-8 w-32 bg-slate-800 rounded" />
-          <div className="h-4 w-48 bg-slate-800 rounded" />
+          <div className="h-8 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+          <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
         </div>
       </div>
-      <div className="h-24 bg-slate-800/50 rounded-xl" />
-      <div className="h-64 bg-slate-800/50 rounded-xl" />
+      <div className="h-24 bg-slate-100 dark:bg-slate-800/50 rounded-xl" />
+      <div className="h-64 bg-slate-100 dark:bg-slate-800/50 rounded-xl" />
     </div>
   );
 }
