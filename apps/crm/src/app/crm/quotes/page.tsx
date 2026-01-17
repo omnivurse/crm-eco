@@ -1,3 +1,5 @@
+'use client';
+
 import { FileCheck } from 'lucide-react';
 import { EmptyState } from '@/components/crm/lists';
 
