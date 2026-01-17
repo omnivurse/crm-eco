@@ -175,9 +175,9 @@ export function FieldsSettingsClient({
   const sections = Object.keys(fieldsBySection).sort();
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
+      <div>
         <Link
           href="/settings"
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4"

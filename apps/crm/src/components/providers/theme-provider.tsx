@@ -44,13 +44,17 @@ export function ThemeProvider({
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }, []);
 
-  // Apply theme to document
+  // Apply theme to document - only update if different to avoid flash
   const applyTheme = useCallback((newTheme: Theme) => {
     const root = window.document.documentElement;
     const resolved = newTheme === 'system' ? getSystemTheme() : newTheme;
-    
-    root.classList.remove('light', 'dark');
-    root.classList.add(resolved);
+
+    // Only update DOM if the class is different (prevents flash on initial load)
+    const currentTheme = root.classList.contains('dark') ? 'dark' : 'light';
+    if (currentTheme !== resolved) {
+      root.classList.remove('light', 'dark');
+      root.classList.add(resolved);
+    }
     setResolvedTheme(resolved);
   }, [getSystemTheme]);
 
@@ -131,27 +135,10 @@ export function ThemeProvider({
     }
   }, [supabase, storageKey, applyTheme]);
 
-  // Prevent flash by not rendering until mounted
-  if (!mounted) {
-    return (
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            (function() {
-              var theme = localStorage.getItem('${storageKey}') || '${defaultTheme}';
-              var resolved = theme === 'system' 
-                ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-                : theme;
-              document.documentElement.classList.add(resolved);
-            })();
-          `,
-        }}
-      />
-    );
-  }
-
+  // Always render children - the script in layout.tsx handles initial theme class
+  // This prevents blank page flash while still avoiding hydration mismatch
   return (
-    <ThemeProviderContext.Provider value={{ theme, resolvedTheme, setTheme, isLoading }}>
+    <ThemeProviderContext.Provider value={{ theme, resolvedTheme, setTheme, isLoading: isLoading || !mounted }}>
       {children}
     </ThemeProviderContext.Provider>
   );

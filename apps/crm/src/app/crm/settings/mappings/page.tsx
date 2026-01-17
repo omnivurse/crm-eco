@@ -25,7 +25,7 @@ async function MappingsContent() {
   const moduleMap = new Map(modules.map(m => [m.id, m]));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -142,7 +142,7 @@ export default function MappingsPage() {
 
 function MappingsSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+    <div className="space-y-6 animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 bg-slate-800 rounded-lg" />

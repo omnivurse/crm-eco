@@ -70,7 +70,7 @@ export const TOP_MODULES: {
         { key: 'operations', label: 'Operations', icon: 'settings-2', href: '/crm/operations' },
         { key: 'analytics', label: 'Analytics', icon: 'bar-chart-3', href: '/crm/analytics' },
         { key: 'integrations', label: 'Integrations', icon: 'plug', href: '/crm/integrations' },
-        { key: 'settings', label: 'Settings', icon: 'settings', href: '/crm/settings' },
+        // Settings removed from module bar - accessed via gear icon in header
     ];
 
 // CRM sidebar navigation items - Main record types

@@ -17,7 +17,7 @@ async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
-          } catch {}
+          } catch { }
         },
       },
     }
@@ -32,7 +32,7 @@ export async function PATCH(
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -69,6 +69,55 @@ export async function PATCH(
     }
 
     return NextResponse.json(module);
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, crm_role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile || profile.crm_role !== 'crm_admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Check if module is a system module
+    const { data: existingModule } = await supabase
+      .from('crm_modules')
+      .select('is_system')
+      .eq('id', id)
+      .single();
+
+    if (existingModule?.is_system) {
+      return NextResponse.json({ error: 'System modules cannot be deleted' }, { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('crm_modules')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
