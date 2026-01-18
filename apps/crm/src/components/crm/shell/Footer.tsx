@@ -5,9 +5,7 @@ import {
   BookOpen,
   HelpCircle,
   MessageCircle,
-  ExternalLink,
   Heart,
-  Zap,
 } from 'lucide-react';
 
 export function Footer() {
@@ -19,14 +17,13 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           {/* Logo & Company */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-bold text-slate-900 dark:text-white">
-                CRM<span className="text-teal-500">Eco</span>
-              </span>
-            </div>
+            <Link href="/crm" className="flex items-center gap-2">
+              <img
+                src="/logo.png"
+                alt="Pay It Forward HealthShare"
+                className="h-8 w-auto object-contain"
+              />
+            </Link>
             <span className="text-slate-400 dark:text-slate-600">|</span>
             <span className="text-sm text-slate-500 dark:text-slate-400">
               Empowering your business relationships
@@ -60,7 +57,7 @@ export function Footer() {
 
           {/* Copyright */}
           <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-500">
-            <span>&copy; {currentYear} CRM Eco. All rights reserved.</span>
+            <span>&copy; {currentYear} Pay It Forward HealthShare. All rights reserved.</span>
             <span className="flex items-center gap-1">
               Made with <Heart className="w-3 h-3 text-red-500 fill-current" />
             </span>
