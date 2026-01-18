@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 
-// Use service role for public access
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Force dynamic rendering - this route uses env vars at runtime
+export const dynamic = 'force-dynamic';
+
+// Create Supabase client lazily to avoid build-time errors
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 const bookingSchema = z.object({
   link_id: z.string().uuid(),
@@ -24,6 +29,8 @@ const bookingSchema = z.object({
  * Create a new booking (public, no auth required)
  */
 export async function POST(request: NextRequest) {
+  // Use service role for public access
+  const supabase = getSupabaseClient();
   try {
     const body = await request.json();
     const parsed = bookingSchema.safeParse(body);
