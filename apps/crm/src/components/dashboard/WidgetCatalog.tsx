@@ -6,6 +6,7 @@ import * as LucideIcons from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -60,6 +61,9 @@ export function WidgetCatalog() {
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-xl">Widget Catalog</DialogTitle>
+          <DialogDescription className="text-slate-500 dark:text-slate-400">
+            Browse and add widgets to customize your dashboard
+          </DialogDescription>
         </DialogHeader>
 
         {/* Search */}
