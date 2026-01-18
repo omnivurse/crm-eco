@@ -6,6 +6,7 @@ import {
   HelpCircle,
   MessageCircle,
   Heart,
+  Sparkles,
 } from 'lucide-react';
 
 export function Footer() {
@@ -32,6 +33,13 @@ export function Footer() {
 
           {/* Links */}
           <nav className="flex items-center gap-6">
+            <Link
+              href="/crm/features"
+              className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Features</span>
+            </Link>
             <Link
               href="/crm/learn"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"

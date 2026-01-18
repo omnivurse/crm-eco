@@ -43,9 +43,9 @@ export function ZohoModuleBar() {
         if (pathname.startsWith('/crm/settings')) return 'settings';
         if (pathname.startsWith('/crm/integrations')) return 'integrations';
         if (pathname.startsWith('/crm/analytics') || pathname.startsWith('/crm/reports')) return 'analytics';
-        if (pathname.startsWith('/crm/operations') || pathname.startsWith('/crm/scheduling') || pathname.startsWith('/crm/playbooks') || pathname.startsWith('/crm/enrollment') || pathname.startsWith('/crm/needs')) return 'operations';
-        if (pathname.startsWith('/crm/revenue') || pathname.startsWith('/crm/pipeline') || pathname.startsWith('/crm/quotes') || pathname.startsWith('/crm/invoices') || pathname.startsWith('/crm/forecasting')) return 'revenue';
-        if (pathname.startsWith('/crm/communications') || pathname.startsWith('/crm/inbox')) return 'communications';
+        if (pathname.startsWith('/crm/operations') || pathname.startsWith('/crm/scheduling') || pathname.startsWith('/crm/playbooks') || pathname.startsWith('/crm/enrollment') || pathname.startsWith('/crm/needs') || pathname.startsWith('/crm/approvals') || pathname.startsWith('/crm/vendors')) return 'operations';
+        if (pathname.startsWith('/crm/revenue') || pathname.startsWith('/crm/pipeline') || pathname.startsWith('/crm/quotes') || pathname.startsWith('/crm/invoices') || pathname.startsWith('/crm/forecasting') || pathname.startsWith('/crm/commissions')) return 'revenue';
+        if (pathname.startsWith('/crm/communications') || pathname.startsWith('/crm/inbox') || pathname.startsWith('/crm/campaigns') || pathname.startsWith('/crm/sequences') || pathname.startsWith('/crm/email')) return 'communications';
         return 'crm';
     };
 

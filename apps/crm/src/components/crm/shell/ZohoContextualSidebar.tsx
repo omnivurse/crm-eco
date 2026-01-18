@@ -9,6 +9,7 @@ import {
     UserPlus,
     Users,
     Building,
+    Building2,
     DollarSign,
     Activity,
     CheckSquare,
@@ -43,6 +44,12 @@ import {
     ChevronLeft,
     ChevronRight,
     Video,
+    Repeat,
+    FolderOpen,
+    FileSignature,
+    Globe,
+    FileUp,
+    GitBranch,
     type LucideIcon,
 } from 'lucide-react';
 import { useModule, getNavItemsForModule, TopModule } from '@/contexts/ModuleContext';
@@ -53,6 +60,7 @@ const iconMap: Record<string, LucideIcon> = {
     'user-plus': UserPlus,
     'users': Users,
     'building': Building,
+    'building-2': Building2,
     'dollar-sign': DollarSign,
     'activity': Activity,
     'check-square': CheckSquare,
@@ -86,6 +94,12 @@ const iconMap: Record<string, LucideIcon> = {
     'upload': Upload,
     'settings': Settings,
     'video': Video,
+    'repeat': Repeat,
+    'folder': FolderOpen,
+    'file-signature': FileSignature,
+    'globe': Globe,
+    'file-up': FileUp,
+    'git-branch': GitBranch,
 };
 
 function getIcon(iconName: string): LucideIcon {
@@ -111,13 +125,14 @@ export function ZohoContextualSidebar({ isOpen, onToggle }: ZohoContextualSideba
         // Analytics & Reports
         if (pathname.startsWith('/crm/analytics')) return 'analytics';
 
-        // Operations: scheduling, playbooks, enrollment, needs, approvals
+        // Operations: scheduling, playbooks, enrollment, needs, approvals, vendors
         if (pathname.startsWith('/crm/operations') ||
             pathname.startsWith('/crm/scheduling') ||
             pathname.startsWith('/crm/playbooks') ||
             pathname.startsWith('/crm/enrollment') ||
             pathname.startsWith('/crm/needs') ||
-            pathname.startsWith('/crm/approvals')) return 'operations';
+            pathname.startsWith('/crm/approvals') ||
+            pathname.startsWith('/crm/vendors')) return 'operations';
 
         // Revenue: products, quotes, invoices, documents, forecasting, commissions, revenue overview
         if (pathname.startsWith('/crm/revenue') ||
@@ -128,9 +143,11 @@ export function ZohoContextualSidebar({ isOpen, onToggle }: ZohoContextualSideba
             pathname.startsWith('/crm/forecasting') ||
             pathname.startsWith('/crm/commissions')) return 'revenue';
 
-        // Communications: inbox, communications, campaigns
+        // Communications: inbox, communications, campaigns, email, sequences
         if (pathname.startsWith('/crm/communications') ||
             pathname.startsWith('/crm/campaigns') ||
+            pathname.startsWith('/crm/sequences') ||
+            pathname.startsWith('/crm/email') ||
             pathname.startsWith('/crm/inbox')) return 'communications';
 
         // Default to CRM for: dashboard, modules (leads/contacts/deals), accounts, pipeline, activities, tasks, reports

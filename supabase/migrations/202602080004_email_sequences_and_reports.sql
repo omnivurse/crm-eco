@@ -193,8 +193,38 @@ CREATE INDEX idx_scheduled_reports_next ON crm_scheduled_reports(next_send_at) W
 -- SECTION 3: Activity Calendar
 -- ============================================================================
 
--- Activities table (if not exists - extends crm_activities)
--- Adding calendar-specific fields
+-- Activities table - Create if not exists
+CREATE TABLE IF NOT EXISTS crm_activities (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  record_id uuid REFERENCES crm_records(id) ON DELETE CASCADE,
+  module_id uuid REFERENCES crm_modules(id) ON DELETE SET NULL,
+  activity_type text NOT NULL CHECK (activity_type IN ('call', 'meeting', 'task', 'email', 'event', 'note')),
+  subject text NOT NULL,
+  description text,
+  status text DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'in_progress', 'completed', 'cancelled')),
+  priority text DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
+  due_date timestamptz,
+  start_time timestamptz,
+  end_time timestamptz,
+  duration_minutes int,
+  assigned_to uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  completed_at timestamptz,
+  completed_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_crm_activities_org ON crm_activities(org_id);
+CREATE INDEX IF NOT EXISTS idx_crm_activities_record ON crm_activities(record_id);
+CREATE INDEX IF NOT EXISTS idx_crm_activities_assigned ON crm_activities(assigned_to);
+CREATE INDEX IF NOT EXISTS idx_crm_activities_due ON crm_activities(due_date) WHERE status = 'scheduled';
+
+COMMENT ON TABLE crm_activities IS 'CRM activities including calls, meetings, tasks, and events';
+
+-- Adding calendar-specific fields to activities
 
 ALTER TABLE crm_activities
 ADD COLUMN IF NOT EXISTS all_day boolean DEFAULT false,
@@ -224,8 +254,8 @@ CREATE TABLE IF NOT EXISTS crm_recent_views (
   UNIQUE(user_id, record_id)
 );
 
-CREATE INDEX idx_recent_views_user ON crm_recent_views(user_id, viewed_at DESC);
-CREATE INDEX idx_recent_views_record ON crm_recent_views(record_id);
+CREATE INDEX IF NOT EXISTS idx_recent_views_user ON crm_recent_views(user_id, viewed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_recent_views_record ON crm_recent_views(record_id);
 
 -- Function to upsert recent view
 CREATE OR REPLACE FUNCTION upsert_recent_view(
@@ -267,15 +297,18 @@ ALTER TABLE crm_scheduled_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crm_recent_views ENABLE ROW LEVEL SECURITY;
 
 -- Sequences policies
+DROP POLICY IF EXISTS "Users can view their org sequences" ON email_sequences;
 CREATE POLICY "Users can view their org sequences"
 ON email_sequences FOR SELECT
 USING (org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can manage their org sequences" ON email_sequences;
 CREATE POLICY "Users can manage their org sequences"
 ON email_sequences FOR ALL
 USING (org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid()));
 
 -- Steps policies (inherit from sequence)
+DROP POLICY IF EXISTS "Users can view sequence steps" ON email_sequence_steps;
 CREATE POLICY "Users can view sequence steps"
 ON email_sequence_steps FOR SELECT
 USING (sequence_id IN (
@@ -283,6 +316,7 @@ USING (sequence_id IN (
   WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
 ));
 
+DROP POLICY IF EXISTS "Users can manage sequence steps" ON email_sequence_steps;
 CREATE POLICY "Users can manage sequence steps"
 ON email_sequence_steps FOR ALL
 USING (sequence_id IN (
@@ -291,6 +325,7 @@ USING (sequence_id IN (
 ));
 
 -- Enrollments policies
+DROP POLICY IF EXISTS "Users can view their org enrollments" ON email_sequence_enrollments;
 CREATE POLICY "Users can view their org enrollments"
 ON email_sequence_enrollments FOR SELECT
 USING (sequence_id IN (
@@ -298,6 +333,7 @@ USING (sequence_id IN (
   WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
 ));
 
+DROP POLICY IF EXISTS "Users can manage their org enrollments" ON email_sequence_enrollments;
 CREATE POLICY "Users can manage their org enrollments"
 ON email_sequence_enrollments FOR ALL
 USING (sequence_id IN (
@@ -306,6 +342,7 @@ USING (sequence_id IN (
 ));
 
 -- Reports policies
+DROP POLICY IF EXISTS "Users can view their org reports" ON crm_reports;
 CREATE POLICY "Users can view their org reports"
 ON crm_reports FOR SELECT
 USING (
@@ -313,6 +350,7 @@ USING (
   OR is_shared = true
 );
 
+DROP POLICY IF EXISTS "Users can manage their own reports" ON crm_reports;
 CREATE POLICY "Users can manage their own reports"
 ON crm_reports FOR ALL
 USING (
@@ -320,6 +358,7 @@ USING (
 );
 
 -- Scheduled reports policies
+DROP POLICY IF EXISTS "Users can view scheduled reports" ON crm_scheduled_reports;
 CREATE POLICY "Users can view scheduled reports"
 ON crm_scheduled_reports FOR SELECT
 USING (report_id IN (
@@ -327,6 +366,7 @@ USING (report_id IN (
   WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
 ));
 
+DROP POLICY IF EXISTS "Users can manage scheduled reports" ON crm_scheduled_reports;
 CREATE POLICY "Users can manage scheduled reports"
 ON crm_scheduled_reports FOR ALL
 USING (report_id IN (
@@ -334,16 +374,19 @@ USING (report_id IN (
   WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
 ));
 
--- Recent views policies
+-- Recent views policies (drop if exists to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own recent views" ON crm_recent_views;
 CREATE POLICY "Users can view their own recent views"
 ON crm_recent_views FOR SELECT
 USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can manage their own recent views" ON crm_recent_views;
 CREATE POLICY "Users can manage their own recent views"
 ON crm_recent_views FOR ALL
 USING (user_id = auth.uid());
 
 -- Step executions policies
+DROP POLICY IF EXISTS "Users can view step executions" ON email_sequence_step_executions;
 CREATE POLICY "Users can view step executions"
 ON email_sequence_step_executions FOR SELECT
 USING (enrollment_id IN (
@@ -351,3 +394,17 @@ USING (enrollment_id IN (
   JOIN email_sequences s ON e.sequence_id = s.id
   WHERE s.org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
 ));
+
+-- Activities policies
+ALTER TABLE crm_activities ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view their org activities" ON crm_activities;
+CREATE POLICY "Users can view their org activities"
+ON crm_activities FOR SELECT
+USING (org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "Users can manage their org activities" ON crm_activities;
+CREATE POLICY "Users can manage their org activities"
+ON crm_activities FOR ALL
+USING (org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid()));
+
