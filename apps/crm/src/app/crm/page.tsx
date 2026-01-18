@@ -38,10 +38,17 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const MODULE_GRADIENTS: Record<string, string> = {
-  contacts: 'from-teal-500/20 to-cyan-500/10',
-  leads: 'from-violet-500/20 to-purple-500/10',
-  deals: 'from-emerald-500/20 to-green-500/10',
-  accounts: 'from-amber-500/20 to-orange-500/10',
+  contacts: 'from-teal-500 to-cyan-400',
+  leads: 'from-violet-500 to-purple-400',
+  deals: 'from-emerald-500 to-green-400',
+  accounts: 'from-amber-500 to-orange-400',
+};
+
+const MODULE_BG_GRADIENTS: Record<string, string> = {
+  contacts: 'from-teal-50 via-cyan-50/50 to-white dark:from-teal-900/20 dark:via-cyan-900/10 dark:to-transparent',
+  leads: 'from-violet-50 via-purple-50/50 to-white dark:from-violet-900/20 dark:via-purple-900/10 dark:to-transparent',
+  deals: 'from-emerald-50 via-green-50/50 to-white dark:from-emerald-900/20 dark:via-green-900/10 dark:to-transparent',
+  accounts: 'from-amber-50 via-orange-50/50 to-white dark:from-amber-900/20 dark:via-orange-900/10 dark:to-transparent',
 };
 
 const MODULE_COLORS: Record<string, string> = {
@@ -52,26 +59,27 @@ const MODULE_COLORS: Record<string, string> = {
 };
 
 const MODULE_BORDER_COLORS: Record<string, string> = {
-  contacts: 'border-teal-500/30 hover:border-teal-500/50',
-  leads: 'border-violet-500/30 hover:border-violet-500/50',
-  deals: 'border-emerald-500/30 hover:border-emerald-500/50',
-  accounts: 'border-amber-500/30 hover:border-amber-500/50',
+  contacts: 'border-teal-200 dark:border-teal-500/30 hover:border-teal-400 dark:hover:border-teal-500/50',
+  leads: 'border-violet-200 dark:border-violet-500/30 hover:border-violet-400 dark:hover:border-violet-500/50',
+  deals: 'border-emerald-200 dark:border-emerald-500/30 hover:border-emerald-400 dark:hover:border-emerald-500/50',
+  accounts: 'border-amber-200 dark:border-amber-500/30 hover:border-amber-400 dark:hover:border-amber-500/50',
 };
 
 function ModuleCard({ stat, index }: { stat: ModuleStats; index: number }) {
   const icon = MODULE_ICONS[stat.moduleKey] || <Users className="w-6 h-6" />;
-  const gradient = MODULE_GRADIENTS[stat.moduleKey] || 'from-teal-500/20 to-cyan-500/10';
+  const gradient = MODULE_GRADIENTS[stat.moduleKey] || 'from-teal-500 to-cyan-400';
+  const bgGradient = MODULE_BG_GRADIENTS[stat.moduleKey] || 'from-teal-50 to-white dark:from-teal-900/20 dark:to-transparent';
   const color = MODULE_COLORS[stat.moduleKey] || 'text-teal-600 dark:text-teal-400';
-  const borderColor = MODULE_BORDER_COLORS[stat.moduleKey] || 'border-teal-500/30';
-  
+  const borderColor = MODULE_BORDER_COLORS[stat.moduleKey] || 'border-teal-200 dark:border-teal-500/30';
+
   return (
     <Link
       href={`/crm/modules/${stat.moduleKey}`}
       className={`
         group relative overflow-hidden rounded-2xl p-6 
-        bg-gradient-to-br ${gradient} glass-card
-        border ${borderColor}
-        transition-all duration-300 hover:scale-[1.02]
+        bg-gradient-to-br ${bgGradient}
+        border-2 ${borderColor}
+        transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
       `}
       style={{ animationDelay: `${index * 100}ms` }}
     >
@@ -82,14 +90,14 @@ function ModuleCard({ stat, index }: { stat: ModuleStats; index: number }) {
 
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-4">
-          <div className={`p-3 rounded-xl bg-white/50 dark:bg-slate-900/50 ${color}`}>
-            {icon}
+          <div className={`p-3 rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}>
+            <div className="text-white">{icon}</div>
           </div>
           <ArrowUpRight className="w-5 h-5 text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300" />
         </div>
-        
+
         <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{stat.moduleName}</h3>
-        
+
         <div className="flex items-baseline gap-3">
           <span className="text-4xl font-bold text-slate-900 dark:text-white tracking-tight">
             {stat.totalRecords.toLocaleString()}
@@ -101,23 +109,23 @@ function ModuleCard({ stat, index }: { stat: ModuleStats; index: number }) {
             </span>
           )}
         </div>
-        
+
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-2">Total records</p>
       </div>
     </Link>
   );
 }
 
-function QuickActionCard({ 
-  icon: Icon, 
-  title, 
-  description, 
-  href, 
-  gradient 
-}: { 
-  icon: React.ElementType; 
-  title: string; 
-  description: string; 
+function QuickActionCard({
+  icon: Icon,
+  title,
+  description,
+  href,
+  gradient
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
   href: string;
   gradient: string;
 }) {
@@ -140,7 +148,7 @@ function QuickActionCard({
 
 function TaskItem({ task }: { task: CrmTask }) {
   const isOverdue = task.due_at && new Date(task.due_at) < new Date();
-  const isDueSoon = task.due_at && !isOverdue && 
+  const isDueSoon = task.due_at && !isOverdue &&
     new Date(task.due_at) < new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   const statusConfig = {
@@ -150,10 +158,10 @@ function TaskItem({ task }: { task: CrmTask }) {
     normal: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-500/10' },
   };
 
-  const status = task.status === 'completed' ? 'completed' 
-    : isOverdue ? 'overdue' 
-    : isDueSoon ? 'soon' 
-    : 'normal';
+  const status = task.status === 'completed' ? 'completed'
+    : isOverdue ? 'overdue'
+      : isDueSoon ? 'soon'
+        : 'normal';
 
   const { icon: StatusIcon, color, bg } = statusConfig[status];
 
@@ -212,14 +220,16 @@ function MyDaySection({ tasks }: { tasks: CrmTask[] }) {
   const upcomingTasks = tasks.filter(t => !overdueTasks.includes(t));
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+    <div className="bg-white dark:bg-slate-900/50 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-gradient-to-r from-amber-50 to-orange-50/50 dark:from-amber-900/10 dark:to-orange-900/5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sun className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
+              <Sun className="w-4 h-4 text-white" />
+            </div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">My Day</h2>
           </div>
-          <span className="text-sm text-slate-500 dark:text-slate-400">
+          <span className="text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-500/10 px-3 py-1 rounded-full">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </span>
         </div>
@@ -315,14 +325,16 @@ function AtRiskDealsSection({ deals }: { deals: AtRiskDeal[] }) {
   };
 
   return (
-    <div className="glass-card rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-gradient-to-r from-red-500/10 to-orange-500/10">
+    <div className="bg-white dark:bg-slate-900/50 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-sm">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-white/5 bg-gradient-to-r from-red-50 to-orange-50/50 dark:from-red-900/10 dark:to-orange-900/5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 shadow-md">
+              <AlertTriangle className="w-4 h-4 text-white" />
+            </div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">At-Risk Deals</h2>
           </div>
-          <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 rounded-full font-medium">
+          <span className="text-xs px-2.5 py-1 bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 rounded-full font-semibold">
             {deals.length} need attention
           </span>
         </div>
@@ -400,22 +412,24 @@ function ShortcutsSection() {
   ];
 
   return (
-    <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-        <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+    <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+      <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-5 flex items-center gap-2">
+        <div className="p-1.5 rounded-lg bg-amber-100 dark:bg-amber-500/20">
+          <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        </div>
         Shortcuts
       </h2>
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4">
         {shortcuts.map(({ icon: Icon, label, href, color }) => (
           <Link
             key={label}
             href={href}
-            className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+            className="flex flex-col items-center gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group"
           >
-            <div className={`p-2.5 rounded-xl bg-gradient-to-br ${color} shadow-sm group-hover:scale-110 transition-transform`}>
+            <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-200`}>
               <Icon className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium text-center">{label}</span>
+            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium text-center group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{label}</span>
           </Link>
         ))}
       </div>
@@ -456,10 +470,10 @@ async function DashboardContent() {
             Here&apos;s what&apos;s happening with your CRM today.
           </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="border-slate-300 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20"
             asChild
           >
@@ -468,7 +482,7 @@ async function DashboardContent() {
               View Reports
             </Link>
           </Button>
-          <Button 
+          <Button
             className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm hover:shadow-md transition-all"
             asChild
           >
@@ -592,42 +606,44 @@ async function DashboardContent() {
       </div>
 
       {/* Performance Overview */}
-      <div className="glass-card rounded-2xl p-6 border border-slate-200 dark:border-white/10">
+      <div className="bg-white dark:bg-slate-900/50 rounded-2xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-500/20">
+              <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Performance Overview</h2>
           </div>
-          <select className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500/50">
+          <select className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer">
             <option>Last 7 days</option>
             <option>Last 30 days</option>
             <option>Last 90 days</option>
           </select>
         </div>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Leads Created</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">-</p>
-            <p className="text-emerald-600 dark:text-emerald-400 text-xs mt-1 flex items-center gap-1">
+          <div className="p-5 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50/50 dark:from-violet-900/20 dark:to-purple-900/10 border border-violet-200 dark:border-violet-500/20">
+            <p className="text-violet-600 dark:text-violet-400 text-sm font-medium mb-1">Leads Created</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">-</p>
+            <p className="text-violet-500 dark:text-violet-400 text-xs mt-2 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
-              Import data to see metrics
+              Import data to see
             </p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Conversion Rate</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">-</p>
-            <p className="text-slate-500 text-xs mt-1">Lead to Contact</p>
+          <div className="p-5 rounded-xl bg-gradient-to-br from-teal-50 to-cyan-50/50 dark:from-teal-900/20 dark:to-cyan-900/10 border border-teal-200 dark:border-teal-500/20">
+            <p className="text-teal-600 dark:text-teal-400 text-sm font-medium mb-1">Conversion Rate</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">-%</p>
+            <p className="text-slate-500 text-xs mt-2">Lead to Contact</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Deals Closed</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">-</p>
-            <p className="text-slate-500 text-xs mt-1">This period</p>
+          <div className="p-5 rounded-xl bg-gradient-to-br from-emerald-50 to-green-50/50 dark:from-emerald-900/20 dark:to-green-900/10 border border-emerald-200 dark:border-emerald-500/20">
+            <p className="text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-1">Deals Closed</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">-</p>
+            <p className="text-slate-500 text-xs mt-2">This period</p>
           </div>
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Revenue</p>
-            <p className="text-2xl font-bold text-slate-900 dark:text-white">$-</p>
-            <p className="text-slate-500 text-xs mt-1">This period</p>
+          <div className="p-5 rounded-xl bg-gradient-to-br from-amber-50 to-orange-50/50 dark:from-amber-900/20 dark:to-orange-900/10 border border-amber-200 dark:border-amber-500/20">
+            <p className="text-amber-600 dark:text-amber-400 text-sm font-medium mb-1">Revenue</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white">$-</p>
+            <p className="text-slate-500 text-xs mt-2">This period</p>
           </div>
         </div>
       </div>
@@ -658,17 +674,17 @@ function DashboardSkeleton() {
           <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
       </div>
-      
+
       {/* Stats grid skeleton */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-44 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
         ))}
       </div>
-      
+
       {/* Quick actions skeleton */}
       <div className="h-32 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
-      
+
       {/* Tasks & Activity skeleton */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="h-96 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
