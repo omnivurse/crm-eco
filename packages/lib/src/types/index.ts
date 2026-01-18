@@ -32,6 +32,20 @@ export type {
   BillingStatus,
   CommissionTransactionStatus,
   CommissionPayoutStatus,
+  // Vendor management types
+  Vendor,
+  VendorInsert,
+  VendorUpdate,
+  VendorFile,
+  VendorFileInsert,
+  VendorFileUpdate,
+  VendorFileRow,
+  VendorFileRowInsert,
+  VendorChange,
+  VendorChangeInsert,
+  VendorConnector,
+  VendorConnectorInsert,
+  VendorConnectorUpdate,
 } from './database';
 
 // Re-export common types for convenience

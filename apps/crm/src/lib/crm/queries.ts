@@ -503,13 +503,13 @@ export async function getImportJob(jobId: string): Promise<CrmImportJob | null> 
 
 export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
   const supabase = await createCrmClient();
-  
+
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const { data: modules } = await supabase
     .from('crm_modules')
-    .select('id, key, name')
+    .select('id, key, name, name_plural')
     .eq('org_id', orgId)
     .eq('is_enabled', true);
 
@@ -531,7 +531,7 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
 
     stats.push({
       moduleKey: module.key,
-      moduleName: module.name,
+      moduleName: module.name_plural || module.name + 's',
       totalRecords: total || 0,
       createdThisWeek: thisWeek || 0,
     });

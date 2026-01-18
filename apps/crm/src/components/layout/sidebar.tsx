@@ -65,6 +65,12 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    title: 'Operations',
+    items: [
+      { name: 'Vendors', href: '/vendors', icon: Building2, roles: ['owner', 'admin', 'staff'] },
+    ],
+  },
+  {
     title: 'Admin',
     items: [
       { name: 'Settings', href: '/settings', icon: Settings, roles: ['owner', 'admin'] },

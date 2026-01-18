@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Button, Input, Label } from '@crm-eco/ui';
 import {
-  Heart,
   Users,
   Shield,
   Activity,
@@ -20,7 +19,6 @@ import {
   Mail,
   Square,
   Sparkles,
-  Star,
   Zap
 } from 'lucide-react';
 import Link from 'next/link';
@@ -43,11 +41,17 @@ function PremiumOrbitAnimation() {
       <div className="absolute w-[300px] h-[300px] bg-brand-emerald-500/15 rounded-full blur-[80px] animate-[pulse_4s_ease-in-out_infinite]" />
       <div className="absolute w-[200px] h-[200px] bg-brand-teal-400/20 rounded-full blur-[60px] animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
 
-      {/* Core nucleus - Healthcare heart */}
+      {/* Core nucleus - Company Logo */}
       <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-brand-teal-400/30 to-brand-emerald-500/20 backdrop-blur-xl border border-brand-teal-400/40 flex items-center justify-center z-20 shadow-[0_0_60px_20px_rgba(6,155,154,0.3)]">
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-teal-400/20 to-transparent animate-[spin_8s_linear_infinite]" />
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-teal-400 to-brand-emerald-500 flex items-center justify-center shadow-[0_0_30px_10px_rgba(6,155,154,0.4)]">
-          <Heart className="w-7 h-7 text-white animate-[pulse_1.5s_ease-in-out_infinite]" />
+        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-[0_0_30px_10px_rgba(6,155,154,0.4)] overflow-hidden">
+          <Image
+            src="/logo-icon.png"
+            alt="Pay It Forward"
+            width={48}
+            height={48}
+            className="w-12 h-12 object-contain animate-[pulse_2s_ease-in-out_infinite]"
+          />
         </div>
       </div>
 
