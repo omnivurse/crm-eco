@@ -10,12 +10,16 @@ import type { WebhookHandler, WebhookResult, WebhookContext } from '../types';
 class StripeWebhookHandler implements WebhookHandler {
   readonly providerId = 'stripe';
 
-  private stripe: Stripe;
+  private _stripe: Stripe | null = null;
 
-  constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: '2024-12-18.acacia',
-    });
+  private get stripe(): Stripe {
+    if (!this._stripe) {
+      const apiKey = process.env.STRIPE_SECRET_KEY || 'sk_placeholder';
+      this._stripe = new Stripe(apiKey, {
+        apiVersion: '2025-12-15.clover',
+      });
+    }
+    return this._stripe;
   }
 
   async verifySignature(
@@ -162,6 +166,9 @@ class StripeWebhookHandler implements WebhookHandler {
     context: WebhookContext
   ): Promise<WebhookResult> {
     const { member_id, plan_id } = subscription.metadata;
+    // Access subscription dates - API structure may vary by version
+    const subAny = subscription as unknown as Record<string, unknown>;
+    const currentPeriodEnd = (subAny.current_period_end as number) || Math.floor(Date.now() / 1000);
 
     return {
       success: true,
@@ -173,7 +180,7 @@ class StripeWebhookHandler implements WebhookHandler {
         customerId: subscription.customer,
         memberId: member_id,
         planId: plan_id,
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+        currentPeriodEnd: new Date(currentPeriodEnd * 1000).toISOString(),
       },
     };
   }
@@ -183,6 +190,9 @@ class StripeWebhookHandler implements WebhookHandler {
     context: WebhookContext
   ): Promise<WebhookResult> {
     const { member_id } = subscription.metadata;
+    // Access subscription dates - API structure may vary by version
+    const subAny = subscription as unknown as Record<string, unknown>;
+    const currentPeriodEnd = (subAny.current_period_end as number) || Math.floor(Date.now() / 1000);
 
     // Update member subscription status if linked
     if (member_id && context.supabase) {
@@ -190,7 +200,7 @@ class StripeWebhookHandler implements WebhookHandler {
         .from('members')
         .update({
           subscription_status: subscription.status,
-          subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          subscription_current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', member_id);

@@ -319,14 +319,15 @@ export function CampaignComposer({
           <div
             contentEditable
             onInput={handleContentChange}
-            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+            dangerouslySetInnerHTML={{ __html: bodyHtml || '<p class="text-slate-400">Start typing your email content...</p>' }}
             className={cn(
               'min-h-[300px] p-4 border border-slate-200 dark:border-slate-700 rounded-b-lg',
               'bg-white dark:bg-slate-900/50 outline-none focus:ring-2 focus:ring-teal-500/20',
               'prose dark:prose-invert max-w-none',
-              '[&[contenteditable]]:focus:outline-none'
+              '[&[contenteditable]]:focus:outline-none',
+              'empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400'
             )}
-            placeholder="Start typing your email content..."
+            data-placeholder="Start typing your email content..."
           />
         )}
       </div>

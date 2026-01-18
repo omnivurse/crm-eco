@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,6 +14,14 @@ import {
 import { Checkbox } from '@crm-eco/ui/components/checkbox';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { Input } from '@crm-eco/ui/components/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@crm-eco/ui/components/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,7 +47,11 @@ import {
   Phone,
   Mail,
   CheckSquare,
+  Loader2,
+  Check,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface RecordTableProps {
   records: CrmRecord[];
@@ -55,6 +67,175 @@ interface RecordTableProps {
   onRowClick?: (recordId: string) => void;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
+  enableInlineEdit?: boolean;
+  onRecordUpdate?: (recordId: string, updates: Record<string, unknown>) => Promise<void>;
+}
+
+interface EditingCell {
+  recordId: string;
+  field: string;
+  value: unknown;
+}
+
+// Inline editor component for different field types
+function InlineEditor({
+  field,
+  value,
+  onSave,
+  onCancel,
+  options,
+}: {
+  field: CrmField | null;
+  value: unknown;
+  onSave: (value: unknown) => void;
+  onCancel: () => void;
+  options?: string[];
+}) {
+  const [editValue, setEditValue] = useState(value ?? '');
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave(editValue);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      onCancel();
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
+  const fieldType = field?.type || 'text';
+
+  // Select field (status is a special system field that behaves like select)
+  if (fieldType === 'select' || (fieldType as string) === 'status' || options) {
+    const selectOptions = options || (field?.options as unknown as { choices?: string[] })?.choices || field?.options || [];
+    return (
+      <div className="flex items-center gap-1">
+        <Select
+          value={String(editValue)}
+          onValueChange={(v) => {
+            setEditValue(v);
+            onSave(v);
+          }}
+        >
+          <SelectTrigger className="h-8 text-sm w-full min-w-[120px]">
+            <SelectValue placeholder="Select..." />
+          </SelectTrigger>
+          <SelectContent>
+            {selectOptions.map((opt: string) => (
+              <SelectItem key={opt} value={opt}>
+                {opt}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCancel}
+          className="h-7 w-7 flex-shrink-0"
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  // Number field
+  if (fieldType === 'number' || fieldType === 'currency') {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          ref={inputRef}
+          type="number"
+          value={String(editValue)}
+          onChange={(e) => setEditValue(e.target.value ? Number(e.target.value) : '')}
+          onKeyDown={handleKeyDown}
+          onBlur={handleSave}
+          className="h-8 text-sm w-full"
+          disabled={saving}
+        />
+        {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      </div>
+    );
+  }
+
+  // Date field
+  if (fieldType === 'date' || fieldType === 'datetime') {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          ref={inputRef}
+          type="date"
+          value={String(editValue).split('T')[0] || ''}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleSave}
+          className="h-8 text-sm w-full"
+          disabled={saving}
+        />
+        {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      </div>
+    );
+  }
+
+  // Boolean/Checkbox field
+  if (fieldType === 'boolean' || (fieldType as string) === 'checkbox') {
+    return (
+      <div className="flex items-center gap-2">
+        <Checkbox
+          checked={Boolean(editValue)}
+          onCheckedChange={(checked) => {
+            setEditValue(checked);
+            onSave(checked);
+          }}
+        />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCancel}
+          className="h-7 w-7"
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  // Default text field
+  return (
+    <div className="flex items-center gap-1">
+      <Input
+        ref={inputRef}
+        type={fieldType === 'email' ? 'email' : fieldType === 'phone' ? 'tel' : 'text'}
+        value={String(editValue)}
+        onChange={(e) => setEditValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={handleSave}
+        className="h-8 text-sm w-full"
+        disabled={saving}
+      />
+      {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+    </div>
+  );
 }
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }> = {
@@ -87,11 +268,56 @@ export function RecordTable({
   onRowClick,
   selectedIds: externalSelectedIds,
   onSelectionChange,
+  enableInlineEdit = false,
+  onRecordUpdate,
 }: RecordTableProps) {
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  // Status options for common status fields
+  const STATUS_OPTIONS = [
+    'Active', 'Inactive', 'New', 'Contacted', 'Qualified', 'Working',
+    'Converted', 'Lost', 'Hot Prospect - ready to move', 'Prospect',
+  ];
+
+  // Handle inline edit save
+  const handleInlineEditSave = useCallback(async (value: unknown) => {
+    if (!editingCell || !onRecordUpdate) return;
+
+    try {
+      const record = records.find(r => r.id === editingCell.recordId);
+      if (!record) return;
+
+      // Determine if this is a system field or data field
+      const isSystemField = ['status', 'title', 'owner_id'].includes(editingCell.field);
+
+      const updates: Record<string, unknown> = isSystemField
+        ? { [editingCell.field]: value }
+        : { data: { ...record.data, [editingCell.field]: value } };
+
+      await onRecordUpdate(editingCell.recordId, updates);
+      toast.success('Updated successfully');
+    } catch (error) {
+      console.error('Error updating field:', error);
+      toast.error('Failed to update');
+    } finally {
+      setEditingCell(null);
+    }
+  }, [editingCell, onRecordUpdate, records]);
+
+  // Cancel inline edit
+  const handleInlineEditCancel = useCallback(() => {
+    setEditingCell(null);
+  }, []);
+
+  // Start editing a cell
+  const startEditing = useCallback((recordId: string, field: string, value: unknown) => {
+    if (!enableInlineEdit || !onRecordUpdate) return;
+    setEditingCell({ recordId, field, value });
+  }, [enableInlineEdit, onRecordUpdate]);
 
   // Use external selection state if provided, otherwise use internal
   const selectedIds = externalSelectedIds ?? internalSelectedIds;
@@ -177,6 +403,26 @@ export function RecordTable({
   };
 
   const renderCellValue = (record: CrmRecord, col: string): React.ReactNode => {
+    // Check if this cell is being edited
+    const isEditing = editingCell?.recordId === record.id && editingCell?.field === col;
+
+    if (isEditing) {
+      const field = fieldMap[col] || null;
+      const isStatusField = col === 'status' || col === 'lead_status' || col === 'contact_status';
+
+      return (
+        <div onClick={(e) => e.stopPropagation()}>
+          <InlineEditor
+            field={field}
+            value={editingCell.value}
+            onSave={handleInlineEditSave}
+            onCancel={handleInlineEditCancel}
+            options={isStatusField ? STATUS_OPTIONS : undefined}
+          />
+        </div>
+      );
+    }
+
     // Build display name from first_name and last_name if available
     if (col === 'title') {
       const firstName = record.data?.first_name || '';
@@ -196,34 +442,68 @@ export function RecordTable({
     
     if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone') {
       const value = record.data?.[col] as string | undefined;
-      if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
-      
-      if (col === 'email') {
+
+      const content = !value ? (
+        <span className="text-slate-400 dark:text-slate-600">—</span>
+      ) : col === 'email' ? (
+        <a
+          href={`mailto:${value}`}
+          className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {value}
+        </a>
+      ) : (
+        <span className="text-slate-700 dark:text-slate-300">{value}</span>
+      );
+
+      if (enableInlineEdit && onRecordUpdate) {
         return (
-          <a 
-            href={`mailto:${value}`}
-            className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-            onClick={(e) => e.stopPropagation()}
+          <div
+            className="group/cell cursor-text hover:bg-slate-100 dark:hover:bg-slate-800 -mx-2 px-2 py-1 rounded transition-colors"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              startEditing(record.id, col, value || '');
+            }}
+            title="Double-click to edit"
           >
-            {value}
-          </a>
+            {content}
+            <Pencil className="w-3 h-3 ml-1 inline-block opacity-0 group-hover/cell:opacity-50 text-slate-400" />
+          </div>
         );
       }
-      
-      return <span className="text-slate-700 dark:text-slate-300">{value}</span>;
+
+      return content;
     }
     
     if (col === 'status' || col === 'lead_status' || col === 'contact_status') {
       const status = record.status || String(record.data?.[col] || record.data?.status || '');
       if (!status) return <span className="text-slate-400 dark:text-slate-600">—</span>;
-      
+
       const style = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
-      
-      return (
+
+      const content = (
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
           {status}
         </span>
       );
+
+      if (enableInlineEdit && onRecordUpdate) {
+        return (
+          <div
+            className="group/cell cursor-pointer inline-block"
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              startEditing(record.id, col, status);
+            }}
+            title="Double-click to edit"
+          >
+            {content}
+          </div>
+        );
+      }
+
+      return content;
     }
     
     if (col === 'owner_id') {

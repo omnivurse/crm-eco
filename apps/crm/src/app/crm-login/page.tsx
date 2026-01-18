@@ -288,48 +288,6 @@ export default function CrmLoginPage() {
   };
 
   return (
-    <>
-      <style jsx global>{`
-        @keyframes float-particle {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0.3;
-          }
-          25% {
-            transform: translate(20px, -30px) scale(1.2);
-            opacity: 1;
-          }
-          50% {
-            transform: translate(-10px, -60px) scale(1.5);
-            opacity: 0.8;
-          }
-          75% {
-            transform: translate(30px, -90px) scale(1.1);
-            opacity: 0.5;
-          }
-        }
-
-        @keyframes gradient-flow {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
-        @keyframes glow-pulse {
-          0%, 100% {
-            opacity: 0.4;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.7;
-            transform: scale(1.05);
-          }
-        }
-      `}</style>
-
       <div className="min-h-screen grid lg:grid-cols-2">
         {/* Left Side - Premium Visuals with deep dark background */}
         <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-slate-950">
@@ -520,6 +478,5 @@ export default function CrmLoginPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }
