@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, PaymentForm } from '@crm-eco/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, PaymentForm, type PaymentMethodData } from '@crm-eco/ui';
 import { CreditCard, Building, DollarSign, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
 import { completePaymentStep, createPaymentProfile } from '@/app/(dashboard)/enrollments/new/actions';
@@ -66,25 +66,7 @@ export function PaymentStep({ plans }: PaymentStepProps) {
   };
 
   // Handle payment form submission - creates payment profile via Authorize.Net
-  const handlePaymentSubmit = useCallback(async (paymentData: {
-    type: 'card' | 'ach';
-    cardNumber?: string;
-    expiryMonth?: string;
-    expiryYear?: string;
-    cvv?: string;
-    routingNumber?: string;
-    accountNumber?: string;
-    accountType?: 'checking' | 'savings';
-    accountName?: string;
-    billingAddress: {
-      firstName: string;
-      lastName: string;
-      address: string;
-      city: string;
-      state: string;
-      zip: string;
-    };
-  }) => {
+  const handlePaymentFormSubmit = useCallback(async (paymentData: PaymentMethodData) => {
     if (!enrollmentId || !primaryMemberId) {
       setError('Enrollment or member not initialized');
       return;
@@ -94,19 +76,29 @@ export function PaymentStep({ plans }: PaymentStepProps) {
     setError(null);
 
     try {
+      // Convert PaymentMethodData to the format expected by createPaymentProfile
+      const isCard = paymentData.type === 'credit_card';
+
       const result = await createPaymentProfile({
         enrollmentId,
         memberId: primaryMemberId,
-        paymentType: paymentData.type,
-        cardNumber: paymentData.cardNumber,
-        expiryMonth: paymentData.expiryMonth,
-        expiryYear: paymentData.expiryYear,
-        cvv: paymentData.cvv,
-        routingNumber: paymentData.routingNumber,
-        accountNumber: paymentData.accountNumber,
-        accountType: paymentData.accountType,
-        accountName: paymentData.accountName,
-        billingAddress: paymentData.billingAddress,
+        paymentType: isCard ? 'card' : 'ach',
+        cardNumber: isCard ? paymentData.card.cardNumber.replace(/\s/g, '') : undefined,
+        expiryMonth: isCard ? paymentData.card.expirationMonth : undefined,
+        expiryYear: isCard ? paymentData.card.expirationYear : undefined,
+        cvv: isCard ? paymentData.card.cvv : undefined,
+        routingNumber: !isCard ? paymentData.bank.routingNumber : undefined,
+        accountNumber: !isCard ? paymentData.bank.accountNumber : undefined,
+        accountType: !isCard ? paymentData.bank.accountType : undefined,
+        accountName: !isCard ? paymentData.bank.accountHolderName : undefined,
+        billingAddress: {
+          firstName: paymentData.billing.firstName,
+          lastName: paymentData.billing.lastName,
+          address: paymentData.billing.address,
+          city: paymentData.billing.city,
+          state: paymentData.billing.state,
+          zip: paymentData.billing.zipCode,
+        },
       });
 
       if (!result.success) {
@@ -119,7 +111,7 @@ export function PaymentStep({ plans }: PaymentStepProps) {
       setPaymentLast4(result.data?.last4 || null);
 
       // Update funding type based on payment type
-      setFundingType(paymentData.type === 'card' ? 'credit_card' : 'ach');
+      setFundingType(isCard ? 'credit_card' : 'ach');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -252,8 +244,8 @@ export function PaymentStep({ plans }: PaymentStepProps) {
               </div>
             ) : (
               <PaymentForm
-                defaultTab={fundingType === 'credit_card' ? 'card' : 'ach'}
-                onSubmit={handlePaymentSubmit}
+                defaultTab={fundingType === 'credit_card' ? 'credit_card' : 'bank_account'}
+                onSubmit={handlePaymentFormSubmit}
                 submitLabel="Verify Payment Method"
                 showBillingAddress={true}
               />
@@ -339,78 +331,6 @@ export function PaymentStep({ plans }: PaymentStepProps) {
                 id="autoPay"
                 checked={autoPay}
                 onCheckedChange={setAutoPay}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Billing Address (Optional) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Billing Address (Optional)</CardTitle>
-          <CardDescription>
-            Required if different from member address
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="addressLine1">Street Address</Label>
-            <Input
-              id="addressLine1"
-              value={billingAddress.line1}
-              onChange={(e) => setBillingAddress({ ...billingAddress, line1: e.target.value })}
-              placeholder="123 Main St"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="addressLine2">Apartment, Suite, etc.</Label>
-            <Input
-              id="addressLine2"
-              value={billingAddress.line2}
-              onChange={(e) => setBillingAddress({ ...billingAddress, line2: e.target.value })}
-              placeholder="Apt 4B"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
-              <Input
-                id="city"
-                value={billingAddress.city}
-                onChange={(e) => setBillingAddress({ ...billingAddress, city: e.target.value })}
-                placeholder="Springfield"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
-              <Select
-                value={billingAddress.state}
-                onValueChange={(value) => setBillingAddress({ ...billingAddress, state: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {US_STATES.map((state) => (
-                    <SelectItem key={state} value={state}>
-                      {state}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="postalCode">ZIP Code</Label>
-              <Input
-                id="postalCode"
-                value={billingAddress.postalCode}
-                onChange={(e) => setBillingAddress({ ...billingAddress, postalCode: e.target.value })}
-                placeholder="12345"
               />
             </div>
           </div>

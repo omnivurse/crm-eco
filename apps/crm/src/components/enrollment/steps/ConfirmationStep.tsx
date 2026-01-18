@@ -385,9 +385,9 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
           ) : (
             <SignaturePad
               onSave={handleSignatureSave}
-              onClear={handleSignatureClear}
               height={150}
               disabled={savingSignature}
+              showControls={true}
             />
           )}
           {savingSignature && (
