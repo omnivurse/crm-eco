@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
@@ -14,6 +15,10 @@ import {
   DollarSign,
   Building2,
   CheckSquare,
+  Settings,
+  LayoutGrid,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -28,6 +33,9 @@ interface ModuleHeaderProps {
   module: CrmModule;
   totalCount: number;
   onExport?: () => void;
+  onBulkUpdate?: () => void;
+  onMassDelete?: () => void;
+  selectedCount?: number;
   className?: string;
 }
 
@@ -47,9 +55,42 @@ const MODULE_COLORS: Record<string, { text: string; bg: string; border: string }
   tasks: { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
 };
 
-export function ModuleHeader({ module, totalCount, onExport, className }: ModuleHeaderProps) {
+export function ModuleHeader({
+  module,
+  totalCount,
+  onExport,
+  onBulkUpdate,
+  onMassDelete,
+  selectedCount = 0,
+  className
+}: ModuleHeaderProps) {
+  const router = useRouter();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
+
+  const handleManageFields = () => {
+    router.push(`/crm/settings/fields?module=${module.id}`);
+  };
+
+  const handleManageViews = () => {
+    router.push(`/crm/settings/layouts?module=${module.id}`);
+  };
+
+  const handleBulkUpdate = () => {
+    if (onBulkUpdate) {
+      onBulkUpdate();
+    } else {
+      router.push(`/crm/modules/${module.key}/bulk-update`);
+    }
+  };
+
+  const handleMassDelete = () => {
+    if (onMassDelete) {
+      onMassDelete();
+    } else {
+      router.push(`/crm/modules/${module.key}/mass-delete`);
+    }
+  };
 
   return (
     <div className={cn('flex flex-col gap-3', className)}>
@@ -129,18 +170,44 @@ export function ModuleHeader({ module, totalCount, onExport, className }: Module
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-              <DropdownMenuItem className="text-slate-700 dark:text-slate-300 cursor-pointer">
+              <DropdownMenuItem
+                onClick={handleManageFields}
+                className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+              >
+                <Settings className="w-4 h-4" />
                 Manage Fields
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-slate-700 dark:text-slate-300 cursor-pointer">
+              <DropdownMenuItem
+                onClick={handleManageViews}
+                className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+              >
+                <LayoutGrid className="w-4 h-4" />
                 Manage Views
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-              <DropdownMenuItem className="text-slate-700 dark:text-slate-300 cursor-pointer">
+              <DropdownMenuItem
+                onClick={handleBulkUpdate}
+                className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
+              >
+                <Pencil className="w-4 h-4" />
                 Bulk Update
+                {selectedCount > 0 && (
+                  <span className="ml-auto text-xs bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 px-1.5 py-0.5 rounded">
+                    {selectedCount}
+                  </span>
+                )}
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-slate-700 dark:text-slate-300 cursor-pointer">
+              <DropdownMenuItem
+                onClick={handleMassDelete}
+                className="text-red-600 dark:text-red-400 cursor-pointer gap-2 focus:text-red-600 dark:focus:text-red-400"
+              >
+                <Trash2 className="w-4 h-4" />
                 Mass Delete
+                {selectedCount > 0 && (
+                  <span className="ml-auto text-xs bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded">
+                    {selectedCount}
+                  </span>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

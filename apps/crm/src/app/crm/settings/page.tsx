@@ -37,6 +37,12 @@ const settingsCards: SettingCard[] = [
     highlight: true,
   },
   {
+    title: 'My Email Settings',
+    description: 'Configure your personal email preferences',
+    href: '/crm/settings/email',
+    icon: <Mail className="w-6 h-6" />,
+  },
+  {
     title: 'Email Domains',
     description: 'Configure and verify sending domains',
     href: '/crm/settings/email-domains',
