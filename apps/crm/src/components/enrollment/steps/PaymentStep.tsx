@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, PaymentForm, type PaymentMethodData } from '@crm-eco/ui';
 import { CreditCard, Building, DollarSign, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
-import { completePaymentStep, createPaymentProfile } from '@/app/(dashboard)/enrollments/new/actions';
+import { completePaymentStep, createPaymentProfile } from '@/app/crm/enrollment/actions';
 
 interface Plan {
   id: string;

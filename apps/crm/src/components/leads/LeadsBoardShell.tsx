@@ -65,7 +65,7 @@ import {
   setLeadsSavedViewDefault,
   deleteLeadsSavedView,
   clearLeadsSavedViewDefault,
-} from '@/app/(dashboard)/leads/actions';
+} from '@/app/crm/leads/actions';
 
 // ============================================================================
 // TYPES

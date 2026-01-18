@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button } from '@crm-eco/ui';
 import { User, UserPlus, Building2, Users, Globe, Briefcase, Check } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation, type EnrollmentMode } from '../wizard';
-import { completeIntakeStep } from '@/app/(dashboard)/enrollments/new/actions';
+import { completeIntakeStep } from '@/app/crm/enrollment/actions';
 import { cn } from '@crm-eco/ui';
 
 interface Member {

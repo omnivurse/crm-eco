@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Label, Badge, SignaturePad } from '@crm-eco/ui';
 import { CheckCircle, User, Users, FileText, Shield, CreditCard, AlertTriangle, UserPlus, PenTool } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
-import { submitEnrollment, saveSignature } from '@/app/(dashboard)/enrollments/new/actions';
+import { submitEnrollment, saveSignature } from '@/app/crm/enrollment/actions';
 
 interface Member {
   id: string;

@@ -30,8 +30,8 @@ import {
   addNeedOpsNote,
   assignNeedToMe,
   assignNeedToProfile,
-} from '@/app/(dashboard)/needs/command-center/actions';
-import type { AssignableProfile } from '@/app/(dashboard)/needs/command-center/page';
+} from '@/app/crm/needs/command-center/actions';
+import type { AssignableProfile } from '@/app/crm/needs/command-center/page';
 
 interface NeedActionsMenuProps {
   needId: string;
