@@ -108,19 +108,18 @@ export function CrmTopBar({
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-4 glass border-b border-slate-200 dark:border-white/5">
-      {/* Left Section: Brand + Module Tabs */}
-      <div className="flex items-center gap-4">
-        {/* Brand - Logo */}
-        <Link href="/crm" className="flex items-center gap-2 mr-2 group flex-shrink-0">
-          <img
-            src="/logo.png"
-            alt="Pay It Forward HealthShare"
-            className="h-10 w-auto object-contain"
-          />
-        </Link>
+    <header className="h-14 flex items-center px-6 glass border-b border-slate-200 dark:border-white/5">
+      {/* Left Section: Logo */}
+      <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
+        <img
+          src="/logo.png"
+          alt="Pay It Forward HealthShare"
+          className="h-8 w-auto object-contain"
+        />
+      </Link>
 
-        {/* Zoho-style Module Bar */}
+      {/* Center Section: Module Tabs - pushed towards center-right */}
+      <div className="flex-1 flex justify-center px-8">
         <ZohoModuleBar />
       </div>
 

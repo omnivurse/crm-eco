@@ -22,7 +22,16 @@ interface App {
   bgColor: string;
   hoverBg: string;
   url: string;
+  isExternal?: boolean;
 }
+
+// URLs for each app - use environment variables in production
+// These are the Vercel deployment URLs
+const APP_URLS = {
+  crm: process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-eco-crm.vercel.app/crm',
+  admin: process.env.NEXT_PUBLIC_ADMIN_URL || 'https://crm-eco-admin.vercel.app',
+  portal: process.env.NEXT_PUBLIC_PORTAL_URL || '', // Portal not yet available
+};
 
 const apps: App[] = [
   {
@@ -30,10 +39,22 @@ const apps: App[] = [
     name: 'CRM',
     description: 'Sales & Operations',
     icon: <Users className="w-5 h-5" />,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-100',
-    hoverBg: 'hover:bg-blue-50',
-    url: '/crm',
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-100',
+    hoverBg: 'hover:bg-teal-50',
+    url: APP_URLS.crm,
+    isExternal: true,
+  },
+  {
+    id: 'admin',
+    name: 'Admin',
+    description: 'System Administration',
+    icon: <Shield className="w-5 h-5" />,
+    color: 'text-purple-600',
+    bgColor: 'bg-purple-100',
+    hoverBg: 'hover:bg-purple-50',
+    url: APP_URLS.admin,
+    isExternal: true,
   },
   {
     id: 'portal',
@@ -43,17 +64,8 @@ const apps: App[] = [
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-100',
     hoverBg: 'hover:bg-emerald-50',
-    url: '/crm', // Portal not yet available
-  },
-  {
-    id: 'admin',
-    name: 'Admin',
-    description: 'System Administration (Coming Soon)',
-    icon: <Shield className="w-5 h-5" />,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-100',
-    hoverBg: 'hover:bg-purple-50',
-    url: '/crm/settings', // Redirect to CRM settings for now
+    url: APP_URLS.portal,
+    isExternal: true,
   },
 ];
 
@@ -67,7 +79,8 @@ export function AppSwitcher({ currentApp, className }: AppSwitcherProps) {
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   const current = apps.find(app => app.id === currentApp) || apps[0];
-  const otherApps = apps.filter(app => app.id !== currentApp);
+  // Filter out current app and apps with empty URLs (not yet available)
+  const otherApps = apps.filter(app => app.id !== currentApp && app.url);
 
   // Close dropdown when clicking outside
   React.useEffect(() => {

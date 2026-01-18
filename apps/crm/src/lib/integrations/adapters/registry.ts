@@ -264,4 +264,15 @@ PLANNED_ADAPTERS.forEach(({ providerId, type }) => {
   adapterTypes.set(providerId, type);
 });
 
+// ============================================================================
+// Register Implemented Adapters
+// ============================================================================
+
+// Calendar Adapters
+import { GoogleCalendarAdapter } from './calendar/google-calendar';
+import { MicrosoftOutlookAdapter } from './calendar/microsoft-outlook';
+
+registerAdapter('google_calendar', 'calendar', () => new GoogleCalendarAdapter());
+registerAdapter('microsoft_outlook', 'calendar', () => new MicrosoftOutlookAdapter());
+
 export { PLANNED_ADAPTERS };
