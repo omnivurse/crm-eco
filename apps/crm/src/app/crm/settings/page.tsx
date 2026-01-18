@@ -7,6 +7,7 @@ import {
   Layout,
   FileSpreadsheet,
   Users,
+  UserPlus,
   ChevronRight,
   Settings,
   Zap,
@@ -81,6 +82,14 @@ const settingsCards: SettingCard[] = [
     description: 'Manage saved import mapping templates',
     href: '/crm/settings/mappings',
     icon: <FileSpreadsheet className="w-6 h-6" />,
+  },
+  {
+    title: 'Team Management',
+    description: 'Invite team members and manage roles',
+    href: '/crm/settings/team',
+    icon: <UserPlus className="w-6 h-6" />,
+    adminOnly: true,
+    highlight: true,
   },
   {
     title: 'CRM Users',

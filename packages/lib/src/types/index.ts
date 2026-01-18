@@ -49,7 +49,63 @@ export type {
 } from './database';
 
 // Re-export common types for convenience
-export type UserRole = 'owner' | 'admin' | 'advisor' | 'staff';
+export type UserRole = 'owner' | 'super_admin' | 'admin' | 'advisor' | 'staff';
+
+// Team invitation types
+export type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
+export type InvitableRole = 'super_admin' | 'admin' | 'advisor' | 'staff';
+
+export interface TeamInvitation {
+  id: string;
+  organization_id: string;
+  email: string;
+  role: InvitableRole;
+  status: InvitationStatus;
+  token: string;
+  expires_at: string;
+  invited_by: string;
+  accepted_by: string | null;
+  accepted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeamMember {
+  id: string;
+  user_id: string;
+  email: string;
+  full_name: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: UserRole;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// Role hierarchy for permission checks
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  owner: 5,
+  super_admin: 4,
+  admin: 3,
+  advisor: 2,
+  staff: 1,
+};
+
+export function canManageRole(userRole: UserRole, targetRole: UserRole): boolean {
+  return ROLE_HIERARCHY[userRole] > ROLE_HIERARCHY[targetRole];
+}
+
+export function getRoleLabel(role: UserRole): string {
+  switch (role) {
+    case 'owner': return 'Owner';
+    case 'super_admin': return 'Super Admin';
+    case 'admin': return 'Admin';
+    case 'advisor': return 'Advisor';
+    case 'staff': return 'Staff';
+    default: return role;
+  }
+}
 export type MemberStatus = 'pending' | 'active' | 'inactive' | 'terminated';
 export type AdvisorStatus = 'pending' | 'active' | 'inactive' | 'terminated';
 export type LeadStatus = 'new' | 'contacted' | 'working' | 'qualified' | 'converted' | 'unqualified' | 'lost';
