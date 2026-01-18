@@ -25,26 +25,15 @@ interface App {
   isExternal?: boolean;
 }
 
-// URLs for each app - use environment variables in production
-// These are the Vercel deployment URLs
+// URLs for each app - hardcoded to Vercel deployment URLs
+// Environment variables can override these if needed
 const APP_URLS = {
-  crm: process.env.NEXT_PUBLIC_CRM_URL || 'https://crm-eco-crm.vercel.app/crm',
-  admin: process.env.NEXT_PUBLIC_ADMIN_URL || 'https://crm-eco-admin.vercel.app',
-  portal: process.env.NEXT_PUBLIC_PORTAL_URL || '', // Portal not yet available
+  crm: 'https://crm-eco-crm.vercel.app/crm',
+  admin: 'https://crm-eco-admin.vercel.app',
+  portal: '', // Portal not yet available
 };
 
 const apps: App[] = [
-  {
-    id: 'crm',
-    name: 'CRM',
-    description: 'Sales & Operations',
-    icon: <Users className="w-5 h-5" />,
-    color: 'text-teal-600',
-    bgColor: 'bg-teal-100',
-    hoverBg: 'hover:bg-teal-50',
-    url: APP_URLS.crm,
-    isExternal: true,
-  },
   {
     id: 'admin',
     name: 'Admin',
@@ -54,6 +43,17 @@ const apps: App[] = [
     bgColor: 'bg-purple-100',
     hoverBg: 'hover:bg-purple-50',
     url: APP_URLS.admin,
+    isExternal: true,
+  },
+  {
+    id: 'crm',
+    name: 'CRM',
+    description: 'Sales & Operations',
+    icon: <Users className="w-5 h-5" />,
+    color: 'text-teal-600',
+    bgColor: 'bg-teal-100',
+    hoverBg: 'hover:bg-teal-50',
+    url: APP_URLS.crm,
     isExternal: true,
   },
   {
