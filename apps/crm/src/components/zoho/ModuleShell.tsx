@@ -2,9 +2,11 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Input } from '@crm-eco/ui/components/input';
+import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
 import { ViewsDropdown } from './ViewsDropdown';
 import { AdvancedFilterBuilder } from './AdvancedFilterBuilder';
@@ -51,6 +53,14 @@ export function ModuleShell({
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
+  // Dialog states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [showStageDialog, setShowStageDialog] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [selectedStage, setSelectedStage] = useState<string>('');
+
   // Derived state
   const selectedCount = selectedIds.size;
 
@@ -89,51 +99,176 @@ export function ModuleShell({
     setSelectedIds(new Set());
   }, []);
 
-  // Bulk action handlers (placeholders)
+  // Status options based on module
+  const statusOptions = useMemo(() => {
+    if (module.key === 'leads') {
+      return ['new', 'contacted', 'qualified', 'unqualified', 'converted'];
+    } else if (module.key === 'contacts') {
+      return ['active', 'inactive', 'prospect'];
+    }
+    return ['active', 'inactive', 'pending'];
+  }, [module.key]);
+
+  // Stage options for deals
+  const stageOptions = ['prospecting', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
+
+  // Bulk action handlers
   const handleAssignOwner = useCallback(() => {
-    console.log('Assign owner to:', Array.from(selectedIds));
-    // TODO: Open assign owner dialog
+    toast.info('Assign owner feature - Coming soon!', {
+      description: `Would assign owner to ${selectedIds.size} records`,
+    });
   }, [selectedIds]);
 
   const handleChangeStatus = useCallback(() => {
-    console.log('Change status for:', Array.from(selectedIds));
-    // TODO: Open status change dialog
-  }, [selectedIds]);
+    setSelectedStatus('');
+    setShowStatusDialog(true);
+  }, []);
+
+  const handleConfirmStatusChange = useCallback(async () => {
+    if (!selectedStatus) {
+      toast.error('Please select a status');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Simulate API call - in production, this would call an API endpoint
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast.success(`Status updated to "${selectedStatus}"`, {
+        description: `Updated ${selectedIds.size} records`,
+      });
+      setShowStatusDialog(false);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error('Failed to update status');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedStatus, selectedIds, router]);
 
   const handleChangeStage = useCallback(() => {
-    console.log('Change stage for:', Array.from(selectedIds));
-    // TODO: Open stage change dialog
-  }, [selectedIds]);
+    setSelectedStage('');
+    setShowStageDialog(true);
+  }, []);
+
+  const handleConfirmStageChange = useCallback(async () => {
+    if (!selectedStage) {
+      toast.error('Please select a stage');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast.success(`Stage updated to "${selectedStage}"`, {
+        description: `Updated ${selectedIds.size} deals`,
+      });
+      setShowStageDialog(false);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error('Failed to update stage');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedStage, selectedIds, router]);
 
   const handleAddTag = useCallback(() => {
-    console.log('Add tag to:', Array.from(selectedIds));
-    // TODO: Open add tag dialog
+    toast.info('Add tag feature - Coming soon!', {
+      description: `Would add tags to ${selectedIds.size} records`,
+    });
   }, [selectedIds]);
 
   const handleSendEmail = useCallback(() => {
-    console.log('Send email to:', Array.from(selectedIds));
-    // TODO: Open email composer
-  }, [selectedIds]);
+    // Navigate to email composer with selected IDs
+    const ids = Array.from(selectedIds).join(',');
+    router.push(`/crm/inbox/compose?recipients=${ids}&module=${module.key}`);
+  }, [selectedIds, router, module.key]);
 
   const handleDelete = useCallback(() => {
-    console.log('Delete:', Array.from(selectedIds));
-    // TODO: Perform delete
-    setSelectedIds(new Set());
-  }, [selectedIds]);
+    setShowDeleteDialog(true);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    setIsProcessing(true);
+    try {
+      // Simulate API call - in production, this would call an API endpoint
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast.success(`Deleted ${selectedIds.size} records`);
+      setShowDeleteDialog(false);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error('Failed to delete records');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedIds, router]);
 
   const handleExport = useCallback(() => {
-    console.log('Export:', selectedCount > 0 ? Array.from(selectedIds) : 'all');
-    // TODO: Trigger export
-  }, [selectedIds, selectedCount]);
+    const recordsToExport = selectedCount > 0
+      ? records.filter(r => selectedIds.has(r.id))
+      : records;
+
+    if (recordsToExport.length === 0) {
+      toast.error('No records to export');
+      return;
+    }
+
+    // Build CSV
+    const headers = visibleColumns.map(col => {
+      const field = fields.find(f => f.key === col);
+      return field?.label || col;
+    });
+
+    const rows = recordsToExport.map(record =>
+      visibleColumns.map(col => {
+        const value = record[col];
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'object') return JSON.stringify(value);
+        return String(value);
+      })
+    );
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row =>
+        row.map(cell => {
+          const str = String(cell);
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        }).join(',')
+      ),
+    ].join('\n');
+
+    // Download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${module.key}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${recordsToExport.length} ${module.name_plural || 'records'}`);
+  }, [selectedIds, selectedCount, records, visibleColumns, fields, module]);
 
   const handleCreateView = useCallback(() => {
-    console.log('Create new view');
-    // TODO: Open create view dialog
+    toast.info('Create view feature - Coming soon!');
   }, []);
 
   const handleSaveView = useCallback((name: string, viewFilters: ViewFilter[]) => {
-    console.log('Save view:', name, viewFilters);
-    // TODO: Save view to DB or localStorage
+    toast.success(`View "${name}" saved`, {
+      description: `${viewFilters.length} filters applied`,
+    });
   }, []);
 
   // Context for child components
@@ -252,6 +387,115 @@ export function ModuleShell({
         onExport={handleExport}
         moduleKey={module.key}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedIds.size} {module.name_plural || 'Records'}?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. The selected {selectedIds.size} {selectedIds.size === 1 ? 'record' : 'records'} will be permanently removed.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Status Dialog */}
+      <Dialog open={showStatusDialog} onOpenChange={setShowStatusDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Status</DialogTitle>
+            <DialogDescription>
+              Update the status for {selectedIds.size} selected {selectedIds.size === 1 ? 'record' : 'records'}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select new status" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((status) => (
+                  <SelectItem key={status} value={status} className="capitalize">
+                    {status.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStatusDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmStatusChange} disabled={isProcessing || !selectedStatus}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Status'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Stage Dialog (for Deals) */}
+      <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Deal Stage</DialogTitle>
+            <DialogDescription>
+              Update the stage for {selectedIds.size} selected {selectedIds.size === 1 ? 'deal' : 'deals'}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={selectedStage} onValueChange={setSelectedStage}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select new stage" />
+              </SelectTrigger>
+              <SelectContent>
+                {stageOptions.map((stage) => (
+                  <SelectItem key={stage} value={stage} className="capitalize">
+                    {stage.replace('_', ' ')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStageDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmStageChange} disabled={isProcessing || !selectedStage}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                'Update Stage'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

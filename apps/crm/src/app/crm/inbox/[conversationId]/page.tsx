@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Input, Label, Textarea } from '@crm-eco/ui';
+import { toast } from 'sonner';
 import {
   ChevronLeft,
   Send,
@@ -21,6 +24,7 @@ import {
   FileText,
   ArrowUpRight,
   ArrowDownLeft,
+  Loader2,
 } from 'lucide-react';
 import type {
   InboxConversation,
@@ -196,6 +200,7 @@ export default function ConversationDetailPage({
   params: Promise<{ conversationId: string }>;
 }) {
   const { conversationId } = use(params);
+  const router = useRouter();
   const [conversation, setConversation] = useState<InboxConversation | null>(null);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -203,6 +208,14 @@ export default function ConversationDetailPage({
   const [sending, setSending] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [showAssign, setShowAssign] = useState(false);
+
+  // Quick action dialog states
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [noteContent, setNoteContent] = useState('');
 
   const fetchConversation = useCallback(async () => {
     setLoading(true);
@@ -292,11 +305,113 @@ export default function ConversationDetailPage({
     }
   };
 
-  const handleQuickAction = (action: string) => {
-    // TODO: Implement quick actions
-    console.log('Quick action:', action);
-    alert(`Quick action "${action}" would be executed here`);
-  };
+  const handleQuickAction = useCallback((action: string) => {
+    if (!conversation) return;
+
+    switch (action) {
+      case 'convert_lead':
+        // Navigate to lead creation with pre-filled data
+        const leadParams = new URLSearchParams();
+        if (conversation.contact_name) {
+          const nameParts = conversation.contact_name.split(' ');
+          leadParams.set('first_name', nameParts[0] || '');
+          leadParams.set('last_name', nameParts.slice(1).join(' ') || '');
+        }
+        if (conversation.contact_email) leadParams.set('email', conversation.contact_email);
+        if (conversation.contact_phone) leadParams.set('phone', conversation.contact_phone);
+        leadParams.set('source', 'inbox');
+        leadParams.set('conversation_id', conversationId);
+        router.push(`/crm/modules/leads/new?${leadParams.toString()}`);
+        break;
+
+      case 'create_task':
+        setTaskTitle(`Follow up: ${conversation.subject || conversation.contact_name || 'Conversation'}`);
+        setTaskDueDate('');
+        setShowTaskDialog(true);
+        break;
+
+      case 'add_note':
+        setNoteContent('');
+        setShowNoteDialog(true);
+        break;
+
+      case 'view_deal':
+        if (conversation.linked_deal_id) {
+          router.push(`/crm/modules/deals/${conversation.linked_deal_id}`);
+        }
+        break;
+
+      default:
+        toast.info(`Action "${action}" is not yet implemented`);
+    }
+  }, [conversation, conversationId, router]);
+
+  const handleCreateTask = useCallback(async () => {
+    if (!taskTitle.trim()) {
+      toast.error('Please enter a task title');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Create task via API
+      const response = await fetch('/api/crm/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: taskTitle,
+          due_date: taskDueDate || null,
+          related_to: 'conversation',
+          related_id: conversationId,
+          description: `Task created from inbox conversation with ${conversation?.contact_name || 'contact'}`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create task');
+      }
+
+      toast.success('Task created successfully');
+      setShowTaskDialog(false);
+      setTaskTitle('');
+      setTaskDueDate('');
+    } catch (error) {
+      toast.error('Failed to create task');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [taskTitle, taskDueDate, conversationId, conversation]);
+
+  const handleAddNote = useCallback(async () => {
+    if (!noteContent.trim()) {
+      toast.error('Please enter a note');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Add note via API
+      const response = await fetch(`/api/inbox/${conversationId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: noteContent,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add note');
+      }
+
+      toast.success('Note added successfully');
+      setShowNoteDialog(false);
+      setNoteContent('');
+    } catch (error) {
+      toast.error('Failed to add note');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [noteContent, conversationId]);
 
   // Group messages by date
   const messagesByDate: Record<string, InboxMessage[]> = {};
@@ -474,6 +589,88 @@ export default function ConversationDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Create Task Dialog */}
+      <Dialog open={showTaskDialog} onOpenChange={setShowTaskDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Task</DialogTitle>
+            <DialogDescription>
+              Create a follow-up task for this conversation
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="taskTitle">Task Title</Label>
+              <Input
+                id="taskTitle"
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                placeholder="Enter task title..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="taskDueDate">Due Date (optional)</Label>
+              <Input
+                id="taskDueDate"
+                type="date"
+                value={taskDueDate}
+                onChange={(e) => setTaskDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTaskDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTask} disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Task'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Note Dialog */}
+      <Dialog open={showNoteDialog} onOpenChange={setShowNoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Note</DialogTitle>
+            <DialogDescription>
+              Add a note to this conversation
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              value={noteContent}
+              onChange={(e) => setNoteContent(e.target.value)}
+              placeholder="Enter your note..."
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNoteDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddNote} disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Add Note'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

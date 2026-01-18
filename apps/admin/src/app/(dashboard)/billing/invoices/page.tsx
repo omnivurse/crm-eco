@@ -1,9 +1,29 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Badge,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -63,16 +83,117 @@ function getStatusBadgeColor(status: string) {
   }
 }
 
+interface Member {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [creatingInvoice, setCreatingInvoice] = useState(false);
+  const [newInvoice, setNewInvoice] = useState({
+    memberId: '',
+    amount: '',
+    dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+    notes: '',
+  });
   const supabase = createClient();
 
   useEffect(() => {
     loadInvoices();
+    loadMembers();
   }, [filter]);
+
+  async function loadMembers() {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single() as { data: { organization_id: string } | null };
+
+      if (!profile) return;
+
+      const { data } = await supabase
+        .from('members')
+        .select('id, first_name, last_name, email')
+        .eq('organization_id', profile.organization_id)
+        .order('last_name');
+
+      setMembers((data || []) as Member[]);
+    } catch (error) {
+      console.error('Error loading members:', error);
+    }
+  }
+
+  async function createInvoice() {
+    if (!newInvoice.memberId || !newInvoice.amount) {
+      toast.error('Please select a member and enter an amount');
+      return;
+    }
+
+    setCreatingInvoice(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single() as { data: { organization_id: string } | null };
+
+      if (!profile) return;
+
+      // Generate invoice number
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+
+      const { error } = await (supabase.from('invoices') as any).insert({
+        organization_id: profile.organization_id,
+        member_id: newInvoice.memberId,
+        invoice_number: invoiceNumber,
+        period_start: new Date().toISOString(),
+        period_end: new Date().toISOString(),
+        due_date: newInvoice.dueDate,
+        subtotal: parseFloat(newInvoice.amount),
+        processing_fee: 0,
+        adjustments: 0,
+        total: parseFloat(newInvoice.amount),
+        amount_paid: 0,
+        status: 'draft',
+        notes: newInvoice.notes || null,
+      });
+
+      if (error) {
+        toast.error('Failed to create invoice');
+        console.error(error);
+      } else {
+        toast.success(`Invoice ${invoiceNumber} created`);
+        setShowNewInvoice(false);
+        setNewInvoice({
+          memberId: '',
+          amount: '',
+          dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
+          notes: '',
+        });
+        await loadInvoices();
+      }
+    } catch (error) {
+      toast.error('An error occurred');
+    } finally {
+      setCreatingInvoice(false);
+    }
+  }
 
   async function loadInvoices() {
     setLoading(true);
@@ -200,7 +321,7 @@ export default function InvoicesPage() {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setShowNewInvoice(true)}>
             <Plus className="h-4 w-4 mr-2" />
             New Invoice
           </Button>
@@ -240,6 +361,83 @@ export default function InvoicesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* New Invoice Dialog */}
+      <Dialog open={showNewInvoice} onOpenChange={setShowNewInvoice}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Create New Invoice</DialogTitle>
+            <DialogDescription>
+              Create a manual invoice for a member
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="member">Member</Label>
+              <Select
+                value={newInvoice.memberId}
+                onValueChange={(value) => setNewInvoice({ ...newInvoice, memberId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.first_name} {member.last_name} ({member.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount ($)</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={newInvoice.amount}
+                onChange={(e) => setNewInvoice({ ...newInvoice, amount: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Input
+                id="dueDate"
+                type="date"
+                value={newInvoice.dueDate}
+                onChange={(e) => setNewInvoice({ ...newInvoice, dueDate: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (optional)</Label>
+              <Input
+                id="notes"
+                placeholder="Invoice notes..."
+                value={newInvoice.notes}
+                onChange={(e) => setNewInvoice({ ...newInvoice, notes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewInvoice(false)}>
+              Cancel
+            </Button>
+            <Button onClick={createInvoice} disabled={creatingInvoice}>
+              {creatingInvoice ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Invoice'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Invoices Table */}
       <Card>
