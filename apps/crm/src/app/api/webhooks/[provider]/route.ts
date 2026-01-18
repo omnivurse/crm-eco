@@ -17,17 +17,24 @@ import type { WebhookContext } from '@/lib/integrations/webhooks/types';
 // Import webhook handlers to register them
 import '@/lib/integrations/webhooks/handlers/stripe';
 
-// Use service role for webhook processing
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Force dynamic rendering - this route uses env vars at runtime
+export const dynamic = 'force-dynamic';
+
+// Create Supabase client lazily to avoid build-time errors
+function getSupabaseClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 interface RouteParams {
   params: Promise<{ provider: string }>;
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  // Use service role for webhook processing
+  const supabase = getSupabaseClient();
   const { provider } = await params;
 
   // Check if we have a handler for this provider
