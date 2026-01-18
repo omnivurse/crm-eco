@@ -56,18 +56,24 @@ export default function WorkflowsPage() {
     try {
       // Fetch modules first
       const modulesRes = await fetch('/api/crm/modules');
-      const modulesData = await modulesRes.json();
-      const moduleMap: Record<string, string> = {};
-      modulesData.forEach((m: { id: string; name: string }) => {
-        moduleMap[m.id] = m.name;
-      });
-      setModules(moduleMap);
+      if (modulesRes.ok) {
+        const modulesData = await modulesRes.json();
+        const moduleMap: Record<string, string> = {};
+        if (Array.isArray(modulesData)) {
+          modulesData.forEach((m: { id: string; name: string }) => {
+            moduleMap[m.id] = m.name;
+          });
+        }
+        setModules(moduleMap);
+      }
 
       // Fetch workflows from API
       const workflowsRes = await fetch('/api/automation/workflows');
       if (workflowsRes.ok) {
         const workflowsData = await workflowsRes.json();
-        setWorkflows(workflowsData);
+        if (Array.isArray(workflowsData)) {
+          setWorkflows(workflowsData);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch workflows:', error);

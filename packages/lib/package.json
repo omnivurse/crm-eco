@@ -11,6 +11,7 @@
     "./supabase/middleware": "./src/supabase/middleware.ts",
     "./types": "./src/types/index.ts",
     "./billing": "./src/billing/index.ts",
+    "./billing/authorize-net": "./src/billing/authorize-net.ts",
     "./commissions": "./src/commissions/index.ts",
     "./email": "./src/email/index.ts"
   },

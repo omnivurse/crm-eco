@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   ChevronLeft,
   Plus,
@@ -16,13 +18,15 @@ import {
   Key,
   Plug,
   Unplug,
+  Loader2,
 } from 'lucide-react';
-import { 
-  PROVIDER_CONFIGS, 
-  type IntegrationConnection, 
+import {
+  PROVIDER_CONFIGS,
+  type IntegrationConnection,
   type IntegrationProvider,
   type ConnectionType,
 } from '@/lib/integrations/types';
+import { isOAuthProvider, isApiKeyProvider } from '@/lib/integrations/oauth/providers';
 
 // ============================================================================
 // Types
@@ -79,24 +83,27 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ProviderCard({ 
-  provider, 
+function ProviderCard({
+  provider,
   connection,
   onConnect,
   onDisconnect,
   onTest,
   onDelete,
-}: { 
+  isOAuthLoading = false,
+}: {
   provider: IntegrationProvider;
   connection?: IntegrationConnection;
   onConnect: (provider: IntegrationProvider) => void;
   onDisconnect: (id: string) => void;
   onTest: (id: string) => void;
   onDelete: (id: string) => void;
+  isOAuthLoading?: boolean;
 }) {
   const config = PROVIDER_CONFIGS[provider];
   const [testing, setTesting] = useState(false);
-  
+  const usesOAuth = isOAuthProvider(provider);
+
   const handleTest = async () => {
     if (!connection) return;
     setTesting(true);
@@ -200,10 +207,20 @@ function ProviderCard({
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => onConnect(provider)}
-              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              disabled={isOAuthLoading}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
-              Connect
+              {isOAuthLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  {usesOAuth ? <ExternalLink className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  {usesOAuth ? 'Connect with OAuth' : 'Connect'}
+                </>
+              )}
             </button>
             {config.docsUrl && (
               <a
@@ -320,9 +337,39 @@ export default function IntegrationCategoryPage({
   icon,
   providers,
 }: IntegrationCategoryPageProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [connections, setConnections] = useState<IntegrationConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [connectingProvider, setConnectingProvider] = useState<IntegrationProvider | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<string | null>(null);
+
+  // Handle OAuth callback notifications
+  useEffect(() => {
+    const connected = searchParams.get('connected');
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
+
+    if (connected) {
+      const providerConfig = PROVIDER_CONFIGS[connected as IntegrationProvider];
+      toast.success(`${providerConfig?.name || connected} connected successfully!`);
+      // Clean up URL
+      router.replace(window.location.pathname);
+    }
+
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        unknown_provider: 'Unknown integration provider',
+        provider_not_configured: 'This integration is not configured. Please contact support.',
+        admin_only: 'Only administrators can connect integrations',
+        invalid_state: 'OAuth session expired. Please try again.',
+        token_exchange_failed: 'Failed to connect. Please try again.',
+        callback_failed: 'Connection failed. Please try again.',
+      };
+      toast.error(errorMessages[error] || message || `Connection error: ${error}`);
+      router.replace(window.location.pathname);
+    }
+  }, [searchParams, router]);
 
   const fetchConnections = useCallback(async () => {
     setLoading(true);
@@ -341,12 +388,24 @@ export default function IntegrationCategoryPage({
     fetchConnections();
   }, [fetchConnections]);
 
+  // Handle provider connection - OAuth or API key
+  const handleProviderConnect = (provider: IntegrationProvider) => {
+    if (isOAuthProvider(provider)) {
+      // Redirect to OAuth flow
+      setOauthLoading(provider);
+      window.location.href = `/api/integrations/oauth/${provider}?connection_type=${connectionType}`;
+    } else {
+      // Show API key modal
+      setConnectingProvider(provider);
+    }
+  };
+
   const handleConnect = async (data: { api_key?: string; api_secret?: string }) => {
     if (!connectingProvider) return;
-    
+
     try {
       const config = PROVIDER_CONFIGS[connectingProvider];
-      
+
       // First create the connection
       const createResponse = await fetch('/api/integrations', {
         method: 'POST',
@@ -358,17 +417,17 @@ export default function IntegrationCategoryPage({
           description: config.description,
         }),
       });
-      
+
       if (!createResponse.ok) {
         const errorData = await createResponse.json();
-        alert(errorData.error || 'Failed to create connection');
+        toast.error(errorData.error || 'Failed to create connection');
         return;
       }
-      
+
       const connection = await createResponse.json();
-      
+
       // Then connect with credentials
-      await fetch(`/api/integrations/${connection.id}`, {
+      const connectResponse = await fetch(`/api/integrations/${connection.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -377,27 +436,33 @@ export default function IntegrationCategoryPage({
           api_secret: data.api_secret,
         }),
       });
-      
+
+      if (connectResponse.ok) {
+        toast.success(`${config.name} connected successfully!`);
+      }
+
       setConnectingProvider(null);
       fetchConnections();
     } catch (error) {
       console.error('Failed to connect:', error);
-      alert('Failed to connect integration');
+      toast.error('Failed to connect integration');
     }
   };
 
   const handleDisconnect = async (id: string) => {
     if (!confirm('Are you sure you want to disconnect this integration?')) return;
-    
+
     try {
       await fetch(`/api/integrations/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'disconnect' }),
       });
+      toast.success('Integration disconnected');
       fetchConnections();
     } catch (error) {
       console.error('Failed to disconnect:', error);
+      toast.error('Failed to disconnect');
     }
   };
 
@@ -407,24 +472,30 @@ export default function IntegrationCategoryPage({
         method: 'POST',
       });
       const result = await response.json();
-      alert(result.success ? 'Connection is working!' : `Test failed: ${result.message}`);
+      if (result.success) {
+        toast.success('Connection is working!');
+      } else {
+        toast.error(`Test failed: ${result.message}`);
+      }
       fetchConnections();
     } catch (error) {
       console.error('Failed to test:', error);
-      alert('Failed to test connection');
+      toast.error('Failed to test connection');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to remove this integration? This cannot be undone.')) return;
-    
+
     try {
       await fetch(`/api/integrations/${id}`, {
         method: 'DELETE',
       });
+      toast.success('Integration removed');
       fetchConnections();
     } catch (error) {
       console.error('Failed to delete:', error);
+      toast.error('Failed to remove integration');
     }
   };
 
@@ -477,10 +548,11 @@ export default function IntegrationCategoryPage({
               key={provider}
               provider={provider}
               connection={getConnectionForProvider(provider)}
-              onConnect={setConnectingProvider}
+              onConnect={handleProviderConnect}
               onDisconnect={handleDisconnect}
               onTest={handleTest}
               onDelete={handleDelete}
+              isOAuthLoading={oauthLoading === provider}
             />
           ))}
         </div>

@@ -104,10 +104,11 @@ export const INTEGRATIONS_NAV_ITEMS = [
 // Communications sidebar navigation items
 export const COMMUNICATIONS_NAV_ITEMS = [
     { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
-    { key: 'email', label: 'Compose Email', icon: 'mail', href: '/crm/communications/new?type=email' },
-    { key: 'sms', label: 'Send SMS', icon: 'message-square', href: '/crm/communications/new?type=sms' },
+    { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/communications' },
+    { key: 'campaigns', label: 'Campaigns', icon: 'mail', href: '/crm/campaigns' },
+    { key: 'email', label: 'Compose Email', icon: 'message-square', href: '/crm/communications/new?type=email' },
+    { key: 'sms', label: 'Send SMS', icon: 'message-circle', href: '/crm/communications/new?type=sms' },
     { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/settings/comms' },
-    { key: 'campaigns', label: 'Campaigns', icon: 'megaphone', href: '/crm/communications' },
 ];
 
 // Revenue sidebar navigation items - Financial focused

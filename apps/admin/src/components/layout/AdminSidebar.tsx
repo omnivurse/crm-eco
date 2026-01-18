@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@crm-eco/ui';
 import {
@@ -74,16 +75,17 @@ export function AdminSidebar() {
         <div className="relative">
           {/* Gradient top stripe */}
           <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
-          
-          <div className="h-16 flex items-center px-5 border-b border-white/10">
-            <Link href="/dashboard" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#047474] to-[#069B9A] rounded-xl flex items-center justify-center shadow-lg shadow-teal-900/30 group-hover:shadow-teal-800/40 transition-shadow">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-lg text-white tracking-tight">Admin</span>
-                <span className="text-[10px] text-[#E9B61F] font-semibold tracking-widest uppercase">Portal</span>
-              </div>
+
+          <div className="h-[72px] flex items-center px-3 border-b border-white/10">
+            <Link href="/dashboard" className="flex items-center group">
+              <Image
+                src="/logo-pif-full.png"
+                alt="Pay It Forward HealthShare"
+                width={200}
+                height={56}
+                className="object-contain"
+                priority
+              />
             </Link>
           </div>
         </div>

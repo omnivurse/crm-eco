@@ -128,8 +128,9 @@ export function ZohoContextualSidebar({ isOpen, onToggle }: ZohoContextualSideba
             pathname.startsWith('/crm/forecasting') ||
             pathname.startsWith('/crm/commissions')) return 'revenue';
 
-        // Communications: inbox, communications
+        // Communications: inbox, communications, campaigns
         if (pathname.startsWith('/crm/communications') ||
+            pathname.startsWith('/crm/campaigns') ||
             pathname.startsWith('/crm/inbox')) return 'communications';
 
         // Default to CRM for: dashboard, modules (leads/contacts/deals), accounts, pipeline, activities, tasks, reports

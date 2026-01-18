@@ -16,6 +16,7 @@ export { DensityToggle } from './DensityToggle';
 // Filters & Columns
 export { AdvancedFilterBuilder, type FilterGroup, type FilterRule } from './AdvancedFilterBuilder';
 export { ColumnsButton } from './ColumnsButton';
+export { QuickFilters } from './QuickFilters';
 
 // Record Drawer
 export { RecordDrawer } from './RecordDrawer';

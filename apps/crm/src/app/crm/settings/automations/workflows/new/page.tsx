@@ -20,8 +20,12 @@ export default function NewWorkflowPage() {
   async function fetchModules() {
     try {
       const res = await fetch('/api/crm/modules');
-      const data = await res.json();
-      setModules(data || []);
+      if (res.ok) {
+        const data = await res.json();
+        setModules(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to fetch modules:', res.status);
+      }
     } catch (error) {
       console.error('Failed to fetch modules:', error);
     } finally {
