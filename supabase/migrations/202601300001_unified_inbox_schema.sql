@@ -238,6 +238,7 @@ ALTER TABLE inbox_quick_actions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inbox_views ENABLE ROW LEVEL SECURITY;
 
 -- Conversations policies
+DROP POLICY IF EXISTS inbox_conversations_org_access ON inbox_conversations;
 CREATE POLICY inbox_conversations_org_access ON inbox_conversations
   FOR ALL USING (
     org_id IN (
@@ -246,6 +247,7 @@ CREATE POLICY inbox_conversations_org_access ON inbox_conversations
   );
 
 -- Messages policies
+DROP POLICY IF EXISTS inbox_messages_org_access ON inbox_messages;
 CREATE POLICY inbox_messages_org_access ON inbox_messages
   FOR ALL USING (
     org_id IN (
@@ -254,6 +256,7 @@ CREATE POLICY inbox_messages_org_access ON inbox_messages
   );
 
 -- Assignments policies
+DROP POLICY IF EXISTS inbox_assignments_org_access ON inbox_assignments;
 CREATE POLICY inbox_assignments_org_access ON inbox_assignments
   FOR ALL USING (
     org_id IN (
@@ -262,6 +265,7 @@ CREATE POLICY inbox_assignments_org_access ON inbox_assignments
   );
 
 -- Quick actions policies
+DROP POLICY IF EXISTS inbox_quick_actions_org_access ON inbox_quick_actions;
 CREATE POLICY inbox_quick_actions_org_access ON inbox_quick_actions
   FOR ALL USING (
     org_id IN (
@@ -270,6 +274,7 @@ CREATE POLICY inbox_quick_actions_org_access ON inbox_quick_actions
   );
 
 -- Views policies (user can see shared views or their own)
+DROP POLICY IF EXISTS inbox_views_org_access ON inbox_views;
 CREATE POLICY inbox_views_org_access ON inbox_views
   FOR ALL USING (
     org_id IN (

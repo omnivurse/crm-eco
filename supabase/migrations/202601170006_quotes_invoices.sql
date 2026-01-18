@@ -50,11 +50,11 @@ CREATE TABLE IF NOT EXISTS quotes (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_quotes_org ON quotes(organization_id);
-CREATE INDEX idx_quotes_contact ON quotes(contact_id);
-CREATE INDEX idx_quotes_deal ON quotes(deal_id);
-CREATE INDEX idx_quotes_status ON quotes(status);
-CREATE INDEX idx_quotes_number ON quotes(organization_id, quote_number);
+CREATE INDEX IF NOT EXISTS idx_quotes_org ON quotes(organization_id);
+CREATE INDEX IF NOT EXISTS idx_quotes_contact ON quotes(contact_id);
+CREATE INDEX IF NOT EXISTS idx_quotes_deal ON quotes(deal_id);
+CREATE INDEX IF NOT EXISTS idx_quotes_status ON quotes(status);
+CREATE INDEX IF NOT EXISTS idx_quotes_number ON quotes(organization_id, quote_number);
 
 -- ============================================================================
 -- QUOTE LINE ITEMS
@@ -82,8 +82,8 @@ CREATE TABLE IF NOT EXISTS quote_line_items (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_quote_items_quote ON quote_line_items(quote_id);
-CREATE INDEX idx_quote_items_product ON quote_line_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_quote_items_quote ON quote_line_items(quote_id);
+CREATE INDEX IF NOT EXISTS idx_quote_items_product ON quote_line_items(product_id);
 
 -- ============================================================================
 -- INVOICES TABLE
@@ -135,12 +135,12 @@ CREATE TABLE IF NOT EXISTS invoices (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_invoices_org ON invoices(organization_id);
-CREATE INDEX idx_invoices_contact ON invoices(contact_id);
-CREATE INDEX idx_invoices_deal ON invoices(deal_id);
-CREATE INDEX idx_invoices_quote ON invoices(quote_id);
-CREATE INDEX idx_invoices_status ON invoices(status);
-CREATE INDEX idx_invoices_number ON invoices(organization_id, invoice_number);
+CREATE INDEX IF NOT EXISTS idx_invoices_org ON invoices(organization_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_contact ON invoices(contact_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_deal ON invoices(deal_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_quote ON invoices(quote_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_number ON invoices(organization_id, invoice_number);
 
 -- ============================================================================
 -- INVOICE LINE ITEMS
@@ -168,8 +168,8 @@ CREATE TABLE IF NOT EXISTS invoice_line_items (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_invoice_items_invoice ON invoice_line_items(invoice_id);
-CREATE INDEX idx_invoice_items_product ON invoice_line_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_line_items(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_items_product ON invoice_line_items(product_id);
 
 -- ============================================================================
 -- INVOICE PAYMENTS
@@ -190,7 +190,7 @@ CREATE TABLE IF NOT EXISTS invoice_payments (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_invoice_payments_invoice ON invoice_payments(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY
@@ -203,46 +203,56 @@ ALTER TABLE invoice_line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_payments ENABLE ROW LEVEL SECURITY;
 
 -- Quotes policies
+DROP POLICY IF EXISTS "Users can view quotes in their org" ON quotes;
 CREATE POLICY "Users can view quotes in their org"
   ON quotes FOR SELECT
   USING (organization_id = get_user_organization_id());
 
+DROP POLICY IF EXISTS "Users can manage quotes in their org" ON quotes;
 CREATE POLICY "Users can manage quotes in their org"
   ON quotes FOR ALL
   USING (organization_id = get_user_organization_id());
 
 -- Quote line items policies
+DROP POLICY IF EXISTS "Users can view quote items" ON quote_line_items;
 CREATE POLICY "Users can view quote items"
   ON quote_line_items FOR SELECT
   USING (quote_id IN (SELECT id FROM quotes WHERE organization_id = get_user_organization_id()));
 
+DROP POLICY IF EXISTS "Users can manage quote items" ON quote_line_items;
 CREATE POLICY "Users can manage quote items"
   ON quote_line_items FOR ALL
   USING (quote_id IN (SELECT id FROM quotes WHERE organization_id = get_user_organization_id()));
 
 -- Invoices policies
+DROP POLICY IF EXISTS "Users can view invoices in their org" ON invoices;
 CREATE POLICY "Users can view invoices in their org"
   ON invoices FOR SELECT
   USING (organization_id = get_user_organization_id());
 
+DROP POLICY IF EXISTS "Users can manage invoices in their org" ON invoices;
 CREATE POLICY "Users can manage invoices in their org"
   ON invoices FOR ALL
   USING (organization_id = get_user_organization_id());
 
 -- Invoice line items policies
+DROP POLICY IF EXISTS "Users can view invoice items" ON invoice_line_items;
 CREATE POLICY "Users can view invoice items"
   ON invoice_line_items FOR SELECT
   USING (invoice_id IN (SELECT id FROM invoices WHERE organization_id = get_user_organization_id()));
 
+DROP POLICY IF EXISTS "Users can manage invoice items" ON invoice_line_items;
 CREATE POLICY "Users can manage invoice items"
   ON invoice_line_items FOR ALL
   USING (invoice_id IN (SELECT id FROM invoices WHERE organization_id = get_user_organization_id()));
 
 -- Invoice payments policies
+DROP POLICY IF EXISTS "Users can view payments" ON invoice_payments;
 CREATE POLICY "Users can view payments"
   ON invoice_payments FOR SELECT
   USING (invoice_id IN (SELECT id FROM invoices WHERE organization_id = get_user_organization_id()));
 
+DROP POLICY IF EXISTS "Users can manage payments" ON invoice_payments;
 CREATE POLICY "Users can manage payments"
   ON invoice_payments FOR ALL
   USING (invoice_id IN (SELECT id FROM invoices WHERE organization_id = get_user_organization_id()));
@@ -251,18 +261,22 @@ CREATE POLICY "Users can manage payments"
 -- TRIGGERS
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_quotes_updated_at ON quotes;
 CREATE TRIGGER update_quotes_updated_at
   BEFORE UPDATE ON quotes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_quote_items_updated_at ON quote_line_items;
 CREATE TRIGGER update_quote_items_updated_at
   BEFORE UPDATE ON quote_line_items
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON invoices;
 CREATE TRIGGER update_invoices_updated_at
   BEFORE UPDATE ON invoices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_invoice_items_updated_at ON invoice_line_items;
 CREATE TRIGGER update_invoice_items_updated_at
   BEFORE UPDATE ON invoice_line_items
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
