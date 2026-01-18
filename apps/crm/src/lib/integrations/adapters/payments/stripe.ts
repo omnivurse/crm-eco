@@ -32,6 +32,7 @@ export class StripeAdapter implements PaymentAdapter {
 
     if (this.apiKey) {
       this.stripe = new Stripe(this.apiKey, {
+        // prettier-ignore
         apiVersion: '2025-12-15.clover',
         typescript: true,
       });
@@ -353,6 +354,7 @@ export class StripeAdapter implements PaymentAdapter {
    */
   static verifyWebhook(payload: string, signature: string, webhookSecret: string): Stripe.Event {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      // prettier-ignore
       apiVersion: '2025-12-15.clover',
     });
 

@@ -16,6 +16,7 @@ class StripeWebhookHandler implements WebhookHandler {
     if (!this._stripe) {
       const apiKey = process.env.STRIPE_SECRET_KEY || 'sk_placeholder';
       this._stripe = new Stripe(apiKey, {
+        // prettier-ignore
         apiVersion: '2025-12-15.clover',
       });
     }
