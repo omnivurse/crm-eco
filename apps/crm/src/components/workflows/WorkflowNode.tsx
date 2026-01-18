@@ -163,7 +163,7 @@ export function WorkflowNode({
 }
 
 function getNodeDescription(node: WorkflowNodeType): string {
-  const config = node.config || {};
+  const config = (node.config || {}) as Record<string, string | undefined>;
 
   switch (node.type) {
     case 'trigger_record_created':
