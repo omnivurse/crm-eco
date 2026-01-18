@@ -273,22 +273,22 @@ function ActivitiesSkeleton() {
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 bg-slate-800/50 rounded-xl animate-pulse" />
+        <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800/50 rounded-xl animate-pulse" />
         <div className="space-y-2">
-          <div className="h-7 w-32 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-4 w-24 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-7 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
         </div>
       </div>
-      <div className="h-16 bg-slate-800/30 rounded-2xl animate-pulse border border-white/5" />
-      <div className="bg-slate-800/30 rounded-2xl border border-white/5 overflow-hidden">
+      <div className="h-16 bg-slate-100 dark:bg-slate-800/30 rounded-2xl animate-pulse border border-slate-200 dark:border-white/5" />
+      <div className="bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 overflow-hidden">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="h-20 border-b border-white/5 flex items-center px-4 gap-4 animate-pulse">
-            <div className="w-10 h-10 bg-slate-700 rounded-lg" />
+          <div key={i} className="h-20 border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-4 animate-pulse">
+            <div className="w-10 h-10 bg-slate-200 dark:bg-slate-700 rounded-lg" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 w-48 bg-slate-700 rounded" />
-              <div className="h-3 w-32 bg-slate-700 rounded" />
+              <div className="h-4 w-48 bg-slate-200 dark:bg-slate-700 rounded" />
+              <div className="h-3 w-32 bg-slate-200 dark:bg-slate-700 rounded" />
             </div>
-            <div className="w-20 h-4 bg-slate-700 rounded" />
+            <div className="w-20 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
           </div>
         ))}
       </div>
