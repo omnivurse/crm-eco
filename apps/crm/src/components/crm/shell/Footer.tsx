@@ -14,16 +14,16 @@ export function Footer() {
 
   return (
     <footer className="relative z-10 border-t border-slate-200/50 dark:border-white/5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-6 py-3">
+      <div className="px-6 py-3">
         {/* Main Row - Logo, Links, Security Badge */}
         <div className="flex items-center justify-between">
           {/* Logo & Tagline */}
           <div className="flex items-center gap-3">
-            <Link href="/crm" className="flex items-center gap-2">
+            <Link href="/crm" className="flex items-center gap-2 flex-shrink-0">
               <img
                 src="/logo.png"
                 alt="Pay It Forward HealthShare"
-                className="h-7 w-auto object-contain"
+                className="h-9 w-auto object-contain"
               />
             </Link>
             <span className="hidden md:inline text-slate-400 dark:text-slate-600">|</span>
