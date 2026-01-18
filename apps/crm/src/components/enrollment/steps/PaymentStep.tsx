@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from '@crm-eco/ui';
-import { CreditCard, Building, DollarSign } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, PaymentForm } from '@crm-eco/ui';
+import { CreditCard, Building, DollarSign, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
-import { completePaymentStep } from '@/app/(dashboard)/enrollments/new/actions';
+import { completePaymentStep, createPaymentProfile } from '@/app/(dashboard)/enrollments/new/actions';
 
 interface Plan {
   id: string;
@@ -24,23 +24,18 @@ const FUNDING_TYPES = [
   { value: 'other', label: 'Other', icon: DollarSign },
 ];
 
-const US_STATES = [
-  'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'DC', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN',
-  'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH',
-  'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT',
-  'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
-];
-
 export function PaymentStep({ plans }: PaymentStepProps) {
   const {
     enrollmentId,
     snapshot,
     selectedPlanId,
+    primaryMemberId,
     setIsLoading,
     setError,
     markStepComplete,
     nextStep,
     updateSnapshot,
+    isLoading,
   } = useEnrollmentWizard();
 
   const selectedPlan = plans.find((p) => p.id === selectedPlanId);
@@ -52,13 +47,12 @@ export function PaymentStep({ plans }: PaymentStepProps) {
     snapshot.payment?.billingFrequency || 'monthly'
   );
   const [autoPay, setAutoPay] = useState(snapshot.payment?.autoPay ?? true);
-  const [billingAddress, setBillingAddress] = useState({
-    line1: snapshot.payment?.billingAddress?.line1 || '',
-    line2: snapshot.payment?.billingAddress?.line2 || '',
-    city: snapshot.payment?.billingAddress?.city || '',
-    state: snapshot.payment?.billingAddress?.state || '',
-    postalCode: snapshot.payment?.billingAddress?.postalCode || '',
-  });
+
+  // Payment profile state
+  const [paymentProfileCreated, setPaymentProfileCreated] = useState(false);
+  const [paymentProfileId, setPaymentProfileId] = useState<string | null>(null);
+  const [paymentLast4, setPaymentLast4] = useState<string | null>(null);
+  const [creatingProfile, setCreatingProfile] = useState(false);
 
   const monthlyAmount = selectedPlan?.monthly_share || 0;
   const enrollmentFee = selectedPlan?.enrollment_fee || 0;
@@ -71,8 +65,73 @@ export function PaymentStep({ plans }: PaymentStepProps) {
     }).format(amount);
   };
 
+  // Handle payment form submission - creates payment profile via Authorize.Net
+  const handlePaymentSubmit = useCallback(async (paymentData: {
+    type: 'card' | 'ach';
+    cardNumber?: string;
+    expiryMonth?: string;
+    expiryYear?: string;
+    cvv?: string;
+    routingNumber?: string;
+    accountNumber?: string;
+    accountType?: 'checking' | 'savings';
+    accountName?: string;
+    billingAddress: {
+      firstName: string;
+      lastName: string;
+      address: string;
+      city: string;
+      state: string;
+      zip: string;
+    };
+  }) => {
+    if (!enrollmentId || !primaryMemberId) {
+      setError('Enrollment or member not initialized');
+      return;
+    }
+
+    setCreatingProfile(true);
+    setError(null);
+
+    try {
+      const result = await createPaymentProfile({
+        enrollmentId,
+        memberId: primaryMemberId,
+        paymentType: paymentData.type,
+        cardNumber: paymentData.cardNumber,
+        expiryMonth: paymentData.expiryMonth,
+        expiryYear: paymentData.expiryYear,
+        cvv: paymentData.cvv,
+        routingNumber: paymentData.routingNumber,
+        accountNumber: paymentData.accountNumber,
+        accountType: paymentData.accountType,
+        accountName: paymentData.accountName,
+        billingAddress: paymentData.billingAddress,
+      });
+
+      if (!result.success) {
+        setError(result.error || 'Failed to create payment profile');
+        return;
+      }
+
+      setPaymentProfileCreated(true);
+      setPaymentProfileId(result.data?.paymentProfileId || null);
+      setPaymentLast4(result.data?.last4 || null);
+
+      // Update funding type based on payment type
+      setFundingType(paymentData.type === 'card' ? 'credit_card' : 'ach');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setCreatingProfile(false);
+    }
+  }, [enrollmentId, primaryMemberId, setError]);
+
   const validateForm = (): string | null => {
     if (!fundingType) return 'Please select a payment method';
+    if ((fundingType === 'credit_card' || fundingType === 'ach') && !paymentProfileCreated) {
+      return 'Please enter and verify your payment information';
+    }
     return null;
   };
 
@@ -100,7 +159,7 @@ export function PaymentStep({ plans }: PaymentStepProps) {
         billingFrequency,
         autoPay,
         billingAmount,
-        billingAddress: billingAddress.line1 ? billingAddress : undefined,
+        paymentProfileId: paymentProfileId || undefined,
       });
 
       if (!result.success) {
@@ -113,7 +172,6 @@ export function PaymentStep({ plans }: PaymentStepProps) {
         billingFrequency,
         autoPay,
         billingAmount,
-        billingAddress: billingAddress.line1 ? billingAddress : undefined,
       });
 
       markStepComplete('payment');
@@ -125,9 +183,11 @@ export function PaymentStep({ plans }: PaymentStepProps) {
     }
   };
 
+  const showPaymentForm = fundingType === 'credit_card' || fundingType === 'ach';
+
   return (
     <div className="space-y-6">
-      {/* Payment Method */}
+      {/* Payment Method Selection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -142,32 +202,113 @@ export function PaymentStep({ plans }: PaymentStepProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {FUNDING_TYPES.map((type) => {
               const Icon = type.icon;
+              const isSelected = fundingType === type.value;
               return (
                 <button
                   key={type.value}
                   type="button"
-                  onClick={() => setFundingType(type.value as typeof fundingType)}
+                  onClick={() => {
+                    setFundingType(type.value as typeof fundingType);
+                    // Reset payment profile if changing to a different type
+                    if (type.value !== 'credit_card' && type.value !== 'ach') {
+                      setPaymentProfileCreated(false);
+                      setPaymentProfileId(null);
+                      setPaymentLast4(null);
+                    }
+                  }}
                   className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
-                    fundingType === type.value
+                    isSelected
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <Icon className={`w-6 h-6 ${fundingType === type.value ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span className={`text-sm font-medium ${fundingType === type.value ? 'text-blue-900' : 'text-slate-700'}`}>
+                  <Icon className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
                     {type.label}
                   </span>
                 </button>
               );
             })}
           </div>
-
-          <p className="text-sm text-slate-500 mt-4">
-            <strong>Note:</strong> Payment details will be collected after enrollment approval. 
-            We do not store full payment credentials at this time.
-          </p>
         </CardContent>
       </Card>
+
+      {/* Payment Form for Card/ACH */}
+      {showPaymentForm && !paymentProfileCreated && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {fundingType === 'credit_card' ? 'Credit Card Details' : 'Bank Account Details'}
+            </CardTitle>
+            <CardDescription>
+              Your payment information is securely processed through our payment gateway
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {creatingProfile ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-2" />
+                <span className="text-slate-600">Processing payment information...</span>
+              </div>
+            ) : (
+              <PaymentForm
+                defaultTab={fundingType === 'credit_card' ? 'card' : 'ach'}
+                onSubmit={handlePaymentSubmit}
+                submitLabel="Verify Payment Method"
+                showBillingAddress={true}
+              />
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payment Profile Confirmed */}
+      {paymentProfileCreated && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800">Payment Method Verified</p>
+                <p className="text-sm text-green-700">
+                  {fundingType === 'credit_card' ? 'Card' : 'Bank Account'} ending in {paymentLast4 || '****'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setPaymentProfileCreated(false);
+                  setPaymentProfileId(null);
+                  setPaymentLast4(null);
+                }}
+                className="ml-auto text-sm text-green-700 hover:text-green-900 underline"
+              >
+                Change
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Check/Other Payment Note */}
+      {(fundingType === 'check' || fundingType === 'other') && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-amber-800">Manual Payment Required</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  {fundingType === 'check'
+                    ? 'You will receive instructions for mailing your check after enrollment approval.'
+                    : 'Our team will contact you to arrange an alternative payment method.'
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Billing Preferences */}
       <Card>

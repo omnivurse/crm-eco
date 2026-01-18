@@ -75,6 +75,7 @@ interface PaymentStepData {
   billingFrequency: 'monthly' | 'annual';
   autoPay: boolean;
   billingAmount?: number;
+  paymentProfileId?: string;
   billingAddress?: {
     line1: string;
     line2?: string;
@@ -82,6 +83,34 @@ interface PaymentStepData {
     state: string;
     postalCode: string;
   };
+}
+
+interface CreatePaymentProfileData {
+  enrollmentId: string;
+  memberId: string;
+  paymentType: 'card' | 'ach';
+  cardNumber?: string;
+  expiryMonth?: string;
+  expiryYear?: string;
+  cvv?: string;
+  routingNumber?: string;
+  accountNumber?: string;
+  accountType?: 'checking' | 'savings';
+  accountName?: string;
+  billingAddress: {
+    firstName: string;
+    lastName: string;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
+}
+
+interface SaveSignatureData {
+  enrollmentId: string;
+  signatureData: string;
+  signedAt: string;
 }
 
 // ============================================================================
@@ -671,10 +700,199 @@ export async function completePaymentStep(data: PaymentStepData): Promise<Action
 }
 
 // ============================================================================
+// Create Payment Profile (Authorize.Net integration)
+// ============================================================================
+
+export async function createPaymentProfile(data: CreatePaymentProfileData): Promise<ActionResult<{ paymentProfileId: string; last4: string }>> {
+  try {
+    const supabase = await getSupabase();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return { success: false, error: 'Profile not found' };
+    }
+
+    // Get member email for Authorize.Net profile
+    const { data: member } = await supabase
+      .from('members')
+      .select('email, first_name, last_name')
+      .eq('id', data.memberId)
+      .single();
+
+    if (!member) {
+      return { success: false, error: 'Member not found' };
+    }
+
+    // Call process-payment Edge Function to create profile
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { success: false, error: 'Supabase configuration missing' };
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/process-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        action: 'create_profile',
+        memberId: data.memberId,
+        email: member.email,
+        paymentType: data.paymentType,
+        cardNumber: data.cardNumber,
+        expiryMonth: data.expiryMonth,
+        expiryYear: data.expiryYear,
+        cvv: data.cvv,
+        routingNumber: data.routingNumber,
+        accountNumber: data.accountNumber,
+        accountType: data.accountType,
+        accountName: data.accountName || `${data.billingAddress.firstName} ${data.billingAddress.lastName}`,
+        billingAddress: data.billingAddress,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+      return { success: false, error: result.error || 'Failed to create payment profile' };
+    }
+
+    // Store payment profile reference in enrollment
+    const last4 = data.paymentType === 'card'
+      ? data.cardNumber?.slice(-4) || '****'
+      : data.accountNumber?.slice(-4) || '****';
+
+    await supabase
+      .from('enrollments')
+      .update({
+        payment_profile_id: result.paymentProfileId,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', data.enrollmentId);
+
+    // Log audit event
+    await supabase.from('enrollment_audit_log').insert({
+      organization_id: profile.organization_id,
+      enrollment_id: data.enrollmentId,
+      actor_profile_id: profile.id,
+      event_type: 'field_update',
+      message: `Payment profile created (${data.paymentType === 'card' ? 'Credit Card' : 'ACH'} ending in ${last4})`,
+      data_after: { paymentType: data.paymentType, last4 },
+    });
+
+    return {
+      success: true,
+      data: {
+        paymentProfileId: result.paymentProfileId,
+        last4,
+      },
+    };
+  } catch (err) {
+    console.error('Create payment profile error:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
+// ============================================================================
+// Save Signature
+// ============================================================================
+
+export async function saveSignature(data: SaveSignatureData): Promise<ActionResult> {
+  try {
+    const supabase = await getSupabase();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return { success: false, error: 'Profile not found' };
+    }
+
+    // Get enrollment
+    const { data: enrollment } = await supabase
+      .from('enrollments')
+      .select('snapshot, primary_member_id')
+      .eq('id', data.enrollmentId)
+      .single();
+
+    if (!enrollment) {
+      return { success: false, error: 'Enrollment not found' };
+    }
+
+    const existingSnapshot = (enrollment.snapshot as WizardSnapshot) || {};
+
+    // Update enrollment with signature
+    await supabase
+      .from('enrollments')
+      .update({
+        signature_data: data.signatureData,
+        signature_date: data.signedAt,
+        snapshot: {
+          ...existingSnapshot,
+          confirmation: {
+            ...existingSnapshot.confirmation,
+            signatureData: data.signatureData,
+            signedAt: data.signedAt,
+          },
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', data.enrollmentId);
+
+    // If there's a contract, update it as well
+    await supabase
+      .from('enrollment_contracts')
+      .update({
+        signature_data: data.signatureData,
+        signed_at: data.signedAt,
+        signer_ip: null, // Would need to capture from request
+      })
+      .eq('enrollment_id', data.enrollmentId)
+      .is('signed_at', null);
+
+    // Log audit event
+    await supabase.from('enrollment_audit_log').insert({
+      organization_id: profile.organization_id,
+      enrollment_id: data.enrollmentId,
+      actor_profile_id: profile.id,
+      event_type: 'signature_captured',
+      message: 'Electronic signature captured',
+      data_after: { signedAt: data.signedAt },
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('Save signature error:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+  }
+}
+
+// ============================================================================
 // Step 6: Submit Enrollment
 // ============================================================================
 
-export async function submitEnrollment(enrollmentId: string, finalAcceptance: boolean): Promise<ActionResult<{ membershipId: string }>> {
+export async function submitEnrollment(enrollmentId: string, finalAcceptance: boolean, signatureData?: string): Promise<ActionResult<{ membershipId: string }>> {
   try {
     if (!finalAcceptance) {
       return { success: false, error: 'Final acceptance is required' };

@@ -15,87 +15,74 @@ import {
   ArrowUpRight,
   FileText,
   TrendingUp,
-  AlertCircle,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { getCurrentProfile } from '@/lib/crm/queries';
+import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 
 // Need status configuration
-const NEED_STATUSES = [
-  { key: 'submitted', label: 'Submitted', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
-  { key: 'in_review', label: 'In Review', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
-  { key: 'pending_docs', label: 'Pending Docs', color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
-  { key: 'approved', label: 'Approved', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
-  { key: 'paid', label: 'Paid', color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
-  { key: 'denied', label: 'Denied', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
-];
+const NEED_STATUSES: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  submitted: { label: 'Submitted', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30' },
+  in_review: { label: 'In Review', color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  pending_docs: { label: 'Pending Docs', color: 'text-violet-400', bg: 'bg-violet-500/10', border: 'border-violet-500/30' },
+  approved: { label: 'Approved', color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30' },
+  paid: { label: 'Paid', color: 'text-teal-400', bg: 'bg-teal-500/10', border: 'border-teal-500/30' },
+  denied: { label: 'Denied', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30' },
+};
 
 // Urgency levels
-const URGENCY_LEVELS = [
-  { key: 'low', label: 'Low', color: 'text-slate-400', bg: 'bg-slate-500/10' },
-  { key: 'medium', label: 'Medium', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  { key: 'high', label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/10' },
-  { key: 'urgent', label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/10' },
-];
+const URGENCY_LEVELS: Record<string, { label: string; color: string; bg: string }> = {
+  low: { label: 'Low', color: 'text-slate-400', bg: 'bg-slate-500/10' },
+  medium: { label: 'Medium', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+  high: { label: 'High', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+  urgent: { label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/10' },
+};
 
-// Mock needs data
-const MOCK_NEEDS = [
-  {
-    id: '1',
-    memberName: 'Robert Williams',
-    memberId: 'MBR-001234',
-    type: 'Medical',
-    description: 'Emergency room visit',
-    amount: 4500,
-    status: 'in_review',
-    urgency: 'high',
-    submittedAt: '2026-01-09',
-    slaDeadline: '2026-01-16',
-  },
-  {
-    id: '2',
-    memberName: 'Emily Davis',
-    memberId: 'MBR-001567',
-    type: 'Prescription',
-    description: 'Monthly medication',
-    amount: 320,
-    status: 'approved',
-    urgency: 'medium',
-    submittedAt: '2026-01-08',
-    slaDeadline: '2026-01-15',
-  },
-  {
-    id: '3',
-    memberName: 'James Wilson',
-    memberId: 'MBR-000892',
-    type: 'Procedure',
-    description: 'Outpatient surgery',
-    amount: 12000,
-    status: 'pending_docs',
-    urgency: 'medium',
-    submittedAt: '2026-01-07',
-    slaDeadline: '2026-01-14',
-  },
-  {
-    id: '4',
-    memberName: 'Lisa Anderson',
-    memberId: 'MBR-002341',
-    type: 'Medical',
-    description: 'Specialist consultation',
-    amount: 850,
-    status: 'submitted',
-    urgency: 'low',
-    submittedAt: '2026-01-10',
-    slaDeadline: '2026-01-17',
-  },
-];
+interface Need {
+  id: string;
+  need_type: string;
+  description: string | null;
+  total_amount: number;
+  amount_submitted: number;
+  status: string;
+  urgency?: string;
+  sla_deadline?: string | null;
+  created_at: string;
+  member?: {
+    id: string;
+    title: string;
+    data: Record<string, unknown>;
+  } | null;
+  assigned_to_user?: {
+    id: string;
+    full_name: string | null;
+  } | null;
+}
 
-function NeedCard({ need }: { need: typeof MOCK_NEEDS[0] }) {
-  const status = NEED_STATUSES.find(s => s.key === need.status) || NEED_STATUSES[0];
-  const urgency = URGENCY_LEVELS.find(u => u.key === need.urgency) || URGENCY_LEVELS[0];
+interface NeedStats {
+  status: string;
+  urgency: string | null;
+  total_amount: number;
+  amount_submitted: number;
+}
 
-  const daysUntilSla = Math.ceil((new Date(need.slaDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+interface RecentNeedStats {
+  status: string;
+  sla_deadline: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function NeedCard({ need }: { need: Need }) {
+  const status = NEED_STATUSES[need.status] || NEED_STATUSES.submitted;
+  const urgency = URGENCY_LEVELS[need.urgency || 'medium'] || URGENCY_LEVELS.medium;
+  const memberName = need.member?.title || 'Unknown Member';
+  const memberId = need.member?.data?.membership_number as string || need.member?.id?.slice(0, 8) || 'N/A';
+
+  const daysUntilSla = need.sla_deadline
+    ? Math.ceil((new Date(need.sla_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 7;
   const isOverdue = daysUntilSla < 0;
   const isDueSoon = daysUntilSla <= 2 && daysUntilSla >= 0;
 
@@ -107,29 +94,34 @@ function NeedCard({ need }: { need: typeof MOCK_NEEDS[0] }) {
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <h4 className="text-slate-900 dark:text-white font-medium group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                  {need.memberName}
+                  {memberName}
                 </h4>
                 <span className={`px-2 py-0.5 rounded text-xs font-medium ${urgency.bg} ${urgency.color}`}>
                   {urgency.label}
                 </span>
               </div>
-              <p className="text-slate-500 text-sm">{need.memberId} • {need.type}</p>
+              <p className="text-slate-500 text-sm">{memberId} &bull; {need.need_type}</p>
             </div>
             <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${status.bg} ${status.color} ${status.border}`}>
               {status.label}
             </span>
           </div>
 
-          <p className="text-slate-600 dark:text-slate-300 text-sm mb-4">{need.description}</p>
+          <p className="text-slate-600 dark:text-slate-300 text-sm mb-4 line-clamp-2">
+            {need.description || 'No description provided'}
+          </p>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
-              <span className="text-xl font-bold text-slate-900 dark:text-white">${need.amount.toLocaleString()}</span>
+              <span className="text-xl font-bold text-slate-900 dark:text-white">
+                ${(need.amount_submitted || need.total_amount || 0).toLocaleString()}
+              </span>
             </div>
 
-            <div className={`flex items-center gap-1 text-xs ${isOverdue ? 'text-red-500 dark:text-red-400' : isDueSoon ? 'text-amber-500 dark:text-amber-400' : 'text-slate-500'
-              }`}>
+            <div className={`flex items-center gap-1 text-xs ${
+              isOverdue ? 'text-red-500 dark:text-red-400' : isDueSoon ? 'text-amber-500 dark:text-amber-400' : 'text-slate-500'
+            }`}>
               {isOverdue ? (
                 <AlertTriangle className="w-3 h-3" />
               ) : (
@@ -146,7 +138,7 @@ function NeedCard({ need }: { need: typeof MOCK_NEEDS[0] }) {
         <div className="px-5 py-3 bg-slate-100 dark:bg-slate-900/30 border-t border-slate-200 dark:border-white/5 flex items-center justify-between">
           <span className="text-xs text-slate-500 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
-            Submitted {new Date(need.submittedAt).toLocaleDateString()}
+            Submitted {new Date(need.created_at).toLocaleDateString()}
           </span>
           <span className="h-7 text-xs text-teal-600 dark:text-teal-400 flex items-center gap-1">
             Review
@@ -164,13 +156,77 @@ async function NeedsContent() {
     redirect('/crm-login');
   }
 
+  const supabase = await createServerSupabaseClient();
+
+  // Fetch needs with related data
+  const { data: needs, error } = await supabase
+    .from('needs')
+    .select(`
+      id,
+      need_type,
+      description,
+      total_amount,
+      amount_submitted,
+      status,
+      urgency,
+      sla_deadline,
+      created_at,
+      member:crm_records!needs_member_id_fkey(id, title, data),
+      assigned_to_user:profiles!needs_assigned_to_fkey(id, full_name)
+    `)
+    .eq('organization_id', profile.organization_id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('Error fetching needs:', error);
+  }
+
+  const needsList = (needs || []) as unknown as Need[];
+
   // Calculate stats
-  const totalNeeds = MOCK_NEEDS.length;
-  const pendingReview = MOCK_NEEDS.filter(n => ['submitted', 'in_review'].includes(n.status)).length;
-  const approvedAmount = MOCK_NEEDS
+  const { data: allNeedsData } = await supabase
+    .from('needs')
+    .select('status, urgency, total_amount, amount_submitted')
+    .eq('organization_id', profile.organization_id);
+
+  const allNeeds = (allNeedsData || []) as NeedStats[];
+  const totalNeeds = allNeeds.length;
+  const pendingReview = allNeeds.filter(n => ['submitted', 'in_review'].includes(n.status)).length;
+  const approvedAmount = allNeeds
     .filter(n => n.status === 'approved' || n.status === 'paid')
-    .reduce((sum, n) => sum + n.amount, 0);
-  const urgentNeeds = MOCK_NEEDS.filter(n => n.urgency === 'urgent' || n.urgency === 'high').length;
+    .reduce((sum, n) => sum + (n.amount_submitted || n.total_amount || 0), 0);
+  const urgentNeeds = allNeeds.filter(n => n.urgency === 'urgent' || n.urgency === 'high').length;
+
+  // Calculate SLA stats (last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const { data: recentNeedsData } = await supabase
+    .from('needs')
+    .select('status, sla_deadline, created_at, updated_at')
+    .eq('organization_id', profile.organization_id)
+    .gte('created_at', thirtyDaysAgo.toISOString());
+
+  const recentNeeds = (recentNeedsData || []) as RecentNeedStats[];
+  const completedNeeds = recentNeeds.filter(n => ['approved', 'paid', 'denied'].includes(n.status));
+  const onTimeCount = completedNeeds.filter(n => {
+    if (!n.sla_deadline) return true;
+    const deadline = new Date(n.sla_deadline);
+    const completed = new Date(n.updated_at);
+    return completed <= deadline;
+  }).length;
+  const onTimeRate = completedNeeds.length > 0 ? Math.round((onTimeCount / completedNeeds.length) * 100) : 100;
+  const approvalRate = recentNeeds.length > 0
+    ? Math.round((recentNeeds.filter(n => n.status === 'approved' || n.status === 'paid').length / recentNeeds.length) * 100)
+    : 0;
+
+  // Count at-risk (close to SLA deadline)
+  const atRiskCount = needsList.filter(n => {
+    if (!n.sla_deadline || ['approved', 'paid', 'denied'].includes(n.status)) return false;
+    const daysLeft = Math.ceil((new Date(n.sla_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return daysLeft <= 2;
+  }).length;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -197,12 +253,14 @@ async function NeedsContent() {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Button
-            className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Submit Need
-          </Button>
+          <Link href="/crm/needs/new">
+            <Button
+              className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Submit Need
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -265,9 +323,9 @@ async function NeedsContent() {
         </div>
 
         <div className="flex items-center gap-2">
-          {NEED_STATUSES.slice(0, 4).map((status) => (
+          {Object.entries(NEED_STATUSES).slice(0, 4).map(([key, status]) => (
             <button
-              key={status.key}
+              key={key}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all hover:scale-105 ${status.bg} ${status.color} ${status.border}`}
             >
               {status.label}
@@ -278,9 +336,25 @@ async function NeedsContent() {
 
       {/* Needs Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {MOCK_NEEDS.map((need) => (
-          <NeedCard key={need.id} need={need} />
-        ))}
+        {needsList.length > 0 ? (
+          needsList.map((need) => (
+            <NeedCard key={need.id} need={need} />
+          ))
+        ) : (
+          <div className="col-span-2 glass-card rounded-xl p-12 border border-slate-200 dark:border-white/10 text-center">
+            <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 w-fit mx-auto mb-4">
+              <HeartHandshake className="w-8 h-8 text-slate-400 dark:text-slate-600" />
+            </div>
+            <p className="text-slate-900 dark:text-white font-medium mb-1">No needs submitted yet</p>
+            <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">Member health sharing needs will appear here.</p>
+            <Link href="/crm/needs/new">
+              <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Submit First Need
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* SLA Overview */}
@@ -295,19 +369,21 @@ async function NeedsContent() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <div className="text-center">
-            <p className="text-3xl font-bold text-emerald-500 dark:text-emerald-400 mb-1">94%</p>
+            <p className="text-3xl font-bold text-emerald-500 dark:text-emerald-400 mb-1">{onTimeRate}%</p>
             <p className="text-slate-500 dark:text-slate-400 text-sm">On-Time Rate</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">3.2</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
+              {completedNeeds.length > 0 ? '3.2' : '0'}
+            </p>
             <p className="text-slate-500 dark:text-slate-400 text-sm">Avg Days to Process</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">87%</p>
+            <p className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{approvalRate}%</p>
             <p className="text-slate-500 dark:text-slate-400 text-sm">Approval Rate</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-amber-500 dark:text-amber-400 mb-1">2</p>
+            <p className="text-3xl font-bold text-amber-500 dark:text-amber-400 mb-1">{atRiskCount}</p>
             <p className="text-slate-500 dark:text-slate-400 text-sm">At Risk (SLA)</p>
           </div>
         </div>
@@ -330,27 +406,27 @@ function NeedsSkeleton() {
       {/* Header skeleton */}
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <div className="h-5 w-32 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-8 w-56 bg-slate-800/50 rounded animate-pulse" />
-          <div className="h-4 w-48 bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-5 w-32 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-8 w-56 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
+          <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
         </div>
         <div className="flex gap-3">
-          <div className="h-10 w-24 bg-slate-800/50 rounded-lg animate-pulse" />
-          <div className="h-10 w-32 bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-24 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
+          <div className="h-10 w-32 bg-slate-200 dark:bg-slate-800/50 rounded-lg animate-pulse" />
         </div>
       </div>
 
       {/* Stats skeleton */}
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-24 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+          <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}
       </div>
 
       {/* Content skeleton */}
       <div className="grid grid-cols-2 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-48 bg-slate-800/30 rounded-xl border border-white/5 animate-pulse" />
+          <div key={i} className="h-48 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}
       </div>
     </div>

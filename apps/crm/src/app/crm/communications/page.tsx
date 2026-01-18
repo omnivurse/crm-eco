@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
 import {
   MessageSquare,
   Mail,
@@ -50,60 +51,15 @@ interface RecentActivity {
   status: 'sent' | 'received' | 'missed' | 'scheduled';
 }
 
-// ============================================================================
-// Mock Data (Replace with API calls)
-// ============================================================================
-
-const CHANNELS: CommunicationChannel[] = [
-  {
-    key: 'email',
-    name: 'Email',
-    description: 'Send and track emails to contacts',
-    icon: <Mail className="w-5 h-5" />,
-    href: '/crm/integrations/email',
-    color: 'blue',
-    stats: { sent: 156, received: 89, pending: 12 },
-    status: 'connected',
-  },
-  {
-    key: 'calls',
-    name: 'Calls',
-    description: 'Make and log phone calls',
-    icon: <Phone className="w-5 h-5" />,
-    href: '/crm/integrations/phone',
-    color: 'green',
-    stats: { sent: 45, received: 32, pending: 5 },
-    status: 'connected',
-  },
-  {
-    key: 'sms',
-    name: 'SMS',
-    description: 'Send text messages to contacts',
-    icon: <MessageSquare className="w-5 h-5" />,
-    href: '/crm/integrations/phone',
-    color: 'purple',
-    stats: { sent: 78, received: 45, pending: 3 },
-    status: 'not_configured',
-  },
-  {
-    key: 'meetings',
-    name: 'Meetings',
-    description: 'Schedule and manage meetings',
-    icon: <Video className="w-5 h-5" />,
-    href: '/crm/scheduling',
-    color: 'orange',
-    stats: { sent: 23, received: 18, pending: 8 },
-    status: 'connected',
-  },
-];
-
-const RECENT_ACTIVITIES: RecentActivity[] = [
-  { id: '1', type: 'email', subject: 'Follow-up on proposal', contact: 'John Smith', time: '10 min ago', status: 'sent' },
-  { id: '2', type: 'call', subject: 'Discovery call', contact: 'Sarah Johnson', time: '1 hour ago', status: 'received' },
-  { id: '3', type: 'meeting', subject: 'Product demo', contact: 'Mike Wilson', time: '2 hours ago', status: 'scheduled' },
-  { id: '4', type: 'email', subject: 'Contract review', contact: 'Emily Davis', time: '3 hours ago', status: 'received' },
-  { id: '5', type: 'sms', subject: 'Appointment reminder', contact: 'Chris Brown', time: '5 hours ago', status: 'sent' },
-];
+interface ActivityData {
+  id: string;
+  title: string;
+  activity_type: string;
+  status: string;
+  call_type: string | null;
+  created_at: string;
+  record?: { title: string }[] | null;
+}
 
 // ============================================================================
 // Components
@@ -226,25 +182,186 @@ function ActivityRow({ activity }: { activity: RecentActivity }) {
 }
 
 // ============================================================================
+// Helper Functions
+// ============================================================================
+
+function getTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+}
+
+// ============================================================================
 // Main Page
 // ============================================================================
 
 export default function CommunicationsPage() {
   const [loading, setLoading] = useState(true);
+  const [channels, setChannels] = useState<CommunicationChannel[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [stats, setStats] = useState({ sent: 0, received: 0, pending: 0, responseRate: 0 });
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    async function loadData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!profile) return;
+
+        // Get date 7 days ago
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        // Fetch activity counts by type (last 7 days)
+        const { data: activitiesData } = await supabase
+          .from('crm_tasks')
+          .select('activity_type, status, call_type')
+          .eq('org_id', profile.organization_id)
+          .in('activity_type', ['email', 'call', 'meeting'])
+          .gte('created_at', sevenDaysAgo.toISOString());
+
+        const activities = (activitiesData || []) as { activity_type: string; status: string; call_type: string | null }[];
+
+        // Calculate stats by type
+        const emailActivities = activities.filter(a => a.activity_type === 'email');
+        const callActivities = activities.filter(a => a.activity_type === 'call');
+        const meetingActivities = activities.filter(a => a.activity_type === 'meeting');
+
+        const channelData: CommunicationChannel[] = [
+          {
+            key: 'email',
+            name: 'Email',
+            description: 'Send and track emails to contacts',
+            icon: <Mail className="w-5 h-5" />,
+            href: '/crm/integrations/email',
+            color: 'blue',
+            stats: {
+              sent: emailActivities.filter(e => e.status === 'completed').length,
+              received: emailActivities.filter(e => e.status === 'open').length,
+              pending: emailActivities.filter(e => e.status === 'in_progress').length,
+            },
+            status: 'connected',
+          },
+          {
+            key: 'calls',
+            name: 'Calls',
+            description: 'Make and log phone calls',
+            icon: <Phone className="w-5 h-5" />,
+            href: '/crm/integrations/phone',
+            color: 'green',
+            stats: {
+              sent: callActivities.filter(c => c.call_type === 'outbound').length,
+              received: callActivities.filter(c => c.call_type === 'inbound').length,
+              pending: callActivities.filter(c => c.status === 'open').length,
+            },
+            status: 'connected',
+          },
+          {
+            key: 'sms',
+            name: 'SMS',
+            description: 'Send text messages to contacts',
+            icon: <MessageSquare className="w-5 h-5" />,
+            href: '/crm/integrations/phone',
+            color: 'purple',
+            stats: { sent: 0, received: 0, pending: 0 },
+            status: 'not_configured',
+          },
+          {
+            key: 'meetings',
+            name: 'Meetings',
+            description: 'Schedule and manage meetings',
+            icon: <Video className="w-5 h-5" />,
+            href: '/crm/scheduling',
+            color: 'orange',
+            stats: {
+              sent: meetingActivities.filter(m => m.status === 'completed').length,
+              received: meetingActivities.length,
+              pending: meetingActivities.filter(m => m.status === 'open' || m.status === 'in_progress').length,
+            },
+            status: 'connected',
+          },
+        ];
+
+        setChannels(channelData);
+
+        // Calculate totals
+        const totalSent = channelData.reduce((sum, c) => sum + c.stats.sent, 0);
+        const totalReceived = channelData.reduce((sum, c) => sum + c.stats.received, 0);
+        const totalPending = channelData.reduce((sum, c) => sum + c.stats.pending, 0);
+        const responseRate = activities.length > 0
+          ? Math.round((activities.filter(a => a.status === 'completed').length / activities.length) * 100)
+          : 0;
+
+        setStats({ sent: totalSent, received: totalReceived, pending: totalPending, responseRate });
+
+        // Fetch recent activities
+        const { data: recentData } = await supabase
+          .from('crm_tasks')
+          .select(`
+            id,
+            title,
+            activity_type,
+            status,
+            call_type,
+            created_at,
+            record:crm_records(title)
+          `)
+          .eq('org_id', profile.organization_id)
+          .in('activity_type', ['email', 'call', 'meeting'])
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        const recentList: RecentActivity[] = ((recentData || []) as unknown as ActivityData[]).map(activity => {
+          const activityStatus = activity.status === 'completed'
+            ? (activity.call_type === 'inbound' ? 'received' : 'sent')
+            : activity.status === 'open'
+              ? 'scheduled'
+              : 'sent';
+
+          return {
+            id: activity.id,
+            type: activity.activity_type as 'email' | 'call' | 'meeting',
+            subject: activity.title,
+            contact: activity.record?.[0]?.title || 'Unknown Contact',
+            time: getTimeAgo(activity.created_at),
+            status: activityStatus as 'sent' | 'received' | 'missed' | 'scheduled',
+          };
+        });
+
+        setRecentActivities(recentList);
+      } catch (error) {
+        console.error('Error loading communications data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [supabase]);
 
   if (loading) {
     return <CommunicationsSkeleton />;
   }
-
-  const totalSent = CHANNELS.reduce((sum, c) => sum + c.stats.sent, 0);
-  const totalReceived = CHANNELS.reduce((sum, c) => sum + c.stats.received, 0);
-  const totalPending = CHANNELS.reduce((sum, c) => sum + c.stats.pending, 0);
 
   return (
     <div className="space-y-6">
@@ -280,10 +397,10 @@ export default function CommunicationsPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard label="Total Sent (7d)" value={totalSent} trend={12} color="blue" />
-        <StatCard label="Total Received (7d)" value={totalReceived} trend={8} color="green" />
-        <StatCard label="Pending" value={totalPending} color="amber" />
-        <StatCard label="Response Rate" value={78} trend={5} color="teal" />
+        <StatCard label="Total Sent (7d)" value={stats.sent} color="blue" />
+        <StatCard label="Total Received (7d)" value={stats.received} color="green" />
+        <StatCard label="Pending" value={stats.pending} color="amber" />
+        <StatCard label="Response Rate" value={stats.responseRate} color="teal" />
       </div>
 
       {/* Channels Grid */}
@@ -292,7 +409,7 @@ export default function CommunicationsPage() {
           Communication Channels
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {CHANNELS.map((channel) => (
+          {channels.map((channel) => (
             <ChannelCard key={channel.key} channel={channel} />
           ))}
         </div>
@@ -310,9 +427,16 @@ export default function CommunicationsPage() {
           </div>
 
           <div className="space-y-1">
-            {RECENT_ACTIVITIES.map((activity) => (
-              <ActivityRow key={activity.id} activity={activity} />
-            ))}
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => (
+                <ActivityRow key={activity.id} activity={activity} />
+              ))
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>No recent communications</p>
+              </div>
+            )}
           </div>
         </div>
 
