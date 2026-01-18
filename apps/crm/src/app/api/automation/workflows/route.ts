@@ -41,11 +41,16 @@ export async function GET(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id, crm_role')
+      .select('organization_id, crm_role, role')
       .eq('user_id', user.id)
       .single();
 
-    if (!profile || !profile.crm_role) {
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    // Allow access for CRM roles or admin/owner platform roles
+    if (!profile.crm_role && !['owner', 'admin'].includes(profile.role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

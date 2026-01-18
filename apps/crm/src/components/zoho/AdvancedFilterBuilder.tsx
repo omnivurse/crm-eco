@@ -40,7 +40,16 @@ interface AdvancedFilterBuilderProps {
 
 type FilterOperator = ViewFilter['operator'];
 
-const OPERATORS: Record<string, { label: string; types: string[]; needsValue: boolean }> = {
+interface OperatorConfig {
+  label: string;
+  types: string[];
+  needsValue: boolean;
+  isDatePreset?: boolean;
+  needsNValue?: boolean;
+}
+
+const OPERATORS: Record<string, OperatorConfig> = {
+  // Basic operators
   equals: { label: 'is', types: ['text', 'select', 'email', 'phone', 'number', 'date', 'boolean'], needsValue: true },
   not_equals: { label: 'is not', types: ['text', 'select', 'email', 'phone', 'number', 'date', 'boolean'], needsValue: true },
   contains: { label: 'contains', types: ['text', 'textarea', 'email', 'phone'], needsValue: true },
@@ -52,12 +61,45 @@ const OPERATORS: Record<string, { label: string; types: string[]; needsValue: bo
   lte: { label: 'less or equal', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
   is_null: { label: 'is empty', types: ['text', 'textarea', 'select', 'email', 'phone', 'number', 'date', 'datetime', 'url'], needsValue: false },
   is_not_null: { label: 'is not empty', types: ['text', 'textarea', 'select', 'email', 'phone', 'number', 'date', 'datetime', 'url'], needsValue: false },
+  in: { label: 'is any of', types: ['text', 'select', 'email'], needsValue: true },
+  not_in: { label: 'is none of', types: ['text', 'select', 'email'], needsValue: true },
+  between: { label: 'is between', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
+  // Date preset operators
+  today: { label: 'is today', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  yesterday: { label: 'is yesterday', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_week: { label: 'is this week', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_week: { label: 'was last week', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_month: { label: 'is this month', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_month: { label: 'was last month', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_quarter: { label: 'is this quarter', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_quarter: { label: 'was last quarter', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_year: { label: 'is this year', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_year: { label: 'was last year', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_n_days: { label: 'in last N days', types: ['date', 'datetime'], needsValue: true, isDatePreset: true, needsNValue: true },
+  next_n_days: { label: 'in next N days', types: ['date', 'datetime'], needsValue: true, isDatePreset: true, needsNValue: true },
 };
 
-function getOperatorsForType(type: string): FilterOperator[] {
-  return Object.entries(OPERATORS)
+// Group operators for better UX
+const DATE_PRESET_GROUP = [
+  'today', 'yesterday', 'this_week', 'last_week',
+  'this_month', 'last_month', 'this_quarter', 'last_quarter',
+  'this_year', 'last_year', 'last_n_days', 'next_n_days'
+];
+
+const STANDARD_OPERATORS = [
+  'equals', 'not_equals', 'contains', 'starts_with', 'ends_with',
+  'gt', 'gte', 'lt', 'lte', 'is_null', 'is_not_null', 'in', 'not_in', 'between'
+];
+
+function getOperatorsForType(type: string): { standard: FilterOperator[]; datePresets: FilterOperator[] } {
+  const all = Object.entries(OPERATORS)
     .filter(([_, config]) => config.types.includes(type))
     .map(([key]) => key as FilterOperator);
+
+  const standard = all.filter(op => !DATE_PRESET_GROUP.includes(op));
+  const datePresets = all.filter(op => DATE_PRESET_GROUP.includes(op));
+
+  return { standard, datePresets };
 }
 
 function FilterRow({
@@ -79,12 +121,70 @@ function FilterRow({
 }) {
   const field = fields.find(f => f.key === filter.field);
   const fieldType = field?.type || 'text';
-  const availableOperators = getOperatorsForType(fieldType);
+  const { standard: standardOperators, datePresets: datePresetOperators } = getOperatorsForType(fieldType);
   const operatorConfig = OPERATORS[filter.operator];
   const needsValue = operatorConfig?.needsValue !== false;
+  const needsNValue = operatorConfig?.needsNValue === true;
+  const isBetween = filter.operator === 'between';
 
   const renderValueInput = () => {
     if (!needsValue) return null;
+
+    // Handle "last N days" and "next N days" operators
+    if (needsNValue) {
+      return (
+        <Input
+          type="number"
+          min={1}
+          value={String(filter.value || 7)}
+          onChange={(e) => onUpdate({ ...filter, value: e.target.valueAsNumber || 7 })}
+          placeholder="Days"
+          className="h-8 w-20 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
+        />
+      );
+    }
+
+    // Handle between operator (needs two values)
+    if (isBetween) {
+      if (['date', 'datetime'].includes(fieldType)) {
+        return (
+          <div className="flex items-center gap-1">
+            <Input
+              type="date"
+              value={String(filter.value || '')}
+              onChange={(e) => onUpdate({ ...filter, value: e.target.value })}
+              className="h-8 w-32 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
+            />
+            <span className="text-xs text-slate-400">and</span>
+            <Input
+              type="date"
+              value={String(filter.secondValue || '')}
+              onChange={(e) => onUpdate({ ...filter, secondValue: e.target.value })}
+              className="h-8 w-32 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
+            />
+          </div>
+        );
+      }
+      return (
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            value={String(filter.value || '')}
+            onChange={(e) => onUpdate({ ...filter, value: e.target.valueAsNumber || 0 })}
+            placeholder="Min"
+            className="h-8 w-20 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
+          />
+          <span className="text-xs text-slate-400">and</span>
+          <Input
+            type="number"
+            value={String(filter.secondValue || '')}
+            onChange={(e) => onUpdate({ ...filter, secondValue: e.target.valueAsNumber || 0 })}
+            placeholder="Max"
+            className="h-8 w-20 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
+          />
+        </div>
+      );
+    }
 
     if (fieldType === 'select' && field?.options?.length) {
       return (
@@ -157,6 +257,8 @@ function FilterRow({
     );
   };
 
+  const hasDatePresets = datePresetOperators.length > 0;
+
   return (
     <div className="flex items-center gap-2">
       {/* Connector */}
@@ -192,17 +294,31 @@ function FilterRow({
       {/* Operator */}
       <Select
         value={filter.operator}
-        onValueChange={(value) => onUpdate({ ...filter, operator: value as FilterOperator })}
+        onValueChange={(value) => onUpdate({ ...filter, operator: value as FilterOperator, value: null, secondValue: undefined })}
       >
-        <SelectTrigger className="h-8 w-32 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
+        <SelectTrigger className="h-8 w-36 text-xs bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-          {availableOperators.map((op) => (
+        <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-h-72">
+          {/* Standard operators */}
+          {standardOperators.map((op) => (
             <SelectItem key={op} value={op} className="text-xs">
               {OPERATORS[op].label}
             </SelectItem>
           ))}
+          {/* Date preset operators (if applicable) */}
+          {hasDatePresets && (
+            <>
+              <div className="px-2 py-1.5 text-xs font-semibold text-slate-400 border-t border-slate-200 dark:border-white/10 mt-1">
+                Date Presets
+              </div>
+              {datePresetOperators.map((op) => (
+                <SelectItem key={op} value={op} className="text-xs">
+                  {OPERATORS[op].label}
+                </SelectItem>
+              ))}
+            </>
+          )}
         </SelectContent>
       </Select>
 

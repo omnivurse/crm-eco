@@ -104,10 +104,85 @@ export interface CrmLayout {
 // CRM Views
 // ============================================================================
 
+// Standard filter operators
+export type FilterOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'starts_with'
+  | 'ends_with'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'is_null'
+  | 'is_not_null'
+  | 'in'
+  | 'not_in'
+  // Date preset operators
+  | 'today'
+  | 'yesterday'
+  | 'this_week'
+  | 'last_week'
+  | 'this_month'
+  | 'last_month'
+  | 'this_quarter'
+  | 'last_quarter'
+  | 'this_year'
+  | 'last_year'
+  | 'last_n_days'
+  | 'next_n_days'
+  | 'between';
+
 export interface ViewFilter {
   field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'starts_with' | 'ends_with' | 'gt' | 'gte' | 'lt' | 'lte' | 'is_null' | 'is_not_null';
+  operator: FilterOperator;
   value: string | number | boolean | null;
+  // For 'last_n_days', 'next_n_days' - number of days
+  // For 'between' - use secondValue for end date
+  secondValue?: string | number | null;
+}
+
+// Date preset definitions for UI
+export type DatePreset =
+  | 'today'
+  | 'yesterday'
+  | 'this_week'
+  | 'last_week'
+  | 'last_7_days'
+  | 'last_14_days'
+  | 'last_30_days'
+  | 'this_month'
+  | 'last_month'
+  | 'this_quarter'
+  | 'last_quarter'
+  | 'this_year'
+  | 'last_year'
+  | 'custom';
+
+export interface DatePresetOption {
+  value: DatePreset;
+  label: string;
+  operator: FilterOperator;
+  // For 'last_n_days' type operators
+  days?: number;
+}
+
+// Quick filter presets
+export type QuickFilterType =
+  | 'my_records'
+  | 'recently_viewed'
+  | 'created_today'
+  | 'created_this_week'
+  | 'modified_today'
+  | 'unassigned'
+  | 'overdue';
+
+export interface QuickFilter {
+  type: QuickFilterType;
+  label: string;
+  icon?: string;
+  getFilters: (userId: string) => ViewFilter[];
 }
 
 export interface ViewSort {
@@ -517,4 +592,170 @@ export interface ModuleStats {
   moduleName: string;
   totalRecords: number;
   createdThisWeek: number;
+}
+
+// ============================================================================
+// Email Campaigns
+// ============================================================================
+
+export type CampaignStatus = 'draft' | 'scheduled' | 'sending' | 'paused' | 'sent' | 'cancelled';
+export type CampaignRecipientStatus =
+  | 'pending'
+  | 'queued'
+  | 'sending'
+  | 'sent'
+  | 'delivered'
+  | 'opened'
+  | 'clicked'
+  | 'bounced'
+  | 'failed'
+  | 'unsubscribed'
+  | 'skipped';
+
+export interface EmailCampaign {
+  id: string;
+  org_id: string;
+  name: string;
+  subject: string;
+  body_html: string;
+  body_text: string | null;
+  from_name: string | null;
+  from_email: string | null;
+  reply_to: string | null;
+  status: CampaignStatus;
+  scheduled_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  total_recipients: number;
+  sent_count: number;
+  delivered_count: number;
+  opened_count: number;
+  clicked_count: number;
+  bounced_count: number;
+  unsubscribed_count: number;
+  failed_count: number;
+  module_key: string | null;
+  view_id: string | null;
+  filter_config: ViewFilter[];
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailCampaignRecipient {
+  id: string;
+  campaign_id: string;
+  record_id: string;
+  module_key: string;
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  merge_data: Record<string, unknown>;
+  status: CampaignRecipientStatus;
+  skip_reason: string | null;
+  sent_at: string | null;
+  delivered_at: string | null;
+  opened_at: string | null;
+  open_count: number;
+  last_opened_at: string | null;
+  clicked_at: string | null;
+  click_count: number;
+  last_clicked_at: string | null;
+  bounced_at: string | null;
+  bounce_type: string | null;
+  bounce_reason: string | null;
+  unsubscribed_at: string | null;
+  failed_at: string | null;
+  error_message: string | null;
+  provider_message_id: string | null;
+  tracking_id: string;
+  created_at: string;
+}
+
+export interface CampaignStats {
+  total: number;
+  sent: number;
+  delivered: number;
+  opened: number;
+  clicked: number;
+  bounced: number;
+  unsubscribed: number;
+  failed: number;
+  pending: number;
+  delivery_rate: number;
+  open_rate: number;
+  click_rate: number;
+  bounce_rate: number;
+}
+
+export interface CampaignTrackingEvent {
+  id: string;
+  org_id: string;
+  campaign_id: string;
+  recipient_id: string;
+  tracking_id: string;
+  event_type: 'open' | 'click' | 'unsubscribe';
+  ip_address: string | null;
+  user_agent: string | null;
+  clicked_url: string | null;
+  created_at: string;
+}
+
+// ============================================================================
+// Email Domains
+// ============================================================================
+
+export type DomainStatus = 'pending' | 'verifying' | 'verified' | 'failed';
+
+export interface EmailDomain {
+  id: string;
+  org_id: string;
+  domain: string;
+  status: DomainStatus;
+  dkim_selector: string | null;
+  dkim_value: string | null;
+  dkim_verified: boolean;
+  dkim_verified_at: string | null;
+  spf_value: string | null;
+  spf_verified: boolean;
+  spf_verified_at: string | null;
+  dmarc_value: string | null;
+  dmarc_verified: boolean;
+  dmarc_verified_at: string | null;
+  verification_token: string | null;
+  verification_attempts: number;
+  last_verification_at: string | null;
+  error_message: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmailSenderAddress {
+  id: string;
+  org_id: string;
+  domain_id: string | null;
+  email: string;
+  name: string | null;
+  reply_to: string | null;
+  is_default: boolean;
+  is_verified: boolean;
+  verified_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// Recent Views
+// ============================================================================
+
+export interface RecentView {
+  id: string;
+  org_id: string;
+  user_id: string;
+  record_id: string;
+  module_id: string;
+  viewed_at: string;
+  view_count: number;
 }

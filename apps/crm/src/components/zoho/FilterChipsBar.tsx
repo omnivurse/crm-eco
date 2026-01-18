@@ -36,9 +36,23 @@ const OPERATOR_LABELS: Record<string, string> = {
   is_null: 'is empty',
   is_not_null: 'is not empty',
   in: 'is any of',
+  not_in: 'is not any of',
   between: 'between',
   before: 'before',
   after: 'after',
+  // Date presets
+  today: 'is today',
+  yesterday: 'is yesterday',
+  this_week: 'is this week',
+  last_week: 'was last week',
+  this_month: 'is this month',
+  last_month: 'was last month',
+  this_quarter: 'is this quarter',
+  last_quarter: 'was last quarter',
+  this_year: 'is this year',
+  last_year: 'was last year',
+  last_n_days: 'in last',
+  next_n_days: 'in next',
 };
 
 export function FilterChipsBar({

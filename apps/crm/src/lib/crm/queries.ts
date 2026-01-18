@@ -29,7 +29,120 @@ import type {
   CrmAttachment,
   CrmAttachmentWithAuthor,
   TimelineEvent,
+  FilterOperator,
 } from './types';
+
+// ============================================================================
+// Date Range Helper Functions
+// ============================================================================
+
+interface DateRange {
+  start: Date;
+  end: Date;
+}
+
+function getStartOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function getEndOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function getDateRangeForPreset(preset: FilterOperator, nValue?: number): DateRange | null {
+  const now = new Date();
+  const today = getStartOfDay(now);
+
+  switch (preset) {
+    case 'today':
+      return { start: today, end: getEndOfDay(now) };
+
+    case 'yesterday': {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return { start: yesterday, end: getEndOfDay(yesterday) };
+    }
+
+    case 'this_week': {
+      const startOfWeek = new Date(today);
+      const day = startOfWeek.getDay();
+      startOfWeek.setDate(startOfWeek.getDate() - day); // Sunday
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(endOfWeek.getDate() + 6);
+      return { start: startOfWeek, end: getEndOfDay(endOfWeek) };
+    }
+
+    case 'last_week': {
+      const startOfLastWeek = new Date(today);
+      const day = startOfLastWeek.getDay();
+      startOfLastWeek.setDate(startOfLastWeek.getDate() - day - 7);
+      const endOfLastWeek = new Date(startOfLastWeek);
+      endOfLastWeek.setDate(endOfLastWeek.getDate() + 6);
+      return { start: startOfLastWeek, end: getEndOfDay(endOfLastWeek) };
+    }
+
+    case 'this_month': {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { start: startOfMonth, end: getEndOfDay(endOfMonth) };
+    }
+
+    case 'last_month': {
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { start: startOfLastMonth, end: getEndOfDay(endOfLastMonth) };
+    }
+
+    case 'this_quarter': {
+      const quarter = Math.floor(now.getMonth() / 3);
+      const startOfQuarter = new Date(now.getFullYear(), quarter * 3, 1);
+      const endOfQuarter = new Date(now.getFullYear(), quarter * 3 + 3, 0);
+      return { start: startOfQuarter, end: getEndOfDay(endOfQuarter) };
+    }
+
+    case 'last_quarter': {
+      const quarter = Math.floor(now.getMonth() / 3);
+      const lastQuarter = quarter === 0 ? 3 : quarter - 1;
+      const year = quarter === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      const startOfLastQuarter = new Date(year, lastQuarter * 3, 1);
+      const endOfLastQuarter = new Date(year, lastQuarter * 3 + 3, 0);
+      return { start: startOfLastQuarter, end: getEndOfDay(endOfLastQuarter) };
+    }
+
+    case 'this_year': {
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const endOfYear = new Date(now.getFullYear(), 11, 31);
+      return { start: startOfYear, end: getEndOfDay(endOfYear) };
+    }
+
+    case 'last_year': {
+      const startOfLastYear = new Date(now.getFullYear() - 1, 0, 1);
+      const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31);
+      return { start: startOfLastYear, end: getEndOfDay(endOfLastYear) };
+    }
+
+    case 'last_n_days': {
+      const n = nValue || 7;
+      const startDate = new Date(today);
+      startDate.setDate(startDate.getDate() - n);
+      return { start: startDate, end: getEndOfDay(now) };
+    }
+
+    case 'next_n_days': {
+      const n = nValue || 7;
+      const endDate = new Date(today);
+      endDate.setDate(endDate.getDate() + n);
+      return { start: today, end: getEndOfDay(endDate) };
+    }
+
+    default:
+      return null;
+  }
+}
 
 // ============================================================================
 // Supabase Client Helper
@@ -259,25 +372,102 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   // Apply filters
   for (const filter of filters) {
+    // Determine the field path - system fields vs custom fields in data jsonb
+    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id'].includes(filter.field);
+    const fieldPath = isSystemField ? filter.field : `data->>${filter.field}`;
+
     switch (filter.operator) {
+      // Basic comparison operators
       case 'equals':
-        query = query.eq(`data->>${filter.field}`, filter.value);
+        query = query.eq(fieldPath, filter.value);
         break;
       case 'not_equals':
-        query = query.neq(`data->>${filter.field}`, filter.value);
+        query = query.neq(fieldPath, filter.value);
         break;
       case 'contains':
-        query = query.ilike(`data->>${filter.field}`, `%${filter.value}%`);
+        query = query.ilike(fieldPath, `%${filter.value}%`);
         break;
       case 'starts_with':
-        query = query.ilike(`data->>${filter.field}`, `${filter.value}%`);
+        query = query.ilike(fieldPath, `${filter.value}%`);
         break;
+      case 'ends_with':
+        query = query.ilike(fieldPath, `%${filter.value}`);
+        break;
+
+      // Numeric/date comparison operators
+      case 'gt':
+        query = query.gt(fieldPath, filter.value);
+        break;
+      case 'gte':
+        query = query.gte(fieldPath, filter.value);
+        break;
+      case 'lt':
+        query = query.lt(fieldPath, filter.value);
+        break;
+      case 'lte':
+        query = query.lte(fieldPath, filter.value);
+        break;
+
+      // Null checks
       case 'is_null':
-        query = query.is(`data->>${filter.field}`, null);
+        query = query.is(fieldPath, null);
         break;
       case 'is_not_null':
-        query = query.not(`data->>${filter.field}`, 'is', null);
+        query = query.not(fieldPath, 'is', null);
         break;
+
+      // Array operators
+      case 'in':
+        if (Array.isArray(filter.value)) {
+          query = query.in(fieldPath, filter.value);
+        } else if (typeof filter.value === 'string') {
+          query = query.in(fieldPath, filter.value.split(',').map(v => v.trim()));
+        }
+        break;
+      case 'not_in':
+        if (Array.isArray(filter.value)) {
+          query = query.not(fieldPath, 'in', `(${filter.value.join(',')})`);
+        } else if (typeof filter.value === 'string') {
+          const values = filter.value.split(',').map(v => v.trim());
+          query = query.not(fieldPath, 'in', `(${values.join(',')})`);
+        }
+        break;
+
+      // Between operator (requires secondValue)
+      case 'between':
+        if (filter.value && filter.secondValue) {
+          query = query.gte(fieldPath, filter.value).lte(fieldPath, filter.secondValue);
+        }
+        break;
+
+      // Date preset operators
+      case 'today':
+      case 'yesterday':
+      case 'this_week':
+      case 'last_week':
+      case 'this_month':
+      case 'last_month':
+      case 'this_quarter':
+      case 'last_quarter':
+      case 'this_year':
+      case 'last_year': {
+        const range = getDateRangeForPreset(filter.operator);
+        if (range) {
+          query = query.gte(fieldPath, range.start.toISOString()).lte(fieldPath, range.end.toISOString());
+        }
+        break;
+      }
+
+      // Last/Next N days (uses filter.value as N)
+      case 'last_n_days':
+      case 'next_n_days': {
+        const nValue = typeof filter.value === 'number' ? filter.value : parseInt(filter.value as string, 10);
+        const range = getDateRangeForPreset(filter.operator, isNaN(nValue) ? 7 : nValue);
+        if (range) {
+          query = query.gte(fieldPath, range.start.toISOString()).lte(fieldPath, range.end.toISOString());
+        }
+        break;
+      }
     }
   }
 

@@ -133,7 +133,7 @@ async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
     .eq('organization_id', orgId)
     .eq('status', 'approved')
     .not('approved_at', 'is', null)
-    .limit(100);
+    .limit(100) as { data: { created_at: string; approved_at: string | null }[] | null };
 
   let avgProcessingDays = 0;
   if (processedEnrollments && processedEnrollments.length > 0) {

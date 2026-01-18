@@ -23,13 +23,38 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       .from('profiles')
       .select('organization_id, id')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { organization_id: string; id: string } | null };
 
     if (!profile) {
       return { success: false, error: 'Profile not found' };
     }
 
     // Get the failure record with related data
+    interface BillingFailureData {
+      id: string;
+      organization_id: string;
+      member_id: string;
+      billing_schedule_id: string;
+      amount: number;
+      resolved: boolean;
+      retry_attempt: number | null;
+      member: {
+        id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        authorize_customer_profile_id: string | null;
+      } | null;
+      billing_schedule: {
+        id: string;
+        payment_profile_id: string;
+        payment_profile: {
+          id: string;
+          authorize_payment_profile_id: string;
+        } | null;
+      } | null;
+    }
+
     const { data: failure, error: failureError } = await supabase
       .from('billing_failures')
       .select(`
@@ -52,7 +77,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       `)
       .eq('id', failureId)
       .eq('organization_id', profile.organization_id)
-      .single();
+      .single() as { data: BillingFailureData | null; error: Error | null };
 
     if (failureError || !failure) {
       return { success: false, error: 'Billing failure not found' };
@@ -88,8 +113,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
 
     if (chargeResult.success && chargeResult.transactionId) {
       // Payment succeeded - create transaction record
-      await supabase
-        .from('billing_transactions')
+      await (supabase
+        .from('billing_transactions') as any)
         .insert({
           organization_id: profile.organization_id,
           member_id: failure.member_id,
@@ -106,8 +131,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
         });
 
       // Mark failure as resolved
-      await supabase
-        .from('billing_failures')
+      await (supabase
+        .from('billing_failures') as any)
         .update({
           resolved: true,
           resolved_at: new Date().toISOString(),
@@ -132,8 +157,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       const nextRetryDate = new Date();
       nextRetryDate.setDate(nextRetryDate.getDate() + nextRetryDays);
 
-      await supabase
-        .from('billing_failures')
+      await (supabase
+        .from('billing_failures') as any)
         .update({
           retry_attempt: newRetryAttempt,
           failure_reason: chargeResult.errorMessage || 'Payment declined',
@@ -145,8 +170,8 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
         .eq('id', failureId);
 
       // Create failed transaction record
-      await supabase
-        .from('billing_transactions')
+      await (supabase
+        .from('billing_transactions') as any)
         .insert({
           organization_id: profile.organization_id,
           member_id: failure.member_id,
@@ -189,30 +214,35 @@ export async function sendFailureNotification(failureId: string): Promise<{ succ
       .from('profiles')
       .select('organization_id')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { organization_id: string } | null };
 
     if (!profile) {
       return { success: false, error: 'Profile not found' };
     }
 
     // Get the failure with member details
-    const { data: failure } = await supabase
-      .from('billing_failures')
+    interface FailureWithMember {
+      id: string;
+      notification_count: number | null;
+      member: { first_name: string; last_name: string; email: string } | null;
+    }
+    const { data: failure } = await (supabase
+      .from('billing_failures') as any)
       .select(`
         *,
         member:members(first_name, last_name, email)
       `)
       .eq('id', failureId)
       .eq('organization_id', profile.organization_id)
-      .single();
+      .single() as { data: FailureWithMember | null };
 
     if (!failure) {
       return { success: false, error: 'Failure not found' };
     }
 
     // Update notification status
-    await supabase
-      .from('billing_failures')
+    await (supabase
+      .from('billing_failures') as any)
       .update({
         member_notified: true,
         notification_count: (failure.notification_count || 0) + 1,
