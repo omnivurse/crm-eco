@@ -21,8 +21,13 @@ import {
   ClipboardList,
   RefreshCcw,
   Bell,
+  DollarSign,
+  CreditCard,
+  BarChart3,
+  ShoppingCart,
+  CalendarDays,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, startOfMonth, startOfDay } from 'date-fns';
 import type { Database } from '@crm-eco/lib/types';
 import { getRoleQueryContext, type RoleQueryContext } from '@/lib/auth';
 
@@ -36,6 +41,7 @@ interface ActivityWithRelations extends ActivityRow {
 }
 
 interface DashboardStats {
+  // Core counts
   activeMembers: number;
   membersTrend: number;
   activeAdvisors: number;
@@ -47,6 +53,17 @@ interface DashboardStats {
   pendingEnrollments: number;
   pendingApprovals: number;
   upcomingRenewals: number;
+  // Totals
+  totalMembers: number;
+  totalAdvisors: number;
+  // Billing stats
+  billingThisMonth: number;
+  billingToday: number;
+  // Today's metrics
+  membersToday: number;
+  plansSoldToday: number;
+  advisorsToday: number;
+  // Role flag
   isAdvisor: boolean;
 }
 
@@ -58,17 +75,41 @@ async function getStats(context: RoleQueryContext): Promise<DashboardStats> {
   // Get date ranges
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const todayStart = startOfDay(now).toISOString();
+  const monthStart = startOfMonth(now).toISOString();
 
   // Build queries based on role
-  let membersQuery = supabase.from('members').select('id, created_at', { count: 'exact' }).eq('status', 'active');
+  let activeMembersQuery = supabase.from('members').select('id, created_at', { count: 'exact' }).eq('status', 'active');
   if (isAdvisor && context.advisorId) {
-    membersQuery = membersQuery.eq('advisor_id', context.advisorId);
+    activeMembersQuery = activeMembersQuery.eq('advisor_id', context.advisorId);
   }
 
-  const advisorsQuery = context.isAdmin
+  // Total members (all statuses)
+  let totalMembersQuery = supabase.from('members').select('id', { count: 'exact', head: true });
+  if (isAdvisor && context.advisorId) {
+    totalMembersQuery = totalMembersQuery.eq('advisor_id', context.advisorId);
+  }
+
+  // Members created today
+  let membersTodayQuery = supabase.from('members').select('id', { count: 'exact', head: true }).gte('created_at', todayStart);
+  if (isAdvisor && context.advisorId) {
+    membersTodayQuery = membersTodayQuery.eq('advisor_id', context.advisorId);
+  }
+
+  // Advisors queries (admin only)
+  const activeAdvisorsQuery = context.isAdmin
     ? supabase.from('advisors').select('id, created_at', { count: 'exact' }).eq('status', 'active')
     : Promise.resolve({ data: [], count: 0 });
 
+  const totalAdvisorsQuery = context.isAdmin
+    ? supabase.from('advisors').select('id', { count: 'exact', head: true })
+    : Promise.resolve({ count: 0 });
+
+  const advisorsTodayQuery = context.isAdmin
+    ? supabase.from('advisors').select('id', { count: 'exact', head: true }).gte('created_at', todayStart)
+    : Promise.resolve({ count: 0 });
+
+  // Tickets query
   let ticketsQuery = supabase.from('tickets').select('id, created_at', { count: 'exact' }).in('status', ['open', 'in_progress']);
   if (isAdvisor && context.advisorId) {
     ticketsQuery = ticketsQuery.or(
@@ -76,6 +117,7 @@ async function getStats(context: RoleQueryContext): Promise<DashboardStats> {
     );
   }
 
+  // Needs query
   let needsQuery = supabase.from('needs').select('id, created_at', { count: 'exact' }).in('status', ['open', 'in_review']);
   if (isAdvisor && context.advisorId) {
     needsQuery = needsQuery.eq('advisor_id', context.advisorId);
@@ -85,12 +127,22 @@ async function getStats(context: RoleQueryContext): Promise<DashboardStats> {
   const pendingEnrollmentsQuery = supabase
     .from('enrollments')
     .select('id', { count: 'exact', head: true })
-    .in('status', ['draft', 'pending_payment', 'pending_documents']);
+    .in('status', ['draft', 'in_progress']);
 
   const pendingApprovalsQuery = supabase
     .from('enrollments')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'pending_review');
+    .eq('status', 'submitted');
+
+  // Plans sold today (enrollments approved today)
+  let plansSoldTodayQuery = supabase
+    .from('enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'approved')
+    .gte('updated_at', todayStart);
+  if (isAdvisor && context.advisorId) {
+    plansSoldTodayQuery = plansSoldTodayQuery.eq('advisor_id', context.advisorId);
+  }
 
   // Upcoming renewals (memberships expiring in next 30 days)
   const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -101,32 +153,60 @@ async function getStats(context: RoleQueryContext): Promise<DashboardStats> {
     .lte('end_date', thirtyDaysFromNow)
     .gte('end_date', now.toISOString());
 
+  // Billing queries - sum billing_amount from active memberships
+  // Billing this month = sum of all active membership billing amounts (monthly revenue)
+  const billingThisMonthQuery = supabase
+    .from('memberships')
+    .select('billing_amount')
+    .eq('status', 'active')
+    .eq('billing_status', 'ok');
+
+  // Run all queries in parallel
   const [
-    membersResult,
-    advisorsResult,
+    activeMembersResult,
+    totalMembersResult,
+    membersTodayResult,
+    activeAdvisorsResult,
+    totalAdvisorsResult,
+    advisorsTodayResult,
     ticketsResult,
     needsResult,
     pendingEnrollmentsResult,
     pendingApprovalsResult,
+    plansSoldTodayResult,
     upcomingRenewalsResult,
+    billingResult,
   ] = await Promise.all([
-    membersQuery,
-    advisorsQuery,
+    activeMembersQuery,
+    totalMembersQuery,
+    membersTodayQuery,
+    activeAdvisorsQuery,
+    totalAdvisorsQuery,
+    advisorsTodayQuery,
     ticketsQuery,
     needsQuery,
     pendingEnrollmentsQuery,
     pendingApprovalsQuery,
+    plansSoldTodayQuery,
     upcomingRenewalsQuery,
+    billingThisMonthQuery,
   ]);
 
   // Calculate trends (simplified - in real app would compare to previous period)
-  const membersData = (membersResult.data || []) as Array<{ id: string; created_at: string }>;
+  const membersData = (activeMembersResult.data || []) as Array<{ id: string; created_at: string }>;
   const recentMembers = membersData.filter(m => new Date(m.created_at) > thirtyDaysAgo).length;
 
+  // Calculate billing amounts
+  const billingData = (billingResult.data || []) as Array<{ billing_amount: number | null }>;
+  const billingThisMonth = billingData.reduce((sum, m) => sum + (m.billing_amount || 0), 0);
+  // For "today" billing, we'll show the daily average based on monthly total / days in month
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const billingToday = Math.round((billingThisMonth / daysInMonth) * 100) / 100;
+
   return {
-    activeMembers: membersResult.count ?? 0,
+    activeMembers: activeMembersResult.count ?? 0,
     membersTrend: recentMembers,
-    activeAdvisors: (advisorsResult as { count: number | null }).count ?? 0,
+    activeAdvisors: (activeAdvisorsResult as { count: number | null }).count ?? 0,
     advisorsTrend: 0,
     openTickets: ticketsResult.count ?? 0,
     ticketsTrend: 0,
@@ -135,6 +215,16 @@ async function getStats(context: RoleQueryContext): Promise<DashboardStats> {
     pendingEnrollments: pendingEnrollmentsResult.count ?? 0,
     pendingApprovals: pendingApprovalsResult.count ?? 0,
     upcomingRenewals: upcomingRenewalsResult.count ?? 0,
+    // Totals
+    totalMembers: totalMembersResult.count ?? 0,
+    totalAdvisors: (totalAdvisorsResult as { count: number | null }).count ?? 0,
+    // Billing
+    billingThisMonth,
+    billingToday,
+    // Today's metrics
+    membersToday: membersTodayResult.count ?? 0,
+    plansSoldToday: plansSoldTodayResult.count ?? 0,
+    advisorsToday: (advisorsTodayResult as { count: number | null }).count ?? 0,
     isAdvisor,
   };
 }
@@ -175,6 +265,8 @@ function EnhancedStatCard({
   icon: Icon,
   href,
   color,
+  isCurrency = false,
+  size = 'default',
 }: {
   title: string;
   value: number;
@@ -182,7 +274,9 @@ function EnhancedStatCard({
   trendLabel?: string;
   icon: React.ElementType;
   href: string;
-  color: 'teal' | 'emerald' | 'amber' | 'rose' | 'violet' | 'blue';
+  color: 'teal' | 'emerald' | 'amber' | 'rose' | 'violet' | 'blue' | 'cyan' | 'indigo' | 'green' | 'orange' | 'slate';
+  isCurrency?: boolean;
+  size?: 'default' | 'compact';
 }) {
   const colorConfig = {
     teal: {
@@ -221,30 +315,73 @@ function EnhancedStatCard({
       border: 'border-blue-100 dark:border-blue-500/20 hover:border-blue-200 dark:hover:border-blue-500/40',
       accent: 'bg-blue-500',
     },
+    cyan: {
+      bg: 'bg-cyan-50 dark:bg-cyan-500/10',
+      icon: 'text-cyan-600 dark:text-cyan-400',
+      border: 'border-cyan-100 dark:border-cyan-500/20 hover:border-cyan-200 dark:hover:border-cyan-500/40',
+      accent: 'bg-cyan-500',
+    },
+    indigo: {
+      bg: 'bg-indigo-50 dark:bg-indigo-500/10',
+      icon: 'text-indigo-600 dark:text-indigo-400',
+      border: 'border-indigo-100 dark:border-indigo-500/20 hover:border-indigo-200 dark:hover:border-indigo-500/40',
+      accent: 'bg-indigo-500',
+    },
+    green: {
+      bg: 'bg-green-50 dark:bg-green-500/10',
+      icon: 'text-green-600 dark:text-green-400',
+      border: 'border-green-100 dark:border-green-500/20 hover:border-green-200 dark:hover:border-green-500/40',
+      accent: 'bg-green-500',
+    },
+    orange: {
+      bg: 'bg-orange-50 dark:bg-orange-500/10',
+      icon: 'text-orange-600 dark:text-orange-400',
+      border: 'border-orange-100 dark:border-orange-500/20 hover:border-orange-200 dark:hover:border-orange-500/40',
+      accent: 'bg-orange-500',
+    },
+    slate: {
+      bg: 'bg-slate-50 dark:bg-slate-500/10',
+      icon: 'text-slate-600 dark:text-slate-400',
+      border: 'border-slate-100 dark:border-slate-500/20 hover:border-slate-200 dark:hover:border-slate-500/40',
+      accent: 'bg-slate-500',
+    },
   };
 
   const config = colorConfig[color];
+  const isCompact = size === 'compact';
+
+  const formatValue = (val: number) => {
+    if (isCurrency) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(val);
+    }
+    return val.toLocaleString();
+  };
 
   return (
     <Link
       href={href}
-      className={`group relative block p-5 rounded-2xl bg-white dark:bg-slate-900/60 border ${config.border} transition-all duration-200 hover:shadow-lg`}
+      className={`group relative block ${isCompact ? 'p-4' : 'p-5'} rounded-2xl bg-white dark:bg-slate-900/60 border ${config.border} transition-all duration-200 hover:shadow-lg`}
     >
       {/* Top accent bar */}
       <div className={`absolute top-0 left-4 right-4 h-1 ${config.accent} rounded-b-full opacity-60`} />
 
       <div className="flex items-start justify-between">
-        <div className={`p-2.5 rounded-xl ${config.bg}`}>
-          <Icon className={`w-5 h-5 ${config.icon}`} />
+        <div className={`${isCompact ? 'p-2' : 'p-2.5'} rounded-xl ${config.bg}`}>
+          <Icon className={`${isCompact ? 'w-4 h-4' : 'w-5 h-5'} ${config.icon}`} />
         </div>
         <ArrowUpRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors" />
       </div>
 
-      <div className="mt-4">
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+      <div className={isCompact ? 'mt-3' : 'mt-4'}>
+        <p className={`${isCompact ? 'text-xs' : 'text-sm'} font-medium text-slate-500 dark:text-slate-400`}>{title}</p>
         <div className="flex items-baseline gap-2 mt-1">
-          <span className="text-3xl font-bold text-slate-900 dark:text-white">
-            {value.toLocaleString()}
+          <span className={`${isCompact ? 'text-2xl' : 'text-3xl'} font-bold text-slate-900 dark:text-white`}>
+            {formatValue(value)}
           </span>
           {trend !== undefined && trend > 0 && (
             <span className="inline-flex items-center gap-0.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
@@ -258,6 +395,31 @@ function EnhancedStatCard({
         )}
       </div>
     </Link>
+  );
+}
+
+// Mini stat for today's metrics
+function MiniStatCard({
+  title,
+  value,
+  icon: Icon,
+  color,
+}: {
+  title: string;
+  value: number;
+  icon: React.ElementType;
+  color: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-700/50">
+      <div className={`p-2 rounded-lg ${color}`}>
+        <Icon className="w-4 h-4 text-white" />
+      </div>
+      <div>
+        <p className="text-lg font-bold text-slate-900 dark:text-white">{value}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{title}</p>
+      </div>
+    </div>
   );
 }
 
@@ -461,7 +623,7 @@ export default async function DashboardPage() {
             count={stats.pendingApprovals}
             description="Enrollments awaiting your review"
             icon={FileCheck}
-            href="/enrollments?status=pending_review"
+            href="/enrollments?status=submitted"
             variant="warning"
           />
           <AlertCard
@@ -475,6 +637,77 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* Today's Snapshot - Admin Only */}
+      {!stats.isAdvisor && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-cyan-500/10 border border-teal-200/50 dark:border-teal-500/20">
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarDays className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <h2 className="font-semibold text-slate-900 dark:text-white">Today&apos;s Snapshot</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MiniStatCard
+              title="Members Today"
+              value={stats.membersToday}
+              icon={UserPlus}
+              color="bg-teal-500"
+            />
+            <MiniStatCard
+              title="Plans Sold Today"
+              value={stats.plansSoldToday}
+              icon={ShoppingCart}
+              color="bg-emerald-500"
+            />
+            <MiniStatCard
+              title="New Advisors Today"
+              value={stats.advisorsToday}
+              icon={UserCheck}
+              color="bg-cyan-500"
+            />
+            <MiniStatCard
+              title="Billing Today"
+              value={stats.billingToday}
+              icon={DollarSign}
+              color="bg-green-500"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Billing Stats Row - Admin Only */}
+      {!stats.isAdvisor && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <EnhancedStatCard
+            title="Billing This Month"
+            value={stats.billingThisMonth}
+            icon={CreditCard}
+            href="/billing"
+            color="green"
+            isCurrency
+          />
+          <EnhancedStatCard
+            title="Total Members"
+            value={stats.totalMembers}
+            icon={Users}
+            href="/members"
+            color="indigo"
+          />
+          <EnhancedStatCard
+            title="Total Advisors"
+            value={stats.totalAdvisors}
+            icon={UserCheck}
+            href="/advisors"
+            color="cyan"
+          />
+          <EnhancedStatCard
+            title="In-Progress Enrollments"
+            value={stats.pendingEnrollments}
+            icon={ClipboardList}
+            href="/enrollments?status=draft"
+            color="violet"
+          />
+        </div>
+      )}
+
       {/* Main Stats Grid */}
       <div className={`grid grid-cols-1 sm:grid-cols-2 ${stats.isAdvisor ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
         <EnhancedStatCard
@@ -483,7 +716,7 @@ export default async function DashboardPage() {
           trend={stats.membersTrend}
           trendLabel="new this month"
           icon={Users}
-          href="/members"
+          href="/members?status=active"
           color="teal"
         />
 
@@ -492,7 +725,7 @@ export default async function DashboardPage() {
             title="Active Advisors"
             value={stats.activeAdvisors}
             icon={UserCheck}
-            href="/advisors"
+            href="/advisors?status=active"
             color="emerald"
           />
         )}
@@ -513,24 +746,6 @@ export default async function DashboardPage() {
           color="rose"
         />
       </div>
-
-      {/* Secondary Stats Row - Enrollments */}
-      {!stats.isAdvisor && stats.pendingEnrollments > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Link
-            href="/enrollments?status=draft"
-            className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 hover:border-slate-200 dark:hover:border-slate-600 transition-all group"
-          >
-            <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-500/20">
-              <ClipboardList className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.pendingEnrollments}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">In-Progress Enrollments</p>
-            </div>
-          </Link>
-        </div>
-      )}
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
