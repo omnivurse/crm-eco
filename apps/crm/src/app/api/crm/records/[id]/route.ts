@@ -3,11 +3,12 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
 import { getModuleBlueprint } from '@/lib/blueprints';
-import { 
-  getRecordPendingApproval, 
+import {
+  getRecordPendingApproval,
   checkApprovalRequired,
   createApprovalRequest,
 } from '@/lib/approvals';
+import { logPHIAccess, identifyPHIFields } from '@/lib/security';
 import type { CrmRecord } from '@/lib/crm/types';
 
 async function createClient() {
@@ -25,7 +26,7 @@ async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
-          } catch {}
+          } catch { }
         },
       },
     }
@@ -40,7 +41,7 @@ export async function PATCH(
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -78,7 +79,7 @@ export async function PATCH(
     if (body.stage !== undefined && body.stage !== previousRecord.stage) {
       // Check if module has a blueprint
       const blueprint = await getModuleBlueprint(previousRecord.module_id);
-      
+
       if (blueprint) {
         return NextResponse.json({
           error: 'Stage changes must go through the transition API when a blueprint is active',
@@ -86,7 +87,7 @@ export async function PATCH(
           hint: 'Use POST /api/crm/transition instead',
         }, { status: 400 });
       }
-      
+
       // No blueprint - allow direct stage change
       updates.stage = body.stage;
     } else if (body.stage !== undefined) {
@@ -147,6 +148,25 @@ export async function PATCH(
       console.error('Scoring error:', err);
     });
 
+    // Log PHI access for HIPAA compliance
+    try {
+      const phiFields = identifyPHIFields(typedRecord.data || {});
+      if (phiFields.length > 0) {
+        await logPHIAccess({
+          userId: profile.id,
+          organizationId: typedRecord.org_id,
+          action: 'update',
+          resourceType: 'record',
+          resourceId: id,
+          recordName: typedRecord.title || undefined,
+          phiFieldsAccessed: phiFields,
+          metadata: { module_id: typedRecord.module_id },
+        });
+      }
+    } catch (err) {
+      console.error('PHI audit logging error:', err);
+    }
+
     return NextResponse.json(record);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -161,7 +181,7 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -239,6 +259,21 @@ export async function DELETE(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Log PHI access for deletion
+    try {
+      await logPHIAccess({
+        userId: profile.id,
+        organizationId: profile.organization_id,
+        action: 'delete',
+        resourceType: 'record',
+        resourceId: id,
+        recordName: record.title,
+        metadata: { module_id: record.module_id },
+      });
+    } catch (err) {
+      console.error('PHI audit logging error:', err);
     }
 
     return NextResponse.json({ success: true });

@@ -4,6 +4,7 @@ import { getCurrentProfile, getModules } from '@/lib/crm/queries';
 import { createCrmClient } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
 import { Toaster } from '@/components/ui/sonner';
+import { SecurityProvider } from '@/providers/SecurityProvider';
 
 export default async function CrmLayout({
   children,
@@ -30,7 +31,7 @@ export default async function CrmLayout({
 
   // Get enabled modules - auto-seed if none exist
   let modules = await getModules(profile.organization_id);
-  
+
   if (modules.length === 0) {
     // Auto-seed default modules for this organization
     try {
@@ -43,7 +44,10 @@ export default async function CrmLayout({
   }
 
   return (
-    <>
+    <SecurityProvider
+      userName={profile.full_name || ''}
+      userEmail={profile.email || ''}
+    >
       <CrmShell
         modules={modules}
         profile={profile}
@@ -52,6 +56,7 @@ export default async function CrmLayout({
         {children}
       </CrmShell>
       <Toaster />
-    </>
+    </SecurityProvider>
   );
 }
+
