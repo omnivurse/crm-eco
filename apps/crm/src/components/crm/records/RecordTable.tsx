@@ -397,11 +397,17 @@ export function RecordTable({
     if (col === 'title') return 'Name';
     if (col === 'first_name') return 'First Name';
     if (col === 'last_name') return 'Last Name';
+    if (col === 'middle_name') return 'Middle Name';
+    if (col === 'middle_initial') return 'Middle Initial';
+    if (col === 'salutation') return 'Salutation';
+    if (col === 'contact_name') return 'Contact Name';
+    if (col === 'record_id') return 'Record Id';
     if (col === 'status') return 'Status';
     if (col === 'lead_status') return 'Status';
     if (col === 'contact_status') return 'Status';
     if (col === 'owner_id') return 'Owner';
     if (col === 'created_at') return 'Created';
+    if (col === 'updated_at') return 'Updated';
     return fieldMap[col]?.label || col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   };
 
@@ -443,7 +449,9 @@ export function RecordTable({
       );
     }
     
-    if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone') {
+    // Handle text fields that come from record.data
+    if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone' ||
+        col === 'middle_name' || col === 'middle_initial' || col === 'salutation' || col === 'contact_name') {
       const value = record.data?.[col] as string | undefined;
 
       const content = !value ? (
@@ -526,6 +534,22 @@ export function RecordTable({
       return (
         <span className="text-sm text-slate-500">
           {new Date(record.created_at).toLocaleDateString()}
+        </span>
+      );
+    }
+
+    if (col === 'updated_at') {
+      return (
+        <span className="text-sm text-slate-500">
+          {new Date(record.updated_at).toLocaleDateString()}
+        </span>
+      );
+    }
+
+    if (col === 'record_id') {
+      return (
+        <span className="text-sm text-slate-500 font-mono">
+          {record.id.slice(0, 8)}...
         </span>
       );
     }
