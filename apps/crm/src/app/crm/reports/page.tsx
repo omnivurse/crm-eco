@@ -312,7 +312,6 @@ async function ReportsContent() {
             href="/crm/reports/sales"
             icon={DollarSign}
             color="bg-gradient-to-br from-emerald-500 to-green-600"
-            comingSoon
           />
           <ReportCard
             title="Lead Analytics"

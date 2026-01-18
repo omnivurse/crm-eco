@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { 
-  LayoutGrid, 
-  Users, 
-  Shield, 
+import {
+  LayoutGrid,
+  Users,
+  Shield,
   Heart,
   ExternalLink,
   ChevronDown
@@ -33,27 +33,27 @@ const apps: App[] = [
     color: 'text-blue-600',
     bgColor: 'bg-blue-100',
     hoverBg: 'hover:bg-blue-50',
-    url: process.env.NEXT_PUBLIC_CRM_URL || 'http://localhost:3000',
+    url: '/crm',
   },
   {
     id: 'portal',
     name: 'Portal',
-    description: 'Member Self-Service',
+    description: 'Member Self-Service (Coming Soon)',
     icon: <Heart className="w-5 h-5" />,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-100',
     hoverBg: 'hover:bg-emerald-50',
-    url: process.env.NEXT_PUBLIC_PORTAL_URL || 'http://localhost:3001',
+    url: '/crm', // Portal not yet available
   },
   {
     id: 'admin',
     name: 'Admin',
-    description: 'System Administration',
+    description: 'System Administration (Coming Soon)',
     icon: <Shield className="w-5 h-5" />,
     color: 'text-purple-600',
     bgColor: 'bg-purple-100',
     hoverBg: 'hover:bg-purple-50',
-    url: process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3002',
+    url: '/crm/settings', // Redirect to CRM settings for now
   },
 ];
 
@@ -112,17 +112,17 @@ export function AppSwitcher({ currentApp, className }: AppSwitcherProps) {
         <span className="text-sm font-semibold text-slate-700 hidden sm:inline">
           {current.name}
         </span>
-        <ChevronDown 
+        <ChevronDown
           className={cn(
             'w-4 h-4 text-slate-400 transition-transform duration-200',
             isOpen && 'transform rotate-180'
-          )} 
+          )}
         />
       </button>
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div 
+        <div
           className={cn(
             'absolute left-0 mt-2 w-72 rounded-xl bg-white shadow-xl border border-slate-200',
             'z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-top-2 duration-200'
@@ -181,10 +181,10 @@ export function AppSwitcher({ currentApp, className }: AppSwitcherProps) {
                   'group-hover:' + app.bgColor.replace('bg-', 'bg-'),
                   'group-hover:' + app.color.replace('text-', 'text-')
                 )}
-                style={{
-                  '--hover-bg': app.bgColor,
-                  '--hover-color': app.color,
-                } as React.CSSProperties}
+                  style={{
+                    '--hover-bg': app.bgColor,
+                    '--hover-color': app.color,
+                  } as React.CSSProperties}
                 >
                   <div className={cn('transition-colors', 'group-hover:' + app.color)}>
                     {app.icon}
