@@ -15,6 +15,7 @@ import {
   Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { retryFailedPayment, sendFailureNotification } from '../actions';
 
 interface BillingFailure {
   id: string;
@@ -95,15 +96,16 @@ export default function FailedPaymentsPage() {
   async function retryPayment(failure: BillingFailure) {
     setProcessingId(failure.id);
     try {
-      // This would call an API route to retry the payment
-      // For now, we'll show a placeholder
-      toast.info('Payment retry functionality will be implemented via API route');
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast.success('Payment retry initiated');
-      await loadFailures();
+      const result = await retryFailedPayment(failure.id);
+
+      if (result.success) {
+        toast.success(`Payment successful! Transaction ID: ${result.transactionId}`);
+        // Remove from list since it's now resolved
+        setFailures(prev => prev.filter(f => f.id !== failure.id));
+      } else {
+        toast.error(result.error || 'Payment retry failed');
+        await loadFailures(); // Refresh to show updated retry count
+      }
     } catch (error) {
       toast.error('Failed to retry payment');
     } finally {
@@ -151,22 +153,14 @@ export default function FailedPaymentsPage() {
   async function sendNotification(failure: BillingFailure) {
     setProcessingId(failure.id);
     try {
-      // This would call an API to send notification email
-      toast.info('Member notification will be sent via email service');
-      
-      // Update notification status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase
-        .from('billing_failures') as any)
-        .update({
-          member_notified: true,
-          notification_count: (failure.notification_count || 0) + 1,
-          last_notification_at: new Date().toISOString(),
-        })
-        .eq('id', failure.id);
+      const result = await sendFailureNotification(failure.id);
 
-      toast.success('Notification sent to member');
-      await loadFailures();
+      if (result.success) {
+        toast.success('Notification sent to member');
+        await loadFailures();
+      } else {
+        toast.error(result.error || 'Failed to send notification');
+      }
     } catch (error) {
       toast.error('Failed to send notification');
     } finally {
