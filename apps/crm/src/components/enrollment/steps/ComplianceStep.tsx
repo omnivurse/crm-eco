@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Checkbox } from '@crm-eco/ui';
 import { Shield, AlertTriangle, UserPlus, FileCheck, Info } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
-import { completeComplianceStep } from '@/app/(dashboard)/enrollments/new/actions';
+import { completeComplianceStep } from '@/app/crm/enrollment/actions';
 
 // Mode-aware copy variants
 const COPY_VARIANTS = {

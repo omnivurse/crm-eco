@@ -68,7 +68,7 @@ import {
   setTicketsSavedViewDefault,
   deleteTicketsSavedView,
   clearTicketsSavedViewDefault,
-} from '@/app/(dashboard)/tickets/actions';
+} from '@/app/crm/tickets/actions';
 
 // ============================================================================
 // TYPES

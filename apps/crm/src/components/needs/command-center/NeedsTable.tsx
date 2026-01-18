@@ -17,7 +17,7 @@ import { type NeedStatus, getNeedStatusLabel } from '@crm-eco/lib';
 import { NeedStatusBadge } from '@/components/shared/status-badge';
 import { UrgencyBadge } from '@/components/shared/urgency-badge';
 import { NeedActionsMenu } from './NeedActionsMenu';
-import type { AssignableProfile } from '@/app/(dashboard)/needs/command-center/page';
+import type { AssignableProfile } from '@/app/crm/needs/command-center/page';
 
 export interface NeedWithMember {
   id: string;

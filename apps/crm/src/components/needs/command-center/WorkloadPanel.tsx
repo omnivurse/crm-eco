@@ -14,7 +14,7 @@ import {
   Button,
 } from '@crm-eco/ui';
 import { Users, X } from 'lucide-react';
-import type { WorkloadBucket } from '@/app/(dashboard)/needs/command-center/page';
+import type { WorkloadBucket } from '@/app/crm/needs/command-center/page';
 
 interface WorkloadPanelProps {
   workload: WorkloadBucket[];

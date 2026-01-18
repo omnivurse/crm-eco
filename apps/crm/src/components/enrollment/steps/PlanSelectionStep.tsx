@@ -25,7 +25,7 @@ import {
 } from '@crm-eco/ui';
 import { FileText, AlertTriangle, UserPlus, Check, Calendar, Pill, Plus, Trash2, Loader2, Sparkles, DollarSign } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
-import { completePlanSelectionStep, runRxPricing } from '@/app/(dashboard)/enrollments/new/actions';
+import { completePlanSelectionStep, runRxPricing } from '@/app/crm/enrollment/actions';
 import { cn } from '@crm-eco/ui';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 

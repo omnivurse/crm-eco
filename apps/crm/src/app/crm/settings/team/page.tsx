@@ -42,8 +42,8 @@ import {
   SelectValue,
 } from '@crm-eco/ui';
 
-type UserRole = 'owner' | 'super_admin' | 'admin' | 'advisor' | 'staff';
-type InvitableRole = 'super_admin' | 'admin' | 'advisor' | 'staff';
+type UserRole = 'owner' | 'super_admin' | 'admin' | 'advisor' | 'sales' | 'staff';
+type InvitableRole = 'super_admin' | 'admin' | 'advisor' | 'sales' | 'staff';
 type InvitationStatus = 'pending' | 'accepted' | 'expired' | 'revoked';
 
 interface TeamMember {
@@ -94,6 +94,12 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bgColor: str
     bgColor: 'bg-emerald-500/10',
     description: 'Can manage assigned members and leads',
   },
+  sales: {
+    label: 'Sales',
+    color: 'text-orange-600 dark:text-orange-400',
+    bgColor: 'bg-orange-500/10',
+    description: 'Sales team with pipeline and deal access',
+  },
   staff: {
     label: 'Staff',
     color: 'text-slate-600 dark:text-slate-400',
@@ -103,10 +109,11 @@ const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bgColor: str
 };
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
-  owner: 5,
-  super_admin: 4,
-  admin: 3,
-  advisor: 2,
+  owner: 6,
+  super_admin: 5,
+  admin: 4,
+  advisor: 3,
+  sales: 2,
   staff: 1,
 };
 
@@ -384,7 +391,7 @@ export default function TeamManagementPage() {
       {/* Role Legend */}
       <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
         <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Role Permissions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {(Object.entries(ROLE_CONFIG) as [UserRole, typeof ROLE_CONFIG[UserRole]][]).map(([role, info]) => (
             <div key={role}>
               <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded mb-1 ${info.bgColor} ${info.color}`}>
@@ -528,6 +535,7 @@ export default function TeamManagementPage() {
                   )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="advisor">Advisor</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
                 </SelectContent>
               </Select>
@@ -576,6 +584,7 @@ export default function TeamManagementPage() {
                   )}
                   <SelectItem value="admin">Admin</SelectItem>
                   <SelectItem value="advisor">Advisor</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
                 </SelectContent>
               </Select>

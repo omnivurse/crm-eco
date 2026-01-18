@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button } from '@crm-eco/ui';
 import { Users, Plus, Trash2 } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation, HouseholdMember } from '../wizard';
-import { completeHouseholdStep } from '@/app/(dashboard)/enrollments/new/actions';
+import { completeHouseholdStep } from '@/app/crm/enrollment/actions';
 
 const RELATIONSHIPS = [
   { value: 'primary', label: 'Primary (Self)' },

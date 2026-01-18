@@ -47,13 +47,13 @@ import {
 import { NeedsFiltersBar, type SlaFilter } from './NeedsFiltersBar';
 import { NeedsTable, type NeedWithMember } from './NeedsTable';
 import { WorkloadPanel } from './WorkloadPanel';
-import type { WorkloadBucket, AssignableProfile } from '@/app/(dashboard)/needs/command-center/page';
+import type { WorkloadBucket, AssignableProfile } from '@/app/crm/needs/command-center/page';
 import {
   createNeedsSavedView,
   setNeedsSavedViewDefault,
   deleteNeedsSavedView,
   clearNeedsSavedViewDefault,
-} from '@/app/(dashboard)/needs/command-center/actions';
+} from '@/app/crm/needs/command-center/actions';
 
 interface SlaCounts {
   overdue: number;
