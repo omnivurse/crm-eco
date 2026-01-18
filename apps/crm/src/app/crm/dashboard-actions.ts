@@ -1,7 +1,8 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
+import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getCurrentProfile } from '@/lib/crm/queries';
 import type { DashboardLayoutConfig } from '@/lib/dashboard/types';
 import { DEFAULT_LAYOUT } from '@/lib/dashboard/widget-registry';
 
@@ -21,9 +22,10 @@ export async function loadDashboardLayout(): Promise<DashboardLayoutConfig | nul
     const profile = await getCurrentProfile();
     if (!profile) return null;
 
-    const supabase = await createCrmClient();
+    const supabase = await createServerSupabaseClient();
 
-    const { data: view, error } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: view, error } = await (supabase as any)
       .from('saved_views')
       .select('filters')
       .eq('owner_profile_id', profile.id)
@@ -59,10 +61,11 @@ export async function saveDashboardLayout(
       return { success: false, error: 'Not authenticated' };
     }
 
-    const supabase = await createCrmClient();
+    const supabase = await createServerSupabaseClient();
 
     // Check if a layout already exists
-    const { data: existing } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: existing, error: selectError } = await (supabase as any)
       .from('saved_views')
       .select('id')
       .eq('owner_profile_id', profile.id)
@@ -70,17 +73,27 @@ export async function saveDashboardLayout(
       .eq('is_default', true)
       .single();
 
+    // Log for debugging
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('Error checking existing layout:', selectError);
+    }
+
     if (existing) {
       // Update existing layout
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('saved_views')
         .update({ filters: layout })
         .eq('id', existing.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating layout:', error);
+        throw error;
+      }
     } else {
       // Create new layout
-      const { error } = await supabase.from('saved_views').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from('saved_views').insert({
         organization_id: profile.organization_id,
         owner_profile_id: profile.id,
         context: DASHBOARD_CONTEXT,
@@ -89,7 +102,10 @@ export async function saveDashboardLayout(
         is_default: true,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error inserting layout:', error);
+        throw error;
+      }
     }
 
     revalidatePath('/crm');
