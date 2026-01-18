@@ -79,7 +79,9 @@ export function StageColumn({
                 {wipLimit !== undefined && `/${wipLimit}`}
               </span>
               {isOverWipLimit && (
-                <AlertTriangle className="w-4 h-4 text-red-500" title="Over WIP limit" />
+                <span title="Over WIP limit">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                </span>
               )}
               {stage.probability > 0 && !stage.is_won && !stage.is_lost && (
                 <span className="text-xs text-slate-500">
