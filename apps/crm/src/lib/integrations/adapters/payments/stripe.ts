@@ -32,7 +32,7 @@ export class StripeAdapter implements PaymentAdapter {
 
     if (this.apiKey) {
       this.stripe = new Stripe(this.apiKey, {
-        apiVersion: '2024-12-18.acacia',
+        apiVersion: '2025-12-15.clover',
         typescript: true,
       });
     }
@@ -302,12 +302,17 @@ export class StripeAdapter implements PaymentAdapter {
       paused: 'unpaid',
     };
 
+    // Access subscription dates - API structure may vary by version
+    const subAny = sub as unknown as Record<string, unknown>;
+    const currentPeriodStart = (subAny.current_period_start as number) || Math.floor(Date.now() / 1000);
+    const currentPeriodEnd = (subAny.current_period_end as number) || Math.floor(Date.now() / 1000);
+
     return {
       id: sub.id,
       customerId: typeof sub.customer === 'string' ? sub.customer : sub.customer.id,
       status: statusMap[sub.status] || 'unpaid',
-      currentPeriodStart: new Date(sub.current_period_start * 1000),
-      currentPeriodEnd: new Date(sub.current_period_end * 1000),
+      currentPeriodStart: new Date(currentPeriodStart * 1000),
+      currentPeriodEnd: new Date(currentPeriodEnd * 1000),
       cancelAtPeriodEnd: sub.cancel_at_period_end,
       priceId: sub.items.data[0]?.price.id || '',
       metadata: sub.metadata as Record<string, string>,
@@ -348,7 +353,7 @@ export class StripeAdapter implements PaymentAdapter {
    */
   static verifyWebhook(payload: string, signature: string, webhookSecret: string): Stripe.Event {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2025-12-15.clover',
     });
 
     return stripe.webhooks.constructEvent(payload, signature, webhookSecret);

@@ -37,6 +37,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.50.0",
     "sonner": "^2.0.7",
+    "stripe": "^20.2.0",
     "tailwind-merge": "^2.2.1",
     "zod": "^3.22.4"
   },
