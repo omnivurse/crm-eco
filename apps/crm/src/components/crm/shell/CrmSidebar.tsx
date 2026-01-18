@@ -323,7 +323,7 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       {/* Logo / Org Name */}
       <div className="flex items-center h-16 px-4 border-b border-slate-200 dark:border-white/5">
         <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
-          <div className="relative flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden group-hover:shadow-lg transition-all duration-300">
+          <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
             <img
               src="/logo.png"
               alt="Pay It Forward HealthShare"

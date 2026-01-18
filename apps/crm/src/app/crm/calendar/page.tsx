@@ -119,7 +119,7 @@ export default function CalendarPage() {
                 // Get profile
                 const { data: profile } = await supabase
                     .from('profiles')
-                    .select('organization_id')
+                    .select('id, organization_id')
                     .eq('user_id', user.id)
                     .single();
 
@@ -177,8 +177,49 @@ export default function CalendarPage() {
 
                     setEvents(calendarEvents);
 
-                    // Load connected calendars (future: from calendar_connections table)
-                    setConnectedCalendars([]);
+                    // Load connected calendars from integration_connections table
+                    const { data: connections } = await supabase
+                        .from('integration_connections')
+                        .select('id, provider, external_account_email, external_account_name, status')
+                        .eq('org_id', profile.organization_id)
+                        .eq('connection_type', 'calendar')
+                        .eq('status', 'connected');
+
+                    if (connections) {
+                        const calendars: ConnectedCalendar[] = connections.map(conn => ({
+                            id: conn.id,
+                            provider: conn.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
+                            email: conn.external_account_email || '',
+                            name: conn.provider === 'google_calendar' ? 'Google Calendar' : 'Outlook Calendar',
+                            color: conn.provider === 'google_calendar' ? PROVIDER_COLORS.google : PROVIDER_COLORS.outlook,
+                            enabled: true,
+                        }));
+                        setConnectedCalendars(calendars);
+
+                        // Load synced calendar events
+                        const { data: syncedEvents } = await supabase
+                            .from('calendar_events')
+                            .select('*')
+                            .eq('owner_id', profile.id)
+                            .neq('status', 'cancelled');
+
+                        if (syncedEvents) {
+                            const calEvents: CalendarEvent[] = syncedEvents.map(e => ({
+                                id: e.id,
+                                title: e.title,
+                                description: e.description,
+                                start: new Date(e.start_time),
+                                end: new Date(e.end_time),
+                                allDay: e.is_all_day,
+                                location: e.location,
+                                provider: e.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
+                                color: e.provider === 'google_calendar' ? PROVIDER_COLORS.google : PROVIDER_COLORS.outlook,
+                                status: e.status,
+                            }));
+                            // Merge with CRM task events
+                            setEvents(prev => [...prev, ...calEvents]);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error loading calendar data:', error);
@@ -266,23 +307,41 @@ export default function CalendarPage() {
 
     // Connect calendar provider
     const connectCalendar = async (provider: CalendarProvider) => {
+        if (provider === 'personal') {
+            // Personal calendar doesn't need OAuth
+            toast.success('Personal calendar events will show from CRM tasks');
+            setShowIntegrationModal(false);
+            return;
+        }
+
         toast.info(`Connecting to ${PROVIDER_NAMES[provider]}...`);
 
-        // In production, this would initiate OAuth flow
-        // For now, simulate connection
-        setTimeout(() => {
-            const newCalendar: ConnectedCalendar = {
-                id: `${provider}-${Date.now()}`,
-                provider,
-                email: provider === 'google' ? 'user@gmail.com' : provider === 'outlook' ? 'user@outlook.com' : 'personal',
-                name: PROVIDER_NAMES[provider],
-                color: PROVIDER_COLORS[provider],
-                enabled: true,
+        try {
+            // Map provider to our internal provider ID
+            const providerMap: Record<string, string> = {
+                google: 'google_calendar',
+                outlook: 'microsoft_outlook',
             };
-            setConnectedCalendars(prev => [...prev, newCalendar]);
-            toast.success(`Connected to ${PROVIDER_NAMES[provider]}`);
-            setShowIntegrationModal(false);
-        }, 1500);
+
+            const response = await fetch('/api/calendar/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider: providerMap[provider] }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to connect');
+            }
+
+            const { authorizationUrl } = await response.json();
+
+            // Redirect to OAuth provider
+            window.location.href = authorizationUrl;
+        } catch (error) {
+            console.error('Calendar connect error:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to connect calendar');
+        }
     };
 
     // Get priority badge color
