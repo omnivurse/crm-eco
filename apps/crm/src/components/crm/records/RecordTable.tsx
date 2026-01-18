@@ -345,9 +345,12 @@ export function RecordTable({
   }, [fields]);
 
   // Get visible columns from view or explicit columns
+  // Allow any column that exists in the fieldMap (custom fields) or common system fields
+  const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'middle_initial', 'lead_status', 'contact_status', 'salutation', 'record_id', 'contact_name'];
   const visibleColumns = useMemo(() => {
     const columns = explicitColumns || view?.columns || ['title', 'status', 'email', 'created_at'];
-    return columns.filter((col) => fieldMap[col] || ['title', 'status', 'owner_id', 'created_at', 'email', 'phone', 'first_name', 'last_name', 'lead_status', 'contact_status'].includes(col));
+    // Allow columns that exist in fieldMap or are known system columns
+    return columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col));
   }, [explicitColumns, view?.columns, fieldMap]);
 
   const allSelected = records.length > 0 && selectedIds.size === records.length;
