@@ -225,14 +225,17 @@ export function ModuleShell({
       return field?.label || col;
     });
 
-    const rows = recordsToExport.map(record =>
-      visibleColumns.map(col => {
-        const value = record[col];
+    const rows = recordsToExport.map(record => {
+      // Access record properties with proper typing
+      const recordData = record as unknown as Record<string, unknown>;
+      return visibleColumns.map(col => {
+        // Try direct property first, then check data object
+        const value = recordData[col] ?? (record.data as Record<string, unknown>)?.[col];
         if (value === null || value === undefined) return '';
         if (typeof value === 'object') return JSON.stringify(value);
         return String(value);
-      })
-    );
+      });
+    });
 
     const csvContent = [
       headers.join(','),
