@@ -23,7 +23,7 @@ function createAdminClient() {
 const DEFAULT_MODULES = [
   { key: 'contacts', name: 'Contact', name_plural: 'Contacts', icon: 'user', description: 'Manage all your contacts and customers', display_order: 1 },
   { key: 'leads', name: 'Lead', name_plural: 'Leads', icon: 'user-plus', description: 'Track and nurture potential customers', display_order: 2 },
-  { key: 'deals', name: 'Deal', name_plural: 'Deals', icon: 'dollar-sign', description: 'Manage your sales pipeline', display_order: 3 },
+  { key: 'deals', name: 'Member', name_plural: 'Members', icon: 'users', description: 'Manage member applications and lifecycle', display_order: 3 },
   { key: 'accounts', name: 'Account', name_plural: 'Accounts', icon: 'building', description: 'Manage organizations and companies', display_order: 4 },
 ];
 
@@ -48,12 +48,13 @@ const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: s
     { key: 'company', label: 'Company', type: 'text', display_order: 7, section: 'main' },
   ],
   deals: [
-    { key: 'deal_name', label: 'Deal Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },
-    { key: 'amount', label: 'Amount', type: 'currency', is_system: true, display_order: 2, section: 'main' },
-    { key: 'stage', label: 'Stage', type: 'select', required: true, is_system: true, display_order: 3, section: 'main', options: ['Qualification', 'Needs Analysis', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'] },
-    { key: 'probability', label: 'Probability (%)', type: 'number', display_order: 4, section: 'main' },
-    { key: 'expected_close_date', label: 'Expected Close Date', type: 'date', is_system: true, display_order: 5, section: 'main' },
-    { key: 'description', label: 'Description', type: 'textarea', display_order: 6, section: 'main' },
+    { key: 'member_name', label: 'Member Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },
+    { key: 'email', label: 'Email', type: 'email', is_system: true, display_order: 2, section: 'main' },
+    { key: 'phone', label: 'Phone', type: 'phone', is_system: true, display_order: 3, section: 'main' },
+    { key: 'stage', label: 'Stage', type: 'select', required: true, is_system: true, display_order: 4, section: 'main', options: ['Application', 'Under Review', 'Approved', 'Active', 'Terminated'] },
+    { key: 'enrollment_date', label: 'Enrollment Date', type: 'date', is_system: true, display_order: 5, section: 'main' },
+    { key: 'plan', label: 'Plan', type: 'text', display_order: 6, section: 'main' },
+    { key: 'notes', label: 'Notes', type: 'textarea', display_order: 7, section: 'main' },
   ],
   accounts: [
     { key: 'account_name', label: 'Account Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },

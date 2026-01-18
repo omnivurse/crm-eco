@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, StatCard } from '@crm-eco/ui';
-import { Users, UserCheck, FileText, TrendingUp, Clock, Activity, User, Package, Settings, DollarSign, Sparkles, ArrowUpRight } from 'lucide-react';
+import { Users, UserCheck, FileText, TrendingUp, Clock, Activity, User, Package, Settings, DollarSign, Sparkles, ArrowUpRight, AlertCircle } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -38,7 +38,7 @@ async function getDashboardStats() {
   const orgId = profile.organization_id;
 
   // Get counts
-  const [membersResult, agentsResult, enrollmentsResult, activeEnrollmentsResult] =
+  const [membersResult, agentsResult, enrollmentsResult, activeEnrollmentsResult, pendingEnrollmentsResult] =
     await Promise.all([
       supabase
         .from('members')
@@ -57,6 +57,11 @@ async function getDashboardStats() {
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', orgId)
         .eq('status', 'approved'),
+      supabase
+        .from('enrollments')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('status', 'submitted'),
     ]);
 
   // Get commission stats
@@ -88,6 +93,7 @@ async function getDashboardStats() {
     totalAgents: agentsResult.count ?? 0,
     totalEnrollments: enrollmentsResult.count ?? 0,
     activeEnrollments: activeEnrollmentsResult.count ?? 0,
+    pendingEnrollments: pendingEnrollmentsResult.count ?? 0,
     pendingCommissions,
     paidThisMonth,
   };
@@ -230,7 +236,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
         <StatCard
           title="Total Members"
           value={stats?.totalMembers ?? 0}
@@ -252,6 +258,16 @@ export default async function DashboardPage() {
           icon={<FileText className="w-5 h-5" />}
           accent="purple"
         />
+        <Link href="/enrollments?status=submitted">
+          <StatCard
+            title="Pending Review"
+            value={stats?.pendingEnrollments ?? 0}
+            subtitle="Awaiting admin review"
+            icon={<AlertCircle className="w-5 h-5" />}
+            accent="amber"
+            className={(stats?.pendingEnrollments ?? 0) > 0 ? 'ring-2 ring-amber-400/50 animate-pulse' : ''}
+          />
+        </Link>
         <StatCard
           title="Active Enrollments"
           value={stats?.activeEnrollments ?? 0}

@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AdminSidebar, AdminTopNav, Breadcrumbs } from '@/components/layout';
+import { AdminNotificationListener } from '@/components/notifications/AdminNotificationListener';
 import { isAdminRole } from '@/lib/auth';
 import type { Database } from '@crm-eco/lib/types';
 
@@ -49,7 +50,9 @@ export default async function DashboardLayout({
             avatarUrl: profile.avatar_url,
             role: profile.role,
           }}
+          userId={profile.id}
         />
+        <AdminNotificationListener userId={profile.id} />
         <main className="flex-1 overflow-auto p-6">
           <Breadcrumbs />
           {children}
