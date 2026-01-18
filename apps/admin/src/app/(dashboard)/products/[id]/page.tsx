@@ -120,6 +120,12 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
           <Badge variant={product.is_active ? 'default' : 'secondary'}>
             {product.is_active ? 'Active' : 'Inactive'}
           </Badge>
+          <Link href={`/products/${product.id}/pricing`}>
+            <Button variant="outline">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Pricing Matrix
+            </Button>
+          </Link>
           <Link href={`/products/${product.id}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />

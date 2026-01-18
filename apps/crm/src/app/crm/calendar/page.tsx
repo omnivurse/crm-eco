@@ -51,9 +51,25 @@ interface CalendarEvent {
 interface Task {
     id: string;
     title: string;
-    due_date: string;
+    due_at: string;
     priority: string;
     status: string;
+}
+
+interface CrmTask {
+    id: string;
+    title: string;
+    description: string | null;
+    due_at: string | null;
+    activity_type: string;
+    meeting_location: string | null;
+    meeting_type: string | null;
+    status: string;
+    assigned_to: string | null;
+    record?: {
+        id: string;
+        title: string;
+    }[] | null;
 }
 
 interface ConnectedCalendar {
@@ -108,31 +124,60 @@ export default function CalendarPage() {
                     .single();
 
                 if (profile) {
-                    // Load tasks
+                    // Load tasks (activity_type = 'task')
                     const { data: tasksData } = await supabase
-                        .from('tasks')
-                        .select('id, title, due_date, priority, status')
-                        .eq('organization_id', profile.organization_id)
+                        .from('crm_tasks')
+                        .select('id, title, due_at, priority, status')
+                        .eq('org_id', profile.organization_id)
+                        .eq('activity_type', 'task')
                         .neq('status', 'completed')
-                        .order('due_date', { ascending: true })
+                        .order('due_at', { ascending: true })
                         .limit(10);
 
-                    setTasks(tasksData || []);
+                    setTasks((tasksData || []) as Task[]);
 
-                    // Load events (mock for now - in production would come from integrated calendars)
-                    const mockEvents: CalendarEvent[] = [
-                        {
-                            id: '1',
-                            title: 'Client Meeting - John Smith',
-                            start: new Date(),
-                            end: new Date(Date.now() + 3600000),
-                            provider: 'google',
-                            color: PROVIDER_COLORS.google,
-                        },
-                    ];
-                    setEvents(mockEvents);
+                    // Load meetings and calls from crm_tasks
+                    const { data: activitiesData } = await supabase
+                        .from('crm_tasks')
+                        .select(`
+                            id,
+                            title,
+                            description,
+                            due_at,
+                            activity_type,
+                            meeting_location,
+                            meeting_type,
+                            status,
+                            assigned_to,
+                            record:crm_records(id, title)
+                        `)
+                        .eq('org_id', profile.organization_id)
+                        .in('activity_type', ['meeting', 'call'])
+                        .neq('status', 'completed')
+                        .not('due_at', 'is', null)
+                        .order('due_at', { ascending: true });
 
-                    // Load connected calendars (mock - would come from DB)
+                    // Convert activities to calendar events
+                    const calendarEvents: CalendarEvent[] = ((activitiesData || []) as unknown as CrmTask[]).map(activity => {
+                        const startDate = new Date(activity.due_at!);
+                        const endDate = new Date(startDate.getTime() + (activity.activity_type === 'call' ? 1800000 : 3600000)); // 30min for calls, 1hr for meetings
+
+                        return {
+                            id: activity.id,
+                            title: activity.title,
+                            description: activity.description || undefined,
+                            start: startDate,
+                            end: endDate,
+                            location: activity.meeting_location || undefined,
+                            provider: 'personal' as CalendarProvider,
+                            color: activity.activity_type === 'meeting' ? '#10B981' : '#8B5CF6', // green for meetings, purple for calls
+                            status: activity.status === 'cancelled' ? 'cancelled' : 'confirmed',
+                        };
+                    });
+
+                    setEvents(calendarEvents);
+
+                    // Load connected calendars (future: from calendar_connections table)
                     setConnectedCalendars([]);
                 }
             } catch (error) {
@@ -418,7 +463,7 @@ export default function CalendarPage() {
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm text-slate-900 dark:text-white truncate">{task.title}</p>
                                             <p className="text-xs text-slate-500">
-                                                {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}
+                                                {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'No due date'}
                                             </p>
                                         </div>
                                         <span className={cn('w-2 h-2 rounded-full mt-1.5', getPriorityColor(task.priority))} />

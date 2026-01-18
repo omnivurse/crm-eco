@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Label, Badge } from '@crm-eco/ui';
-import { CheckCircle, User, Users, FileText, Shield, CreditCard, AlertTriangle, UserPlus } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Label, Badge, SignaturePad } from '@crm-eco/ui';
+import { CheckCircle, User, Users, FileText, Shield, CreditCard, AlertTriangle, UserPlus, PenTool } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
-import { submitEnrollment } from '@/app/(dashboard)/enrollments/new/actions';
+import { submitEnrollment, saveSignature } from '@/app/(dashboard)/enrollments/new/actions';
 
 interface Member {
   id: string;
@@ -44,9 +44,46 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
     setIsLoading,
     setError,
     stepStatuses,
+    isLoading,
   } = useEnrollmentWizard();
 
   const [finalAcceptance, setFinalAcceptance] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
+  const [signatureSaved, setSignatureSaved] = useState(false);
+  const [savingSignature, setSavingSignature] = useState(false);
+
+  // Handle signature save
+  const handleSignatureSave = useCallback(async (signature: string) => {
+    if (!enrollmentId) return;
+
+    setSavingSignature(true);
+    setError(null);
+
+    try {
+      const result = await saveSignature({
+        enrollmentId,
+        signatureData: signature,
+        signedAt: new Date().toISOString(),
+      });
+
+      if (!result.success) {
+        setError(result.error || 'Failed to save signature');
+        return;
+      }
+
+      setSignatureData(signature);
+      setSignatureSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save signature');
+    } finally {
+      setSavingSignature(false);
+    }
+  }, [enrollmentId, setError]);
+
+  const handleSignatureClear = useCallback(() => {
+    setSignatureData(null);
+    setSignatureSaved(false);
+  }, []);
 
   // Get selected data
   const selectedMember = members.find((m) => m.id === snapshot.intake?.memberId);
@@ -71,6 +108,11 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
       return;
     }
 
+    if (!signatureSaved) {
+      setError('Please provide your electronic signature');
+      return;
+    }
+
     if (!enrollmentId) {
       setError('Enrollment not initialized');
       return;
@@ -85,7 +127,7 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
     setError(null);
 
     try {
-      const result = await submitEnrollment(enrollmentId, finalAcceptance);
+      const result = await submitEnrollment(enrollmentId, finalAcceptance, signatureData || undefined);
 
       if (!result.success) {
         setError(result.error || 'Failed to submit enrollment');
@@ -305,6 +347,55 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
         </CardContent>
       </Card>
 
+      {/* Electronic Signature */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <PenTool className="w-4 h-4 text-slate-400" />
+            Electronic Signature
+          </CardTitle>
+          <CardDescription>
+            Please sign below to authorize your enrollment application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {signatureSaved && signatureData ? (
+            <div className="space-y-4">
+              <div className="border rounded-lg p-4 bg-slate-50">
+                <img
+                  src={signatureData}
+                  alt="Your signature"
+                  className="max-h-24 mx-auto"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="w-4 h-4" />
+                  <span className="text-sm font-medium">Signature saved</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSignatureClear}
+                  className="text-sm text-slate-600 hover:text-slate-900 underline"
+                >
+                  Clear and re-sign
+                </button>
+              </div>
+            </div>
+          ) : (
+            <SignaturePad
+              onSave={handleSignatureSave}
+              onClear={handleSignatureClear}
+              height={150}
+              disabled={savingSignature}
+            />
+          )}
+          {savingSignature && (
+            <p className="text-sm text-slate-500 mt-2">Saving signature...</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Final Acceptance */}
       <Card className="border-blue-200 bg-blue-50">
         <CardContent className="pt-6">
@@ -320,9 +411,9 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
                 I confirm that all information provided is accurate
               </Label>
               <p className="text-sm text-slate-600 mt-1">
-                By checking this box and submitting, I confirm that the information provided in 
-                this enrollment is true and accurate to the best of my knowledge. I understand 
-                that my enrollment is subject to review and approval, and I agree to the terms 
+                By checking this box and submitting, I confirm that the information provided in
+                this enrollment is true and accurate to the best of my knowledge. I understand
+                that my enrollment is subject to review and approval, and I agree to the terms
                 and conditions of the healthshare program.
               </p>
             </div>
@@ -351,7 +442,7 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
       <WizardNavigation
         onSubmit={handleSubmit}
         submitLabel="Submit Enrollment"
-        isNextDisabled={!finalAcceptance || !allStepsComplete}
+        isNextDisabled={!finalAcceptance || !allStepsComplete || !signatureSaved}
         showSubmit
       />
     </div>

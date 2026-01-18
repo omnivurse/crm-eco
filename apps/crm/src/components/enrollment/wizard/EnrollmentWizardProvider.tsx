@@ -88,6 +88,8 @@ export interface WizardSnapshot {
   };
   confirmation?: {
     finalAcceptance: boolean;
+    signatureData?: string;
+    signedAt?: string;
   };
 }
 

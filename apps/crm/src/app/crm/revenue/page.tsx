@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createBrowserClient } from '@supabase/ssr';
 import {
   DollarSign,
   TrendingUp,
@@ -42,79 +43,21 @@ interface PipelineStage {
   color: string;
 }
 
-// ============================================================================
-// Mock Data (Replace with API calls)
-// ============================================================================
+interface DealData {
+  id: string;
+  stage: string;
+  data: { amount?: number } | null;
+}
 
-const REVENUE_MODULES: RevenueModule[] = [
-  {
-    key: 'pipeline',
-    name: 'Sales Pipeline',
-    description: 'Manage your deal pipeline and stages',
-    icon: <Target className="w-5 h-5" />,
-    href: '/crm/pipeline',
-    color: 'teal',
-    count: 47,
-    value: 1250000,
-  },
-  {
-    key: 'deals',
-    name: 'Deals',
-    description: 'Track opportunities and close deals',
-    icon: <DollarSign className="w-5 h-5" />,
-    href: '/crm/deals',
-    color: 'emerald',
-    count: 156,
-    value: 3450000,
-  },
-  {
-    key: 'quotes',
-    name: 'Quotes',
-    description: 'Create and send professional quotes',
-    icon: <FileCheck className="w-5 h-5" />,
-    href: '/crm/quotes',
-    color: 'blue',
-    count: 23,
-    value: 185000,
-  },
-  {
-    key: 'invoices',
-    name: 'Invoices',
-    description: 'Generate and track invoices',
-    icon: <Receipt className="w-5 h-5" />,
-    href: '/crm/invoices',
-    color: 'violet',
-    count: 89,
-    value: 425000,
-  },
-  {
-    key: 'products',
-    name: 'Products',
-    description: 'Manage your product catalog',
-    icon: <Package className="w-5 h-5" />,
-    href: '/crm/products',
-    color: 'amber',
-    count: 34,
-  },
-  {
-    key: 'commissions',
-    name: 'Commissions',
-    description: 'Track sales commissions and payouts',
-    icon: <Percent className="w-5 h-5" />,
-    href: '/crm/commissions',
-    color: 'rose',
-    count: 12,
-    value: 45000,
-  },
-];
-
-const PIPELINE_STAGES: PipelineStage[] = [
-  { name: 'Qualification', count: 15, value: 320000, color: 'bg-slate-500' },
-  { name: 'Discovery', count: 12, value: 280000, color: 'bg-blue-500' },
-  { name: 'Proposal', count: 8, value: 450000, color: 'bg-violet-500' },
-  { name: 'Negotiation', count: 7, value: 380000, color: 'bg-amber-500' },
-  { name: 'Closed Won', count: 5, value: 520000, color: 'bg-emerald-500' },
-];
+// Stage color mapping
+const STAGE_COLORS: Record<string, string> = {
+  'Qualification': 'bg-slate-500',
+  'Discovery': 'bg-blue-500',
+  'Proposal': 'bg-violet-500',
+  'Negotiation': 'bg-amber-500',
+  'Closed Won': 'bg-emerald-500',
+  'Closed Lost': 'bg-red-500',
+};
 
 // ============================================================================
 // Components
@@ -267,19 +210,175 @@ function PipelineOverview({ stages }: { stages: PipelineStage[] }) {
 
 export default function RevenuePage() {
   const [loading, setLoading] = useState(true);
+  const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
+  const [modules, setModules] = useState<RevenueModule[]>([]);
+  const [stats, setStats] = useState({
+    pipelineValue: 0,
+    closedWonValue: 0,
+    activeDeals: 0,
+    winRate: 0,
+  });
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    async function loadData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('organization_id')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!profile) return;
+
+        // Fetch deals with stage info
+        const { data: dealsData } = await supabase
+          .from('crm_records')
+          .select('id, stage, data')
+          .eq('organization_id', profile.organization_id)
+          .eq('record_type', 'deals');
+
+        const deals = (dealsData || []) as unknown as DealData[];
+
+        // Group by stage
+        const stageMap = new Map<string, { count: number; value: number }>();
+        let totalPipelineValue = 0;
+        let closedWonValue = 0;
+
+        deals.forEach(deal => {
+          const stage = deal.stage || 'Qualification';
+          const amount = deal.data?.amount || 0;
+
+          if (!stageMap.has(stage)) {
+            stageMap.set(stage, { count: 0, value: 0 });
+          }
+          const stageData = stageMap.get(stage)!;
+          stageData.count++;
+          stageData.value += amount;
+
+          if (stage !== 'Closed Won' && stage !== 'Closed Lost') {
+            totalPipelineValue += amount;
+          }
+          if (stage === 'Closed Won') {
+            closedWonValue += amount;
+          }
+        });
+
+        // Convert to pipeline stages array
+        const orderedStages = ['Qualification', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
+        const stages: PipelineStage[] = orderedStages
+          .filter(stageName => stageMap.has(stageName))
+          .map(stageName => ({
+            name: stageName,
+            count: stageMap.get(stageName)!.count,
+            value: stageMap.get(stageName)!.value,
+            color: STAGE_COLORS[stageName] || 'bg-slate-500',
+          }));
+
+        setPipelineStages(stages);
+
+        // Calculate win rate
+        const closedDeals = deals.filter(d => d.stage === 'Closed Won' || d.stage === 'Closed Lost');
+        const wonDeals = deals.filter(d => d.stage === 'Closed Won');
+        const winRate = closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
+
+        setStats({
+          pipelineValue: totalPipelineValue,
+          closedWonValue: closedWonValue,
+          activeDeals: deals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length,
+          winRate: winRate,
+        });
+
+        // Fetch products count
+        const { count: productsCount } = await supabase
+          .from('products')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', profile.organization_id);
+
+        // Create revenue modules
+        const revenueModules: RevenueModule[] = [
+          {
+            key: 'pipeline',
+            name: 'Sales Pipeline',
+            description: 'Manage your deal pipeline and stages',
+            icon: <Target className="w-5 h-5" />,
+            href: '/crm/pipeline',
+            color: 'teal',
+            count: deals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length,
+            value: totalPipelineValue,
+          },
+          {
+            key: 'deals',
+            name: 'Deals',
+            description: 'Track opportunities and close deals',
+            icon: <DollarSign className="w-5 h-5" />,
+            href: '/crm/deals',
+            color: 'emerald',
+            count: deals.length,
+            value: deals.reduce((sum, d) => sum + (d.data?.amount || 0), 0),
+          },
+          {
+            key: 'quotes',
+            name: 'Quotes',
+            description: 'Create and send professional quotes',
+            icon: <FileCheck className="w-5 h-5" />,
+            href: '/crm/quotes',
+            color: 'blue',
+            count: 0,
+            value: 0,
+          },
+          {
+            key: 'invoices',
+            name: 'Invoices',
+            description: 'Generate and track invoices',
+            icon: <Receipt className="w-5 h-5" />,
+            href: '/crm/invoices',
+            color: 'violet',
+            count: 0,
+            value: 0,
+          },
+          {
+            key: 'products',
+            name: 'Products',
+            description: 'Manage your product catalog',
+            icon: <Package className="w-5 h-5" />,
+            href: '/crm/products',
+            color: 'amber',
+            count: productsCount || 0,
+          },
+          {
+            key: 'commissions',
+            name: 'Commissions',
+            description: 'Track sales commissions and payouts',
+            icon: <Percent className="w-5 h-5" />,
+            href: '/crm/commissions',
+            color: 'rose',
+            count: 0,
+            value: 0,
+          },
+        ];
+
+        setModules(revenueModules);
+      } catch (error) {
+        console.error('Error loading revenue data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [supabase]);
 
   if (loading) {
     return <RevenueSkeleton />;
   }
-
-  const totalPipelineValue = PIPELINE_STAGES.reduce((sum, s) => sum + s.value, 0);
-  const closedWonValue = PIPELINE_STAGES.find(s => s.name === 'Closed Won')?.value || 0;
-  const totalDeals = PIPELINE_STAGES.reduce((sum, s) => sum + s.count, 0);
 
   return (
     <div className="space-y-6">
@@ -319,32 +418,25 @@ export default function RevenuePage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
           label="Pipeline Value"
-          value={formatCurrency(totalPipelineValue)}
-          trend={15}
-          trendLabel="vs last month"
+          value={formatCurrency(stats.pipelineValue)}
           icon={Target}
           color="teal"
         />
         <StatCard
           label="Closed Won (MTD)"
-          value={formatCurrency(closedWonValue)}
-          trend={23}
-          trendLabel="vs last month"
+          value={formatCurrency(stats.closedWonValue)}
           icon={DollarSign}
           color="emerald"
         />
         <StatCard
           label="Active Deals"
-          value={totalDeals.toString()}
-          trend={8}
+          value={stats.activeDeals.toString()}
           icon={PieChart}
           color="blue"
         />
         <StatCard
           label="Win Rate"
-          value="32%"
-          trend={5}
-          trendLabel="vs last quarter"
+          value={`${stats.winRate}%`}
           icon={TrendingUp}
           color="violet"
         />
@@ -352,7 +444,7 @@ export default function RevenuePage() {
 
       {/* Pipeline Overview & Modules */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PipelineOverview stages={PIPELINE_STAGES} />
+        <PipelineOverview stages={pipelineStages} />
 
         {/* Quick Actions */}
         <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
@@ -416,7 +508,7 @@ export default function RevenuePage() {
           Revenue Modules
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {REVENUE_MODULES.map((module) => (
+          {modules.map((module) => (
             <ModuleCard key={module.key} module={module} />
           ))}
         </div>
