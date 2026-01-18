@@ -46,6 +46,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmailEditor } from '@/components/email';
 
 // ============================================================================
 // Types
@@ -473,7 +474,7 @@ export default function TemplatesPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
               {editingTemplate ? 'Edit Template' : 'Create Template'}
@@ -550,18 +551,24 @@ export default function TemplatesPage() {
               <Label htmlFor="body">
                 {formChannel === 'email' ? 'Email Body' : 'Message'}
               </Label>
-              <Textarea
-                id="body"
-                placeholder={
-                  formChannel === 'email'
-                    ? '<p>Hi {{contact.first_name}},</p><p>Your message here...</p>'
-                    : 'Hi {{contact.first_name}}, your message here...'
-                }
-                value={formBody}
-                onChange={(e) => setFormBody(e.target.value)}
-                rows={10}
-                className="font-mono text-sm"
-              />
+              {formChannel === 'email' ? (
+                <EmailEditor
+                  content={formBody}
+                  onChange={setFormBody}
+                  placeholder="Start composing your email template..."
+                  minHeight={300}
+                  showSourceToggle={true}
+                />
+              ) : (
+                <Textarea
+                  id="body"
+                  placeholder="Hi {{contact.first_name}}, your message here..."
+                  value={formBody}
+                  onChange={(e) => setFormBody(e.target.value)}
+                  rows={6}
+                  className="font-mono text-sm"
+                />
+              )}
               <p className="text-xs text-slate-500">
                 Available merge fields: {'{{contact.first_name}}'}, {'{{contact.last_name}}'}, {'{{contact.email}}'}, {'{{company.name}}'}, {'{{owner.name}}'}
               </p>

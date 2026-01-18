@@ -152,6 +152,7 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Tools': true,
     'Health Sharing': true,
+    'Email': true,
     'Communication': false,
     'Automation': false,
     'Integrations': false,
@@ -207,12 +208,24 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       ],
     },
     {
+      title: 'Email',
+      collapsible: true,
+      defaultOpen: true,
+      items: [
+        { name: 'Email Campaigns', href: '/crm/campaigns', icon: Send, isNew: true },
+        { name: 'Sequences', href: '/crm/sequences', icon: Repeat },
+        { name: 'Templates', href: '/crm/settings/templates', icon: LayoutTemplate },
+        { name: 'Asset Library', href: '/crm/email/assets', icon: FolderOpen, isNew: true },
+        { name: 'Signatures', href: '/crm/settings/signatures', icon: FileText },
+        { name: 'Domains', href: '/crm/settings/email-domains', icon: Globe },
+      ],
+    },
+    {
       title: 'Communication',
       collapsible: true,
       defaultOpen: false,
       items: [
         { name: 'Inbox', href: '/crm/inbox', icon: Inbox },
-        { name: 'Email Templates', href: '/crm/communications', icon: Mail },
         { name: 'SMS Campaigns', href: '/crm/communications?tab=sms', icon: MessageSquare, isBeta: true },
         { name: 'Call Logs', href: '/crm/activities?type=calls', icon: Phone },
         { name: 'Notifications', href: '/crm/settings/comms', icon: Bell },

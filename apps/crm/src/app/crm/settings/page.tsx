@@ -1,16 +1,20 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Boxes, 
-  FormInput, 
-  Layout, 
-  FileSpreadsheet, 
+import {
+  Boxes,
+  FormInput,
+  Layout,
+  FileSpreadsheet,
   Users,
   ChevronRight,
   Settings,
   Zap,
   Activity,
+  Mail,
+  FileSignature,
+  Globe,
+  Image,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 
@@ -25,12 +29,31 @@ interface SettingCard {
 
 const settingsCards: SettingCard[] = [
   {
+    title: 'Email System',
+    description: 'Templates, signatures, domains, and asset library',
+    href: '/crm/settings/templates',
+    icon: <Mail className="w-6 h-6" />,
+    highlight: true,
+  },
+  {
+    title: 'Email Domains',
+    description: 'Configure and verify sending domains',
+    href: '/crm/settings/email-domains',
+    icon: <Globe className="w-6 h-6" />,
+    adminOnly: true,
+  },
+  {
+    title: 'Email Signatures',
+    description: 'Create and manage your email signatures',
+    href: '/crm/settings/signatures',
+    icon: <FileSignature className="w-6 h-6" />,
+  },
+  {
     title: 'Automations',
     description: 'Workflows, assignment rules, scoring, cadences, and webforms',
     href: '/crm/settings/automations',
     icon: <Zap className="w-6 h-6" />,
     adminOnly: true,
-    highlight: true,
   },
   {
     title: 'Modules',
