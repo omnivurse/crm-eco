@@ -152,6 +152,7 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Tools': true,
     'Health Sharing': true,
+    'Vendors': true,
     'Email': true,
     'Communication': false,
     'Automation': false,
@@ -205,6 +206,18 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
         { name: 'Needs', href: '/crm/needs', icon: HeartHandshake },
         { name: 'Approvals', href: '/crm/approvals', icon: CheckCircle2 },
         { name: 'Payments', href: '/crm/commissions', icon: CircleDollarSign },
+      ],
+    },
+    {
+      title: 'Vendors',
+      collapsible: true,
+      defaultOpen: true,
+      items: [
+        { name: 'Vendor Hub', href: '/crm/vendors', icon: Building2, isNew: true },
+        { name: 'Upload Files', href: '/crm/vendors/upload', icon: FileUp },
+        { name: 'Review Changes', href: '/crm/vendors/changes', icon: GitBranch },
+        { name: 'Connectors', href: '/crm/vendors/connectors', icon: Link2 },
+        { name: 'Processing Jobs', href: '/crm/vendors/jobs', icon: RefreshCcw },
       ],
     },
     {
