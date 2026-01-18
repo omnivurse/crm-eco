@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
+import { useRouter } from 'next/navigation';
+import {
   ArrowLeft,
   Edit,
   UserPlus,
@@ -19,10 +20,14 @@ import {
   Clock,
   Link2,
   MessageSquare,
+  X,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { Input } from '@crm-eco/ui/components/input';
+import { Textarea } from '@crm-eco/ui/components/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,10 +35,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@crm-eco/ui/components/dialog';
 import { ActionRail } from '@/components/layout/ActionRail';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
+import { toast } from 'sonner';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage } from '@/lib/crm/types';
 
 interface RecordDetailShellProps {
@@ -126,16 +138,169 @@ export function RecordDetailShell({
   onRefresh,
   className,
 }: RecordDetailShellProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
-  
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
   // Check if we should show ComposerBar on timeline tab
   const showComposer = activeTab === 'timeline';
-  
+
   const icon = MODULE_ICONS[module.key] || <UserCircle className="w-5 h-5" />;
   const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
 
   const backUrl = `/crm/modules/${module.key}`;
   const isDeals = module.key === 'deals';
+
+  // Handle Edit Record - navigate to edit mode
+  const handleEditRecord = () => {
+    if (onEdit) {
+      onEdit();
+    } else {
+      router.push(`/crm/r/${record.id}/edit`);
+    }
+  };
+
+  // Handle Add Task
+  const handleAddTask = async () => {
+    if (onAddTask) {
+      onAddTask();
+      return;
+    }
+    setShowTaskModal(true);
+  };
+
+  const submitTask = async () => {
+    if (!taskTitle.trim()) {
+      toast.error('Please enter a task title');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/crm/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: record.id,
+          title: taskTitle,
+          description: taskDescription,
+          due_at: taskDueDate || null,
+          priority: 'medium',
+          activity_type: 'task',
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create task');
+
+      toast.success('Task created successfully');
+      setShowTaskModal(false);
+      setTaskTitle('');
+      setTaskDescription('');
+      setTaskDueDate('');
+      router.refresh();
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast.error('Failed to create task');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Add Note
+  const handleAddNote = async () => {
+    if (onAddNote) {
+      onAddNote();
+      return;
+    }
+    setShowNoteModal(true);
+  };
+
+  const submitNote = async () => {
+    if (!noteContent.trim()) {
+      toast.error('Please enter note content');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch('/api/crm/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: record.id,
+          body: noteContent,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create note');
+
+      toast.success('Note added successfully');
+      setShowNoteModal(false);
+      setNoteContent('');
+      // Switch to notes tab if it exists
+      if (children.notes) {
+        setActiveTab('notes');
+      }
+      router.refresh();
+    } catch (error) {
+      console.error('Error creating note:', error);
+      toast.error('Failed to add note');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Upload File
+  const handleUploadFile = async () => {
+    if (onUploadFile) {
+      onUploadFile();
+      return;
+    }
+    setShowUploadModal(true);
+  };
+
+  const submitFile = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('recordId', record.id);
+
+      const response = await fetch('/api/crm/attachments', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to upload file');
+
+      toast.success('File uploaded successfully');
+      setShowUploadModal(false);
+      setSelectedFile(null);
+      // Switch to files tab if it exists
+      if (children.attachments) {
+        setActiveTab('attachments');
+      }
+      router.refresh();
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast.error('Failed to upload file');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className={cn('flex h-full', className)}>
@@ -203,7 +368,7 @@ export function RecordDetailShell({
                   variant="outline"
                   size="sm"
                   className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                  onClick={onEdit}
+                  onClick={handleEditRecord}
                 >
                   <Edit className="w-4 h-4 mr-1" />
                   Edit
@@ -357,34 +522,34 @@ export function RecordDetailShell({
           <Button
             variant="outline"
             className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
-            onClick={onEdit}
+            onClick={handleEditRecord}
           >
             <Edit className="w-4 h-4 mr-2" />
             Edit Record
           </Button>
-          
+
           <Button
             variant="outline"
             className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
-            onClick={onAddTask}
+            onClick={handleAddTask}
           >
             <CheckSquare className="w-4 h-4 mr-2" />
             Add Task
           </Button>
-          
+
           <Button
             variant="outline"
             className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
-            onClick={onAddNote}
+            onClick={handleAddNote}
           >
             <StickyNote className="w-4 h-4 mr-2" />
             Add Note
           </Button>
-          
+
           <Button
             variant="outline"
             className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
-            onClick={onUploadFile}
+            onClick={handleUploadFile}
           >
             <Upload className="w-4 h-4 mr-2" />
             Upload File
@@ -417,6 +582,184 @@ export function RecordDetailShell({
           </div>
         </div>
       </ActionRail>
+
+      {/* Add Task Modal */}
+      <Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white">Add Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Task Title *
+              </label>
+              <Input
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                placeholder="Enter task title..."
+                className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Description
+              </label>
+              <Textarea
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+                placeholder="Enter task description..."
+                rows={3}
+                className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Due Date
+              </label>
+              <Input
+                type="datetime-local"
+                value={taskDueDate}
+                onChange={(e) => setTaskDueDate(e.target.value)}
+                className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowTaskModal(false)}
+                className="border-slate-200 dark:border-white/10"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitTask}
+                disabled={isSubmitting}
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Task'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Note Modal */}
+      <Dialog open={showNoteModal} onOpenChange={setShowNoteModal}>
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white">Add Note</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Note Content *
+              </label>
+              <Textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Enter your note..."
+                rows={5}
+                className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowNoteModal(false)}
+                className="border-slate-200 dark:border-white/10"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitNote}
+                disabled={isSubmitting}
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Note'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upload File Modal */}
+      <Dialog open={showUploadModal} onOpenChange={setShowUploadModal}>
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-white">Upload File</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1 block">
+                Select File *
+              </label>
+              <div className="border-2 border-dashed border-slate-200 dark:border-white/10 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer flex flex-col items-center"
+                >
+                  <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {selectedFile ? selectedFile.name : 'Click to select a file'}
+                  </span>
+                  {selectedFile && (
+                    <span className="text-xs text-slate-500 mt-1">
+                      {(selectedFile.size / 1024).toFixed(1)} KB
+                    </span>
+                  )}
+                </label>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setSelectedFile(null);
+                }}
+                className="border-slate-200 dark:border-white/10"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitFile}
+                disabled={isSubmitting || !selectedFile}
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload File'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
