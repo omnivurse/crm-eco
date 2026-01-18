@@ -36,21 +36,23 @@ CREATE TABLE IF NOT EXISTS team_invitations (
 
   -- Timestamps
   created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-
-  -- Prevent duplicate pending invitations to same email in same org
-  UNIQUE(organization_id, email, status) WHERE status = 'pending'
+  updated_at timestamptz DEFAULT now()
 );
 
 -- Enable RLS
 ALTER TABLE team_invitations ENABLE ROW LEVEL SECURITY;
 
 -- Indexes for common queries
-CREATE INDEX idx_team_invitations_org_id ON team_invitations(organization_id);
-CREATE INDEX idx_team_invitations_email ON team_invitations(email);
-CREATE INDEX idx_team_invitations_token ON team_invitations(token);
-CREATE INDEX idx_team_invitations_status ON team_invitations(status);
-CREATE INDEX idx_team_invitations_expires_at ON team_invitations(expires_at);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_org_id ON team_invitations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_email ON team_invitations(email);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_token ON team_invitations(token);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_status ON team_invitations(status);
+CREATE INDEX IF NOT EXISTS idx_team_invitations_expires_at ON team_invitations(expires_at);
+
+-- Prevent duplicate pending invitations to same email in same org (partial unique index)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_team_invitations_unique_pending
+  ON team_invitations(organization_id, email)
+  WHERE status = 'pending';
 
 -- ============================================================================
 -- RLS Policies for Team Invitations

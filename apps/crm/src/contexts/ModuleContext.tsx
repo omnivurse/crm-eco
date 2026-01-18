@@ -105,10 +105,12 @@ export const INTEGRATIONS_NAV_ITEMS = [
 export const COMMUNICATIONS_NAV_ITEMS = [
     { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
     { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/communications' },
-    { key: 'campaigns', label: 'Campaigns', icon: 'mail', href: '/crm/campaigns' },
-    { key: 'email', label: 'Compose Email', icon: 'message-square', href: '/crm/communications/new?type=email' },
-    { key: 'sms', label: 'Send SMS', icon: 'message-circle', href: '/crm/communications/new?type=sms' },
-    { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/settings/comms' },
+    { key: 'campaigns', label: 'Email Campaigns', icon: 'mail', href: '/crm/campaigns' },
+    { key: 'sequences', label: 'Sequences', icon: 'repeat', href: '/crm/sequences' },
+    { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/settings/templates' },
+    { key: 'assets', label: 'Asset Library', icon: 'folder', href: '/crm/email/assets' },
+    { key: 'signatures', label: 'Signatures', icon: 'file-signature', href: '/crm/settings/signatures' },
+    { key: 'domains', label: 'Email Domains', icon: 'globe', href: '/crm/settings/email-domains' },
 ];
 
 // Revenue sidebar navigation items - Financial focused
@@ -130,6 +132,9 @@ export const OPERATIONS_NAV_ITEMS = [
     { key: 'enrollment', label: 'Enrollment', icon: 'clipboard-check', href: '/crm/enrollment' },
     { key: 'needs', label: 'Needs', icon: 'heart', href: '/crm/needs' },
     { key: 'approvals', label: 'Approvals', icon: 'check-circle', href: '/crm/approvals' },
+    { key: 'vendors', label: 'Vendor Hub', icon: 'building-2', href: '/crm/vendors' },
+    { key: 'vendor-upload', label: 'Upload Files', icon: 'file-up', href: '/crm/vendors/upload' },
+    { key: 'vendor-changes', label: 'Review Changes', icon: 'git-branch', href: '/crm/vendors/changes' },
 ];
 
 // Analytics sidebar navigation items  
