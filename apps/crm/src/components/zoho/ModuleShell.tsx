@@ -14,6 +14,7 @@ import { FilterChipsBar } from './FilterChipsBar';
 import { ColumnsButton } from './ColumnsButton';
 import { DensityToggle } from './DensityToggle';
 import { MassActionsBar } from './MassActionsBar';
+import { ModuleShellProvider } from './ModuleShellContext';
 import type { Density } from './ViewPreferencesContext';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewFilter } from '@/lib/crm/types';
 
@@ -280,6 +281,7 @@ export function ModuleShell({
     setSelectedIds,
     density,
     visibleColumns,
+    setVisibleColumns,
     sortField,
     sortDirection,
     moduleKey: module.key,
@@ -364,16 +366,17 @@ export function ModuleShell({
       </div>
 
       {/* Table Content */}
-      <div
-        data-module-shell-context={JSON.stringify(shellContext)}
-        className={cn(
-          'relative',
-          density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
-          density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
-        )}
-      >
-        {children}
-      </div>
+      <ModuleShellProvider value={shellContext}>
+        <div
+          className={cn(
+            'relative',
+            density === 'compact' && '[&_table_td]:py-1.5 [&_table_th]:py-2',
+            density === 'comfortable' && '[&_table_td]:py-4 [&_table_th]:py-3'
+          )}
+        >
+          {children}
+        </div>
+      </ModuleShellProvider>
 
       {/* Mass Actions Bar */}
       <MassActionsBar
