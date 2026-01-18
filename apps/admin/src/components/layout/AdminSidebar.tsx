@@ -17,6 +17,7 @@ import {
   Mail,
   Shield,
   Sparkles,
+  Building2,
 } from 'lucide-react';
 
 interface NavItem {
@@ -32,9 +33,10 @@ const navItems: NavItem[] = [
   { label: 'Agents', href: '/agents', icon: <UserCog className="h-5 w-5" /> },
   { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" /> },
   { label: 'Enrollments', href: '/enrollments', icon: <FileText className="h-5 w-5" /> },
-  { 
-    label: 'Enrollment Links', 
-    href: '/enrollment-links', 
+  { label: 'Vendors', href: '/vendors', icon: <Building2 className="h-5 w-5" /> },
+  {
+    label: 'Enrollment Links',
+    href: '/enrollment-links',
     icon: <LinkIcon className="h-5 w-5" />,
     children: [
       { label: 'Landing Pages', href: '/enrollment-links' },
