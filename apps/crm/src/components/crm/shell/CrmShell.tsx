@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { CommandPalette } from './CommandPalette';
+import { Footer } from './Footer';
 import { ModuleProvider } from '@/contexts/ModuleContext';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
@@ -75,11 +76,14 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
 
             {/* Page Content */}
             <main className="flex-1 overflow-auto p-6 scrollbar-thin">
-              <div className="animate-fade-in-up max-w-7xl mx-auto">
+              <div className="animate-fade-in-up max-w-7xl mx-auto pb-16">
                 {children}
               </div>
             </main>
           </div>
+
+          {/* Footer */}
+          <Footer />
         </div>
 
         {/* Command Palette */}
