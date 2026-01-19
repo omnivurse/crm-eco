@@ -22,11 +22,22 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user's profile ID
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     const { data: signature, error } = await supabase
       .from('email_signatures')
       .select('*')
       .eq('id', id)
-      .eq('profile_id', user.id)
+      .eq('profile_id', profile.id)
       .single();
 
     if (error || !signature) {
@@ -58,12 +69,23 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user's profile ID
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     // Verify ownership
     const { data: existing } = await supabase
       .from('email_signatures')
       .select('id')
       .eq('id', id)
-      .eq('profile_id', user.id)
+      .eq('profile_id', profile.id)
       .single();
 
     if (!existing) {
@@ -88,7 +110,7 @@ export async function PUT(
       await supabase
         .from('email_signatures')
         .update({ is_default: false })
-        .eq('profile_id', user.id)
+        .eq('profile_id', profile.id)
         .eq('is_default', true)
         .neq('id', id);
     }
@@ -109,7 +131,7 @@ export async function PUT(
       .from('email_signatures')
       .update(updateData)
       .eq('id', id)
-      .eq('profile_id', user.id)
+      .eq('profile_id', profile.id)
       .select()
       .single();
 
@@ -149,12 +171,23 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Get user's profile ID
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
     // Verify ownership
     const { data: existing } = await supabase
       .from('email_signatures')
       .select('id')
       .eq('id', id)
-      .eq('profile_id', user.id)
+      .eq('profile_id', profile.id)
       .single();
 
     if (!existing) {
@@ -165,7 +198,7 @@ export async function DELETE(
       .from('email_signatures')
       .delete()
       .eq('id', id)
-      .eq('profile_id', user.id);
+      .eq('profile_id', profile.id);
 
     if (error) {
       console.error('Error deleting signature:', error);
