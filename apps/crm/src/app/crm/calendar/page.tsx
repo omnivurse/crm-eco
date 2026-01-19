@@ -300,11 +300,6 @@ export default function CalendarPage() {
         return date.getMonth() === currentDate.getMonth();
     };
 
-    // Format month/year header
-    const formatHeader = () => {
-        return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-    };
-
     // Connect calendar provider
     const connectCalendar = async (provider: CalendarProvider) => {
         if (provider === 'personal') {
@@ -356,6 +351,50 @@ export default function CalendarPage() {
 
     // Today's events
     const todaysEvents = events.filter(e => isToday(new Date(e.start)));
+
+    // Generate week days for week view
+    const weekDays = useMemo(() => {
+        const startOfWeek = new Date(currentDate);
+        const day = startOfWeek.getDay();
+        const diff = day === 0 ? -6 : 1 - day; // Monday start
+        startOfWeek.setDate(startOfWeek.getDate() + diff);
+
+        const days: Date[] = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(startOfWeek);
+            d.setDate(startOfWeek.getDate() + i);
+            days.push(d);
+        }
+        return days;
+    }, [currentDate]);
+
+    // Hours for day/week view
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+
+    // Get events for a specific hour on a specific date
+    const getEventsForHour = (date: Date, hour: number) => {
+        return events.filter(event => {
+            const eventDate = new Date(event.start);
+            return eventDate.toDateString() === date.toDateString() &&
+                eventDate.getHours() === hour;
+        });
+    };
+
+    // Format header based on view
+    const formatHeader = () => {
+        if (view === 'day') {
+            return currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        }
+        if (view === 'week') {
+            const start = weekDays[0];
+            const end = weekDays[6];
+            if (start.getMonth() === end.getMonth()) {
+                return `${start.toLocaleDateString('en-US', { month: 'long' })} ${start.getDate()} - ${end.getDate()}, ${start.getFullYear()}`;
+            }
+            return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+        }
+        return currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    };
 
     if (loading) {
         return (
@@ -438,68 +477,192 @@ export default function CalendarPage() {
             <div className="flex gap-6">
                 {/* Calendar Grid */}
                 <div className="flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                    {/* Day Headers */}
-                    <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700">
-                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-                            <div
-                                key={day}
-                                className="py-3 text-center text-sm font-medium text-slate-600 dark:text-slate-400"
-                            >
-                                {day}
+                    {/* Month View */}
+                    {view === 'month' && (
+                        <>
+                            {/* Day Headers */}
+                            <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700">
+                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                                    <div
+                                        key={day}
+                                        className="py-3 text-center text-sm font-medium text-slate-600 dark:text-slate-400"
+                                    >
+                                        {day}
+                                    </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
 
-                    {/* Calendar Days */}
-                    <div className="grid grid-cols-7">
-                        {calendarDays.map((date, index) => {
-                            if (!date) return <div key={index} className="h-28 border-b border-r border-slate-100 dark:border-slate-800" />;
+                            {/* Calendar Days */}
+                            <div className="grid grid-cols-7">
+                                {calendarDays.map((date, index) => {
+                                    if (!date) return <div key={index} className="h-28 border-b border-r border-slate-100 dark:border-slate-800" />;
 
-                            const dayEvents = getEventsForDate(date);
-                            const isCurrentMonthDay = isCurrentMonth(date);
-                            const isTodayDate = isToday(date);
+                                    const dayEvents = getEventsForDate(date);
+                                    const isCurrentMonthDay = isCurrentMonth(date);
+                                    const isTodayDate = isToday(date);
 
-                            return (
-                                <div
-                                    key={index}
-                                    onClick={() => setSelectedDate(date)}
-                                    className={cn(
-                                        'h-28 p-2 border-b border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors',
-                                        !isCurrentMonthDay && 'bg-slate-50 dark:bg-slate-900/50',
-                                        isTodayDate && 'bg-teal-50/50 dark:bg-teal-900/20',
-                                        selectedDate?.toDateString() === date.toDateString() && 'ring-2 ring-teal-500 ring-inset'
-                                    )}
-                                >
-                                    <div className="flex items-center justify-center mb-1">
-                                        <span
+                                    return (
+                                        <div
+                                            key={index}
+                                            onClick={() => setSelectedDate(date)}
                                             className={cn(
-                                                'w-7 h-7 flex items-center justify-center text-sm font-medium rounded-full',
-                                                isTodayDate && 'bg-teal-600 text-white',
-                                                !isTodayDate && isCurrentMonthDay && 'text-slate-900 dark:text-white',
-                                                !isTodayDate && !isCurrentMonthDay && 'text-slate-400 dark:text-slate-600'
+                                                'h-28 p-2 border-b border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors',
+                                                !isCurrentMonthDay && 'bg-slate-50 dark:bg-slate-900/50',
+                                                isTodayDate && 'bg-teal-50/50 dark:bg-teal-900/20',
+                                                selectedDate?.toDateString() === date.toDateString() && 'ring-2 ring-teal-500 ring-inset'
                                             )}
                                         >
-                                            {date.getDate()}
-                                        </span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        {dayEvents.slice(0, 2).map((event) => (
-                                            <div
-                                                key={event.id}
-                                                className="text-xs px-1.5 py-0.5 rounded truncate"
-                                                style={{ backgroundColor: `${event.color}20`, color: event.color }}
-                                            >
-                                                {event.title}
+                                            <div className="flex items-center justify-center mb-1">
+                                                <span
+                                                    className={cn(
+                                                        'w-7 h-7 flex items-center justify-center text-sm font-medium rounded-full',
+                                                        isTodayDate && 'bg-teal-600 text-white',
+                                                        !isTodayDate && isCurrentMonthDay && 'text-slate-900 dark:text-white',
+                                                        !isTodayDate && !isCurrentMonthDay && 'text-slate-400 dark:text-slate-600'
+                                                    )}
+                                                >
+                                                    {date.getDate()}
+                                                </span>
                                             </div>
-                                        ))}
-                                        {dayEvents.length > 2 && (
-                                            <div className="text-xs text-slate-500 pl-1">+{dayEvents.length - 2} more</div>
+                                            <div className="space-y-1">
+                                                {dayEvents.slice(0, 2).map((event) => (
+                                                    <div
+                                                        key={event.id}
+                                                        className="text-xs px-1.5 py-0.5 rounded truncate"
+                                                        style={{ backgroundColor: `${event.color}20`, color: event.color }}
+                                                    >
+                                                        {event.title}
+                                                    </div>
+                                                ))}
+                                                {dayEvents.length > 2 && (
+                                                    <div className="text-xs text-slate-500 pl-1">+{dayEvents.length - 2} more</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Week View */}
+                    {view === 'week' && (
+                        <>
+                            {/* Day Headers with dates */}
+                            <div className="grid grid-cols-8 border-b border-slate-200 dark:border-slate-700">
+                                <div className="py-3 text-center text-sm font-medium text-slate-400 border-r border-slate-200 dark:border-slate-700 w-16" />
+                                {weekDays.map((date, i) => (
+                                    <div
+                                        key={i}
+                                        className={cn(
+                                            'py-3 text-center border-r border-slate-200 dark:border-slate-700 last:border-r-0',
+                                            isToday(date) && 'bg-teal-50/50 dark:bg-teal-900/20'
                                         )}
+                                    >
+                                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        </div>
+                                        <div className={cn(
+                                            'text-lg font-semibold mt-0.5',
+                                            isToday(date) ? 'text-teal-600 dark:text-teal-400' : 'text-slate-900 dark:text-white'
+                                        )}>
+                                            {date.getDate()}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Time Grid */}
+                            <div className="overflow-y-auto max-h-[600px]">
+                                {hours.slice(6, 22).map((hour) => (
+                                    <div key={hour} className="grid grid-cols-8 border-b border-slate-100 dark:border-slate-800">
+                                        <div className="py-2 px-2 text-xs text-slate-400 text-right border-r border-slate-200 dark:border-slate-700 w-16">
+                                            {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                                        </div>
+                                        {weekDays.map((date, i) => {
+                                            const hourEvents = getEventsForHour(date, hour);
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={cn(
+                                                        'min-h-[48px] p-1 border-r border-slate-100 dark:border-slate-800 last:border-r-0',
+                                                        isToday(date) && 'bg-teal-50/30 dark:bg-teal-900/10'
+                                                    )}
+                                                >
+                                                    {hourEvents.map((event) => (
+                                                        <div
+                                                            key={event.id}
+                                                            className="text-xs px-1.5 py-1 rounded mb-1 truncate"
+                                                            style={{ backgroundColor: `${event.color}20`, color: event.color }}
+                                                        >
+                                                            {event.title}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Day View */}
+                    {view === 'day' && (
+                        <>
+                            {/* Day Header */}
+                            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                                <div className={cn(
+                                    'text-center',
+                                    isToday(currentDate) && 'text-teal-600 dark:text-teal-400'
+                                )}>
+                                    <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                        {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
+                                    </div>
+                                    <div className="text-3xl font-bold mt-1">
+                                        {currentDate.getDate()}
+                                    </div>
+                                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                                        {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
+                            </div>
+
+                            {/* Time Grid */}
+                            <div className="overflow-y-auto max-h-[600px]">
+                                {hours.slice(6, 22).map((hour) => {
+                                    const hourEvents = getEventsForHour(currentDate, hour);
+                                    return (
+                                        <div key={hour} className="flex border-b border-slate-100 dark:border-slate-800">
+                                            <div className="py-3 px-4 text-sm text-slate-400 text-right w-20 flex-shrink-0 border-r border-slate-200 dark:border-slate-700">
+                                                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                                            </div>
+                                            <div className="flex-1 min-h-[60px] p-2">
+                                                {hourEvents.map((event) => (
+                                                    <div
+                                                        key={event.id}
+                                                        className="text-sm px-3 py-2 rounded-lg mb-1"
+                                                        style={{ backgroundColor: `${event.color}15`, borderLeft: `3px solid ${event.color}` }}
+                                                    >
+                                                        <div className="font-medium" style={{ color: event.color }}>{event.title}</div>
+                                                        <div className="text-xs text-slate-500 mt-0.5">
+                                                            {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </div>
+                                                        {event.location && (
+                                                            <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                                                                <MapPin className="w-3 h-3" />
+                                                                {event.location}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Sidebar */}

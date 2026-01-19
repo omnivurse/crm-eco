@@ -107,24 +107,48 @@ export default function OrganizerPage() {
                     // Get new leads (last 7 days)
                     const weekAgo = new Date();
                     weekAgo.setDate(weekAgo.getDate() - 7);
-                    const { count: newLeadsCount } = await supabase
-                        .from('crm_records')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('module_key', 'leads')
-                        .gte('created_at', weekAgo.toISOString());
+
+                    // First get leads module ID
+                    const { data: leadsModule } = await supabase
+                        .from('crm_modules')
+                        .select('id')
+                        .eq('org_id', profile.organization_id)
+                        .eq('key', 'leads')
+                        .single();
+
+                    let newLeadsCount = 0;
+                    if (leadsModule) {
+                        const { count } = await supabase
+                            .from('crm_records')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('module_id', leadsModule.id)
+                            .gte('created_at', weekAgo.toISOString());
+                        newLeadsCount = count || 0;
+                    }
 
                     // Get deals at risk (stale deals)
-                    const { count: dealsAtRiskCount } = await supabase
-                        .from('crm_records')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('module_key', 'deals')
-                        .lt('updated_at', weekAgo.toISOString());
+                    const { data: dealsModule } = await supabase
+                        .from('crm_modules')
+                        .select('id')
+                        .eq('org_id', profile.organization_id)
+                        .eq('key', 'deals')
+                        .single();
+
+                    let dealsAtRiskCount = 0;
+                    if (dealsModule) {
+                        const { count } = await supabase
+                            .from('crm_records')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('module_id', dealsModule.id)
+                            .lt('updated_at', weekAgo.toISOString());
+                        dealsAtRiskCount = count || 0;
+                    }
 
                     setStats({
                         tasksDue: tasksDueCount || 0,
                         overdue: overdueCount || 0,
-                        newLeads: newLeadsCount || 0,
-                        dealsAtRisk: dealsAtRiskCount || 0,
+                        newLeads: newLeadsCount,
+                        dealsAtRisk: dealsAtRiskCount,
                     });
 
                     setTasks(todayTasks || []);
