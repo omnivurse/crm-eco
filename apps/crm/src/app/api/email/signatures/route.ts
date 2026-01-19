@@ -18,11 +18,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org
+    // Get user's org and profile ID
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
+      .select('id, organization_id')
+      .eq('user_id', user.id)
       .single();
 
     if (!profile?.organization_id) {
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const { data: signatures, error } = await supabase
       .from('email_signatures')
       .select('*')
-      .eq('profile_id', user.id)
+      .eq('profile_id', profile.id)
       .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -63,11 +63,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org
+    // Get user's org and profile ID
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id')
-      .eq('id', user.id)
+      .select('id, organization_id')
+      .eq('user_id', user.id)
       .single();
 
     if (!profile?.organization_id) {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       await supabase
         .from('email_signatures')
         .update({ is_default: false })
-        .eq('profile_id', user.id)
+        .eq('profile_id', profile.id)
         .eq('is_default', true);
     }
 
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       .from('email_signatures')
       .insert({
         org_id: profile.organization_id,
-        profile_id: user.id,
+        profile_id: profile.id,
         name,
         content_html,
         content_text,

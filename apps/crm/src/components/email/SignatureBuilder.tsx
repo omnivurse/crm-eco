@@ -285,11 +285,11 @@ export function SignatureBuilder({
                     variant="outline"
                     size="sm"
                     onClick={() => applyTemplate(template.id)}
-                    className="justify-start h-auto py-2"
+                    className="justify-start h-auto py-2 overflow-hidden"
                   >
-                    <div className="text-left">
-                      <p className="font-medium">{template.name}</p>
-                      <p className="text-xs text-slate-500">{template.description}</p>
+                    <div className="text-left min-w-0">
+                      <p className="font-medium truncate">{template.name}</p>
+                      <p className="text-xs text-slate-500 truncate">{template.description}</p>
                     </div>
                   </Button>
                 ))}
