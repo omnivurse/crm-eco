@@ -391,10 +391,43 @@ function DomainCard({
 // Main Page
 // ============================================================================
 
+// Domain validation regex (must match server-side validation)
+const DOMAIN_REGEX = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+
+function validateDomain(domain: string): { valid: boolean; error?: string } {
+  if (!domain) return { valid: false, error: 'Domain is required' };
+
+  // Clean up common mistakes
+  const cleaned = domain.trim().toLowerCase();
+
+  if (cleaned.startsWith('http://') || cleaned.startsWith('https://')) {
+    return { valid: false, error: 'Remove http:// or https:// from the domain' };
+  }
+
+  if (cleaned.startsWith('www.')) {
+    return { valid: false, error: 'Remove www. prefix from the domain' };
+  }
+
+  if (cleaned.includes('/')) {
+    return { valid: false, error: 'Domain should not include paths (remove everything after /)' };
+  }
+
+  if (cleaned.includes(' ')) {
+    return { valid: false, error: 'Domain should not contain spaces' };
+  }
+
+  if (!DOMAIN_REGEX.test(cleaned)) {
+    return { valid: false, error: 'Invalid domain format. Example: example.com' };
+  }
+
+  return { valid: true };
+}
+
 export default function EmailDomainsPage() {
   const [domains, setDomains] = useState<EmailDomain[]>([]);
   const [loading, setLoading] = useState(true);
   const [newDomain, setNewDomain] = useState('');
+  const [domainError, setDomainError] = useState<string | null>(null);
   const [addingDomain, setAddingDomain] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -415,15 +448,30 @@ export default function EmailDomainsPage() {
     }
   }
 
+  function handleDomainChange(value: string) {
+    setNewDomain(value);
+    // Clear error when user starts typing again
+    if (domainError) {
+      setDomainError(null);
+    }
+  }
+
   async function handleAddDomain() {
-    if (!newDomain.trim()) return;
+    const cleaned = newDomain.trim().toLowerCase();
+    const validation = validateDomain(cleaned);
+
+    if (!validation.valid) {
+      setDomainError(validation.error || 'Invalid domain');
+      return;
+    }
+
     setAddingDomain(true);
 
     try {
       const response = await fetch('/api/settings/email-domains', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: newDomain.trim() }),
+        body: JSON.stringify({ domain: cleaned }),
       });
 
       if (!response.ok) {
@@ -433,11 +481,14 @@ export default function EmailDomainsPage() {
 
       toast.success('Domain added successfully');
       setNewDomain('');
+      setDomainError(null);
       setDialogOpen(false);
       await loadDomains();
     } catch (error) {
       console.error('Error adding domain:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to add domain');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add domain';
+      setDomainError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setAddingDomain(false);
     }
@@ -520,7 +571,13 @@ export default function EmailDomainsPage() {
           </p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) {
+            setNewDomain('');
+            setDomainError(null);
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="w-4 h-4" />
@@ -541,15 +598,27 @@ export default function EmailDomainsPage() {
                   id="domain"
                   placeholder="example.com"
                   value={newDomain}
-                  onChange={(e) => setNewDomain(e.target.value)}
+                  onChange={(e) => handleDomainChange(e.target.value)}
+                  className={domainError ? 'border-red-500 focus-visible:ring-red-500' : ''}
                 />
-                <p className="text-xs text-slate-500">
-                  Enter your domain without http:// or www
-                </p>
+                {domainError ? (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    {domainError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500">
+                    Enter your domain without http:// or www
+                  </p>
+                )}
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setDialogOpen(false);
+                setNewDomain('');
+                setDomainError(null);
+              }}>
                 Cancel
               </Button>
               <Button onClick={handleAddDomain} disabled={!newDomain.trim() || addingDomain}>
