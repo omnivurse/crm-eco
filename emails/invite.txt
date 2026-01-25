@@ -1,0 +1,8 @@
+Welcome to MPB Health IT
+
+Hello {{full_name}}, you've been invited as {{role}}.
+
+Accept Invite:
+{{invite_url}}
+
+If you did not expect this email, you can ignore it.

@@ -1,0 +1,114 @@
+{
+  "common": {
+    "appName": "ChampionDesk",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "loading": "Loading...",
+    "attachments": "Attachments",
+    "priority": "Priority",
+    "priority_low": "Low",
+    "priority_medium": "Medium",
+    "priority_high": "High",
+    "success": "Success",
+    "error": "Error",
+    "language": "Language"
+  },
+  "tickets": {
+    "subject": "Subject",
+    "description": "Description",
+    "createTicket": "Create Ticket",
+    "created": "Ticket created successfully",
+    "failed": "Could not create ticket",
+    "memberIssue": "Member Issue",
+    "advisorIssue": "Advisor Issue",
+    "staffIssue": "Staff Issue",
+    "submitterType": "Submitter Type",
+    "member": "Member",
+    "advisor": "Advisor",
+    "staff": "Staff"
+  },
+  "pages": {
+    "memberSupport": {
+      "title": "Member Support",
+      "subtitle": "Tell us what's going on and we'll get you help fast.",
+      "fields": {
+        "contactEmail": "Contact Email",
+        "memberId": "Member ID (optional)",
+        "category": "Category",
+        "categories": {
+          "login": "Login Issues",
+          "benefits": "Benefits / Coverage",
+          "billing": "Billing / Payments",
+          "claims": "Claims Questions",
+          "technical": "Technical Issue",
+          "other": "Other"
+        },
+        "subjectPlaceholder": "Briefly describe your issue",
+        "descriptionPlaceholder": "Add more context to help our team resolve this quickly"
+      }
+    },
+    "advisorSupport": {
+      "title": "Advisor Support",
+      "subtitle": "Support for enrollments, commissions, software, and more.",
+      "fields": {
+        "contactEmail": "Contact Email",
+        "npi": "NPN / Advisor ID (optional)",
+        "category": "Category",
+        "categories": {
+          "member": "Member Issues",
+          "accounting": "Accounting & Billing",
+          "commissions": "Commissions",
+          "technical": "Technical",
+          "software": "Software",
+          "web": "Web Support",
+          "app": "App Support",
+          "enrollment": "Enrollment (e123)",
+          "other": "Other"
+        },
+        "subjectPlaceholder": "Brief summary (e.g., e123 blocking enrollment)",
+        "descriptionPlaceholder": "Detail steps, affected members, screenshots, error messages, etc."
+      }
+    },
+    "staffSupport": {
+      "title": "Staff Support",
+      "subtitle": "Internal IT support across data, apps, security, and ops.",
+      "fields": {
+        "contactEmail": "Contact Email",
+        "department": "Department",
+        "category": "Category",
+        "categories": {
+          "eligibility": "Eligibility Data",
+          "fileTransfer": "File Transfer / SFTP",
+          "memberAccess": "Member Portal Access",
+          "pricing": "Pricing Updates",
+          "billing": "Billing",
+          "commissions": "Commissions",
+          "crm": "CRM Issues / Updates",
+          "vendor": "Vendor Updates & Integrations",
+          "marketing": "Marketing",
+          "websites": "Websites",
+          "sales": "Sales Tools",
+          "communications": "Communications",
+          "software": "Software",
+          "hardware": "Hardware",
+          "email": "Email",
+          "security": "Security / Suspicious Activity",
+          "other": "Other"
+        },
+        "subjectPlaceholder": "Brief description",
+        "descriptionPlaceholder": "Provide detailed context and any impact/priority info"
+      }
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Enter a valid email",
+    "minSubject": "Subject must be at least 4 characters",
+    "minDescription": "Description must be at least 10 characters"
+  },
+  "toasts": {
+    "created": "Created! We'll notify you with updates.",
+    "failed": "Something went wrong. Please try again."
+  }
+}

@@ -1,0 +1,244 @@
+/* Championship Modern Design System - MPB Health Brand */
+
+:root {
+  /* Gradient color system - MPB Health Brand Colors */
+  --gradient-primary: linear-gradient(135deg, #0A4E8E 0%, #147BC6 100%);
+  --gradient-success: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
+  --gradient-warning: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  --gradient-danger: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  --gradient-info: linear-gradient(135deg, #147BC6 0%, #1991EB 100%);
+  --gradient-teal: linear-gradient(135deg, #0F65A1 0%, #0A4E8E 100%);
+  --gradient-cyan: linear-gradient(135deg, #1991EB 0%, #147BC6 100%);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(10, 78, 142, 0.37);
+
+  /* Neon effects - MPB Health Brand Colors */
+  --neon-primary: #1991EB;
+  --neon-accent: #DC2626;
+  --neon-blue: #0A4E8E;
+  --neon-success: #16A34A;
+  --neon-light: #47A7EF;
+
+  /* Modern shadows - MPB Health Brand */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.16);
+  --shadow-glow: 0 0 20px rgba(10, 78, 142, 0.5);
+}
+
+/* Professional Card Effect */
+.glass-card {
+  background: white;
+  border: 1px solid rgb(226, 232, 240);
+  border-radius: 12px;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.04);
+}
+
+.dark .glass-card {
+  background: rgb(30, 41, 59);
+  border: 1px solid rgb(51, 65, 85);
+}
+
+/* Modern Hero Gradient Backgrounds */
+
+/* Default hero - MPB Health Primary Blue gradient with depth */
+.gradient-bg {
+  background: linear-gradient(135deg, #0A4E8E 0%, #147BC6 50%, #1991EB 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.gradient-bg::after {
+  content: none;
+}
+
+
+/* Professional Primary Button */
+.neon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  color: white;
+  background: #0A4E8E;
+  border: 1px solid #083D71;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.neon-button:hover {
+  background: #147BC6;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  transform: translateY(-1px);
+}
+
+.neon-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Modern Badge */
+.modern-badge {
+  padding: 6px 16px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* Subtle Hover Effect */
+.floating {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.floating:hover {
+  transform: translateY(-2px);
+}
+
+
+/* Progress Bar Modern - MPB Health Brand */
+.progress-modern {
+  height: 8px;
+  background: rgba(10, 78, 142, 0.1);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-modern-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0A4E8E 0%, #1991EB 100%);
+  border-radius: 20px;
+  position: relative;
+  transition: width 0.3s ease;
+}
+
+
+/* Championship Title - MPB Health Brand */
+.championship-title {
+  font-size: 48px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #0A4E8E 0%, #147BC6 50%, #1991EB 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  display: inline-block;
+  letter-spacing: -1px;
+}
+
+.championship-title::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  background: linear-gradient(135deg, #0A4E8E 0%, #147BC6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: blur(20px);
+  opacity: 0.5;
+}
+
+/* Hero Sections - MPB Health Brand */
+/* Shared hero base styles */
+.hero-dashboard,
+.hero-work,
+.hero-content,
+.hero-security,
+.hero-service {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dashboard Hero - Primary Blue */
+.hero-dashboard {
+  background: linear-gradient(135deg, #0A4E8E 0%, #147BC6 50%, #1991EB 100%);
+}
+
+/* Work Hero - Blue to Teal */
+.hero-work {
+  background: linear-gradient(135deg, #0A4E8E 0%, #0F65A1 50%, #147BC6 100%);
+}
+
+/* Content Hero - Teal Variant */
+.hero-content {
+  background: linear-gradient(135deg, #147BC6 0%, #1991EB 50%, #47A7EF 100%);
+}
+
+/* Security Hero - Dark Blue */
+.hero-security {
+  background: linear-gradient(135deg, #062C54 0%, #0A4E8E 50%, #0F65A1 100%);
+}
+
+/* Service Catalog Hero - Cyan to Teal */
+.hero-service {
+  background: linear-gradient(135deg, #0F65A1 0%, #147BC6 50%, #1991EB 100%);
+}
+
+/* Professional hero overlays */
+.hero-dashboard::before,
+.hero-work::before,
+.hero-content::before,
+.hero-security::before,
+.hero-service::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Professional Stat Card */
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid rgb(226, 232, 240);
+  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.06), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+}
+
+.stat-card:hover {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.04);
+}
+
+.dark .stat-card {
+  background: rgb(30, 41, 59);
+  border-color: rgb(51, 65, 85);
+}

@@ -1,0 +1,114 @@
+{
+  "common": {
+    "appName": "ChampionDesk",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "submit": "Enviar",
+    "loading": "Carregando...",
+    "attachments": "Anexos",
+    "priority": "Prioridade",
+    "priority_low": "Baixa",
+    "priority_medium": "Média",
+    "priority_high": "Alta",
+    "success": "Sucesso",
+    "error": "Erro",
+    "language": "Idioma"
+  },
+  "tickets": {
+    "subject": "Assunto",
+    "description": "Descrição",
+    "createTicket": "Criar Ticket",
+    "created": "Ticket criado com sucesso",
+    "failed": "Não foi possível criar o ticket",
+    "memberIssue": "Problema do Membro",
+    "advisorIssue": "Problema do Consultor",
+    "staffIssue": "Problema da Equipe",
+    "submitterType": "Tipo de Solicitante",
+    "member": "Membro",
+    "advisor": "Consultor",
+    "staff": "Equipe"
+  },
+  "pages": {
+    "memberSupport": {
+      "title": "Suporte ao Membro",
+      "subtitle": "Conte-nos o que está acontecendo e ajudaremos rapidamente.",
+      "fields": {
+        "contactEmail": "E-mail de Contato",
+        "memberId": "ID do Membro (opcional)",
+        "category": "Categoria",
+        "categories": {
+          "login": "Problemas de Login",
+          "benefits": "Benefícios / Cobertura",
+          "billing": "Cobrança / Pagamentos",
+          "claims": "Dúvidas sobre Sinistros",
+          "technical": "Problema Técnico",
+          "other": "Outro"
+        },
+        "subjectPlaceholder": "Descreva brevemente o problema",
+        "descriptionPlaceholder": "Adicione mais contexto para ajudar nossa equipe"
+      }
+    },
+    "advisorSupport": {
+      "title": "Suporte ao Consultor",
+      "subtitle": "Suporte para inscrições, comissões, software e mais.",
+      "fields": {
+        "contactEmail": "E-mail de Contato",
+        "npi": "NPN / ID do Consultor (opcional)",
+        "category": "Categoria",
+        "categories": {
+          "member": "Problemas de Membros",
+          "accounting": "Contabilidade e Cobrança",
+          "commissions": "Comissões",
+          "technical": "Técnico",
+          "software": "Software",
+          "web": "Suporte Web",
+          "app": "Suporte ao App",
+          "enrollment": "Inscrição (e123)",
+          "other": "Outro"
+        },
+        "subjectPlaceholder": "Resumo breve (ex.: e123 bloqueando inscrição)",
+        "descriptionPlaceholder": "Detalhe etapas, membros afetados, prints, mensagens de erro, etc."
+      }
+    },
+    "staffSupport": {
+      "title": "Suporte Interno",
+      "subtitle": "Suporte de TI interno: dados, sistemas, segurança e operações.",
+      "fields": {
+        "contactEmail": "E-mail de Contato",
+        "department": "Departamento",
+        "category": "Categoria",
+        "categories": {
+          "eligibility": "Dados de Elegibilidade",
+          "fileTransfer": "Transferência de Arquivos / SFTP",
+          "memberAccess": "Acesso ao Portal do Membro",
+          "pricing": "Atualizações de Preço",
+          "billing": "Cobrança",
+          "commissions": "Comissões",
+          "crm": "CRM / Atualizações",
+          "vendor": "Integrações / Fornecedores",
+          "marketing": "Marketing",
+          "websites": "Sites",
+          "sales": "Ferramentas de Vendas",
+          "communications": "Comunicações",
+          "software": "Software",
+          "hardware": "Hardware",
+          "email": "E-mail",
+          "security": "Segurança / Atividade Suspeita",
+          "other": "Outro"
+        },
+        "subjectPlaceholder": "Descrição breve",
+        "descriptionPlaceholder": "Forneça contexto e impacto/prioridade"
+      }
+    }
+  },
+  "validation": {
+    "required": "Campo obrigatório",
+    "email": "Informe um e-mail válido",
+    "minSubject": "O assunto deve ter pelo menos 4 caracteres",
+    "minDescription": "A descrição deve ter pelo menos 10 caracteres"
+  },
+  "toasts": {
+    "created": "Criado! Avisaremos com atualizações.",
+    "failed": "Algo deu errado. Tente novamente."
+  }
+}
