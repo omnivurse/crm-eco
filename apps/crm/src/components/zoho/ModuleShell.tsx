@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -65,18 +65,42 @@ export function ModuleShell({
   // Derived state
   const selectedCount = selectedIds.size;
 
+  // Track if initial mount to avoid triggering search on page load
+  const isInitialMount = useRef(true);
+  const searchParamsRef = useRef(searchParams);
+
+  // Keep searchParams ref updated without triggering effect
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
+  // Debounced live search - only triggered by searchQuery changes
+  useEffect(() => {
+    // Skip the initial mount to avoid double navigation
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParamsRef.current.toString());
+      if (searchQuery.trim()) {
+        params.set('search', searchQuery.trim());
+      } else {
+        params.delete('search');
+      }
+      params.delete('page');
+      router.push(`/crm/modules/${module.key}?${params.toString()}`);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, router, module.key]);
+
   // Handlers
   const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
-    if (searchQuery.trim()) {
-      params.set('search', searchQuery.trim());
-    } else {
-      params.delete('search');
-    }
-    params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [searchQuery, searchParams, router, module.key]);
+    // Search is already handled by the debounced effect
+  }, []);
 
   const handleRemoveFilter = useCallback((index: number) => {
     setFilters(prev => prev.filter((_, i) => i !== index));
