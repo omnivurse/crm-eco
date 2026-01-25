@@ -1,4 +1,2 @@
-# Ignore Next.js configs to prevent framework detection for root Vite app
-apps/*/next.config.js
-apps/*/next.config.mjs
+# Only ignore next-env.d.ts files (auto-generated)
 apps/*/next-env.d.ts

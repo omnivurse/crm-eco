@@ -1,5 +1,6 @@
 {
   "installCommand": "cd ../.. && npm install --legacy-peer-deps",
   "buildCommand": "cd ../.. && npm run build:admin",
+  "outputDirectory": ".next",
   "framework": "nextjs"
 }
