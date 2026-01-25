@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AdminSidebar, AdminTopNav, Breadcrumbs } from '@/components/layout';
 import { AdminNotificationListener } from '@/components/notifications/AdminNotificationListener';
+import { TerminalWrapper } from '@/components/terminal/TerminalWrapper';
 import { isAdminRole } from '@/lib/auth';
 import type { Database } from '@crm-eco/lib/types';
 
@@ -40,24 +41,32 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminTopNav
-          profile={{
-            fullName: profile.full_name,
-            email: profile.email,
-            avatarUrl: profile.avatar_url,
-            role: profile.role,
-          }}
-          userId={profile.id}
-        />
-        <AdminNotificationListener userId={profile.id} />
-        <main className="flex-1 overflow-auto p-6">
-          <Breadcrumbs />
-          {children}
-        </main>
+    <TerminalWrapper
+      profile={{
+        id: profile.id,
+        role: profile.role,
+        full_name: profile.full_name,
+      }}
+    >
+      <div className="flex h-screen bg-slate-50">
+        <AdminSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <AdminTopNav
+            profile={{
+              fullName: profile.full_name,
+              email: profile.email,
+              avatarUrl: profile.avatar_url,
+              role: profile.role,
+            }}
+            userId={profile.id}
+          />
+          <AdminNotificationListener userId={profile.id} />
+          <main className="flex-1 overflow-auto p-6">
+            <Breadcrumbs />
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </TerminalWrapper>
   );
 }
