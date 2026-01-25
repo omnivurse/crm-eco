@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import { VisuallyHidden } from '@crm-eco/ui';
 import { Input } from '@crm-eco/ui/components/input';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmModule } from '@/lib/crm/types';
@@ -343,6 +345,9 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-lg overflow-hidden">
+        <VisuallyHidden>
+          <DialogTitle>Command Palette</DialogTitle>
+        </VisuallyHidden>
         {/* Search Input */}
         <div className="flex items-center border-b px-3">
           <Search className="w-4 h-4 text-muted-foreground mr-2" />

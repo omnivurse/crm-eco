@@ -6,7 +6,9 @@ import { createBrowserClient } from '@supabase/ssr';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import { VisuallyHidden } from '@crm-eco/ui';
 import { Input } from '@crm-eco/ui/components/input';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
@@ -165,6 +167,9 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 max-w-xl overflow-hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+        <VisuallyHidden>
+          <DialogTitle>Search Records</DialogTitle>
+        </VisuallyHidden>
         {/* Search Input */}
         <div className="flex items-center border-b border-slate-200 dark:border-white/10 px-4">
           <Search className="w-5 h-5 text-slate-400 mr-3" />
