@@ -37,7 +37,7 @@ import {
 } from '@crm-eco/ui/components/table';
 import { ExportButton, type ExportFormat } from '@crm-eco/ui/components/export-button';
 import { DateRangePicker, type DateRange } from '@crm-eco/ui/components/date-range-picker';
-import { getTemplateById, exportData, downloadExport } from '@crm-eco/shared';
+import { getTemplateById, exportData, downloadExport } from '@/lib/reports';
 
 export default function TemplateDetailPage() {
   const params = useParams();

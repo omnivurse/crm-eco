@@ -26,7 +26,7 @@ import {
   REPORT_TEMPLATES,
   getTemplatesByCategory,
   type TemplateCategory,
-} from '@crm-eco/shared';
+} from '@/lib/reports';
 
 const categoryIcons: Record<string, React.ElementType> = {
   all: LayoutGrid,

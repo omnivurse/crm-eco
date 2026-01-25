@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { REPORT_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesByCategory, type TemplateCategory } from '@crm-eco/shared';
+import { REPORT_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesByCategory, type TemplateCategory } from '@/lib/reports';
 
 // GET /api/reports/templates - List all templates
 export async function GET(request: NextRequest) {
