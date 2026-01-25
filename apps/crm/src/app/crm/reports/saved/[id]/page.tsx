@@ -34,7 +34,7 @@ import {
 } from '@crm-eco/ui/components/table';
 import { ExportButton, type ExportFormat } from '@crm-eco/ui/components/export-button';
 import { DateRangePicker, type DateRange } from '@crm-eco/ui/components/date-range-picker';
-import { exportData, downloadExport } from '@crm-eco/shared';
+import { exportData, downloadExport } from '@/lib/reports';
 
 interface SavedReport {
   id: string;

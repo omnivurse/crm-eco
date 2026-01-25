@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTemplateById } from '@crm-eco/shared';
+import { getTemplateById } from '@/lib/reports';
 
 // GET /api/reports/templates/[id] - Get single template
 export async function GET(
