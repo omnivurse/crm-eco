@@ -1,7 +1,7 @@
 'use client';
 
 // Terminal Window - Pay It Forward Command Center
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Maximize2, Terminal as TerminalIcon } from 'lucide-react';
 import { useTerminal } from './terminal-provider';
@@ -12,6 +12,24 @@ import './terminal.css';
 export function TerminalWindow() {
   const { isOpen, close, currentPanel } = useTerminal();
   const windowRef = useRef<HTMLDivElement>(null);
+  const [currentTime, setCurrentTime] = useState<string>('--:--:--');
+
+  // Update time on client only to avoid hydration mismatch
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(
+        new Date().toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        })
+      );
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Focus trap when terminal is open
   useEffect(() => {
@@ -116,14 +134,7 @@ export function TerminalWindow() {
                 </span>
               </div>
               <div className="statusbar-right">
-                <span className="status-time">
-                  {new Date().toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false,
-                  })}
-                </span>
+                <span className="status-time">{currentTime}</span>
               </div>
             </div>
           </motion.div>
