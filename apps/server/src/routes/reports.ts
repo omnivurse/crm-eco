@@ -9,7 +9,11 @@ import {
   SortingSchema,
   GroupingSchema,
   AggregationSchema,
-} from 'shared';
+  REPORT_TEMPLATES,
+  getTemplateById,
+  getTemplatesByCategory,
+  TEMPLATE_CATEGORIES,
+} from '@crm-eco/shared';
 
 const router = Router();
 
@@ -369,6 +373,266 @@ router.delete('/:id', async (req: AuthenticatedRequest, res) => {
   } catch (error) {
     console.error('Delete report error:', error);
     res.status(500).json({ error: 'Failed to delete report' });
+  }
+});
+
+// ============================================================================
+// TEMPLATES ENDPOINTS
+// ============================================================================
+
+// Get all templates
+router.get('/templates', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!hasReportAccess(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { category } = req.query;
+
+    let templates = REPORT_TEMPLATES;
+    if (category && typeof category === 'string' && category !== 'all') {
+      templates = getTemplatesByCategory(category as any);
+    }
+
+    res.json({
+      templates,
+      categories: TEMPLATE_CATEGORIES,
+    });
+  } catch (error) {
+    console.error('Get templates error:', error);
+    res.status(500).json({ error: 'Failed to fetch templates' });
+  }
+});
+
+// Get single template
+router.get('/templates/:id', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!hasReportAccess(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { id } = req.params;
+    const template = getTemplateById(id);
+
+    if (!template) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+
+    res.json({ template });
+  } catch (error) {
+    console.error('Get template error:', error);
+    res.status(500).json({ error: 'Failed to fetch template' });
+  }
+});
+
+// ============================================================================
+// FAVORITE & HISTORY ENDPOINTS
+// ============================================================================
+
+// Toggle favorite
+router.patch('/:id/favorite', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!hasReportAccess(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { id } = req.params;
+
+    // Get current favorite status
+    const { data: report, error: fetchError } = await supabaseClient
+      .from('crm_reports')
+      .select('is_favorite')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // Toggle favorite
+    const { data, error } = await supabaseClient
+      .from('crm_reports')
+      .update({ is_favorite: !report.is_favorite })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ report: data });
+  } catch (error) {
+    console.error('Toggle favorite error:', error);
+    res.status(500).json({ error: 'Failed to toggle favorite' });
+  }
+});
+
+// Get report run history
+router.get('/:id/history', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!hasReportAccess(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { id } = req.params;
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
+
+    const { data, error } = await supabaseClient
+      .from('report_run_history')
+      .select('*')
+      .eq('report_id', id)
+      .order('executed_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    res.json({ history: data || [] });
+  } catch (error) {
+    console.error('Get history error:', error);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+// Log report run (called after executing a report)
+router.post('/:id/log-run', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!hasReportAccess(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { id } = req.params;
+    const schema = z.object({
+      durationMs: z.number().optional(),
+      rowCount: z.number().optional(),
+      status: z.enum(['completed', 'failed']).default('completed'),
+      errorMessage: z.string().optional(),
+      filtersUsed: z.array(z.any()).optional(),
+      exportFormat: z.string().optional(),
+    });
+
+    const params = schema.parse(req.body);
+    const orgId = req.body.orgId || '00000000-0000-0000-0000-000000000001';
+
+    // Insert history record
+    const { data, error } = await supabaseClient
+      .from('report_run_history')
+      .insert({
+        report_id: id,
+        organization_id: orgId,
+        executed_by: req.user?.id,
+        duration_ms: params.durationMs,
+        row_count: params.rowCount,
+        status: params.status,
+        error_message: params.errorMessage,
+        filters_used: params.filtersUsed || [],
+        export_format: params.exportFormat,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Log run error:', error);
+      // Don't fail the request if logging fails
+      return res.json({ logged: false, error: error.message });
+    }
+
+    // Update report run count and last_run_at
+    if (params.status === 'completed') {
+      await supabaseClient
+        .from('crm_reports')
+        .update({
+          run_count: supabaseClient.rpc('increment', { x: 1 }),
+          last_run_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+    }
+
+    res.json({ logged: true, history: data });
+  } catch (error) {
+    console.error('Log run error:', error);
+    res.json({ logged: false, error: 'Failed to log run' });
+  }
+});
+
+// Export report data
+router.post('/:id/export', async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!hasReportAccess(req.user?.role)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { id } = req.params;
+    const { format } = req.body;
+
+    if (!['csv', 'excel', 'json'].includes(format)) {
+      return res.status(400).json({ error: 'Invalid export format' });
+    }
+
+    // Get report configuration
+    const { data: report, error: reportError } = await supabaseClient
+      .from('crm_reports')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (reportError || !report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    // Execute the report to get data
+    let query = supabaseClient
+      .from(report.data_source)
+      .select('*');
+
+    // Apply filters
+    for (const filter of report.filters || []) {
+      const column = filter.column.replace('.', '_');
+      switch (filter.operator) {
+        case 'eq':
+          query = query.eq(column, filter.value);
+          break;
+        case 'neq':
+          query = query.neq(column, filter.value);
+          break;
+        case 'ilike':
+          query = query.ilike(column, `%${filter.value}%`);
+          break;
+        case 'in':
+          if (Array.isArray(filter.value)) {
+            query = query.in(column, filter.value);
+          }
+          break;
+      }
+    }
+
+    const { data, error } = await query.limit(10000);
+
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Log the export
+    await supabaseClient.from('report_run_history').insert({
+      report_id: id,
+      organization_id: report.organization_id,
+      executed_by: req.user?.id,
+      row_count: data?.length || 0,
+      status: 'completed',
+      export_format: format,
+    });
+
+    res.json({
+      data: data || [],
+      columns: report.columns,
+      format,
+      rowCount: data?.length || 0,
+    });
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ error: 'Failed to export report' });
   }
 });
 
