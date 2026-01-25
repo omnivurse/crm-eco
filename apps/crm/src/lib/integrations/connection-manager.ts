@@ -6,6 +6,7 @@ import type {
   ConnectionStatus,
   HealthStatus,
 } from './types';
+import { encrypt, decrypt } from './adapters/credentials';
 
 // ============================================================================
 // Connection Manager Service
@@ -295,6 +296,7 @@ export async function deleteConnection(id: string): Promise<void> {
 
 /**
  * Connect (activate) a connection with credentials
+ * Credentials are encrypted before storage
  */
 export async function connectIntegration(
   id: string,
@@ -311,10 +313,10 @@ export async function connectIntegration(
   }
 ): Promise<IntegrationConnection> {
   return updateConnection(id, {
-    api_key_enc: credentials.api_key,
-    api_secret_enc: credentials.api_secret,
-    access_token_enc: credentials.access_token,
-    refresh_token_enc: credentials.refresh_token,
+    api_key_enc: credentials.api_key ? encrypt(credentials.api_key) : undefined,
+    api_secret_enc: credentials.api_secret ? encrypt(credentials.api_secret) : undefined,
+    access_token_enc: credentials.access_token ? encrypt(credentials.access_token) : undefined,
+    refresh_token_enc: credentials.refresh_token ? encrypt(credentials.refresh_token) : undefined,
     token_expires_at: credentials.expires_at,
     external_account_id: credentials.external_account_id,
     external_account_name: credentials.external_account_name,
@@ -433,6 +435,24 @@ export async function getHealthSummary(): Promise<HealthSummary> {
       .filter(Boolean)
       .sort()
       .reverse()[0] || null,
+  };
+}
+
+/**
+ * Get decrypted credentials from a connection
+ * Use this when you need to make API calls with the stored credentials
+ */
+export function getDecryptedCredentials(connection: IntegrationConnection): {
+  apiKey?: string;
+  apiSecret?: string;
+  accessToken?: string;
+  refreshToken?: string;
+} {
+  return {
+    apiKey: connection.api_key_enc ? decrypt(connection.api_key_enc) : undefined,
+    apiSecret: connection.api_secret_enc ? decrypt(connection.api_secret_enc) : undefined,
+    accessToken: connection.access_token_enc ? decrypt(connection.access_token_enc) : undefined,
+    refreshToken: connection.refresh_token_enc ? decrypt(connection.refresh_token_enc) : undefined,
   };
 }
 

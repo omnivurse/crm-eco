@@ -1,6 +1,6 @@
-export { 
-  ResendEmailService, 
-  createResendService, 
+export {
+  ResendEmailService,
+  createResendService,
   EMAIL_TEMPLATES,
   type SendEmailOptions,
   type SendEmailResult,
@@ -15,3 +15,9 @@ export {
   type SendEmailInput,
   type EmailStats,
 } from './email-service';
+
+export {
+  sendEnrollmentConfirmationEmail,
+  sendAdvisorNotificationEmail,
+  type TransactionalEmailResult,
+} from './transactional';

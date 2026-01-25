@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import {
+  sendEnrollmentConfirmationEmail,
+  sendAdvisorNotificationEmail,
+} from '@crm-eco/lib/email';
 
 // Use service role for public enrollment
 function getServiceClient() {
@@ -161,8 +165,66 @@ export async function POST(request: NextRequest) {
       enrollment_id: enrollment.id,
     });
 
-    // TODO: Send confirmation email
-    // TODO: Notify advisor if assigned
+    // Get organization info for emails
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', landingPage.organization_id)
+      .single();
+
+    const organizationName = org?.name || 'Your Organization';
+
+    // Get plan name if selected
+    let planName: string | undefined;
+    if (data.planId) {
+      const { data: plan } = await supabase
+        .from('plans')
+        .select('name')
+        .eq('id', data.planId)
+        .single();
+      planName = plan?.name;
+    }
+
+    // Send confirmation email to member
+    const confirmationResult = await sendEnrollmentConfirmationEmail({
+      toEmail: data.email.toLowerCase(),
+      firstName: data.firstName,
+      lastName: data.lastName,
+      phone: data.phone,
+      planName,
+      enrollmentId: enrollment.id,
+      organizationName,
+    });
+
+    if (!confirmationResult.success) {
+      console.warn('Failed to send enrollment confirmation email:', confirmationResult.error);
+    }
+
+    // Notify advisor if assigned
+    if (landingPage.default_advisor_id) {
+      const { data: advisor } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', landingPage.default_advisor_id)
+        .single();
+
+      if (advisor?.email) {
+        const notificationResult = await sendAdvisorNotificationEmail({
+          advisorEmail: advisor.email,
+          advisorName: advisor.full_name || 'Advisor',
+          memberFirstName: data.firstName,
+          memberLastName: data.lastName,
+          memberEmail: data.email.toLowerCase(),
+          memberPhone: data.phone,
+          enrollmentId: enrollment.id,
+          organizationName,
+        });
+
+        if (!notificationResult.success) {
+          console.warn('Failed to send advisor notification email:', notificationResult.error);
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,

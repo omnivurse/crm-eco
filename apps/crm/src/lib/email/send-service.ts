@@ -1,5 +1,6 @@
 import { createServerSupabaseClient as createClient } from '@crm-eco/lib/supabase/server';
 import { createLog } from '@/lib/integrations';
+import { decrypt } from '@/lib/integrations/adapters/credentials';
 
 // ============================================================================
 // Email Send Service
@@ -100,7 +101,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   
   try {
     if (provider === 'sendgrid' && emailConnection?.api_key_enc) {
-      result = await sendViaSendGrid(emailConnection.api_key_enc, {
+      const apiKey = decrypt(emailConnection.api_key_enc);
+      result = await sendViaSendGrid(apiKey, {
         from: { email: fromEmail, name: fromName },
         to: toEmails,
         cc: params.cc,
@@ -111,7 +113,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         replyTo: params.reply_to,
       });
     } else if (provider === 'resend' && emailConnection?.api_key_enc) {
-      result = await sendViaResend(emailConnection.api_key_enc, {
+      const apiKey = decrypt(emailConnection.api_key_enc);
+      result = await sendViaResend(apiKey, {
         from: `${fromName} <${fromEmail}>`,
         to: toEmails,
         cc: params.cc,
@@ -231,9 +234,11 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
   
   try {
     if (twilioConnection?.api_key_enc && twilioConnection?.api_secret_enc) {
+      const accountSid = decrypt(twilioConnection.api_key_enc);
+      const authToken = decrypt(twilioConnection.api_secret_enc);
       result = await sendViaTwilio(
-        twilioConnection.api_key_enc,
-        twilioConnection.api_secret_enc,
+        accountSid,
+        authToken,
         twilioConnection.settings?.phone_number as string || '',
         params.to,
         params.body

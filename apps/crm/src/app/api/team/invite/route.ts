@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import crypto from 'crypto';
+import { sendTeamInviteEmail } from '@/lib/email/transactional';
 
 export const dynamic = 'force-dynamic';
 
@@ -133,17 +134,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create invitation' }, { status: 500 });
     }
 
-    // Get organization name for email
+    // Get organization name and inviter info for email
     const { data: org } = await supabase
       .from('organizations')
       .select('name')
       .eq('id', profile.organization_id)
       .single();
 
-    // TODO: Send invitation email using email service
-    // For now, we'll just log the invitation link
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/accept-invite?token=${token}`;
-    console.log(`Invitation link for ${email}: ${inviteLink}`);
+    const { data: inviterProfile } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', profile.id)
+      .single();
+
+    // Send invitation email
+    const emailResult = await sendTeamInviteEmail({
+      toEmail: email.toLowerCase(),
+      organizationName: org?.name || 'Your Organization',
+      inviterName: inviterProfile?.full_name || inviterProfile?.email || 'A team member',
+      role,
+      inviteToken: token,
+      expiresAt: expiresAt.toISOString(),
+    });
+
+    if (!emailResult.success) {
+      console.warn(`Failed to send invite email to ${email}:`, emailResult.error);
+      // Don't fail the request - invitation was created, just email failed
+    }
 
     return NextResponse.json({
       success: true,
@@ -153,8 +170,7 @@ export async function POST(request: NextRequest) {
         role: invitation.role,
         expires_at: invitation.expires_at,
       },
-      // Include invite link for testing (remove in production)
-      inviteLink,
+      emailSent: emailResult.success,
     });
   } catch (error) {
     console.error('Team invite error:', error);
