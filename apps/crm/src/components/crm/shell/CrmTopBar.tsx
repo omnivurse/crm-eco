@@ -38,7 +38,9 @@ import {
   Mail,
   FileCheck,
   Receipt,
+  Terminal,
 } from 'lucide-react';
+import { useTerminal } from '@/components/terminal';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
@@ -63,6 +65,7 @@ export function CrmTopBar({
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const router = useRouter();
+  const { toggle: toggleTerminal } = useTerminal();
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -157,6 +160,17 @@ export function CrmTopBar({
 
         {/* Theme Toggle */}
         <ThemeToggle variant="icon" />
+
+        {/* Command Center */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9 rounded-lg text-cyan-500 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+          onClick={toggleTerminal}
+          title="Command Center (Ctrl+K)"
+        >
+          <Terminal className="w-4 h-4" />
+        </Button>
 
         {/* Notifications */}
         <NotificationsPanel />

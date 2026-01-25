@@ -19,7 +19,9 @@ import {
   Shield,
   Sparkles,
   Building2,
+  Terminal,
 } from 'lucide-react';
+import { useTerminal } from '@/components/terminal';
 
 interface NavItem {
   label: string;
@@ -63,6 +65,7 @@ const navItems: NavItem[] = [
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { toggle: toggleTerminal } = useTerminal();
 
   return (
     <aside className="w-64 bg-[#003560] text-white flex flex-col relative overflow-hidden">
@@ -145,6 +148,19 @@ export function AdminSidebar() {
             );
           })}
         </nav>
+
+        {/* Command Center Button */}
+        <div className="px-3 pb-2">
+          <button
+            onClick={toggleTerminal}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-cyan-400 hover:bg-cyan-900/30 hover:text-cyan-300"
+            title="Command Center (Ctrl+K)"
+          >
+            <Terminal className="w-5 h-5" />
+            <span>Command Center</span>
+            <kbd className="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded">^K</kbd>
+          </button>
+        </div>
 
         {/* Footer */}
         <div className="p-4 border-t border-white/10">
