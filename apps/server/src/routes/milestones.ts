@@ -8,7 +8,7 @@ import {
   mapDbRowToAgentLevel,
   type AdvisorMetrics,
   type AgentLevel,
-} from 'shared';
+} from '@crm-eco/shared';
 
 const router = Router();
 

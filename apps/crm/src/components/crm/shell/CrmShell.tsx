@@ -32,7 +32,7 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
       profile={{
         id: profile.id,
         organization_id: profile.organization_id,
-        role: profile.crm_role,
+        role: profile.crm_role ?? undefined,
         full_name: profile.full_name,
       }}
     >
