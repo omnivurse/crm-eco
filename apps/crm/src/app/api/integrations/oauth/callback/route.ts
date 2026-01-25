@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { exchangeCodeForTokens, calculateTokenExpiry } from '@/lib/integrations/oauth/token-manager';
 import { OAUTH_PROVIDERS } from '@/lib/integrations/oauth/providers';
+import { encrypt } from '@/lib/integrations/adapters/credentials';
 
 // Force dynamic rendering - this route uses env vars at runtime
 export const dynamic = 'force-dynamic';
@@ -97,15 +98,15 @@ export async function GET(request: NextRequest) {
       .eq('connection_type', connection_type)
       .single();
 
-    // Prepare connection data
+    // Prepare connection data with encrypted tokens
     const connectionData = {
       org_id,
       provider,
       connection_type,
       name: providerConfig.name,
       status: 'connected',
-      access_token_enc: tokens.access_token, // TODO: Encrypt
-      refresh_token_enc: tokens.refresh_token || null, // TODO: Encrypt
+      access_token_enc: encrypt(tokens.access_token),
+      refresh_token_enc: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
       token_expires_at: tokens.expires_in ? calculateTokenExpiry(tokens.expires_in)?.toISOString() : null,
       scopes: tokens.scope ? tokens.scope.split(' ') : providerConfig.defaultScopes,
       external_account_id: userInfo?.id || null,

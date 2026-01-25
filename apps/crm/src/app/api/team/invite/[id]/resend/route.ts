@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import crypto from 'crypto';
+import { sendTeamInviteEmail } from '@/lib/email/transactional';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,13 +107,37 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to resend invitation' }, { status: 500 });
     }
 
-    // TODO: Send invitation email using email service
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/accept-invite?token=${newToken}`;
-    console.log(`Resent invitation link for ${invitation.email}: ${inviteLink}`);
+    // Get organization name and inviter info for email
+    const { data: org } = await supabase
+      .from('organizations')
+      .select('name')
+      .eq('id', profile.organization_id)
+      .single();
+
+    const { data: inviterProfile } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', profile.id)
+      .single();
+
+    // Send invitation email
+    const emailResult = await sendTeamInviteEmail({
+      toEmail: invitation.email,
+      organizationName: org?.name || 'Your Organization',
+      inviterName: inviterProfile?.full_name || inviterProfile?.email || 'A team member',
+      role: invitation.role,
+      inviteToken: newToken,
+      expiresAt: newExpiresAt.toISOString(),
+    });
+
+    if (!emailResult.success) {
+      console.warn(`Failed to resend invite email to ${invitation.email}:`, emailResult.error);
+    }
 
     return NextResponse.json({
       success: true,
       expires_at: newExpiresAt.toISOString(),
+      emailSent: emailResult.success,
     });
   } catch (error) {
     console.error('Resend invitation error:', error);
