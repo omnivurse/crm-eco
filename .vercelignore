@@ -1,0 +1,4 @@
+apps/*/package.json
+apps/*/package-lock.json
+packages/*/package.json
+packages/*/package-lock.json
