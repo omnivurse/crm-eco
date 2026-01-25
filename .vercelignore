@@ -1,7 +1,3 @@
-# Ignore monorepo app package.json files to prevent npm from trying to resolve workspace deps
-apps/admin/package.json
-apps/crm/package.json
-apps/portal/package.json
-apps/server/package.json
-packages/lib/package.json
-packages/ui/package.json
+# Ignore monorepo apps and packages - only deploy root Vite app
+apps
+packages
