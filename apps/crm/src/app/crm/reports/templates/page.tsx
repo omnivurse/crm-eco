@@ -86,7 +86,7 @@ function ReportTemplateCard({
   description: string;
   category: string;
   icon?: string;
-  dataSource: string;
+  dataSource?: string;
 }) {
   const IconComponent = icon ? (iconMap[icon] || BarChart3) : BarChart3;
   const gradient = categoryColors[category] || 'from-slate-500 to-slate-600';

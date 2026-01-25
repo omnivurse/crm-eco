@@ -1,46 +1,34 @@
 // Reports Library - Template definitions and utilities
 
-export type TemplateCategory = 'sales' | 'marketing' | 'operations' | 'financial' | 'custom';
+export type TemplateCategory = 'all' | 'sales' | 'marketing' | 'team' | 'operations' | 'finance' | 'productivity';
 
 export interface ReportTemplate {
   id: string;
   name: string;
   description: string;
-  category: TemplateCategory;
+  category: Exclude<TemplateCategory, 'all'>;
   icon: string;
-  metrics: string[];
+  metrics?: string[];
   filters: string[];
-  defaultTimeRange: string;
+  defaultTimeRange?: string;
   isFavorite?: boolean;
+  // Fields for report execution
+  dataSource?: string;
+  columns?: string[];
+  grouping?: Array<{ column: string; aggregation?: string }>;
+  aggregations?: Array<{ column: string; function: string; alias?: string }>;
+  sorting?: Array<{ column: string; direction: 'asc' | 'desc' }>;
 }
 
-export const TEMPLATE_CATEGORIES: Record<TemplateCategory, { label: string; icon: string; color: string }> = {
-  sales: {
-    label: 'Sales & Pipeline',
-    icon: 'TrendingUp',
-    color: 'teal',
-  },
-  marketing: {
-    label: 'Marketing & Leads',
-    icon: 'Target',
-    color: 'violet',
-  },
-  operations: {
-    label: 'Operations',
-    icon: 'Settings',
-    color: 'amber',
-  },
-  financial: {
-    label: 'Financial',
-    icon: 'DollarSign',
-    color: 'emerald',
-  },
-  custom: {
-    label: 'Custom Reports',
-    icon: 'FileText',
-    color: 'slate',
-  },
-};
+export const TEMPLATE_CATEGORIES = [
+  { id: 'all' as const, label: 'All Reports', icon: 'LayoutGrid', color: 'slate' },
+  { id: 'sales' as const, label: 'Sales', icon: 'DollarSign', color: 'emerald' },
+  { id: 'marketing' as const, label: 'Marketing', icon: 'Target', color: 'violet' },
+  { id: 'team' as const, label: 'Team', icon: 'Users', color: 'blue' },
+  { id: 'operations' as const, label: 'Operations', icon: 'Settings', color: 'amber' },
+  { id: 'finance' as const, label: 'Finance', icon: 'Wallet', color: 'green' },
+  { id: 'productivity' as const, label: 'Productivity', icon: 'Zap', color: 'orange' },
+];
 
 export const REPORT_TEMPLATES: ReportTemplate[] = [
   // Sales Templates
@@ -105,6 +93,17 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Campaign', 'Channel'],
     defaultTimeRange: '30d',
   },
+  // Team Templates
+  {
+    id: 'team-performance',
+    name: 'Team Performance',
+    description: 'Track team productivity and achievements',
+    category: 'team',
+    icon: 'Users',
+    metrics: ['Tasks Completed', 'Goals Met', 'Response Time'],
+    filters: ['Date Range', 'Team Member', 'Department'],
+    defaultTimeRange: '30d',
+  },
   // Operations Templates
   {
     id: 'enrollment-status',
@@ -119,19 +118,19 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
   {
     id: 'task-completion',
     name: 'Task Completion',
-    description: 'Team productivity and task metrics',
+    description: 'Task tracking and completion metrics',
     category: 'operations',
     icon: 'CheckSquare',
     metrics: ['Tasks Completed', 'Overdue Tasks', 'Avg Completion Time'],
     filters: ['Date Range', 'Assignee', 'Priority'],
     defaultTimeRange: '7d',
   },
-  // Financial Templates
+  // Finance Templates
   {
     id: 'revenue-analysis',
     name: 'Revenue Analysis',
     description: 'Comprehensive revenue breakdown and trends',
-    category: 'financial',
+    category: 'finance',
     icon: 'DollarSign',
     metrics: ['Total Revenue', 'MRR', 'ARR', 'Growth Rate'],
     filters: ['Date Range', 'Product', 'Region'],
@@ -141,16 +140,27 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'commission-report',
     name: 'Commission Report',
     description: 'Agent commissions and payouts',
-    category: 'financial',
+    category: 'finance',
     icon: 'Wallet',
     metrics: ['Total Commissions', 'By Agent', 'By Product'],
     filters: ['Date Range', 'Agent', 'Product'],
     defaultTimeRange: '30d',
   },
+  // Productivity Templates
+  {
+    id: 'productivity-overview',
+    name: 'Productivity Overview',
+    description: 'Overall productivity metrics and trends',
+    category: 'productivity',
+    icon: 'Zap',
+    metrics: ['Output', 'Efficiency', 'Time Savings'],
+    filters: ['Date Range', 'Team', 'Process'],
+    defaultTimeRange: '30d',
+  },
 ];
 
 export function getTemplatesByCategory(category?: TemplateCategory): ReportTemplate[] {
-  if (!category) return REPORT_TEMPLATES;
+  if (!category || category === 'all') return REPORT_TEMPLATES;
   return REPORT_TEMPLATES.filter((t) => t.category === category);
 }
 
