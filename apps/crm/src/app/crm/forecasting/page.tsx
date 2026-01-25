@@ -267,12 +267,24 @@ export default function ForecastingPage() {
 
       if (!profile) return;
 
+      // Get deals module
+      const { data: dealsModule } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('org_id', profile.organization_id)
+        .eq('key', 'deals')
+        .single();
+
+      if (!dealsModule) {
+        setLoading(false);
+        return;
+      }
+
       // Fetch deals
       const { data: dealsData } = await supabase
         .from('crm_records')
         .select('id, title, stage, data, created_at')
-        .eq('organization_id', profile.organization_id)
-        .eq('record_type', 'deals');
+        .eq('module_id', dealsModule.id);
 
       const allDeals = (dealsData || []) as unknown as DealData[];
       setDeals(allDeals);

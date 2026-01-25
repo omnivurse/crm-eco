@@ -32,6 +32,9 @@ import {
   Code,
   Palette,
   Loader2,
+  Upload,
+  Check,
+  Sparkles,
 } from 'lucide-react';
 
 interface SignatureData {
@@ -70,6 +73,28 @@ interface SignatureBuilderProps {
     phone?: string;
   };
 }
+
+// Preset Pay It Forward HealthShare signature images
+const PRESET_SIGNATURES = [
+  {
+    id: 'pif-horizontal',
+    name: 'Horizontal',
+    description: 'Wide banner style with tagline',
+    image: '/signatures/EmailSignature-01.jpg',
+  },
+  {
+    id: 'pif-gradient',
+    name: 'Gradient',
+    description: 'Modern gradient background',
+    image: '/signatures/EmailSignature-02.jpg',
+  },
+  {
+    id: 'pif-stacked',
+    name: 'Stacked',
+    description: 'Vertical logo with tagline',
+    image: '/signatures/EmailSignature-03.jpg',
+  },
+];
 
 const SIGNATURE_TEMPLATES = [
   {
@@ -151,6 +176,8 @@ export function SignatureBuilder({
 }: SignatureBuilderProps) {
   const [activeTab, setActiveTab] = useState('editor');
   const [saving, setSaving] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [signatureMode, setSignatureMode] = useState<'preset' | 'custom'>('custom');
   const [formData, setFormData] = useState<SignatureData>({
     name: signature?.name || 'My Signature',
     content_html: signature?.content_html || '',
@@ -190,6 +217,28 @@ export function SignatureBuilder({
 
       setFormData((prev) => ({ ...prev, content_html: html }));
     }
+  };
+
+  const applyPresetSignature = (presetId: string) => {
+    const preset = PRESET_SIGNATURES.find((p) => p.id === presetId);
+    if (preset) {
+      setSelectedPreset(presetId);
+      setSignatureMode('preset');
+      // Create HTML with the preset image
+      const html = `<table style="font-family: Arial, sans-serif;">
+  <tr>
+    <td>
+      <img src="${preset.image}" alt="Pay It Forward HealthShare" style="max-width: 100%; height: auto; display: block;" />
+    </td>
+  </tr>
+</table>`;
+      setFormData((prev) => ({ ...prev, content_html: html }));
+    }
+  };
+
+  const switchToCustomMode = () => {
+    setSignatureMode('custom');
+    setSelectedPreset(null);
   };
 
   const handleSave = async () => {
@@ -268,13 +317,74 @@ export function SignatureBuilder({
             />
           </div>
 
-          {/* Templates */}
+          {/* Preset Signatures */}
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-teal-500" />
+                Pay It Forward Signatures
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Choose a pre-designed branded signature
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="grid grid-cols-1 gap-3">
+                {PRESET_SIGNATURES.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => applyPresetSignature(preset.id)}
+                    className={cn(
+                      'relative rounded-lg border-2 overflow-hidden transition-all hover:border-teal-500/50 group',
+                      selectedPreset === preset.id
+                        ? 'border-teal-500 ring-2 ring-teal-500/20'
+                        : 'border-slate-200 dark:border-slate-700'
+                    )}
+                  >
+                    <img
+                      src={preset.image}
+                      alt={preset.name}
+                      className="w-full h-auto"
+                    />
+                    {selectedPreset === preset.id && (
+                      <div className="absolute top-2 right-2 p-1 bg-teal-500 rounded-full">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end">
+                      <div className="p-2 text-white text-left">
+                        <p className="font-medium text-sm">{preset.name}</p>
+                        <p className="text-xs text-white/80">{preset.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {selectedPreset && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={switchToCustomMode}
+                  className="mt-3 w-full text-slate-500"
+                >
+                  Switch to custom signature
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Custom Templates */}
           <Card>
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Palette className="w-4 h-4" />
-                Quick Templates
+                Custom Templates
               </CardTitle>
+              <CardDescription className="text-xs">
+                Build your own signature from a template
+              </CardDescription>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="grid grid-cols-2 gap-2">
@@ -284,7 +394,10 @@ export function SignatureBuilder({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => applyTemplate(template.id)}
+                    onClick={() => {
+                      applyTemplate(template.id);
+                      switchToCustomMode();
+                    }}
                     className="justify-start h-auto py-2 overflow-hidden"
                   >
                     <div className="text-left min-w-0">
@@ -312,7 +425,45 @@ export function SignatureBuilder({
 
             <TabsContent value="editor" className="mt-4">
               <div className="space-y-4">
-                {/* Image URLs */}
+                {/* Custom Signature Image Upload */}
+                <Card className="border-dashed">
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      Upload Custom Signature Image
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Upload your own signature image (JPG, PNG, GIF)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="custom_signature_url">Image URL</Label>
+                      <Input
+                        id="custom_signature_url"
+                        placeholder="https://... or paste image URL"
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            switchToCustomMode();
+                            const html = `<table style="font-family: Arial, sans-serif;">
+  <tr>
+    <td>
+      <img src="${e.target.value}" alt="Email Signature" style="max-width: 100%; height: auto; display: block;" />
+    </td>
+  </tr>
+</table>`;
+                            setFormData((prev) => ({ ...prev, content_html: html }));
+                          }
+                        }}
+                      />
+                      <p className="text-xs text-slate-500">
+                        Tip: Upload your image to the Asset Library first, then paste the URL here
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Image URLs for templates */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="photo_url" className="flex items-center gap-2">

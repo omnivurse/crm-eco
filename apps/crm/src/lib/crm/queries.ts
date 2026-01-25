@@ -707,23 +707,56 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
 
   const stats: ModuleStats[] = [];
 
+  // Legacy table mappings for backwards compatibility
+  const legacyTableMap: Record<string, string> = {
+    leads: 'leads',
+    contacts: 'members',  // contacts map to members in legacy system
+    deals: 'members',     // deals might also map to members
+  };
+
   for (const module of modules) {
-    const { count: total } = await supabase
+    // Count from CRM records table
+    const { count: crmTotal } = await supabase
       .from('crm_records')
       .select('*', { count: 'exact', head: true })
       .eq('module_id', module.id);
 
-    const { count: thisWeek } = await supabase
+    const { count: crmThisWeek } = await supabase
       .from('crm_records')
       .select('*', { count: 'exact', head: true })
       .eq('module_id', module.id)
       .gte('created_at', oneWeekAgo.toISOString());
 
+    let totalRecords = crmTotal || 0;
+    let createdThisWeek = crmThisWeek || 0;
+
+    // Also check legacy tables for backwards compatibility
+    const legacyTable = legacyTableMap[module.key];
+    if (legacyTable) {
+      try {
+        const { count: legacyTotal } = await supabase
+          .from(legacyTable)
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', orgId);
+
+        const { count: legacyThisWeek } = await supabase
+          .from(legacyTable)
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', orgId)
+          .gte('created_at', oneWeekAgo.toISOString());
+
+        totalRecords += legacyTotal || 0;
+        createdThisWeek += legacyThisWeek || 0;
+      } catch {
+        // Legacy table might not exist, ignore
+      }
+    }
+
     stats.push({
       moduleKey: module.key,
       moduleName: module.name_plural || module.name + 's',
-      totalRecords: total || 0,
-      createdThisWeek: thisWeek || 0,
+      totalRecords,
+      createdThisWeek,
     });
   }
 
