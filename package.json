@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "build": "vite build",
+    "vercel-build": "ls -la && cat index.html && vite build",
     "build:all": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
