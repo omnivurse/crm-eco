@@ -223,11 +223,19 @@ export default function SavedReportDetailPage() {
   const handleExport = async (format: ExportFormat) => {
     if (!report || results.length === 0) return;
 
-    const result = exportData(results, report.columns, format, undefined, {
-      filename: `${reportName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`,
+    // Map ExportFormat to ExportOptions format
+    const exportFormat = format === 'excel' ? 'xlsx' : format;
+    const fileExt = format === 'excel' ? 'xlsx' : format;
+    const filename = `${reportName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`;
+
+    const result = exportData({
+      format: exportFormat as 'csv' | 'xlsx' | 'pdf' | 'json',
+      data: results,
+      columns: report.columns,
+      filename,
     });
 
-    downloadExport(result);
+    downloadExport(result, `${filename}.${fileExt}`);
   };
 
   const getColumnHeaders = () => {
