@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { CreateReportRequest } from '@/lib/reports/types';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -23,7 +22,7 @@ async function createClient() {
   );
 }
 
-// GET /api/reports - List all reports
+// GET /api/reports - List all reports (admin can see all org reports)
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -37,7 +36,7 @@ export async function GET(request: NextRequest) {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('organization_id, id')
+      .select('organization_id, id, role')
       .eq('user_id', user.id)
       .single();
 
@@ -45,6 +44,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
+    // Admin can see all reports in their org
     let query = supabase
       .from('crm_reports')
       .select(`
@@ -52,7 +52,6 @@ export async function GET(request: NextRequest) {
         created_by_profile:profiles!crm_reports_created_by_fkey(full_name, avatar_url)
       `)
       .eq('org_id', profile.organization_id)
-      .or(`created_by.eq.${profile.id},is_shared.eq.true`)
       .order('updated_at', { ascending: false });
 
     if (moduleId) {

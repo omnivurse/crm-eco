@@ -23,15 +23,26 @@ export interface ReportTemplate {
 // ============================================================================
 
 export const TEMPLATE_CATEGORIES = [
-  { id: 'members', label: 'Member Reports', icon: 'Users' },
-  { id: 'advisors', label: 'Advisor Reports', icon: 'UserCheck' },
-  { id: 'enrollments', label: 'Enrollment Reports', icon: 'FileText' },
-  { id: 'commissions', label: 'Commission Reports', icon: 'DollarSign' },
-  { id: 'performance', label: 'Performance Reports', icon: 'TrendingUp' },
-  { id: 'geographic', label: 'Geographic Reports', icon: 'Map' },
+  { id: 'all', label: 'All Reports', icon: 'LayoutGrid', color: 'slate' },
+  { id: 'sales', label: 'Sales', icon: 'DollarSign', color: 'emerald' },
+  { id: 'marketing', label: 'Marketing', icon: 'Target', color: 'violet' },
+  { id: 'team', label: 'Team', icon: 'Users', color: 'blue' },
+  { id: 'operations', label: 'Operations', icon: 'Settings', color: 'amber' },
+  { id: 'finance', label: 'Finance', icon: 'Wallet', color: 'green' },
+  { id: 'productivity', label: 'Productivity', icon: 'Zap', color: 'orange' },
 ] as const;
 
 export type TemplateCategory = typeof TEMPLATE_CATEGORIES[number]['id'];
+
+// Legacy category mapping for backwards compatibility
+const CATEGORY_MAP: Record<string, TemplateCategory> = {
+  members: 'operations',
+  advisors: 'team',
+  enrollments: 'sales',
+  commissions: 'finance',
+  performance: 'productivity',
+  geographic: 'marketing',
+};
 
 // ============================================================================
 // REPORT TEMPLATES
@@ -39,13 +50,13 @@ export type TemplateCategory = typeof TEMPLATE_CATEGORIES[number]['id'];
 
 export const REPORT_TEMPLATES: ReportTemplate[] = [
   // =========================================================================
-  // MEMBER REPORTS
+  // OPERATIONS REPORTS (formerly Members)
   // =========================================================================
   {
     id: 'members-by-state',
     name: 'Members by State',
     description: 'Geographic distribution of all members grouped by state',
-    category: 'members',
+    category: 'operations',
     dataSource: 'members',
     columns: ['state'],
     filters: [],
@@ -60,7 +71,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'members-by-status',
     name: 'Members by Status',
     description: 'Breakdown of members by their current status',
-    category: 'members',
+    category: 'operations',
     dataSource: 'members',
     columns: ['status'],
     filters: [],
@@ -75,7 +86,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'members-active',
     name: 'Active Members List',
     description: 'All active members with their advisor information',
-    category: 'members',
+    category: 'productivity',
     dataSource: 'members',
     columns: [
       'member_number',
@@ -99,7 +110,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'members-in-date-range',
     name: 'New Members (Date Range)',
     description: 'Members enrolled within a specific date range',
-    category: 'members',
+    category: 'marketing',
     dataSource: 'members',
     columns: [
       'member_number',
@@ -124,7 +135,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'member-retention',
     name: 'Retention Analysis',
     description: 'Member retention by enrollment month with termination counts',
-    category: 'members',
+    category: 'operations',
     dataSource: 'members',
     columns: ['enrollment_date', 'status'],
     filters: [],
@@ -140,13 +151,13 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
   },
 
   // =========================================================================
-  // ADVISOR REPORTS
+  // TEAM REPORTS (formerly Advisors)
   // =========================================================================
   {
     id: 'advisors-by-level',
     name: 'Advisors by Level',
     description: 'Distribution of advisors across agent levels',
-    category: 'advisors',
+    category: 'team',
     dataSource: 'advisors',
     columns: ['level.name'],
     filters: [
@@ -163,7 +174,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'top-advisors',
     name: 'Top Performing Advisors',
     description: 'Advisors ranked by active member count',
-    category: 'advisors',
+    category: 'team',
     dataSource: 'advisors',
     columns: [
       'code',
@@ -185,7 +196,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'advisors-by-state',
     name: 'Advisors by State',
     description: 'Geographic distribution of advisors',
-    category: 'advisors',
+    category: 'productivity',
     dataSource: 'advisors',
     columns: ['state'],
     filters: [
@@ -202,7 +213,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'advisor-hierarchy',
     name: 'Advisor Hierarchy',
     description: 'Advisors with their upline information',
-    category: 'advisors',
+    category: 'team',
     dataSource: 'advisors',
     columns: [
       'code',
@@ -222,13 +233,13 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
   },
 
   // =========================================================================
-  // ENROLLMENT REPORTS
+  // SALES REPORTS (formerly Enrollments)
   // =========================================================================
   {
     id: 'enrollments-per-advisor',
     name: 'Enrollments per Advisor',
     description: 'Count of enrollments grouped by advisor',
-    category: 'enrollments',
+    category: 'sales',
     dataSource: 'enrollments',
     columns: ['advisor.first_name', 'advisor.last_name'],
     filters: [
@@ -249,7 +260,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'enrollments-by-product',
     name: 'Enrollments by Product',
     description: 'Product popularity based on enrollment counts',
-    category: 'enrollments',
+    category: 'sales',
     dataSource: 'enrollments',
     columns: ['product.name', 'product.type'],
     filters: [
@@ -270,7 +281,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'members-with-addons',
     name: 'Members with Add-Ons',
     description: 'Enrollments for add-on products (Dental/Vision)',
-    category: 'enrollments',
+    category: 'operations',
     dataSource: 'enrollments',
     columns: [
       'member.first_name',
@@ -293,7 +304,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'monthly-enrollments',
     name: 'Monthly Enrollment Trend',
     description: 'Enrollment counts by month',
-    category: 'enrollments',
+    category: 'sales',
     dataSource: 'enrollments',
     columns: ['enrollment_date'],
     filters: [],
@@ -307,13 +318,13 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
   },
 
   // =========================================================================
-  // COMMISSION REPORTS
+  // FINANCE REPORTS (formerly Commissions)
   // =========================================================================
   {
     id: 'commission-earnings',
     name: 'Commission Earnings',
     description: 'Total commission amounts by advisor',
-    category: 'commissions',
+    category: 'finance',
     dataSource: 'commissions',
     columns: ['advisor.first_name', 'advisor.last_name', 'advisor.code'],
     filters: [
@@ -335,7 +346,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'pending-commissions',
     name: 'Pending Commissions',
     description: 'All pending commissions awaiting approval or payment',
-    category: 'commissions',
+    category: 'finance',
     dataSource: 'commissions',
     columns: [
       'advisor.first_name',
@@ -359,7 +370,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'commissions-by-period',
     name: 'Commissions by Period',
     description: 'Commission totals grouped by period',
-    category: 'commissions',
+    category: 'finance',
     dataSource: 'commissions',
     columns: ['commission_period'],
     filters: [],
@@ -375,7 +386,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'commissions-by-type',
     name: 'Commissions by Type',
     description: 'Commission breakdown by type (initial, renewal, override, bonus)',
-    category: 'commissions',
+    category: 'finance',
     dataSource: 'commissions',
     columns: ['commission_type'],
     filters: [],
@@ -390,13 +401,13 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
   },
 
   // =========================================================================
-  // GEOGRAPHIC REPORTS
+  // MARKETING REPORTS (formerly Geographic)
   // =========================================================================
   {
     id: 'regional-cost-analysis',
     name: 'Regional Cost Analysis',
     description: 'Premium analysis by state/region',
-    category: 'geographic',
+    category: 'marketing',
     dataSource: 'enrollments',
     columns: ['member.state'],
     filters: [
@@ -415,7 +426,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     id: 'state-performance',
     name: 'State Performance',
     description: 'Member and enrollment counts by state',
-    category: 'geographic',
+    category: 'productivity',
     dataSource: 'members',
     columns: ['state', 'status'],
     filters: [],
@@ -440,7 +451,20 @@ export function getTemplateById(id: string): ReportTemplate | undefined {
 }
 
 export function getTemplatesByCategory(category: TemplateCategory): ReportTemplate[] {
+  if (category === 'all') {
+    return REPORT_TEMPLATES;
+  }
   return REPORT_TEMPLATES.filter((t) => t.category === category);
+}
+
+export function getCategoryColor(category: string): string {
+  const cat = TEMPLATE_CATEGORIES.find((c) => c.id === category);
+  return cat?.color || 'slate';
+}
+
+export function getCategoryLabel(category: string): string {
+  const cat = TEMPLATE_CATEGORIES.find((c) => c.id === category);
+  return cat?.label || category;
 }
 
 export function getTemplatesByDataSource(dataSource: DataSource): ReportTemplate[] {
