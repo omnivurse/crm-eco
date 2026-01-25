@@ -11,7 +11,7 @@
     "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "shared": "workspace:*",
+    "shared": "*",
     "@supabase/supabase-js": "^2.81.1",
     "cors": "^2.8.5",
     "express": "^4.21.2",
