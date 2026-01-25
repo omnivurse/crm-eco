@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@crm-eco/lib": "*",
+    "@crm-eco/shared": "*",
     "@crm-eco/ui": "*",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-checkbox": "^1.0.4",
