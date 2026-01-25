@@ -75,9 +75,9 @@ function PanelRenderer() {
     case 'bridge':
       return <BridgePanel />;
     case 'deals':
-      return <DealsPanel data={panelData} />;
+      return <DealsPanel data={panelData as { filter?: string } | undefined} />;
     case 'tasks':
-      return <TasksPanel data={panelData} />;
+      return <TasksPanel data={panelData as any} />;
     case 'status':
       return <StatusPanel />;
     case 'help':
