@@ -41,25 +41,58 @@ CREATE TABLE IF NOT EXISTS public.organizations (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_organizations_slug ON public.organizations(slug);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_organizations_slug ON public.organizations(slug);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Agent Levels (tier definitions for advisors)
-CREATE TABLE IF NOT EXISTS public.agent_levels (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  org_id uuid REFERENCES public.organizations(id) ON DELETE CASCADE,
-  name text NOT NULL,
-  rank integer NOT NULL DEFAULT 0,
-  min_active_members integer DEFAULT 0,
-  min_monthly_enrollments integer DEFAULT 0,
-  commission_rate numeric(5,2) DEFAULT 0,
-  description text,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now(),
-  UNIQUE(org_id, name)
-);
+-- Add org_id column to existing table if missing
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'agent_levels') THEN
+    -- Table exists, add missing columns
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'org_id') THEN
+      ALTER TABLE public.agent_levels ADD COLUMN org_id uuid REFERENCES public.organizations(id) ON DELETE CASCADE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'min_active_members') THEN
+      ALTER TABLE public.agent_levels ADD COLUMN min_active_members integer DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'min_monthly_enrollments') THEN
+      ALTER TABLE public.agent_levels ADD COLUMN min_monthly_enrollments integer DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'commission_rate') THEN
+      ALTER TABLE public.agent_levels ADD COLUMN commission_rate numeric(5,2) DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'rank') THEN
+      ALTER TABLE public.agent_levels ADD COLUMN rank integer NOT NULL DEFAULT 0;
+    END IF;
+  ELSE
+    -- Create the table
+    CREATE TABLE public.agent_levels (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      org_id uuid REFERENCES public.organizations(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      rank integer NOT NULL DEFAULT 0,
+      min_active_members integer DEFAULT 0,
+      min_monthly_enrollments integer DEFAULT 0,
+      commission_rate numeric(5,2) DEFAULT 0,
+      description text,
+      created_at timestamptz DEFAULT now(),
+      updated_at timestamptz DEFAULT now(),
+      UNIQUE(org_id, name)
+    );
+  END IF;
+END $$;
 
-CREATE INDEX IF NOT EXISTS idx_agent_levels_org_id ON public.agent_levels(org_id);
-CREATE INDEX IF NOT EXISTS idx_agent_levels_rank ON public.agent_levels(org_id, rank);
+-- Create indexes on agent_levels (conditional on column existence)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'org_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_levels_org_id ON public.agent_levels(org_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_levels_rank ON public.agent_levels(org_id, rank);
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Advisors (insurance agents)
 CREATE TABLE IF NOT EXISTS public.advisors (
@@ -82,12 +115,15 @@ CREATE TABLE IF NOT EXISTS public.advisors (
   UNIQUE(org_id, email)
 );
 
-CREATE INDEX IF NOT EXISTS idx_advisors_org_id ON public.advisors(org_id);
-CREATE INDEX IF NOT EXISTS idx_advisors_profile_id ON public.advisors(profile_id);
-CREATE INDEX IF NOT EXISTS idx_advisors_agent_level_id ON public.advisors(agent_level_id);
-CREATE INDEX IF NOT EXISTS idx_advisors_parent_advisor_id ON public.advisors(parent_advisor_id);
-CREATE INDEX IF NOT EXISTS idx_advisors_status ON public.advisors(org_id, status);
-CREATE INDEX IF NOT EXISTS idx_advisors_state ON public.advisors(state);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_advisors_org_id ON public.advisors(org_id);
+  CREATE INDEX IF NOT EXISTS idx_advisors_profile_id ON public.advisors(profile_id);
+  CREATE INDEX IF NOT EXISTS idx_advisors_agent_level_id ON public.advisors(agent_level_id);
+  CREATE INDEX IF NOT EXISTS idx_advisors_parent_advisor_id ON public.advisors(parent_advisor_id);
+  CREATE INDEX IF NOT EXISTS idx_advisors_status ON public.advisors(org_id, status);
+  CREATE INDEX IF NOT EXISTS idx_advisors_state ON public.advisors(state);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Products (insurance products)
 CREATE TABLE IF NOT EXISTS public.products (
@@ -106,9 +142,12 @@ CREATE TABLE IF NOT EXISTS public.products (
   UNIQUE(org_id, code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_products_org_id ON public.products(org_id);
-CREATE INDEX IF NOT EXISTS idx_products_type ON public.products(org_id, type);
-CREATE INDEX IF NOT EXISTS idx_products_is_addon ON public.products(org_id, is_addon);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_products_org_id ON public.products(org_id);
+  CREATE INDEX IF NOT EXISTS idx_products_type ON public.products(org_id, type);
+  CREATE INDEX IF NOT EXISTS idx_products_is_addon ON public.products(org_id, is_addon);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Members (health insurance members)
 CREATE TABLE IF NOT EXISTS public.members (
@@ -134,14 +173,17 @@ CREATE TABLE IF NOT EXISTS public.members (
   UNIQUE(org_id, member_number)
 );
 
-CREATE INDEX IF NOT EXISTS idx_members_org_id ON public.members(org_id);
-CREATE INDEX IF NOT EXISTS idx_members_advisor_id ON public.members(advisor_id);
-CREATE INDEX IF NOT EXISTS idx_members_profile_id ON public.members(profile_id);
-CREATE INDEX IF NOT EXISTS idx_members_status ON public.members(org_id, status);
-CREATE INDEX IF NOT EXISTS idx_members_state ON public.members(state);
-CREATE INDEX IF NOT EXISTS idx_members_state_status ON public.members(state, status);
-CREATE INDEX IF NOT EXISTS idx_members_advisor_status ON public.members(advisor_id, status);
-CREATE INDEX IF NOT EXISTS idx_members_enrollment_date ON public.members(enrollment_date);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_members_org_id ON public.members(org_id);
+  CREATE INDEX IF NOT EXISTS idx_members_advisor_id ON public.members(advisor_id);
+  CREATE INDEX IF NOT EXISTS idx_members_profile_id ON public.members(profile_id);
+  CREATE INDEX IF NOT EXISTS idx_members_status ON public.members(org_id, status);
+  CREATE INDEX IF NOT EXISTS idx_members_state ON public.members(state);
+  CREATE INDEX IF NOT EXISTS idx_members_state_status ON public.members(state, status);
+  CREATE INDEX IF NOT EXISTS idx_members_advisor_status ON public.members(advisor_id, status);
+  CREATE INDEX IF NOT EXISTS idx_members_enrollment_date ON public.members(enrollment_date);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Enrollments (member enrollment records)
 CREATE TABLE IF NOT EXISTS public.enrollments (
@@ -161,13 +203,16 @@ CREATE TABLE IF NOT EXISTS public.enrollments (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_enrollments_org_id ON public.enrollments(org_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_member_id ON public.enrollments(member_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_advisor_id ON public.enrollments(advisor_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_product_id ON public.enrollments(product_id);
-CREATE INDEX IF NOT EXISTS idx_enrollments_status ON public.enrollments(org_id, status);
-CREATE INDEX IF NOT EXISTS idx_enrollments_advisor_date ON public.enrollments(advisor_id, enrollment_date);
-CREATE INDEX IF NOT EXISTS idx_enrollments_date ON public.enrollments(enrollment_date);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_enrollments_org_id ON public.enrollments(org_id);
+  CREATE INDEX IF NOT EXISTS idx_enrollments_member_id ON public.enrollments(member_id);
+  CREATE INDEX IF NOT EXISTS idx_enrollments_advisor_id ON public.enrollments(advisor_id);
+  CREATE INDEX IF NOT EXISTS idx_enrollments_product_id ON public.enrollments(product_id);
+  CREATE INDEX IF NOT EXISTS idx_enrollments_status ON public.enrollments(org_id, status);
+  CREATE INDEX IF NOT EXISTS idx_enrollments_advisor_date ON public.enrollments(advisor_id, enrollment_date);
+  CREATE INDEX IF NOT EXISTS idx_enrollments_date ON public.enrollments(enrollment_date);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Commissions (advisor commission records)
 CREATE TABLE IF NOT EXISTS public.commissions (
@@ -187,13 +232,16 @@ CREATE TABLE IF NOT EXISTS public.commissions (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_commissions_org_id ON public.commissions(org_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_advisor_id ON public.commissions(advisor_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_member_id ON public.commissions(member_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_enrollment_id ON public.commissions(enrollment_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_period ON public.commissions(commission_period);
-CREATE INDEX IF NOT EXISTS idx_commissions_status ON public.commissions(org_id, status);
-CREATE INDEX IF NOT EXISTS idx_commissions_advisor_period ON public.commissions(advisor_id, commission_period);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_commissions_org_id ON public.commissions(org_id);
+  CREATE INDEX IF NOT EXISTS idx_commissions_advisor_id ON public.commissions(advisor_id);
+  CREATE INDEX IF NOT EXISTS idx_commissions_member_id ON public.commissions(member_id);
+  CREATE INDEX IF NOT EXISTS idx_commissions_enrollment_id ON public.commissions(enrollment_id);
+  CREATE INDEX IF NOT EXISTS idx_commissions_period ON public.commissions(commission_period);
+  CREATE INDEX IF NOT EXISTS idx_commissions_status ON public.commissions(org_id, status);
+  CREATE INDEX IF NOT EXISTS idx_commissions_advisor_period ON public.commissions(advisor_id, commission_period);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- ============================================================================
 -- REPORT BUILDER TABLES
@@ -218,10 +266,13 @@ CREATE TABLE IF NOT EXISTS public.crm_reports (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_crm_reports_org_id ON public.crm_reports(org_id);
-CREATE INDEX IF NOT EXISTS idx_crm_reports_data_source ON public.crm_reports(org_id, data_source);
-CREATE INDEX IF NOT EXISTS idx_crm_reports_is_template ON public.crm_reports(is_template);
-CREATE INDEX IF NOT EXISTS idx_crm_reports_created_by ON public.crm_reports(created_by);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_crm_reports_org_id ON public.crm_reports(org_id);
+  CREATE INDEX IF NOT EXISTS idx_crm_reports_data_source ON public.crm_reports(org_id, data_source);
+  CREATE INDEX IF NOT EXISTS idx_crm_reports_is_template ON public.crm_reports(is_template);
+  CREATE INDEX IF NOT EXISTS idx_crm_reports_created_by ON public.crm_reports(created_by);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- CRM Scheduled Reports
 CREATE TABLE IF NOT EXISTS public.crm_scheduled_reports (
@@ -241,9 +292,12 @@ CREATE TABLE IF NOT EXISTS public.crm_scheduled_reports (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_crm_scheduled_reports_org_id ON public.crm_scheduled_reports(org_id);
-CREATE INDEX IF NOT EXISTS idx_crm_scheduled_reports_report_id ON public.crm_scheduled_reports(report_id);
-CREATE INDEX IF NOT EXISTS idx_crm_scheduled_reports_next_run ON public.crm_scheduled_reports(next_run_at) WHERE is_enabled = true;
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_crm_scheduled_reports_org_id ON public.crm_scheduled_reports(org_id);
+  CREATE INDEX IF NOT EXISTS idx_crm_scheduled_reports_report_id ON public.crm_scheduled_reports(report_id);
+  CREATE INDEX IF NOT EXISTS idx_crm_scheduled_reports_next_run ON public.crm_scheduled_reports(next_run_at) WHERE is_enabled = true;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Report Segments (saved result sets for campaigns)
 CREATE TABLE IF NOT EXISTS public.report_segments (
@@ -261,9 +315,12 @@ CREATE TABLE IF NOT EXISTS public.report_segments (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_report_segments_org_id ON public.report_segments(org_id);
-CREATE INDEX IF NOT EXISTS idx_report_segments_report_id ON public.report_segments(report_id);
-CREATE INDEX IF NOT EXISTS idx_report_segments_entity_type ON public.report_segments(org_id, entity_type);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_report_segments_org_id ON public.report_segments(org_id);
+  CREATE INDEX IF NOT EXISTS idx_report_segments_report_id ON public.report_segments(report_id);
+  CREATE INDEX IF NOT EXISTS idx_report_segments_entity_type ON public.report_segments(org_id, entity_type);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Report Alerts (milestone/threshold notifications)
 CREATE TABLE IF NOT EXISTS public.report_alerts (
@@ -281,9 +338,12 @@ CREATE TABLE IF NOT EXISTS public.report_alerts (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_report_alerts_org_id ON public.report_alerts(org_id);
-CREATE INDEX IF NOT EXISTS idx_report_alerts_report_id ON public.report_alerts(report_id);
-CREATE INDEX IF NOT EXISTS idx_report_alerts_is_enabled ON public.report_alerts(is_enabled) WHERE is_enabled = true;
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_report_alerts_org_id ON public.report_alerts(org_id);
+  CREATE INDEX IF NOT EXISTS idx_report_alerts_report_id ON public.report_alerts(report_id);
+  CREATE INDEX IF NOT EXISTS idx_report_alerts_is_enabled ON public.report_alerts(is_enabled) WHERE is_enabled = true;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- Advisor Milestone Progress
 CREATE TABLE IF NOT EXISTS public.advisor_milestone_progress (
@@ -300,27 +360,89 @@ CREATE TABLE IF NOT EXISTS public.advisor_milestone_progress (
   UNIQUE(advisor_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_advisor_milestone_progress_org_id ON public.advisor_milestone_progress(org_id);
-CREATE INDEX IF NOT EXISTS idx_advisor_milestone_progress_advisor_id ON public.advisor_milestone_progress(advisor_id);
-CREATE INDEX IF NOT EXISTS idx_advisor_milestone_progress_current_level ON public.advisor_milestone_progress(current_level_id);
+DO $$ BEGIN
+  CREATE INDEX IF NOT EXISTS idx_advisor_milestone_progress_org_id ON public.advisor_milestone_progress(org_id);
+  CREATE INDEX IF NOT EXISTS idx_advisor_milestone_progress_advisor_id ON public.advisor_milestone_progress(advisor_id);
+  CREATE INDEX IF NOT EXISTS idx_advisor_milestone_progress_current_level ON public.advisor_milestone_progress(current_level_id);
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
 -- ============================================================================
 -- ROW LEVEL SECURITY
 -- ============================================================================
 
--- Enable RLS on all tables
-ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.agent_levels ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.advisors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.commissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.crm_reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.crm_scheduled_reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.report_segments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.report_alerts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.advisor_milestone_progress ENABLE ROW LEVEL SECURITY;
+-- Enable RLS on all tables (using DO block to handle existing tables)
+DO $$
+BEGIN
+  ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.agent_levels ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.advisors ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.members ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.enrollments ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.commissions ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.crm_reports ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.crm_scheduled_reports ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.report_segments ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.report_alerts ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+  ALTER TABLE public.advisor_milestone_progress ENABLE ROW LEVEL SECURITY;
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
 -- Helper function to check if user is staff/admin
 CREATE OR REPLACE FUNCTION public.is_staff_or_admin()
@@ -346,159 +468,137 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 
--- Organizations policies
-CREATE POLICY "Staff can read organizations"
-  ON public.organizations FOR SELECT
-  USING (public.is_staff_or_admin());
+-- Create policies only if they don't exist (using DROP IF EXISTS first for idempotency)
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read organizations" ON public.organizations;
+  DROP POLICY IF EXISTS "Admins can manage organizations" ON public.organizations;
+  CREATE POLICY "Staff can read organizations" ON public.organizations FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Admins can manage organizations" ON public.organizations FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
-CREATE POLICY "Admins can manage organizations"
-  ON public.organizations FOR ALL
-  USING (public.is_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read agent levels" ON public.agent_levels;
+  DROP POLICY IF EXISTS "Admins can manage agent levels" ON public.agent_levels;
+  CREATE POLICY "Staff can read agent levels" ON public.agent_levels FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Admins can manage agent levels" ON public.agent_levels FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
--- Agent Levels policies
-CREATE POLICY "Staff can read agent levels"
-  ON public.agent_levels FOR SELECT
-  USING (public.is_staff_or_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read advisors" ON public.advisors;
+  DROP POLICY IF EXISTS "Advisors can read own record" ON public.advisors;
+  DROP POLICY IF EXISTS "Admins can manage advisors" ON public.advisors;
+  CREATE POLICY "Staff can read advisors" ON public.advisors FOR SELECT USING (public.is_staff_or_admin());
+  -- Only create profile_id-based policy if column exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'advisors' AND column_name = 'profile_id') THEN
+    CREATE POLICY "Advisors can read own record" ON public.advisors FOR SELECT USING (profile_id = auth.uid());
+  END IF;
+  CREATE POLICY "Admins can manage advisors" ON public.advisors FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+END $$;
 
-CREATE POLICY "Admins can manage agent levels"
-  ON public.agent_levels FOR ALL
-  USING (public.is_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read products" ON public.products;
+  DROP POLICY IF EXISTS "Admins can manage products" ON public.products;
+  CREATE POLICY "Staff can read products" ON public.products FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Admins can manage products" ON public.products FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
--- Advisors policies
-CREATE POLICY "Staff can read advisors"
-  ON public.advisors FOR SELECT
-  USING (public.is_staff_or_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read members" ON public.members;
+  DROP POLICY IF EXISTS "Members can read own record" ON public.members;
+  DROP POLICY IF EXISTS "Advisors can read their members" ON public.members;
+  DROP POLICY IF EXISTS "Admins can manage members" ON public.members;
+  CREATE POLICY "Staff can read members" ON public.members FOR SELECT USING (public.is_staff_or_admin());
+  -- Only create profile_id-based policy if column exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'members' AND column_name = 'profile_id') THEN
+    CREATE POLICY "Members can read own record" ON public.members FOR SELECT USING (profile_id = auth.uid());
+  END IF;
+  -- Only create advisor_id-based policy if column exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'members' AND column_name = 'advisor_id') THEN
+    CREATE POLICY "Advisors can read their members" ON public.members FOR SELECT USING (
+      EXISTS (SELECT 1 FROM public.advisors a WHERE a.profile_id = auth.uid() AND public.members.advisor_id = a.id)
+    );
+  END IF;
+  CREATE POLICY "Admins can manage members" ON public.members FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+END $$;
 
-CREATE POLICY "Advisors can read own record"
-  ON public.advisors FOR SELECT
-  USING (profile_id = auth.uid());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read enrollments" ON public.enrollments;
+  DROP POLICY IF EXISTS "Admins can manage enrollments" ON public.enrollments;
+  CREATE POLICY "Staff can read enrollments" ON public.enrollments FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Admins can manage enrollments" ON public.enrollments FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
-CREATE POLICY "Admins can manage advisors"
-  ON public.advisors FOR ALL
-  USING (public.is_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read commissions" ON public.commissions;
+  DROP POLICY IF EXISTS "Advisors can read own commissions" ON public.commissions;
+  DROP POLICY IF EXISTS "Admins can manage commissions" ON public.commissions;
+  CREATE POLICY "Staff can read commissions" ON public.commissions FOR SELECT USING (public.is_staff_or_admin());
+  -- Only create advisor-based policy if advisor_id column exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'advisor_id') THEN
+    CREATE POLICY "Advisors can read own commissions" ON public.commissions FOR SELECT USING (
+      EXISTS (SELECT 1 FROM public.advisors a WHERE a.profile_id = auth.uid() AND public.commissions.advisor_id = a.id)
+    );
+  END IF;
+  CREATE POLICY "Admins can manage commissions" ON public.commissions FOR ALL USING (public.is_admin());
+EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+END $$;
 
--- Products policies
-CREATE POLICY "Staff can read products"
-  ON public.products FOR SELECT
-  USING (public.is_staff_or_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read reports" ON public.crm_reports;
+  DROP POLICY IF EXISTS "Staff can create reports" ON public.crm_reports;
+  DROP POLICY IF EXISTS "Users can update own reports" ON public.crm_reports;
+  DROP POLICY IF EXISTS "Users can delete own reports" ON public.crm_reports;
+  CREATE POLICY "Staff can read reports" ON public.crm_reports FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Staff can create reports" ON public.crm_reports FOR INSERT WITH CHECK (public.is_staff_or_admin());
+  CREATE POLICY "Users can update own reports" ON public.crm_reports FOR UPDATE USING (created_by = auth.uid() OR public.is_admin());
+  CREATE POLICY "Users can delete own reports" ON public.crm_reports FOR DELETE USING (created_by = auth.uid() OR public.is_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
-CREATE POLICY "Admins can manage products"
-  ON public.products FOR ALL
-  USING (public.is_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read scheduled reports" ON public.crm_scheduled_reports;
+  DROP POLICY IF EXISTS "Staff can manage scheduled reports" ON public.crm_scheduled_reports;
+  CREATE POLICY "Staff can read scheduled reports" ON public.crm_scheduled_reports FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Staff can manage scheduled reports" ON public.crm_scheduled_reports FOR ALL USING (public.is_staff_or_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
--- Members policies
-CREATE POLICY "Staff can read members"
-  ON public.members FOR SELECT
-  USING (public.is_staff_or_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read segments" ON public.report_segments;
+  DROP POLICY IF EXISTS "Staff can manage segments" ON public.report_segments;
+  CREATE POLICY "Staff can read segments" ON public.report_segments FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Staff can manage segments" ON public.report_segments FOR ALL USING (public.is_staff_or_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
-CREATE POLICY "Members can read own record"
-  ON public.members FOR SELECT
-  USING (profile_id = auth.uid());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read alerts" ON public.report_alerts;
+  DROP POLICY IF EXISTS "Staff can manage alerts" ON public.report_alerts;
+  CREATE POLICY "Staff can read alerts" ON public.report_alerts FOR SELECT USING (public.is_staff_or_admin());
+  CREATE POLICY "Staff can manage alerts" ON public.report_alerts FOR ALL USING (public.is_staff_or_admin());
+EXCEPTION WHEN undefined_table THEN NULL;
+END $$;
 
-CREATE POLICY "Advisors can read their members"
-  ON public.advisors FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.advisors a
-      WHERE a.profile_id = auth.uid()
-      AND public.members.advisor_id = a.id
-    )
-  );
-
-CREATE POLICY "Admins can manage members"
-  ON public.members FOR ALL
-  USING (public.is_admin());
-
--- Enrollments policies
-CREATE POLICY "Staff can read enrollments"
-  ON public.enrollments FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Admins can manage enrollments"
-  ON public.enrollments FOR ALL
-  USING (public.is_admin());
-
--- Commissions policies
-CREATE POLICY "Staff can read commissions"
-  ON public.commissions FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Advisors can read own commissions"
-  ON public.commissions FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.advisors a
-      WHERE a.profile_id = auth.uid()
-      AND public.commissions.advisor_id = a.id
-    )
-  );
-
-CREATE POLICY "Admins can manage commissions"
-  ON public.commissions FOR ALL
-  USING (public.is_admin());
-
--- CRM Reports policies
-CREATE POLICY "Staff can read reports"
-  ON public.crm_reports FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Staff can create reports"
-  ON public.crm_reports FOR INSERT
-  WITH CHECK (public.is_staff_or_admin());
-
-CREATE POLICY "Users can update own reports"
-  ON public.crm_reports FOR UPDATE
-  USING (created_by = auth.uid() OR public.is_admin());
-
-CREATE POLICY "Users can delete own reports"
-  ON public.crm_reports FOR DELETE
-  USING (created_by = auth.uid() OR public.is_admin());
-
--- CRM Scheduled Reports policies
-CREATE POLICY "Staff can read scheduled reports"
-  ON public.crm_scheduled_reports FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Staff can manage scheduled reports"
-  ON public.crm_scheduled_reports FOR ALL
-  USING (public.is_staff_or_admin());
-
--- Report Segments policies
-CREATE POLICY "Staff can read segments"
-  ON public.report_segments FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Staff can manage segments"
-  ON public.report_segments FOR ALL
-  USING (public.is_staff_or_admin());
-
--- Report Alerts policies
-CREATE POLICY "Staff can read alerts"
-  ON public.report_alerts FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Staff can manage alerts"
-  ON public.report_alerts FOR ALL
-  USING (public.is_staff_or_admin());
-
--- Advisor Milestone Progress policies
-CREATE POLICY "Staff can read milestone progress"
-  ON public.advisor_milestone_progress FOR SELECT
-  USING (public.is_staff_or_admin());
-
-CREATE POLICY "Advisors can read own progress"
-  ON public.advisor_milestone_progress FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.advisors a
-      WHERE a.profile_id = auth.uid()
-      AND public.advisor_milestone_progress.advisor_id = a.id
-    )
-  );
-
-CREATE POLICY "Staff can manage milestone progress"
-  ON public.advisor_milestone_progress FOR ALL
-  USING (public.is_staff_or_admin());
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "Staff can read milestone progress" ON public.advisor_milestone_progress;
+  DROP POLICY IF EXISTS "Advisors can read own progress" ON public.advisor_milestone_progress;
+  DROP POLICY IF EXISTS "Staff can manage milestone progress" ON public.advisor_milestone_progress;
+  CREATE POLICY "Staff can read milestone progress" ON public.advisor_milestone_progress FOR SELECT USING (public.is_staff_or_admin());
+  -- Only create advisor-based policy if advisor_id column exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'advisor_milestone_progress' AND column_name = 'advisor_id') THEN
+    CREATE POLICY "Advisors can read own progress" ON public.advisor_milestone_progress FOR SELECT USING (
+      EXISTS (SELECT 1 FROM public.advisors a WHERE a.profile_id = auth.uid() AND public.advisor_milestone_progress.advisor_id = a.id)
+    );
+  END IF;
+  CREATE POLICY "Staff can manage milestone progress" ON public.advisor_milestone_progress FOR ALL USING (public.is_staff_or_admin());
+EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+END $$;
 
 -- ============================================================================
 -- TRIGGERS FOR updated_at
@@ -525,13 +625,18 @@ BEGIN
       'crm_scheduled_reports', 'report_alerts'
     ])
   LOOP
-    EXECUTE format(
-      'DROP TRIGGER IF EXISTS set_%s_updated_at ON public.%s;
-       CREATE TRIGGER set_%s_updated_at
-       BEFORE UPDATE ON public.%s
-       FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();',
-      tbl, tbl, tbl, tbl
-    );
+    BEGIN
+      EXECUTE format(
+        'DROP TRIGGER IF EXISTS set_%s_updated_at ON public.%s;
+         CREATE TRIGGER set_%s_updated_at
+         BEFORE UPDATE ON public.%s
+         FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();',
+        tbl, tbl, tbl, tbl
+      );
+    EXCEPTION WHEN undefined_table THEN
+      -- Table doesn't exist, skip
+      NULL;
+    END;
   END LOOP;
 END $$;
 
@@ -539,35 +644,50 @@ END $$;
 -- SEED DATA: Default Organization and Agent Levels
 -- ============================================================================
 
--- Insert default organization
-INSERT INTO public.organizations (id, name, slug, settings)
-VALUES (
-  '00000000-0000-0000-0000-000000000001',
-  'Default Organization',
-  'default',
-  '{"features": ["reports", "milestones", "alerts"]}'
-)
-ON CONFLICT (slug) DO NOTHING;
+-- Insert default organization (wrapped to handle missing table)
+DO $$ BEGIN
+  INSERT INTO public.organizations (id, name, slug, settings)
+  VALUES (
+    '00000000-0000-0000-0000-000000000001',
+    'Default Organization',
+    'default',
+    '{"features": ["reports", "milestones", "alerts"]}'
+  )
+  ON CONFLICT (id) DO NOTHING;
+EXCEPTION WHEN undefined_table OR unique_violation THEN NULL;
+END $$;
 
--- Insert default agent levels
-INSERT INTO public.agent_levels (org_id, name, rank, min_active_members, min_monthly_enrollments, commission_rate, description)
-VALUES
-  ('00000000-0000-0000-0000-000000000001', 'Associate', 1, 0, 0, 5.00, 'Entry level advisor'),
-  ('00000000-0000-0000-0000-000000000001', 'Agent', 2, 10, 3, 7.50, 'Standard advisor tier'),
-  ('00000000-0000-0000-0000-000000000001', 'Team Lead', 3, 25, 5, 10.00, 'Team leadership tier'),
-  ('00000000-0000-0000-0000-000000000001', 'Manager', 4, 50, 10, 12.50, 'Management tier'),
-  ('00000000-0000-0000-0000-000000000001', 'Director', 5, 100, 20, 15.00, 'Director level tier'),
-  ('00000000-0000-0000-0000-000000000001', 'Regional VP', 6, 250, 50, 17.50, 'Regional leadership'),
-  ('00000000-0000-0000-0000-000000000001', 'Executive', 7, 500, 100, 20.00, 'Executive leadership')
-ON CONFLICT (org_id, name) DO NOTHING;
+-- Insert default agent levels (wrapped to handle missing table/columns/constraints)
+DO $$ BEGIN
+  -- Only insert if org_id column exists (new schema)
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'org_id') THEN
+    INSERT INTO public.agent_levels (org_id, name, rank, min_active_members, min_monthly_enrollments, commission_rate, description)
+    VALUES
+      ('00000000-0000-0000-0000-000000000001', 'Associate', 1, 0, 0, 5.00, 'Entry level advisor'),
+      ('00000000-0000-0000-0000-000000000001', 'Agent', 2, 10, 3, 7.50, 'Standard advisor tier'),
+      ('00000000-0000-0000-0000-000000000001', 'Team Lead', 3, 25, 5, 10.00, 'Team leadership tier'),
+      ('00000000-0000-0000-0000-000000000001', 'Manager', 4, 50, 10, 12.50, 'Management tier'),
+      ('00000000-0000-0000-0000-000000000001', 'Director', 5, 100, 20, 15.00, 'Director level tier'),
+      ('00000000-0000-0000-0000-000000000001', 'Regional VP', 6, 250, 50, 17.50, 'Regional leadership'),
+      ('00000000-0000-0000-0000-000000000001', 'Executive', 7, 500, 100, 20.00, 'Executive leadership')
+    ON CONFLICT (org_id, name) DO NOTHING;
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
 
--- Insert sample products
-INSERT INTO public.products (org_id, name, code, type, monthly_premium, description, is_addon, is_active)
-VALUES
-  ('00000000-0000-0000-0000-000000000001', 'Bronze Health Plan', 'BRONZE', 'medical', 299.99, 'Basic health coverage', false, true),
-  ('00000000-0000-0000-0000-000000000001', 'Silver Health Plan', 'SILVER', 'medical', 449.99, 'Standard health coverage', false, true),
-  ('00000000-0000-0000-0000-000000000001', 'Gold Health Plan', 'GOLD', 'medical', 649.99, 'Premium health coverage', false, true),
-  ('00000000-0000-0000-0000-000000000001', 'Dental Coverage', 'DENTAL', 'dental', 39.99, 'Dental insurance add-on', true, true),
-  ('00000000-0000-0000-0000-000000000001', 'Vision Coverage', 'VISION', 'vision', 19.99, 'Vision insurance add-on', true, true),
-  ('00000000-0000-0000-0000-000000000001', 'Life Insurance Basic', 'LIFE-B', 'life', 29.99, 'Basic life insurance', true, true)
-ON CONFLICT (org_id, code) DO NOTHING;
+-- Insert sample products (wrapped to handle missing table/columns/constraints)
+DO $$ BEGIN
+  -- Only insert if org_id column exists (new schema)
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'org_id') THEN
+    INSERT INTO public.products (org_id, name, code, type, monthly_premium, description, is_addon, is_active)
+    VALUES
+      ('00000000-0000-0000-0000-000000000001', 'Bronze Health Plan', 'BRONZE', 'medical', 299.99, 'Basic health coverage', false, true),
+      ('00000000-0000-0000-0000-000000000001', 'Silver Health Plan', 'SILVER', 'medical', 449.99, 'Standard health coverage', false, true),
+      ('00000000-0000-0000-0000-000000000001', 'Gold Health Plan', 'GOLD', 'medical', 649.99, 'Premium health coverage', false, true),
+      ('00000000-0000-0000-0000-000000000001', 'Dental Coverage', 'DENTAL', 'dental', 39.99, 'Dental insurance add-on', true, true),
+      ('00000000-0000-0000-0000-000000000001', 'Vision Coverage', 'VISION', 'vision', 19.99, 'Vision insurance add-on', true, true),
+      ('00000000-0000-0000-0000-000000000001', 'Life Insurance Basic', 'LIFE-B', 'life', 29.99, 'Basic life insurance', true, true)
+    ON CONFLICT (org_id, code) DO NOTHING;
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
