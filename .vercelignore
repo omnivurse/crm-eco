@@ -1,6 +1,3 @@
-apps/admin/package.json
-apps/crm/package.json
-apps/portal/package.json
-apps/server/package.json
-packages/lib/package.json
-packages/ui/package.json
+apps/
+packages/
+shared/package.json
