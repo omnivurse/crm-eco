@@ -22,16 +22,19 @@ import {
   Briefcase,
   ArrowLeftRight,
   Calendar,
+  Terminal,
 } from 'lucide-react';
 import { useState } from 'react';
 import { CommandPalette } from '../../components/ui/CommandPalette';
 import { Breadcrumbs } from '../../components/ui/Breadcrumbs';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { TerminalWindow, useTerminal } from '../../components/terminal';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { toggle: toggleTerminal } = useTerminal();
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
   const isStaff = profile?.role && ['staff', 'agent', 'admin', 'super_admin'].includes(profile.role);
@@ -94,6 +97,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen app-background">
       <CommandPalette />
+      <TerminalWindow />
       <div className="lg:hidden">
         <div className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between bg-white dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-4 py-3">
           <Logo size="small" />
@@ -200,6 +204,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="px-2">
               <SupportContact variant="minimal" showEmail={false} />
             </div>
+            <button
+              onClick={toggleTerminal}
+              className="btn-enterprise-ghost w-full justify-start gap-3 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+              title="Command Center (Ctrl+K)"
+            >
+              <Terminal size={20} />
+              <span>Command Center</span>
+              <kbd className="ml-auto text-xs bg-neutral-100 dark:bg-neutral-700 px-1.5 py-0.5 rounded">^K</kbd>
+            </button>
             <button
               onClick={handleSignOut}
               className="btn-enterprise-ghost w-full justify-start gap-3"

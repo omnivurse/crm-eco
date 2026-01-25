@@ -9,6 +9,7 @@ import './styles/championship-theme.css';
 import './styles/enterprise-design.css';
 import { AuthProvider } from './providers/AuthProvider';
 import { ThemeProvider } from './providers/ThemeProvider';
+import { TerminalProvider } from './components/terminal';
 
 const qc = new QueryClient({
   defaultOptions: {
@@ -26,7 +27,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <ToastProvider>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <App />
+              <TerminalProvider>
+                <App />
+              </TerminalProvider>
             </BrowserRouter>
           </ToastProvider>
         </ThemeProvider>
