@@ -1,0 +1,5 @@
+{
+  "installCommand": "cd ../.. && npm install --legacy-peer-deps",
+  "buildCommand": "cd ../.. && npm run build:crm",
+  "framework": "nextjs"
+}
