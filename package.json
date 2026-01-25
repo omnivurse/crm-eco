@@ -1,8 +1,14 @@
 {
   "name": "crm-eco",
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "build": "vite build",
+    "build:admin": "npm run build --workspace=@crm-eco/admin",
+    "build:portal": "npm run build --workspace=@crm-eco/portal",
     "build:all": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
