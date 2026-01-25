@@ -1,3 +1,0 @@
-# Ignore monorepo apps and packages - only deploy root Vite app
-apps
-packages
