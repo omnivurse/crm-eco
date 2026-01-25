@@ -1,6 +1,6 @@
 'use client';
 
-// Terminal Window - Starship Command Center
+// Terminal Window - Pay It Forward Command Center
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Minus, Maximize2, Terminal as TerminalIcon } from 'lucide-react';
@@ -79,7 +79,7 @@ export function TerminalWindow() {
                 </div>
                 <div className="titlebar-title">
                   <TerminalIcon size={14} className="titlebar-icon" />
-                  <span>STARSHIP COMMAND CENTER</span>
+                  <span>PAY IT FORWARD COMMAND CENTER</span>
                 </div>
               </div>
               <div className="titlebar-right">

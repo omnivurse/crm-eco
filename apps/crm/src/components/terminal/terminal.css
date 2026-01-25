@@ -1,5 +1,5 @@
-/* Starship Command Center - Terminal Styles */
-/* LCARS-inspired Star Trek aesthetic */
+/* Pay It Forward Command Center - Terminal Styles */
+/* LCARS-inspired aesthetic */
 
 /* CSS Variables */
 :root {
@@ -41,22 +41,32 @@
 /* Backdrop */
 .terminal-backdrop {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Main Terminal Window */
 .terminal-window {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   width: 90vw;
   max-width: 1000px;
   height: 80vh;
   max-height: 700px;
+  margin: auto;
   background: var(--terminal-bg);
   border: 1px solid var(--terminal-border-bright);
   border-radius: 12px;
