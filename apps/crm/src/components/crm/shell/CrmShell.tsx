@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { CommandPalette } from './CommandPalette';
 import { Footer } from './Footer';
 import { ModuleProvider } from '@/contexts/ModuleContext';
+import { TerminalProvider, TerminalWindow } from '@/components/terminal';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 interface CrmShellProps {
@@ -18,8 +20,22 @@ interface CrmShellProps {
 export function CrmShell({ children, modules, profile, organizationName }: CrmShellProps) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true); // Default to open
+  const router = useRouter();
+
+  const handleNavigate = (path: string) => {
+    router.push(path);
+  };
 
   return (
+    <TerminalProvider
+      navigate={handleNavigate}
+      profile={{
+        id: profile.id,
+        organization_id: profile.organization_id,
+        role: profile.crm_role,
+        full_name: profile.full_name,
+      }}
+    >
     <ModuleProvider>
       <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-transparent">
         {/* Animated Gradient Mesh Background */}
@@ -92,7 +108,11 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
           onOpenChange={setCommandPaletteOpen}
           modules={modules}
         />
+
+        {/* Starship Command Center Terminal */}
+        <TerminalWindow />
       </div>
     </ModuleProvider>
+    </TerminalProvider>
   );
 }
