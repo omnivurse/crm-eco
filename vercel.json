@@ -1,9 +1,8 @@
 {
-  "buildCommand": "npx vite build --config vite.config.ts",
+  "buildCommand": "vite build",
   "outputDirectory": "dist",
-  "devCommand": "pnpm run dev",
   "installCommand": "npm install",
-  "framework": "vite",
+  "framework": null,
   "rewrites": [
     {
       "source": "/(.*)",
