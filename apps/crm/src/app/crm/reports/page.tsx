@@ -319,7 +319,6 @@ async function ReportsContent() {
             href="/crm/reports/leads"
             icon={UserPlus}
             color="bg-gradient-to-br from-violet-500 to-purple-600"
-            comingSoon
           />
           <ReportCard
             title="Activity Report"
@@ -327,7 +326,6 @@ async function ReportsContent() {
             href="/crm/reports/activity"
             icon={Calendar}
             color="bg-gradient-to-br from-blue-500 to-cyan-600"
-            comingSoon
           />
           <ReportCard
             title="Pipeline Health"
@@ -335,7 +333,6 @@ async function ReportsContent() {
             href="/crm/reports/pipeline"
             icon={Target}
             color="bg-gradient-to-br from-amber-500 to-orange-600"
-            comingSoon
           />
         </div>
       </div>

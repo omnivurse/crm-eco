@@ -15,6 +15,7 @@ interface ImportRequest {
   data: Record<string, string>[];
   fileName?: string;
   saveMappingAs?: string; // Optional: save mapping template for reuse
+  skipDuplicates?: boolean; // Skip records that already exist (by email/phone)
 }
 
 export async function POST(request: NextRequest) {
@@ -58,7 +59,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ImportRequest = await request.json();
-    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs } = body;
+    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates } = body;
 
     // Verify org matches
     if (organizationId !== profile.organization_id) {
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     // Process records
     let success = 0;
     let errors = 0;
+    let skipped = 0;
     const errorDetails: Array<{ row: number; error: string }> = [];
 
     // Build mapping lookup
@@ -117,6 +119,39 @@ export async function POST(request: NextRequest) {
             if (targetField === 'phone' || targetField === 'mobile') phone = value;
           }
         });
+
+        // Check for duplicates if skipDuplicates is enabled
+        if (skipDuplicates && (email || phone)) {
+          let query = supabase
+            .from('crm_records')
+            .select('id')
+            .eq('org_id', organizationId)
+            .eq('module_id', moduleId);
+
+          // Check by email first (primary duplicate key)
+          if (email) {
+            query = query.eq('email', email);
+          } else if (phone) {
+            // Fall back to phone if no email
+            query = query.eq('phone', phone);
+          }
+
+          const { data: existing } = await query.limit(1);
+
+          if (existing && existing.length > 0) {
+            // Record is a duplicate - skip it
+            skipped++;
+            await supabase.from('crm_import_rows').insert({
+              job_id: importJob.id,
+              row_index: i,
+              raw: row,
+              normalized: recordData,
+              status: 'skipped',
+              match_type: 'duplicate',
+            });
+            continue;
+          }
+        }
 
         // Insert the record
         const { data: record, error: insertError } = await supabase
@@ -171,6 +206,7 @@ export async function POST(request: NextRequest) {
         status: 'completed',
         processed_rows: data.length,
         inserted_count: success,
+        skipped_count: skipped,
         error_count: errors,
         completed_at: new Date().toISOString(),
       })
@@ -212,6 +248,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success,
+      skipped,
       errors,
       total: data.length,
       jobId: importJob.id,

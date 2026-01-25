@@ -238,12 +238,24 @@ export default function RevenuePage() {
 
         if (!profile) return;
 
+        // Get deals module
+        const { data: dealsModule } = await supabase
+          .from('crm_modules')
+          .select('id')
+          .eq('org_id', profile.organization_id)
+          .eq('key', 'deals')
+          .single();
+
+        if (!dealsModule) {
+          setLoading(false);
+          return;
+        }
+
         // Fetch deals with stage info
         const { data: dealsData } = await supabase
           .from('crm_records')
           .select('id, stage, data')
-          .eq('organization_id', profile.organization_id)
-          .eq('record_type', 'deals');
+          .eq('module_id', dealsModule.id);
 
         const deals = (dealsData || []) as unknown as DealData[];
 

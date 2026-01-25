@@ -78,6 +78,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   const [importProgress, setImportProgress] = useState(0);
   const [importResult, setImportResult] = useState<{
     success: number;
+    skipped: number;
     errors: number;
     total: number;
   } | null>(null);
@@ -85,6 +86,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
   const [dragActive, setDragActive] = useState(false);
   const [saveMapping, setSaveMapping] = useState(false);
   const [mappingName, setMappingName] = useState('');
+  const [skipDuplicates, setSkipDuplicates] = useState(true); // Default to skipping duplicates
 
   // Calculate step progress
   const steps: WizardStep[] = ['module', 'upload', 'mapping', 'preview', 'complete'];
@@ -301,6 +303,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       const batches = Math.ceil(totalRows / BATCH_SIZE);
 
       let totalSuccess = 0;
+      let totalSkipped = 0;
       let totalErrors = 0;
       let lastJobId: string | null = null;
       let savedMappingId: string | null = null;
@@ -323,6 +326,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
             data: batchData,
             fileName: `${fileName} (batch ${i + 1}/${batches})`,
             saveMappingAs: i === 0 && saveMapping ? mappingName : undefined, // Only save mapping on first batch
+            skipDuplicates,
           }),
         });
 
@@ -333,6 +337,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
 
         const result = await res.json();
         totalSuccess += result.success || 0;
+        totalSkipped += result.skipped || 0;
         totalErrors += result.errors || 0;
         lastJobId = result.jobId;
         if (result.savedMappingId) savedMappingId = result.savedMappingId;
@@ -341,6 +346,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       setImportProgress(100);
       setImportResult({
         success: totalSuccess,
+        skipped: totalSkipped,
         errors: totalErrors,
         total: totalRows,
       });
@@ -354,7 +360,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     } finally {
       setImporting(false);
     }
-  }, [selectedModule, organizationId, mappings, csvData, fileName, saveMapping, mappingName]);
+  }, [selectedModule, organizationId, mappings, csvData, fileName, saveMapping, mappingName, skipDuplicates]);
 
   // Reset wizard
   const handleReset = useCallback(() => {
@@ -644,8 +650,23 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
               </div>
             </div>
 
-            {/* Save Mapping Option */}
-            <div className="glass rounded-xl border border-slate-200 dark:border-white/5 p-4">
+            {/* Import Options */}
+            <div className="glass rounded-xl border border-slate-200 dark:border-white/5 p-4 space-y-4">
+              {/* Skip Duplicates Option */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={skipDuplicates}
+                  onChange={(e) => setSkipDuplicates(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-teal-500 focus:ring-teal-500/20"
+                />
+                <div>
+                  <span className="text-slate-900 dark:text-white font-medium">Skip duplicate records</span>
+                  <p className="text-slate-500 text-xs">Records with matching email or phone will be skipped to avoid duplicates</p>
+                </div>
+              </label>
+
+              {/* Save Mapping Option */}
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -726,6 +747,12 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 <span className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{importResult.success.toLocaleString()}</span>
                 <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Imported</p>
               </div>
+              {importResult.skipped > 0 && (
+                <div className="px-6 py-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                  <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">{importResult.skipped.toLocaleString()}</span>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Duplicates Skipped</p>
+                </div>
+              )}
               {importResult.errors > 0 && (
                 <div className="px-6 py-4 rounded-xl bg-red-500/10 border border-red-500/30">
                   <span className="text-3xl font-bold text-red-600 dark:text-red-400">{importResult.errors.toLocaleString()}</span>
