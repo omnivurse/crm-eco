@@ -24,11 +24,39 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 
+// Pre-generate particle data to avoid hydration mismatches
+function generateParticleData() {
+  return [...Array(40)].map(() => ({
+    width: Math.random() * 4 + 2,
+    height: Math.random() * 4 + 2,
+    isTeal: Math.random() > 0.5,
+    opacity: Math.random() * 0.5 + 0.3,
+    top: Math.random() * 100,
+    left: Math.random() * 100,
+    duration: Math.random() * 10 + 15,
+    delay: Math.random() * -20,
+    blur: Math.random() * 10 + 5,
+  }));
+}
+
+function generateShootingStarData() {
+  return [...Array(5)].map(() => ({
+    width: Math.random() * 100 + 50,
+    top: Math.random() * 100,
+    duration: Math.random() * 3 + 2,
+    delay: Math.random() * 5,
+  }));
+}
+
 // Premium Healthcare Orbit Animation
 function PremiumOrbitAnimation() {
   const [mounted, setMounted] = useState(false);
+  const [particleData, setParticleData] = useState<ReturnType<typeof generateParticleData>>([]);
+  const [shootingStarData, setShootingStarData] = useState<ReturnType<typeof generateShootingStarData>>([]);
 
   useEffect(() => {
+    setParticleData(generateParticleData());
+    setShootingStarData(generateShootingStarData());
     setMounted(true);
   }, []);
 
@@ -153,35 +181,35 @@ function PremiumOrbitAnimation() {
       </div>
 
       {/* Floating particles */}
-      {[...Array(40)].map((_, i) => (
+      {particleData.map((particle, i) => (
         <div
           key={i}
           className="absolute rounded-full"
           style={{
-            width: Math.random() * 4 + 2 + 'px',
-            height: Math.random() * 4 + 2 + 'px',
-            background: `rgba(${Math.random() > 0.5 ? '6, 155, 154' : '2, 115, 67'}, ${Math.random() * 0.5 + 0.3})`,
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            animation: `float-particle ${Math.random() * 10 + 15}s linear infinite`,
-            animationDelay: `${Math.random() * -20}s`,
-            boxShadow: `0 0 ${Math.random() * 10 + 5}px rgba(6, 155, 154, 0.5)`,
+            width: particle.width + 'px',
+            height: particle.height + 'px',
+            background: `rgba(${particle.isTeal ? '6, 155, 154' : '2, 115, 67'}, ${particle.opacity})`,
+            top: `${particle.top}%`,
+            left: `${particle.left}%`,
+            animation: `float-particle ${particle.duration}s linear infinite`,
+            animationDelay: `${particle.delay}s`,
+            boxShadow: `0 0 ${particle.blur}px rgba(6, 155, 154, 0.5)`,
           }}
         />
       ))}
 
       {/* Shooting stars */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(5)].map((_, i) => (
+        {shootingStarData.map((star, i) => (
           <div
             key={`stream-${i}`}
             className="absolute h-px bg-gradient-to-r from-transparent via-brand-teal-400 to-transparent opacity-60"
             style={{
-              width: Math.random() * 100 + 50 + 'px',
-              top: `${Math.random() * 100}%`,
+              width: star.width + 'px',
+              top: `${star.top}%`,
               left: '-100px',
-              animation: `shooting-star ${Math.random() * 3 + 2}s linear infinite`,
-              animationDelay: `${Math.random() * 5}s`,
+              animation: `shooting-star ${star.duration}s linear infinite`,
+              animationDelay: `${star.delay}s`,
             }}
           />
         ))}
@@ -253,7 +281,7 @@ export default function LoginPage() {
             opacity: 1;
           }
           50% {
-            transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(1.5);
+            transform: translate(25px, -25px) scale(1.5);
           }
           90% {
             opacity: 1;

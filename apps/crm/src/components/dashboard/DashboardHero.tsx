@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
   Sun,
   AlertTriangle,
@@ -25,13 +28,26 @@ export function DashboardHero({
   newThisWeek,
   atRiskCount,
 }: DashboardHeroProps) {
-  const currentHour = new Date().getHours();
-  const greeting =
-    currentHour < 12
-      ? 'Good morning'
-      : currentHour < 17
-      ? 'Good afternoon'
-      : 'Good evening';
+  const [mounted, setMounted] = useState(false);
+  const [dateInfo, setDateInfo] = useState({ greeting: 'Hello', formattedDate: '' });
+
+  useEffect(() => {
+    const currentHour = new Date().getHours();
+    const greeting =
+      currentHour < 12
+        ? 'Good morning'
+        : currentHour < 17
+        ? 'Good afternoon'
+        : 'Good evening';
+    const formattedDate = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
+    setDateInfo({ greeting, formattedDate });
+    setMounted(true);
+  }, []);
+
   const firstName = profile.full_name?.split(' ')[0] || 'there';
 
   return (
@@ -90,7 +106,7 @@ export function DashboardHero({
               </div>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              {greeting}, {firstName}!
+              {dateInfo.greeting}, {firstName}!
             </h1>
             <p className="text-white/60 text-lg">
               Here&apos;s what&apos;s happening with your CRM today
@@ -109,11 +125,7 @@ export function DashboardHero({
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
               <Clock className="w-4 h-4 text-white/60" />
               <span className="text-sm text-white/60">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'short',
-                  day: 'numeric',
-                })}
+                {mounted ? dateInfo.formattedDate : ''}
               </span>
             </div>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -109,8 +109,8 @@ export function CampaignComposer({
     onSubjectChange(subject + mergeTag);
   }, [subject, onSubjectChange]);
 
-  // Preview data for merge field replacement
-  const previewData: Record<string, string> = {
+  // Preview data for merge field replacement - memoized to avoid hydration mismatch
+  const previewData: Record<string, string> = useMemo(() => ({
     'contact.first_name': 'John',
     'contact.last_name': 'Smith',
     'contact.full_name': 'John Smith',
@@ -134,11 +134,11 @@ export function CampaignComposer({
     'owner.email': 'jane@company.com',
     'owner.phone': '(555) 987-6543',
     'owner.title': 'Account Executive',
-    'system.today': new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-    'system.current_year': new Date().getFullYear().toString(),
+    'system.today': 'January 25, 2026',
+    'system.current_year': '2026',
     'system.unsubscribe_link': '[Unsubscribe]',
     'system.view_in_browser_link': '[View in Browser]',
-  };
+  }), []);
 
   // Preview the subject with merge fields replaced
   const getPreviewSubject = (text: string): string => {
