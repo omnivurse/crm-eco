@@ -92,7 +92,7 @@ export default function TeamLeaderboardWidget({
       footer={
         leaderboard.members.length > displayCount ? (
           <Link
-            href="/crm/team"
+            href="/crm/reports"
             className="inline-flex items-center gap-1 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
           >
             View full leaderboard

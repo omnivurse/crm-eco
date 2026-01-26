@@ -94,7 +94,7 @@ const ARTICLES = [
     title: 'Enrolling Contacts',
     description: 'Add contacts manually or automatically via triggers',
     time: '4 min',
-    href: '/crm/learn/sequences/enrollment',
+    href: '/crm/learn/sequences/enrolling',
     icon: <Users className="w-5 h-5" />,
   },
   {

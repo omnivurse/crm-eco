@@ -71,7 +71,7 @@ export default function NotesMemosWidget({
       footer={
         allNotes.length > displayCount ? (
           <Link
-            href="/crm/notes"
+            href="/crm/activities?type=note"
             className="inline-flex items-center gap-1 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
           >
             View all notes
