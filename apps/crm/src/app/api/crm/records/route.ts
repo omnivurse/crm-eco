@@ -27,6 +27,91 @@ async function createClient() {
   );
 }
 
+/**
+ * GET /api/crm/records
+ * Fetch records with pagination, filtering, and search
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id, organization_id, crm_role')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const moduleKey = searchParams.get('module_key');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const pageSize = Math.min(parseInt(searchParams.get('page_size') || '25', 10), 100);
+    const search = searchParams.get('search');
+
+    if (!moduleKey) {
+      return NextResponse.json({ error: 'module_key is required' }, { status: 400 });
+    }
+
+    // Get module by key
+    const { data: module, error: moduleError } = await supabase
+      .from('crm_modules')
+      .select('id')
+      .eq('org_id', profile.organization_id)
+      .eq('key', moduleKey)
+      .single();
+
+    if (moduleError || !module) {
+      return NextResponse.json({ error: 'Module not found' }, { status: 404 });
+    }
+
+    // Build query
+    let query = supabase
+      .from('crm_records')
+      .select('*', { count: 'exact' })
+      .eq('module_id', module.id)
+      .eq('org_id', profile.organization_id);
+
+    // Apply search if provided
+    if (search) {
+      query = query.or(`title.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    // Apply sorting
+    query = query.order('created_at', { ascending: false });
+
+    // Apply pagination
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
+
+    const { data: records, count, error } = await query;
+
+    if (error) {
+      console.error('Error fetching records:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      records: records || [],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    });
+  } catch (error) {
+    console.error('Error in GET /api/crm/records:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 const createRecordSchema = z.object({
   org_id: z.string().uuid(),
   module_id: z.string().uuid(),
