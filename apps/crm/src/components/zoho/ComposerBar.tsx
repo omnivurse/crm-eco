@@ -42,9 +42,8 @@ export function ComposerBar({
     if (!content.trim() || !mode) return;
 
     setSubmitting(true);
-    
+
     try {
-      // TODO: Implement actual API calls
       switch (mode) {
         case 'note':
           await createNote();

@@ -93,13 +93,24 @@ BEGIN
     END IF;
 
     -- Set default target dates if not provided
-    -- TODO: These SLA durations can be tuned per organization
+    -- SLA durations can be configured per organization in org_settings.sla_config
+    -- Defaults: 3 days for initial review, 45 days for completion
     IF NEW.target_initial_review_date IS NULL THEN
-      NEW.target_initial_review_date := (current_date + 3);   -- 3 days for initial review
+      NEW.target_initial_review_date := (current_date + COALESCE(
+        (SELECT (settings->'sla_config'->>'initial_review_days')::int
+         FROM public.organizations
+         WHERE id = NEW.org_id),
+        3  -- Production default: 3 business days
+      ));
     END IF;
 
     IF NEW.target_completion_date IS NULL THEN
-      NEW.target_completion_date := (current_date + 45);      -- 45 days for completion
+      NEW.target_completion_date := (current_date + COALESCE(
+        (SELECT (settings->'sla_config'->>'completion_days')::int
+         FROM public.organizations
+         WHERE id = NEW.org_id),
+        45  -- Production default: 45 days (industry standard)
+      ));
     END IF;
 
     -- Also set sla_target_date if not set (for backwards compatibility)
@@ -136,11 +147,18 @@ BEGIN
   days_to_target := NEW.target_completion_date - current_date;
 
   -- Apply urgency thresholds
-  -- TODO: These thresholds can be tuned per organization
-  IF days_to_target >= 5 THEN
-    NEW.urgency_light := 'green';   -- Comfortably on track (5+ days)
+  -- Thresholds can be configured per organization in org_settings.sla_config
+  -- Defaults: green (5+ days), orange (0-4 days), red (overdue)
+  -- Note: Customize urgency_green_days in organization settings to adjust threshold
+  IF days_to_target >= COALESCE(
+    (SELECT (settings->'sla_config'->>'urgency_green_days')::int
+     FROM public.organizations
+     WHERE id = NEW.org_id),
+    5  -- Production default: 5+ days = green
+  ) THEN
+    NEW.urgency_light := 'green';   -- Comfortably on track
   ELSIF days_to_target >= 0 THEN
-    NEW.urgency_light := 'orange';  -- Approaching deadline (0-4 days)
+    NEW.urgency_light := 'orange';  -- Approaching deadline
   ELSE
     NEW.urgency_light := 'red';     -- Past target date (overdue)
   END IF;

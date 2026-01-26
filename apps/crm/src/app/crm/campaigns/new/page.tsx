@@ -38,6 +38,7 @@ import { toast } from 'sonner';
 
 interface Recipient {
   record_id: string;
+  module_key: string;
   email: string;
   first_name: string | null;
   last_name: string | null;
@@ -250,7 +251,7 @@ export default function NewCampaignPage() {
         const recipientRecords = recipients.map(r => ({
           campaign_id: campaign.id,
           record_id: r.record_id,
-          module_key: 'contacts', // TODO: Support multiple modules
+          module_key: r.module_key,
           email: r.email,
           first_name: r.first_name,
           last_name: r.last_name,

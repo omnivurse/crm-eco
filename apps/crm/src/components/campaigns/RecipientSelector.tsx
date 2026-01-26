@@ -45,6 +45,7 @@ interface CrmView {
 
 interface Recipient {
   record_id: string;
+  module_key: string;
   email: string;
   first_name: string | null;
   last_name: string | null;
@@ -151,10 +152,15 @@ export function RecipientSelector({
       const { data: records } = await query.limit(100);
 
       if (records) {
+        // Get the module key for the selected module
+        const selectedModule = modules.find(m => m.id === selectedModuleId);
+        const moduleKey = selectedModule?.key || 'contacts';
+
         const recipients: Recipient[] = records
           .filter(r => r.email)
           .map(r => ({
             record_id: r.id,
+            module_key: moduleKey,
             email: r.email!,
             first_name: (r.data as Record<string, unknown>)?.first_name as string || null,
             last_name: (r.data as Record<string, unknown>)?.last_name as string || null,
@@ -167,7 +173,7 @@ export function RecipientSelector({
     } finally {
       setLoading(false);
     }
-  }, [selectedViewId, selectedModuleId, supabase]);
+  }, [selectedViewId, selectedModuleId, supabase, modules]);
 
   const addAllPreview = () => {
     const newRecipients = previewRecipients.filter(

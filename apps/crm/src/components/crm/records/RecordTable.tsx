@@ -23,12 +23,21 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@crm-eco/ui/components/dialog';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
+import { Textarea } from '@crm-eco/ui/components/textarea';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FieldRenderer } from './FieldRenderer';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
@@ -274,6 +283,13 @@ export function RecordTable({
   const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [taskRecordId, setTaskRecordId] = useState<string | null>(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskDescription, setTaskDescription] = useState('');
+  const [taskDueDate, setTaskDueDate] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -376,11 +392,66 @@ export function RecordTable({
 
   const handleSort = (field: string) => {
     if (!onSort) return;
-    
+
     const newDirection =
       currentSort?.field === field && currentSort?.direction === 'asc' ? 'desc' : 'asc';
     onSort(field, newDirection);
   };
+
+  // Task Dialog Handlers
+  const openTaskDialog = useCallback((recordId: string) => {
+    setTaskRecordId(recordId);
+    setTaskTitle('');
+    setTaskDescription('');
+    setTaskDueDate('');
+    setTaskPriority('medium');
+    setTaskDialogOpen(true);
+  }, []);
+
+  const closeTaskDialog = useCallback(() => {
+    setTaskDialogOpen(false);
+    setTaskRecordId(null);
+    setTaskTitle('');
+    setTaskDescription('');
+    setTaskDueDate('');
+    setTaskPriority('medium');
+  }, []);
+
+  const handleCreateTask = useCallback(async () => {
+    if (!taskRecordId || !taskTitle.trim()) {
+      toast.error('Task title is required');
+      return;
+    }
+
+    setIsCreatingTask(true);
+    try {
+      const response = await fetch('/api/crm/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_id: taskRecordId,
+          title: taskTitle.trim(),
+          description: taskDescription.trim() || null,
+          due_at: taskDueDate || null,
+          priority: taskPriority,
+          activity_type: 'task',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create task');
+      }
+
+      toast.success('Task created successfully');
+      closeTaskDialog();
+    } catch (error) {
+      console.error('Error creating task:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create task');
+    } finally {
+      setIsCreatingTask(false);
+    }
+  }, [taskRecordId, taskTitle, taskDescription, taskDueDate, taskPriority, closeTaskDialog]);
 
   const getSortIcon = (field: string) => {
     if (currentSort?.field !== field) {
@@ -733,8 +804,7 @@ export function RecordTable({
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // TODO: Open add task dialog
-                        console.log('Add task for', record.id);
+                        openTaskDialog(record.id);
                       }}
                       className="h-7 w-7 text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:text-violet-400 dark:hover:bg-violet-500/10"
                       title="Add Task"
@@ -785,6 +855,90 @@ export function RecordTable({
           )}
         </TableBody>
       </Table>
+
+      {/* Add Task Dialog */}
+      <Dialog open={taskDialogOpen} onOpenChange={(open) => !open && closeTaskDialog()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create Task</DialogTitle>
+            <DialogDescription>
+              Add a new task for this record.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <Input
+                placeholder="Enter task title..."
+                value={taskTitle}
+                onChange={(e) => setTaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleCreateTask();
+                  }
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                Description
+              </label>
+              <Textarea
+                placeholder="Add details about this task..."
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Due Date
+                </label>
+                <Input
+                  type="date"
+                  value={taskDueDate}
+                  onChange={(e) => setTaskDueDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Priority
+                </label>
+                <Select value={taskPriority} onValueChange={(v) => setTaskPriority(v as 'low' | 'medium' | 'high' | 'urgent')}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeTaskDialog} disabled={isCreatingTask}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateTask} disabled={!taskTitle.trim() || isCreatingTask}>
+              {isCreatingTask ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                'Create Task'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
