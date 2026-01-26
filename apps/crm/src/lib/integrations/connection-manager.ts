@@ -7,6 +7,7 @@ import type {
   HealthStatus,
 } from './types';
 import { encrypt, decrypt } from './adapters/credentials';
+import { getInitializedAdapter, hasAdapter } from './adapters/registry';
 
 // ============================================================================
 // Connection Manager Service
@@ -457,30 +458,87 @@ export function getDecryptedCredentials(connection: IntegrationConnection): {
 }
 
 /**
- * Test a connection by provider
+ * Test a connection by provider using provider-specific adapters
  */
-export async function testConnection(id: string): Promise<{ success: boolean; message: string }> {
+export async function testConnection(id: string): Promise<{ success: boolean; message: string; accountInfo?: { id?: string; email?: string; name?: string } }> {
   const connection = await getConnection(id);
-  
+
   if (!connection) {
     return { success: false, message: 'Connection not found' };
   }
-  
-  // TODO: Implement actual provider-specific tests
-  // For now, check if credentials exist
-  const hasCredentials = 
-    connection.api_key_enc || 
+
+  // Check if credentials exist
+  const hasCredentials =
+    connection.api_key_enc ||
     connection.access_token_enc;
-  
+
   if (!hasCredentials) {
     return { success: false, message: 'No credentials configured' };
   }
-  
-  // Mark connection as healthy
+
+  // Get decrypted credentials for the adapter
+  const decryptedCreds = getDecryptedCredentials(connection);
+
+  // Check if we have an adapter for this provider
+  if (hasAdapter(connection.provider)) {
+    try {
+      const adapter = getInitializedAdapter(connection, decryptedCreds);
+
+      if (adapter) {
+        // Use the adapter's testConnection method for provider-specific verification
+        const result = await adapter.testConnection();
+
+        if (result.success) {
+          // Update connection with healthy status and account info
+          await updateConnection(id, {
+            health_status: 'healthy',
+            error_count: 0,
+            external_account_id: result.accountInfo?.id || connection.external_account_id,
+            external_account_email: result.accountInfo?.email || connection.external_account_email,
+            external_account_name: result.accountInfo?.name || connection.external_account_name,
+          });
+
+          return {
+            success: true,
+            message: result.message || 'Connection is working',
+            accountInfo: result.accountInfo,
+          };
+        } else {
+          // Update connection with error status
+          await updateConnection(id, {
+            health_status: 'unhealthy',
+            error_count: (connection.error_count || 0) + 1,
+            last_sync_error: result.message,
+          });
+
+          return {
+            success: false,
+            message: result.message || 'Connection test failed',
+          };
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error during connection test';
+
+      await updateConnection(id, {
+        health_status: 'unhealthy',
+        error_count: (connection.error_count || 0) + 1,
+        last_sync_error: errorMessage,
+      });
+
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  }
+
+  // Fallback for providers without adapters - basic credential check
+  // Mark connection as healthy since credentials exist
   await updateConnection(id, {
     health_status: 'healthy',
     error_count: 0,
   });
-  
-  return { success: true, message: 'Connection is working' };
+
+  return { success: true, message: 'Connection credentials verified' };
 }

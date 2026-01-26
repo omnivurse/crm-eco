@@ -63,7 +63,7 @@ const CLOUD_PROVIDERS: CloudProvider[] = [
     ),
     color: 'blue',
     features: ['Smart sync', 'Team folders', 'Version history'],
-    status: 'coming_soon',
+    status: 'disconnected',
   },
   {
     id: 'onedrive',
@@ -76,7 +76,7 @@ const CLOUD_PROVIDERS: CloudProvider[] = [
     ),
     color: 'sky',
     features: ['Office 365 integration', 'SharePoint sync', 'Real-time collaboration'],
-    status: 'coming_soon',
+    status: 'disconnected',
   },
   {
     id: 'box',
@@ -163,24 +163,24 @@ export default function CloudStoragePage() {
     setConnecting(providerId);
 
     try {
-      // In production, this would initiate OAuth flow
       if (providerId === 'google_drive') {
-        // Simulate OAuth redirect
         toast.info('Redirecting to Google for authentication...');
-
-        // For now, show a message about OAuth setup
-        setTimeout(() => {
-          toast.error(
-            'Google Drive OAuth requires setup in Google Cloud Console. Contact your admin.'
-          );
-          setConnecting(null);
-        }, 2000);
+        // Redirect to OAuth flow - the backend handles credential validation
+        // If credentials aren't configured, user will be redirected back with an error
+        window.location.href = `/api/integrations/oauth/google_drive?connection_type=cloud_storage`;
+      } else if (providerId === 'dropbox') {
+        toast.info('Redirecting to Dropbox for authentication...');
+        window.location.href = `/api/integrations/oauth/dropbox?connection_type=cloud_storage`;
+      } else if (providerId === 'onedrive') {
+        toast.info('Redirecting to Microsoft for authentication...');
+        window.location.href = `/api/integrations/oauth/onedrive?connection_type=cloud_storage`;
       } else {
         toast.info(`${provider.name} integration coming soon!`);
         setConnecting(null);
       }
     } catch (error) {
-      toast.error('Failed to connect');
+      console.error('Connection error:', error);
+      toast.error('Failed to connect. Please try again.');
       setConnecting(null);
     }
   };

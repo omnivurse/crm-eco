@@ -51,16 +51,25 @@ export function ModuleShell({
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     views.find(v => v.id === activeViewId)?.columns || ['title', 'status', 'email', 'created_at']
   );
-  const [sortField, setSortField] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortField, setSortField] = useState<string | null>(searchParams.get('sortField'));
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(
+    (searchParams.get('sortDirection') as 'asc' | 'desc') || 'asc'
+  );
 
   // Dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showStageDialog, setShowStageDialog] = useState(false);
+  const [showAssignOwnerDialog, setShowAssignOwnerDialog] = useState(false);
+  const [showAddTagDialog, setShowAddTagDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [selectedStage, setSelectedStage] = useState<string>('');
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: string; full_name: string; email: string }>>([]);
+  const [availableTags, setAvailableTags] = useState<Array<{ id: string; name: string; color: string }>>([]);
+  const [newTagName, setNewTagName] = useState<string>('');
 
   // Derived state
   const selectedCount = selectedIds.size;
@@ -113,8 +122,14 @@ export function ModuleShell({
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSortField(field);
     setSortDirection(direction);
-    // TODO: Apply sort to query
-  }, []);
+
+    // Apply sort to URL query params
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('sortField', field);
+    params.set('sortDirection', direction);
+    params.delete('page'); // Reset to first page when sorting changes
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [searchParams, router, module.key]);
 
   const handleSelectAll = useCallback(() => {
     setSelectedIds(new Set(records.map(r => r.id)));
@@ -137,12 +152,74 @@ export function ModuleShell({
   // Stage options for deals
   const stageOptions = ['prospecting', 'qualification', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
 
+  // Fetch team members for assign owner dialog
+  const fetchTeamMembers = useCallback(async () => {
+    try {
+      const response = await fetch('/api/team/members?crmOnly=true');
+      if (response.ok) {
+        const data = await response.json();
+        setTeamMembers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+    }
+  }, []);
+
+  // Fetch tags for add tag dialog
+  const fetchTags = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/crm/tags?module=${module.key}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableTags(data);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  }, [module.key]);
+
   // Bulk action handlers
   const handleAssignOwner = useCallback(() => {
-    toast.info('Assign owner feature - Coming soon!', {
-      description: `Would assign owner to ${selectedIds.size} records`,
-    });
-  }, [selectedIds]);
+    setSelectedOwnerId('');
+    fetchTeamMembers();
+    setShowAssignOwnerDialog(true);
+  }, [fetchTeamMembers]);
+
+  const handleConfirmAssignOwner = useCallback(async () => {
+    if (!selectedOwnerId) {
+      toast.error('Please select an owner');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/crm/records/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_ids: Array.from(selectedIds),
+          updates: { owner_id: selectedOwnerId },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to assign owner');
+      }
+
+      const result = await response.json();
+      toast.success(`Owner assigned successfully`, {
+        description: `Updated ${result.updated_count} records`,
+      });
+      setShowAssignOwnerDialog(false);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to assign owner');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedOwnerId, selectedIds, router]);
 
   const handleChangeStatus = useCallback(() => {
     setSelectedStatus('');
@@ -157,17 +234,29 @@ export function ModuleShell({
 
     setIsProcessing(true);
     try {
-      // Simulate API call - in production, this would call an API endpoint
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await fetch('/api/crm/records/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_ids: Array.from(selectedIds),
+          updates: { status: selectedStatus },
+        }),
+      });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update status');
+      }
+
+      const result = await response.json();
       toast.success(`Status updated to "${selectedStatus}"`, {
-        description: `Updated ${selectedIds.size} records`,
+        description: `Updated ${result.updated_count} records`,
       });
       setShowStatusDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } catch (error) {
-      toast.error('Failed to update status');
+      toast.error(error instanceof Error ? error.message : 'Failed to update status');
     } finally {
       setIsProcessing(false);
     }
@@ -186,26 +275,100 @@ export function ModuleShell({
 
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await fetch('/api/crm/records/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_ids: Array.from(selectedIds),
+          updates: { stage: selectedStage },
+        }),
+      });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update stage');
+      }
+
+      const result = await response.json();
       toast.success(`Stage updated to "${selectedStage}"`, {
-        description: `Updated ${selectedIds.size} deals`,
+        description: `Updated ${result.updated_count} deals`,
       });
       setShowStageDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } catch (error) {
-      toast.error('Failed to update stage');
+      toast.error(error instanceof Error ? error.message : 'Failed to update stage');
     } finally {
       setIsProcessing(false);
     }
   }, [selectedStage, selectedIds, router]);
 
   const handleAddTag = useCallback(() => {
-    toast.info('Add tag feature - Coming soon!', {
-      description: `Would add tags to ${selectedIds.size} records`,
-    });
-  }, [selectedIds]);
+    setSelectedTagIds([]);
+    setNewTagName('');
+    fetchTags();
+    setShowAddTagDialog(true);
+  }, [fetchTags]);
+
+  const handleCreateTag = useCallback(async () => {
+    if (!newTagName.trim()) return;
+
+    try {
+      const response = await fetch('/api/crm/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTagName.trim() }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create tag');
+      }
+
+      const newTag = await response.json();
+      setAvailableTags((prev) => [...prev, newTag]);
+      setSelectedTagIds((prev) => [...prev, newTag.id]);
+      setNewTagName('');
+      toast.success(`Tag "${newTag.name}" created`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create tag');
+    }
+  }, [newTagName]);
+
+  const handleConfirmAddTag = useCallback(async () => {
+    if (selectedTagIds.length === 0) {
+      toast.error('Please select at least one tag');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/crm/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_ids: Array.from(selectedIds),
+          tag_ids: selectedTagIds,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add tags');
+      }
+
+      toast.success(`Tags added successfully`, {
+        description: `Added ${selectedTagIds.length} tag(s) to ${selectedIds.size} records`,
+      });
+      setShowAddTagDialog(false);
+      setSelectedIds(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to add tags');
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedTagIds, selectedIds, router]);
 
   const handleSendEmail = useCallback(() => {
     // Navigate to email composer with selected IDs
@@ -220,15 +383,26 @@ export function ModuleShell({
   const handleConfirmDelete = useCallback(async () => {
     setIsProcessing(true);
     try {
-      // Simulate API call - in production, this would call an API endpoint
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const response = await fetch('/api/crm/records/bulk', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          record_ids: Array.from(selectedIds),
+        }),
+      });
 
-      toast.success(`Deleted ${selectedIds.size} records`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete records');
+      }
+
+      const result = await response.json();
+      toast.success(`Deleted ${result.deleted_count} records`);
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
       router.refresh();
     } catch (error) {
-      toast.error('Failed to delete records');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete records');
     } finally {
       setIsProcessing(false);
     }
@@ -521,6 +695,128 @@ export function ModuleShell({
                 </>
               ) : (
                 'Update Stage'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Owner Dialog */}
+      <Dialog open={showAssignOwnerDialog} onOpenChange={setShowAssignOwnerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Owner</DialogTitle>
+            <DialogDescription>
+              Assign an owner to {selectedIds.size} selected {selectedIds.size === 1 ? 'record' : 'records'}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Select value={selectedOwnerId} onValueChange={setSelectedOwnerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select team member" />
+              </SelectTrigger>
+              <SelectContent>
+                {teamMembers.map((member) => (
+                  <SelectItem key={member.id} value={member.id}>
+                    {member.full_name || member.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignOwnerDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmAssignOwner} disabled={isProcessing || !selectedOwnerId}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Assigning...
+                </>
+              ) : (
+                'Assign Owner'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Tag Dialog */}
+      <Dialog open={showAddTagDialog} onOpenChange={setShowAddTagDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Tags</DialogTitle>
+            <DialogDescription>
+              Add tags to {selectedIds.size} selected {selectedIds.size === 1 ? 'record' : 'records'}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {/* Existing Tags */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Tags</label>
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTagIds((prev) =>
+                        prev.includes(tag.id)
+                          ? prev.filter((id) => id !== tag.id)
+                          : [...prev, tag.id]
+                      );
+                    }}
+                    className={cn(
+                      'px-3 py-1 rounded-full text-sm font-medium transition-colors',
+                      selectedTagIds.includes(tag.id)
+                        ? 'bg-teal-500 text-white'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    )}
+                    style={selectedTagIds.includes(tag.id) ? {} : { borderLeft: `3px solid ${tag.color}` }}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+                {availableTags.length === 0 && (
+                  <p className="text-sm text-slate-500">No tags yet. Create one below.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Create New Tag */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Create New Tag</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter tag name..."
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleCreateTag();
+                    }
+                  }}
+                />
+                <Button variant="outline" onClick={handleCreateTag} disabled={!newTagName.trim()}>
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddTagDialog(false)} disabled={isProcessing}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmAddTag} disabled={isProcessing || selectedTagIds.length === 0}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding Tags...
+                </>
+              ) : (
+                `Add ${selectedTagIds.length} Tag${selectedTagIds.length !== 1 ? 's' : ''}`
               )}
             </Button>
           </DialogFooter>

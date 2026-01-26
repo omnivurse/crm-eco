@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 
 export type Density = 'compact' | 'default' | 'comfortable';
 
@@ -43,22 +42,39 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
   const [preferences, setPreferences] = useState<Record<string, ViewPreferences>>({});
   const [loaded, setLoaded] = useState(false);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  // Load preferences from localStorage on mount
+  // Load preferences from API and localStorage on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setPreferences(JSON.parse(stored));
-      } catch {
-        console.warn('Failed to parse stored view preferences');
+    async function loadPreferences() {
+      // First, load from localStorage as fallback
+      const stored = localStorage.getItem(STORAGE_KEY);
+      let localPrefs: Record<string, ViewPreferences> = {};
+      if (stored) {
+        try {
+          localPrefs = JSON.parse(stored);
+        } catch {
+          console.warn('Failed to parse stored view preferences');
+        }
       }
+
+      // Then try to load from API (DB takes precedence)
+      try {
+        const response = await fetch('/api/crm/preferences');
+        if (response.ok) {
+          const dbPrefs = await response.json();
+          // Merge: DB prefs override local prefs
+          setPreferences({ ...localPrefs, ...dbPrefs });
+        } else {
+          setPreferences(localPrefs);
+        }
+      } catch {
+        // API not available, use local prefs
+        setPreferences(localPrefs);
+      }
+
+      setLoaded(true);
     }
-    setLoaded(true);
+
+    loadPreferences();
   }, []);
 
   // Save to localStorage whenever preferences change
@@ -99,20 +115,28 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
     updatePreferences(moduleKey, { sortField: field, sortDirection: direction });
   }, [updatePreferences]);
 
-  // TODO: When crm_saved_views table exists, persist to DB
+  // Save preferences to API (DB) and localStorage
   const savePreferences = useCallback(async (moduleKey: string) => {
-    // For now, preferences are auto-saved to localStorage
-    // When DB table is ready, save there as well
+    const prefs = preferences[moduleKey];
+    if (!prefs) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Future: await supabase.from('crm_user_preferences').upsert(...)
-        console.log('View preferences saved for', moduleKey);
+      const response = await fetch('/api/crm/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          module_key: moduleKey,
+          preferences: prefs,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to save preferences to DB');
       }
     } catch (error) {
       console.warn('Failed to save preferences to DB:', error);
     }
-  }, [supabase]);
+  }, [preferences]);
 
   return (
     <ViewPreferencesContext.Provider
