@@ -493,9 +493,9 @@ export async function testConnection(id: string): Promise<{ success: boolean; me
           await updateConnection(id, {
             health_status: 'healthy',
             error_count: 0,
-            external_account_id: result.accountInfo?.id || connection.external_account_id,
-            external_account_email: result.accountInfo?.email || connection.external_account_email,
-            external_account_name: result.accountInfo?.name || connection.external_account_name,
+            external_account_id: result.accountInfo?.id || connection.external_account_id || undefined,
+            external_account_email: result.accountInfo?.email || connection.external_account_email || undefined,
+            external_account_name: result.accountInfo?.name || connection.external_account_name || undefined,
           });
 
           return {
@@ -508,7 +508,7 @@ export async function testConnection(id: string): Promise<{ success: boolean; me
           await updateConnection(id, {
             health_status: 'unhealthy',
             error_count: (connection.error_count || 0) + 1,
-            last_sync_error: result.message,
+            last_sync_error: result.message || undefined,
           });
 
           return {

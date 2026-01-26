@@ -94,6 +94,7 @@ export interface IntegrationConnection {
   sync_cursor: string | null;
   last_webhook_at: string | null;
   webhook_secret: string | null;
+  scopes: string[] | null;
   error_count: number;
   last_error_at: string | null;
   last_error_message: string | null;
