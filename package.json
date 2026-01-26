@@ -7,18 +7,20 @@
     "shared"
   ],
   "scripts": {
-    "build": "vite build",
-    "build:shared": "npm run build --workspace=@crm-eco/shared",
-    "build:crm": "npm run build:shared && npm run build --workspace=@crm-eco/crm",
-    "build:admin": "npm run build:shared && npm run build --workspace=@crm-eco/admin",
-    "build:portal": "npm run build --workspace=@crm-eco/portal",
-    "build:all": "turbo build",
+    "check:conflicts": "node scripts/check-merge-conflicts.js",
+    "build": "npm run check:conflicts && vite build",
+    "build:shared": "npm run check:conflicts && npm run build --workspace=@crm-eco/shared",
+    "build:crm": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/crm",
+    "build:admin": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/admin",
+    "build:portal": "npm run check:conflicts && npm run build --workspace=@crm-eco/portal",
+    "build:all": "npm run check:conflicts && turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "db:generate-types": "supabase gen types typescript --project-id ctujznwjyyqnhecixlon > packages/lib/src/types/database.ts"
+    "db:generate-types": "supabase gen types typescript --project-id ctujznwjyyqnhecixlon > packages/lib/src/types/database.ts",
+    "migrate:zoho-contacts": "tsx scripts/migrate-zoho-contacts.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -41,12 +43,15 @@
     "zustand": "^4.5.7"
   },
   "devDependencies": {
+    "@types/node": "^20.19.30",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.22",
+    "dotenv": "^17.2.3",
     "postcss": "^8.5.6",
     "prettier": "^3.2.4",
     "tailwindcss": "^3.4.18",
     "terser": "^5.44.1",
+    "tsx": "^4.21.0",
     "turbo": "^2.3.3",
     "typescript": "^5.3.3",
     "vite": "^5.4.21"
@@ -55,4 +60,3 @@
     "node": ">=18"
   }
 }
-
