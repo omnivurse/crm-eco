@@ -1,2 +1,2 @@
-# Only ignore next-env.d.ts files (auto-generated)
-apps/*/next-env.d.ts
+# Vercel ignore file
+# Add paths to ignore during deployment if needed
