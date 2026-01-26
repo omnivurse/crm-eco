@@ -57,6 +57,7 @@ export default async function DashboardLayout({
               email: profile.email,
               avatarUrl: profile.avatar_url,
               role: profile.role,
+              organizationId: profile.organization_id,
             }}
             userId={profile.id}
           />

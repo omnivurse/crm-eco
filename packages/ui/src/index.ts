@@ -26,5 +26,6 @@ export * from './components/textarea';
 export * from './components/signature-pad';
 export * from './components/payment-form';
 export * from './components/visually-hidden';
+export * from './components/change-ticker';
 export * from './lib/utils';
 

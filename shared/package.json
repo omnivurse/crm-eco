@@ -10,6 +10,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./changes": {
+      "import": "./dist/changes/index.js",
+      "require": "./dist/changes/index.js",
+      "types": "./dist/changes/index.d.ts"
     }
   },
   "files": [
@@ -22,7 +27,11 @@
   "dependencies": {
     "zod": "^3.25.76"
   },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
   "devDependencies": {
+    "@types/react": "^18.3.22",
     "typescript": "^5.9.3"
   }
 }
