@@ -69,8 +69,10 @@ const SYNC_STATUS_CONFIG: Record<SyncStatus, { label: string; color: string; dot
   stale: { label: 'Stale', color: 'text-slate-400', dotColor: 'bg-slate-400' },
 };
 
-// Format relative time
-function formatRelativeTime(timestamp: string): string {
+// Format relative time (returns empty string on first render to avoid hydration mismatch)
+function formatRelativeTime(timestamp: string, isMounted: boolean): string {
+  if (!isMounted) return '';
+
   const date = new Date(timestamp);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -88,6 +90,15 @@ function formatRelativeTime(timestamp: string): string {
   return date.toLocaleDateString();
 }
 
+// Hook to track if component is mounted (for hydration-safe rendering)
+function useIsMounted() {
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  return isMounted;
+}
+
 /**
  * Compact Ticker - Horizontal scrolling ticker for headers
  */
@@ -103,6 +114,7 @@ export function ChangeTickerCompact({
 }: ChangeTickerProps) {
   const tickerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const isMounted = useIsMounted();
 
   // Auto-pause on hover
   useEffect(() => {
@@ -151,7 +163,7 @@ export function ChangeTickerCompact({
               >
                 <span>{SEVERITY_INDICATORS[event.severity]}</span>
                 <span className="text-slate-300">{event.title}</span>
-                <span className="text-slate-500">{formatRelativeTime(event.createdAt)}</span>
+                <span className="text-slate-500">{formatRelativeTime(event.createdAt, isMounted)}</span>
               </button>
             ))
           )}
@@ -185,6 +197,7 @@ export function ChangeTickerExpanded({
   onEventClick,
   className,
 }: ChangeTickerProps) {
+  const isMounted = useIsMounted();
   const syncConfig = SYNC_STATUS_CONFIG[syncStatus];
 
   return (
@@ -254,6 +267,7 @@ export function ChangeTickerExpanded({
                 key={event.id}
                 event={event}
                 isNew={index === 0 && !isPaused}
+                isMounted={isMounted}
                 onClick={() => onEventClick?.(event)}
               />
             ))}
@@ -270,10 +284,12 @@ export function ChangeTickerExpanded({
 function ChangeTickerItem({
   event,
   isNew,
+  isMounted,
   onClick,
 }: {
   event: ChangeTickerEvent;
   isNew: boolean;
+  isMounted: boolean;
   onClick?: () => void;
 }) {
   const [isAnimating, setIsAnimating] = useState(isNew);
@@ -298,7 +314,7 @@ function ChangeTickerItem({
         <p className="text-sm text-white truncate">{event.title}</p>
         <p className="text-xs text-slate-500">
           {event.actorName || event.sourceName || 'System'} •{' '}
-          {formatRelativeTime(event.createdAt)}
+          {formatRelativeTime(event.createdAt, isMounted)}
         </p>
       </div>
       {event.requiresReview && (
