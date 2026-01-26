@@ -559,7 +559,11 @@ export function RecordTable({
     }
     
     if (col === 'status' || col === 'lead_status' || col === 'contact_status') {
-      const status = record.status || String(record.data?.[col] || record.data?.status || '');
+      // Get status value, handling null, undefined, and boolean false properly
+      const rawStatus = record.status ?? record.data?.[col] ?? record.data?.status;
+      const status = (rawStatus === null || rawStatus === undefined || rawStatus === false || rawStatus === '')
+        ? ''
+        : String(rawStatus);
       if (!status) return <span className="text-slate-400 dark:text-slate-600">—</span>;
 
       const style = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };

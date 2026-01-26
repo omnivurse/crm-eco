@@ -108,17 +108,40 @@ export async function POST(request: NextRequest) {
         const recordData: Record<string, unknown> = {};
         let email: string | null = null;
         let phone: string | null = null;
+        let title: string | null = null;
+        let status: string | null = null;
+
+        // System fields that should be stored at top level, not in data
+        const SYSTEM_FIELDS = ['email', 'phone', 'mobile', 'title', 'status', 'lead_status', 'contact_status'];
 
         fieldMappings.forEach((targetField, sourceCol) => {
           const value = row[sourceCol];
           if (value !== undefined && value !== '') {
-            recordData[targetField] = value;
-
             // Extract system fields
-            if (targetField === 'email') email = value;
-            if (targetField === 'phone' || targetField === 'mobile') phone = value;
+            if (targetField === 'email') {
+              email = value;
+            } else if (targetField === 'phone' || targetField === 'mobile') {
+              phone = value;
+            } else if (targetField === 'title' || targetField === 'first_name') {
+              // Use first_name as title if title not explicitly mapped
+              if (targetField === 'title') {
+                title = value;
+              } else if (!title) {
+                title = value; // Will be overridden if title is also mapped
+              }
+            } else if (targetField === 'status' || targetField === 'lead_status' || targetField === 'contact_status') {
+              status = value;
+            }
+
+            // All fields also go into data for custom field access
+            recordData[targetField] = value;
           }
         });
+
+        // Build title from first_name + last_name if no explicit title
+        if (!title && (recordData.first_name || recordData.last_name)) {
+          title = [recordData.first_name, recordData.last_name].filter(Boolean).join(' ') || null;
+        }
 
         // Check for duplicates if skipDuplicates is enabled
         if (skipDuplicates && (email || phone)) {
@@ -160,6 +183,8 @@ export async function POST(request: NextRequest) {
             org_id: organizationId,
             module_id: moduleId,
             owner_id: profile.id,
+            title,
+            status,
             data: recordData,
             email,
             phone,
