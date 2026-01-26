@@ -62,7 +62,7 @@ const navSections: NavSection[] = [
     title: 'Enrollment',
     items: [
       { name: 'Enrollments', href: '/enrollments', icon: ClipboardCheck },
-      { name: 'New Enrollment', href: '/enrollments/new', icon: FilePlus, roles: ['owner', 'admin', 'advisor'] },
+      { name: 'New Enrollment', href: '/crm/enrollment?new=true', icon: FilePlus, roles: ['owner', 'admin', 'advisor'] },
     ],
   },
   {

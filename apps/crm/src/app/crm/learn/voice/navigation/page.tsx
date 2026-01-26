@@ -35,8 +35,8 @@ const NAVIGATION_COMMANDS = [
     section: 'Administration',
     destinations: [
       { phrase: '"Open settings"', destination: 'Settings', path: '/crm/settings' },
-      { phrase: '"Show members"', destination: 'Members Module', path: '/crm/modules/members' },
-      { phrase: '"Go to advisors"', destination: 'Advisors Module', path: '/crm/modules/advisors' },
+      { phrase: '"Show members"', destination: 'Members', path: '/members' },
+      { phrase: '"Go to advisors"', destination: 'Advisors', path: '/advisors' },
       { phrase: '"Show commissions"', destination: 'Commissions', path: '/crm/commissions' },
     ],
   },

@@ -362,7 +362,7 @@ export default function CreatingSequencesPage() {
             Back to Sequences
           </Button>
         </Link>
-        <Link href="/crm/learn/sequences/enrollment">
+        <Link href="/crm/learn/sequences/enrolling">
           <Button className="gap-2">
             Next: Enrolling Contacts
             <ArrowRight className="w-4 h-4" />

@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -10,7 +11,12 @@ import {
 import { SecurityTrustBadge } from '@/components/security';
 
 export function Footer() {
-  const currentYear = new Date().getFullYear();
+  // Use static year on SSR, dynamic on client to avoid hydration mismatch
+  const [isMounted, setIsMounted] = React.useState(false);
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  const currentYear = isMounted ? new Date().getFullYear() : 2026;
 
   return (
     <footer className="relative z-10 border-t border-slate-200/50 dark:border-white/5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">

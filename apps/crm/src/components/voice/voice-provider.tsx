@@ -82,7 +82,7 @@ const defaultContext: VoiceCtx = {
   currentModule: 'crm',
   selectedRecord: null,
   recentEntities: [],
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  timezone: 'America/New_York', // Default timezone, updated on client mount
 };
 
 const initialState: VoiceState = {
@@ -116,6 +116,8 @@ function voiceReducer(state: VoiceState, action: VoiceAction): VoiceState {
       return { ...state, error: action.payload, isListening: false, isProcessing: false };
     case 'SET_CONFIDENCE':
       return { ...state, confidence: action.payload };
+    case 'SET_SUPPORTED':
+      return { ...state, isSupported: action.payload };
     case 'TOGGLE_OPEN':
       return { ...state, isOpen: !state.isOpen };
     case 'SET_OPEN':
@@ -214,10 +216,14 @@ export function VoiceProvider({
     }
 
     dispatch({ type: 'SET_LISTENING', payload: false });
-    // Update initial state to reflect support
-    if (isSupported !== state.isSupported) {
-      // We'll handle this through a separate initialization
-    }
+    // Update state to reflect browser support (after mount to avoid hydration mismatch)
+    dispatch({ type: 'SET_SUPPORTED', payload: isSupported });
+    
+    // Also update timezone on client
+    dispatch({ 
+      type: 'SET_CONTEXT', 
+      payload: { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone } 
+    });
   }, []);
 
   // Update recognition language when settings change
@@ -483,22 +489,11 @@ export function VoiceProvider({
     }
   }, []);
 
-  // Check if supported on mount
-  useEffect(() => {
-    const isSupported = typeof window !== 'undefined' &&
-      ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
-
-    // We need to set isSupported in state - use a workaround since it's not in actions
-    if (isSupported) {
-      // The state will reflect support through the presence of recognitionRef
-    }
-  }, []);
-
+  // isSupported is set in the initialization useEffect after mount to avoid hydration mismatch
   const value: VoiceContextValue = {
     state: {
       ...state,
-      isSupported: !!recognitionRef.current || (typeof window !== 'undefined' &&
-        ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)),
+      // Use state.isSupported which is set to true in useEffect after checking browser support
     },
     startListening,
     stopListening,

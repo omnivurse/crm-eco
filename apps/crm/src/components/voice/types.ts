@@ -75,6 +75,7 @@ export type VoiceAction =
   | { type: 'SET_RESPONSE'; payload: VoiceResponse | null }
   | { type: 'SET_ERROR'; payload: VoiceError | null }
   | { type: 'SET_CONFIDENCE'; payload: number }
+  | { type: 'SET_SUPPORTED'; payload: boolean }
   | { type: 'TOGGLE_OPEN' }
   | { type: 'SET_OPEN'; payload: boolean }
   | { type: 'ADD_TO_HISTORY'; payload: { transcript: string; response: VoiceResponse } }
@@ -146,9 +147,9 @@ export const NAVIGATION_DESTINATIONS: Record<string, string> = {
   'reports': '/crm/reports',
   'analytics': '/crm/analytics',
   'settings': '/crm/settings',
-  'members': '/crm/modules/members',
-  'advisors': '/crm/modules/advisors',
-  'enrollments': '/crm/modules/enrollments',
+  'members': '/members',
+  'advisors': '/advisors',
+  'enrollments': '/enrollments',
   'commissions': '/crm/commissions',
   'communications': '/crm/communications',
   'campaigns': '/crm/campaigns',
