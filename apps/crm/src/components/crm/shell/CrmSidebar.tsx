@@ -194,7 +194,7 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
         { name: 'Commissions', href: '/crm/commissions', icon: Wallet },
         { name: 'Activities', href: '/crm/activities', icon: Activity },
         { name: 'Tasks', href: '/crm/activities?type=tasks', icon: CheckCircle2 },
-        { name: 'Calendar', href: '/crm/scheduling', icon: CalendarDays },
+        { name: 'Calendar', href: '/crm/calendar', icon: CalendarDays },
       ],
     },
     {

@@ -103,6 +103,13 @@ export default function CalendarPage() {
     const [showNewEventModal, setShowNewEventModal] = useState(false);
     const [showIntegrationModal, setShowIntegrationModal] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+    const [newEventTitle, setNewEventTitle] = useState('');
+    const [newEventStart, setNewEventStart] = useState('');
+    const [newEventEnd, setNewEventEnd] = useState('');
+    const [newEventLocation, setNewEventLocation] = useState('');
+    const [newEventDescription, setNewEventDescription] = useState('');
+    const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+    const [profileData, setProfileData] = useState<{ id: string; organization_id: string } | null>(null);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -124,6 +131,8 @@ export default function CalendarPage() {
                     .single();
 
                 if (profile) {
+                    setProfileData({ id: profile.id, organization_id: profile.organization_id });
+                    
                     // Load tasks (activity_type = 'task')
                     const { data: tasksData } = await supabase
                         .from('crm_tasks')
@@ -841,7 +850,17 @@ export default function CalendarPage() {
             </Dialog>
 
             {/* New Event Modal */}
-            <Dialog open={showNewEventModal} onOpenChange={setShowNewEventModal}>
+            <Dialog open={showNewEventModal} onOpenChange={(open) => {
+                setShowNewEventModal(open);
+                if (!open) {
+                    // Reset form when closing
+                    setNewEventTitle('');
+                    setNewEventStart('');
+                    setNewEventEnd('');
+                    setNewEventLocation('');
+                    setNewEventDescription('');
+                }
+            }}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>New Event</DialogTitle>
@@ -854,6 +873,8 @@ export default function CalendarPage() {
                             <input
                                 type="text"
                                 placeholder="Enter event title"
+                                value={newEventTitle}
+                                onChange={(e) => setNewEventTitle(e.target.value)}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                             />
                         </div>
@@ -864,6 +885,8 @@ export default function CalendarPage() {
                                 </label>
                                 <input
                                     type="datetime-local"
+                                    value={newEventStart}
+                                    onChange={(e) => setNewEventStart(e.target.value)}
                                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                                 />
                             </div>
@@ -873,6 +896,8 @@ export default function CalendarPage() {
                                 </label>
                                 <input
                                     type="datetime-local"
+                                    value={newEventEnd}
+                                    onChange={(e) => setNewEventEnd(e.target.value)}
                                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                                 />
                             </div>
@@ -897,6 +922,8 @@ export default function CalendarPage() {
                                 <input
                                     type="text"
                                     placeholder="Add location or video link"
+                                    value={newEventLocation}
+                                    onChange={(e) => setNewEventLocation(e.target.value)}
                                     className="w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                                 />
                             </div>
@@ -908,24 +935,88 @@ export default function CalendarPage() {
                             <textarea
                                 rows={3}
                                 placeholder="Add description..."
+                                value={newEventDescription}
+                                onChange={(e) => setNewEventDescription(e.target.value)}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                             />
                         </div>
                         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                             <button
                                 onClick={() => setShowNewEventModal(false)}
-                                className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                disabled={isCreatingEvent}
+                                className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => {
-                                    toast.success('Event created');
-                                    setShowNewEventModal(false);
+                                onClick={async () => {
+                                    if (!newEventTitle.trim()) {
+                                        toast.error('Please enter an event title');
+                                        return;
+                                    }
+                                    if (!newEventStart) {
+                                        toast.error('Please select a start date and time');
+                                        return;
+                                    }
+                                    if (!profileData) {
+                                        toast.error('Unable to create event. Please refresh the page.');
+                                        return;
+                                    }
+
+                                    setIsCreatingEvent(true);
+                                    try {
+                                        const startDate = new Date(newEventStart);
+                                        const endDate = newEventEnd ? new Date(newEventEnd) : new Date(startDate.getTime() + 3600000); // Default 1 hour duration
+
+                                        // Create as a CRM task with activity_type = 'meeting'
+                                        const { error } = await supabase
+                                            .from('crm_tasks')
+                                            .insert({
+                                                org_id: profileData.organization_id,
+                                                title: newEventTitle.trim(),
+                                                description: newEventDescription.trim() || null,
+                                                due_at: startDate.toISOString(),
+                                                activity_type: 'meeting',
+                                                meeting_location: newEventLocation.trim() || null,
+                                                status: 'pending',
+                                                priority: 'medium',
+                                            });
+
+                                        if (error) throw error;
+
+                                        // Add to local events
+                                        const newEvent: CalendarEvent = {
+                                            id: crypto.randomUUID(),
+                                            title: newEventTitle.trim(),
+                                            description: newEventDescription.trim() || undefined,
+                                            start: startDate,
+                                            end: endDate,
+                                            location: newEventLocation.trim() || undefined,
+                                            provider: 'personal',
+                                            color: '#10B981',
+                                            status: 'confirmed',
+                                        };
+                                        setEvents(prev => [...prev, newEvent]);
+
+                                        toast.success('Event created successfully');
+                                        setShowNewEventModal(false);
+                                        setNewEventTitle('');
+                                        setNewEventStart('');
+                                        setNewEventEnd('');
+                                        setNewEventLocation('');
+                                        setNewEventDescription('');
+                                    } catch (error) {
+                                        console.error('Error creating event:', error);
+                                        toast.error('Failed to create event');
+                                    } finally {
+                                        setIsCreatingEvent(false);
+                                    }
                                 }}
-                                className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
+                                disabled={isCreatingEvent}
+                                className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
-                                Create Event
+                                {isCreatingEvent && <Loader2 className="w-4 h-4 animate-spin" />}
+                                {isCreatingEvent ? 'Creating...' : 'Create Event'}
                             </button>
                         </div>
                     </div>
