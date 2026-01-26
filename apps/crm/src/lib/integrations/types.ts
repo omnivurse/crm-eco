@@ -85,6 +85,7 @@ export interface IntegrationConnection {
   api_key_enc: string | null;
   api_secret_enc: string | null;
   settings: Record<string, unknown>;
+  scopes: string[] | null;
   external_account_id: string | null;
   external_account_name: string | null;
   external_account_email: string | null;

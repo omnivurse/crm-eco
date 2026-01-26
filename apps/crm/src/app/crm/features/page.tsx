@@ -96,6 +96,12 @@ import {
   ListChecks,
   FileSpreadsheet,
   Combine,
+  Mic,
+  AudioWaveform,
+  Terminal,
+  Download,
+  Table,
+  FolderKanban,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -819,15 +825,29 @@ export default function FeaturesPage() {
       >
         <FeatureCard
           icon={<BarChart3 className="w-6 h-6" />}
-          title="Reports"
-          description="Comprehensive reporting across all modules"
+          title="Reports & Templates"
+          description="Comprehensive reporting with 20+ pre-built templates across 7 categories"
           features={[
-            'Pre-built report templates',
-            'Custom report builder',
-            'Scheduled reports',
-            'Export to CSV/PDF',
+            'Sales, Marketing, Team, Operations templates',
+            'Finance & Productivity reports',
+            'One-click template execution',
+            'Save & schedule reports',
           ]}
           href="/crm/reports"
+          isNew
+        />
+        <FeatureCard
+          icon={<FolderKanban className="w-6 h-6" />}
+          title="Saved Reports"
+          description="Save, organize, and track your favorite reports"
+          features={[
+            'Personal report library',
+            'Run history tracking',
+            'Favorite reports',
+            'Quick re-run capability',
+          ]}
+          href="/crm/reports/saved"
+          isNew
         />
         <FeatureCard
           icon={<PieChart className="w-6 h-6" />}
@@ -909,6 +929,31 @@ export default function FeaturesPage() {
             'Conversion reports',
           ]}
           href="/crm/reports/sales"
+        />
+        <FeatureCard
+          icon={<Download className="w-6 h-6" />}
+          title="Data Export"
+          description="Export your data in multiple formats"
+          features={[
+            'CSV export for spreadsheets',
+            'Excel (XLSX) support',
+            'JSON for developers',
+            'Bulk data downloads',
+          ]}
+          isNew
+        />
+        <FeatureCard
+          icon={<Table className="w-6 h-6" />}
+          title="Query Builder"
+          description="Build custom queries with our visual query engine"
+          features={[
+            'Multi-source data access',
+            'Dynamic filtering',
+            'Aggregations & grouping',
+            'Sort & pagination',
+          ]}
+          href="/crm/reports/new"
+          isNew
         />
         <FeatureCard
           icon={<ScrollText className="w-6 h-6" />}
@@ -1423,6 +1468,31 @@ export default function FeaturesPage() {
         subtitle="Designed for productivity and ease of use"
         gradient="from-pink-500 to-rose-500"
       >
+        <FeatureCard
+          icon={<Mic className="w-6 h-6" />}
+          title="Voice Command Center"
+          description="Control your CRM with natural voice commands"
+          features={[
+            'Navigate with "Show me leads"',
+            'Query data: "How many deals?"',
+            'Create tasks by speaking',
+            'Hands-free productivity',
+          ]}
+          href="/crm/learn/voice"
+          isNew
+        />
+        <FeatureCard
+          icon={<Terminal className="w-6 h-6" />}
+          title="Command Terminal"
+          description="Power-user command-line interface for quick actions"
+          features={[
+            'Keyboard shortcuts (Ctrl+K)',
+            'Quick navigation commands',
+            'System controls',
+            'Developer-friendly',
+          ]}
+          isNew
+        />
         <FeatureCard
           icon={<Moon className="w-6 h-6" />}
           title="Dark Mode"
