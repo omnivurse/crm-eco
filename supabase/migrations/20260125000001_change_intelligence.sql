@@ -3,45 +3,47 @@
 -- Centralized change detection, scoring, and reconciliation
 -- ============================================================================
 
+-- Drop existing objects if they exist (for clean re-run)
+DROP VIEW IF EXISTS change_feed_view CASCADE;
+DROP FUNCTION IF EXISTS record_change_event CASCADE;
+DROP FUNCTION IF EXISTS get_change_feed_stats CASCADE;
+DROP TABLE IF EXISTS change_subscriptions CASCADE;
+DROP TABLE IF EXISTS change_events CASCADE;
+
 -- Change Events Table
--- Captures all changes from any source with intelligence metadata
-CREATE TABLE IF NOT EXISTS change_events (
+CREATE TABLE change_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
 
   -- Source identification
   source_type text NOT NULL CHECK (source_type IN ('user', 'system', 'integration', 'vendor', 'import')),
-  source_name text,                    -- Human-readable source name (e.g., 'Stripe', 'Bulk Import')
-  source_id text,                      -- External ID from source system
+  source_name text,
+  source_id text,
 
   -- Change classification
-  change_type text NOT NULL,           -- 'create', 'update', 'delete', 'status_change', 'enrollment', etc.
-  entity_type text NOT NULL,           -- 'record', 'enrollment', 'member', 'deal', 'task', etc.
+  change_type text NOT NULL,
+  entity_type text NOT NULL,
   entity_id uuid NOT NULL,
-  entity_title text,                   -- Cached display title for quick reference
+  entity_title text,
 
   -- Severity and priority
   severity text NOT NULL DEFAULT 'info' CHECK (severity IN ('critical', 'high', 'medium', 'low', 'info')),
   requires_review boolean DEFAULT false,
 
   -- Change details
-  title text NOT NULL,                 -- Human-readable summary
-  description text,                    -- Detailed description
-  diff jsonb,                          -- Before/after state
-  payload jsonb DEFAULT '{}',          -- Additional context data
+  title text NOT NULL,
+  description text,
+  diff jsonb,
+  payload jsonb DEFAULT '{}',
 
   -- Actor information
   actor_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
-  actor_name text,                     -- Cached for display
+  actor_name text,
   actor_type text DEFAULT 'user' CHECK (actor_type IN ('user', 'system', 'integration', 'vendor')),
 
   -- Reconciliation tracking
   reconciliation_status text DEFAULT 'none' CHECK (reconciliation_status IN (
-    'none',           -- No action needed
-    'pending',        -- Awaiting review
-    'approved',       -- Reviewed and approved
-    'rejected',       -- Reviewed and rejected
-    'auto_resolved'   -- System auto-resolved
+    'none', 'pending', 'approved', 'rejected', 'auto_resolved'
   )),
   reviewed_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
   reviewed_at timestamptz,
@@ -51,7 +53,7 @@ CREATE TABLE IF NOT EXISTS change_events (
   content_hash text,
   previous_hash text,
 
-  -- Sync status (for cross-system reconciliation)
+  -- Sync status
   sync_status text DEFAULT 'synced' CHECK (sync_status IN ('synced', 'pending', 'conflict', 'stale')),
   synced_at timestamptz,
 
@@ -60,60 +62,48 @@ CREATE TABLE IF NOT EXISTS change_events (
   created_at timestamptz DEFAULT now()
 );
 
--- Add comment for documentation
 COMMENT ON TABLE change_events IS 'Centralized change intelligence tracking for all system changes';
 
--- ============================================================================
--- INDEXES
--- ============================================================================
-
--- Primary query patterns
+-- Indexes
 CREATE INDEX idx_change_events_org_created ON change_events(org_id, created_at DESC);
 CREATE INDEX idx_change_events_entity ON change_events(entity_type, entity_id);
-
--- Severity-based filtering (partial index for critical/high only)
-CREATE INDEX idx_change_events_severity ON change_events(org_id, severity)
-  WHERE severity IN ('critical', 'high');
-
--- Pending review queue
-CREATE INDEX idx_change_events_pending_review ON change_events(org_id, reconciliation_status)
-  WHERE requires_review = true AND reconciliation_status IN ('none', 'pending');
-
--- Source tracking
+CREATE INDEX idx_change_events_severity ON change_events(org_id, severity) WHERE severity IN ('critical', 'high');
+CREATE INDEX idx_change_events_pending_review ON change_events(org_id, reconciliation_status) WHERE requires_review = true AND reconciliation_status IN ('none', 'pending');
 CREATE INDEX idx_change_events_source ON change_events(source_type, source_name);
-
--- Hash lookup for deduplication
 CREATE INDEX idx_change_events_hash ON change_events(content_hash) WHERE content_hash IS NOT NULL;
+CREATE INDEX idx_change_events_sync ON change_events(org_id, sync_status) WHERE sync_status != 'synced';
+CREATE INDEX idx_change_events_actor ON change_events(actor_id, created_at DESC) WHERE actor_id IS NOT NULL;
 
--- Sync status monitoring
-CREATE INDEX idx_change_events_sync ON change_events(org_id, sync_status)
-  WHERE sync_status != 'synced';
-
--- Actor activity
-CREATE INDEX idx_change_events_actor ON change_events(actor_id, created_at DESC)
-  WHERE actor_id IS NOT NULL;
-
--- ============================================================================
--- ROW LEVEL SECURITY
--- ============================================================================
-
+-- RLS
 ALTER TABLE change_events ENABLE ROW LEVEL SECURITY;
 
--- Read access for org members (CRM users)
-CREATE POLICY "change_events_crm_read"
+-- Read access for org members via profiles
+CREATE POLICY "change_events_read"
 ON change_events FOR SELECT
 TO authenticated
 USING (
   EXISTS (
-    SELECT 1 FROM crm_user_orgs cuo
-    WHERE cuo.org_id = change_events.org_id
-    AND cuo.user_id = auth.uid()
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid()
+    AND p.organization_id = change_events.org_id
   )
 );
 
--- Read access for admin users
-CREATE POLICY "change_events_admin_read"
-ON change_events FOR SELECT
+-- Insert for authenticated users in the org
+CREATE POLICY "change_events_insert"
+ON change_events FOR INSERT
+TO authenticated
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM profiles p
+    WHERE p.id = auth.uid()
+    AND p.organization_id = change_events.org_id
+  )
+);
+
+-- Update for review actions
+CREATE POLICY "change_events_update"
+ON change_events FOR UPDATE
 TO authenticated
 USING (
   EXISTS (
@@ -122,98 +112,43 @@ USING (
     AND p.organization_id = change_events.org_id
     AND p.role IN ('owner', 'admin', 'manager')
   )
-);
-
--- Insert for authenticated users with proper roles
-CREATE POLICY "change_events_insert"
-ON change_events FOR INSERT
-TO authenticated
-WITH CHECK (
-  EXISTS (
-    SELECT 1 FROM crm_user_orgs cuo
-    WHERE cuo.org_id = change_events.org_id
-    AND cuo.user_id = auth.uid()
-    AND cuo.role IN ('crm_admin', 'crm_manager')
-  )
-  OR
-  EXISTS (
-    SELECT 1 FROM profiles p
-    WHERE p.id = auth.uid()
-    AND p.organization_id = change_events.org_id
-    AND p.role IN ('owner', 'admin')
-  )
-);
-
--- Update for review actions
-CREATE POLICY "change_events_update_review"
-ON change_events FOR UPDATE
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM crm_user_orgs cuo
-    WHERE cuo.org_id = change_events.org_id
-    AND cuo.user_id = auth.uid()
-    AND cuo.role IN ('crm_admin', 'crm_manager')
-  )
-  OR
-  EXISTS (
-    SELECT 1 FROM profiles p
-    WHERE p.id = auth.uid()
-    AND p.organization_id = change_events.org_id
-    AND p.role IN ('owner', 'admin')
-  )
 )
 WITH CHECK (
   EXISTS (
-    SELECT 1 FROM crm_user_orgs cuo
-    WHERE cuo.org_id = change_events.org_id
-    AND cuo.user_id = auth.uid()
-    AND cuo.role IN ('crm_admin', 'crm_manager')
-  )
-  OR
-  EXISTS (
     SELECT 1 FROM profiles p
     WHERE p.id = auth.uid()
     AND p.organization_id = change_events.org_id
-    AND p.role IN ('owner', 'admin')
+    AND p.role IN ('owner', 'admin', 'manager')
   )
 );
 
--- Service role can insert (for system/integration changes)
+-- Service role policies
 CREATE POLICY "change_events_service_insert"
 ON change_events FOR INSERT
 TO service_role
 WITH CHECK (true);
 
--- Service role can update
 CREATE POLICY "change_events_service_update"
 ON change_events FOR UPDATE
 TO service_role
 USING (true)
 WITH CHECK (true);
 
--- ============================================================================
--- CHANGE SUBSCRIPTIONS TABLE
--- User preferences for which changes to show in their feed
--- ============================================================================
-
-CREATE TABLE IF NOT EXISTS change_subscriptions (
+-- Change Subscriptions Table
+CREATE TABLE change_subscriptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
 
-  -- Filter settings
-  entity_types text[] DEFAULT '{}',        -- Empty = all types
-  source_types text[] DEFAULT '{}',        -- Empty = all sources
+  entity_types text[] DEFAULT '{}',
+  source_types text[] DEFAULT '{}',
   min_severity text DEFAULT 'info' CHECK (min_severity IN ('critical', 'high', 'medium', 'low', 'info')),
 
-  -- Notification preferences
   show_in_ticker boolean DEFAULT true,
   send_push boolean DEFAULT false,
   send_email boolean DEFAULT false,
   email_digest text DEFAULT 'none' CHECK (email_digest IN ('none', 'hourly', 'daily', 'weekly')),
 
-  -- Sound preferences
   sound_enabled boolean DEFAULT true,
   sound_critical_only boolean DEFAULT true,
 
@@ -225,24 +160,17 @@ CREATE TABLE IF NOT EXISTS change_subscriptions (
 
 COMMENT ON TABLE change_subscriptions IS 'User preferences for change notifications and feed filtering';
 
--- Index for user lookup
 CREATE INDEX idx_change_subscriptions_user ON change_subscriptions(user_id);
 
--- RLS
 ALTER TABLE change_subscriptions ENABLE ROW LEVEL SECURITY;
 
--- Users can only see/edit their own subscriptions
 CREATE POLICY "change_subscriptions_own"
 ON change_subscriptions FOR ALL
 TO authenticated
 USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
--- ============================================================================
--- VIEW: Change Feed with Actor Info
--- Optimized view for feed queries
--- ============================================================================
-
+-- View: Change Feed with Actor Info
 CREATE OR REPLACE VIEW change_feed_view AS
 SELECT
   ce.*,
@@ -255,11 +183,7 @@ LEFT JOIN profiles rp ON ce.reviewed_by = rp.id;
 
 COMMENT ON VIEW change_feed_view IS 'Change events with joined actor and reviewer profile information';
 
--- ============================================================================
--- FUNCTION: Record Change Event
--- Helper function to insert change events with proper defaults
--- ============================================================================
-
+-- Function: Record Change Event
 CREATE OR REPLACE FUNCTION record_change_event(
   p_org_id uuid,
   p_source_type text,
@@ -287,7 +211,6 @@ DECLARE
   v_change_id uuid;
   v_actor_name text;
 BEGIN
-  -- Calculate severity if not provided
   IF p_severity IS NULL THEN
     v_severity := CASE
       WHEN p_change_type IN ('termination', 'integration_error') THEN 'critical'
@@ -300,19 +223,16 @@ BEGIN
     v_severity := p_severity;
   END IF;
 
-  -- Determine if review is required
   IF p_requires_review IS NULL THEN
     v_requires_review := v_severity IN ('critical', 'high') OR p_change_type IN ('termination', 'plan_change');
   ELSE
     v_requires_review := p_requires_review;
   END IF;
 
-  -- Get actor name if actor_id provided
   IF p_actor_id IS NOT NULL THEN
     SELECT full_name INTO v_actor_name FROM profiles WHERE id = p_actor_id;
   END IF;
 
-  -- Insert the change event
   INSERT INTO change_events (
     org_id, source_type, source_name, change_type, entity_type, entity_id,
     entity_title, title, description, diff, payload, actor_id, actor_name,
@@ -331,11 +251,7 @@ $$;
 
 COMMENT ON FUNCTION record_change_event IS 'Helper function to record change events with automatic severity calculation';
 
--- ============================================================================
--- FUNCTION: Get Change Feed Stats
--- Returns summary statistics for the change feed
--- ============================================================================
-
+-- Function: Get Change Feed Stats
 CREATE OR REPLACE FUNCTION get_change_feed_stats(p_org_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -350,20 +266,11 @@ BEGIN
     'critical_count', COUNT(*) FILTER (WHERE severity = 'critical' AND reconciliation_status IN ('none', 'pending')),
     'high_count', COUNT(*) FILTER (WHERE severity = 'high' AND reconciliation_status IN ('none', 'pending')),
     'pending_review', COUNT(*) FILTER (WHERE requires_review = true AND reconciliation_status IN ('none', 'pending')),
-    'sync_conflicts', COUNT(*) FILTER (WHERE sync_status = 'conflict'),
-    'by_source', jsonb_object_agg(
-      COALESCE(source_type, 'unknown'),
-      source_count
-    )
+    'sync_conflicts', COUNT(*) FILTER (WHERE sync_status = 'conflict')
   ) INTO v_stats
-  FROM (
-    SELECT
-      ce.*,
-      COUNT(*) OVER (PARTITION BY source_type) as source_count
-    FROM change_events ce
-    WHERE ce.org_id = p_org_id
-    AND ce.created_at >= CURRENT_DATE - INTERVAL '7 days'
-  ) sub;
+  FROM change_events
+  WHERE org_id = p_org_id
+  AND created_at >= CURRENT_DATE - INTERVAL '7 days';
 
   RETURN COALESCE(v_stats, '{}'::jsonb);
 END;
@@ -371,8 +278,5 @@ $$;
 
 COMMENT ON FUNCTION get_change_feed_stats IS 'Returns summary statistics for the change intelligence dashboard';
 
--- ============================================================================
--- ENABLE REALTIME
--- ============================================================================
-
+-- Enable Realtime
 ALTER PUBLICATION supabase_realtime ADD TABLE change_events;
