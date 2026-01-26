@@ -39,7 +39,10 @@ import {
   FileCheck,
   Receipt,
   Terminal,
+  Activity,
 } from 'lucide-react';
+import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
+import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
 import { useTerminal } from '@/components/terminal';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
@@ -71,6 +74,34 @@ export function CrmTopBar({
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  // Change feed for ticker
+  const changeFeed = useChangeFeed({
+    orgId: profile.organization_id,
+    entityTypes: ['record', 'lead', 'member', 'enrollment', 'deal', 'task', 'activity'],
+    minSeverity: 'info',
+    maxEvents: 20,
+    realtime: true,
+  });
+
+  // Subscribe to Supabase realtime for change events
+  useChangeSubscription(supabase, profile.organization_id);
+
+  // Convert change feed events to ticker format
+  const tickerEvents = changeFeed.events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    description: event.description || undefined,
+    severity: event.severity,
+    entityType: event.entity_type,
+    entityTitle: event.entity_title || undefined,
+    actorName: event.actor_full_name || undefined,
+    sourceName: event.source_name || undefined,
+    sourceType: event.source_type,
+    requiresReview: event.requires_review,
+    syncStatus: event.sync_status,
+    createdAt: event.created_at,
+  }));
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -174,6 +205,30 @@ export function CrmTopBar({
 
         {/* Notifications */}
         <NotificationsPanel />
+
+        {/* Change Feed Ticker */}
+        <ChangeTickerPopover
+          events={tickerEvents}
+          isPaused={changeFeed.isPaused}
+          newEventCount={changeFeed.newEventCount}
+          isLoading={changeFeed.isLoading}
+          syncStatus={tickerEvents.length === 0 ? 'synced' : 'pending'}
+          showSyncStatus={true}
+          onPause={changeFeed.pause}
+          onResume={changeFeed.resume}
+          onClear={changeFeed.clear}
+          onRefresh={changeFeed.refresh}
+          onEventClick={(event) => {
+            // Navigate to entity based on type
+            if (event.entityType === 'record' || event.entityType === 'lead' || event.entityType === 'member') {
+              router.push(`/crm/records/${event.entityType}s`);
+            } else if (event.entityType === 'enrollment') {
+              router.push('/enrollments');
+            } else if (event.entityType === 'deal') {
+              router.push('/crm/deals');
+            }
+          }}
+        />
 
         {/* Settings Gear */}
         <Button

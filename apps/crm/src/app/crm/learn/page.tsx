@@ -27,6 +27,8 @@ import {
   Clock,
   CheckCircle,
   ArrowRight,
+  Mic,
+  Terminal,
 } from 'lucide-react';
 import { FeatureCard } from '@/components/learn/AnimatedDemo';
 
@@ -130,10 +132,35 @@ const CATEGORIES = [
     icon: <BarChart3 className="w-6 h-6" />,
     color: 'blue',
     articles: [
-      { title: 'Dashboard Overview', href: '/crm/learn/reports/dashboard', time: '3 min' },
+      { title: 'Reports Overview', href: '/crm/learn/reports', time: '3 min' },
+      { title: 'Using Report Templates', href: '/crm/learn/reports/templates', time: '5 min' },
       { title: 'Building Custom Reports', href: '/crm/learn/reports/custom', time: '6 min' },
-      { title: 'Scheduling Reports', href: '/crm/learn/reports/scheduling', time: '4 min' },
       { title: 'Exporting Data', href: '/crm/learn/reports/exporting', time: '3 min' },
+    ],
+  },
+  {
+    id: 'voice',
+    title: 'Voice Commands',
+    description: 'Control your CRM with your voice',
+    icon: <Mic className="w-6 h-6" />,
+    color: 'rose',
+    articles: [
+      { title: 'Getting Started with Voice', href: '/crm/learn/voice', time: '3 min' },
+      { title: 'Voice Navigation', href: '/crm/learn/voice/navigation', time: '4 min' },
+      { title: 'Voice Queries & Actions', href: '/crm/learn/voice/commands', time: '5 min' },
+      { title: 'Voice Settings', href: '/crm/learn/voice/settings', time: '2 min' },
+    ],
+  },
+  {
+    id: 'terminal',
+    title: 'Command Terminal',
+    description: 'Power-user keyboard shortcuts',
+    icon: <Terminal className="w-6 h-6" />,
+    color: 'slate',
+    articles: [
+      { title: 'Terminal Basics', href: '/crm/learn/terminal', time: '3 min' },
+      { title: 'Available Commands', href: '/crm/learn/terminal/commands', time: '5 min' },
+      { title: 'Keyboard Shortcuts', href: '/crm/learn/terminal/shortcuts', time: '3 min' },
     ],
   },
 ];
@@ -262,6 +289,7 @@ export default function LearnPage() {
                 category.color === 'emerald' && 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
                 category.color === 'amber' && 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
                 category.color === 'rose' && 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
+                category.color === 'slate' && 'bg-slate-200 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
               )}>
                 {category.icon}
               </div>
@@ -295,6 +323,7 @@ export default function LearnPage() {
                       category.color === 'emerald' && 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
                       category.color === 'amber' && 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
                       category.color === 'rose' && 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
+                      category.color === 'slate' && 'bg-slate-200 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
                     )}>
                       {category.icon}
                     </div>
