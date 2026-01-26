@@ -13,7 +13,9 @@ import {
   Badge,
   ScrollArea,
 } from '@crm-eco/ui';
-import { Bell, User, LogOut, Settings, ChevronDown, Shield, FileText, CheckCircle, AlertTriangle, Check, ExternalLink } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, Shield, FileText, CheckCircle, AlertTriangle, Check, ExternalLink, Activity } from 'lucide-react';
+import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
+import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { formatDistanceToNow } from 'date-fns';
@@ -36,6 +38,7 @@ interface AdminTopNavProps {
     email: string;
     avatarUrl?: string | null;
     role: string;
+    organizationId: string;
   };
   userId: string;
 }
@@ -74,6 +77,33 @@ export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  // Change feed for ticker (admin sees all changes)
+  const changeFeed = useChangeFeed({
+    orgId: profile.organizationId,
+    minSeverity: 'low',
+    maxEvents: 30,
+    realtime: true,
+  });
+
+  // Subscribe to Supabase realtime for change events
+  useChangeSubscription(supabase, profile.organizationId);
+
+  // Convert change feed events to ticker format
+  const tickerEvents = changeFeed.events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    description: event.description || undefined,
+    severity: event.severity,
+    entityType: event.entity_type,
+    entityTitle: event.entity_title || undefined,
+    actorName: event.actor_full_name || undefined,
+    sourceName: event.source_name || undefined,
+    sourceType: event.source_type,
+    requiresReview: event.requires_review,
+    syncStatus: event.sync_status,
+    createdAt: event.created_at,
+  }));
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
@@ -179,6 +209,32 @@ export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
 
       {/* Right side - actions and user menu */}
       <div className="flex items-center gap-3">
+        {/* Change Feed Ticker */}
+        <ChangeTickerPopover
+          events={tickerEvents}
+          isPaused={changeFeed.isPaused}
+          newEventCount={changeFeed.newEventCount}
+          isLoading={changeFeed.isLoading}
+          syncStatus={tickerEvents.length === 0 ? 'synced' : 'pending'}
+          showSyncStatus={true}
+          onPause={changeFeed.pause}
+          onResume={changeFeed.resume}
+          onClear={changeFeed.clear}
+          onRefresh={changeFeed.refresh}
+          onEventClick={(event) => {
+            // Navigate based on entity type
+            if (event.entityType === 'enrollment') {
+              router.push('/enrollments');
+            } else if (event.entityType === 'member') {
+              router.push('/members');
+            } else if (event.entityType === 'organization') {
+              router.push('/organizations');
+            } else if (event.requiresReview) {
+              router.push('/changes/review');
+            }
+          }}
+        />
+
         {/* Notifications */}
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
