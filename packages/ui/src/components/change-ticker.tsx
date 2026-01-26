@@ -88,6 +88,25 @@ function formatRelativeTime(timestamp: string): string {
   return date.toLocaleDateString();
 }
 
+// Hook to track client-side mount for hydration-safe rendering
+function useHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+  return hydrated;
+}
+
+// Hydration-safe relative time component
+function RelativeTime({ timestamp }: { timestamp: string }) {
+  const hydrated = useHydrated();
+  if (!hydrated) {
+    // Return a placeholder during SSR/hydration to prevent mismatch
+    return <span className="text-slate-500">...</span>;
+  }
+  return <span className="text-slate-500">{formatRelativeTime(timestamp)}</span>;
+}
+
 /**
  * Compact Ticker - Horizontal scrolling ticker for headers
  */
@@ -151,7 +170,7 @@ export function ChangeTickerCompact({
               >
                 <span>{SEVERITY_INDICATORS[event.severity]}</span>
                 <span className="text-slate-300">{event.title}</span>
-                <span className="text-slate-500">{formatRelativeTime(event.createdAt)}</span>
+                <RelativeTime timestamp={event.createdAt} />
               </button>
             ))
           )}
