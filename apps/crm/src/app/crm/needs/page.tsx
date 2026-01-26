@@ -253,7 +253,7 @@ async function NeedsContent() {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Link href="/crm/needs/new">
+          <Link href="/crm/needs?new=true">
             <Button
               className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white"
             >
@@ -347,7 +347,7 @@ async function NeedsContent() {
             </div>
             <p className="text-slate-900 dark:text-white font-medium mb-1">No needs submitted yet</p>
             <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">Member health sharing needs will appear here.</p>
-            <Link href="/crm/needs/new">
+            <Link href="/crm/needs?new=true">
               <Button className="bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-400 hover:to-pink-400 text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Submit First Need

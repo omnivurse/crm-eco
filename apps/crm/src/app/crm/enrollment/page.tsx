@@ -230,7 +230,7 @@ async function EnrollmentContent() {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Link href="/crm/enrollment/new">
+          <Link href="/crm/enrollment?new=true">
             <Button
               className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md"
             >
@@ -315,7 +315,7 @@ async function EnrollmentContent() {
                 </div>
                 <p className="text-slate-900 dark:text-white font-medium mb-1">No enrollments yet</p>
                 <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">New enrollment applications will appear here.</p>
-                <Link href="/crm/enrollment/new">
+                <Link href="/crm/enrollment?new=true">
                   <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white">
                     <Plus className="w-4 h-4 mr-2" />
                     Start First Enrollment
@@ -373,7 +373,7 @@ async function EnrollmentContent() {
           <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
             <h3 className="text-slate-900 dark:text-white font-medium mb-3">Quick Actions</h3>
             <div className="space-y-2">
-              <Link href="/crm/modules/members">
+              <Link href="/members">
                 <Button
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"

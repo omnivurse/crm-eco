@@ -464,7 +464,7 @@ export default function RevenuePage() {
 
           <div className="space-y-2">
             <Link
-              href="/crm/deals/new"
+              href="/crm/modules/deals/new"
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
             >
               <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
