@@ -7,11 +7,12 @@
     "shared"
   ],
   "scripts": {
+    "check:conflicts": "node scripts/check-merge-conflicts.js",
     "build": "vite build",
-    "build:shared": "npm run build --workspace=@crm-eco/shared",
-    "build:crm": "npm run build:shared && npm run build --workspace=@crm-eco/crm",
-    "build:admin": "npm run build:shared && npm run build --workspace=@crm-eco/admin",
-    "build:portal": "npm run build --workspace=@crm-eco/portal",
+    "build:shared": "npm run check:conflicts && npm run build --workspace=@crm-eco/shared",
+    "build:crm": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/crm",
+    "build:admin": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/admin",
+    "build:portal": "npm run check:conflicts && npm run build --workspace=@crm-eco/portal",
     "build:all": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",

@@ -90,25 +90,6 @@ function formatRelativeTime(timestamp: string, isMounted: boolean): string {
   return date.toLocaleDateString();
 }
 
-<<<<<<< HEAD
-// Hook to track client-side mount for hydration-safe rendering
-function useHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-  return hydrated;
-}
-
-// Hydration-safe relative time component
-function RelativeTime({ timestamp }: { timestamp: string }) {
-  const hydrated = useHydrated();
-  if (!hydrated) {
-    // Return a placeholder during SSR/hydration to prevent mismatch
-    return <span className="text-slate-500">...</span>;
-  }
-  return <span className="text-slate-500">{formatRelativeTime(timestamp)}</span>;
-=======
 // Hook to track if component is mounted (for hydration-safe rendering)
 function useIsMounted() {
   const [isMounted, setIsMounted] = useState(false);
@@ -116,7 +97,6 @@ function useIsMounted() {
     setIsMounted(true);
   }, []);
   return isMounted;
->>>>>>> 0ad13e2d06862883557cc607c8522902ae07087a
 }
 
 /**
@@ -183,11 +163,7 @@ export function ChangeTickerCompact({
               >
                 <span>{SEVERITY_INDICATORS[event.severity]}</span>
                 <span className="text-slate-300">{event.title}</span>
-<<<<<<< HEAD
-                <RelativeTime timestamp={event.createdAt} />
-=======
-                <span className="text-slate-500">{formatRelativeTime(event.createdAt, isMounted)}</span>
->>>>>>> 0ad13e2d06862883557cc607c8522902ae07087a
+<span className="text-slate-500">{formatRelativeTime(event.createdAt, isMounted)}</span>
               </button>
             ))
           )}
