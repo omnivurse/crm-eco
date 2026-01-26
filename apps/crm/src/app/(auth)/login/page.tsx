@@ -484,7 +484,7 @@ export default function LoginPage() {
                 type="button"
                 variant="outline"
                 className="w-full h-14 border-brand-navy-200 bg-white text-brand-navy-700 hover:bg-brand-navy-50 hover:text-brand-navy-900 hover:border-brand-navy-300 rounded-xl transition-all shadow-sm"
-                onClick={() => router.push('/enroll')}
+                onClick={() => router.push('/crm/enrollment')}
               >
                 Start your enrollment
               </Button>
