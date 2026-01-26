@@ -6,7 +6,7 @@ const { execSync } = require("node:child_process");
 let output = "";
 try {
   output = execSync(
-    'git grep -nE "^\\s*(<{7}|={7}|>{7})(\\s|$)" -- "*.ts" "*.tsx" "*.js" "*.jsx" "*.json" "*.md"',
+    'git grep -nE "^\\s*(<{7}|={7}|>{7})(\\s|$)" -- "*.ts" "*.tsx" "*.js" "*.jsx" "*.json" "*.md" "*.css"',
     { stdio: "pipe", encoding: "utf8" }
   );
 } catch (err) {

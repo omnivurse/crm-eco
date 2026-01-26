@@ -297,7 +297,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     setImportProgress(0);
 
     try {
-      // Batch size to stay under Vercel's payload limits
+      // Batch size to stay under Vercel's payload limits (~4.5MB)
       const BATCH_SIZE = 500;
       const totalRows = csvData.length;
       const batches = Math.ceil(totalRows / BATCH_SIZE);
