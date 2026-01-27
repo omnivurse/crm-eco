@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { Plus, Upload, GitBranch, RefreshCw } from 'lucide-react';
+import { Plus, Upload, GitBranch, RefreshCw, Users } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AgentTable } from '@/components/agents/AgentTable';
@@ -54,6 +54,12 @@ export default async function AgentsPage() {
           <p className="text-slate-500">Manage agent accounts and commissions</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/agents/bill-groups">
+            <Button variant="outline">
+              <Users className="h-4 w-4 mr-2" />
+              Bill Groups
+            </Button>
+          </Link>
           <Link href="/agents/assignment">
             <Button variant="outline">
               <RefreshCw className="h-4 w-4 mr-2" />

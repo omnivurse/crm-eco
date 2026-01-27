@@ -1,11 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign, Link as LinkIcon } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign, Link as LinkIcon, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
 import { AgentCommissionTab } from '@/components/commissions/AgentCommissionTab';
 import { AgentEnrollmentTab } from '@/components/enrollment-links/AgentEnrollmentTab';
+import { AgentLicensingTab } from '@/components/agents/AgentLicensingTab';
 
 async function getAgent(id: string) {
   const supabase = await createServerSupabaseClient();
@@ -132,6 +133,10 @@ export default async function AgentDetailPage({ params }: PageProps) {
           <TabsTrigger value="profile">
             <Users className="h-4 w-4 mr-2" />
             Profile
+          </TabsTrigger>
+          <TabsTrigger value="licensing">
+            <FileText className="h-4 w-4 mr-2" />
+            Licensing
           </TabsTrigger>
           <TabsTrigger value="enrollment">
             <LinkIcon className="h-4 w-4 mr-2" />
@@ -399,6 +404,11 @@ export default async function AgentDetailPage({ params }: PageProps) {
               </Card>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Licensing Tab */}
+        <TabsContent value="licensing">
+          <AgentLicensingTab agentId={agent.id} organizationId={organizationId} />
         </TabsContent>
 
         {/* Enrollment Links Tab */}
