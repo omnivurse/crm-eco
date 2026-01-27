@@ -20,6 +20,7 @@ import {
   Sparkles,
   Building2,
   Terminal,
+  Zap,
 } from 'lucide-react';
 import { useTerminal } from '@/components/terminal';
 
@@ -48,9 +49,20 @@ const navItems: NavItem[] = [
   },
   { label: 'Commissions', href: '/commissions', icon: <Layers className="h-5 w-5" /> },
   { label: 'Billing', href: '/billing', icon: <CreditCard className="h-5 w-5" /> },
-  { 
-    label: 'Communications', 
-    href: '/communications', 
+  {
+    label: 'Ops',
+    href: '/ops',
+    icon: <Zap className="h-5 w-5" />,
+    children: [
+      { label: 'Overview', href: '/ops' },
+      { label: 'Eligibility', href: '/ops/eligibility' },
+      { label: 'Job History', href: '/ops/jobs' },
+      { label: 'Scheduler', href: '/ops/scheduler' },
+    ],
+  },
+  {
+    label: 'Communications',
+    href: '/communications',
     icon: <Mail className="h-5 w-5" />,
     children: [
       { label: 'Dashboard', href: '/communications' },
@@ -60,7 +72,16 @@ const navItems: NavItem[] = [
     ],
   },
   { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
-  { label: 'Settings', href: '/settings', icon: <Settings className="h-5 w-5" /> },
+  {
+    label: 'Settings',
+    href: '/settings',
+    icon: <Settings className="h-5 w-5" />,
+    children: [
+      { label: 'General', href: '/settings' },
+      { label: 'User Security', href: '/settings/security' },
+      { label: 'Automations', href: '/settings/automations' },
+    ],
+  },
 ];
 
 export function AdminSidebar() {

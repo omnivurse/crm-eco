@@ -13,7 +13,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Admin Portal | Health Insurance Enrollment',
+  title: 'Admin Portal | Pay It Forward Healthshare',
   description: 'Manage members, agents, products, and enrollments.',
 };
 

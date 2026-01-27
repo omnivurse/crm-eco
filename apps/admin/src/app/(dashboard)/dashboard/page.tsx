@@ -26,6 +26,7 @@ import {
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
+import { TodoListWidget, JobsWidget, RecentPagesWidget } from '@/components/dashboard';
 
 interface ActivityLogEntry {
   id: string;
@@ -108,6 +109,13 @@ async function getDashboardStats() {
     0
   );
 
+  // Get profile ID
+  const { data: profileData } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .single() as { data: { id: string } | null };
+
   return {
     totalMembers: membersResult.count ?? 0,
     totalAgents: agentsResult.count ?? 0,
@@ -116,6 +124,8 @@ async function getDashboardStats() {
     pendingEnrollments: pendingEnrollmentsResult.count ?? 0,
     pendingCommissions,
     paidThisMonth,
+    profileId: profileData?.id ?? '',
+    organizationId: orgId,
   };
 }
 
@@ -506,6 +516,23 @@ export default async function DashboardPage() {
           iconBg="bg-emerald-100"
         />
       </div>
+
+      {/* Dashboard Widgets: ToDo, Jobs, Recently Visited */}
+      {stats?.profileId && stats?.organizationId && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <TodoListWidget
+            profileId={stats.profileId}
+            organizationId={stats.organizationId}
+          />
+          <JobsWidget
+            organizationId={stats.organizationId}
+          />
+          <RecentPagesWidget
+            profileId={stats.profileId}
+            organizationId={stats.organizationId}
+          />
+        </div>
+      )}
 
       {/* Activity Feed and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
