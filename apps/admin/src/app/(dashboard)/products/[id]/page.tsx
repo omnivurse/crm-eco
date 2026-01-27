@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Calendar, DollarSign, List, Settings } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, DollarSign, List, Settings, Sparkles, Shield, Upload } from 'lucide-react';
+import { ProductDetailActions } from '@/components/products/ProductDetailActions';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -28,7 +29,7 @@ async function getProduct(id: string) {
     .eq('organization_id', profile.organization_id)
     .single() as any);
 
-  return product;
+  return { product, organizationId: profile.organization_id };
 }
 
 async function getProductIuaLevels(productId: string) {
@@ -88,11 +89,13 @@ function formatCurrency(amount: number | null): string {
 }
 
 export default async function ProductDetailPage({ params }: { params: { id: string } }) {
-  const product = await getProduct(params.id);
+  const result = await getProduct(params.id);
 
-  if (!product) {
+  if (!result?.product) {
     notFound();
   }
+
+  const { product, organizationId } = result;
 
   const [iuaLevels, ageBrackets, benefits, extraCosts] = await Promise.all([
     getProductIuaLevels(params.id),
@@ -120,6 +123,11 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
           <Badge variant={product.is_active ? 'default' : 'secondary'}>
             {product.is_active ? 'Active' : 'Inactive'}
           </Badge>
+          <ProductDetailActions
+            productId={product.id}
+            productName={product.name}
+            organizationId={organizationId}
+          />
           <Link href={`/products/${product.id}/pricing`}>
             <Button variant="outline">
               <DollarSign className="h-4 w-4 mr-2" />
