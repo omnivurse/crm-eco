@@ -37,9 +37,11 @@ import {
   X,
   ArrowRight,
   GripVertical,
+  Eye,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { AssignmentPreview } from '@/components/agents';
 
 interface AssignmentRule {
   id: string;
@@ -102,6 +104,7 @@ export default function AgentAssignmentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRule, setSelectedRule] = useState<AssignmentRule | null>(null);
+  const [previewRule, setPreviewRule] = useState<AssignmentRule | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -515,6 +518,16 @@ export default function AgentAssignmentPage() {
                           checked={rule.is_enabled}
                           onCheckedChange={() => handleToggleEnabled(rule)}
                         />
+                        {(rule.strategy === 'round_robin' || rule.strategy === 'least_loaded' || rule.strategy === 'fixed') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewRule(previewRule?.id === rule.id ? null : rule)}
+                            className={previewRule?.id === rule.id ? 'bg-teal-100' : ''}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => handleEditRule(rule)}>
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -537,6 +550,15 @@ export default function AgentAssignmentPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Assignment Preview */}
+      {previewRule && organizationId && (
+        <AssignmentPreview
+          rule={previewRule}
+          agents={agents}
+          organizationId={organizationId}
+        />
+      )}
 
       {/* Active Agents Card */}
       <Card>
