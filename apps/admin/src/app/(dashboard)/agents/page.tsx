@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { Plus } from 'lucide-react';
+import { Plus, Upload, GitBranch, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AgentTable } from '@/components/agents/AgentTable';
@@ -53,12 +53,32 @@ export default async function AgentsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Agents</h1>
           <p className="text-slate-500">Manage agent accounts and commissions</p>
         </div>
-        <Link href="/agents/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Agent
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/agents/assignment">
+            <Button variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Assignment Rules
+            </Button>
+          </Link>
+          <Link href="/agents/tree">
+            <Button variant="outline">
+              <GitBranch className="h-4 w-4 mr-2" />
+              Tree View
+            </Button>
+          </Link>
+          <Link href="/agents/import">
+            <Button variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Import
+            </Button>
+          </Link>
+          <Link href="/agents/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Agent
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Agents Table */}
