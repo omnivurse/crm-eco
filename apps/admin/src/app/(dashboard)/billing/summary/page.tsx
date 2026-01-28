@@ -115,7 +115,8 @@ export default function BillingSummaryPage() {
     const { start, end } = getDateRange(datePreset);
 
     try {
-      const { data: transactions, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: transactions, error } = await (supabase as any)
         .from('billing_transactions')
         .select('*')
         .gte('created_at', start.toISOString())
@@ -124,7 +125,7 @@ export default function BillingSummaryPage() {
 
       if (error) throw error;
 
-      const txns = transactions || [];
+      const txns = (transactions || []) as Array<{ status: string; amount: number; created_at: string; payment_method?: string }>;
 
       // Calculate main stats
       const collected = txns

@@ -286,37 +286,37 @@ CREATE INDEX IF NOT EXISTS idx_financial_audit_performed_by ON financial_audit_l
 -- ============================================================================
 
 -- Insert commission permissions
-INSERT INTO permissions (name, description, category) VALUES
-  ('commissions.read', 'View commissions', 'commissions'),
-  ('commissions.write', 'Create and edit commissions', 'commissions'),
-  ('commissions.delete', 'Delete commissions', 'commissions'),
-  ('commissions.generate', 'Generate bonus commissions', 'commissions'),
-  ('commissions.copy', 'Copy agent commission structures', 'commissions'),
-  ('commissions.approve', 'Approve commission payments', 'commissions'),
-  ('commissions.export', 'Export commission data', 'commissions')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO permissions (key, name, description, resource, action) VALUES
+  ('commissions.read', 'View Commissions', 'View commissions', 'commissions', 'read'),
+  ('commissions.write', 'Edit Commissions', 'Create and edit commissions', 'commissions', 'write'),
+  ('commissions.delete', 'Delete Commissions', 'Delete commissions', 'commissions', 'delete'),
+  ('commissions.generate', 'Generate Commissions', 'Generate bonus commissions', 'commissions', 'generate'),
+  ('commissions.copy', 'Copy Commissions', 'Copy agent commission structures', 'commissions', 'copy'),
+  ('commissions.approve', 'Approve Commissions', 'Approve commission payments', 'commissions', 'approve'),
+  ('commissions.export', 'Export Commissions', 'Export commission data', 'commissions', 'export')
+ON CONFLICT (key) DO NOTHING;
 
 -- Insert payables permissions
-INSERT INTO permissions (name, description, category) VALUES
-  ('payables.read', 'View payables', 'payables'),
-  ('payables.write', 'Create and edit payables', 'payables'),
-  ('payables.delete', 'Delete payables', 'payables'),
-  ('payables.approve', 'Approve payables for payment', 'payables'),
-  ('payables.process', 'Process payable payments', 'payables'),
-  ('payables.export', 'Export payables data', 'payables')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO permissions (key, name, description, resource, action) VALUES
+  ('payables.read', 'View Payables', 'View payables', 'payables', 'read'),
+  ('payables.write', 'Edit Payables', 'Create and edit payables', 'payables', 'write'),
+  ('payables.delete', 'Delete Payables', 'Delete payables', 'payables', 'delete'),
+  ('payables.approve', 'Approve Payables', 'Approve payables for payment', 'payables', 'approve'),
+  ('payables.process', 'Process Payables', 'Process payable payments', 'payables', 'process'),
+  ('payables.export', 'Export Payables', 'Export payables data', 'payables', 'export')
+ON CONFLICT (key) DO NOTHING;
 
 -- Insert invoice permissions
-INSERT INTO permissions (name, description, category) VALUES
-  ('invoices.read', 'View invoices', 'invoices'),
-  ('invoices.write', 'Create and edit invoices', 'invoices'),
-  ('invoices.delete', 'Delete invoices', 'invoices'),
-  ('invoices.generate', 'Generate invoices (batch and retro)', 'invoices'),
-  ('invoices.send', 'Send invoices to members', 'invoices'),
-  ('invoices.void', 'Void invoices', 'invoices'),
-  ('invoices.export', 'Export invoice data', 'invoices'),
-  ('invoices.retro', 'Create retroactive invoices', 'invoices')
-ON CONFLICT (name) DO NOTHING;
+INSERT INTO permissions (key, name, description, resource, action) VALUES
+  ('invoices.read', 'View Invoices', 'View invoices', 'invoices', 'read'),
+  ('invoices.write', 'Edit Invoices', 'Create and edit invoices', 'invoices', 'write'),
+  ('invoices.delete', 'Delete Invoices', 'Delete invoices', 'invoices', 'delete'),
+  ('invoices.generate', 'Generate Invoices', 'Generate invoices (batch and retro)', 'invoices', 'generate'),
+  ('invoices.send', 'Send Invoices', 'Send invoices to members', 'invoices', 'send'),
+  ('invoices.void', 'Void Invoices', 'Void invoices', 'invoices', 'void'),
+  ('invoices.export', 'Export Invoices', 'Export invoice data', 'invoices', 'export'),
+  ('invoices.retro', 'Retro Invoices', 'Create retroactive invoices', 'invoices', 'retro')
+ON CONFLICT (key) DO NOTHING;
 
 -- ============================================================================
 -- ROW LEVEL SECURITY

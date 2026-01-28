@@ -101,12 +101,13 @@ export default function NachaExportPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -121,7 +122,8 @@ export default function NachaExportPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('billing_transactions')
         .select(
           `
@@ -156,7 +158,8 @@ export default function NachaExportPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('job_runs')
         .select('*')
         .eq('organization_id', organizationId)
@@ -331,7 +334,8 @@ export default function NachaExportPage() {
       const fileName = `NACHA_${format(new Date(), 'yyyyMMdd_HHmmss')}.txt`;
 
       // Create job record
-      const { data: job, error: jobError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: job, error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
           organization_id: organizationId,
@@ -356,13 +360,15 @@ export default function NachaExportPage() {
       if (jobError) throw jobError;
 
       // Update transactions as exported
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('billing_transactions')
         .update({ status: 'exported', nacha_job_id: job.id })
         .in('id', Array.from(selectedTransactions));
 
       // Log to audit
-      await supabase.from('billing_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('billing_audit_log').insert({
         action: 'nacha_export',
         entity_type: 'nacha_file',
         entity_id: job.id,
