@@ -244,7 +244,7 @@ export default function AgentTreePage() {
         .from('profiles')
         .select('organization_id')
         .eq('user_id', user.id)
-        .single();
+        .single() as { data: { organization_id: string } | null };
 
       if (profile) {
         setOrganizationId(profile.organization_id);
