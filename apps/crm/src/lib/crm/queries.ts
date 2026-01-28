@@ -4,6 +4,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { unstable_cache } from 'next/cache';
 import type {
   CrmModule,
   CrmField,
@@ -696,6 +697,7 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
 
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const oneWeekAgoISO = oneWeekAgo.toISOString();
 
   const { data: modules } = await supabase
     .from('crm_modules')
@@ -703,64 +705,104 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
     .eq('org_id', orgId)
     .eq('is_enabled', true);
 
-  if (!modules) return [];
-
-  const stats: ModuleStats[] = [];
+  if (!modules || modules.length === 0) return [];
 
   // Legacy table mappings for backwards compatibility
   const legacyTableMap: Record<string, string> = {
     leads: 'leads',
-    contacts: 'members',  // contacts map to members in legacy system
-    deals: 'members',     // deals might also map to members
+    contacts: 'members',
+    deals: 'members',
   };
 
-  for (const crmModule of modules) {
-    // Count from CRM records table
-    const { count: crmTotal } = await supabase
-      .from('crm_records')
-      .select('*', { count: 'exact', head: true })
-      .eq('module_id', crmModule.id);
+  // Build all queries in parallel - eliminates N+1 problem
+  const moduleIds = modules.map(m => m.id);
 
-    const { count: crmThisWeek } = await supabase
-      .from('crm_records')
-      .select('*', { count: 'exact', head: true })
-      .eq('module_id', crmModule.id)
-      .gte('created_at', oneWeekAgo.toISOString());
+  // Single query to get all CRM record counts grouped by module
+  const [crmTotalsResult, crmThisWeekResult] = await Promise.all([
+    // Total counts per module
+    supabase.rpc('count_records_by_modules', { module_ids: moduleIds }).catch(() => ({ data: null })),
+    // This week counts per module
+    supabase.rpc('count_records_by_modules_since', {
+      module_ids: moduleIds,
+      since_date: oneWeekAgoISO
+    }).catch(() => ({ data: null })),
+  ]);
 
-    let totalRecords = crmTotal || 0;
-    let createdThisWeek = crmThisWeek || 0;
+  // Build counts map from RPC results, fallback to individual queries if RPC doesn't exist
+  let crmTotalsMap: Record<string, number> = {};
+  let crmThisWeekMap: Record<string, number> = {};
 
-    // Also check legacy tables for backwards compatibility
-    const legacyTable = legacyTableMap[crmModule.key];
-    if (legacyTable) {
-      try {
-        const { count: legacyTotal } = await supabase
-          .from(legacyTable)
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', orgId);
+  if (crmTotalsResult.data && crmThisWeekResult.data) {
+    // RPC functions exist - use aggregated results
+    (crmTotalsResult.data as Array<{ module_id: string; count: number }>).forEach(r => {
+      crmTotalsMap[r.module_id] = r.count;
+    });
+    (crmThisWeekResult.data as Array<{ module_id: string; count: number }>).forEach(r => {
+      crmThisWeekMap[r.module_id] = r.count;
+    });
+  } else {
+    // Fallback: run all module queries in parallel (still better than sequential)
+    const queries = modules.flatMap(m => [
+      supabase
+        .from('crm_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('module_id', m.id)
+        .then(r => ({ moduleId: m.id, type: 'total' as const, count: r.count || 0 })),
+      supabase
+        .from('crm_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('module_id', m.id)
+        .gte('created_at', oneWeekAgoISO)
+        .then(r => ({ moduleId: m.id, type: 'week' as const, count: r.count || 0 })),
+    ]);
 
-        const { count: legacyThisWeek } = await supabase
-          .from(legacyTable)
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', orgId)
-          .gte('created_at', oneWeekAgo.toISOString());
-
-        totalRecords += legacyTotal || 0;
-        createdThisWeek += legacyThisWeek || 0;
-      } catch {
-        // Legacy table might not exist, ignore
-      }
-    }
-
-    stats.push({
-      moduleKey: crmModule.key,
-      moduleName: crmModule.name_plural || crmModule.name + 's',
-      totalRecords,
-      createdThisWeek,
+    const results = await Promise.all(queries);
+    results.forEach(r => {
+      if (r.type === 'total') crmTotalsMap[r.moduleId] = r.count;
+      else crmThisWeekMap[r.moduleId] = r.count;
     });
   }
 
-  return stats;
+  // Legacy queries in parallel
+  const legacyQueries = modules
+    .filter(m => legacyTableMap[m.key])
+    .flatMap(m => {
+      const table = legacyTableMap[m.key];
+      return [
+        supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', orgId)
+          .then(r => ({ moduleKey: m.key, type: 'total' as const, count: r.count || 0 }))
+          .catch(() => ({ moduleKey: m.key, type: 'total' as const, count: 0 })),
+        supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq('organization_id', orgId)
+          .gte('created_at', oneWeekAgoISO)
+          .then(r => ({ moduleKey: m.key, type: 'week' as const, count: r.count || 0 }))
+          .catch(() => ({ moduleKey: m.key, type: 'week' as const, count: 0 })),
+      ];
+    });
+
+  const legacyTotalsMap: Record<string, number> = {};
+  const legacyThisWeekMap: Record<string, number> = {};
+
+  if (legacyQueries.length > 0) {
+    const legacyResults = await Promise.all(legacyQueries);
+    legacyResults.forEach(r => {
+      if (r.type === 'total') legacyTotalsMap[r.moduleKey] = r.count;
+      else legacyThisWeekMap[r.moduleKey] = r.count;
+    });
+  }
+
+  // Combine results
+  return modules.map(m => ({
+    moduleKey: m.key,
+    moduleName: m.name_plural || m.name + 's',
+    totalRecords: (crmTotalsMap[m.id] || 0) + (legacyTotalsMap[m.key] || 0),
+    createdThisWeek: (crmThisWeekMap[m.id] || 0) + (legacyThisWeekMap[m.key] || 0),
+  }));
 }
 
 export interface AtRiskDeal {
@@ -880,34 +922,89 @@ export async function getMonthlyRecordCounts(orgId: string, monthsBack: number =
   const moduleMap: Record<string, string> = {};
   modules.forEach(m => { moduleMap[m.key] = m.id; });
 
-  const results: MonthlyRecordCounts[] = [];
   const now = new Date();
+  const moduleKeys = ['leads', 'contacts', 'deals'] as const;
 
-  for (let i = monthsBack - 1; i >= 0; i--) {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-    const monthName = startOfMonth.toLocaleString('en-US', { month: 'short' });
+  // Build all month ranges
+  const monthRanges = Array.from({ length: monthsBack }, (_, i) => {
+    const idx = monthsBack - 1 - i;
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth() - idx, 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() - idx + 1, 0, 23, 59, 59);
+    return {
+      monthName: startOfMonth.toLocaleString('en-US', { month: 'short' }),
+      start: startOfMonth.toISOString(),
+      end: endOfMonth.toISOString(),
+    };
+  });
 
-    const counts = { month: monthName, leads: 0, contacts: 0, deals: 0 };
-
-    // Count for each module type
-    for (const key of ['leads', 'contacts', 'deals'] as const) {
-      if (moduleMap[key]) {
-        const { count } = await supabase
-          .from('crm_records')
-          .select('*', { count: 'exact', head: true })
-          .eq('module_id', moduleMap[key])
-          .gte('created_at', startOfMonth.toISOString())
-          .lte('created_at', endOfMonth.toISOString());
-        counts[key] = count || 0;
+  // Execute ALL queries in parallel - eliminates nested loop N+1 problem
+  const allQueries = monthRanges.flatMap((range, monthIndex) =>
+    moduleKeys.map(key => {
+      if (!moduleMap[key]) {
+        return Promise.resolve({ monthIndex, key, count: 0 });
       }
-    }
+      return supabase
+        .from('crm_records')
+        .select('*', { count: 'exact', head: true })
+        .eq('module_id', moduleMap[key])
+        .gte('created_at', range.start)
+        .lte('created_at', range.end)
+        .then(r => ({ monthIndex, key, count: r.count || 0 }));
+    })
+  );
 
-    results.push(counts);
-  }
+  const queryResults = await Promise.all(allQueries);
+
+  // Build results from parallel query responses
+  const results: MonthlyRecordCounts[] = monthRanges.map((range, idx) => ({
+    month: range.monthName,
+    leads: 0,
+    contacts: 0,
+    deals: 0,
+  }));
+
+  queryResults.forEach(({ monthIndex, key, count }) => {
+    results[monthIndex][key] = count;
+  });
 
   return results;
 }
+
+// ============================================================================
+// Cached Dashboard Queries - For expensive operations
+// ============================================================================
+
+/**
+ * Cached version of getModuleStats - revalidates every 60 seconds
+ * Use this for dashboard to avoid repeated expensive queries
+ */
+export const getCachedModuleStats = (orgId: string) =>
+  unstable_cache(
+    async () => getModuleStats(orgId),
+    [`module-stats-${orgId}`],
+    { revalidate: 60, tags: [`org-${orgId}`, 'module-stats'] }
+  )();
+
+/**
+ * Cached version of getMonthlyRecordCounts - revalidates every 5 minutes
+ * Data changes slowly so longer cache is acceptable
+ */
+export const getCachedMonthlyRecordCounts = (orgId: string, monthsBack: number = 6) =>
+  unstable_cache(
+    async () => getMonthlyRecordCounts(orgId, monthsBack),
+    [`monthly-counts-${orgId}-${monthsBack}`],
+    { revalidate: 300, tags: [`org-${orgId}`, 'monthly-counts'] }
+  )();
+
+/**
+ * Cached version of getAtRiskDeals - revalidates every 2 minutes
+ */
+export const getCachedAtRiskDeals = (orgId: string, limit: number = 5) =>
+  unstable_cache(
+    async () => getAtRiskDeals(orgId, limit),
+    [`at-risk-deals-${orgId}-${limit}`],
+    { revalidate: 120, tags: [`org-${orgId}`, 'at-risk-deals'] }
+  )();
 
 export interface ReportSummary {
   totalContacts: number;
@@ -1013,89 +1110,94 @@ export async function getStageHistory(recordId: string): Promise<CrmStageHistory
 
 export async function getRecordLinks(recordId: string): Promise<CrmLinkedRecord[]> {
   const supabase = await createCrmClient();
-  
-  // Get outbound links (this record -> other)
-  const { data: outbound, error: outboundError } = await supabase
-    .from('crm_record_links')
-    .select(`
-      id,
-      link_type,
-      is_primary,
-      created_at,
-      target_record:crm_records!crm_record_links_target_record_id_fkey(
+
+  // Run both queries in parallel
+  const [outboundResult, inboundResult] = await Promise.all([
+    // Get outbound links (this record -> other)
+    supabase
+      .from('crm_record_links')
+      .select(`
         id,
-        title,
-        module:crm_modules!crm_records_module_id_fkey(
-          key,
-          name
+        link_type,
+        is_primary,
+        created_at,
+        target_record:crm_records!crm_record_links_target_record_id_fkey(
+          id,
+          title,
+          module:crm_modules!crm_records_module_id_fkey(
+            key,
+            name
+          )
         )
-      )
-    `)
-    .eq('source_record_id', recordId);
-
-  if (outboundError) throw outboundError;
-
-  // Get inbound links (other -> this record)
-  const { data: inbound, error: inboundError } = await supabase
-    .from('crm_record_links')
-    .select(`
-      id,
-      link_type,
-      is_primary,
-      created_at,
-      source_record:crm_records!crm_record_links_source_record_id_fkey(
+      `)
+      .eq('source_record_id', recordId),
+    // Get inbound links (other -> this record)
+    supabase
+      .from('crm_record_links')
+      .select(`
         id,
-        title,
-        module:crm_modules!crm_records_module_id_fkey(
-          key,
-          name
+        link_type,
+        is_primary,
+        created_at,
+        source_record:crm_records!crm_record_links_source_record_id_fkey(
+          id,
+          title,
+          module:crm_modules!crm_records_module_id_fkey(
+            key,
+            name
+          )
         )
-      )
-    `)
-    .eq('target_record_id', recordId);
+      `)
+      .eq('target_record_id', recordId),
+  ]);
 
-  if (inboundError) throw inboundError;
+  if (outboundResult.error) throw outboundResult.error;
+  if (inboundResult.error) throw inboundResult.error;
 
-  const results: CrmLinkedRecord[] = [];
+  const outbound = outboundResult.data;
+  const inbound = inboundResult.data;
 
-  // Transform outbound links
-  for (const link of outbound || []) {
-    const record = link.target_record as unknown as { id: string; title: string; module: { key: string; name: string } };
-    if (record) {
-      results.push({
+  // Transform both link arrays using map instead of loops
+  const outboundLinks: CrmLinkedRecord[] = (outbound || [])
+    .map(link => {
+      const record = link.target_record as unknown as { id: string; title: string; module: { key: string; name: string } };
+      if (!record) return null;
+      return {
         link_id: link.id,
         link_type: link.link_type,
         is_primary: link.is_primary,
-        direction: 'outbound',
+        direction: 'outbound' as const,
         record_id: record.id,
         record_title: record.title,
         record_module_key: record.module?.key || '',
         record_module_name: record.module?.name || '',
         created_at: link.created_at,
-      });
-    }
-  }
+      };
+    })
+    .filter((x): x is CrmLinkedRecord => x !== null);
 
-  // Transform inbound links
-  for (const link of inbound || []) {
-    const record = link.source_record as unknown as { id: string; title: string; module: { key: string; name: string } };
-    if (record) {
-      results.push({
+  const inboundLinks: CrmLinkedRecord[] = (inbound || [])
+    .map(link => {
+      const record = link.source_record as unknown as { id: string; title: string; module: { key: string; name: string } };
+      if (!record) return null;
+      return {
         link_id: link.id,
         link_type: link.link_type,
         is_primary: link.is_primary,
-        direction: 'inbound',
+        direction: 'inbound' as const,
         record_id: record.id,
         record_title: record.title,
         record_module_key: record.module?.key || '',
         record_module_name: record.module?.name || '',
         created_at: link.created_at,
-      });
-    }
-  }
+      };
+    })
+    .filter((x): x is CrmLinkedRecord => x !== null);
 
-  // Sort by created_at desc
-  return results.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  // Combine and sort by created_at desc
+  return [...outboundLinks, ...inboundLinks].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 }
 
 // ============================================================================

@@ -396,7 +396,8 @@ export default function CalendarPage() {
         switch (priority) {
             case 'urgent': return 'bg-red-500';
             case 'high': return 'bg-orange-500';
-            case 'medium': return 'bg-yellow-500';
+            case 'normal': return 'bg-yellow-500';
+            case 'low': return 'bg-slate-400';
             default: return 'bg-slate-400';
         }
     };
@@ -1071,8 +1072,8 @@ export default function CalendarPage() {
                                                 due_at: startDate.toISOString(),
                                                 activity_type: newEventType,
                                                 meeting_location: (newEventType === 'meeting' || newEventType === 'call') ? (newEventLocation.trim() || null) : null,
-                                                status: newEventType === 'task' ? 'open' : 'pending',
-                                                priority: 'medium',
+                                                status: 'open',
+                                                priority: 'normal',
                                             } as any)
                                             .select('id')
                                             .single();
@@ -1093,7 +1094,7 @@ export default function CalendarPage() {
                                                 id: insertedTask?.id || crypto.randomUUID(),
                                                 title: newEventTitle.trim(),
                                                 due_at: startDate.toISOString(),
-                                                priority: 'medium',
+                                                priority: 'normal',
                                                 status: 'open',
                                             }]);
                                         } else {

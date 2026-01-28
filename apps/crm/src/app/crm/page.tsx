@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 import {
   getCurrentProfile,
-  getModuleStats,
+  getCachedModuleStats,
   getUpcomingTasks,
   getRecentActivity,
-  getAtRiskDeals,
+  getCachedAtRiskDeals,
   getTodaysTasks,
 } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
@@ -40,7 +40,7 @@ async function fetchWidgetData(
     todaysTasks: () => getTodaysTasks(profile.id),
     upcomingTasks: () => getUpcomingTasks(profile.id, 7),
     recentActivity: () => getRecentActivity(profile.organization_id, 10),
-    atRiskDeals: () => getAtRiskDeals(profile.organization_id, 5),
+    atRiskDeals: () => getCachedAtRiskDeals(profile.organization_id, 5),
     quickActions: () => Promise.resolve(null),
     // Placeholder fetchers for new widgets - will be implemented in Phase 6
     topDeals: () => Promise.resolve([]),
@@ -78,9 +78,9 @@ async function DashboardContent() {
   // Get widget types from layout to fetch only needed data
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all required widget data in parallel
+  // Fetch all required widget data in parallel - using cached versions for expensive queries
   const [stats, widgetData] = await Promise.all([
-    getModuleStats(profile.organization_id),
+    getCachedModuleStats(profile.organization_id),
     fetchWidgetData(profile, widgetTypes),
   ]);
 
