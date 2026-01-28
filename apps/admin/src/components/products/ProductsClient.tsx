@@ -76,7 +76,8 @@ export function ProductsClient({ products, organizationId, categories }: Product
 
   const handleDuplicate = async (product: Product) => {
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('plans')
         .insert({
           organization_id: organizationId,
@@ -95,7 +96,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
       if (error) throw error;
 
       toast.success('Product duplicated');
-      router.push(`/products/${data.id}`);
+      router.push(`/products/${(data as { id: string }).id}`);
     } catch (error) {
       console.error('Error duplicating product:', error);
       toast.error('Failed to duplicate product');
