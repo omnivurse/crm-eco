@@ -8,6 +8,8 @@ import {
   getTodaysTasks,
   getCalendarEvents,
 } from '@/lib/crm/queries';
+
+export const dynamic = 'force-dynamic';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
