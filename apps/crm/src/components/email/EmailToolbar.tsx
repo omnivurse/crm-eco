@@ -30,7 +30,7 @@ import {
   AlignRight,
   AlignJustify,
   Link,
-  Image,
+  Image as ImageIcon,
   Table,
   Undo,
   Redo,
@@ -417,7 +417,7 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
         onClick={() => onImageUpload?.()}
         title="Insert Image"
       >
-        <Image className="w-4 h-4" />
+        <ImageIcon className="w-4 h-4" />
       </ToolbarButton>
 
       {/* Table */}

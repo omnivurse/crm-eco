@@ -739,32 +739,30 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
     else crmThisWeekMap[r.moduleId] = r.count;
   });
 
-  // Legacy queries in parallel
-  const legacyQueries = modules
-    .filter(m => legacyTableMap[m.key])
-    .flatMap(m => {
-      const table = legacyTableMap[m.key];
-      return [
-        supabase
-          .from(table)
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', orgId)
-          .then(r => ({ moduleKey: m.key, type: 'total' as const, count: r.count || 0 }))
-          .catch(() => ({ moduleKey: m.key, type: 'total' as const, count: 0 })),
-        supabase
-          .from(table)
-          .select('*', { count: 'exact', head: true })
-          .eq('organization_id', orgId)
-          .gte('created_at', oneWeekAgoISO)
-          .then(r => ({ moduleKey: m.key, type: 'week' as const, count: r.count || 0 }))
-          .catch(() => ({ moduleKey: m.key, type: 'week' as const, count: 0 })),
-      ];
-    });
-
+  // Legacy queries in parallel - wrapped in async functions for proper error handling
   const legacyTotalsMap: Record<string, number> = {};
   const legacyThisWeekMap: Record<string, number> = {};
 
-  if (legacyQueries.length > 0) {
+  const legacyModules = modules.filter(m => legacyTableMap[m.key]);
+  if (legacyModules.length > 0) {
+    const legacyQueries = legacyModules.flatMap(m => {
+      const table = legacyTableMap[m.key];
+      return [
+        (async () => {
+          try {
+            const r = await supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId);
+            return { moduleKey: m.key, type: 'total' as const, count: r.count || 0 };
+          } catch { return { moduleKey: m.key, type: 'total' as const, count: 0 }; }
+        })(),
+        (async () => {
+          try {
+            const r = await supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', oneWeekAgoISO);
+            return { moduleKey: m.key, type: 'week' as const, count: r.count || 0 };
+          } catch { return { moduleKey: m.key, type: 'week' as const, count: 0 }; }
+        })(),
+      ];
+    });
+
     const legacyResults = await Promise.all(legacyQueries);
     legacyResults.forEach(r => {
       if (r.type === 'total') legacyTotalsMap[r.moduleKey] = r.count;
