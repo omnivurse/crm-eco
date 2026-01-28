@@ -224,14 +224,15 @@ export default function CommissionsSummaryPage() {
         const monthStart = startOfMonth(monthDate);
         const monthEnd = endOfMonth(monthDate);
 
-        const { data: monthTxns } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: monthTxns } = await (supabase as any)
           .from('commission_transactions')
           .select('commission_amount, status, is_bonus')
           .eq('organization_id', organizationId)
           .gte('created_at', monthStart.toISOString())
           .lte('created_at', monthEnd.toISOString());
 
-        const monthData = monthTxns || [];
+        const monthData = (monthTxns || []) as Array<{ commission_amount: number; status: string; is_bonus: boolean }>;
         trendData.push({
           month: format(monthDate, 'MMM yyyy'),
           total: monthData.reduce((sum, t) => sum + (t.commission_amount || 0), 0),
