@@ -232,7 +232,8 @@ export function ImportLicensesModal({
             notes: result.data.notes || null,
           };
 
-          const { error } = await supabase.from('agent_licenses').insert(data);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase as any).from('agent_licenses').insert(data);
           if (error) throw error;
         } else {
           const states = result.data.states
@@ -253,7 +254,8 @@ export function ImportLicensesModal({
             notes: result.data.notes || null,
           };
 
-          const { error } = await supabase.from('agent_appointments').insert(data);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error } = await (supabase as any).from('agent_appointments').insert(data);
           if (error) throw error;
         }
         success++;

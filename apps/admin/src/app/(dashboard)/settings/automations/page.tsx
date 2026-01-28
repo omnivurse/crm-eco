@@ -160,7 +160,7 @@ export default function AutomationsPage() {
     description: '',
     trigger_type: 'event' as 'event' | 'schedule' | 'webhook',
     trigger_config: {} as Record<string, unknown>,
-    conditions: { match: 'all' as const, rules: [] as Array<{ field: string; operator: string; value: string }> },
+    conditions: { match: 'all' as 'all' | 'any', rules: [] as Array<{ field: string; operator: string; value: string }> },
     actions: [] as Array<{ type: string; config: Record<string, unknown> }>,
     is_active: true,
   });
@@ -271,7 +271,8 @@ export default function AutomationsPage() {
       };
 
       if (selectedRule) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('automation_rules')
           .update(ruleData)
           .eq('id', selectedRule.id);
@@ -279,7 +280,8 @@ export default function AutomationsPage() {
         if (error) throw error;
         toast.success('Automation rule updated successfully');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('automation_rules')
           .insert(ruleData);
 
@@ -300,7 +302,8 @@ export default function AutomationsPage() {
 
   const handleToggleActive = async (rule: AutomationRule) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('automation_rules')
         .update({ is_active: !rule.is_active })
         .eq('id', rule.id);

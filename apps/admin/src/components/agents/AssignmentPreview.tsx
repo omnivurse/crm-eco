@@ -67,7 +67,8 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
     setIsLoading(true);
     try {
       // Try to use the database function if available
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .rpc('preview_round_robin_assignments', {
           p_rule_id: rule.id,
           p_count: 5,
@@ -92,7 +93,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
 
         setPreview(previewData);
       } else if (data) {
-        const previewData: PreviewAssignment[] = data.map((item: { position: number; advisor_id: string }) => ({
+        const previewData: PreviewAssignment[] = (data as Array<{ position: number; advisor_id: string }>).map((item) => ({
           ...item,
           agent: agents.find(a => a.id === item.advisor_id),
         }));

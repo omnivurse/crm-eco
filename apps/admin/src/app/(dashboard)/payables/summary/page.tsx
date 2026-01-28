@@ -120,7 +120,7 @@ export default function PayablesSummaryPage() {
 
       if (error && error.code !== '42P01') throw error;
 
-      interface PayableRecord { status: string; due_date?: string; amount?: number; payee_type: string; }
+      interface PayableRecord { status: string; due_date?: string; amount?: number; payee_type: string; payee_name: string; created_at: string; }
       const data = (payables || []) as PayableRecord[];
       const now = new Date();
 

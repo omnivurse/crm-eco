@@ -46,7 +46,7 @@ export default async function ProductsPage() {
   const { products, organizationId } = await getProducts();
 
   const activeProducts = products.filter((p: { is_active: boolean }) => p.is_active);
-  const categories = [...new Set(products.map((p: { coverage_category: string | null }) => p.coverage_category).filter(Boolean))];
+  const categories = Array.from(new Set(products.map((p: { coverage_category: string | null }) => p.coverage_category).filter(Boolean)));
   const totalMonthlyValue = products.reduce((sum: number, p: { monthly_share: number | null }) => sum + (p.monthly_share || 0), 0);
 
   return (

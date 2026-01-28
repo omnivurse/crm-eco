@@ -18016,3 +18016,52 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Helper types for table rows
+export type Organization = Tables<'organizations'>;
+export type Profile = Tables<'profiles'>;
+export type Advisor = Tables<'advisors'>;
+export type Member = Tables<'members'>;
+export type Lead = Tables<'leads'>;
+export type Activity = Tables<'activities'>;
+export type Ticket = Tables<'tickets'>;
+export type TicketComment = Tables<'ticket_comments'>;
+export type Need = Tables<'needs'>;
+export type NeedEvent = Tables<'need_events'>;
+export type CustomFieldDefinition = Tables<'custom_field_definitions'>;
+export type FieldMapping = Tables<'field_mappings'>;
+export type ImportJob = Tables<'import_jobs'>;
+export type ImportJobRow = Tables<'import_job_rows'>;
+export type ImportSnapshot = Tables<'import_snapshots'>;
+export type Plan = Tables<'plans'>;
+export type Membership = Tables<'memberships'>;
+export type Enrollment = Tables<'enrollments'>;
+export type EnrollmentStep = Tables<'enrollment_steps'>;
+export type EnrollmentAuditLog = Tables<'enrollment_audit_log'>;
+export type CommissionTier = Tables<'commission_tiers'>;
+export type CommissionTransaction = Tables<'commission_transactions'>;
+export type CommissionPayout = Tables<'commission_payouts'>;
+
+// Vendor management types
+export type Vendor = Tables<'vendors'>;
+export type VendorInsert = TablesInsert<'vendors'>;
+export type VendorUpdate = TablesUpdate<'vendors'>;
+export type VendorFile = Tables<'vendor_files'>;
+export type VendorFileInsert = TablesInsert<'vendor_files'>;
+export type VendorFileUpdate = TablesUpdate<'vendor_files'>;
+export type VendorFileRow = Tables<'vendor_file_rows'>;
+export type VendorFileRowInsert = TablesInsert<'vendor_file_rows'>;
+export type VendorChange = Tables<'vendor_changes'>;
+export type VendorChangeInsert = TablesInsert<'vendor_changes'>;
+export type VendorConnector = Tables<'vendor_connectors'>;
+export type VendorConnectorInsert = TablesInsert<'vendor_connectors'>;
+export type VendorConnectorUpdate = TablesUpdate<'vendor_connectors'>;
+
+// Status enum types
+export type ImportJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+export type ImportRowStatus = 'pending' | 'valid' | 'invalid' | 'imported' | 'skipped' | 'error';
+export type MembershipStatus = 'pending' | 'active' | 'suspended' | 'terminated' | 'cancelled';
+export type EnrollmentStatus = 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'expired';
+export type BillingStatus = 'current' | 'past_due' | 'delinquent' | 'suspended' | 'collections';
+export type CommissionTransactionStatus = 'pending' | 'approved' | 'paid' | 'cancelled' | 'reversed';
+export type CommissionPayoutStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

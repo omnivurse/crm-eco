@@ -164,7 +164,8 @@ export default function SecuritySettingsPage() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({
           role: editingRole,
@@ -188,7 +189,8 @@ export default function SecuritySettingsPage() {
 
   const handleToggleUserActive = async (user: User) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({ is_active: !user.is_active })
         .eq('id', user.id);
