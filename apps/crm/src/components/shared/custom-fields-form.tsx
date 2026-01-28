@@ -113,7 +113,7 @@ function renderField(
           id={field.field_name}
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
-          required={field.is_required}
+          required={field.is_required ?? false}
         />
       );
 
@@ -124,7 +124,7 @@ function renderField(
           type="number"
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value ? parseFloat(e.target.value) : null)}
-          required={field.is_required}
+          required={field.is_required ?? false}
         />
       );
 
@@ -135,7 +135,7 @@ function renderField(
           type="date"
           value={value || ''}
           onChange={(e) => onChange(e.target.value || null)}
-          required={field.is_required}
+          required={field.is_required ?? false}
         />
       );
 
