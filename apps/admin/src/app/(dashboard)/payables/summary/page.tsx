@@ -91,12 +91,13 @@ export default function PayablesSummaryPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
       }
@@ -111,14 +112,16 @@ export default function PayablesSummaryPage() {
 
     try {
       // Fetch all payables
-      const { data: payables, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: payables, error } = await (supabase as any)
         .from('payables')
         .select('*')
         .eq('organization_id', organizationId);
 
       if (error && error.code !== '42P01') throw error;
 
-      const data = payables || [];
+      interface PayableRecord { status: string; due_date?: string; amount?: number; payee_type: string; }
+      const data = (payables || []) as PayableRecord[];
       const now = new Date();
 
       // Calculate main stats

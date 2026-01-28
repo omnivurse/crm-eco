@@ -119,12 +119,13 @@ export default function PayablesPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -300,7 +301,8 @@ export default function PayablesPage() {
 
     setSaving(true);
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('payables')
         .insert({
           organization_id: organizationId,
@@ -323,7 +325,8 @@ export default function PayablesPage() {
       if (error) throw error;
 
       // Log to audit
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'payable_created',
         entity_type: 'payable',
@@ -349,7 +352,8 @@ export default function PayablesPage() {
 
   const handleApprove = async (payable: Payable) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('payables')
         .update({
           status: 'approved',
@@ -360,7 +364,8 @@ export default function PayablesPage() {
 
       if (error) throw error;
 
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'payable_approved',
         entity_type: 'payable',
@@ -379,7 +384,8 @@ export default function PayablesPage() {
 
   const handleMarkPaid = async (payable: Payable) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('payables')
         .update({
           status: 'paid',
@@ -389,7 +395,8 @@ export default function PayablesPage() {
 
       if (error) throw error;
 
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'payable_paid',
         entity_type: 'payable',
@@ -705,7 +712,7 @@ export default function PayablesPage() {
                 <select
                   className="w-full border rounded-md px-3 py-2"
                   value={formData.payee_type}
-                  onChange={(e) => setFormData({ ...formData, payee_type: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, payee_type: e.target.value as 'vendor' | 'agent' | 'provider' | 'other' })}
                 >
                   <option value="vendor">Vendor</option>
                   <option value="agent">Agent</option>

@@ -258,12 +258,13 @@ export default function VendorOpsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -293,7 +294,8 @@ export default function VendorOpsPage() {
     setRunningJob(true);
     try {
       // Create eligibility run
-      const { data: run, error: runError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: run, error: runError } = await (supabase as any)
         .from('vendor_eligibility_runs')
         .insert({
           organization_id: organizationId,
@@ -309,7 +311,8 @@ export default function VendorOpsPage() {
       if (runError) throw runError;
 
       // Create job run record
-      const { error: jobError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
           organization_id: organizationId,
@@ -338,7 +341,8 @@ export default function VendorOpsPage() {
     if (!organizationId || !profileId) return;
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('vendor_eligibility_runs')
         .insert({
           organization_id: organizationId,
@@ -381,7 +385,8 @@ export default function VendorOpsPage() {
       };
 
       if (editingConfig) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('vendor_job_configs')
           .update(configData)
           .eq('id', editingConfig.id);
@@ -389,7 +394,8 @@ export default function VendorOpsPage() {
         if (error) throw error;
         toast.success('Configuration updated');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('vendor_job_configs')
           .insert({
             ...configData,
@@ -450,7 +456,8 @@ export default function VendorOpsPage() {
       };
 
       if (editingCredential) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('vendor_credentials')
           .update(credData)
           .eq('id', editingCredential.id);
@@ -458,7 +465,8 @@ export default function VendorOpsPage() {
         if (error) throw error;
         toast.success('Credential updated');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('vendor_credentials')
           .insert({
             ...credData,

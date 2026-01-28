@@ -199,12 +199,13 @@ export default function JobsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -234,7 +235,8 @@ export default function JobsPage() {
 
     setRetrying(true);
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('job_runs')
         .insert({
           organization_id: organizationId,
@@ -254,7 +256,8 @@ export default function JobsPage() {
       if (error) throw error;
 
       // Log audit event
-      await supabase.rpc('log_ops_audit', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).rpc('log_ops_audit', {
         p_org_id: organizationId,
         p_event_type: 'job_run_retried',
         p_entity_type: 'job_run',
@@ -277,7 +280,8 @@ export default function JobsPage() {
   const handleCancel = async (job: JobRun) => {
     setCancelling(true);
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('job_runs')
         .update({
           status: 'cancelled',
