@@ -6,6 +6,7 @@ import {
   getRecentActivity,
   getCachedAtRiskDeals,
   getTodaysTasks,
+  getCalendarEvents,
 } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
@@ -46,7 +47,7 @@ async function fetchWidgetData(
     topDeals: () => Promise.resolve([]),
     pipelineSummary: () => Promise.resolve(null),
     performanceMetrics: () => Promise.resolve(null),
-    calendarEvents: () => Promise.resolve([]),
+    calendarEvents: () => getCalendarEvents(profile.organization_id),
     notesMemos: () => Promise.resolve([]),
     emailStats: () => Promise.resolve(null),
     leadConversion: () => Promise.resolve(null),
