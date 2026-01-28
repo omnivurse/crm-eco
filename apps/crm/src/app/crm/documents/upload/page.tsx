@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   Upload,
   FileText,
-  Image,
+  Image as ImageIcon,
   File,
   X,
   Check,
@@ -132,7 +132,7 @@ export default function DocumentUploadPage() {
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image className="w-5 h-5" />;
+    if (mimeType.startsWith('image/')) return <ImageIcon className="w-5 h-5" />;
     if (mimeType === 'application/pdf') return <FileText className="w-5 h-5" />;
     return <File className="w-5 h-5" />;
   };

@@ -9,7 +9,7 @@ import {
   Clock,
   CheckCircle,
   Type,
-  Image,
+  Image as ImageIcon,
   Link2,
   Variable,
   Palette,
@@ -133,7 +133,7 @@ export default function TemplatesPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           {[
             { icon: <Type className="w-5 h-5" />, title: 'Rich Text Editing', description: 'Bold, italic, lists, and text formatting' },
-            { icon: <Image className="w-5 h-5" />, title: 'Images', description: 'Insert images with alt text and sizing' },
+            { icon: <ImageIcon className="w-5 h-5" />, title: 'Images', description: 'Insert images with alt text and sizing' },
             { icon: <Link2 className="w-5 h-5" />, title: 'Links', description: 'Add clickable links with tracking' },
             { icon: <Variable className="w-5 h-5" />, title: 'Merge Fields', description: 'Personalize with contact data' },
             { icon: <Palette className="w-5 h-5" />, title: 'Styling', description: 'Colors, fonts, and alignment' },

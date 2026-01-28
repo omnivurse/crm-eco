@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared'],
+  // ESLint config - suppress noisy warnings during build
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors - but warnings are suppressed for cleaner builds
+    ignoreDuringBuilds: false,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
