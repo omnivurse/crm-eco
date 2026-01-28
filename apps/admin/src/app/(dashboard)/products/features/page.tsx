@@ -123,7 +123,8 @@ export default function FeaturesLibraryPage() {
 
     setIsSaving(true);
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('product_features_library')
         .insert({
           organization_id: organizationId,
@@ -155,7 +156,8 @@ export default function FeaturesLibraryPage() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('product_features_library')
         .update({
           name: editingFeature.name,

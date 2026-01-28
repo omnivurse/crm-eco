@@ -222,14 +222,16 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
       };
 
       if (selectedLicense) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('agent_licenses')
           .update(data)
           .eq('id', selectedLicense.id);
         if (error) throw error;
         toast.success('License updated successfully');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('agent_licenses')
           .insert(data);
         if (error) throw error;
@@ -318,14 +320,16 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
       };
 
       if (selectedAppointment) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('agent_appointments')
           .update(data)
           .eq('id', selectedAppointment.id);
         if (error) throw error;
         toast.success('Appointment updated successfully');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('agent_appointments')
           .insert(data);
         if (error) throw error;
