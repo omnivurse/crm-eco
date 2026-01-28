@@ -19,7 +19,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "db:generate-types": "supabase gen types typescript --project-id ctujznwjyyqnhecixlon > packages/lib/src/types/database.ts",
+    "db:generate-types": "supabase gen types typescript --project-id pewlbjxykqrxzjkvshfr > packages/lib/src/types/database.ts",
     "migrate:zoho-contacts": "tsx scripts/migrate-zoho-contacts.ts"
   },
   "dependencies": {

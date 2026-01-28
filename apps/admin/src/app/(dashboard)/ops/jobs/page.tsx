@@ -19,6 +19,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   ScrollArea,
   Table,
   TableBody,
@@ -41,13 +42,18 @@ import {
   Play,
   Calendar,
   Download,
+  RotateCcw,
+  StopCircle,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 interface JobRun {
   id: string;
+  job_definition_id: string | null;
   job_type: string;
   job_name: string;
+  vendor_code: string | null;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   started_at: string | null;
   completed_at: string | null;
@@ -58,7 +64,9 @@ interface JobRun {
   error_message: string | null;
   error_details: any;
   logs: any[];
-  trigger_type: 'manual' | 'scheduled' | 'webhook' | 'system';
+  trigger_type: 'manual' | 'scheduled' | 'webhook' | 'system' | 'retry';
+  retry_count: number;
+  retried_from_id: string | null;
   created_at: string;
   triggered_by_profile?: {
     full_name: string;
@@ -86,6 +94,11 @@ const jobTypeLabels: Record<string, string> = {
   data_sync: 'Data Sync',
   cleanup: 'Data Cleanup',
   custom: 'Custom Job',
+  vendor_eligibility: 'Vendor Eligibility',
+  vendor_enrollment_sync: 'Enrollment Sync',
+  vendor_termination_sync: 'Termination Sync',
+  vendor_roster_pull: 'Roster Pull',
+  age_up_out_check: 'Age Up/Out Check',
 };
 
 function formatDuration(ms: number | null): string {
@@ -100,11 +113,15 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobRun | null>(null);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [vendorFilter, setVendorFilter] = useState<string>('all');
 
   // Pagination
   const [page, setPage] = useState(0);
@@ -122,8 +139,10 @@ export default function JobsPage() {
         .from('job_runs')
         .select(`
           id,
+          job_definition_id,
           job_type,
           job_name,
+          vendor_code,
           status,
           started_at,
           completed_at,
@@ -135,6 +154,8 @@ export default function JobsPage() {
           error_details,
           logs,
           trigger_type,
+          retry_count,
+          retried_from_id,
           created_at,
           triggered_by_profile:profiles!job_runs_triggered_by_fkey(full_name, email)
         `, { count: 'exact' })
@@ -148,6 +169,10 @@ export default function JobsPage() {
 
       if (typeFilter !== 'all') {
         query = query.eq('job_type', typeFilter);
+      }
+
+      if (vendorFilter !== 'all') {
+        query = query.eq('vendor_code', vendorFilter);
       }
 
       if (searchQuery) {
@@ -166,7 +191,7 @@ export default function JobsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, organizationId, page, statusFilter, typeFilter, searchQuery]);
+  }, [supabase, organizationId, page, statusFilter, typeFilter, vendorFilter, searchQuery]);
 
   // Get organization ID on mount
   useEffect(() => {
@@ -176,12 +201,13 @@ export default function JobsPage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('organization_id')
+        .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
       if (profile) {
         setOrganizationId(profile.organization_id);
+        setProfileId(profile.id);
       }
     }
 
@@ -202,6 +228,89 @@ export default function JobsPage() {
     const interval = setInterval(fetchJobs, 5000);
     return () => clearInterval(interval);
   }, [jobs, fetchJobs]);
+
+  const handleRetry = async (job: JobRun) => {
+    if (!organizationId || !profileId) return;
+
+    setRetrying(true);
+    try {
+      const { data, error } = await supabase
+        .from('job_runs')
+        .insert({
+          organization_id: organizationId,
+          job_definition_id: job.job_definition_id,
+          job_type: job.job_type,
+          job_name: `${job.job_name} (Retry)`,
+          vendor_code: job.vendor_code,
+          status: 'pending',
+          trigger_type: 'retry',
+          triggered_by: profileId,
+          retry_count: (job.retry_count || 0) + 1,
+          retried_from_id: job.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log audit event
+      await supabase.rpc('log_ops_audit', {
+        p_org_id: organizationId,
+        p_event_type: 'job_run_retried',
+        p_entity_type: 'job_run',
+        p_entity_id: job.id,
+        p_vendor_code: job.vendor_code,
+        p_metadata: { new_job_id: data.id, original_job_id: job.id },
+      });
+
+      toast.success('Job retry queued');
+      setSelectedJob(null);
+      fetchJobs();
+    } catch (error: any) {
+      console.error('Error retrying job:', error);
+      toast.error(error.message || 'Failed to retry job');
+    } finally {
+      setRetrying(false);
+    }
+  };
+
+  const handleCancel = async (job: JobRun) => {
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('job_runs')
+        .update({
+          status: 'cancelled',
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', job.id);
+
+      if (error) throw error;
+
+      toast.success('Job cancelled');
+      setSelectedJob(null);
+      fetchJobs();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to cancel job');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const exportLogs = (job: JobRun) => {
+    const logContent = job.logs?.map((log: any) => {
+      const timestamp = log.timestamp ? format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss.SSS') : '';
+      return `[${timestamp}] [${log.level?.toUpperCase() || 'INFO'}] ${log.message}`;
+    }).join('\n') || 'No logs available';
+
+    const blob = new Blob([logContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `job-${job.id}-logs.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -266,6 +375,20 @@ export default function JobsPage() {
                   ))}
                 </SelectContent>
               </Select>
+
+              <Select value={vendorFilter} onValueChange={(v) => { setVendorFilter(v); setPage(0); }}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Vendor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Vendors</SelectItem>
+                  <SelectItem value="arm">ARM</SelectItem>
+                  <SelectItem value="sedera">Sedera</SelectItem>
+                  <SelectItem value="zion">Zion</SelectItem>
+                  <SelectItem value="mphc">MPHC</SelectItem>
+                  <SelectItem value="altrua">Altrua</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -289,6 +412,7 @@ export default function JobsPage() {
                   <TableRow>
                     <TableHead>Job</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Vendor</TableHead>
                     <TableHead>Trigger</TableHead>
                     <TableHead>Started</TableHead>
                     <TableHead>Duration</TableHead>
@@ -312,7 +436,12 @@ export default function JobsPage() {
                             <p className="font-medium text-slate-700">
                               {job.job_name || jobTypeLabels[job.job_type] || job.job_type}
                             </p>
-                            <p className="text-xs text-slate-400">{job.job_type}</p>
+                            <p className="text-xs text-slate-400">
+                              {job.job_type}
+                              {job.retry_count > 0 && (
+                                <span className="ml-1 text-amber-500">(Retry #{job.retry_count})</span>
+                              )}
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -320,6 +449,15 @@ export default function JobsPage() {
                             <StatusIcon className={`w-3 h-3 mr-1 ${job.status === 'running' ? 'animate-spin' : ''}`} />
                             {config.label}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {job.vendor_code ? (
+                            <span className="px-2 py-1 bg-slate-100 rounded text-sm text-slate-600">
+                              {job.vendor_code.toUpperCase()}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-slate-500 capitalize">{job.trigger_type}</span>
@@ -475,7 +613,7 @@ export default function JobsPage() {
               </div>
 
               {/* Trigger Info */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <p className="text-sm font-medium text-slate-500 mb-1">Trigger Type</p>
                   <p className="text-slate-700 capitalize">{selectedJob.trigger_type}</p>
@@ -486,7 +624,27 @@ export default function JobsPage() {
                     {selectedJob.triggered_by_profile?.full_name || 'System'}
                   </p>
                 </div>
+                {selectedJob.vendor_code && (
+                  <div>
+                    <p className="text-sm font-medium text-slate-500 mb-1">Vendor</p>
+                    <p className="text-slate-700">{selectedJob.vendor_code.toUpperCase()}</p>
+                  </div>
+                )}
               </div>
+
+              {/* Retry Info */}
+              {selectedJob.retry_count > 0 && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-700">
+                    This is retry attempt #{selectedJob.retry_count}
+                    {selectedJob.retried_from_id && (
+                      <span className="text-amber-500 ml-1">
+                        (from job {selectedJob.retried_from_id.slice(0, 8)}...)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              )}
 
               {/* Error */}
               {selectedJob.error_message && (
@@ -507,7 +665,13 @@ export default function JobsPage() {
               {/* Logs */}
               {selectedJob.logs && selectedJob.logs.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-slate-700 mb-2">Logs</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-slate-700">Logs</p>
+                    <Button variant="ghost" size="sm" onClick={() => exportLogs(selectedJob)}>
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </Button>
+                  </div>
                   <ScrollArea className="h-64 rounded-lg border bg-slate-900 p-4">
                     <div className="font-mono text-xs text-slate-300 space-y-1">
                       {selectedJob.logs.map((log: any, i: number) => (
@@ -538,6 +702,43 @@ export default function JobsPage() {
               </div>
             </div>
           )}
+
+          <DialogFooter className="flex justify-between">
+            <div className="flex gap-2">
+              {selectedJob?.status === 'failed' && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleRetry(selectedJob)}
+                  disabled={retrying}
+                >
+                  {retrying ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                  )}
+                  Retry Job
+                </Button>
+              )}
+              {(selectedJob?.status === 'pending' || selectedJob?.status === 'running') && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700"
+                  onClick={() => selectedJob && handleCancel(selectedJob)}
+                  disabled={cancelling}
+                >
+                  {cancelling ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <StopCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Cancel Job
+                </Button>
+              )}
+            </div>
+            <Button variant="outline" onClick={() => setSelectedJob(null)}>
+              Close
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
