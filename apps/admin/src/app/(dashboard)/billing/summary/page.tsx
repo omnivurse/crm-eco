@@ -125,7 +125,7 @@ export default function BillingSummaryPage() {
 
       if (error) throw error;
 
-      const txns = (transactions || []) as Array<{ status: string; amount: number; created_at: string; payment_method?: string }>;
+      const txns = (transactions || []) as Array<{ status: string; amount: number; created_at: string; payment_method?: string; decline_category?: string }>;
 
       // Calculate main stats
       const collected = txns

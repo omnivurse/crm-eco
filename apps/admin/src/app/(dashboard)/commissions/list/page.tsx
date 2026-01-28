@@ -134,12 +134,13 @@ export default function CommissionsListPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await (supabase as any)
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -155,7 +156,8 @@ export default function CommissionsListPage() {
     setLoading(true);
 
     try {
-      let query = supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = (supabase as any)
         .from('commission_transactions')
         .select(
           `
@@ -212,7 +214,7 @@ export default function CommissionsListPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('advisors')
         .select('id, first_name, last_name, email')
         .eq('organization_id', organizationId)
@@ -230,7 +232,7 @@ export default function CommissionsListPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('commission_bonus_types')
         .select('*')
         .eq('organization_id', organizationId)
@@ -347,7 +349,7 @@ export default function CommissionsListPage() {
 
     setSavingBonus(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('commission_transactions')
         .insert({
           organization_id: organizationId,
@@ -370,7 +372,7 @@ export default function CommissionsListPage() {
       if (error) throw error;
 
       // Log to audit
-      await supabase.from('financial_audit_log').insert({
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'bonus_commission_generated',
         entity_type: 'commission',
@@ -416,7 +418,7 @@ export default function CommissionsListPage() {
     setCopying(true);
     try {
       // Get source agent's commission rates/structure
-      const { data: sourceRates, error: ratesError } = await supabase
+      const { data: sourceRates, error: ratesError } = await (supabase as any)
         .from('commission_rates')
         .select('*')
         .eq('advisor_id', copyForm.sourceAgentId);
@@ -435,14 +437,14 @@ export default function CommissionsListPage() {
           updated_at: undefined,
         }));
 
-        const { error: insertError } = await supabase.from('commission_rates').insert(newRates);
+        const { error: insertError } = await (supabase as any).from('commission_rates').insert(newRates);
 
         if (insertError && insertError.code !== '42P01') throw insertError;
         itemsCopied = newRates.length;
       }
 
       // Log the copy action
-      const { error: historyError } = await supabase.from('commission_copy_history').insert({
+      const { error: historyError } = await (supabase as any).from('commission_copy_history').insert({
         organization_id: organizationId,
         source_agent_id: copyForm.sourceAgentId,
         target_agent_id: copyForm.targetAgentId,
@@ -459,7 +461,7 @@ export default function CommissionsListPage() {
       }
 
       // Log to audit
-      await supabase.from('financial_audit_log').insert({
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'commission_structure_copied',
         entity_type: 'commission',
