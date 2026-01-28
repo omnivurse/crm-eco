@@ -274,5 +274,3 @@ import { MicrosoftOutlookAdapter } from './calendar/microsoft-outlook';
 
 registerAdapter('google_calendar', 'calendar', () => new GoogleCalendarAdapter());
 registerAdapter('microsoft_outlook', 'calendar', () => new MicrosoftOutlookAdapter());
-
-export { PLANNED_ADAPTERS };

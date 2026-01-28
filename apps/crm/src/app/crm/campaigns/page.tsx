@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   Mail,
@@ -74,7 +75,7 @@ interface CampaignStats {
 // Components
 // ============================================================================
 
-function StatCard({
+const StatCard = memo(function StatCard({
   label,
   value,
   icon,
@@ -108,7 +109,7 @@ function StatCard({
       </div>
     </div>
   );
-}
+});
 
 function StatusBadge({ status }: { status: Campaign['status'] }) {
   const statusConfig: Record<Campaign['status'], { label: string; className: string }> = {
@@ -129,7 +130,7 @@ function StatusBadge({ status }: { status: Campaign['status'] }) {
   );
 }
 
-function CampaignRow({ campaign, onAction }: { campaign: Campaign; onAction: (action: string, id: string) => void }) {
+const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign: Campaign; onAction: (action: string, id: string) => void }) {
   const progress = campaign.total_recipients > 0
     ? Math.round((campaign.sent_count / campaign.total_recipients) * 100)
     : 0;
@@ -242,18 +243,20 @@ function CampaignRow({ campaign, onAction }: { campaign: Campaign; onAction: (ac
       </TableCell>
     </TableRow>
   );
-}
+});
 
 // ============================================================================
 // Main Page
 // ============================================================================
 
 export default function CampaignsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<CampaignStats>({ total: 0, draft: 0, scheduled: 0, sending: 0, sent: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -283,10 +286,7 @@ export default function CampaignsPage() {
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading campaigns:', error);
-        return;
-      }
+      if (error) return;
 
       const campaignList = (data || []) as Campaign[];
       setCampaigns(campaignList);
@@ -299,24 +299,98 @@ export default function CampaignsPage() {
         sending: campaignList.filter(c => c.status === 'sending').length,
         sent: campaignList.filter(c => c.status === 'sent').length,
       });
-    } catch (error) {
-      console.error('Error loading campaigns:', error);
+    } catch {
+      // Error handled silently
     } finally {
       setLoading(false);
     }
   }
 
-  function handleAction(action: string, campaignId: string) {
-    console.log('Action:', action, 'Campaign:', campaignId);
-    // TODO: Implement campaign actions
-  }
+  const handleAction = useCallback(async (action: string, campaignId: string) => {
+    setActionLoading(campaignId);
 
-  const filteredCampaigns = campaigns.filter(campaign => {
+    try {
+      switch (action) {
+        case 'send': {
+          // Start sending the campaign
+          const response = await fetch(`/api/campaigns/${campaignId}/send`, {
+            method: 'POST',
+          });
+          if (!response.ok) throw new Error('Failed to send campaign');
+          break;
+        }
+        case 'pause': {
+          // Pause the campaign
+          const { error } = await supabase
+            .from('email_campaigns')
+            .update({ status: 'paused' })
+            .eq('id', campaignId);
+          if (error) throw error;
+          break;
+        }
+        case 'resume': {
+          // Resume paused campaign
+          const { error } = await supabase
+            .from('email_campaigns')
+            .update({ status: 'sending' })
+            .eq('id', campaignId);
+          if (error) throw error;
+          break;
+        }
+        case 'duplicate': {
+          // Get original campaign
+          const { data: original, error: fetchError } = await supabase
+            .from('email_campaigns')
+            .select('*')
+            .eq('id', campaignId)
+            .single();
+          if (fetchError || !original) throw fetchError || new Error('Campaign not found');
+
+          // Create duplicate
+          const { error: insertError } = await supabase
+            .from('email_campaigns')
+            .insert({
+              ...original,
+              id: undefined,
+              name: `${original.name} (Copy)`,
+              status: 'draft',
+              scheduled_at: null,
+              started_at: null,
+              completed_at: null,
+              sent_count: 0,
+              created_at: new Date().toISOString(),
+            });
+          if (insertError) throw insertError;
+          break;
+        }
+        case 'delete': {
+          if (!confirm('Are you sure you want to delete this campaign?')) {
+            setActionLoading(null);
+            return;
+          }
+          const { error } = await supabase
+            .from('email_campaigns')
+            .delete()
+            .eq('id', campaignId);
+          if (error) throw error;
+          break;
+        }
+      }
+      // Refresh campaigns list
+      loadCampaigns();
+    } catch {
+      // Error handled silently - could add toast notification here
+    } finally {
+      setActionLoading(null);
+    }
+  }, [supabase]);
+
+  const filteredCampaigns = useMemo(() => campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       campaign.subject.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
     return matchesSearch && matchesStatus;
-  });
+  }), [campaigns, searchQuery, statusFilter]);
 
   if (loading) {
     return <CampaignsSkeleton />;

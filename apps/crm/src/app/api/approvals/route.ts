@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { 
-  getPendingApprovalsForUser, 
+import {
+  getPendingApprovalsForUser,
   getApprovalHistory,
   getApprovalInbox,
   getApprovalDetail,
   getApprovalDecisions,
   type ApprovalStatus,
 } from '@/lib/approvals';
+
+export const dynamic = 'force-dynamic';
 
 async function createClient() {
   const cookieStore = await cookies();

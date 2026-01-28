@@ -3,6 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getAutomationRuns } from '@/lib/automation';
 
+export const dynamic = 'force-dynamic';
+
 async function createClient() {
   const cookieStore = await cookies();
   return createServerClient(

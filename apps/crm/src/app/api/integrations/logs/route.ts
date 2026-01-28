@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLogs, getLogStats, type LogFilters } from '@/lib/integrations';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/integrations/logs
  * Get integration logs with filtering and pagination

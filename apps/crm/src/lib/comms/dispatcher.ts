@@ -596,8 +596,4 @@ export async function processMessageQueue(limit: number = 50): Promise<{
   };
 }
 
-// ============================================================================
-// Exports
-// ============================================================================
-
-export { getContactPreferences, checkPreferences };
+// Note: getContactPreferences and checkPreferences are internal helpers used by dispatchMessage

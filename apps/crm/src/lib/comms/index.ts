@@ -36,6 +36,4 @@ export {
   dispatchMessage,
   sendMessageNow,
   processMessageQueue,
-  getContactPreferences,
-  checkPreferences,
 } from './dispatcher';

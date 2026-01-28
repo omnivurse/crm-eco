@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getTeamMembers } from '@/lib/inbox';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/inbox/team
  * Get team members available for assignment
