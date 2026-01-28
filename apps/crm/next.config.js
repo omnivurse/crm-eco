@@ -1,12 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared'],
-  // ESLint config - suppress noisy warnings during build
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors - but warnings are suppressed for cleaner builds
-    ignoreDuringBuilds: false,
-  },
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
@@ -24,48 +18,6 @@ const nextConfig = {
     // Remove console.log in production
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-  // Webpack optimizations for better code splitting
-  webpack: (config, { isServer }) => {
-    if (!isServer) {
-      // Split large vendor chunks
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        minSize: 20000,
-        maxSize: 244000,
-        cacheGroups: {
-          // Separate DnD kit for pipeline page
-          dndkit: {
-            test: /[\\/]node_modules[\\/](@dnd-kit)[\\/]/,
-            name: 'dndkit',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          // Separate Tiptap editor
-          tiptap: {
-            test: /[\\/]node_modules[\\/](@tiptap)[\\/]/,
-            name: 'tiptap',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          // Separate framer-motion for animations
-          framer: {
-            test: /[\\/]node_modules[\\/](framer-motion)[\\/]/,
-            name: 'framer',
-            priority: 30,
-            reuseExistingChunk: true,
-          },
-          // Common vendor chunks
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendor',
-            priority: 10,
-            reuseExistingChunk: true,
-          },
-        },
-      };
-    }
-    return config;
-  },
   // Headers for static asset caching
   async headers() {
     return [
@@ -78,18 +30,8 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: '/fonts/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
     ];
   },
 };
 
 module.exports = nextConfig;
-

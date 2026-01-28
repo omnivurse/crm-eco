@@ -624,6 +624,55 @@ export async function getUpcomingTasks(profileId: string, days = 7): Promise<Crm
   return (data || []) as CrmTask[];
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  location?: string;
+  type: 'meeting' | 'call' | 'task' | 'reminder';
+}
+
+export async function getCalendarEvents(orgId: string, days = 14): Promise<CalendarEvent[]> {
+  const supabase = await createCrmClient();
+
+  const now = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + days);
+
+  // Fetch meetings and calls from crm_tasks
+  const { data, error } = await supabase
+    .from('crm_tasks')
+    .select('id, title, due_at, activity_type, meeting_location')
+    .eq('org_id', orgId)
+    .in('activity_type', ['meeting', 'call'])
+    .neq('status', 'completed')
+    .gte('due_at', now.toISOString())
+    .lte('due_at', futureDate.toISOString())
+    .order('due_at', { ascending: true })
+    .limit(20);
+
+  if (error) throw error;
+
+  // Transform to CalendarEvent format
+  return (data || []).map((task: {
+    id: string;
+    title: string;
+    due_at: string | null;
+    activity_type: string;
+    meeting_location: string | null;
+  }) => ({
+    id: task.id,
+    title: task.title,
+    start_time: task.due_at || new Date().toISOString(),
+    end_time: task.due_at
+      ? new Date(new Date(task.due_at).getTime() + 3600000).toISOString() // 1 hour duration
+      : new Date().toISOString(),
+    location: task.meeting_location || undefined,
+    type: task.activity_type as 'meeting' | 'call',
+  }));
+}
+
 // ============================================================================
 // Audit Log Queries
 // ============================================================================
