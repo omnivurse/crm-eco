@@ -131,7 +131,6 @@ export default function EligibilityPage() {
     if (!organizationId) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('job_runs')
         .select('*')
@@ -189,7 +188,6 @@ export default function EligibilityPage() {
 
     try {
       // Create job record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -216,7 +214,6 @@ export default function EligibilityPage() {
         const membersIneligible = membersChecked - membersEligible;
         const membersChanged = Math.floor(Math.random() * 10);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from('job_runs')
           .update({

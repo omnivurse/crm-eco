@@ -78,7 +78,6 @@ export async function createSession(
     const sessionToken = generateUUID();
     const expiresAt = new Date(Date.now() + SESSION_ABSOLUTE_TIMEOUT_MS);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('user_sessions') as any).insert({
         user_id: userId,
         session_token: sessionToken,
@@ -115,7 +114,6 @@ export async function validateSession(): Promise<SessionInfo | null> {
         return null;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sessionData = session as any;
 
     // Check absolute timeout
@@ -134,7 +132,6 @@ export async function validateSession(): Promise<SessionInfo | null> {
     }
 
     // Update last activity
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase.from('user_sessions') as any)
         .update({ last_activity_at: new Date().toISOString() })
         .eq('session_token', sessionToken);
@@ -212,7 +209,6 @@ export async function getUserActiveSessions(userId: string): Promise<SessionInfo
 
     if (error || !data) return [];
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (data as any[]).map((session: any) => ({
         id: session.id,
         userId: session.user_id,

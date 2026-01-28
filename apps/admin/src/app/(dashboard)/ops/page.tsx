@@ -85,7 +85,6 @@ export default function OpsPage() {
 
     async function fetchStats() {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sb = supabase as any;
         const [totalJobsResult, runningJobsResult, failedJobsResult, recentJobsResult, vendorStatsResult] = await Promise.all([
           sb

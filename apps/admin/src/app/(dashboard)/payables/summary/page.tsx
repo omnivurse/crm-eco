@@ -112,7 +112,6 @@ export default function PayablesSummaryPage() {
 
     try {
       // Fetch all payables
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: payables, error } = await (supabase as any)
         .from('payables')
         .select('*')

@@ -122,7 +122,6 @@ export default function NachaExportPage() {
     if (!organizationId) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('billing_transactions')
         .select(
@@ -158,7 +157,6 @@ export default function NachaExportPage() {
     if (!organizationId) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('job_runs')
         .select('*')
@@ -334,7 +332,6 @@ export default function NachaExportPage() {
       const fileName = `NACHA_${format(new Date(), 'yyyyMMdd_HHmmss')}.txt`;
 
       // Create job record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -360,14 +357,12 @@ export default function NachaExportPage() {
       if (jobError) throw jobError;
 
       // Update transactions as exported
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('billing_transactions')
         .update({ status: 'exported', nacha_job_id: job.id })
         .in('id', Array.from(selectedTransactions));
 
       // Log to audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('billing_audit_log').insert({
         action: 'nacha_export',
         entity_type: 'nacha_file',

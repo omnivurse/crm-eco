@@ -76,7 +76,6 @@ export function ProductsClient({ products, organizationId, categories }: Product
 
   const handleDuplicate = async (product: Product) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('plans')
         .insert({

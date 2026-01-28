@@ -529,7 +529,6 @@ export class GoogleCalendarAdapter implements CalendarAdapter {
   // HTTP Client
   // ============================================================================
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async makeRequest<T = any>(
     path: string,
     params: Record<string, string> = {},

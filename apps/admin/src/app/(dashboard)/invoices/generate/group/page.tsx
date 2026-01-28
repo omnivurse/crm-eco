@@ -138,7 +138,6 @@ export default function GenerateGroupInvoicePage() {
 
     try {
       // Create generation job
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error: jobError } = await (supabase as any)
         .from('invoice_generation_jobs')
         .insert({
@@ -163,7 +162,6 @@ export default function GenerateGroupInvoicePage() {
       setProgress(10);
 
       // Get group members
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: members, error: membersError } = await (supabase as any)
         .from('invoice_group_members')
         .select('member_id')
@@ -176,7 +174,6 @@ export default function GenerateGroupInvoicePage() {
 
       if (memberIds.length === 0) {
         // Update job as failed
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from('invoice_generation_jobs')
           .update({
@@ -215,7 +212,6 @@ export default function GenerateGroupInvoicePage() {
           const invoiceNumber = `INV-${format(new Date(), 'yyyyMMdd')}-${String(successCount + 1).padStart(4, '0')}`;
           const invoiceTotal = (member as { monthly_share?: number }).monthly_share || 0;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error: invoiceError } = await (supabase as any).from('invoices').insert({
             organization_id: organizationId,
             invoice_number: invoiceNumber,
@@ -246,7 +242,6 @@ export default function GenerateGroupInvoicePage() {
       setProgress(95);
 
       // Update job with results
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('invoice_generation_jobs')
         .update({
@@ -263,7 +258,6 @@ export default function GenerateGroupInvoicePage() {
         .eq('id', job.id);
 
       // Update group last generated
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('invoice_groups')
         .update({
@@ -273,7 +267,6 @@ export default function GenerateGroupInvoicePage() {
         .eq('id', selectedGroupId);
 
       // Log to audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_batch_generated',

@@ -89,7 +89,6 @@ export default async function NeedsCommandCenterPage() {
   // Fetch needs for this organization
   const supabase = await createServerSupabaseClient();
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: needsData, error: needsError } = await (supabase as any)
     .from('needs')
     .select(`
@@ -133,7 +132,6 @@ export default async function NeedsCommandCenterPage() {
   let membersMap: Record<string, { first_name: string; last_name: string }> = {};
   
   if (memberIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: membersData } = await (supabase as any)
       .from('members')
       .select('id, first_name, last_name')
@@ -154,7 +152,6 @@ export default async function NeedsCommandCenterPage() {
   let assigneesMap: Record<string, { full_name: string }> = {};
 
   if (assigneeIds.length > 0) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: profilesData } = await (supabase as any)
       .from('profiles')
       .select('id, full_name')
@@ -237,7 +234,6 @@ export default async function NeedsCommandCenterPage() {
   );
 
   // Fetch all Ops profiles in this organization for assignment picker
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: opsProfilesData } = await (supabase as any)
     .from('profiles')
     .select('id, full_name, role')
@@ -254,7 +250,6 @@ export default async function NeedsCommandCenterPage() {
   );
 
   // Fetch saved views for this user in the Needs Command Center context
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: savedViewsData } = await (supabase as any)
     .from('saved_views')
     .select('id, organization_id, owner_profile_id, context, name, is_default, filters, created_at, updated_at')

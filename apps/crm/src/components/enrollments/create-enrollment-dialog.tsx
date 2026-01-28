@@ -6,7 +6,6 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import { computeEnrollmentWarnings, getWarningMessages } from '@crm-eco/lib';
 
 // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getSupabase(): any {
   return createClient();
 }

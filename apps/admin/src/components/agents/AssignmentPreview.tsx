@@ -67,7 +67,6 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
     setIsLoading(true);
     try {
       // Try to use the database function if available
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .rpc('preview_round_robin_assignments', {
           p_rule_id: rule.id,

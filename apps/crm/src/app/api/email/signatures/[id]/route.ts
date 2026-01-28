@@ -11,7 +11,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {
@@ -58,7 +57,6 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {
@@ -160,7 +158,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {

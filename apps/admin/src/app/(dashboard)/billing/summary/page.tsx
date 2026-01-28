@@ -115,7 +115,6 @@ export default function BillingSummaryPage() {
     const { start, end } = getDateRange(datePreset);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: transactions, error } = await (supabase as any)
         .from('billing_transactions')
         .select('*')

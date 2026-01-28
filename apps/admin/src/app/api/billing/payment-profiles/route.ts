@@ -135,7 +135,6 @@ export async function POST(request: NextRequest) {
     });
 
     // Log activity
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).rpc('log_admin_activity', {
       p_organization_id: profile.organization_id,
       p_actor_profile_id: profile.id,
@@ -193,7 +192,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verify payment profile belongs to organization
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: paymentProfile } = await (supabase as any)
       .from('payment_profiles')
       .select('id, member_id')
@@ -210,7 +208,6 @@ export async function DELETE(request: NextRequest) {
     await billingService.deletePaymentProfile(profileId);
 
     // Log activity
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).rpc('log_admin_activity', {
       p_organization_id: profile.organization_id,
       p_actor_profile_id: profile.id,

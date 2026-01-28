@@ -64,6 +64,22 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [showLinkInput, setShowLinkInput] = useState(false);
 
+  const setLink = useCallback(() => {
+    if (!editor) return;
+    if (linkUrl) {
+      editor
+        .chain()
+        .focus()
+        .extendMarkRange('link')
+        .setLink({ href: linkUrl })
+        .run();
+    } else {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    }
+    setShowLinkInput(false);
+    setLinkUrl('');
+  }, [editor, linkUrl]);
+
   if (!editor) {
     return null;
   }
@@ -100,21 +116,6 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
   const ToolbarDivider = () => (
     <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
   );
-
-  const setLink = useCallback(() => {
-    if (linkUrl) {
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange('link')
-        .setLink({ href: linkUrl })
-        .run();
-    } else {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run();
-    }
-    setShowLinkInput(false);
-    setLinkUrl('');
-  }, [editor, linkUrl]);
 
   const insertMergeField = (fieldKey: string, label: string) => {
     editor.chain().focus().insertMergeField(fieldKey, label).run();

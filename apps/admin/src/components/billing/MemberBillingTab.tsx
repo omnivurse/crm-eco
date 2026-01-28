@@ -68,7 +68,6 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
   async function loadBillingData() {
     setLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
       
       const [profilesRes, schedulesRes, transactionsRes] = await Promise.all([
@@ -145,7 +144,6 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
   async function handleSetDefault(profileId: string) {
     setProcessingId(profileId);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any;
       
       // Unset all defaults
@@ -177,7 +175,6 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
 
     setProcessingId(profileId);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('payment_profiles')
         .update({ is_active: false, is_default: false })

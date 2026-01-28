@@ -714,24 +714,24 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
     deals: 'members',     // deals might also map to members
   };
 
-  for (const module of modules) {
+  for (const crmModule of modules) {
     // Count from CRM records table
     const { count: crmTotal } = await supabase
       .from('crm_records')
       .select('*', { count: 'exact', head: true })
-      .eq('module_id', module.id);
+      .eq('module_id', crmModule.id);
 
     const { count: crmThisWeek } = await supabase
       .from('crm_records')
       .select('*', { count: 'exact', head: true })
-      .eq('module_id', module.id)
+      .eq('module_id', crmModule.id)
       .gte('created_at', oneWeekAgo.toISOString());
 
     let totalRecords = crmTotal || 0;
     let createdThisWeek = crmThisWeek || 0;
 
     // Also check legacy tables for backwards compatibility
-    const legacyTable = legacyTableMap[module.key];
+    const legacyTable = legacyTableMap[crmModule.key];
     if (legacyTable) {
       try {
         const { count: legacyTotal } = await supabase
@@ -753,8 +753,8 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
     }
 
     stats.push({
-      moduleKey: module.key,
-      moduleName: module.name_plural || module.name + 's',
+      moduleKey: crmModule.key,
+      moduleName: crmModule.name_plural || crmModule.name + 's',
       totalRecords,
       createdThisWeek,
     });

@@ -51,7 +51,6 @@ async function getBillingStats(): Promise<BillingStats | null> {
   const orgId = profile.organization_id;
 
   // Get billing statistics
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const db = supabase as any;
   
   const [
@@ -115,7 +114,6 @@ async function getRecentTransactions(): Promise<RecentTransaction[]> {
 
   if (!profile) return [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: transactions, error } = await (supabase as any)
     .from('billing_transactions')
     .select(`

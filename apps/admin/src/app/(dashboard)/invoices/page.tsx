@@ -229,7 +229,6 @@ export default function InvoicesPage() {
 
   const handleSendInvoice = async (invoice: Invoice) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('invoices')
         .update({
@@ -240,7 +239,6 @@ export default function InvoicesPage() {
 
       if (error) throw error;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_sent',
@@ -260,7 +258,6 @@ export default function InvoicesPage() {
 
   const handleMarkPaid = async (invoice: Invoice) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('invoices')
         .update({
@@ -273,7 +270,6 @@ export default function InvoicesPage() {
 
       if (error) throw error;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_paid',

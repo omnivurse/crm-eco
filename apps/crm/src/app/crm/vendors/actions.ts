@@ -131,7 +131,6 @@ async function verifyCrmAdminAccess() {
 export async function getVendorStats(): Promise<ActionResult<VendorStats>> {
   try {
     const profile = await verifyCrmAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const sevenDaysAgo = new Date();
@@ -198,7 +197,6 @@ export async function getVendors(options?: {
 }): Promise<ActionResult<VendorWithStats[]>> {
   try {
     const profile = await verifyCrmAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     let query = supabase
@@ -243,7 +241,6 @@ export async function getVendors(options?: {
 export async function getVendorById(id: string): Promise<ActionResult<Vendor>> {
   try {
     const profile = await verifyCrmAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const { data, error } = await supabase
@@ -279,7 +276,6 @@ export async function getRecentJobs(options?: {
 }): Promise<ActionResult<RecentJob[]>> {
   try {
     const profile = await verifyCrmAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     let query = supabase
@@ -359,7 +355,6 @@ export async function getVendorChanges(options?: {
 }): Promise<ActionResult<{ changes: VendorChange[]; total: number }>> {
   try {
     const profile = await verifyCrmAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     let query = supabase
@@ -425,7 +420,6 @@ export async function reviewChange(
 ): Promise<ActionResult> {
   try {
     const profile = await verifyCrmAdminAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const statusMap: Record<'approve' | 'reject' | 'ignore', 'approved' | 'rejected' | 'ignored'> = {
@@ -467,7 +461,6 @@ export async function bulkReviewChanges(
 ): Promise<ActionResult<{ processed: number; failed: number }>> {
   try {
     const profile = await verifyCrmAdminAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const statusMap: Record<'approve' | 'reject' | 'ignore', 'approved' | 'rejected' | 'ignored'> = {
@@ -514,7 +507,6 @@ export async function bulkReviewChanges(
 export async function getConnectors(vendorId?: string): Promise<ActionResult<VendorConnector[]>> {
   try {
     const profile = await verifyCrmAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     let query = supabase
@@ -568,7 +560,6 @@ export async function createVendorFile(params: {
 }): Promise<ActionResult<{ fileId: string }>> {
   try {
     const profile = await verifyCrmAdminAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const { data, error } = await supabase
@@ -623,7 +614,6 @@ export async function createVendor(params: {
 }): Promise<ActionResult<{ vendorId: string }>> {
   try {
     const profile = await verifyCrmAdminAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const { data, error } = await supabase
@@ -683,7 +673,6 @@ export async function updateVendor(
 ): Promise<ActionResult> {
   try {
     const profile = await verifyCrmAdminAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const updateData: Record<string, unknown> = { updated_by: profile.id };
@@ -727,7 +716,6 @@ export async function updateVendor(
 export async function deleteVendor(id: string): Promise<ActionResult> {
   try {
     const profile = await verifyCrmAdminAccess();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const { error } = await supabase

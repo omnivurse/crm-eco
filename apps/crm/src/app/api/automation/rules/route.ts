@@ -7,7 +7,6 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
     
     const { searchParams } = new URL(request.url);
@@ -42,7 +41,6 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
     const body = await request.json();
     

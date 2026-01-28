@@ -343,7 +343,6 @@ export default function SchedulerPage() {
       };
 
       if (editingJob) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('job_definitions')
           .update(jobData)
@@ -352,7 +351,6 @@ export default function SchedulerPage() {
         if (error) throw error;
         toast.success('Schedule updated');
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('job_definitions')
           .insert({
@@ -378,7 +376,6 @@ export default function SchedulerPage() {
 
   const toggleActive = async (job: JobDefinition) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('job_definitions')
         .update({ is_active: !job.is_active })
@@ -412,7 +409,6 @@ export default function SchedulerPage() {
 
   const runJobNow = async (job: JobDefinition) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('job_runs')
         .insert({

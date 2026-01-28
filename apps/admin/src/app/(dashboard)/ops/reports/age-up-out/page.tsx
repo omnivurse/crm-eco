@@ -238,7 +238,6 @@ export default function AgeUpOutPage() {
     setRunning(true);
     try {
       // Create a job run for the age up/out check
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -271,7 +270,6 @@ export default function AgeUpOutPage() {
 
     setSaving(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('age_up_out_results')
         .update({

@@ -21,7 +21,6 @@ async function getVendor(id: string) {
 
   if (!profile) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: vendor } = await (supabase as any)
     .from('vendors')
     .select('*')

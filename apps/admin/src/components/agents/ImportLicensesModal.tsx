@@ -232,7 +232,6 @@ export function ImportLicensesModal({
             notes: result.data.notes || null,
           };
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error } = await (supabase as any).from('agent_licenses').insert(data);
           if (error) throw error;
         } else {
@@ -254,7 +253,6 @@ export function ImportLicensesModal({
             notes: result.data.notes || null,
           };
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error } = await (supabase as any).from('agent_appointments').insert(data);
           if (error) throw error;
         }

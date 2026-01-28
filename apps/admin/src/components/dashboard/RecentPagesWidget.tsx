@@ -145,7 +145,6 @@ export function RecentPagesWidget({ profileId, organizationId }: RecentPagesWidg
     try {
       const title = getTitleFromPath(pathname);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('recent_page_visits').upsert(
         {
           profile_id: profileId,

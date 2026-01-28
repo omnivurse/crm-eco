@@ -235,7 +235,6 @@ export default function JobsPage() {
 
     setRetrying(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -256,7 +255,6 @@ export default function JobsPage() {
       if (error) throw error;
 
       // Log audit event
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).rpc('log_ops_audit', {
         p_org_id: organizationId,
         p_event_type: 'job_run_retried',
@@ -280,7 +278,6 @@ export default function JobsPage() {
   const handleCancel = async (job: JobRun) => {
     setCancelling(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('job_runs')
         .update({

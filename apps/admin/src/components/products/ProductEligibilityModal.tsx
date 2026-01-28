@@ -232,7 +232,6 @@ export function ProductEligibilityModal({
         is_active: true,
       };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       if (editingRule) {
         const { error } = await sb
@@ -286,7 +285,6 @@ export function ProductEligibilityModal({
 
   const handleToggleActive = async (rule: EligibilityRule) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('product_eligibility_rules')
         .update({ is_active: !rule.is_active })

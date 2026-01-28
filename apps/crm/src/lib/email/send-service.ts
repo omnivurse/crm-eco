@@ -48,7 +48,6 @@ export interface SendSmsResult {
 // Helper to get supabase client with any table access
 async function getSupabaseAny() {
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return supabase as any;
 }
 

@@ -515,7 +515,6 @@ export class MicrosoftOutlookAdapter implements CalendarAdapter {
     path: string,
     method: 'GET' | 'POST' | 'PATCH' | 'DELETE' = 'GET',
     body?: Record<string, unknown>
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
     if (!this.accessToken) {
       throw new Error('Not authenticated');

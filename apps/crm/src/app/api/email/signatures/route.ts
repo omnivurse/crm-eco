@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 // GET - List user's signatures
 export async function GET(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {
@@ -52,7 +51,6 @@ export async function GET(request: NextRequest) {
 // POST - Create new signature
 export async function POST(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {

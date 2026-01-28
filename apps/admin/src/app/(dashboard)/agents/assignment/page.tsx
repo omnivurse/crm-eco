@@ -149,7 +149,6 @@ export default function AgentAssignmentPage() {
 
       // Load assignment rules
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: rulesData } = await (supabase as any)
           .from('crm_assignment_rules')
           .select('*')
@@ -236,7 +235,6 @@ export default function AgentAssignmentPage() {
       };
 
       if (selectedRule) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('crm_assignment_rules')
           .update(ruleData)
@@ -245,7 +243,6 @@ export default function AgentAssignmentPage() {
         if (error) throw error;
         toast.success('Assignment rule updated successfully');
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('crm_assignment_rules')
           .insert(ruleData);
@@ -267,7 +264,6 @@ export default function AgentAssignmentPage() {
 
   const handleToggleEnabled = async (rule: AssignmentRule) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('crm_assignment_rules')
         .update({ is_enabled: !rule.is_enabled })
@@ -287,7 +283,6 @@ export default function AgentAssignmentPage() {
     setIsSaving(true);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('crm_assignment_rules')
         .delete()

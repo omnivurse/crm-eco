@@ -156,7 +156,6 @@ export default function CommissionsListPage() {
     setLoading(true);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let query = (supabase as any)
         .from('commission_transactions')
         .select(

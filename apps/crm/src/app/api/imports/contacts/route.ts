@@ -13,7 +13,6 @@ interface CrmModule {
   id: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getSupabaseAny() {
   const supabase = await createServerSupabaseClient();
   return supabase as any;

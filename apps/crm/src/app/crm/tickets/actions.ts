@@ -56,7 +56,6 @@ export async function createTicketsSavedView(params: {
 
     // If setting as default, first clear other defaults for this user/context
     if (params.setAsDefault) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('saved_views')
         .update({ is_default: false })
@@ -65,7 +64,6 @@ export async function createTicketsSavedView(params: {
     }
 
     // Insert the new view
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('saved_views')
       .insert({
@@ -103,7 +101,6 @@ export async function setTicketsSavedViewDefault(viewId: string): Promise<Action
     const supabase = await createServerSupabaseClient();
 
     // Verify the view belongs to this user
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: view, error: viewError } = await (supabase as any)
       .from('saved_views')
       .select('id')
@@ -117,7 +114,6 @@ export async function setTicketsSavedViewDefault(viewId: string): Promise<Action
     }
 
     // Clear other defaults for this user/context
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('saved_views')
       .update({ is_default: false })
@@ -125,7 +121,6 @@ export async function setTicketsSavedViewDefault(viewId: string): Promise<Action
       .eq('context', TICKETS_BOARD_CONTEXT);
 
     // Set this one as default
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('saved_views')
       .update({ is_default: true })
@@ -154,7 +149,6 @@ export async function clearTicketsSavedViewDefault(): Promise<ActionResult> {
     const profile = await verifyAccess();
     const supabase = await createServerSupabaseClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('saved_views')
       .update({ is_default: false })
@@ -180,7 +174,6 @@ export async function deleteTicketsSavedView(viewId: string): Promise<ActionResu
     const profile = await verifyAccess();
     const supabase = await createServerSupabaseClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('saved_views')
       .delete()

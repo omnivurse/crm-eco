@@ -83,8 +83,8 @@ export function ModulesSettingsClient({ modules: initialModules, profile }: Modu
       });
 
       if (response.ok) {
-        const module = await response.json();
-        setModules((prev) => [...prev, module]);
+        const newModule = await response.json();
+        setModules((prev) => [...prev, newModule]);
         setShowCreateDialog(false);
         setNewModuleName('');
         setNewModuleKey('');

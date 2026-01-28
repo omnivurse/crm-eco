@@ -251,13 +251,11 @@ export default function InvoiceGroupsPage() {
       };
 
       if (editingGroup) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('invoice_groups').update(saveData).eq('id', editingGroup.id);
 
         if (error) throw error;
         toast.success('Invoice group updated');
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('invoice_groups').insert({
           ...saveData,
           organization_id: organizationId,
@@ -295,7 +293,6 @@ export default function InvoiceGroupsPage() {
 
   const toggleActive = async (group: InvoiceGroup) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('invoice_groups')
         .update({ is_active: !group.is_active })
@@ -314,7 +311,6 @@ export default function InvoiceGroupsPage() {
     if (!selectedGroup) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from('invoice_group_members').insert({
         invoice_group_id: selectedGroup.id,
         member_id: memberId,
@@ -330,7 +326,6 @@ export default function InvoiceGroupsPage() {
       }
 
       // Update member count
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('invoice_groups')
         .update({ member_count: (selectedGroup.member_count || 0) + 1 })
@@ -356,7 +351,6 @@ export default function InvoiceGroupsPage() {
       if (error) throw error;
 
       // Update member count
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('invoice_groups')
         .update({ member_count: Math.max(0, (selectedGroup.member_count || 0) - 1) })

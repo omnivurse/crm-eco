@@ -55,7 +55,6 @@ async function getVendorWithData(id: string) {
 
   if (!profile) return null;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
 
   const [vendorResult, filesResult, changesResult, connectorsResult] = await Promise.all([
