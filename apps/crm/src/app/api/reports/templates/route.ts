@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { REPORT_TEMPLATES, TEMPLATE_CATEGORIES, getTemplatesByCategory, type TemplateCategory } from '@/lib/reports';
 
+export const dynamic = 'force-dynamic';
+
 // GET /api/reports/templates - List all templates
 export async function GET(request: NextRequest) {
   try {
