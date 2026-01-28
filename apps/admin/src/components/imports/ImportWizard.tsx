@@ -264,7 +264,8 @@ export function ImportWizard({
 
     try {
       // Create import job record
-      const { data: job, error: jobError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: job, error: jobError } = await (supabase as any)
         .from('import_jobs')
         .insert({
           organization_id: organizationId,
@@ -284,7 +285,7 @@ export function ImportWizard({
 
       if (jobError) throw jobError;
 
-      setImportJobId(job.id);
+      setImportJobId((job as { id: string }).id);
 
       // Process in batches
       const batchSize = 50;
@@ -309,8 +310,10 @@ export function ImportWizard({
             mappedData.organization_id = organizationId;
 
             // Insert based on type
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const sb = supabase as any;
             if (importType === 'member') {
-              const { error } = await supabase.from('members').insert({
+              const { error } = await sb.from('members').insert({
                 first_name: mappedData.first_name,
                 last_name: mappedData.last_name,
                 email: mappedData.email,
@@ -330,7 +333,7 @@ export function ImportWizard({
                 successCount++;
               }
             } else if (importType === 'agent') {
-              const { error } = await supabase.from('advisors').insert({
+              const { error } = await sb.from('advisors').insert({
                 first_name: mappedData.first_name,
                 last_name: mappedData.last_name,
                 email: mappedData.email,
@@ -359,7 +362,8 @@ export function ImportWizard({
       }
 
       // Update job with results
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('import_jobs')
         .update({
           status: 'completed',
@@ -369,7 +373,7 @@ export function ImportWizard({
           skip_count: skipCount,
           completed_at: new Date().toISOString(),
         })
-        .eq('id', job.id);
+        .eq('id', (job as { id: string }).id);
 
       setResults({
         total: parsedData.length,
@@ -382,10 +386,11 @@ export function ImportWizard({
       setStep('complete');
 
       // Log activity
-      await supabase.rpc('log_admin_activity', {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).rpc('log_admin_activity', {
         p_actor_profile_id: profileId,
         p_entity_type: importType,
-        p_entity_id: job.id,
+        p_entity_id: (job as { id: string }).id,
         p_action: 'import',
         p_metadata: { count: successCount, errors: errorCount, skipped: skipCount },
       }).catch(() => {});
