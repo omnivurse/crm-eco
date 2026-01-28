@@ -362,7 +362,7 @@ export function SearchAgentsModal({
                     >
                       <div className="flex items-center gap-3">
                         {multiSelect && (
-                          <Checkbox checked={isSelected} readOnly />
+                          <Checkbox checked={isSelected} disabled />
                         )}
                         <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center">
                           <span className="text-sm font-medium text-teal-700">

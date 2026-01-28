@@ -237,54 +237,56 @@ export function BulkPricingImportModal({
 
     try {
       // First, get or create IUA levels and age brackets
-      const iuaAmounts = [...new Set(validationResult.valid.map(r => r.iua_amount))];
-      const ageBrackets = [...new Set(validationResult.valid.map(r => `${r.age_min}-${r.age_max}`))];
+      const iuaAmounts = Array.from(new Set(validationResult.valid.map(r => r.iua_amount)));
+      const ageBrackets = Array.from(new Set(validationResult.valid.map(r => `${r.age_min}-${r.age_max}`)));
 
       // Get existing IUA levels
-      const { data: existingIuas } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+      const { data: existingIuas } = await sb
         .from('product_iua')
         .select('id, amount')
         .eq('plan_id', productId);
 
-      const iuaMap = new Map(existingIuas?.map(i => [i.amount, i.id]) || []);
+      const iuaMap = new Map((existingIuas || []).map((i: { amount: number; id: string }) => [i.amount, i.id]));
 
       // Create missing IUA levels
       for (const amount of iuaAmounts) {
         if (!iuaMap.has(amount)) {
-          const { data: newIua, error } = await supabase
+          const { data: newIua, error } = await sb
             .from('product_iua')
             .insert({ plan_id: productId, amount, sort_order: iuaMap.size })
             .select('id')
             .single();
 
           if (!error && newIua) {
-            iuaMap.set(amount, newIua.id);
+            iuaMap.set(amount, (newIua as { id: string }).id);
           }
         }
       }
 
       // Get existing age brackets
-      const { data: existingBrackets } = await supabase
+      const { data: existingBrackets } = await sb
         .from('product_age_brackets')
         .select('id, min_age, max_age')
         .eq('plan_id', productId);
 
       const bracketMap = new Map(
-        existingBrackets?.map(b => [`${b.min_age}-${b.max_age}`, b.id]) || []
+        (existingBrackets || []).map((b: { min_age: number; max_age: number; id: string }) => [`${b.min_age}-${b.max_age}`, b.id])
       );
 
       // Create missing age brackets
       for (const bracket of ageBrackets) {
         if (!bracketMap.has(bracket)) {
           const [min, max] = bracket.split('-').map(Number);
-          const { data: newBracket, error } = await supabase
+          const { data: newBracket, error } = await sb
             .from('product_age_brackets')
             .insert({ plan_id: productId, min_age: min, max_age: max, sort_order: bracketMap.size })
             .select('id')
             .single();
 
           if (!error && newBracket) {
-            bracketMap.set(bracket, newBracket.id);
+            bracketMap.set(bracket, (newBracket as { id: string }).id);
           }
         }
       }
@@ -300,7 +302,7 @@ export function BulkPricingImportModal({
         }
 
         // Check if pricing exists
-        const { data: existingPricing } = await supabase
+        const { data: existingPricing } = await sb
           .from('product_pricing_matrix')
           .select('id')
           .eq('plan_id', productId)
@@ -317,15 +319,15 @@ export function BulkPricingImportModal({
         };
 
         if (existingPricing) {
-          const { error } = await supabase
+          const { error } = await sb
             .from('product_pricing_matrix')
             .update(pricingData)
-            .eq('id', existingPricing.id);
+            .eq('id', (existingPricing as { id: string }).id);
 
           if (error) errors++;
           else updated++;
         } else {
-          const { error } = await supabase
+          const { error } = await sb
             .from('product_pricing_matrix')
             .insert(pricingData);
 
@@ -335,7 +337,7 @@ export function BulkPricingImportModal({
       }
 
       // Log the import
-      await supabase.from('product_audit_log').insert({
+      await sb.from('product_audit_log').insert({
         organization_id: organizationId,
         plan_id: productId,
         action: 'bulk_import',

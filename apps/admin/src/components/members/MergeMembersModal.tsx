@@ -100,7 +100,7 @@ export function MergeMembersModal({
 
       // Filter out already selected members
       const filtered = (data || []).filter(
-        m => !selectedMembers.some(s => s.id === m.id)
+        (m: { id: string }) => !selectedMembers.some(s => s.id === m.id)
       );
       setSearchResults(filtered as Member[]);
     } catch (error) {
@@ -143,27 +143,29 @@ export function MergeMembersModal({
       const secondaryMembers = selectedMembers.filter(m => m.id !== primaryMemberId);
 
       // For each secondary member, update related records to point to primary
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
       for (const secondary of secondaryMembers) {
         // Update dependents
-        await supabase
+        await sb
           .from('dependents')
           .update({ member_id: primaryMemberId })
           .eq('member_id', secondary.id);
 
         // Update billing transactions
-        await supabase
+        await sb
           .from('billing_transactions')
           .update({ member_id: primaryMemberId })
           .eq('member_id', secondary.id);
 
         // Update enrollments
-        await supabase
+        await sb
           .from('enrollments')
           .update({ member_id: primaryMemberId })
           .eq('member_id', secondary.id);
 
         // Update notes/activities if they exist
-        await supabase
+        await sb
           .from('admin_activity_log')
           .update({
             entity_id: primaryMemberId,
@@ -173,7 +175,7 @@ export function MergeMembersModal({
           .eq('entity_id', secondary.id);
 
         // Soft delete the secondary member (or mark as merged)
-        await supabase
+        await sb
           .from('members')
           .update({
             status: 'merged',
@@ -184,7 +186,7 @@ export function MergeMembersModal({
       }
 
       // Log the merge action
-      await supabase.rpc('log_admin_activity', {
+      await sb.rpc('log_admin_activity', {
         p_actor_profile_id: profileId,
         p_entity_type: 'member',
         p_entity_id: primaryMemberId,

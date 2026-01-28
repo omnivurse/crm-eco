@@ -232,8 +232,10 @@ export function ProductEligibilityModal({
         is_active: true,
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
       if (editingRule) {
-        const { error } = await supabase
+        const { error } = await sb
           .from('product_eligibility_rules')
           .update(ruleData)
           .eq('id', editingRule.id);
@@ -241,7 +243,7 @@ export function ProductEligibilityModal({
         if (error) throw error;
         toast.success('Rule updated');
       } else {
-        const { error } = await supabase
+        const { error } = await sb
           .from('product_eligibility_rules')
           .insert({
             ...ruleData,
@@ -284,7 +286,8 @@ export function ProductEligibilityModal({
 
   const handleToggleActive = async (rule: EligibilityRule) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('product_eligibility_rules')
         .update({ is_active: !rule.is_active })
         .eq('id', rule.id);
