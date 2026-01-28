@@ -205,47 +205,63 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      console.log('Starting login process...');
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+
       const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
+      console.log('Attempting sign in with email:', email);
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('Sign in response:', { data: data ? 'received' : 'null', error: signInError });
+
       if (signInError) {
+        console.error('Sign in error:', signInError);
         setError(signInError.message);
+        setLoading(false);
         return;
       }
 
       if (data.user) {
+        console.log('User authenticated, fetching profile...');
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_id', data.user.id)
           .single();
 
+        console.log('Profile response:', { profile: profile ? 'found' : 'null', error: profileError });
+
         if (profileError || !profile) {
+          console.error('Profile error:', profileError);
           setError('No profile found. Please contact your administrator.');
           await supabase.auth.signOut();
+          setLoading(false);
           return;
         }
 
         // Check if user has admin access
-        if (!['owner', 'super_admin', 'admin'].includes(profile.role)) {
+        console.log('User role:', profile.role);
+        if (!['owner', 'super_admin', 'admin', 'staff'].includes(profile.role)) {
           setError('You do not have admin access. Please contact your administrator.');
           await supabase.auth.signOut();
+          setLoading(false);
           return;
         }
 
+        console.log('Login successful, redirecting to dashboard...');
         router.push('/dashboard');
         router.refresh();
       }
     } catch (err) {
-      setError('An unexpected error occurred');
-      console.error(err);
+      console.error('Unexpected login error:', err);
+      setError('An unexpected error occurred. Please check the console for details.');
     } finally {
       setLoading(false);
     }
