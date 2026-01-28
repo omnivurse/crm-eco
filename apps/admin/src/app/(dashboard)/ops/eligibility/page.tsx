@@ -84,12 +84,13 @@ export default function EligibilityPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -114,7 +115,7 @@ export default function EligibilityPage() {
       if (error && error.code !== '42P01') throw error;
 
       // Get member counts per vendor (mock for now)
-      const vendorsWithCounts = (data || []).map(v => ({
+      const vendorsWithCounts = (data || []).map((v: Record<string, unknown>) => ({
         ...v,
         member_count: Math.floor(Math.random() * 500) + 50, // Mock data
       }));
@@ -130,7 +131,8 @@ export default function EligibilityPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('job_runs')
         .select('*')
         .eq('organization_id', organizationId)
@@ -187,7 +189,8 @@ export default function EligibilityPage() {
 
     try {
       // Create job record
-      const { data: job, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: job, error } = await (supabase as any)
         .from('job_runs')
         .insert({
           organization_id: organizationId,
@@ -213,7 +216,8 @@ export default function EligibilityPage() {
         const membersIneligible = membersChecked - membersEligible;
         const membersChanged = Math.floor(Math.random() * 10);
 
-        await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
           .from('job_runs')
           .update({
             status: 'completed',

@@ -229,7 +229,8 @@ export default function InvoicesPage() {
 
   const handleSendInvoice = async (invoice: Invoice) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('invoices')
         .update({
           status: 'sent',
@@ -239,7 +240,8 @@ export default function InvoicesPage() {
 
       if (error) throw error;
 
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_sent',
         entity_type: 'invoice',
@@ -258,7 +260,8 @@ export default function InvoicesPage() {
 
   const handleMarkPaid = async (invoice: Invoice) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('invoices')
         .update({
           status: 'paid',
@@ -270,7 +273,8 @@ export default function InvoicesPage() {
 
       if (error) throw error;
 
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_paid',
         entity_type: 'invoice',

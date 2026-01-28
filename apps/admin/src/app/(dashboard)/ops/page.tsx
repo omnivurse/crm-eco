@@ -66,12 +66,13 @@ export default function OpsPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
       }
@@ -84,29 +85,31 @@ export default function OpsPage() {
 
     async function fetchStats() {
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sb = supabase as any;
         const [totalJobsResult, runningJobsResult, failedJobsResult, recentJobsResult, vendorStatsResult] = await Promise.all([
-          supabase
+          sb
             .from('job_runs')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', organizationId),
-          supabase
+          sb
             .from('job_runs')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', organizationId)
             .eq('status', 'running'),
-          supabase
+          sb
             .from('job_runs')
             .select('id', { count: 'exact', head: true })
             .eq('organization_id', organizationId)
             .eq('status', 'failed')
             .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-          supabase
+          sb
             .from('job_runs')
             .select('id, job_type, job_name, status, created_at, duration_ms, vendor_code')
             .eq('organization_id', organizationId)
             .order('created_at', { ascending: false })
             .limit(5),
-          supabase.rpc('get_vendor_eligibility_summary', { p_org_id: organizationId }),
+          sb.rpc('get_vendor_eligibility_summary', { p_org_id: organizationId }),
         ]);
 
         setStats({
