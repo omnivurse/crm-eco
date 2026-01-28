@@ -7,7 +7,6 @@ export const dynamic = 'force-dynamic';
 // GET - List email assets
 export async function GET(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {
@@ -74,7 +73,6 @@ export async function GET(request: NextRequest) {
 // POST - Upload new asset
 export async function POST(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {
@@ -192,7 +190,6 @@ export async function POST(request: NextRequest) {
 // DELETE - Delete multiple assets
 export async function DELETE(request: NextRequest) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = await createServerSupabaseClient() as any;
 
     const {

@@ -137,9 +137,9 @@ export async function GET(request: NextRequest) {
 
     // Transform results
     const results: SearchResult[] = (records || []).map((record: any) => {
-      const module = record.crm_modules;
+      const recordModule = record.crm_modules;
       const data = record.data || {};
-      
+
       // Build subtitle from available data
       const subtitleParts: string[] = [];
       if (record.email) subtitleParts.push(record.email);
@@ -148,12 +148,12 @@ export async function GET(request: NextRequest) {
 
       return {
         id: record.id,
-        title: record.title || data.first_name 
-          ? `${data.first_name || ''} ${data.last_name || ''}`.trim() 
+        title: record.title || data.first_name
+          ? `${data.first_name || ''} ${data.last_name || ''}`.trim()
           : 'Untitled',
         subtitle: subtitleParts.join(' · ') || undefined,
-        module: module.name_plural || module.name,
-        moduleKey: module.key,
+        module: recordModule.name_plural || recordModule.name,
+        moduleKey: recordModule.key,
         url: `/crm/r/${record.id}`,
       };
     });

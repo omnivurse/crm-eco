@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify transaction belongs to organization
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: transaction } = await (supabase as any)
       .from('billing_transactions')
       .select('*')
@@ -67,7 +66,6 @@ export async function POST(request: NextRequest) {
 
     if (result.success) {
       // Log activity
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).rpc('log_admin_activity', {
         p_organization_id: profile.organization_id,
         p_actor_profile_id: profile.id,

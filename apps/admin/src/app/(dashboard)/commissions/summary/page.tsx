@@ -114,7 +114,6 @@ export default function CommissionsSummaryPage() {
 
     try {
       // Fetch all commissions for the period
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: commissions, error } = await (supabase as any)
         .from('commission_transactions')
         .select(
@@ -224,7 +223,6 @@ export default function CommissionsSummaryPage() {
         const monthStart = startOfMonth(monthDate);
         const monthEnd = endOfMonth(monthDate);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: monthTxns } = await (supabase as any)
           .from('commission_transactions')
           .select('commission_amount, status, is_bonus')

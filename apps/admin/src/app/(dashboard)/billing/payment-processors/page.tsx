@@ -95,7 +95,6 @@ export default function PaymentProcessorsPage() {
   const fetchProcessors = async () => {
     setLoading(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('payment_processors')
         .select('*')
@@ -179,7 +178,6 @@ export default function PaymentProcessorsPage() {
         saveData.transaction_key = formData.transaction_key;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
 
       if (editingProcessor) {
@@ -254,7 +252,6 @@ export default function PaymentProcessorsPage() {
 
     setDeleting(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       const { error } = await sb
         .from('payment_processors')
@@ -287,7 +284,6 @@ export default function PaymentProcessorsPage() {
 
   const toggleActive = async (processor: PaymentProcessor) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       const { error } = await sb
         .from('payment_processors')
@@ -314,7 +310,6 @@ export default function PaymentProcessorsPage() {
 
   const setAsDefault = async (processor: PaymentProcessor) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       // Unset all defaults first
       await sb.from('payment_processors').update({ is_default: false }).neq('id', processor.id);

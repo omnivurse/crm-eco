@@ -143,7 +143,6 @@ export function MergeMembersModal({
       const secondaryMembers = selectedMembers.filter(m => m.id !== primaryMemberId);
 
       // For each secondary member, update related records to point to primary
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       for (const secondary of secondaryMembers) {
         // Update dependents

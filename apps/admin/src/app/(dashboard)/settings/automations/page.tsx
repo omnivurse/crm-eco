@@ -271,7 +271,6 @@ export default function AutomationsPage() {
       };
 
       if (selectedRule) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('automation_rules')
           .update(ruleData)
@@ -280,7 +279,6 @@ export default function AutomationsPage() {
         if (error) throw error;
         toast.success('Automation rule updated successfully');
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('automation_rules')
           .insert(ruleData);
@@ -302,7 +300,6 @@ export default function AutomationsPage() {
 
   const handleToggleActive = async (rule: AutomationRule) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('automation_rules')
         .update({ is_active: !rule.is_active })

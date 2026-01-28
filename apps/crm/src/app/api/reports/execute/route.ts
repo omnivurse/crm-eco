@@ -83,7 +83,6 @@ export async function POST(request: NextRequest) {
     // Build the select string
     const selectString = columns.length > 0 ? columns.join(', ') : '*';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let query = supabase.from(table).select(selectString, { count: 'exact' }) as any;
 
     // Always filter by organization

@@ -68,7 +68,6 @@ export default function FailedPaymentsPage() {
 
       if (!profile) return;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase
         .from('billing_failures') as any)
         .select(`
@@ -125,7 +124,6 @@ export default function FailedPaymentsPage() {
         .eq('user_id', user.id)
         .single() as { data: { id: string } | null };
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase
         .from('billing_failures') as any)
         .update({

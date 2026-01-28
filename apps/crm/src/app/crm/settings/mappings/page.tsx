@@ -61,7 +61,7 @@ async function MappingsContent() {
           </div>
           <div className="divide-y divide-slate-200 dark:divide-slate-700/50">
             {mappings.map((mapping: CrmImportMapping) => {
-              const module = moduleMap.get(mapping.module_id);
+              const mappingModule = moduleMap.get(mapping.module_id);
               const fieldCount = Object.keys(mapping.mapping || {}).length;
 
               return (
@@ -80,7 +80,7 @@ async function MappingsContent() {
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      <span>{module?.name || 'Unknown Module'}</span>
+                      <span>{mappingModule?.name || 'Unknown Module'}</span>
                       <span>•</span>
                       <span>{fieldCount} fields mapped</span>
                       <span>•</span>

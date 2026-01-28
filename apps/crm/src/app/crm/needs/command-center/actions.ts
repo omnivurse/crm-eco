@@ -38,7 +38,6 @@ async function verifyNeedOwnership(
   needId: string,
   organizationId: string
 ): Promise<{ id: string; status: string; organization_id: string }> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: need, error } = await (supabase as any)
     .from('needs')
     .select('id, status, organization_id')
@@ -80,7 +79,6 @@ async function insertNeedEvent(
     note: params.note || null,
   };
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any).from('need_events').insert(insertData);
   
   if (error) {
@@ -114,7 +112,6 @@ export async function updateNeedStatus(
     const oldStatus = need.status;
     
     // Update the need status (trigger will handle urgency_light and last_status_change_at)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ status: newStatus })
@@ -163,7 +160,6 @@ export async function updateNeedTargetDate(
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
     
     // Update sla_target_date (trigger will recompute urgency_light)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ sla_target_date: newDate })
@@ -210,7 +206,6 @@ export async function toggleNeedIuaMet(
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
     
     // Update iua_met
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ iua_met: nextValue })
@@ -295,7 +290,6 @@ export async function assignNeedToMe(needId: string): Promise<ActionResult> {
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
     
     // Update assignee to current user
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ assigned_to_profile_id: profile.id })
@@ -342,7 +336,6 @@ export async function assignNeedToProfile(
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
     
     // Verify assignee is a valid Ops profile in the same org
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: assignee, error: assigneeError } = await (supabase as any)
       .from('profiles')
       .select('id, full_name, role, organization_id')
@@ -362,7 +355,6 @@ export async function assignNeedToProfile(
     }
     
     // Update assignee
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ assigned_to_profile_id: assignee.id })
@@ -422,7 +414,6 @@ export async function createNeedsSavedView(params: {
 
     // If setting as default, first clear other defaults for this user/context
     if (params.setAsDefault) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('saved_views')
         .update({ is_default: false })
@@ -431,7 +422,6 @@ export async function createNeedsSavedView(params: {
     }
 
     // Insert the new view
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('saved_views')
       .insert({
@@ -469,7 +459,6 @@ export async function setNeedsSavedViewDefault(viewId: string): Promise<ActionRe
     const supabase = await createServerSupabaseClient();
 
     // First, verify the view belongs to this user
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: view, error: viewError } = await (supabase as any)
       .from('saved_views')
       .select('id')
@@ -483,7 +472,6 @@ export async function setNeedsSavedViewDefault(viewId: string): Promise<ActionRe
     }
 
     // Clear other defaults for this user/context
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('saved_views')
       .update({ is_default: false })
@@ -491,7 +479,6 @@ export async function setNeedsSavedViewDefault(viewId: string): Promise<ActionRe
       .eq('context', NEEDS_COMMAND_CENTER_CONTEXT);
 
     // Set this one as default
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('saved_views')
       .update({ is_default: true })
@@ -521,7 +508,6 @@ export async function clearNeedsSavedViewDefault(): Promise<ActionResult> {
     const supabase = await createServerSupabaseClient();
 
     // Clear all defaults for this user/context
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
       .from('saved_views')
       .update({ is_default: false })
@@ -548,7 +534,6 @@ export async function deleteNeedsSavedView(viewId: string): Promise<ActionResult
     const supabase = await createServerSupabaseClient();
 
     // Delete the view (RLS will enforce ownership, but we double-check)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('saved_views')
       .delete()
@@ -584,7 +569,6 @@ export async function updateNeedsSavedView(params: {
     const supabase = await createServerSupabaseClient();
 
     // Verify ownership
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: view, error: viewError } = await (supabase as any)
       .from('saved_views')
       .select('id')
@@ -610,7 +594,6 @@ export async function updateNeedsSavedView(params: {
       return { success: true }; // Nothing to update
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: updateError } = await (supabase as any)
       .from('saved_views')
       .update(updatePayload)

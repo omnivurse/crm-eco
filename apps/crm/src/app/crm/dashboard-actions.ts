@@ -24,7 +24,6 @@ export async function loadDashboardLayout(): Promise<DashboardLayoutConfig | nul
 
     const supabase = await createServerSupabaseClient();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: view, error } = await (supabase as any)
       .from('saved_views')
       .select('filters')
@@ -64,7 +63,6 @@ export async function saveDashboardLayout(
     const supabase = await createServerSupabaseClient();
 
     // Check if a layout already exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existing, error: selectError } = await (supabase as any)
       .from('saved_views')
       .select('id')
@@ -80,7 +78,6 @@ export async function saveDashboardLayout(
 
     if (existing) {
       // Update existing layout
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('saved_views')
         .update({ filters: layout })
@@ -92,7 +89,6 @@ export async function saveDashboardLayout(
       }
     } else {
       // Create new layout
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from('saved_views').insert({
         organization_id: profile.organization_id,
         owner_profile_id: profile.id,

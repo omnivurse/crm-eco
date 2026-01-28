@@ -140,7 +140,6 @@ export function ProductFeaturesModal({
     if (!newFeature.name.trim()) return;
 
     setIsSaving(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any;
     try {
       const { data, error } = await sb
@@ -175,7 +174,6 @@ export function ProductFeaturesModal({
 
     setIsSaving(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('product_features_library')
         .update({
@@ -223,7 +221,6 @@ export function ProductFeaturesModal({
     const existingMapping = mappings.find(m => m.feature_id === feature.id);
 
     setIsSaving(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sbToggle = supabase as any;
     try {
       if (existingMapping) {
@@ -261,7 +258,6 @@ export function ProductFeaturesModal({
 
   const handleUpdateMapping = async (mappingId: string, updates: Partial<FeatureMapping>) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('product_feature_mappings')
         .update(updates)

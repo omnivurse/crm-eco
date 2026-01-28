@@ -113,7 +113,6 @@ export function VendorForm({ initialData }: VendorFormProps) {
 
       if (!profile) throw new Error('Profile not found');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       const profileData = profile as { id: string; organization_id: string };
 

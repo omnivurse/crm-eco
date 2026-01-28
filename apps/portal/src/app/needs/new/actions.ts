@@ -93,7 +93,6 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
     has_member_consent: false,
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: newNeed, error: needError } = await (supabase as any)
     .from('needs')
     .insert(needInsert)
@@ -106,7 +105,6 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
   }
 
   // Create the initial event
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: eventError } = await (supabase as any)
     .from('need_events')
     .insert({
@@ -181,7 +179,6 @@ export async function updateNeedBillsAndCashPay(
   }
 
   // Update the need
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updateError } = await (supabase as any)
     .from('needs')
     .update(updateData)
@@ -199,7 +196,6 @@ export async function updateNeedBillsAndCashPay(
       ? `Bill amount of $${data.billedAmount.toFixed(2)} recorded`
       : 'Payment information updated';
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('need_events')
     .insert({
@@ -261,7 +257,6 @@ export async function updateNeedConsentAndDocs(
   }
 
   // Update the need
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updateError } = await (supabase as any)
     .from('needs')
     .update({
@@ -276,7 +271,6 @@ export async function updateNeedConsentAndDocs(
   }
 
   // Create event
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('need_events')
     .insert({
@@ -314,7 +308,6 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
   const { member, profile } = context;
 
   // Verify ownership and get current status
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existingNeed, error: fetchError } = await (supabase as any)
     .from('needs')
     .select('id, member_id, organization_id, status, has_member_consent')
@@ -336,7 +329,6 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
   }
 
   // Update status to in_review
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updateError } = await (supabase as any)
     .from('needs')
     .update({
@@ -351,7 +343,6 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
   }
 
   // Create submission event
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('need_events')
     .insert({

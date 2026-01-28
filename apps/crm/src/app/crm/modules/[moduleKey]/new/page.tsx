@@ -26,12 +26,12 @@ async function NewRecordContent({ params }: PageProps) {
     redirect(`/crm/modules/${moduleKey}?error=no_create_permission`);
   }
 
-  const module = await getModuleByKey(profile.organization_id, moduleKey);
-  if (!module) return notFound();
+  const crmModule = await getModuleByKey(profile.organization_id, moduleKey);
+  if (!crmModule) return notFound();
 
   const [fields, layout] = await Promise.all([
-    getFieldsForModule(module.id),
-    getDefaultLayout(module.id),
+    getFieldsForModule(crmModule.id),
+    getDefaultLayout(crmModule.id),
   ]);
 
   async function handleSubmit(formData: FormData) {
@@ -40,8 +40,8 @@ async function NewRecordContent({ params }: PageProps) {
     const profile = await getCurrentProfile();
     if (!profile) throw new Error('Not authenticated');
 
-    const module = await getModuleByKey(profile.organization_id, moduleKey);
-    if (!module) throw new Error('Module not found');
+    const crmMod = await getModuleByKey(profile.organization_id, moduleKey);
+    if (!crmMod) throw new Error('Module not found');
 
     const data: Record<string, unknown> = {};
     formData.forEach((value, key) => {
@@ -52,7 +52,7 @@ async function NewRecordContent({ params }: PageProps) {
 
     const input: CreateRecordInput = {
       org_id: profile.organization_id,
-      module_id: module.id,
+      module_id: crmMod.id,
       owner_id: profile.id,
       data,
     };
@@ -72,9 +72,9 @@ async function NewRecordContent({ params }: PageProps) {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New {module.name}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New {crmModule.name}</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Create a new {module.name.toLowerCase()} record
+            Create a new {crmModule.name.toLowerCase()} record
           </p>
         </div>
       </div>

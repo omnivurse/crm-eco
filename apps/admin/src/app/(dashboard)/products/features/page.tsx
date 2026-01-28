@@ -123,7 +123,6 @@ export default function FeaturesLibraryPage() {
 
     setIsSaving(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('product_features_library')
         .insert({
@@ -156,7 +155,6 @@ export default function FeaturesLibraryPage() {
 
     setIsSaving(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('product_features_library')
         .update({

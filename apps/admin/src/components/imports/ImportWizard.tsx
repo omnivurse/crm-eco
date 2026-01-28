@@ -264,7 +264,6 @@ export function ImportWizard({
 
     try {
       // Create import job record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error: jobError } = await (supabase as any)
         .from('import_jobs')
         .insert({
@@ -310,7 +309,6 @@ export function ImportWizard({
             mappedData.organization_id = organizationId;
 
             // Insert based on type
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const sb = supabase as any;
             if (importType === 'member') {
               const { error } = await sb.from('members').insert({
@@ -362,7 +360,6 @@ export function ImportWizard({
       }
 
       // Update job with results
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('import_jobs')
         .update({
@@ -386,7 +383,6 @@ export function ImportWizard({
       setStep('complete');
 
       // Log activity
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).rpc('log_admin_activity', {
         p_actor_profile_id: profileId,
         p_entity_type: importType,

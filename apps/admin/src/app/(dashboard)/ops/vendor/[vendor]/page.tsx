@@ -294,7 +294,6 @@ export default function VendorOpsPage() {
     setRunningJob(true);
     try {
       // Create eligibility run
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: run, error: runError } = await (supabase as any)
         .from('vendor_eligibility_runs')
         .insert({
@@ -311,7 +310,6 @@ export default function VendorOpsPage() {
       if (runError) throw runError;
 
       // Create job run record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -341,7 +339,6 @@ export default function VendorOpsPage() {
     if (!organizationId || !profileId) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('vendor_eligibility_runs')
         .insert({
@@ -385,7 +382,6 @@ export default function VendorOpsPage() {
       };
 
       if (editingConfig) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('vendor_job_configs')
           .update(configData)
@@ -394,7 +390,6 @@ export default function VendorOpsPage() {
         if (error) throw error;
         toast.success('Configuration updated');
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('vendor_job_configs')
           .insert({
@@ -456,7 +451,6 @@ export default function VendorOpsPage() {
       };
 
       if (editingCredential) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('vendor_credentials')
           .update(credData)
@@ -465,7 +459,6 @@ export default function VendorOpsPage() {
         if (error) throw error;
         toast.success('Credential updated');
       } else {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('vendor_credentials')
           .insert({

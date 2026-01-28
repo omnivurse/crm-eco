@@ -89,7 +89,6 @@ export async function logPHIAccess(entry: PHIAccessLogEntry): Promise<void> {
         const ipAddress = getClientIP();
         const userAgent = getUserAgent();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('phi_access_log') as any).insert({
             user_id: entry.userId,
             organization_id: entry.organizationId,
@@ -117,7 +116,6 @@ export async function logAuthEvent(entry: AuthEventEntry): Promise<void> {
         const ipAddress = getClientIP();
         const userAgent = getUserAgent();
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('auth_events') as any).insert({
             user_id: entry.userId,
             email: entry.email,
@@ -173,7 +171,6 @@ export async function withPHILogging<T>(
 
         // Log failed access attempt
         const supabase = await createServerSupabaseClient();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase.from('phi_access_log') as any).insert({
             user_id: userId,
             organization_id: organizationId,
@@ -233,7 +230,6 @@ export async function getOrganizationPHIAccessSummary(
 
     if (error) throw error;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logs = (data || []) as any[];
     const uniqueUsers = new Set(logs.map((l: { user_id: string }) => l.user_id)).size;
     const exportCount = logs.filter((l: { action: string }) => l.action === 'export').length;

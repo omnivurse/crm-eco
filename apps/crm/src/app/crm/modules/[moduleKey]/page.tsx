@@ -30,15 +30,15 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
 
-  const module = await getModuleByKey(profile.organization_id, moduleKey);
-  if (!module) return notFound();
+  const crmModule = await getModuleByKey(profile.organization_id, moduleKey);
+  if (!crmModule) return notFound();
 
   const page = parseInt(pageStr || '1', 10);
   const pageSize = 25;
 
   const [fields, views] = await Promise.all([
-    getFieldsForModule(module.id),
-    getViewsForModule(module.id),
+    getFieldsForModule(crmModule.id),
+    getViewsForModule(crmModule.id),
   ]);
 
   // Get current view
@@ -47,12 +47,12 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     currentView = views.find(v => v.id === viewId) || null;
   }
   if (!currentView) {
-    currentView = await getDefaultView(module.id);
+    currentView = await getDefaultView(crmModule.id);
   }
 
   // Fetch records
   const { records, total } = await getRecords({
-    moduleId: module.id,
+    moduleId: crmModule.id,
     page,
     pageSize,
     search,
@@ -66,7 +66,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     <>
       {/* Client-side interactive shell with drawer */}
       <ModuleListClient
-        module={module}
+        module={crmModule}
         records={records}
         fields={fields}
         views={views}
@@ -91,7 +91,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
               disabled={page <= 1}
               asChild
             >
-              <Link href={`/crm/modules/${module.key}?page=${page - 1}`}>
+              <Link href={`/crm/modules/${crmModule.key}?page=${page - 1}`}>
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
               </Link>
@@ -113,7 +113,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
                 return (
                   <Link
                     key={pageNum}
-                    href={`/crm/modules/${module.key}?page=${pageNum}`}
+                    href={`/crm/modules/${crmModule.key}?page=${pageNum}`}
                     className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
                       pageNum === page
                         ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30'
@@ -133,7 +133,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
               disabled={page >= totalPages}
               asChild
             >
-              <Link href={`/crm/modules/${module.key}?page=${page + 1}`}>
+              <Link href={`/crm/modules/${crmModule.key}?page=${page + 1}`}>
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Link>

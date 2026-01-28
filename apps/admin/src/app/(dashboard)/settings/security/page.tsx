@@ -164,7 +164,6 @@ export default function SecuritySettingsPage() {
     setIsSaving(true);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('profiles')
         .update({
@@ -189,7 +188,6 @@ export default function SecuritySettingsPage() {
 
   const handleToggleUserActive = async (user: User) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('profiles')
         .update({ is_active: !user.is_active })

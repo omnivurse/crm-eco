@@ -241,7 +241,6 @@ export function BulkPricingImportModal({
       const ageBrackets = Array.from(new Set(validationResult.valid.map(r => `${r.age_min}-${r.age_max}`)));
 
       // Get existing IUA levels
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any;
       const { data: existingIuas } = await sb
         .from('product_iua')

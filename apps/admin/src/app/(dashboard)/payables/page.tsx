@@ -301,7 +301,6 @@ export default function PayablesPage() {
 
     setSaving(true);
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('payables')
         .insert({
@@ -325,7 +324,6 @@ export default function PayablesPage() {
       if (error) throw error;
 
       // Log to audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'payable_created',
@@ -352,7 +350,6 @@ export default function PayablesPage() {
 
   const handleApprove = async (payable: Payable) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('payables')
         .update({
@@ -364,7 +361,6 @@ export default function PayablesPage() {
 
       if (error) throw error;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'payable_approved',
@@ -384,7 +380,6 @@ export default function PayablesPage() {
 
   const handleMarkPaid = async (payable: Payable) => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('payables')
         .update({
@@ -395,7 +390,6 @@ export default function PayablesPage() {
 
       if (error) throw error;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'payable_paid',

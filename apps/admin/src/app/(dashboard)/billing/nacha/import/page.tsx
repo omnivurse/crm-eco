@@ -126,7 +126,6 @@ export default function NachaImportPage() {
     if (!organizationId) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('job_runs')
         .select('*')
@@ -219,7 +218,6 @@ export default function NachaImportPage() {
     setImportProgress(0);
     try {
       // Create job record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -267,7 +265,6 @@ export default function NachaImportPage() {
       }
 
       // Update job status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('job_runs')
         .update({
@@ -284,7 +281,6 @@ export default function NachaImportPage() {
         .eq('id', job.id);
 
       // Log to audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('billing_audit_log').insert({
         action: 'nacha_import',
         entity_type: 'nacha_file',

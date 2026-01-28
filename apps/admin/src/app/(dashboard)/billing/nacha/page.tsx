@@ -326,7 +326,6 @@ export default function NachaPage() {
       const totalAmount = txnsToExport.reduce((sum, t) => sum + t.amount, 0);
 
       // Create job record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -352,7 +351,6 @@ export default function NachaPage() {
       if (jobError) throw jobError;
 
       // Update transactions as exported
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('billing_transactions')
         .update({ status: 'exported', nacha_job_id: job.id })
@@ -394,7 +392,6 @@ export default function NachaPage() {
       const lines = content.split('\n').filter(l => l.trim());
 
       // Create job record
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: job, error: jobError } = await (supabase as any)
         .from('job_runs')
         .insert({
@@ -432,7 +429,6 @@ export default function NachaPage() {
       }
 
       // Update job status
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('job_runs')
         .update({

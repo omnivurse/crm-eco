@@ -6,7 +6,6 @@ import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 import type { WizardSnapshot, HouseholdMember, EnrollmentMode } from '@/components/enrollment/wizard';
 
 // Helper to get untyped Supabase client due to @supabase/ssr 0.5.x type inference limitations
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getSupabase(): Promise<any> {
   return await createServerSupabaseClient();
 }
