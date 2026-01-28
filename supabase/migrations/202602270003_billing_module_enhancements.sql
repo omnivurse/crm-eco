@@ -48,12 +48,12 @@ CREATE INDEX IF NOT EXISTS idx_payment_processors_active ON payment_processors(o
 -- ============================================================================
 -- ADD BILLING PERMISSIONS
 -- ============================================================================
-INSERT INTO permissions (name, description, category)
+INSERT INTO permissions (key, name, description, resource, action)
 VALUES
-  ('billing.read', 'View billing transactions and invoices', 'billing'),
-  ('billing.write', 'Create and modify billing records, process payments', 'billing'),
-  ('billing.export', 'Export billing data and NACHA files', 'billing')
-ON CONFLICT (name) DO NOTHING;
+  ('billing.read', 'View Billing', 'View billing transactions and invoices', 'billing', 'read'),
+  ('billing.write', 'Edit Billing', 'Create and modify billing records, process payments', 'billing', 'write'),
+  ('billing.export', 'Export Billing', 'Export billing data and NACHA files', 'billing', 'export')
+ON CONFLICT (key) DO NOTHING;
 
 -- ============================================================================
 -- BILLING AUDIT LOG

@@ -105,12 +105,13 @@ export default function NachaImportPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
-        .single() as { data: { id: string; organization_id: string } | null };
+        .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);

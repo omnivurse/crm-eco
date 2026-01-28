@@ -590,7 +590,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION preview_round_robin_assignments(
   p_rule_id uuid,
   p_count int DEFAULT 5
-) RETURNS TABLE(position int, advisor_id uuid) AS $$
+) RETURNS TABLE(assignment_position int, advisor_id uuid) AS $$
 DECLARE
   v_config jsonb;
   v_users uuid[];
@@ -617,7 +617,7 @@ BEGIN
 
   -- Generate preview
   FOR i IN 0..(p_count - 1) LOOP
-    position := i + 1;
+    assignment_position := i + 1;
     advisor_id := v_users[((v_cursor + i) % v_len) + 1];
     RETURN NEXT;
   END LOOP;

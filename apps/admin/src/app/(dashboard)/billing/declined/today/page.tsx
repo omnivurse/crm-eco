@@ -41,13 +41,14 @@ import { toast } from 'sonner';
 interface DeclinedTransaction {
   id: string;
   member_id: string;
+  organization_id: string;
   amount: number;
-  payment_method: string;
+  transaction_type: string;
   status: string;
   decline_code: string | null;
   decline_category: string | null;
   error_message: string | null;
-  retry_count: number;
+  retry_count: number | null;
   original_transaction_id: string | null;
   created_at: string;
   member?: {
@@ -98,7 +99,6 @@ export default function DeclinedTodayPage() {
     today.setHours(0, 0, 0, 0);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('billing_transactions')
         .select(`
@@ -111,7 +111,7 @@ export default function DeclinedTodayPage() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      setTransactions((data || []) as DeclinedTransaction[]);
     } catch (error) {
       console.error('Error fetching declined transactions:', error);
       toast.error('Failed to load declined transactions');
@@ -152,14 +152,13 @@ export default function DeclinedTodayPage() {
     setRetryingId(transaction.id);
     try {
       // Create a new retry transaction
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: newTxn, error } = await (supabase as any)
         .from('billing_transactions')
         .insert({
           member_id: transaction.member_id,
+          organization_id: transaction.organization_id,
           payment_profile_id: transaction.payment_profile?.id,
           amount: transaction.amount,
-          payment_method: transaction.payment_method,
           status: 'pending',
           original_transaction_id: transaction.original_transaction_id || transaction.id,
           retry_count: (transaction.retry_count || 0) + 1,
@@ -171,8 +170,8 @@ export default function DeclinedTodayPage() {
       if (error) throw error;
 
       // Log the retry action to audit
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('billing_audit_log').insert({
+        organization_id: transaction.organization_id,
         action: 'transaction_retry',
         entity_type: 'billing_transaction',
         entity_id: newTxn.id,
@@ -210,12 +209,11 @@ export default function DeclinedTodayPage() {
       if (!transaction) continue;
 
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('billing_transactions').insert({
           member_id: transaction.member_id,
+          organization_id: transaction.organization_id,
           payment_profile_id: transaction.payment_profile?.id,
           amount: transaction.amount,
-          payment_method: transaction.payment_method,
           status: 'pending',
           original_transaction_id: transaction.original_transaction_id || transaction.id,
           retry_count: (transaction.retry_count || 0) + 1,
@@ -229,18 +227,21 @@ export default function DeclinedTodayPage() {
       }
     }
 
-    // Log bulk retry to audit
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).from('billing_audit_log').insert({
-      action: 'bulk_transaction_retry',
-      entity_type: 'billing_transaction',
-      entity_id: null,
-      details: {
-        transaction_count: selectedIds.size,
-        success_count: successCount,
-        fail_count: failCount,
-      },
-    });
+    // Log bulk retry to audit - use first transaction's org_id
+    const firstTransaction = transactions.find((t) => selectedIds.has(t.id));
+    if (firstTransaction) {
+      await (supabase as any).from('billing_audit_log').insert({
+        organization_id: firstTransaction.organization_id,
+        action: 'bulk_transaction_retry',
+        entity_type: 'billing_transaction',
+        entity_id: null,
+        details: {
+          transaction_count: selectedIds.size,
+          success_count: successCount,
+          fail_count: failCount,
+        },
+      });
+    }
 
     toast.success(`Retried ${successCount} transactions${failCount > 0 ? `, ${failCount} failed` : ''}`);
     setSelectedIds(new Set());
@@ -292,7 +293,7 @@ export default function DeclinedTodayPage() {
           `"${txn.member?.first_name || ''} ${txn.member?.last_name || ''}"`,
           txn.member?.email || '',
           txn.amount,
-          txn.payment_method,
+          txn.payment_profile?.payment_type,
           txn.decline_code || '',
           txn.decline_category || '',
           `"${txn.error_message || ''}"`,
@@ -501,7 +502,7 @@ export default function DeclinedTodayPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <Badge variant={txn.retry_count > 2 ? 'destructive' : 'secondary'}>
+                        <Badge variant={(txn.retry_count || 0) > 2 ? 'destructive' : 'secondary'}>
                           {txn.retry_count || 0}
                         </Badge>
                       </td>

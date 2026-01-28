@@ -89,12 +89,12 @@ CREATE INDEX IF NOT EXISTS idx_product_audit_log_created ON product_audit_log(cr
 -- ============================================================================
 -- ADD PRODUCT PERMISSIONS
 -- ============================================================================
-INSERT INTO permissions (name, description, category)
+INSERT INTO permissions (key, name, description, resource, action)
 VALUES
-  ('products.read', 'View products and pricing', 'products'),
-  ('products.write', 'Create and edit products', 'products'),
-  ('products.admin', 'Full product management including delete and bulk operations', 'products')
-ON CONFLICT (name) DO NOTHING;
+  ('products.read', 'View Products', 'View products and pricing', 'products', 'read'),
+  ('products.write', 'Edit Products', 'Create and edit products', 'products', 'write'),
+  ('products.admin', 'Admin Products', 'Full product management including delete and bulk operations', 'products', 'admin')
+ON CONFLICT (key) DO NOTHING;
 
 -- ============================================================================
 -- RLS POLICIES

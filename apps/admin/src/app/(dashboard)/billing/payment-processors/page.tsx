@@ -95,7 +95,8 @@ export default function PaymentProcessorsPage() {
   const fetchProcessors = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('payment_processors')
         .select('*')
         .order('is_default', { ascending: false })
@@ -178,9 +179,12 @@ export default function PaymentProcessorsPage() {
         saveData.transaction_key = formData.transaction_key;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+
       if (editingProcessor) {
         // Update existing
-        const { error } = await supabase
+        const { error } = await sb
           .from('payment_processors')
           .update(saveData)
           .eq('id', editingProcessor.id);
@@ -188,7 +192,7 @@ export default function PaymentProcessorsPage() {
         if (error) throw error;
 
         // Log to audit
-        await supabase.from('billing_audit_log').insert({
+        await sb.from('billing_audit_log').insert({
           action: 'processor_updated',
           entity_type: 'payment_processor',
           entity_id: editingProcessor.id,
@@ -203,7 +207,7 @@ export default function PaymentProcessorsPage() {
         toast.success('Payment processor updated');
       } else {
         // Create new
-        const { data, error } = await supabase
+        const { data, error } = await sb
           .from('payment_processors')
           .insert(saveData)
           .select()
@@ -212,7 +216,7 @@ export default function PaymentProcessorsPage() {
         if (error) throw error;
 
         // Log to audit
-        await supabase.from('billing_audit_log').insert({
+        await sb.from('billing_audit_log').insert({
           action: 'processor_created',
           entity_type: 'payment_processor',
           entity_id: data.id,
@@ -229,7 +233,7 @@ export default function PaymentProcessorsPage() {
       // If this processor is set as default, unset others
       if (formData.is_default) {
         const currentId = editingProcessor?.id;
-        await supabase
+        await sb
           .from('payment_processors')
           .update({ is_default: false })
           .neq('id', currentId || '');
@@ -250,7 +254,9 @@ export default function PaymentProcessorsPage() {
 
     setDeleting(true);
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+      const { error } = await sb
         .from('payment_processors')
         .delete()
         .eq('id', editingProcessor.id);
@@ -258,7 +264,7 @@ export default function PaymentProcessorsPage() {
       if (error) throw error;
 
       // Log to audit
-      await supabase.from('billing_audit_log').insert({
+      await sb.from('billing_audit_log').insert({
         action: 'processor_deleted',
         entity_type: 'payment_processor',
         entity_id: editingProcessor.id,
@@ -281,7 +287,9 @@ export default function PaymentProcessorsPage() {
 
   const toggleActive = async (processor: PaymentProcessor) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+      const { error } = await sb
         .from('payment_processors')
         .update({ is_active: !processor.is_active })
         .eq('id', processor.id);
@@ -289,7 +297,7 @@ export default function PaymentProcessorsPage() {
       if (error) throw error;
 
       // Log to audit
-      await supabase.from('billing_audit_log').insert({
+      await sb.from('billing_audit_log').insert({
         action: processor.is_active ? 'processor_deactivated' : 'processor_activated',
         entity_type: 'payment_processor',
         entity_id: processor.id,
@@ -306,11 +314,13 @@ export default function PaymentProcessorsPage() {
 
   const setAsDefault = async (processor: PaymentProcessor) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
       // Unset all defaults first
-      await supabase.from('payment_processors').update({ is_default: false }).neq('id', processor.id);
+      await sb.from('payment_processors').update({ is_default: false }).neq('id', processor.id);
 
       // Set this one as default
-      const { error } = await supabase
+      const { error } = await sb
         .from('payment_processors')
         .update({ is_default: true })
         .eq('id', processor.id);
@@ -318,7 +328,7 @@ export default function PaymentProcessorsPage() {
       if (error) throw error;
 
       // Log to audit
-      await supabase.from('billing_audit_log').insert({
+      await sb.from('billing_audit_log').insert({
         action: 'processor_set_default',
         entity_type: 'payment_processor',
         entity_id: processor.id,

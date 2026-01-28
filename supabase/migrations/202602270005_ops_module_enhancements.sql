@@ -413,17 +413,12 @@ BEGIN
 END $$;
 
 -- Insert ops permissions
-INSERT INTO public.permissions (code, name, description, category, parent_code)
+INSERT INTO public.permissions (key, name, description, resource, action)
 VALUES
-  ('ops', 'Ops', 'Operations access', 'ops', NULL),
-  ('ops.read', 'Read Ops', 'View operations dashboard, jobs, and logs', 'ops', 'ops'),
-  ('ops.run_jobs', 'Run Jobs', 'Manually trigger job runs and retries', 'ops', 'ops.read'),
-  ('ops.admin', 'Ops Admin', 'Full ops access including credential management', 'ops', 'ops.run_jobs')
-ON CONFLICT (code) DO UPDATE
-SET name = EXCLUDED.name,
-    description = EXCLUDED.description,
-    category = EXCLUDED.category,
-    parent_code = EXCLUDED.parent_code;
+  ('ops.read', 'Read Ops', 'View operations dashboard, jobs, and logs', 'ops', 'read'),
+  ('ops.run_jobs', 'Run Jobs', 'Manually trigger job runs and retries', 'ops', 'run_jobs'),
+  ('ops.admin', 'Ops Admin', 'Full ops access including credential management', 'ops', 'admin')
+ON CONFLICT (key) DO NOTHING;
 
 -- Function to log ops audit events
 CREATE OR REPLACE FUNCTION public.log_ops_audit(

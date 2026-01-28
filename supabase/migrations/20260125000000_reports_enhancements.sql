@@ -12,12 +12,12 @@ ADD COLUMN IF NOT EXISTS is_favorite boolean DEFAULT false;
 
 -- Create index for favorite reports queries
 CREATE INDEX IF NOT EXISTS idx_crm_reports_favorite
-ON public.crm_reports(organization_id, is_favorite)
+ON public.crm_reports(org_id, is_favorite)
 WHERE is_favorite = true;
 
 -- Create index for last_run_at queries
 CREATE INDEX IF NOT EXISTS idx_crm_reports_last_run
-ON public.crm_reports(organization_id, last_run_at DESC);
+ON public.crm_reports(org_id, last_run_at DESC);
 
 -- ============================================================================
 -- Report Run History Table
