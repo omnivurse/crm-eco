@@ -1131,42 +1131,38 @@ export async function getRecordLinks(recordId: string): Promise<CrmLinkedRecord[
   const outbound = outboundResult.data;
   const inbound = inboundResult.data;
 
-  // Transform both link arrays using map instead of loops
-  const outboundLinks: CrmLinkedRecord[] = (outbound || [])
-    .map(link => {
-      const record = link.target_record as unknown as { id: string; title: string; module: { key: string; name: string } };
-      if (!record) return null;
-      return {
-        link_id: link.id,
-        link_type: link.link_type,
-        is_primary: link.is_primary,
-        direction: 'outbound' as const,
-        record_id: record.id,
-        record_title: record.title,
-        record_module_key: record.module?.key || '',
-        record_module_name: record.module?.name || '',
-        created_at: link.created_at,
-      };
-    })
-    .filter((x): x is CrmLinkedRecord => x !== null);
+  // Transform both link arrays using flatMap for proper null filtering
+  const outboundLinks: CrmLinkedRecord[] = (outbound || []).flatMap(link => {
+    const record = link.target_record as unknown as { id: string; title: string; module: { key: string; name: string } };
+    if (!record) return [];
+    return [{
+      link_id: link.id,
+      link_type: link.link_type,
+      is_primary: link.is_primary,
+      direction: 'outbound' as const,
+      record_id: record.id,
+      record_title: record.title,
+      record_module_key: record.module?.key || '',
+      record_module_name: record.module?.name || '',
+      created_at: link.created_at,
+    }];
+  });
 
-  const inboundLinks: CrmLinkedRecord[] = (inbound || [])
-    .map(link => {
-      const record = link.source_record as unknown as { id: string; title: string; module: { key: string; name: string } };
-      if (!record) return null;
-      return {
-        link_id: link.id,
-        link_type: link.link_type,
-        is_primary: link.is_primary,
-        direction: 'inbound' as const,
-        record_id: record.id,
-        record_title: record.title,
-        record_module_key: record.module?.key || '',
-        record_module_name: record.module?.name || '',
-        created_at: link.created_at,
-      };
-    })
-    .filter((x): x is CrmLinkedRecord => x !== null);
+  const inboundLinks: CrmLinkedRecord[] = (inbound || []).flatMap(link => {
+    const record = link.source_record as unknown as { id: string; title: string; module: { key: string; name: string } };
+    if (!record) return [];
+    return [{
+      link_id: link.id,
+      link_type: link.link_type,
+      is_primary: link.is_primary,
+      direction: 'inbound' as const,
+      record_id: record.id,
+      record_title: record.title,
+      record_module_key: record.module?.key || '',
+      record_module_name: record.module?.name || '',
+      created_at: link.created_at,
+    }];
+  });
 
   // Combine and sort by created_at desc
   return [...outboundLinks, ...inboundLinks].sort(
