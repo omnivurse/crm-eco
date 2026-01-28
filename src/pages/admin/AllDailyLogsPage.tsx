@@ -185,7 +185,7 @@ export default function AllDailyLogsPage() {
       Date: format(new Date(log.work_date), 'yyyy-MM-dd'),
       User: log.user.full_name || log.user.email,
       Email: log.user.email,
-      Role: log.role,
+      Role: log.user.role,
       Started: log.started_at ? format(new Date(log.started_at), 'HH:mm:ss') : 'N/A',
       Ended: log.ended_at ? format(new Date(log.ended_at), 'HH:mm:ss') : 'In Progress',
       Status: log.ended_at ? 'Completed' : log.started_at ? 'Active' : 'Not Started',
