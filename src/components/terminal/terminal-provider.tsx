@@ -143,7 +143,7 @@ export function TerminalProvider({ children }: { children: React.ReactNode }) {
 
     const context = {
       supabase,
-      tenantId: profile?.tenant_id,
+      tenantId: (profile as { organization_id?: string } | null)?.organization_id,
       userId: profile?.id,
       userRole: profile?.role,
       navigate,

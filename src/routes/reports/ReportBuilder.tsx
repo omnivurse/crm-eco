@@ -50,7 +50,7 @@ export function ReportBuilder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const templateId = searchParams.get('template');
-  const { addToast } = useToast();
+  const { toast, success, error: showError, info } = useToast();
 
   const [currentStep, setCurrentStep] = useState<BuilderStep>('source');
   const [showTemplates, setShowTemplates] = useState(!templateId);
@@ -206,7 +206,7 @@ export function ReportBuilder() {
       setTotalCount(count || 0);
     } catch (error) {
       console.error('Error executing report:', error);
-      addToast({ type: 'error', message: 'Failed to execute report' });
+      showError( 'Failed to execute report');
     } finally {
       setLoading(false);
     }
@@ -235,10 +235,10 @@ export function ReportBuilder() {
       );
 
       downloadExport(result);
-      addToast({ type: 'success', message: `Report exported as ${format.toUpperCase()}` });
+      success( `Report exported as ${format.toUpperCase()}` });
     } catch (error) {
       console.error('Export error:', error);
-      addToast({ type: 'error', message: 'Failed to export report' });
+      showError( 'Failed to export report');
     } finally {
       setIsExporting(false);
     }
@@ -261,10 +261,10 @@ export function ReportBuilder() {
 
       if (error) throw error;
 
-      addToast({ type: 'success', message: 'Report saved successfully' });
+      success( 'Report saved successfully');
     } catch (error) {
       console.error('Save error:', error);
-      addToast({ type: 'error', message: 'Failed to save report' });
+      showError( 'Failed to save report');
     } finally {
       setIsSaving(false);
     }
@@ -287,19 +287,19 @@ export function ReportBuilder() {
 
       if (error) throw error;
 
-      addToast({ type: 'success', message: 'Segment created successfully' });
+      success( 'Segment created successfully');
     } catch (error) {
       console.error('Segment error:', error);
-      addToast({ type: 'error', message: 'Failed to create segment' });
+      showError( 'Failed to create segment');
     }
   };
 
   const handleSetAlert = () => {
-    addToast({ type: 'info', message: 'Alert configuration coming soon' });
+    info( 'Alert configuration coming soon');
   };
 
   const handleSchedule = () => {
-    addToast({ type: 'info', message: 'Report scheduling coming soon' });
+    info( 'Report scheduling coming soon');
   };
 
   // Template selection view
