@@ -5,6 +5,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import type {
   CrmModule,
   CrmField,
@@ -180,7 +181,7 @@ export async function createCrmClient() {
 
 export async function getCurrentProfile(): Promise<CrmProfile | null> {
   const supabase = await createCrmClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -193,9 +194,15 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
   return profile as CrmProfile | null;
 }
 
+/**
+ * Cached version of getCurrentProfile - deduplicates within a single request
+ * Use this in layouts to avoid re-fetching on every navigation
+ */
+export const getCachedCurrentProfile = cache(getCurrentProfile);
+
 export async function getOrganizationProfiles(orgId: string): Promise<CrmProfile[]> {
   const supabase = await createCrmClient();
-  
+
   const { data } = await supabase
     .from('profiles')
     .select('*')
@@ -206,13 +213,42 @@ export async function getOrganizationProfiles(orgId: string): Promise<CrmProfile
   return (data || []) as CrmProfile[];
 }
 
+export interface OrganizationInfo {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export async function getOrganization(orgId: string): Promise<OrganizationInfo | null> {
+  const supabase = await createCrmClient();
+
+  const { data } = await supabase
+    .from('organizations')
+    .select('id, name, slug')
+    .eq('id', orgId)
+    .single();
+
+  return data as OrganizationInfo | null;
+}
+
+/**
+ * Cached version of getOrganization - revalidates every 10 minutes
+ * Organization info rarely changes
+ */
+export const getCachedOrganization = (orgId: string) =>
+  unstable_cache(
+    async () => getOrganization(orgId),
+    [`organization-${orgId}`],
+    { revalidate: 600, tags: [`org-${orgId}`, 'organization'] }
+  )();
+
 // ============================================================================
 // Module Queries
 // ============================================================================
 
 export async function getModules(orgId: string): Promise<CrmModule[]> {
   const supabase = await createCrmClient();
-  
+
   const { data, error } = await supabase
     .from('crm_modules')
     .select('*')
@@ -223,6 +259,17 @@ export async function getModules(orgId: string): Promise<CrmModule[]> {
   if (error) throw error;
   return (data || []) as CrmModule[];
 }
+
+/**
+ * Cached version of getModules - revalidates every 5 minutes
+ * Modules rarely change, so aggressive caching is appropriate
+ */
+export const getCachedModules = (orgId: string) =>
+  unstable_cache(
+    async () => getModules(orgId),
+    [`modules-${orgId}`],
+    { revalidate: 300, tags: [`org-${orgId}`, 'modules'] }
+  )();
 
 export async function getModuleByKey(orgId: string, key: string): Promise<CrmModule | null> {
   const supabase = await createCrmClient();

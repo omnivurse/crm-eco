@@ -1,7 +1,11 @@
 import { redirect } from 'next/navigation';
 import { CrmShell } from '@/components/crm/shell';
-import { getCurrentProfile, getModules } from '@/lib/crm/queries';
-import { createCrmClient } from '@/lib/crm/queries';
+import {
+  getCachedCurrentProfile,
+  getCachedModules,
+  getCachedOrganization,
+  getModules,
+} from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
 import { Toaster } from '@/components/ui/sonner';
 import { SecurityProvider } from '@/providers/SecurityProvider';
@@ -11,7 +15,8 @@ export default async function CrmLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getCurrentProfile();
+  // Use cached profile - deduplicates requests within same render
+  const profile = await getCachedCurrentProfile();
 
   if (!profile) {
     redirect('/crm-login');
@@ -21,23 +26,18 @@ export default async function CrmLayout({
     redirect('/crm-login?error=no_crm_access');
   }
 
-  // Get organization info
-  const supabase = await createCrmClient();
-  const { data: organization } = await supabase
-    .from('organizations')
-    .select('id, name, slug')
-    .eq('id', profile.organization_id)
-    .single();
+  // Fetch organization and modules in parallel with caching
+  const [organization, modules] = await Promise.all([
+    getCachedOrganization(profile.organization_id),
+    getCachedModules(profile.organization_id),
+  ]);
 
-  // Get enabled modules - auto-seed if none exist
-  let modules = await getModules(profile.organization_id);
-
-  if (modules.length === 0) {
-    // Auto-seed default modules for this organization
+  // Auto-seed modules if none exist (rare case, first login)
+  let activeModules = modules;
+  if (activeModules.length === 0) {
     try {
       await ensureDefaultModules(profile.organization_id);
-      // Re-fetch modules after seeding
-      modules = await getModules(profile.organization_id);
+      activeModules = await getModules(profile.organization_id);
     } catch (error) {
       console.error('Failed to auto-seed modules:', error);
     }
@@ -49,7 +49,7 @@ export default async function CrmLayout({
       userEmail={profile.email || ''}
     >
       <CrmShell
-        modules={modules}
+        modules={activeModules}
         profile={profile}
         organizationName={organization?.name}
       >
@@ -59,4 +59,3 @@ export default async function CrmLayout({
     </SecurityProvider>
   );
 }
-
