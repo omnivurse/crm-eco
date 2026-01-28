@@ -92,12 +92,6 @@ const OPERATORS = [
   { value: 'is_not_empty', label: 'Is Not Empty' },
 ];
 
-const APPLY_TO_OPTIONS = [
-  { value: 'leads', label: 'New Leads' },
-  { value: 'members', label: 'New Members' },
-  { value: 'enrollments', label: 'New Enrollments' },
-];
-
 export default function AgentAssignmentPage() {
   const [rules, setRules] = useState<AssignmentRule[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -155,7 +149,8 @@ export default function AgentAssignmentPage() {
 
       // Load assignment rules
       try {
-        const { data: rulesData } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: rulesData } = await (supabase as any)
           .from('crm_assignment_rules')
           .select('*')
           .eq('org_id', profile.organization_id)
@@ -241,7 +236,8 @@ export default function AgentAssignmentPage() {
       };
 
       if (selectedRule) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('crm_assignment_rules')
           .update(ruleData)
           .eq('id', selectedRule.id);
@@ -249,7 +245,8 @@ export default function AgentAssignmentPage() {
         if (error) throw error;
         toast.success('Assignment rule updated successfully');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('crm_assignment_rules')
           .insert(ruleData);
 
@@ -270,7 +267,8 @@ export default function AgentAssignmentPage() {
 
   const handleToggleEnabled = async (rule: AssignmentRule) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('crm_assignment_rules')
         .update({ is_enabled: !rule.is_enabled })
         .eq('id', rule.id);
@@ -289,7 +287,8 @@ export default function AgentAssignmentPage() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('crm_assignment_rules')
         .delete()
         .eq('id', selectedRule.id);

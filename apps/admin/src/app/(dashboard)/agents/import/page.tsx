@@ -28,7 +28,7 @@ export default function AgentsImportPage() {
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
-        .single();
+        .single() as { data: { id: string; organization_id: string } | null };
 
       if (profile) {
         setOrganizationId(profile.organization_id);

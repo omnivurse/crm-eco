@@ -137,7 +137,8 @@ export default function BillGroupsPage() {
 
       // Load bill groups with member counts
       try {
-        const { data: groupsData } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: groupsData } = await (supabase as any)
           .from('agent_bill_groups')
           .select(`
             *,
@@ -149,7 +150,8 @@ export default function BillGroupsPage() {
         if (groupsData) {
           // Get member counts
           const groupIds = groupsData.map(g => g.id);
-          const { data: memberCounts } = await supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: memberCounts } = await (supabase as any)
             .from('agent_bill_group_members')
             .select('bill_group_id')
             .in('bill_group_id', groupIds);
@@ -180,7 +182,8 @@ export default function BillGroupsPage() {
 
   const loadGroupMembers = async (groupId: string) => {
     try {
-      const { data } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
         .from('agent_bill_group_members')
         .select(`
           *,
@@ -245,14 +248,16 @@ export default function BillGroupsPage() {
       };
 
       if (selectedGroup) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('agent_bill_groups')
           .update(data)
           .eq('id', selectedGroup.id);
         if (error) throw error;
         toast.success('Group updated successfully');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('agent_bill_groups')
           .insert(data);
         if (error) throw error;
@@ -274,7 +279,8 @@ export default function BillGroupsPage() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('agent_bill_groups')
         .delete()
         .eq('id', selectedGroup.id);
@@ -294,7 +300,8 @@ export default function BillGroupsPage() {
     if (!selectedGroup || !organizationId) return;
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('agent_bill_group_members')
         .insert({
           organization_id: organizationId,
@@ -318,7 +325,8 @@ export default function BillGroupsPage() {
     if (!selectedGroup) return;
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('agent_bill_group_members')
         .delete()
         .eq('id', memberId);
@@ -334,7 +342,8 @@ export default function BillGroupsPage() {
 
   const handleUpdateMemberRole = async (memberId: string, role: string) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('agent_bill_group_members')
         .update({ role })
         .eq('id', memberId);
