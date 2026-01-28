@@ -715,53 +715,29 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
   };
 
   // Build all queries in parallel - eliminates N+1 problem
-  const moduleIds = modules.map(m => m.id);
+  // Run all module queries in parallel (much faster than sequential)
+  const crmTotalsMap: Record<string, number> = {};
+  const crmThisWeekMap: Record<string, number> = {};
 
-  // Single query to get all CRM record counts grouped by module
-  const [crmTotalsResult, crmThisWeekResult] = await Promise.all([
-    // Total counts per module
-    supabase.rpc('count_records_by_modules', { module_ids: moduleIds }).catch(() => ({ data: null })),
-    // This week counts per module
-    supabase.rpc('count_records_by_modules_since', {
-      module_ids: moduleIds,
-      since_date: oneWeekAgoISO
-    }).catch(() => ({ data: null })),
+  const crmQueries = modules.flatMap(m => [
+    supabase
+      .from('crm_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('module_id', m.id)
+      .then(r => ({ moduleId: m.id, type: 'total' as const, count: r.count || 0 })),
+    supabase
+      .from('crm_records')
+      .select('*', { count: 'exact', head: true })
+      .eq('module_id', m.id)
+      .gte('created_at', oneWeekAgoISO)
+      .then(r => ({ moduleId: m.id, type: 'week' as const, count: r.count || 0 })),
   ]);
 
-  // Build counts map from RPC results, fallback to individual queries if RPC doesn't exist
-  let crmTotalsMap: Record<string, number> = {};
-  let crmThisWeekMap: Record<string, number> = {};
-
-  if (crmTotalsResult.data && crmThisWeekResult.data) {
-    // RPC functions exist - use aggregated results
-    (crmTotalsResult.data as Array<{ module_id: string; count: number }>).forEach(r => {
-      crmTotalsMap[r.module_id] = r.count;
-    });
-    (crmThisWeekResult.data as Array<{ module_id: string; count: number }>).forEach(r => {
-      crmThisWeekMap[r.module_id] = r.count;
-    });
-  } else {
-    // Fallback: run all module queries in parallel (still better than sequential)
-    const queries = modules.flatMap(m => [
-      supabase
-        .from('crm_records')
-        .select('*', { count: 'exact', head: true })
-        .eq('module_id', m.id)
-        .then(r => ({ moduleId: m.id, type: 'total' as const, count: r.count || 0 })),
-      supabase
-        .from('crm_records')
-        .select('*', { count: 'exact', head: true })
-        .eq('module_id', m.id)
-        .gte('created_at', oneWeekAgoISO)
-        .then(r => ({ moduleId: m.id, type: 'week' as const, count: r.count || 0 })),
-    ]);
-
-    const results = await Promise.all(queries);
-    results.forEach(r => {
-      if (r.type === 'total') crmTotalsMap[r.moduleId] = r.count;
-      else crmThisWeekMap[r.moduleId] = r.count;
-    });
-  }
+  const crmResults = await Promise.all(crmQueries);
+  crmResults.forEach(r => {
+    if (r.type === 'total') crmTotalsMap[r.moduleId] = r.count;
+    else crmThisWeekMap[r.moduleId] = r.count;
+  });
 
   // Legacy queries in parallel
   const legacyQueries = modules
