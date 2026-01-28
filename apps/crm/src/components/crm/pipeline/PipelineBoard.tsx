@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -40,6 +40,10 @@ export function PipelineBoard({
   const [activeDeal, setActiveDeal] = useState<CrmRecord | null>(null);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
+  // Use ref for current deals in callbacks to avoid stale closures and prevent callback recreation
+  const dealsRef = useRef(deals);
+  dealsRef.current = deals;
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -51,18 +55,27 @@ export function PipelineBoard({
     })
   );
 
-  // Group deals by stage
-  const dealsByStage = stages.reduce((acc, stage) => {
-    acc[stage.key] = deals.filter(d => d.stage === stage.key);
-    return acc;
-  }, {} as Record<string, CrmRecord[]>);
+  // Memoize grouped deals by stage - prevents O(stages × deals) recalculation on every render
+  const dealsByStage = useMemo(() => {
+    const grouped: Record<string, CrmRecord[]> = {};
+    // Single pass through deals instead of filter per stage
+    for (const stage of stages) {
+      grouped[stage.key] = [];
+    }
+    for (const deal of deals) {
+      if (deal.stage && grouped[deal.stage]) {
+        grouped[deal.stage].push(deal);
+      }
+    }
+    return grouped;
+  }, [deals, stages]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const deal = deals.find(d => d.id === event.active.id);
+    const deal = dealsRef.current.find(d => d.id === event.active.id);
     if (deal) {
       setActiveDeal(deal);
     }
-  }, [deals]);
+  }, []); // No dependencies - uses ref
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
@@ -72,20 +85,20 @@ export function PipelineBoard({
     const overId = over.id as string;
 
     // Find the active deal
-    const deal = deals.find(d => d.id === activeDealId);
+    const deal = dealsRef.current.find(d => d.id === activeDealId);
     if (!deal) return;
 
     // Check if we're over a stage column
     const overStage = stages.find(s => s.key === overId);
     if (overStage && deal.stage !== overStage.key) {
-      // Preview the move
-      setDeals(prev => prev.map(d => 
-        d.id === activeDealId 
+      // Preview the move with functional update
+      setDeals(prev => prev.map(d =>
+        d.id === activeDealId
           ? { ...d, stage: overStage.key }
           : d
       ));
     }
-  }, [deals, stages]);
+  }, [stages]); // Only depends on stages, not deals
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;

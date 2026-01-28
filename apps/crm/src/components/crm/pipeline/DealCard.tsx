@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
@@ -38,7 +39,7 @@ interface DealCardProps {
   displayFields?: string[]; // Customizable fields to display on card
 }
 
-export function DealCard({ deal, isDragging, isUpdating, onQuickAction, displayFields }: DealCardProps) {
+export const DealCard = memo(function DealCard({ deal, isDragging, isUpdating, onQuickAction, displayFields }: DealCardProps) {
   const {
     attributes,
     listeners,
@@ -232,4 +233,4 @@ export function DealCard({ deal, isDragging, isUpdating, onQuickAction, displayF
   );
 
   return content;
-}
+});
