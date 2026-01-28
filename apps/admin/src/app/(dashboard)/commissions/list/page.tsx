@@ -429,7 +429,7 @@ export default function CommissionsListPage() {
 
       if (sourceRates && sourceRates.length > 0) {
         // Copy rates to target agent
-        const newRates = sourceRates.map((rate) => ({
+        const newRates = sourceRates.map((rate: any) => ({
           ...rate,
           id: undefined,
           advisor_id: copyForm.targetAgentId,

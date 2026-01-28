@@ -93,12 +93,13 @@ export default function CommissionsSummaryPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
       }
@@ -113,7 +114,8 @@ export default function CommissionsSummaryPage() {
 
     try {
       // Fetch all commissions for the period
-      const { data: commissions, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: commissions, error } = await (supabase as any)
         .from('commission_transactions')
         .select(
           `
