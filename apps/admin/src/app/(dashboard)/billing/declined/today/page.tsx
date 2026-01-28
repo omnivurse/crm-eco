@@ -98,7 +98,8 @@ export default function DeclinedTodayPage() {
     today.setHours(0, 0, 0, 0);
 
     try {
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('billing_transactions')
         .select(`
           *,
@@ -151,7 +152,8 @@ export default function DeclinedTodayPage() {
     setRetryingId(transaction.id);
     try {
       // Create a new retry transaction
-      const { data: newTxn, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newTxn, error } = await (supabase as any)
         .from('billing_transactions')
         .insert({
           member_id: transaction.member_id,
@@ -169,7 +171,8 @@ export default function DeclinedTodayPage() {
       if (error) throw error;
 
       // Log the retry action to audit
-      await supabase.from('billing_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('billing_audit_log').insert({
         action: 'transaction_retry',
         entity_type: 'billing_transaction',
         entity_id: newTxn.id,
@@ -202,12 +205,13 @@ export default function DeclinedTodayPage() {
     let successCount = 0;
     let failCount = 0;
 
-    for (const id of selectedIds) {
+    for (const id of Array.from(selectedIds)) {
       const transaction = transactions.find((t) => t.id === id);
       if (!transaction) continue;
 
       try {
-        const { error } = await supabase.from('billing_transactions').insert({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).from('billing_transactions').insert({
           member_id: transaction.member_id,
           payment_profile_id: transaction.payment_profile?.id,
           amount: transaction.amount,
@@ -226,7 +230,8 @@ export default function DeclinedTodayPage() {
     }
 
     // Log bulk retry to audit
-    await supabase.from('billing_audit_log').insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('billing_audit_log').insert({
       action: 'bulk_transaction_retry',
       entity_type: 'billing_transaction',
       entity_id: null,
