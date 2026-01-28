@@ -155,7 +155,8 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
       };
 
       if (editingTask) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('tasks')
           .update(taskData)
           .eq('id', editingTask.id);
@@ -163,7 +164,8 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
         if (error) throw error;
         toast.success('Task updated');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('tasks')
           .insert({
             ...taskData,
@@ -191,7 +193,8 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
     const newStatus = task.status === 'done' ? 'todo' : 'done';
 
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('tasks')
         .update({ status: newStatus })
         .eq('id', task.id);
