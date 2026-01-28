@@ -1,5 +1,5 @@
 import { supabase } from '../supabase.js';
-import type { AgentMessage } from '@champion-charlie/shared';
+import type { AgentMessage } from '../types/shared.js';
 
 export async function logMessage(message: Omit<AgentMessage, 'id' | 'created_at'>) {
   try {

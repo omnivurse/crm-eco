@@ -13,7 +13,7 @@ import {
   FetchCRMContactSchema,
   NotifySlackSchema,
   TriageTicketSchema,
-} from '@champion-charlie/shared';
+} from '../types/shared.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 export interface ToolContext {

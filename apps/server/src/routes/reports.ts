@@ -583,7 +583,8 @@ router.post('/:id/export', async (req: AuthenticatedRequest, res) => {
     }
 
     // Execute the report to get data
-    let query = supabaseClient
+    // Cast to any to avoid TypeScript deep type instantiation error
+    let query: any = supabaseClient
       .from(report.data_source)
       .select('*');
 

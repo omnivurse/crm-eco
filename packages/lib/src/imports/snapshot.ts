@@ -139,8 +139,8 @@ export async function canRollback(
     .single();
   
   if (error || !data) return false;
-  
-  return data.can_rollback && !data.rollback_status;
+
+  return Boolean(data.can_rollback) && !data.rollback_status;
 }
 
 // ============================================================================

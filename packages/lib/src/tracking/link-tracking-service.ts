@@ -237,7 +237,7 @@ export class LinkTrackingService {
     }
 
     // Check if max uses reached
-    if (data.max_uses && data.total_visits >= data.max_uses) {
+    if (data.max_uses && (data.total_visits ?? 0) >= data.max_uses) {
       return null;
     }
 
@@ -326,9 +326,9 @@ export class LinkTrackingService {
       if (visit) {
         firstTouchAt = visit.visited_at;
         advisorId = (visit.enrollment_links as { advisor_id: string }).advisor_id;
-        timeToConvert = Math.floor(
-          (new Date().getTime() - new Date(visit.visited_at).getTime()) / 1000
-        );
+        timeToConvert = visit.visited_at
+          ? Math.floor((new Date().getTime() - new Date(visit.visited_at).getTime()) / 1000)
+          : 0;
 
         // Count previous visits from same visitor
         if (visit.visitor_id) {
