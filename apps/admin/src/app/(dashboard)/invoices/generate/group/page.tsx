@@ -83,8 +83,8 @@ export default function GenerateGroupInvoicePage() {
         .single();
 
       if (profile) {
-        setOrganizationId(profile.organization_id);
-        setProfileId(profile.id);
+        setOrganizationId((profile as { id: string; organization_id: string }).organization_id);
+        setProfileId((profile as { id: string; organization_id: string }).id);
       }
     }
 
@@ -138,7 +138,8 @@ export default function GenerateGroupInvoicePage() {
 
     try {
       // Create generation job
-      const { data: job, error: jobError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: job, error: jobError } = await (supabase as any)
         .from('invoice_generation_jobs')
         .insert({
           organization_id: organizationId,
