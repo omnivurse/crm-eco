@@ -235,7 +235,8 @@ export default function GenerateIndividualInvoicePage() {
       const invoiceNumber = `INV-${format(new Date(), 'yyyyMMddHHmmss')}`;
 
       // Create invoice
-      const { data: invoice, error: invoiceError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: invoice, error: invoiceError } = await (supabase as any)
         .from('invoices')
         .insert({
           organization_id: organizationId,
@@ -270,13 +271,15 @@ export default function GenerateIndividualInvoicePage() {
         }));
 
       if (lineItemsToInsert.length > 0) {
-        const { error: itemsError } = await supabase.from('invoice_line_items').insert(lineItemsToInsert);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: itemsError } = await (supabase as any).from('invoice_line_items').insert(lineItemsToInsert);
 
         if (itemsError) throw itemsError;
       }
 
       // Log to audit
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_created',
         entity_type: 'invoice',

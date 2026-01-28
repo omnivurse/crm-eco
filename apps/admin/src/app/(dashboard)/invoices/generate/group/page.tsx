@@ -163,19 +163,21 @@ export default function GenerateGroupInvoicePage() {
       setProgress(10);
 
       // Get group members
-      const { data: members, error: membersError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: members, error: membersError } = await (supabase as any)
         .from('invoice_group_members')
         .select('member_id')
         .eq('invoice_group_id', selectedGroupId);
 
       if (membersError && membersError.code !== '42P01') throw membersError;
 
-      const memberIds = (members || []).map((m) => m.member_id);
+      const memberIds = (members || []).map((m: { member_id: string }) => m.member_id);
       setProgress(20);
 
       if (memberIds.length === 0) {
         // Update job as failed
-        await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any)
           .from('invoice_generation_jobs')
           .update({
             status: 'failed',
@@ -211,12 +213,13 @@ export default function GenerateGroupInvoicePage() {
         try {
           // Generate invoice number
           const invoiceNumber = `INV-${format(new Date(), 'yyyyMMdd')}-${String(successCount + 1).padStart(4, '0')}`;
-          const invoiceTotal = member.monthly_share || 0;
+          const invoiceTotal = (member as { monthly_share?: number }).monthly_share || 0;
 
-          const { error: invoiceError } = await supabase.from('invoices').insert({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { error: invoiceError } = await (supabase as any).from('invoices').insert({
             organization_id: organizationId,
             invoice_number: invoiceNumber,
-            member_id: member.id,
+            member_id: (member as { id: string }).id,
             status: 'draft',
             subtotal: invoiceTotal,
             discount_amount: 0,
@@ -235,7 +238,7 @@ export default function GenerateGroupInvoicePage() {
           successCount++;
           totalAmount += invoiceTotal;
         } catch (err) {
-          console.error('Error generating invoice for member:', member.id, err);
+          console.error('Error generating invoice for member:', (member as { id: string }).id, err);
           failCount++;
         }
       }
@@ -243,7 +246,8 @@ export default function GenerateGroupInvoicePage() {
       setProgress(95);
 
       // Update job with results
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('invoice_generation_jobs')
         .update({
           status: 'completed',
@@ -259,7 +263,8 @@ export default function GenerateGroupInvoicePage() {
         .eq('id', job.id);
 
       // Update group last generated
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('invoice_groups')
         .update({
           last_generated_at: new Date().toISOString(),
@@ -268,7 +273,8 @@ export default function GenerateGroupInvoicePage() {
         .eq('id', selectedGroupId);
 
       // Log to audit
-      await supabase.from('financial_audit_log').insert({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('financial_audit_log').insert({
         organization_id: organizationId,
         action: 'invoice_batch_generated',
         entity_type: 'invoice_generation_job',
