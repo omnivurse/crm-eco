@@ -75,7 +75,7 @@ type StatusFilter = 'all' | 'pending' | 'approved' | 'processing' | 'paid' | 'on
 type PayeeTypeFilter = 'all' | 'agent' | 'vendor' | 'provider' | 'other';
 
 const emptyPayable = {
-  payee_type: 'vendor' as const,
+  payee_type: 'vendor' as 'vendor' | 'agent' | 'provider' | 'other',
   payee_name: '',
   payee_email: '',
   category_id: '',
