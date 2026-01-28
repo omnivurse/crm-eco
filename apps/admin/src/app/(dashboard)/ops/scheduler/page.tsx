@@ -239,12 +239,13 @@ export default function SchedulerPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -342,7 +343,8 @@ export default function SchedulerPage() {
       };
 
       if (editingJob) {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('job_definitions')
           .update(jobData)
           .eq('id', editingJob.id);
@@ -350,7 +352,8 @@ export default function SchedulerPage() {
         if (error) throw error;
         toast.success('Schedule updated');
       } else {
-        const { error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any)
           .from('job_definitions')
           .insert({
             ...jobData,
@@ -375,7 +378,8 @@ export default function SchedulerPage() {
 
   const toggleActive = async (job: JobDefinition) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('job_definitions')
         .update({ is_active: !job.is_active })
         .eq('id', job.id);
@@ -408,7 +412,8 @@ export default function SchedulerPage() {
 
   const runJobNow = async (job: JobDefinition) => {
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('job_runs')
         .insert({
           organization_id: organizationId,

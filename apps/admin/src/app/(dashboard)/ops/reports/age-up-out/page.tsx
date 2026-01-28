@@ -211,12 +211,13 @@ export default function AgeUpOutPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: profile } = await supabase
+      const result = await supabase
         .from('profiles')
         .select('id, organization_id')
         .eq('user_id', user.id)
         .single();
 
+      const profile = result.data as { id: string; organization_id: string } | null;
       if (profile) {
         setOrganizationId(profile.organization_id);
         setProfileId(profile.id);
@@ -237,7 +238,8 @@ export default function AgeUpOutPage() {
     setRunning(true);
     try {
       // Create a job run for the age up/out check
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('job_runs')
         .insert({
           organization_id: organizationId,
@@ -269,7 +271,8 @@ export default function AgeUpOutPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('age_up_out_results')
         .update({
           action_required: false,
