@@ -117,7 +117,7 @@ export function OrganizationSettingsForm({ organization }: OrganizationSettingsF
         <div className="space-y-2">
           <Label>Created</Label>
           <Input
-            value={new Date(organization.created_at).toLocaleString()}
+            value={organization.created_at ? new Date(organization.created_at).toLocaleString() : 'N/A'}
             readOnly
             disabled
             className="bg-slate-50"

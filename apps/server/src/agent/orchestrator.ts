@@ -111,7 +111,7 @@ export async function processChat(
           
           logger.info(`Executing tool: ${toolName}`, validatedArgs);
           
-          const result = await tool.run(validatedArgs, context);
+          const result = await (tool.run as any)(validatedArgs, context);
           
           // Log the tool call
           await logMessage({

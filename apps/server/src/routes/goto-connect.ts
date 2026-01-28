@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { supabase } from '../supabase.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -81,7 +81,7 @@ async function ensureAgentStatus(agentId: string) {
  * Register a new WebRTC device for an agent
  * POST /api/goto-connect/devices
  */
-router.post('/devices', authenticateToken, async (req, res) => {
+router.post('/devices', authMiddleware, async (req, res) => {
   try {
     const schema = z.object({
       device_name: z.string(),
@@ -107,7 +107,7 @@ router.post('/devices', authenticateToken, async (req, res) => {
       throw new Error('Failed to create notification channel');
     }
 
-    const channelData = await channelResponse.json();
+    const channelData = await channelResponse.json() as { id: string };
 
     // Create device in GoTo Connect
     const deviceResponse = await gotoApiRequest('/web-calls/v1/devices', {
@@ -122,7 +122,7 @@ router.post('/devices', authenticateToken, async (req, res) => {
       throw new Error('Failed to register device with GoTo Connect');
     }
 
-    const deviceData = await deviceResponse.json();
+    const deviceData = await deviceResponse.json() as { id: string };
 
     // Save device to database
     const { data: device, error } = await supabase
@@ -164,7 +164,7 @@ router.post('/devices', authenticateToken, async (req, res) => {
  * Get all devices for current agent
  * GET /api/goto-connect/devices
  */
-router.get('/devices', authenticateToken, async (req, res) => {
+router.get('/devices', authMiddleware, async (req, res) => {
   try {
     const userId = (req as any).user.id;
 
@@ -195,7 +195,7 @@ router.get('/devices', authenticateToken, async (req, res) => {
  * Deactivate a device
  * DELETE /api/goto-connect/devices/:deviceId
  */
-router.delete('/devices/:deviceId', authenticateToken, async (req, res) => {
+router.delete('/devices/:deviceId', authMiddleware, async (req, res) => {
   try {
     const { deviceId } = req.params;
     const userId = (req as any).user.id;
@@ -232,7 +232,7 @@ router.delete('/devices/:deviceId', authenticateToken, async (req, res) => {
  * Make an outbound call
  * POST /api/goto-connect/calls
  */
-router.post('/calls', authenticateToken, async (req, res) => {
+router.post('/calls', authMiddleware, async (req, res) => {
   try {
     const schema = z.object({
       to_phone: z.string(),
@@ -271,7 +271,7 @@ router.post('/calls', authenticateToken, async (req, res) => {
       throw new Error('Failed to initiate call');
     }
 
-    const callData = await callResponse.json();
+    const callData = await callResponse.json() as { id: string };
 
     // Create call log in database
     const { data: callLog, error } = await supabase
@@ -311,7 +311,7 @@ router.post('/calls', authenticateToken, async (req, res) => {
  * Get call history
  * GET /api/goto-connect/calls
  */
-router.get('/calls', authenticateToken, async (req, res) => {
+router.get('/calls', authMiddleware, async (req, res) => {
   try {
     const userId = (req as any).user.id;
     const { status, limit = '50' } = req.query;
@@ -354,7 +354,7 @@ router.get('/calls', authenticateToken, async (req, res) => {
  * Get a specific call
  * GET /api/goto-connect/calls/:callId
  */
-router.get('/calls/:callId', authenticateToken, async (req, res) => {
+router.get('/calls/:callId', authMiddleware, async (req, res) => {
   try {
     const { callId } = req.params;
 
@@ -390,7 +390,7 @@ router.get('/calls/:callId', authenticateToken, async (req, res) => {
  * Update call (add notes, outcome, link ticket)
  * PATCH /api/goto-connect/calls/:callId
  */
-router.patch('/calls/:callId', authenticateToken, async (req, res) => {
+router.patch('/calls/:callId', authMiddleware, async (req, res) => {
   try {
     const { callId } = req.params;
     const schema = z.object({
@@ -434,7 +434,7 @@ router.patch('/calls/:callId', authenticateToken, async (req, res) => {
  * Get current agent status
  * GET /api/goto-connect/status
  */
-router.get('/status', authenticateToken, async (req, res) => {
+router.get('/status', authMiddleware, async (req, res) => {
   try {
     const userId = (req as any).user.id;
 
@@ -486,7 +486,7 @@ router.get('/status', authenticateToken, async (req, res) => {
  * Update agent status
  * PATCH /api/goto-connect/status
  */
-router.patch('/status', authenticateToken, async (req, res) => {
+router.patch('/status', authMiddleware, async (req, res) => {
   try {
     const userId = (req as any).user.id;
     const schema = z.object({
@@ -531,7 +531,7 @@ router.patch('/status', authenticateToken, async (req, res) => {
  * Get all agent statuses (for call routing)
  * GET /api/goto-connect/agents/status
  */
-router.get('/agents/status', authenticateToken, async (req, res) => {
+router.get('/agents/status', authMiddleware, async (req, res) => {
   try {
     const { data: statuses, error } = await supabase
       .from('agent_call_status')
@@ -566,7 +566,7 @@ router.get('/agents/status', authenticateToken, async (req, res) => {
  * Get current call queue
  * GET /api/goto-connect/queue
  */
-router.get('/queue', authenticateToken, async (req, res) => {
+router.get('/queue', authMiddleware, async (req, res) => {
   try {
     const { data: queue, error } = await supabase
       .from('call_queue')
@@ -599,7 +599,7 @@ router.get('/queue', authenticateToken, async (req, res) => {
  * Assign a queued call to current agent
  * POST /api/goto-connect/queue/:queueId/assign
  */
-router.post('/queue/:queueId/assign', authenticateToken, async (req, res) => {
+router.post('/queue/:queueId/assign', authMiddleware, async (req, res) => {
   try {
     const { queueId } = req.params;
     const userId = (req as any).user.id;
@@ -664,7 +664,7 @@ router.post('/queue/:queueId/assign', authenticateToken, async (req, res) => {
  * Get GoTo Connect settings
  * GET /api/goto-connect/settings
  */
-router.get('/settings', authenticateToken, async (req, res) => {
+router.get('/settings', authMiddleware, async (req, res) => {
   try {
     const { data: settings, error } = await supabase
       .from('goto_settings')
@@ -697,7 +697,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
  * Update GoTo Connect settings (admin only)
  * PATCH /api/goto-connect/settings
  */
-router.patch('/settings', authenticateToken, async (req, res) => {
+router.patch('/settings', authMiddleware, async (req, res) => {
   try {
     // Check if user is admin
     const userId = (req as any).user.id;

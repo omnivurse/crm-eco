@@ -130,12 +130,12 @@ export function CustomFieldsManager({ definitions, organizationId }: CustomField
       fieldKey: field.field_key || '',
       description: field.description || '',
       fieldType: field.field_type,
-      isRequired: field.is_required,
+      isRequired: field.is_required ?? false,
       isFilterable: field.is_filterable ?? false,
       isVisible: field.is_visible ?? true,
       options: Array.isArray(field.options) ? (field.options as string[]).join(', ') : '',
       orderIndex: field.order_index ?? 0,
-      displayOrder: field.display_order,
+      displayOrder: field.display_order ?? 0,
     });
     setError(null);
     setDialogOpen(true);

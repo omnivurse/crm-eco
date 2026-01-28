@@ -108,8 +108,11 @@ export default function CalendarPage() {
     const [newEventEnd, setNewEventEnd] = useState('');
     const [newEventLocation, setNewEventLocation] = useState('');
     const [newEventDescription, setNewEventDescription] = useState('');
+    const [newEventType, setNewEventType] = useState<'meeting' | 'call' | 'task' | 'email'>('meeting');
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
     const [profileData, setProfileData] = useState<{ id: string; organization_id: string } | null>(null);
+    const [showEventDetailModal, setShowEventDetailModal] = useState(false);
+    const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
     const supabase = createBrowserClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -348,6 +351,46 @@ export default function CalendarPage() {
         }
     };
 
+    // Handle date click - open new event modal with date pre-selected
+    const handleDateClick = (date: Date) => {
+        setSelectedDate(date);
+        // Pre-fill the start date/time
+        const dateStr = date.toISOString().slice(0, 16);
+        setNewEventStart(dateStr);
+        // Set end time to 1 hour later
+        const endDate = new Date(date.getTime() + 3600000);
+        setNewEventEnd(endDate.toISOString().slice(0, 16));
+        setShowNewEventModal(true);
+    };
+
+    // Handle event click - show event details
+    const handleEventClick = (event: CalendarEvent, e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setSelectedEvent(event);
+        setShowEventDetailModal(true);
+    };
+
+    // Complete a task
+    const completeTask = async (taskId: string) => {
+        try {
+            const { error } = await supabase
+                .from('crm_tasks')
+                .update({ status: 'completed', completed_at: new Date().toISOString() })
+                .eq('id', taskId);
+
+            if (error) throw error;
+
+            // Remove from local tasks list
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            // Also remove from events if it was a meeting/call
+            setEvents(prev => prev.filter(e => e.id !== taskId));
+            toast.success('Task completed');
+        } catch (error) {
+            console.error('Error completing task:', error);
+            toast.error('Failed to complete task');
+        }
+    };
+
     // Get priority badge color
     const getPriorityColor = (priority: string) => {
         switch (priority) {
@@ -513,9 +556,9 @@ export default function CalendarPage() {
                                     return (
                                         <div
                                             key={index}
-                                            onClick={() => setSelectedDate(date)}
+                                            onClick={() => handleDateClick(date)}
                                             className={cn(
-                                                'h-28 p-2 border-b border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors',
+                                                'h-28 p-2 border-b border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50',
                                                 !isCurrentMonthDay && 'bg-slate-50 dark:bg-slate-900/50',
                                                 isTodayDate && 'bg-teal-50/50 dark:bg-teal-900/20',
                                                 selectedDate?.toDateString() === date.toDateString() && 'ring-2 ring-teal-500 ring-inset'
@@ -535,13 +578,14 @@ export default function CalendarPage() {
                                             </div>
                                             <div className="space-y-1">
                                                 {dayEvents.slice(0, 2).map((event) => (
-                                                    <div
+                                                    <button
                                                         key={event.id}
-                                                        className="text-xs px-1.5 py-0.5 rounded truncate"
+                                                        onClick={(e) => handleEventClick(event, e)}
+                                                        className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate hover:opacity-80"
                                                         style={{ backgroundColor: `${event.color}20`, color: event.color }}
                                                     >
                                                         {event.title}
-                                                    </div>
+                                                    </button>
                                                 ))}
                                                 {dayEvents.length > 2 && (
                                                     <div className="text-xs text-slate-500 pl-1">+{dayEvents.length - 2} more</div>
@@ -590,22 +634,26 @@ export default function CalendarPage() {
                                         </div>
                                         {weekDays.map((date, i) => {
                                             const hourEvents = getEventsForHour(date, hour);
+                                            const slotDate = new Date(date);
+                                            slotDate.setHours(hour, 0, 0, 0);
                                             return (
                                                 <div
                                                     key={i}
+                                                    onClick={() => handleDateClick(slotDate)}
                                                     className={cn(
-                                                        'min-h-[48px] p-1 border-r border-slate-100 dark:border-slate-800 last:border-r-0',
+                                                        'min-h-[48px] p-1 border-r border-slate-100 dark:border-slate-800 last:border-r-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors',
                                                         isToday(date) && 'bg-teal-50/30 dark:bg-teal-900/10'
                                                     )}
                                                 >
                                                     {hourEvents.map((event) => (
-                                                        <div
+                                                        <button
                                                             key={event.id}
-                                                            className="text-xs px-1.5 py-1 rounded mb-1 truncate"
+                                                            onClick={(e) => handleEventClick(event, e)}
+                                                            className="w-full text-left text-xs px-1.5 py-1 rounded mb-1 truncate hover:opacity-80"
                                                             style={{ backgroundColor: `${event.color}20`, color: event.color }}
                                                         >
                                                             {event.title}
-                                                        </div>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             );
@@ -641,16 +689,22 @@ export default function CalendarPage() {
                             <div className="overflow-y-auto max-h-[600px]">
                                 {hours.slice(6, 22).map((hour) => {
                                     const hourEvents = getEventsForHour(currentDate, hour);
+                                    const slotDate = new Date(currentDate);
+                                    slotDate.setHours(hour, 0, 0, 0);
                                     return (
                                         <div key={hour} className="flex border-b border-slate-100 dark:border-slate-800">
                                             <div className="py-3 px-4 text-sm text-slate-400 text-right w-20 flex-shrink-0 border-r border-slate-200 dark:border-slate-700">
                                                 {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
                                             </div>
-                                            <div className="flex-1 min-h-[60px] p-2">
+                                            <div
+                                                onClick={() => handleDateClick(slotDate)}
+                                                className="flex-1 min-h-[60px] p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                            >
                                                 {hourEvents.map((event) => (
-                                                    <div
+                                                    <button
                                                         key={event.id}
-                                                        className="text-sm px-3 py-2 rounded-lg mb-1"
+                                                        onClick={(e) => handleEventClick(event, e)}
+                                                        className="w-full text-left text-sm px-3 py-2 rounded-lg mb-1 hover:opacity-80"
                                                         style={{ backgroundColor: `${event.color}15`, borderLeft: `3px solid ${event.color}` }}
                                                     >
                                                         <div className="font-medium" style={{ color: event.color }}>{event.title}</div>
@@ -663,7 +717,7 @@ export default function CalendarPage() {
                                                                 {event.location}
                                                             </div>
                                                         )}
-                                                    </div>
+                                                    </button>
                                                 ))}
                                             </div>
                                         </div>
@@ -690,7 +744,12 @@ export default function CalendarPage() {
                             ) : (
                                 tasks.slice(0, 5).map((task) => (
                                     <div key={task.id} className="flex items-start gap-3">
-                                        <button className="mt-0.5 w-4 h-4 rounded border-2 border-slate-300 dark:border-slate-600 hover:border-teal-500 transition-colors flex-shrink-0" />
+                                        <button
+                                            onClick={() => completeTask(task.id)}
+                                            className="mt-0.5 w-4 h-4 rounded border-2 border-slate-300 dark:border-slate-600 hover:border-teal-500 hover:bg-teal-500 transition-colors flex-shrink-0 flex items-center justify-center group"
+                                        >
+                                            <Check className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </button>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm text-slate-900 dark:text-white truncate">{task.title}</p>
                                             <p className="text-xs text-slate-500">
@@ -722,9 +781,10 @@ export default function CalendarPage() {
                                 </div>
                             ) : (
                                 todaysEvents.map((event) => (
-                                    <div
+                                    <button
                                         key={event.id}
-                                        className="p-3 rounded-lg"
+                                        onClick={() => handleEventClick(event)}
+                                        className="w-full text-left p-3 rounded-lg hover:opacity-80 transition-opacity"
                                         style={{ backgroundColor: `${event.color}10` }}
                                     >
                                         <p className="text-sm font-medium text-slate-900 dark:text-white">{event.title}</p>
@@ -732,7 +792,7 @@ export default function CalendarPage() {
                                             <Clock className="w-3 h-3" />
                                             {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </p>
-                                    </div>
+                                    </button>
                                 ))
                             )}
                         </div>
@@ -859,20 +919,59 @@ export default function CalendarPage() {
                     setNewEventEnd('');
                     setNewEventLocation('');
                     setNewEventDescription('');
+                    setNewEventType('meeting');
                 }
             }}>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>New Event</DialogTitle>
+                        <DialogTitle>New Activity</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-4">
+                        {/* Activity Type Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Activity Type
+                            </label>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[
+                                    { type: 'meeting' as const, label: 'Meeting', icon: Users, color: 'teal' },
+                                    { type: 'call' as const, label: 'Call', icon: Video, color: 'purple' },
+                                    { type: 'task' as const, label: 'Task', icon: CheckCircle2, color: 'blue' },
+                                    { type: 'email' as const, label: 'Email', icon: AlertCircle, color: 'amber' },
+                                ].map(({ type, label, icon: Icon, color }) => (
+                                    <button
+                                        key={type}
+                                        type="button"
+                                        onClick={() => setNewEventType(type)}
+                                        className={cn(
+                                            'flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all',
+                                            newEventType === type
+                                                ? `border-${color}-500 bg-${color}-50 dark:bg-${color}-900/20`
+                                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                        )}
+                                    >
+                                        <Icon className={cn(
+                                            'w-5 h-5',
+                                            newEventType === type ? `text-${color}-600` : 'text-slate-400'
+                                        )} />
+                                        <span className={cn(
+                                            'text-xs font-medium',
+                                            newEventType === type ? `text-${color}-700 dark:text-${color}-400` : 'text-slate-600 dark:text-slate-400'
+                                        )}>
+                                            {label}
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Event Title
+                                {newEventType === 'task' ? 'Task Title' : newEventType === 'call' ? 'Call Subject' : 'Event Title'}
                             </label>
                             <input
                                 type="text"
-                                placeholder="Enter event title"
+                                placeholder={newEventType === 'task' ? 'What needs to be done?' : newEventType === 'call' ? 'Who are you calling?' : 'Enter event title'}
                                 value={newEventTitle}
                                 onChange={(e) => setNewEventTitle(e.target.value)}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
@@ -881,7 +980,7 @@ export default function CalendarPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    Start Date & Time
+                                    {newEventType === 'task' ? 'Due Date' : 'Start Date & Time'}
                                 </label>
                                 <input
                                     type="datetime-local"
@@ -890,51 +989,44 @@ export default function CalendarPage() {
                                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                                 />
                             </div>
+                            {newEventType !== 'task' && (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        End Date & Time
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        value={newEventEnd}
+                                        onChange={(e) => setNewEventEnd(e.target.value)}
+                                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        {(newEventType === 'meeting' || newEventType === 'call') && (
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                    End Date & Time
+                                    {newEventType === 'meeting' ? 'Location' : 'Phone Number'}
                                 </label>
-                                <input
-                                    type="datetime-local"
-                                    value={newEventEnd}
-                                    onChange={(e) => setNewEventEnd(e.target.value)}
-                                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                />
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <input
+                                        type="text"
+                                        placeholder={newEventType === 'meeting' ? 'Add location or video link' : 'Phone number'}
+                                        value={newEventLocation}
+                                        onChange={(e) => setNewEventLocation(e.target.value)}
+                                        className="w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                    />
+                                </div>
                             </div>
-                        </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Calendar
-                            </label>
-                            <select className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                                <option>Personal Calendar</option>
-                                {connectedCalendars.map((cal) => (
-                                    <option key={cal.id}>{cal.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Location
-                            </label>
-                            <div className="relative">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Add location or video link"
-                                    value={newEventLocation}
-                                    onChange={(e) => setNewEventLocation(e.target.value)}
-                                    className="w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Description
+                                {newEventType === 'task' ? 'Notes' : 'Description'}
                             </label>
                             <textarea
                                 rows={3}
-                                placeholder="Add description..."
+                                placeholder={newEventType === 'task' ? 'Add notes...' : 'Add description...'}
                                 value={newEventDescription}
                                 onChange={(e) => setNewEventDescription(e.target.value)}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
@@ -951,63 +1043,91 @@ export default function CalendarPage() {
                             <button
                                 onClick={async () => {
                                     if (!newEventTitle.trim()) {
-                                        toast.error('Please enter an event title');
+                                        toast.error(`Please enter a ${newEventType === 'task' ? 'task' : 'event'} title`);
                                         return;
                                     }
                                     if (!newEventStart) {
-                                        toast.error('Please select a start date and time');
+                                        toast.error(`Please select a ${newEventType === 'task' ? 'due date' : 'start date and time'}`);
                                         return;
                                     }
                                     if (!profileData) {
-                                        toast.error('Unable to create event. Please refresh the page.');
+                                        toast.error('Unable to create. Please refresh the page.');
                                         return;
                                     }
 
                                     setIsCreatingEvent(true);
                                     try {
                                         const startDate = new Date(newEventStart);
-                                        const endDate = newEventEnd ? new Date(newEventEnd) : new Date(startDate.getTime() + 3600000); // Default 1 hour duration
+                                        const duration = newEventType === 'call' ? 1800000 : 3600000; // 30min for calls, 1hr for others
+                                        const endDate = newEventEnd ? new Date(newEventEnd) : new Date(startDate.getTime() + duration);
 
-                                        // Create as a CRM task with activity_type = 'meeting'
-                                        const { error } = await supabase
+                                        // Create as a CRM task with the selected activity_type
+                                        const { data: insertedTask, error } = await supabase
                                             .from('crm_tasks')
                                             .insert({
                                                 org_id: profileData.organization_id,
                                                 title: newEventTitle.trim(),
                                                 description: newEventDescription.trim() || null,
                                                 due_at: startDate.toISOString(),
-                                                activity_type: 'meeting',
-                                                meeting_location: newEventLocation.trim() || null,
-                                                status: 'pending',
+                                                activity_type: newEventType,
+                                                meeting_location: (newEventType === 'meeting' || newEventType === 'call') ? (newEventLocation.trim() || null) : null,
+                                                status: newEventType === 'task' ? 'open' : 'pending',
                                                 priority: 'medium',
-                                            });
+                                            } as any)
+                                            .select('id')
+                                            .single();
 
                                         if (error) throw error;
 
-                                        // Add to local events
-                                        const newEvent: CalendarEvent = {
-                                            id: crypto.randomUUID(),
-                                            title: newEventTitle.trim(),
-                                            description: newEventDescription.trim() || undefined,
-                                            start: startDate,
-                                            end: endDate,
-                                            location: newEventLocation.trim() || undefined,
-                                            provider: 'personal',
-                                            color: '#10B981',
-                                            status: 'confirmed',
+                                        // Determine color based on type
+                                        const typeColors: Record<string, string> = {
+                                            meeting: '#10B981',
+                                            call: '#8B5CF6',
+                                            task: '#3B82F6',
+                                            email: '#F59E0B',
                                         };
-                                        setEvents(prev => [...prev, newEvent]);
 
-                                        toast.success('Event created successfully');
+                                        // Add to local events (for meetings and calls) or tasks (for tasks)
+                                        if (newEventType === 'task') {
+                                            setTasks(prev => [...prev, {
+                                                id: insertedTask?.id || crypto.randomUUID(),
+                                                title: newEventTitle.trim(),
+                                                due_at: startDate.toISOString(),
+                                                priority: 'medium',
+                                                status: 'open',
+                                            }]);
+                                        } else {
+                                            const newEvent: CalendarEvent = {
+                                                id: insertedTask?.id || crypto.randomUUID(),
+                                                title: newEventTitle.trim(),
+                                                description: newEventDescription.trim() || undefined,
+                                                start: startDate,
+                                                end: endDate,
+                                                location: newEventLocation.trim() || undefined,
+                                                provider: 'personal',
+                                                color: typeColors[newEventType],
+                                                status: 'confirmed',
+                                            };
+                                            setEvents(prev => [...prev, newEvent]);
+                                        }
+
+                                        const successMessages: Record<string, string> = {
+                                            meeting: 'Meeting scheduled successfully',
+                                            call: 'Call scheduled successfully',
+                                            task: 'Task created successfully',
+                                            email: 'Email reminder created',
+                                        };
+                                        toast.success(successMessages[newEventType]);
                                         setShowNewEventModal(false);
                                         setNewEventTitle('');
                                         setNewEventStart('');
                                         setNewEventEnd('');
                                         setNewEventLocation('');
                                         setNewEventDescription('');
+                                        setNewEventType('meeting');
                                     } catch (error) {
-                                        console.error('Error creating event:', error);
-                                        toast.error('Failed to create event');
+                                        console.error('Error creating activity:', error);
+                                        toast.error('Failed to create activity');
                                     } finally {
                                         setIsCreatingEvent(false);
                                     }
@@ -1016,10 +1136,85 @@ export default function CalendarPage() {
                                 className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                                 {isCreatingEvent && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {isCreatingEvent ? 'Creating...' : 'Create Event'}
+                                {isCreatingEvent ? 'Creating...' : newEventType === 'task' ? 'Create Task' : 'Create Event'}
                             </button>
                         </div>
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Event Detail Modal */}
+            <Dialog open={showEventDetailModal} onOpenChange={setShowEventDetailModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Event Details</DialogTitle>
+                    </DialogHeader>
+                    {selectedEvent && (
+                        <div className="space-y-4 pt-4">
+                            <div className="flex items-start gap-3">
+                                <div
+                                    className="w-10 h-10 rounded-lg flex items-center justify-center"
+                                    style={{ backgroundColor: `${selectedEvent.color}20` }}
+                                >
+                                    <CalendarIcon className="w-5 h-5" style={{ color: selectedEvent.color }} />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-slate-900 dark:text-white">{selectedEvent.title}</h3>
+                                    <p className="text-sm text-slate-500 mt-1">
+                                        {new Date(selectedEvent.start).toLocaleDateString('en-US', {
+                                            weekday: 'long',
+                                            month: 'long',
+                                            day: 'numeric',
+                                            year: 'numeric',
+                                        })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-sm">
+                                    <Clock className="w-4 h-4 text-slate-400" />
+                                    <span className="text-slate-700 dark:text-slate-300">
+                                        {new Date(selectedEvent.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        {' - '}
+                                        {new Date(selectedEvent.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+
+                                {selectedEvent.location && (
+                                    <div className="flex items-center gap-3 text-sm">
+                                        <MapPin className="w-4 h-4 text-slate-400" />
+                                        <span className="text-slate-700 dark:text-slate-300">{selectedEvent.location}</span>
+                                    </div>
+                                )}
+
+                                {selectedEvent.description && (
+                                    <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
+                                        <p className="text-sm text-slate-600 dark:text-slate-400">{selectedEvent.description}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <button
+                                    onClick={() => {
+                                        completeTask(selectedEvent.id);
+                                        setShowEventDetailModal(false);
+                                    }}
+                                    className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Check className="w-4 h-4" />
+                                    Mark Complete
+                                </button>
+                                <button
+                                    onClick={() => setShowEventDetailModal(false)}
+                                    className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>

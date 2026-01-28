@@ -147,7 +147,8 @@ router.post('/:id/refresh', async (req: AuthenticatedRequest, res) => {
 
     // Re-run the filter query to get updated count
     const filters = segment.filter_snapshot || [];
-    let query = supabaseClient
+    // Cast to any to avoid TypeScript deep type instantiation error
+    let query: any = supabaseClient
       .from(segment.entity_type)
       .select('id', { count: 'exact', head: true });
 
@@ -237,7 +238,8 @@ router.get('/:id/records', async (req: AuthenticatedRequest, res) => {
 
     // Query records
     const filters = segment.filter_snapshot || [];
-    let query = supabaseClient
+    // Cast to any to avoid TypeScript deep type instantiation error
+    let query: any = supabaseClient
       .from(segment.entity_type)
       .select('*', { count: 'exact' });
 

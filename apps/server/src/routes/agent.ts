@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { ChatRequestSchema } from '@champion-charlie/shared';
+import { ChatRequestSchema } from '../types/shared.js';
 import { processChat } from '../agent/orchestrator.js';
 import { logMessage } from '../agent/logs.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
