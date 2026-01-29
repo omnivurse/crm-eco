@@ -104,7 +104,7 @@ export default function NotesMemosWidget({
                   <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1">
                     {note.content}
                   </p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1" suppressHydrationWarning>
                     {formatDate(note.updated_at)}
                   </p>
                 </div>

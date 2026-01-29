@@ -37,7 +37,7 @@ export function ActivityItem({ activity }: ActivityItemProps) {
           </span>{' '}
           {activity.entity}
         </p>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5" suppressHydrationWarning>
           {new Date(activity.created_at).toLocaleString([], {
             month: 'short',
             day: 'numeric',
