@@ -41,6 +41,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Total Deals', 'Pipeline Value', 'Conversion Rate', 'Avg Deal Size'],
     filters: ['Date Range', 'Sales Rep', 'Deal Stage', 'Product'],
     defaultTimeRange: '30d',
+    dataSource: 'deals',
+    columns: ['id', 'name', 'data', 'stage_id', 'owner_id', 'created_at', 'updated_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
     id: 'sales-forecast',
@@ -51,6 +54,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Projected Revenue', 'Weighted Pipeline', 'Expected Close'],
     filters: ['Date Range', 'Sales Rep', 'Region'],
     defaultTimeRange: '90d',
+    dataSource: 'deals',
+    columns: ['id', 'name', 'data', 'stage_id', 'owner_id', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
     id: 'sales-performance',
@@ -61,6 +67,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Deals Closed', 'Revenue', 'Win Rate', 'Quota Attainment'],
     filters: ['Date Range', 'Sales Rep', 'Team'],
     defaultTimeRange: '30d',
+    dataSource: 'deals',
+    columns: ['id', 'name', 'data', 'stage_id', 'owner_id', 'created_at'],
+    sorting: [{ column: 'owner_id', direction: 'asc' }],
   },
   {
     id: 'deal-velocity',
@@ -71,6 +80,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Avg Days to Close', 'Stage Duration', 'Bottlenecks'],
     filters: ['Date Range', 'Deal Type', 'Product'],
     defaultTimeRange: '90d',
+    dataSource: 'deals',
+    columns: ['id', 'name', 'data', 'stage_id', 'created_at', 'updated_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   // Marketing Templates
   {
@@ -82,6 +94,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['New Leads', 'Source Performance', 'Lead Quality Score'],
     filters: ['Date Range', 'Lead Source', 'Campaign'],
     defaultTimeRange: '30d',
+    dataSource: 'leads',
+    columns: ['id', 'name', 'data', 'owner_id', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
     id: 'campaign-performance',
@@ -92,6 +107,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Impressions', 'Clicks', 'Conversions', 'ROI'],
     filters: ['Date Range', 'Campaign', 'Channel'],
     defaultTimeRange: '30d',
+    dataSource: 'leads',
+    columns: ['id', 'name', 'data', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   // Team Templates
   {
@@ -103,6 +121,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Tasks Completed', 'Goals Met', 'Response Time'],
     filters: ['Date Range', 'Team Member', 'Department'],
     defaultTimeRange: '30d',
+    dataSource: 'tasks',
+    columns: ['id', 'title', 'status', 'priority', 'assigned_to', 'due_at', 'completed_at', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   // Operations Templates
   {
@@ -114,6 +135,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['New Enrollments', 'Active Members', 'Churn Rate'],
     filters: ['Date Range', 'Product', 'Agent'],
     defaultTimeRange: '30d',
+    dataSource: 'enrollments',
+    columns: ['*'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
     id: 'task-completion',
@@ -124,6 +148,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Tasks Completed', 'Overdue Tasks', 'Avg Completion Time'],
     filters: ['Date Range', 'Assignee', 'Priority'],
     defaultTimeRange: '7d',
+    dataSource: 'tasks',
+    columns: ['id', 'title', 'status', 'priority', 'assigned_to', 'due_at', 'completed_at', 'created_at'],
+    sorting: [{ column: 'due_at', direction: 'asc' }],
   },
   // Finance Templates
   {
@@ -135,6 +162,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Total Revenue', 'MRR', 'ARR', 'Growth Rate'],
     filters: ['Date Range', 'Product', 'Region'],
     defaultTimeRange: '30d',
+    dataSource: 'deals',
+    columns: ['id', 'name', 'data', 'stage_id', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
     id: 'commission-report',
@@ -145,6 +175,9 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Total Commissions', 'By Agent', 'By Product'],
     filters: ['Date Range', 'Agent', 'Product'],
     defaultTimeRange: '30d',
+    dataSource: 'commissions',
+    columns: ['*'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   // Productivity Templates
   {
@@ -156,6 +189,23 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     metrics: ['Output', 'Efficiency', 'Time Savings'],
     filters: ['Date Range', 'Team', 'Process'],
     defaultTimeRange: '30d',
+    dataSource: 'tasks',
+    columns: ['id', 'title', 'status', 'priority', 'assigned_to', 'due_at', 'completed_at', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
+  },
+  // Contact Templates
+  {
+    id: 'contact-list',
+    name: 'Contact List',
+    description: 'All contacts with key information',
+    category: 'sales',
+    icon: 'Users',
+    metrics: ['Total Contacts', 'New This Month', 'Active Contacts'],
+    filters: ['Date Range', 'Owner', 'Status'],
+    defaultTimeRange: '30d',
+    dataSource: 'contacts',
+    columns: ['id', 'name', 'data', 'owner_id', 'created_at'],
+    sorting: [{ column: 'created_at', direction: 'desc' }],
   },
 ];
 
