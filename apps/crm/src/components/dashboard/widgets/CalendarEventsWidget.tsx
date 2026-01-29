@@ -113,7 +113,7 @@ export default function CalendarEventsWidget({
                   </p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
                     <Clock className="w-3 h-3 flex-shrink-0" />
-                    <span>
+                    <span suppressHydrationWarning>
                       {formatDate(event.start_time)} · {formatTime(event.start_time)}
                     </span>
                   </div>

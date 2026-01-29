@@ -35,6 +35,7 @@ export function TaskItem({ task }: TaskItemProps) {
                 ? 'text-red-500 font-medium'
                 : 'text-slate-400 dark:text-slate-500'
             )}
+            suppressHydrationWarning
           >
             {isOverdue
               ? 'Overdue'

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sun, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';
@@ -23,20 +24,29 @@ export default function TodaysTasksWidget({
   data: todaysTasks,
   size,
 }: TodaysTasksWidgetProps) {
+  const [mounted, setMounted] = useState(false);
   const tasks = todaysTasks || [];
   const overdueTasks = tasks.filter(
     (t) => t.due_at && new Date(t.due_at) < new Date()
   );
   const displayCount = sizeToDisplayCount[size] || 5;
 
-  return (
-    <WidgetCard
-      title="Today's Tasks"
-      subtitle={new Date().toLocaleDateString('en-US', {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const todayString = mounted
+    ? new Date().toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'short',
         day: 'numeric',
-      })}
+      })
+    : 'Today';
+
+  return (
+    <WidgetCard
+      title="Today's Tasks"
+      subtitle={todayString}
       icon={<Sun className="w-5 h-5 text-white" />}
       gradient="bg-gradient-to-r from-amber-500 via-orange-400 to-amber-500"
       badge={
