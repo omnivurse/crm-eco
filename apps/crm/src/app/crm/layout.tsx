@@ -9,6 +9,7 @@ import {
 import { ensureDefaultModules } from '@/lib/crm/seed';
 import { Toaster } from '@/components/ui/sonner';
 import { SecurityProvider } from '@/providers/SecurityProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,14 +51,16 @@ export default async function CrmLayout({
       userName={profile.full_name || ''}
       userEmail={profile.email || ''}
     >
-      <CrmShell
-        modules={activeModules}
-        profile={profile}
-        organizationName={organization?.name}
-      >
-        {children}
-      </CrmShell>
-      <Toaster />
+      <QueryProvider>
+        <CrmShell
+          modules={activeModules}
+          profile={profile}
+          organizationName={organization?.name}
+        >
+          {children}
+        </CrmShell>
+        <Toaster />
+      </QueryProvider>
     </SecurityProvider>
   );
 }

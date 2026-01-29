@@ -3,9 +3,6 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import './globals.css';
 
-// Force dynamic rendering for all pages to prevent build-time Supabase errors
-export const dynamic = 'force-dynamic';
-
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
