@@ -210,7 +210,8 @@ export function useChangeFeed(options: UseChangeFeedOptions): UseChangeFeedRetur
 }
 
 /**
- * Hook for subscribing to Supabase realtime changes
+ * Hook for subscribing to Supabase realtime changes via broadcast
+ * Uses broadcast instead of postgres_changes to eliminate WAL polling overhead
  * @param supabase - Supabase client instance
  * @param orgId - Organization ID to subscribe to
  */
@@ -221,18 +222,15 @@ export function useChangeSubscription(
   useEffect(() => {
     if (!supabase || !orgId) return;
 
+    // Use broadcast channel instead of postgres_changes
+    // Channel name must match server-side: `change-events:${orgId}`
     const channel = supabase
-      .channel(`change-events-${orgId}`)
+      .channel(`change-events:${orgId}`)
       .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'change_events',
-          filter: `org_id=eq.${orgId}`,
-        },
-        (payload: any) => {
-          const event = payload.new;
+        'broadcast',
+        { event: 'change_event' },
+        (payload: { payload: any }) => {
+          const event = payload.payload;
           ChangeEventBus.emit({
             type: event.entity_type,
             orgId: event.org_id,

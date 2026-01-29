@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { broadcastChangeEvent } from '@crm-eco/lib/realtime';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -172,6 +173,26 @@ export async function POST(request: NextRequest) {
       console.error('Error creating change event:', error);
       return NextResponse.json({ error: 'Failed to create change event' }, { status: 500 });
     }
+
+    // Broadcast the event via Realtime (non-blocking)
+    broadcastChangeEvent({
+      id: event.id,
+      org_id: event.org_id,
+      source_type: event.source_type,
+      source_name: event.source_name,
+      change_type: event.change_type,
+      entity_type: event.entity_type,
+      entity_id: event.entity_id,
+      entity_title: event.entity_title,
+      severity: event.severity,
+      requires_review: event.requires_review,
+      title: event.title,
+      description: event.description,
+      sync_status: event.sync_status,
+      actor_id: event.actor_id,
+      actor_name: event.actor_name,
+      created_at: event.created_at,
+    }).catch(() => {}); // Fire and forget
 
     return NextResponse.json({ event });
   } catch (error) {
