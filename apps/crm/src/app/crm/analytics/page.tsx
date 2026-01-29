@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
+import { toast } from 'sonner';
 
 interface DashboardData {
   summary: {
@@ -175,6 +176,7 @@ export default function AnalyticsPage() {
       }
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
+      toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
       setRefreshing(false);

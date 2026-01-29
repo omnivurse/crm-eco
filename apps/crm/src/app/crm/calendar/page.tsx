@@ -235,6 +235,7 @@ export default function CalendarPage() {
                 }
             } catch (error) {
                 console.error('Error loading calendar data:', error);
+                toast.error('Failed to load calendar data');
             } finally {
                 setLoading(false);
             }

@@ -22,6 +22,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Type Definitions
@@ -351,6 +352,7 @@ export default function CommunicationsPage() {
         setRecentActivities(recentList);
       } catch (error) {
         console.error('Error loading communications data:', error);
+        toast.error('Failed to load communications data');
       } finally {
         setLoading(false);
       }
