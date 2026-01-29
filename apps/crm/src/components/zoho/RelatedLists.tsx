@@ -88,7 +88,7 @@ export function RelatedLists({
               const date = new Date(String(value));
               const isOverdue = date < new Date() && value;
               return (
-                <span className={isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'}>
+                <span className={isOverdue ? 'text-red-600 dark:text-red-400' : 'text-slate-600 dark:text-slate-300'} suppressHydrationWarning>
                   {date.toLocaleDateString()}
                 </span>
               );
@@ -121,7 +121,7 @@ export function RelatedLists({
             key: 'created_at', 
             label: 'Created',
             render: (value) => (
-              <span className="text-slate-500 text-xs">
+              <span className="text-slate-500 text-xs" suppressHydrationWarning>
                 {value ? new Date(String(value)).toLocaleDateString() : '—'}
               </span>
             ),
@@ -164,11 +164,11 @@ export function RelatedLists({
                 </span>
               ),
             },
-            { 
-              key: 'created_at', 
+            {
+              key: 'created_at',
               label: 'Date',
               render: (value) => (
-                <span className="text-slate-500 text-xs">
+                <span className="text-slate-500 text-xs" suppressHydrationWarning>
                   {value ? new Date(String(value)).toLocaleDateString() : '—'}
                 </span>
               ),
@@ -204,11 +204,11 @@ export function RelatedLists({
               return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
             },
           },
-          { 
-            key: 'created_at', 
+          {
+            key: 'created_at',
             label: 'Uploaded',
             render: (value) => (
-              <span className="text-slate-500 text-xs">
+              <span className="text-slate-500 text-xs" suppressHydrationWarning>
                 {value ? new Date(String(value)).toLocaleDateString() : '—'}
               </span>
             ),
