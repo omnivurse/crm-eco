@@ -11,48 +11,23 @@
 
 -- Remove high-write CRM tables (polling/TanStack Query used instead)
 DO $$
+DECLARE
+  tbl text;
+  tables_to_remove text[] := ARRAY[
+    'crm_records', 'crm_activities', 'crm_notes', 'crm_tasks',
+    'crm_audit_logs', 'activities', 'audit_logs', 'email_campaign_recipients'
+  ];
 BEGIN
-  -- Try to drop each table, ignore errors if not in publication
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS crm_records;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS crm_activities;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS crm_notes;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS crm_tasks;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS crm_audit_logs;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS activities;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS audit_logs;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
-
-  -- Remove email campaign recipients (high-volume, doesn't need realtime)
-  BEGIN
-    ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS email_campaign_recipients;
-  EXCEPTION WHEN undefined_object THEN NULL;
-  END;
+  FOREACH tbl IN ARRAY tables_to_remove
+  LOOP
+    -- Check if table is in the publication before trying to remove
+    IF EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname = 'supabase_realtime' AND tablename = tbl
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime DROP TABLE %I', tbl);
+    END IF;
+  END LOOP;
 END $$;
 
 -- ============================================================================
@@ -61,10 +36,26 @@ END $$;
 -- ============================================================================
 
 -- Change events (used by CrmTopBar change ticker)
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS change_events;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'change_events'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE change_events;
+  END IF;
+END $$;
 
 -- Admin notifications (used by AdminNotificationListener)
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS admin_notifications;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'admin_notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE admin_notifications;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- STEP 3: Add replica identity for filtered subscriptions
