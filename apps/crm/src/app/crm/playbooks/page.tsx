@@ -44,12 +44,14 @@ export default function PlaybooksPage() {
   const fetchPlaybooks = useCallback(async () => {
     try {
       const res = await fetch('/api/playbooks');
-      if (res.ok) {
-        const data = await res.json();
-        setPlaybooks(data || []);
+      if (!res.ok) {
+        throw new Error('Failed to fetch');
       }
+      const data = await res.json();
+      setPlaybooks(data || []);
     } catch (error) {
       console.error('Failed to fetch playbooks:', error);
+      toast.error('Failed to load playbooks');
     } finally {
       setLoading(false);
     }
