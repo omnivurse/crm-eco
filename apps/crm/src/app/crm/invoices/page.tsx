@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -233,8 +234,10 @@ export default function InvoicesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
@@ -380,14 +383,17 @@ export default function InvoicesPage() {
     }
   }
 
-  // Filter invoices
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = !searchQuery ||
-      invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      invoice.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter invoices with debounced search
+  const filteredInvoices = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return invoices.filter(invoice => {
+      const matchesSearch = !searchLower ||
+        invoice.invoice_number.toLowerCase().includes(searchLower) ||
+        invoice.title?.toLowerCase().includes(searchLower);
+      const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [invoices, debouncedQuery, statusFilter]);
 
   // Calculate stats
   const totalValue = invoices.reduce((sum, i) => sum + (i.total || 0), 0);

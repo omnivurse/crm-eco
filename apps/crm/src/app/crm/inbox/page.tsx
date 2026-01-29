@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import {
@@ -103,8 +104,10 @@ export default function InboxPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [channelFilter, setChannelFilter] = useState<InboxChannel | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ConversationStatus | 'active'>('active');
-  const [searchQuery, setSearchQuery] = useState('');
   const [showComposeModal, setShowComposeModal] = useState(false);
+
+  // Live search with debounce (300ms for API calls)
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 300 });
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
@@ -158,10 +161,10 @@ export default function InboxPage() {
         query = query.gt('unread_count', 0);
       }
 
-      // Apply search
-      if (searchQuery) {
+      // Apply search (uses debounced query to prevent API spam)
+      if (debouncedQuery) {
         query = query.or(
-          `subject.ilike.%${searchQuery}%,preview.ilike.%${searchQuery}%,contact_name.ilike.%${searchQuery}%,contact_email.ilike.%${searchQuery}%`
+          `subject.ilike.%${debouncedQuery}%,preview.ilike.%${debouncedQuery}%,contact_name.ilike.%${debouncedQuery}%,contact_email.ilike.%${debouncedQuery}%`
         );
       }
 
@@ -200,7 +203,7 @@ export default function InboxPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, filter, channelFilter, statusFilter, searchQuery]);
+  }, [supabase, filter, channelFilter, statusFilter, debouncedQuery]);
 
   useEffect(() => {
     loadConversations();

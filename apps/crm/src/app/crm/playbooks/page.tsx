@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -39,7 +40,9 @@ interface Playbook {
 export default function PlaybooksPage() {
   const [playbooks, setPlaybooks] = useState<Playbook[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
 
   const fetchPlaybooks = useCallback(async () => {
     try {
@@ -77,10 +80,14 @@ export default function PlaybooksPage() {
     }
   };
 
-  const filteredPlaybooks = playbooks.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.description || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredPlaybooks = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    if (!searchLower) return playbooks;
+    return playbooks.filter(p =>
+      p.name.toLowerCase().includes(searchLower) ||
+      (p.description || '').toLowerCase().includes(searchLower)
+    );
+  }, [playbooks, debouncedQuery]);
 
   const getTotalItems = (playbook: Playbook) => {
     return playbook.content.reduce((acc, section) => acc + section.items.length, 0);

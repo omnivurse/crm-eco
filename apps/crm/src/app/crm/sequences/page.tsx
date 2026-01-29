@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
@@ -211,8 +212,10 @@ export default function SequencesPage() {
   const router = useRouter();
   const [sequences, setSequences] = useState<SequenceWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
 
   useEffect(() => {
     loadSequences();
@@ -312,18 +315,20 @@ export default function SequencesPage() {
     }
   }
 
-  // Filter sequences
-  const filteredSequences = sequences.filter(s => {
-    if (statusFilter !== 'all' && s.status !== statusFilter) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        s.name.toLowerCase().includes(query) ||
-        s.description?.toLowerCase().includes(query)
-      );
-    }
-    return true;
-  });
+  // Filter sequences with debounced search
+  const filteredSequences = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return sequences.filter(s => {
+      if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+      if (searchLower) {
+        return (
+          s.name.toLowerCase().includes(searchLower) ||
+          s.description?.toLowerCase().includes(searchLower)
+        );
+      }
+      return true;
+    });
+  }, [sequences, debouncedQuery, statusFilter]);
 
   if (loading) {
     return (

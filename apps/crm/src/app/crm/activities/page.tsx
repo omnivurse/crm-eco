@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -135,7 +136,9 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -173,13 +176,16 @@ export default function ActivitiesPage() {
     fetchActivities();
   }, [activityType, statusFilter]);
 
-  // Filter and paginate
-  const filteredActivities = activities.filter((a) =>
-    searchQuery
-      ? a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      : true
-  );
+  // Filter and paginate with debounced search
+  const filteredActivities = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return activities.filter((a) =>
+      searchLower
+        ? a.title.toLowerCase().includes(searchLower) ||
+          a.description?.toLowerCase().includes(searchLower)
+        : true
+    );
+  }, [activities, debouncedQuery]);
   const total = filteredActivities.length;
   const totalPages = Math.ceil(total / pageSize);
   const paginatedActivities = filteredActivities.slice(
