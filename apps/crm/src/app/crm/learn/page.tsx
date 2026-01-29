@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { Input } from '@crm-eco/ui/components/input';
 import { Button } from '@crm-eco/ui/components/button';
@@ -173,19 +174,21 @@ const QUICK_LINKS = [
 ];
 
 export default function LearnPage() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Filter categories based on search
-  const filteredCategories = CATEGORIES.filter(cat => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      cat.title.toLowerCase().includes(query) ||
-      cat.description.toLowerCase().includes(query) ||
-      cat.articles.some(a => a.title.toLowerCase().includes(query))
-    );
-  });
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
+
+  // Filter categories based on debounced search
+  const filteredCategories = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    if (!searchLower) return CATEGORIES;
+    return CATEGORIES.filter(cat => (
+      cat.title.toLowerCase().includes(searchLower) ||
+      cat.description.toLowerCase().includes(searchLower) ||
+      cat.articles.some(a => a.title.toLowerCase().includes(searchLower))
+    ));
+  }, [debouncedQuery]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
