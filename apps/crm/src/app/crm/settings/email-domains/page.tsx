@@ -34,7 +34,6 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  ExternalLink,
   Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -167,12 +166,16 @@ function DomainCard({
     setLoading(true);
     try {
       const response = await fetch(`/api/settings/email-domains/${domain.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to load DNS records');
+      }
       const data = await response.json();
       if (data.dnsRecords) {
         setDnsRecords(data.dnsRecords);
       }
     } catch (error) {
       console.error('Error loading DNS records:', error);
+      toast.error('Failed to load DNS records');
     } finally {
       setLoading(false);
     }
@@ -217,7 +220,7 @@ function DomainCard({
               <h3 className="font-semibold text-slate-900 dark:text-white">
                 {domain.domain}
               </h3>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500" suppressHydrationWarning>
                 Added {new Date(domain.created_at).toLocaleDateString()}
               </p>
             </div>
@@ -438,6 +441,9 @@ export default function EmailDomainsPage() {
   async function loadDomains() {
     try {
       const response = await fetch('/api/settings/email-domains');
+      if (!response.ok) {
+        throw new Error('Failed to load domains');
+      }
       const data = await response.json();
       setDomains(data.domains || []);
     } catch (error) {
@@ -500,6 +506,11 @@ export default function EmailDomainsPage() {
         method: 'POST',
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Verification failed');
+      }
+
       const data = await response.json();
 
       if (data.verification?.allVerified) {
@@ -511,7 +522,7 @@ export default function EmailDomainsPage() {
       await loadDomains();
     } catch (error) {
       console.error('Error verifying domain:', error);
-      toast.error('Verification failed');
+      toast.error(error instanceof Error ? error.message : 'Verification failed');
     }
   }
 
@@ -519,12 +530,16 @@ export default function EmailDomainsPage() {
     if (!confirm('Are you sure you want to delete this domain?')) return;
 
     try {
-      await fetch(`/api/settings/email-domains/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/settings/email-domains/${id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete domain');
+      }
       toast.success('Domain deleted');
       await loadDomains();
     } catch (error) {
       console.error('Error deleting domain:', error);
-      toast.error('Failed to delete domain');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete domain');
     }
   }
 
