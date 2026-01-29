@@ -13,7 +13,8 @@
     "./billing": "./src/billing/index.ts",
     "./billing/authorize-net": "./src/billing/authorize-net.ts",
     "./commissions": "./src/commissions/index.ts",
-    "./email": "./src/email/index.ts"
+    "./email": "./src/email/index.ts",
+    "./realtime": "./src/realtime/index.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

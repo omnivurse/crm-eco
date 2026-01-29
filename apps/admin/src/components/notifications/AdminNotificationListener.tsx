@@ -41,19 +41,16 @@ export function AdminNotificationListener({ userId }: AdminNotificationListenerP
 
     const supabase = createClient();
 
-    // Subscribe to new notifications for this user
+    // Subscribe via broadcast instead of postgres_changes
+    // This eliminates WAL polling overhead
+    // Channel name must match server-side: `admin-notifications:${userId}`
     const channel = supabase
-      .channel(`admin-notifications-${userId}`)
+      .channel(`admin-notifications:${userId}`)
       .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'admin_notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const notification = payload.new as Notification;
+        'broadcast',
+        { event: 'notification' },
+        (payload: { payload: Notification }) => {
+          const notification = payload.payload;
 
           // Show toast notification
           toast(notification.title, {
