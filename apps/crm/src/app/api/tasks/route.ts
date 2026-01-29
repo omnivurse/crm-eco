@@ -51,12 +51,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const recordId = searchParams.get('record_id');
+    const activityType = searchParams.get('activity_type');
 
     let query = supabase
       .from('crm_tasks')
       .select(`
         *,
-        assigned_to_profile:profiles!crm_tasks_assigned_to_fkey(id, full_name, avatar_url),
+        assignee:profiles!crm_tasks_assigned_to_fkey(id, full_name, avatar_url),
         created_by_profile:profiles!crm_tasks_created_by_fkey(id, full_name, avatar_url)
       `)
       .eq('org_id', profile.organization_id)
@@ -68,6 +69,10 @@ export async function GET(request: NextRequest) {
 
     if (recordId) {
       query = query.eq('record_id', recordId);
+    }
+
+    if (activityType) {
+      query = query.eq('activity_type', activityType);
     }
 
     const { data: tasks, error } = await query;
@@ -87,11 +92,12 @@ export async function GET(request: NextRequest) {
 const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional().default('medium'),
+  priority: z.enum(['low', 'normal', 'medium', 'high', 'urgent']).optional().default('normal'),
   status: z.enum(['pending', 'in_progress', 'completed', 'cancelled']).optional().default('pending'),
   due_date: z.string().optional(),
   record_id: z.string().uuid().optional(),
   assigned_to: z.string().uuid().optional(),
+  activity_type: z.enum(['task', 'call', 'meeting', 'email']).optional().default('task'),
 });
 
 /**
@@ -142,6 +148,7 @@ export async function POST(request: NextRequest) {
         record_id: parsed.data.record_id || null,
         assigned_to: parsed.data.assigned_to || profile.id,
         created_by: profile.id,
+        activity_type: parsed.data.activity_type || 'task',
       })
       .select()
       .single();
