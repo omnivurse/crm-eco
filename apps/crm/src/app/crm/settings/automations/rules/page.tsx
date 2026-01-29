@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import {
   Zap,
@@ -89,7 +90,9 @@ function getActionIcon(actionType: string) {
 export default function AutomationRulesPage() {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
 
   const fetchRules = useCallback(async () => {
     setLoading(true);
@@ -134,10 +137,14 @@ export default function AutomationRulesPage() {
     }
   };
 
-  const filteredRules = rules.filter(rule =>
-    rule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (rule.description || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredRules = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    if (!searchLower) return rules;
+    return rules.filter(rule =>
+      rule.name.toLowerCase().includes(searchLower) ||
+      (rule.description || '').toLowerCase().includes(searchLower)
+    );
+  }, [rules, debouncedQuery]);
 
   return (
     <div className="space-y-6">
