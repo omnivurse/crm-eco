@@ -187,7 +187,7 @@ function TemplateCard({
           <TrendingUp className="w-3 h-3" />
           {template.usage_count || 0} uses
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" suppressHydrationWarning>
           <Clock className="w-3 h-3" />
           {new Date(template.updated_at || template.created_at).toLocaleDateString()}
         </div>

@@ -80,7 +80,7 @@ function MessageItem({ message }: { message: CrmMessage }) {
         )}
         <p className="text-sm whitespace-pre-wrap">{message.body}</p>
         <div className="flex items-center justify-between mt-2 gap-4">
-          <span className="text-xs opacity-70">
+          <span className="text-xs opacity-70" suppressHydrationWarning>
             {new Date(message.created_at).toLocaleString()}
           </span>
           {isOutbound && <MessageStatusBadge status={message.status} />}
