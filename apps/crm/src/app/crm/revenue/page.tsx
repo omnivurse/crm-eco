@@ -15,11 +15,10 @@ import {
   ArrowUpRight,
   PieChart,
   BarChart3,
-  Users,
-  Calendar,
   Percent,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Type Definitions
@@ -162,7 +161,7 @@ function ModuleCard({ module }: { module: RevenueModule }) {
 
 function PipelineOverview({ stages }: { stages: PipelineStage[] }) {
   const totalValue = stages.reduce((sum, s) => sum + s.value, 0);
-  const maxValue = Math.max(...stages.map(s => s.value));
+  const maxValue = stages.length > 0 ? Math.max(...stages.map(s => s.value)) : 1;
 
   return (
     <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
@@ -380,6 +379,7 @@ export default function RevenuePage() {
         setModules(revenueModules);
       } catch (error) {
         console.error('Error loading revenue data:', error);
+        toast.error('Failed to load revenue data');
       } finally {
         setLoading(false);
       }

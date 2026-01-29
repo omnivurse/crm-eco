@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   Receipt,
@@ -163,7 +164,7 @@ function InvoiceCard({
           {contactName}
         </span>
         {invoice.due_date && (
-          <span className={cn('flex items-center gap-1', isOverdue && 'text-red-500')}>
+          <span className={cn('flex items-center gap-1', isOverdue && 'text-red-500')} suppressHydrationWarning>
             <Calendar className="w-4 h-4" />
             Due {new Date(invoice.due_date).toLocaleDateString()}
           </span>
@@ -229,6 +230,7 @@ function StatCard({
 // ============================================================================
 
 export default function InvoicesPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -466,7 +468,7 @@ export default function InvoicesPage() {
             <InvoiceCard
               key={invoice.id}
               invoice={invoice}
-              onEdit={() => window.location.href = `/crm/invoices/${invoice.id}/edit`}
+              onEdit={() => router.push(`/crm/invoices/${invoice.id}/edit`)}
               onDelete={() => handleDeleteInvoice(invoice)}
               onDuplicate={() => handleDuplicateInvoice(invoice)}
               onSend={() => handleSendInvoice(invoice)}

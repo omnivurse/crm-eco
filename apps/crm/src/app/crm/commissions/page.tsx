@@ -4,16 +4,12 @@ import { useState, useEffect } from 'react';
 import {
   DollarSign,
   Users,
-  TrendingUp,
   ChevronRight,
   ChevronDown,
   Clock,
   CheckCircle,
-  XCircle,
   Loader2,
   Download,
-  Filter,
-  Calendar,
   Building2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
@@ -25,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
-import { Input } from '@crm-eco/ui/components/input';
+import { toast } from 'sonner';
 
 interface AdvisorNode {
   id: string;
@@ -61,6 +57,13 @@ interface CommissionSummary {
   totalApproved: number;
   totalPaid: number;
   count: number;
+}
+
+interface CommissionStats {
+  totalAdvisors: number;
+  activeAdvisors: number;
+  totalProduction: number;
+  avgTeamSize: number;
 }
 
 function formatCurrency(amount: number): string {
@@ -132,7 +135,8 @@ export default function CommissionsPage() {
   const [hierarchy, setHierarchy] = useState<AdvisorNode[]>([]);
   const [transactions, setTransactions] = useState<CommissionTransaction[]>([]);
   const [summary, setSummary] = useState<CommissionSummary>({ totalPending: 0, totalApproved: 0, totalPaid: 0, count: 0 });
-  const [stats, setStats] = useState({ totalAdvisors: 0, activeAdvisors: 0, totalProduction: 0, avgTeamSize: 0 });
+  const [stats, setStats] = useState<CommissionStats>({ totalAdvisors: 0, activeAdvisors: 0, totalProduction: 0, avgTeamSize: 0 });
+  const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'transactions'>('hierarchy');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -151,18 +155,48 @@ export default function CommissionsPage() {
       if (hierarchyRes.ok) {
         const data = await hierarchyRes.json();
         setHierarchy(data.hierarchy || []);
-        setStats(data.stats || {});
+        setStats(data.stats || { totalAdvisors: 0, activeAdvisors: 0, totalProduction: 0, avgTeamSize: 0 });
+      } else {
+        toast.error('Failed to load advisor hierarchy');
       }
 
       if (commissionsRes.ok) {
         const data = await commissionsRes.json();
         setTransactions(data.transactions || []);
-        setSummary(data.summary || {});
+        setSummary(data.summary || { totalPending: 0, totalApproved: 0, totalPaid: 0, count: 0 });
+      } else {
+        toast.error('Failed to load commission transactions');
       }
     } catch (error) {
       console.error('Failed to fetch commission data:', error);
+      toast.error('Failed to load commission data');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const response = await fetch('/api/commissions/export');
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `commissions-report-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success('Report exported successfully');
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export report');
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -186,8 +220,17 @@ export default function CommissionsPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Commission Management</h1>
           <p className="text-slate-600 dark:text-slate-400">Track advisor hierarchy and commission payouts</p>
         </div>
-        <Button variant="outline" className="border-slate-300 dark:border-slate-700">
-          <Download className="w-4 h-4 mr-2" />
+        <Button
+          variant="outline"
+          className="border-slate-300 dark:border-slate-700"
+          onClick={handleExport}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4 mr-2" />
+          )}
           Export Report
         </Button>
       </div>
