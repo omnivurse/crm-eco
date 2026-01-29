@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -207,8 +208,10 @@ function stripHtml(html: string): string {
 export default function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedChannel, setSelectedChannel] = useState<string>('all');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   // Dialog state
@@ -355,20 +358,22 @@ export default function TemplatesPage() {
     }
   }
 
-  // Filter templates
-  const filteredTemplates = templates.filter(t => {
-    if (selectedChannel !== 'all' && t.channel !== selectedChannel) return false;
-    if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        t.name.toLowerCase().includes(query) ||
-        t.subject?.toLowerCase().includes(query) ||
-        t.body.toLowerCase().includes(query)
-      );
-    }
-    return true;
-  });
+  // Filter templates with debounced search
+  const filteredTemplates = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return templates.filter(t => {
+      if (selectedChannel !== 'all' && t.channel !== selectedChannel) return false;
+      if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
+      if (searchLower) {
+        return (
+          t.name.toLowerCase().includes(searchLower) ||
+          t.subject?.toLowerCase().includes(searchLower) ||
+          t.body.toLowerCase().includes(searchLower)
+        );
+      }
+      return true;
+    });
+  }, [templates, debouncedQuery, selectedChannel, selectedCategory]);
 
   if (loading) {
     return (
