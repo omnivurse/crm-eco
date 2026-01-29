@@ -184,7 +184,7 @@ const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign
         )}
       </TableCell>
       <TableCell>
-        <div className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="text-sm text-slate-500 dark:text-slate-400" suppressHydrationWarning>
           {campaign.scheduled_at
             ? formatDistanceToNow(new Date(campaign.scheduled_at), { addSuffix: true })
             : campaign.completed_at

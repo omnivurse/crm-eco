@@ -36,6 +36,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Types
@@ -155,6 +156,7 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [rates, setRates] = useState<CampaignRates | null>(null);
@@ -178,9 +180,75 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
       setTopLinks(data.topLinks || []);
     } catch (error) {
       console.error('Error loading campaign:', error);
+      toast.error('Failed to load campaign data');
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  }
+
+  async function handleSendCampaign() {
+    if (!campaign) return;
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/campaigns/${id}/send`, {
+        method: 'POST',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send campaign');
+      }
+      toast.success('Campaign sending started');
+      loadData(true);
+    } catch (error) {
+      console.error('Error sending campaign:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to send campaign');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handlePauseCampaign() {
+    if (!campaign) return;
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/campaigns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'paused' }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to pause campaign');
+      }
+      toast.success('Campaign paused');
+      loadData(true);
+    } catch (error) {
+      console.error('Error pausing campaign:', error);
+      toast.error('Failed to pause campaign');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleResumeCampaign() {
+    if (!campaign) return;
+    setActionLoading(true);
+    try {
+      const response = await fetch(`/api/campaigns/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'sending' }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to resume campaign');
+      }
+      toast.success('Campaign resumed');
+      loadData(true);
+    } catch (error) {
+      console.error('Error resuming campaign:', error);
+      toast.error('Failed to resume campaign');
+    } finally {
+      setActionLoading(false);
     }
   }
 
@@ -256,21 +324,35 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
             Refresh
           </Button>
           {campaign.status === 'draft' && (
-            <Button size="sm" className="bg-gradient-to-r from-teal-500 to-cyan-500">
+            <Button
+              size="sm"
+              className="bg-gradient-to-r from-teal-500 to-cyan-500"
+              onClick={handleSendCampaign}
+              disabled={actionLoading}
+            >
               <Send className="w-4 h-4 mr-2" />
-              Send Now
+              {actionLoading ? 'Sending...' : 'Send Now'}
             </Button>
           )}
           {campaign.status === 'sending' && (
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePauseCampaign}
+              disabled={actionLoading}
+            >
               <Pause className="w-4 h-4 mr-2" />
-              Pause
+              {actionLoading ? 'Pausing...' : 'Pause'}
             </Button>
           )}
           {campaign.status === 'paused' && (
-            <Button size="sm">
+            <Button
+              size="sm"
+              onClick={handleResumeCampaign}
+              disabled={actionLoading}
+            >
               <Play className="w-4 h-4 mr-2" />
-              Resume
+              {actionLoading ? 'Resuming...' : 'Resume'}
             </Button>
           )}
         </div>
