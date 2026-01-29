@@ -55,36 +55,45 @@ async function PipelineContent() {
     ];
   }
 
-  // Calculate stats
-  const dealsByStage = stages.reduce((acc, stage) => {
-    acc[stage.key] = deals.filter(d => d.stage === stage.key);
+  // Create stage lookup map for O(1) access
+  const stageMap = stages.reduce((acc, stage) => {
+    acc[stage.key] = stage;
     return acc;
-  }, {} as Record<string, CrmRecord[]>);
+  }, {} as Record<string, CrmDealStage>);
 
-  const totalPipelineValue = deals
-    .filter(d => {
-      const stage = stages.find(s => s.key === d.stage);
-      return stage && !stage.is_won && !stage.is_lost;
-    })
-    .reduce((sum, d) => sum + (Number(d.data?.amount) || 0), 0);
+  // Single-pass calculation for all stats (O(n) instead of O(n*m) with multiple filter/find operations)
+  const stats = deals.reduce((acc, deal) => {
+    const stage = stageMap[deal.stage || ''];
+    const amount = Number(deal.data?.amount) || 0;
 
-  const wonValue = deals
-    .filter(d => {
-      const stage = stages.find(s => s.key === d.stage);
-      return stage?.is_won;
-    })
-    .reduce((sum, d) => sum + (Number(d.data?.amount) || 0), 0);
+    // Group by stage
+    if (deal.stage) {
+      if (!acc.dealsByStage[deal.stage]) {
+        acc.dealsByStage[deal.stage] = [];
+      }
+      acc.dealsByStage[deal.stage].push(deal);
+    }
 
-  const activeDeals = deals.filter(d => {
-    const stage = stages.find(s => s.key === d.stage);
-    return stage && !stage.is_won && !stage.is_lost;
-  }).length;
+    if (stage) {
+      if (stage.is_won) {
+        acc.wonValue += amount;
+        acc.wonDeals++;
+      } else if (!stage.is_lost) {
+        acc.totalPipelineValue += amount;
+        acc.activeDeals++;
+      }
+    }
 
-  const wonDeals = deals.filter(d => {
-    const stage = stages.find(s => s.key === d.stage);
-    return stage?.is_won;
-  }).length;
+    return acc;
+  }, {
+    dealsByStage: {} as Record<string, CrmRecord[]>,
+    totalPipelineValue: 0,
+    wonValue: 0,
+    activeDeals: 0,
+    wonDeals: 0,
+  });
 
+  const { dealsByStage, totalPipelineValue, wonValue, activeDeals, wonDeals } = stats;
   const negotiationDeals = dealsByStage['negotiation']?.length || 0;
   const winRate = totalDeals > 0 ? Math.round((wonDeals / totalDeals) * 100) : 0;
 

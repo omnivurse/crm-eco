@@ -3,28 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
 import { ArrowLeft, Save, Loader2, X } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
 import { use } from 'react';
-
-interface RecordData {
-  id: string;
-  title: string;
-  email: string | null;
-  phone: string | null;
-  status: string | null;
-  data: Record<string, unknown>;
-  module: {
-    id: string;
-    key: string;
-    name: string;
-    name_plural: string | null;
-  };
-}
+import { useEditRecordData } from '@/hooks/useEditRecordData';
 
 interface Field {
   id: string;
@@ -39,69 +24,30 @@ interface Field {
 export default function EditRecordPage({ params }: { params: Promise<{ recordId: string }> }) {
   const { recordId } = use(params);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [record, setRecord] = useState<RecordData | null>(null);
-  const [fields, setFields] = useState<Field[]>([]);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  // Use TanStack Query for cached data fetching
+  const { data, isLoading, error } = useEditRecordData(recordId);
 
+  // Initialize form data when record loads
   useEffect(() => {
-    async function loadRecord() {
-      try {
-        // Fetch record with module info
-        const { data: recordData, error: recordError } = await supabase
-          .from('crm_records')
-          .select(`
-            id,
-            title,
-            email,
-            phone,
-            status,
-            data,
-            module:crm_modules(id, key, name, name_plural)
-          `)
-          .eq('id', recordId)
-          .single();
-
-        if (recordError) throw recordError;
-        if (!recordData) throw new Error('Record not found');
-
-        const moduleData = Array.isArray(recordData.module)
-          ? recordData.module[0]
-          : recordData.module;
-
-        setRecord({
-          ...recordData,
-          module: moduleData,
-        } as RecordData);
-
-        // Fetch fields for this module
-        const { data: fieldsData, error: fieldsError } = await supabase
-          .from('crm_fields')
-          .select('id, key, label, field_type, is_required, options, placeholder')
-          .eq('module_id', moduleData.id)
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true });
-
-        if (fieldsError) throw fieldsError;
-
-        setFields(fieldsData || []);
-        setFormData(recordData.data || {});
-      } catch (error) {
-        console.error('Error loading record:', error);
-        toast.error('Failed to load record');
-      } finally {
-        setLoading(false);
-      }
+    if (data?.record?.data && !isInitialized) {
+      setFormData(data.record.data);
+      setIsInitialized(true);
     }
+  }, [data?.record?.data, isInitialized]);
 
-    loadRecord();
-  }, [recordId, supabase]);
+  // Show error toast if loading fails
+  useEffect(() => {
+    if (error) {
+      toast.error('Failed to load record');
+    }
+  }, [error]);
+
+  const record = data?.record;
+  const fields = data?.fields || [];
 
   const handleFieldChange = (key: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [key]: value }));
@@ -233,7 +179,7 @@ export default function EditRecordPage({ params }: { params: Promise<{ recordId:
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-teal-500" />

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { format } from 'date-fns';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -12,7 +13,8 @@ interface FieldRendererProps {
   className?: string;
 }
 
-export function FieldRenderer({ field, value, className }: FieldRendererProps) {
+// Memoized component to prevent unnecessary re-renders in table cells
+export const FieldRenderer = memo(function FieldRenderer({ field, value, className }: FieldRendererProps) {
   if (value === null || value === undefined || value === '') {
     return <span className={cn('text-muted-foreground', className)}>—</span>;
   }
@@ -138,7 +140,7 @@ export function FieldRenderer({ field, value, className }: FieldRendererProps) {
     default:
       return <span className={className}>{String(value)}</span>;
   }
-}
+});
 
 // Helper to render value in table cell (compact view)
 export function renderCellValue(field: CrmField, value: unknown): React.ReactNode {

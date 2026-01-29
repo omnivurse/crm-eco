@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -310,6 +310,14 @@ export function FieldsManagerClient({
         return a.localeCompare(b);
     });
 
+    // Create field index lookup map for O(1) access instead of O(n) findIndex
+    const fieldIndexMap = useMemo(() => {
+        return fields.reduce((acc, field, index) => {
+            acc[field.id] = index;
+            return acc;
+        }, {} as Record<string, number>);
+    }, [fields]);
+
     // ========================================================================
     // Drag and Drop Handlers
     // ========================================================================
@@ -608,7 +616,8 @@ export function FieldsManagerClient({
                                 </div>
                                 <div className="p-3 space-y-2">
                                     {sectionFields.map((field, idx) => {
-                                        const globalIndex = fields.findIndex(f => f.id === field.id);
+                                        // O(1) lookup instead of O(n) findIndex
+                                        const globalIndex = fieldIndexMap[field.id];
                                         return (
                                             <FieldRow
                                                 key={field.id}
