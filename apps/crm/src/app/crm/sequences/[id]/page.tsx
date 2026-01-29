@@ -410,7 +410,7 @@ export default function SequenceDetailPage({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => router.push(`/crm/sequences/${id}/settings`)}>
+              <DropdownMenuItem onClick={() => toast.info('Sequence settings coming soon')}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </DropdownMenuItem>
