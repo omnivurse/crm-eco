@@ -188,7 +188,7 @@ export function RecordDrawer() {
                         Assigned
                       </span>
                     )}
-                    <span className="flex items-center gap-1 text-xs text-slate-500">
+                    <span className="flex items-center gap-1 text-xs text-slate-500" suppressHydrationWarning>
                       <Clock className="w-3 h-3" />
                       {new Date(data.record.updated_at).toLocaleDateString()}
                     </span>
