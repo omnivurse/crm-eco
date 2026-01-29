@@ -193,7 +193,7 @@ function SequenceCard({
           <div className="flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 mb-1">
             <Clock className="w-4 h-4" />
           </div>
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300" suppressHydrationWarning>
             {new Date(sequence.updated_at).toLocaleDateString()}
           </p>
           <p className="text-xs text-slate-500">Updated</p>

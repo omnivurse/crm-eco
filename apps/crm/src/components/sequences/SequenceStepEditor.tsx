@@ -23,6 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Mail, Clock, GitBranch, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { SequenceStep, StepType } from '@/lib/sequences/types';
 
 interface SequenceStepEditorProps {
@@ -118,6 +119,17 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
   async function handleSave() {
     // Validation
     if (stepType === 'email' && !formData.subject.trim()) {
+      toast.error('Please enter an email subject');
+      return;
+    }
+
+    if (stepType === 'wait' && formData.delay_days === 0 && formData.delay_hours === 0 && formData.delay_minutes === 0) {
+      toast.error('Please set a wait duration');
+      return;
+    }
+
+    if (stepType === 'condition' && !formData.name.trim()) {
+      toast.error('Please enter a condition name');
       return;
     }
 
@@ -127,6 +139,9 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
         step_type: stepType,
         ...formData,
       });
+    } catch (error) {
+      console.error('Error saving step:', error);
+      toast.error('Failed to save step');
     } finally {
       setSaving(false);
     }
