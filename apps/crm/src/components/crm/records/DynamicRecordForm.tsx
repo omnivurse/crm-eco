@@ -31,6 +31,8 @@ interface DynamicRecordFormProps {
   isLoading?: boolean;
   mode?: 'create' | 'edit';
   readOnly?: boolean;
+  /** When true, renders fields without wrapping in a form element (for use inside server action forms) */
+  embedded?: boolean;
 }
 
 export function DynamicRecordForm({
@@ -43,6 +45,7 @@ export function DynamicRecordForm({
   isLoading = false,
   mode = 'create',
   readOnly = false,
+  embedded = false,
 }: DynamicRecordFormProps) {
   const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
@@ -278,8 +281,8 @@ export function DynamicRecordForm({
 
   const handleFormSubmit = onSubmit ? handleSubmit(onSubmit) : undefined;
 
-  return (
-    <form onSubmit={handleFormSubmit} className="space-y-6">
+  const renderSections = () => (
+    <>
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
         if (sectionFields.length === 0) return null;
@@ -335,6 +338,21 @@ export function DynamicRecordForm({
           </Card>
         );
       })}
+    </>
+  );
+
+  // When embedded in a server action form, just render the fields without form wrapper
+  if (embedded) {
+    return (
+      <div className="space-y-6">
+        {renderSections()}
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleFormSubmit} className="space-y-6">
+      {renderSections()}
 
       {/* Form Actions */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t">

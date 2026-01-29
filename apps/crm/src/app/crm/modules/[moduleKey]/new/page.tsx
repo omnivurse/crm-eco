@@ -86,6 +86,7 @@ async function NewRecordContent({ params }: PageProps) {
             fields={fields}
             layout={layout || undefined}
             readOnly={false}
+            embedded={true}
           />
         </div>
 
