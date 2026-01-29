@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
@@ -11,7 +12,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@crm-eco/ui/components/sheet';
-import { cn } from '@crm-eco/ui/lib/utils';
 import {
   X,
   ExternalLink,
@@ -27,128 +27,58 @@ import {
 import { useRecordDrawer } from './RecordDrawerContext';
 import { InlineField } from './InlineField';
 import { RecordMiniTimeline } from './RecordMiniTimeline';
-import type { CrmRecord, CrmField } from '@/lib/crm/types';
-
-interface RecordData {
-  record: CrmRecord;
-  fields: CrmField[];
-  timeline: Array<{
-    id: string;
-    type: string;
-    timestamp: string;
-    data: Record<string, unknown>;
-  }>;
-}
+import { useRecordDrawerData } from '@/hooks/useRecordDrawerData';
+import { queryKeys } from '@/lib/query-keys';
 
 export function RecordDrawer() {
-  const { isOpen, recordId, moduleKey, closeDrawer } = useRecordDrawer();
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<RecordData | null>(null);
+  const { isOpen, recordId, closeDrawer } = useRecordDrawer();
+  const queryClient = useQueryClient();
 
-  const supabase = createBrowserClient(
+  // Use TanStack Query for cached data fetching
+  const { data, isLoading } = useRecordDrawerData(isOpen ? recordId : null);
+
+  // Local state for optimistic updates
+  const [localRecordData, setLocalRecordData] = useState<Record<string, unknown> | null>(null);
+
+  // Supabase client for mutations only
+  const supabase = useMemo(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
-  // Fetch record data when drawer opens
-  useEffect(() => {
-    if (!isOpen || !recordId) {
-      setData(null);
-      return;
-    }
-
-    async function loadRecord() {
-      setLoading(true);
-      try {
-        // Fetch record
-        const { data: record } = await supabase
-          .from('crm_records')
-          .select('*')
-          .eq('id', recordId)
-          .single();
-
-        if (!record) throw new Error('Record not found');
-
-        // Fetch fields for module
-        const { data: fields } = await supabase
-          .from('crm_fields')
-          .select('*')
-          .eq('module_id', record.module_id)
-          .order('display_order');
-
-        // Fetch recent timeline (simplified - just notes and tasks)
-        const { data: notes } = await supabase
-          .from('crm_notes')
-          .select('id, body, created_at, created_by')
-          .eq('record_id', recordId)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        const { data: tasks } = await supabase
-          .from('crm_tasks')
-          .select('id, title, status, due_at, created_at')
-          .eq('record_id', recordId)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        // Combine into timeline
-        const timeline = [
-          ...(notes || []).map(n => ({
-            id: n.id,
-            type: 'note' as const,
-            timestamp: n.created_at,
-            data: n,
-          })),
-          ...(tasks || []).map(t => ({
-            id: t.id,
-            type: 'task' as const,
-            timestamp: t.created_at,
-            data: t,
-          })),
-        ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-          .slice(0, 10);
-
-        setData({
-          record: record as CrmRecord,
-          fields: (fields || []) as CrmField[],
-          timeline,
-        });
-      } catch (error) {
-        console.error('Error loading record:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadRecord();
-  }, [isOpen, recordId, supabase]);
+  ), []);
 
   const handleFieldUpdate = async (fieldKey: string, value: unknown) => {
     if (!data?.record) return;
 
+    const currentData = localRecordData || data.record.data;
+    const updatedData = { ...currentData, [fieldKey]: value };
+
+    // Optimistic update
+    setLocalRecordData(updatedData);
+
     try {
-      const updatedData = { ...data.record.data, [fieldKey]: value };
-      
       await supabase
         .from('crm_records')
         .update({ data: updatedData })
         .eq('id', data.record.id);
 
-      setData(prev => prev ? {
-        ...prev,
-        record: { ...prev.record, data: updatedData },
-      } : null);
+      // Invalidate cache to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(data.record.id) });
     } catch (error) {
+      // Rollback on error
+      setLocalRecordData(null);
       console.error('Error updating field:', error);
       throw error;
     }
   };
 
+  // Reset local state when drawer closes or record changes
+  const effectiveRecordData = localRecordData || data?.record?.data;
+
   // Build display name
   const getDisplayName = () => {
     if (!data?.record) return 'Loading...';
-    const firstName = data.record.data?.first_name || '';
-    const lastName = data.record.data?.last_name || '';
+    const firstName = effectiveRecordData?.first_name || '';
+    const lastName = effectiveRecordData?.last_name || '';
     return [firstName, lastName].filter(Boolean).join(' ') || data.record.title || 'Untitled';
   };
 
@@ -159,11 +89,11 @@ export function RecordDrawer() {
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeDrawer()}>
-      <SheetContent 
-        side="right" 
+      <SheetContent
+        side="right"
         className="w-full sm:max-w-lg p-0 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-white/10"
       >
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
           </div>
@@ -273,7 +203,7 @@ export function RecordDrawer() {
                     <InlineField
                       key={field.id}
                       field={field}
-                      value={data.record.data?.[field.key]}
+                      value={effectiveRecordData?.[field.key]}
                       onSave={(value) => handleFieldUpdate(field.key, value)}
                     />
                   ))}

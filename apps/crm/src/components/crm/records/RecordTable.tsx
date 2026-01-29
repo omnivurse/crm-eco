@@ -40,6 +40,7 @@ import {
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FieldRenderer } from './FieldRenderer';
+import { prefetchRecordForDrawer } from '@/lib/prefetch';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
 import {
   MoreHorizontal,
@@ -291,7 +292,27 @@ export function RecordTable({
   const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [isCreatingTask, setIsCreatingTask] = useState(false);
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const prefetchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  // Prefetch record data on row hover for instant drawer opens
+  const handleRowMouseEnter = useCallback((recordId: string) => {
+    // Clear any pending prefetch
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current);
+    }
+    // Delay prefetch by 150ms to avoid prefetching on quick mouse movements
+    prefetchTimerRef.current = setTimeout(() => {
+      prefetchRecordForDrawer(recordId);
+    }, 150);
+  }, []);
+
+  const handleRowMouseLeave = useCallback(() => {
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current);
+      prefetchTimerRef.current = null;
+    }
+  }, []);
 
   // Status options for common status fields
   const STATUS_OPTIONS = [
@@ -753,6 +774,8 @@ export function RecordTable({
                   selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5'
                 )}
                 onClick={() => handleRowClick(record)}
+                onMouseEnter={() => handleRowMouseEnter(record.id)}
+                onMouseLeave={handleRowMouseLeave}
                 style={{ animationDelay: `${idx * 30}ms` }}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
