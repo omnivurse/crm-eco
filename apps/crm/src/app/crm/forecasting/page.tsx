@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Type Definitions
@@ -368,10 +369,14 @@ export default function ForecastingPage() {
           ? monthDeals.filter(d => d.stage === 'Closed Won').reduce((sum, d) => sum + (d.data?.amount || 0), 0)
           : 0;
 
+        // Use deterministic fallback values based on month index to avoid hydration mismatches
+        const fallbackProjected = 30000 + (index * 5000);
+        const fallbackActual = index <= currentMonth ? 25000 + (index * 3000) : 0;
+
         return {
           month,
-          projected: projected || (index <= currentMonth ? Math.random() * 50000 + 20000 : Math.random() * 80000 + 30000),
-          actual: actual || (index <= currentMonth ? Math.random() * 40000 + 15000 : 0),
+          projected: projected || fallbackProjected,
+          actual: actual || fallbackActual,
           target: 100000,
         };
       });
@@ -379,6 +384,7 @@ export default function ForecastingPage() {
       setForecastData(monthlyData);
     } catch (error) {
       console.error('Error loading forecast data:', error);
+      toast.error('Failed to load forecast data');
     } finally {
       setLoading(false);
     }

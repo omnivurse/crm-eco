@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   FileCheck,
@@ -149,7 +150,7 @@ function QuoteCard({
           {contactName}
         </span>
         {quote.valid_until && (
-          <span className={cn('flex items-center gap-1', isExpired && 'text-red-500')}>
+          <span className={cn('flex items-center gap-1', isExpired && 'text-red-500')} suppressHydrationWarning>
             <Calendar className="w-4 h-4" />
             Valid until {new Date(quote.valid_until).toLocaleDateString()}
           </span>
@@ -157,7 +158,7 @@ function QuoteCard({
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-slate-500" suppressHydrationWarning>
           Created {new Date(quote.created_at).toLocaleDateString()}
         </span>
         <span className="text-lg font-bold text-slate-900 dark:text-white">
@@ -206,6 +207,7 @@ function StatCard({
 // ============================================================================
 
 export default function QuotesPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -418,7 +420,7 @@ export default function QuotesPage() {
             <QuoteCard
               key={quote.id}
               quote={quote}
-              onEdit={() => window.location.href = `/crm/quotes/${quote.id}/edit`}
+              onEdit={() => router.push(`/crm/quotes/${quote.id}/edit`)}
               onDelete={() => handleDeleteQuote(quote)}
               onDuplicate={() => handleDuplicateQuote(quote)}
               onSend={() => handleSendQuote(quote)}

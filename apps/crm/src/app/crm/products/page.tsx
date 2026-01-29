@@ -251,8 +251,9 @@ function ProductModal({
     try {
       await onSave(formData);
       onOpenChange(false);
-    } catch {
-      // Error handled in parent
+    } catch (error) {
+      // Error handled and shown in parent via toast
+      console.error('Error saving product:', error);
     } finally {
       setSaving(false);
     }

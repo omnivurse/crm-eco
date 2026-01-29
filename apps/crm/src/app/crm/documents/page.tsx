@@ -5,14 +5,12 @@ import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   FileText,
-  Plus,
   Search,
   Upload,
   Download,
   Trash2,
   MoreHorizontal,
   Eye,
-  Folder,
   File,
   FileImage,
   FileSpreadsheet,
@@ -122,7 +120,7 @@ function DocumentCard({
 
       <div className="flex items-center justify-between text-sm text-slate-500">
         <span>{formatFileSize(doc.size)}</span>
-        <span>{new Date(doc.created_at).toLocaleDateString()}</span>
+        <span suppressHydrationWarning>{new Date(doc.created_at).toLocaleDateString()}</span>
       </div>
     </div>
   );
@@ -152,7 +150,7 @@ function DocumentRow({
       </div>
 
       <span className="text-sm text-slate-500 w-20 text-right">{formatFileSize(doc.size)}</span>
-      <span className="text-sm text-slate-500 w-24 text-right">
+      <span className="text-sm text-slate-500 w-24 text-right" suppressHydrationWarning>
         {new Date(doc.created_at).toLocaleDateString()}
       </span>
 
@@ -333,6 +331,8 @@ export default function DocumentsPage() {
 
       if (data?.publicUrl) {
         window.open(data.publicUrl, '_blank');
+      } else {
+        toast.error('Unable to generate preview URL');
       }
     } catch (error) {
       console.error('Error previewing document:', error);
