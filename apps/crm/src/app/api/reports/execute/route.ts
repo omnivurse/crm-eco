@@ -2,12 +2,32 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+export const dynamic = 'force-dynamic';
+
 // Data source to table mapping
 const DATA_SOURCE_TABLES: Record<string, string> = {
+  // Legacy tables
   members: 'members',
   advisors: 'advisors',
   enrollments: 'enrollments',
   commissions: 'commissions',
+  // CRM tables
+  deals: 'crm_records',
+  contacts: 'crm_records',
+  leads: 'crm_records',
+  accounts: 'crm_records',
+  tasks: 'crm_tasks',
+  activities: 'crm_tasks',
+};
+
+// Module key to filter CRM records by module
+const DATA_SOURCE_MODULE_KEY: Record<string, string | undefined> = {
+  deals: 'deals',
+  contacts: 'contacts',
+  leads: 'leads',
+  accounts: 'accounts',
+  tasks: undefined, // crm_tasks doesn't have module_key
+  activities: undefined,
 };
 
 interface Filter {
@@ -87,6 +107,12 @@ export async function POST(request: NextRequest) {
 
     // Always filter by organization
     query = query.eq('org_id', profile.organization_id);
+
+    // Filter by module_key for CRM record types
+    const moduleKey = DATA_SOURCE_MODULE_KEY[dataSource];
+    if (moduleKey) {
+      query = query.eq('module_key', moduleKey);
+    }
 
     // Apply filters
     for (const filter of filters) {

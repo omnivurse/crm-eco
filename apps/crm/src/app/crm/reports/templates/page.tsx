@@ -71,6 +71,21 @@ const iconMap: Record<string, React.ElementType> = {
   PieChart: BarChart3,
   Globe: Target,
   RefreshCw: TrendingUp,
+  CheckSquare: Settings,
+};
+
+// Human-readable data source labels
+const dataSourceLabels: Record<string, string> = {
+  deals: 'Deals',
+  contacts: 'Contacts',
+  leads: 'Leads',
+  accounts: 'Accounts',
+  tasks: 'Tasks',
+  activities: 'Activities',
+  members: 'Members',
+  advisors: 'Advisors',
+  enrollments: 'Enrollments',
+  commissions: 'Commissions',
 };
 
 function ReportTemplateCard({
@@ -111,9 +126,11 @@ function ReportTemplateCard({
         <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
           {categoryLabel}
         </span>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
-          {dataSource}
-        </span>
+        {dataSource && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400">
+            {dataSourceLabels[dataSource] || dataSource}
+          </span>
+        )}
       </div>
     </Link>
   );
