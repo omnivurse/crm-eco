@@ -36,6 +36,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface RecordDetailClientProps {
   record: CrmRecord;
@@ -89,11 +90,15 @@ export function RecordDetailClient({
       });
 
       if (response.ok) {
+        toast.success('Record saved successfully');
         setIsEditing(false);
         router.refresh();
+      } else {
+        toast.error('Failed to save record');
       }
     } catch (error) {
       console.error('Failed to save record:', error);
+      toast.error('Failed to save record');
     } finally {
       setIsSaving(false);
     }
@@ -110,10 +115,14 @@ export function RecordDetailClient({
       });
 
       if (response.ok) {
+        toast.success('Record deleted successfully');
         router.push(`/modules/${module.key}`);
+      } else {
+        toast.error('Failed to delete record');
       }
     } catch (error) {
       console.error('Failed to delete record:', error);
+      toast.error('Failed to delete record');
     }
   };
 
@@ -136,9 +145,13 @@ export function RecordDetailClient({
         const note = await response.json();
         setNotes([note, ...notes]);
         setNewNote('');
+        toast.success('Note added successfully');
+      } else {
+        toast.error('Failed to add note');
       }
     } catch (error) {
       console.error('Failed to add note:', error);
+      toast.error('Failed to add note');
     } finally {
       setIsAddingNote(false);
     }
@@ -154,9 +167,13 @@ export function RecordDetailClient({
         setTasks(tasks.map((t) =>
           t.id === taskId ? { ...t, status: 'completed' as const, completed_at: new Date().toISOString() } : t
         ));
+        toast.success('Task completed');
+      } else {
+        toast.error('Failed to complete task');
       }
     } catch (error) {
       console.error('Failed to complete task:', error);
+      toast.error('Failed to complete task');
     }
   };
 
