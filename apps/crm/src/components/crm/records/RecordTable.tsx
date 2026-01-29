@@ -776,7 +776,6 @@ export function RecordTable({
                 onClick={() => handleRowClick(record)}
                 onMouseEnter={() => handleRowMouseEnter(record.id)}
                 onMouseLeave={handleRowMouseLeave}
-                style={{ animationDelay: `${idx * 30}ms` }}
               >
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
