@@ -204,7 +204,7 @@ export default function AssetLibraryPage() {
     }
   };
 
-  const handleUploadComplete = () => {
+  const handleUploadComplete = (_url?: string, _alt?: string) => {
     setShowUploader(false);
     fetchAssets();
   };

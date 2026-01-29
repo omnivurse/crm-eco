@@ -28,6 +28,7 @@ import {
   Image as ImageIcon,
   FolderOpen,
   Copy,
+  CheckCircle2,
   MoreVertical,
   RefreshCw,
 } from 'lucide-react';
@@ -93,6 +94,7 @@ export function AssetLibrary({
   const [selectedAsset, setSelectedAsset] = useState<EmailAsset | null>(null);
   const [total, setTotal] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchAssets = useCallback(async () => {
     setLoading(true);
@@ -152,8 +154,10 @@ export function AssetLibrary({
     }
   };
 
-  const handleCopyUrl = (url: string) => {
+  const handleCopyUrl = (url: string, id: string) => {
     navigator.clipboard.writeText(url);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleInsert = () => {
@@ -285,11 +289,20 @@ export function AssetLibrary({
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleCopyUrl(asset.public_url);
+                            handleCopyUrl(asset.public_url, asset.id);
                           }}
                         >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy URL
+                          {copiedId === asset.id ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4 mr-2 text-green-500" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Copy URL
+                            </>
+                          )}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(e) => {
