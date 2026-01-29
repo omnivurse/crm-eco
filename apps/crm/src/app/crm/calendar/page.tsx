@@ -837,7 +837,23 @@ export default function CalendarPage() {
                                             <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{cal.name}</p>
                                             <p className="text-xs text-slate-500 truncate">{cal.email}</p>
                                         </div>
-                                        <button className="text-slate-400 hover:text-red-500">
+                                        <button
+                                            className="text-slate-400 hover:text-red-500"
+                                            onClick={async () => {
+                                                if (!confirm(`Disconnect ${cal.name}?`)) return;
+                                                try {
+                                                    const response = await fetch(`/api/calendar/disconnect/${cal.id}`, {
+                                                        method: 'DELETE',
+                                                    });
+                                                    if (!response.ok) throw new Error('Failed to disconnect');
+                                                    setConnectedCalendars(prev => prev.filter(c => c.id !== cal.id));
+                                                    toast.success(`${cal.name} disconnected`);
+                                                } catch (error) {
+                                                    console.error('Disconnect error:', error);
+                                                    toast.error('Failed to disconnect calendar');
+                                                }
+                                            }}
+                                        >
                                             <X className="w-4 h-4" />
                                         </button>
                                     </div>
@@ -935,11 +951,11 @@ export default function CalendarPage() {
                             </label>
                             <div className="grid grid-cols-4 gap-2">
                                 {[
-                                    { type: 'meeting' as const, label: 'Meeting', icon: Users, color: 'teal' },
-                                    { type: 'call' as const, label: 'Call', icon: Video, color: 'purple' },
-                                    { type: 'task' as const, label: 'Task', icon: CheckCircle2, color: 'blue' },
-                                    { type: 'email' as const, label: 'Email', icon: AlertCircle, color: 'amber' },
-                                ].map(({ type, label, icon: Icon, color }) => (
+                                    { type: 'meeting' as const, label: 'Meeting', icon: Users, activeBorder: 'border-teal-500', activeBg: 'bg-teal-50 dark:bg-teal-900/20', activeIcon: 'text-teal-600', activeText: 'text-teal-700 dark:text-teal-400' },
+                                    { type: 'call' as const, label: 'Call', icon: Video, activeBorder: 'border-purple-500', activeBg: 'bg-purple-50 dark:bg-purple-900/20', activeIcon: 'text-purple-600', activeText: 'text-purple-700 dark:text-purple-400' },
+                                    { type: 'task' as const, label: 'Task', icon: CheckCircle2, activeBorder: 'border-blue-500', activeBg: 'bg-blue-50 dark:bg-blue-900/20', activeIcon: 'text-blue-600', activeText: 'text-blue-700 dark:text-blue-400' },
+                                    { type: 'email' as const, label: 'Email', icon: AlertCircle, activeBorder: 'border-amber-500', activeBg: 'bg-amber-50 dark:bg-amber-900/20', activeIcon: 'text-amber-600', activeText: 'text-amber-700 dark:text-amber-400' },
+                                ].map(({ type, label, icon: Icon, activeBorder, activeBg, activeIcon, activeText }) => (
                                     <button
                                         key={type}
                                         type="button"
@@ -947,17 +963,17 @@ export default function CalendarPage() {
                                         className={cn(
                                             'flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 transition-all',
                                             newEventType === type
-                                                ? `border-${color}-500 bg-${color}-50 dark:bg-${color}-900/20`
+                                                ? `${activeBorder} ${activeBg}`
                                                 : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
                                         )}
                                     >
                                         <Icon className={cn(
                                             'w-5 h-5',
-                                            newEventType === type ? `text-${color}-600` : 'text-slate-400'
+                                            newEventType === type ? activeIcon : 'text-slate-400'
                                         )} />
                                         <span className={cn(
                                             'text-xs font-medium',
-                                            newEventType === type ? `text-${color}-700 dark:text-${color}-400` : 'text-slate-600 dark:text-slate-400'
+                                            newEventType === type ? activeText : 'text-slate-600 dark:text-slate-400'
                                         )}>
                                             {label}
                                         </span>

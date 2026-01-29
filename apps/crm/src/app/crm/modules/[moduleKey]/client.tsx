@@ -21,6 +21,7 @@ import { RecordTable } from '@/components/crm/records';
 import { DynamicRecordForm } from '@/components/crm/records';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmProfile, CrmLayout } from '@/lib/crm/types';
 import { Plus, Search, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ModuleListClientProps {
   module: CrmModule;
@@ -94,19 +95,23 @@ export function ModuleListClient({
     if (!confirm(`Are you sure you want to delete ${ids.length} record(s)?`)) {
       return;
     }
-    
+
     try {
       const response = await fetch('/api/crm/records/bulk-delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids }),
       });
-      
-      if (response.ok) {
-        router.refresh();
+
+      if (!response.ok) {
+        throw new Error('Failed to delete records');
       }
+
+      toast.success(`${ids.length} record(s) deleted successfully`);
+      router.refresh();
     } catch (error) {
       console.error('Failed to delete records:', error);
+      toast.error('Failed to delete records');
     }
   };
 
@@ -122,14 +127,18 @@ export function ModuleListClient({
           data,
         }),
       });
-      
-      if (response.ok) {
-        const record = await response.json();
-        setShowCreateDialog(false);
-        router.push(`/r/${record.id}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to create record');
       }
+
+      const record = await response.json();
+      toast.success(`${module.name} created successfully`);
+      setShowCreateDialog(false);
+      router.push(`/crm/r/${record.id}`);
     } catch (error) {
       console.error('Failed to create record:', error);
+      toast.error('Failed to create record');
     } finally {
       setIsCreating(false);
     }
@@ -164,7 +173,11 @@ export function ModuleListClient({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => toast.info('Export functionality coming soon')}
+          >
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
@@ -214,7 +227,11 @@ export function ModuleListClient({
         </Select>
 
         {/* Filter Button */}
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => toast.info('Filter functionality coming soon')}
+        >
           <Filter className="w-4 h-4 mr-2" />
           Filters
         </Button>
