@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { cache } from 'react';
 import type { Database } from '@crm-eco/lib/types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -10,11 +11,12 @@ export interface CurrentUserProfile extends Profile {
 }
 
 /**
- * Get the current user's profile including their role and organization
+ * Internal function to fetch profile (uncached)
+ * This is wrapped by getCurrentProfile with React's cache()
  */
-export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
+async function fetchCurrentProfile(): Promise<CurrentUserProfile | null> {
   const supabase = await createServerSupabaseClient();
-  
+
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -39,7 +41,7 @@ export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
       .select('id')
       .eq('profile_id', profile.id)
       .single();
-    
+
     const advisor = advisorData as { id: string } | null;
     advisorId = advisor?.id ?? null;
   }
@@ -49,6 +51,15 @@ export async function getCurrentProfile(): Promise<CurrentUserProfile | null> {
     advisorId,
   } as CurrentUserProfile;
 }
+
+/**
+ * Get the current user's profile including their role and organization
+ *
+ * This function is memoized per-request using React's cache() function.
+ * Multiple calls during the same request will reuse the cached result,
+ * significantly reducing database queries (~5M -> fraction of that).
+ */
+export const getCurrentProfile = cache(fetchCurrentProfile);
 
 /**
  * Get the advisor ID for the current user if they are an advisor

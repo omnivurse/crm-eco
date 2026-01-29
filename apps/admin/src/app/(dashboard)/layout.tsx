@@ -1,42 +1,23 @@
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AdminSidebar, AdminTopNav, Breadcrumbs } from '@/components/layout';
 import { AdminNotificationListener } from '@/components/notifications/AdminNotificationListener';
 import { TerminalWrapper } from '@/components/terminal/TerminalWrapper';
-import { isAdminRole } from '@/lib/auth';
-import type { Database } from '@crm-eco/lib/types';
-
-type Profile = Database['public']['Tables']['profiles']['Row'];
+import { getAdminProfile } from '@/lib/profile';
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createServerSupabaseClient();
+  // Use cached profile getter - memoized per-request
+  const profile = await getAdminProfile();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!profile) {
     redirect('/login');
   }
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error || !data) {
-    redirect('/login');
-  }
-
-  const profile = data as Profile;
 
   // Only allow admin roles (owner, admin, staff)
-  if (!isAdminRole(profile.role)) {
+  if (!profile.isAdmin) {
     redirect('/access-denied');
   }
 
