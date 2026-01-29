@@ -562,13 +562,13 @@ export function RecordDetailShell({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Created</span>
-                <span className="text-slate-700 dark:text-slate-300">
+                <span className="text-slate-700 dark:text-slate-300" suppressHydrationWarning>
                   {new Date(record.created_at).toLocaleDateString()}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">Updated</span>
-                <span className="text-slate-700 dark:text-slate-300">
+                <span className="text-slate-700 dark:text-slate-300" suppressHydrationWarning>
                   {new Date(record.updated_at).toLocaleDateString()}
                 </span>
               </div>
