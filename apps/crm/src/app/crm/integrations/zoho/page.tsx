@@ -256,7 +256,7 @@ export default function ZohoSyncPage() {
         <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-slate-900 dark:text-white">Module Mappings</h3>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => toast.info('Field configuration coming soon')}>
               <Settings className="w-4 h-4 mr-2" />
               Configure Fields
             </Button>

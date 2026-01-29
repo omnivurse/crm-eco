@@ -148,6 +148,7 @@ export default function CloudStoragePage() {
       }
     } catch (error) {
       console.error('Failed to load connections:', error);
+      toast.error('Failed to load cloud storage connections');
     } finally {
       setLoading(false);
     }
@@ -342,7 +343,7 @@ export default function CloudStoragePage() {
             <div className="flex items-center gap-2">
               {provider.status === 'connected' ? (
                 <>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => toast.info('Storage settings coming soon')}>
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </Button>
