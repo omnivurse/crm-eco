@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import {
   MessageSquare,
@@ -33,8 +34,10 @@ interface AutoResponse {
 export default function AutoResponsesPage() {
   const [responses, setResponses] = useState<AutoResponse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form state
@@ -122,9 +125,11 @@ export default function AutoResponsesPage() {
     saveResponses(updated);
   };
 
-  const filteredResponses = responses.filter(r =>
-    r.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredResponses = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    if (!searchLower) return responses;
+    return responses.filter(r => r.name.toLowerCase().includes(searchLower));
+  }, [responses, debouncedQuery]);
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import {
   FileText,
@@ -274,7 +275,9 @@ export default function IntegrationLogsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [providerFilter, setProviderFilter] = useState<string>('');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState('');
+
+  // Live search with debounce (300ms for API calls)
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 300 });
 
   const fetchLogs = useCallback(async (pageNum: number = 1) => {
     setLoading(true);
@@ -288,7 +291,7 @@ export default function IntegrationLogsPage() {
       if (statusFilter) params.set('status', statusFilter);
       if (providerFilter) params.set('provider', providerFilter);
       if (eventTypeFilter) params.set('event_type', eventTypeFilter);
-      if (searchQuery) params.set('search', searchQuery);
+      if (debouncedQuery) params.set('search', debouncedQuery);
       
       const response = await fetch(`/api/integrations/logs?${params}`);
       const data: LogsResponse = await response.json();
@@ -304,7 +307,7 @@ export default function IntegrationLogsPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, providerFilter, eventTypeFilter, searchQuery]);
+  }, [statusFilter, providerFilter, eventTypeFilter, debouncedQuery]);
 
   useEffect(() => {
     fetchLogs(1);
