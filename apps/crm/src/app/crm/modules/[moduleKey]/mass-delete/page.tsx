@@ -28,6 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@crm-eco/ui/components/alert-dialog';
+import { toast } from 'sonner';
 
 interface CrmRecord {
   id: string;
@@ -101,7 +102,9 @@ export default function MassDeletePage() {
       setTotalRecords(recordsData.total || 0);
       setTotalPages(Math.ceil((recordsData.total || 0) / pageSize));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -157,7 +160,9 @@ export default function MassDeletePage() {
       }
 
       const data = await response.json();
-      setSuccess(`Successfully deleted ${data.deleted_count} record${data.deleted_count !== 1 ? 's' : ''}`);
+      const successMessage = `Successfully deleted ${data.deleted_count} record${data.deleted_count !== 1 ? 's' : ''}`;
+      setSuccess(successMessage);
+      toast.success(successMessage);
       setSelectedIds(new Set());
       setShowConfirm(false);
 
@@ -169,7 +174,9 @@ export default function MassDeletePage() {
         router.push(`/crm/modules/${moduleKey}`);
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete records');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete records';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setDeleting(false);
     }
@@ -368,7 +375,7 @@ export default function MassDeletePage() {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-sm">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-400 text-sm" suppressHydrationWarning>
                       {new Date(record.created_at).toLocaleDateString()}
                     </td>
                   </tr>
