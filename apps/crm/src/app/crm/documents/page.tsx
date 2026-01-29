@@ -273,6 +273,7 @@ export default function DocumentsPage() {
       setDocuments(docs);
     } catch (error) {
       console.error('Error loading documents:', error);
+      toast.error('Failed to load documents');
     } finally {
       setLoading(false);
     }

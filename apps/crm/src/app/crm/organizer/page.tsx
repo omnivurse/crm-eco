@@ -169,6 +169,7 @@ export default function OrganizerPage() {
                 }
             } catch (error) {
                 console.error('Error loading organizer data:', error);
+                toast.error('Failed to load organizer data');
             } finally {
                 setLoading(false);
             }

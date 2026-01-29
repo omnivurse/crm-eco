@@ -44,6 +44,7 @@ import {
 } from '@crm-eco/ui/components/table';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Type Definitions
@@ -299,8 +300,9 @@ export default function CampaignsPage() {
         sending: campaignList.filter(c => c.status === 'sending').length,
         sent: campaignList.filter(c => c.status === 'sent').length,
       });
-    } catch {
-      // Error handled silently
+    } catch (error) {
+      console.error('Failed to load campaigns:', error);
+      toast.error('Failed to load campaigns');
     } finally {
       setLoading(false);
     }
@@ -378,8 +380,9 @@ export default function CampaignsPage() {
       }
       // Refresh campaigns list
       loadCampaigns();
-    } catch {
-      // Error handled silently - could add toast notification here
+    } catch (error) {
+      console.error('Campaign action failed:', error);
+      toast.error('Failed to perform action');
     } finally {
       setActionLoading(null);
     }
