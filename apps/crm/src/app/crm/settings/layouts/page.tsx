@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
+import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -54,6 +56,7 @@ interface LayoutWithModule extends CrmLayout {
 }
 
 export default function LayoutsPage() {
+  const router = useRouter();
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -94,7 +97,7 @@ export default function LayoutsPage() {
         .single();
 
       if (!profile || profile.crm_role !== 'crm_admin') {
-        window.location.href = '/crm/settings?error=admin_only';
+        router.push('/crm/settings?error=admin_only');
         return;
       }
 
@@ -115,10 +118,11 @@ export default function LayoutsPage() {
       setLayouts(layoutsWithModules);
     } catch (error) {
       console.error('Failed to fetch data:', error);
+      toast.error('Failed to load layouts');
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, router]);
 
   useEffect(() => {
     fetchData();
@@ -163,9 +167,11 @@ export default function LayoutsPage() {
       });
 
       if (error) throw error;
+      toast.success('Layout duplicated successfully');
       fetchData();
     } catch (error) {
       console.error('Failed to duplicate:', error);
+      toast.error('Failed to duplicate layout');
     }
   };
 
@@ -202,10 +208,12 @@ export default function LayoutsPage() {
         if (error) throw error;
       }
 
+      toast.success(editing ? 'Layout updated successfully' : 'Layout created successfully');
       fetchData();
       setDialogOpen(false);
     } catch (error) {
       console.error('Failed to save:', error);
+      toast.error('Failed to save layout');
     } finally {
       setSaving(false);
     }
@@ -215,9 +223,11 @@ export default function LayoutsPage() {
     if (!deleteId) return;
     try {
       await supabase.from('crm_layouts').delete().eq('id', deleteId);
+      toast.success('Layout deleted successfully');
       setLayouts(layouts.filter(l => l.id !== deleteId));
     } catch (error) {
       console.error('Failed to delete:', error);
+      toast.error('Failed to delete layout');
     } finally {
       setDeleteId(null);
     }
