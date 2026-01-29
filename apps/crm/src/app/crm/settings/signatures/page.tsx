@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { SignatureBuilder } from '@/components/email/SignatureBuilder';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 interface EmailSignature {
   id: string;
@@ -119,8 +120,9 @@ export default function SignaturesSettingsPage() {
       }
 
       setSignatures((prev) => prev.filter((s) => s.id !== id));
+      toast.success('Signature deleted');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete signature');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete signature');
     } finally {
       setDeletingId(null);
     }
@@ -146,8 +148,9 @@ export default function SignaturesSettingsPage() {
           is_default: s.id === id,
         }))
       );
+      toast.success('Default signature updated');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to set default');
+      toast.error(err instanceof Error ? err.message : 'Failed to set default');
     } finally {
       setSettingDefault(null);
     }

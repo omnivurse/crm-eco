@@ -124,6 +124,9 @@ export function EmailComposer({
   const [showAttachmentsPanel, setShowAttachmentsPanel] = useState(initialAttachments.length > 0);
   const [isSending, setIsSending] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
 
   // Data state
   const [signatures, setSignatures] = useState<EmailSignature[]>([]);
@@ -257,6 +260,44 @@ export function EmailComposer({
       toast.error(error instanceof Error ? error.message : 'Failed to save draft');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Handle schedule
+  const handleSchedule = async () => {
+    if (to.length === 0) {
+      toast.error('Please add at least one recipient');
+      return;
+    }
+
+    if (!subject.trim()) {
+      toast.error('Please add a subject');
+      return;
+    }
+
+    if (!scheduleDate) {
+      toast.error('Please select a schedule date and time');
+      return;
+    }
+
+    const scheduledAt = new Date(scheduleDate);
+    if (scheduledAt <= new Date()) {
+      toast.error('Schedule time must be in the future');
+      return;
+    }
+
+    if (!onSchedule) return;
+
+    setIsScheduling(true);
+    try {
+      await onSchedule(getComposerData(), scheduledAt);
+      toast.success(`Email scheduled for ${scheduledAt.toLocaleString()}`);
+      setShowSchedulePicker(false);
+      setScheduleDate('');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to schedule email');
+    } finally {
+      setIsScheduling(false);
     }
   };
 
@@ -579,16 +620,62 @@ export function EmailComposer({
           )}
 
           {showSchedule && onSchedule && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={disabled || isSending || isSaving || uploadingCount > 0}
-              className="gap-1"
-            >
-              <Clock className="w-4 h-4" />
-              Schedule
-            </Button>
+            <div className="relative">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSchedulePicker(!showSchedulePicker)}
+                disabled={disabled || isSending || isSaving || isScheduling || uploadingCount > 0}
+                className="gap-1"
+              >
+                {isScheduling ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Clock className="w-4 h-4" />
+                )}
+                Schedule
+              </Button>
+              {showSchedulePicker && (
+                <div className="absolute bottom-full right-0 mb-2 p-3 bg-white dark:bg-slate-900 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50 min-w-[250px]">
+                  <Label className="text-xs text-slate-500 mb-2 block">Schedule for:</Label>
+                  <Input
+                    type="datetime-local"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    className="mb-2"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowSchedulePicker(false);
+                        setScheduleDate('');
+                      }}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleSchedule}
+                      disabled={!scheduleDate || isScheduling}
+                      className="flex-1"
+                    >
+                      {isScheduling ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        'Confirm'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {onSend && (
