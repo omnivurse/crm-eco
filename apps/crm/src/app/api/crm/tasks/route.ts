@@ -7,9 +7,15 @@ const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   due_at: z.string().nullable().optional(),
-  priority: z.enum(['low', 'medium', 'high', 'urgent']).optional(),
+  priority: z.enum(['low', 'normal', 'medium', 'high', 'urgent']).optional(),
   activity_type: z.enum(['task', 'call', 'email', 'meeting']).optional(),
 });
+
+// Map 'medium' to 'normal' for database compatibility
+function mapPriority(priority: string | undefined): string {
+  if (priority === 'medium') return 'normal';
+  return priority || 'normal';
+}
 
 /**
  * GET /api/crm/tasks
@@ -85,7 +91,7 @@ export async function POST(request: NextRequest) {
         title: parsed.data.title,
         description: parsed.data.description || null,
         due_at: parsed.data.due_at || null,
-        priority: parsed.data.priority || 'medium',
+        priority: mapPriority(parsed.data.priority),
         activity_type: parsed.data.activity_type || 'task',
         status: 'open',
         assigned_to: profile.id,
