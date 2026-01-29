@@ -44,12 +44,14 @@ export default function SchedulingPage() {
   const fetchLinks = useCallback(async () => {
     try {
       const res = await fetch('/api/scheduling');
-      if (res.ok) {
-        const data = await res.json();
-        setLinks(data || []);
+      if (!res.ok) {
+        throw new Error('Failed to fetch');
       }
+      const data = await res.json();
+      setLinks(data || []);
     } catch (error) {
       console.error('Failed to fetch scheduling links:', error);
+      toast.error('Failed to load scheduling links');
     } finally {
       setLoading(false);
     }

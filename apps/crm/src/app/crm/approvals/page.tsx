@@ -51,6 +51,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { ApprovalInboxItem, ApprovalStatus } from '@/lib/approvals/types';
 
 type StatusFilter = ApprovalStatus | 'all';
@@ -107,6 +108,7 @@ export default function ApprovalsPage() {
       setSelectedIds(new Set());
     } catch (error) {
       console.error('Failed to load approvals:', error);
+      toast.error('Failed to load approvals');
     } finally {
       setLoading(false);
     }
@@ -135,16 +137,18 @@ export default function ApprovalsPage() {
       const result = await response.json();
       
       if (result.success) {
+        toast.success(`Request ${actionType === 'approve' ? 'approved' : actionType === 'reject' ? 'rejected' : 'updated'} successfully`);
         // Reload inbox
         await loadInbox();
         setActionDialogOpen(false);
         setSelectedApproval(null);
         setComment('');
       } else {
-        alert(result.error || 'Failed to process approval');
+        toast.error(result.error || 'Failed to process approval');
       }
     } catch (error) {
-      alert('Failed to process approval');
+      console.error('Failed to process approval:', error);
+      toast.error('Failed to process approval');
     } finally {
       setProcessing(null);
     }
@@ -168,9 +172,11 @@ export default function ApprovalsPage() {
       );
       
       await Promise.all(promises);
+      toast.success(`${selectedIds.size} approvals ${action === 'approve' ? 'approved' : 'rejected'} successfully`);
       await loadInbox();
     } catch (error) {
-      alert('Some actions failed');
+      console.error('Bulk action failed:', error);
+      toast.error('Some actions failed');
     } finally {
       setBulkProcessing(false);
     }
@@ -432,7 +438,7 @@ export default function ApprovalsPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <span className="text-sm text-muted-foreground">
+                          <span className="text-sm text-muted-foreground" suppressHydrationWarning>
                             {new Date(approval.created_at).toLocaleDateString()}
                           </span>
                         </TableCell>
