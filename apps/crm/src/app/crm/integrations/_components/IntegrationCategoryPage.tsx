@@ -111,12 +111,25 @@ function ProviderCard({
     setTesting(false);
   };
 
+  // Static color class mappings for Tailwind JIT
+  const colorClasses: Record<string, { bg: string; text: string }> = {
+    teal: { bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400' },
+    blue: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400' },
+    purple: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400' },
+    rose: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400' },
+    amber: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400' },
+    indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400' },
+    slate: { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400' },
+  };
+  const colors = colorClasses[config.color] || colorClasses.slate;
+
   return (
     <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-5">
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-lg bg-${config.color}-500/10`}>
-            <Plug className={`w-5 h-5 text-${config.color}-600 dark:text-${config.color}-400`} />
+          <div className={`p-2.5 rounded-lg ${colors.bg}`}>
+            <Plug className={`w-5 h-5 ${colors.text}`} />
           </div>
           <div>
             <h3 className="font-semibold text-slate-900 dark:text-white">{config.name}</h3>
@@ -379,6 +392,7 @@ export default function IntegrationCategoryPage({
       setConnections(data.connections || []);
     } catch (error) {
       console.error('Failed to fetch connections:', error);
+      toast.error('Failed to load integration connections');
     } finally {
       setLoading(false);
     }

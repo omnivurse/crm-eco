@@ -17,6 +17,7 @@ import {
   RotateCw,
   ChevronDown,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { IntegrationLog, LogStatus, LogDirection, LogEventType } from '@/lib/integrations/types';
 
 // ============================================================================
@@ -299,6 +300,7 @@ export default function IntegrationLogsPage() {
       setPage(pageNum);
     } catch (error) {
       console.error('Failed to fetch logs:', error);
+      toast.error('Failed to load integration logs');
     } finally {
       setLoading(false);
     }
