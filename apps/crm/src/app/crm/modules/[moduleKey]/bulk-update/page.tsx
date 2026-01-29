@@ -36,6 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import { toast } from 'sonner';
 
 interface CrmRecord {
   id: string;
@@ -161,7 +162,9 @@ export default function BulkUpdatePage() {
         setProfiles(Array.isArray(profilesData) ? profilesData : profilesData.members || []);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load data');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load data';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -251,7 +254,9 @@ export default function BulkUpdatePage() {
       }
 
       const data = await response.json();
-      setSuccess(`Successfully updated ${data.updated_count} record${data.updated_count !== 1 ? 's' : ''}`);
+      const successMessage = `Successfully updated ${data.updated_count} record${data.updated_count !== 1 ? 's' : ''}`;
+      setSuccess(successMessage);
+      toast.success(successMessage);
       setShowUpdateDialog(false);
 
       // Reset form
@@ -267,7 +272,9 @@ export default function BulkUpdatePage() {
       // Clear selection after successful update
       setSelectedIds(new Set());
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update records');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update records';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setUpdating(false);
     }
