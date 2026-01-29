@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { createBrowserClient } from '@supabase/ssr';
 import {
   Package,
@@ -437,8 +438,10 @@ function ProductModal({
 export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -589,15 +592,18 @@ export default function ProductsPage() {
     }
   }
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = !searchQuery ||
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.label?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter products with debounced search
+  const filteredProducts = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return products.filter(product => {
+      const matchesSearch = !searchLower ||
+        product.name.toLowerCase().includes(searchLower) ||
+        product.label?.toLowerCase().includes(searchLower) ||
+        product.category?.toLowerCase().includes(searchLower);
+      const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [products, debouncedQuery, statusFilter]);
 
   if (loading) {
     return (

@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
 import {
@@ -218,8 +219,10 @@ function StatCard({
 export default function DocumentsPage() {
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
@@ -341,10 +344,14 @@ export default function DocumentsPage() {
     }
   }
 
-  // Filter documents
-  const filteredDocuments = documents.filter(doc =>
-    doc.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter documents with debounced search
+  const filteredDocuments = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    if (!searchLower) return documents;
+    return documents.filter(doc =>
+      doc.name.toLowerCase().includes(searchLower)
+    );
+  }, [documents, debouncedQuery]);
 
   // Calculate stats
   const totalSize = documents.reduce((sum, d) => sum + d.size, 0);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -255,8 +256,10 @@ export default function CampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<CampaignStats>({ total: 0, draft: 0, scheduled: 0, sending: 0, sent: 0 });
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
@@ -388,12 +391,16 @@ export default function CampaignsPage() {
     }
   }, [supabase]);
 
-  const filteredCampaigns = useMemo(() => campaigns.filter(campaign => {
-    const matchesSearch = campaign.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      campaign.subject.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  }), [campaigns, searchQuery, statusFilter]);
+  const filteredCampaigns = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return campaigns.filter(campaign => {
+      const matchesSearch = !searchLower ||
+        campaign.name.toLowerCase().includes(searchLower) ||
+        campaign.subject.toLowerCase().includes(searchLower);
+      const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [campaigns, debouncedQuery, statusFilter]);
 
   if (loading) {
     return <CampaignsSkeleton />;

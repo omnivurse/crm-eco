@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
@@ -210,8 +211,10 @@ export default function QuotesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Live search with debounce
+  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   const supabase = createBrowserClient(
@@ -333,14 +336,17 @@ export default function QuotesPage() {
     }
   }
 
-  // Filter quotes
-  const filteredQuotes = quotes.filter(quote => {
-    const matchesSearch = !searchQuery ||
-      quote.quote_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      quote.title?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Filter quotes with debounced search
+  const filteredQuotes = useMemo(() => {
+    const searchLower = debouncedQuery.toLowerCase();
+    return quotes.filter(quote => {
+      const matchesSearch = !searchLower ||
+        quote.quote_number.toLowerCase().includes(searchLower) ||
+        quote.title?.toLowerCase().includes(searchLower);
+      const matchesStatus = statusFilter === 'all' || quote.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [quotes, debouncedQuery, statusFilter]);
 
   // Calculate stats
   const totalValue = quotes.reduce((sum, q) => sum + (q.total || 0), 0);
