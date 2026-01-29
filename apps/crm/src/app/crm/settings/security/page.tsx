@@ -106,6 +106,7 @@ export default function SecuritySettingsPage() {
             setRecentActivity([]);
         } catch (error) {
             console.error('Failed to load security data:', error);
+            toast.error('Failed to load security data');
         } finally {
             setLoading(false);
         }
@@ -462,7 +463,10 @@ export default function SecuritySettingsPage() {
                             <p className="text-sm text-slate-500">Export a copy of your personal data (HIPAA Right of Access)</p>
                         </div>
                     </div>
-                    <Button variant="outline">
+                    <Button
+                        variant="outline"
+                        onClick={() => toast.info('Data export request functionality coming soon')}
+                    >
                         <Download className="w-4 h-4 mr-2" />
                         Request Export
                     </Button>
