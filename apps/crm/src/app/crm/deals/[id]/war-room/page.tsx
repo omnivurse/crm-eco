@@ -17,6 +17,7 @@ import {
   BookOpen,
   Flag,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Types
@@ -209,14 +210,20 @@ export default function DealWarRoomPage({
           <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-slate-900 dark:text-white">Next Best Actions</h2>
-              <button className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1">
+              <button
+                onClick={() => toast.info('Add action functionality coming soon')}
+                className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+              >
                 <Plus className="w-4 h-4" /> Add
               </button>
             </div>
             <div className="space-y-3">
               {nextActions.map((action) => (
                 <div key={action.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                  <button className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded">
+                  <button
+                    onClick={() => toast.success(`Action "${action.title}" marked as complete`)}
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
+                  >
                     <CheckCircle2 className={`w-5 h-5 ${action.completed ? 'text-green-500' : 'text-slate-300'}`} />
                   </button>
                   <div className="flex-1">
@@ -237,7 +244,10 @@ export default function DealWarRoomPage({
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
                 Blockers
               </h2>
-              <button className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1">
+              <button
+                onClick={() => toast.info('Add blocker functionality coming soon')}
+                className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+              >
                 <Plus className="w-4 h-4" /> Add
               </button>
             </div>
@@ -268,7 +278,10 @@ export default function DealWarRoomPage({
             </div>
             <div className="text-center py-4 text-slate-500 dark:text-slate-400">
               <p className="text-sm">No playbook attached</p>
-              <button className="text-sm text-teal-600 hover:text-teal-700 mt-2">
+              <button
+                onClick={() => toast.info('Attach playbook functionality coming soon')}
+                className="text-sm text-teal-600 hover:text-teal-700 mt-2"
+              >
                 Attach Playbook
               </button>
             </div>
@@ -286,13 +299,31 @@ export default function DealWarRoomPage({
             placeholder="Add a quick note or update..."
             className="flex-1 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400"
           />
-          <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Log Call">
+          <button
+            onClick={() => toast.info('Log call functionality coming soon')}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Log Call"
+          >
             <Phone className="w-5 h-5 text-slate-500" />
           </button>
-          <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors" title="Send Email">
+          <button
+            onClick={() => toast.info('Send email functionality coming soon')}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Send Email"
+          >
             <Mail className="w-5 h-5 text-slate-500" />
           </button>
-          <button className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (newNote.trim()) {
+                toast.success('Note added');
+                setNewNote('');
+              } else {
+                toast.error('Please enter a note');
+              }
+            }}
+            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 flex items-center gap-2"
+          >
             <Send className="w-4 h-4" />
             Add
           </button>

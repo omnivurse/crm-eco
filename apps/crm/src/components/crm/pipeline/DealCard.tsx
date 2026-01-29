@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import Link from 'next/link';
@@ -40,6 +41,7 @@ interface DealCardProps {
 }
 
 export const DealCard = memo(function DealCard({ deal, isDragging, isUpdating, onQuickAction, displayFields }: DealCardProps) {
+  const router = useRouter();
   const {
     attributes,
     listeners,
@@ -73,9 +75,9 @@ export const DealCard = memo(function DealCard({ deal, isDragging, isUpdating, o
       } else if (action === 'email' && contactEmail) {
         window.location.href = `mailto:${contactEmail}`;
       } else if (action === 'view') {
-        window.location.href = `/crm/r/${deal.id}`;
+        router.push(`/crm/r/${deal.id}`);
       } else if (action === 'edit') {
-        window.location.href = `/crm/r/${deal.id}?edit=true`;
+        router.push(`/crm/r/${deal.id}?edit=true`);
       }
     }
   };

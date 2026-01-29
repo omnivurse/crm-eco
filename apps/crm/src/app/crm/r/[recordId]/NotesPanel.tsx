@@ -6,6 +6,7 @@ import { StickyNote, Plus, Pin, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { formatDistanceToNow } from 'date-fns';
+import { toast } from 'sonner';
 import type { CrmNote, CrmNoteWithAuthor } from '@/lib/crm/types';
 
 interface NotesPanelProps {
@@ -14,8 +15,31 @@ interface NotesPanelProps {
   orgId: string;
 }
 
-function NoteCard({ note }: { note: CrmNoteWithAuthor }) {
+function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: string) => void }) {
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/crm/notes/${note.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete note');
+      }
+
+      toast.success('Note deleted successfully');
+      onDelete(note.id);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      toast.error('Failed to delete note');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5 hover:border-white/10 transition-colors group">
@@ -51,6 +75,7 @@ function NoteCard({ note }: { note: CrmNoteWithAuthor }) {
             size="icon"
             className="h-7 w-7 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
             disabled={isDeleting}
+            onClick={handleDelete}
           >
             {isDeleting ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -88,13 +113,17 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
         }),
       });
       
-      if (response.ok) {
-        setNewNote('');
-        setIsAdding(false);
-        router.refresh();
+      if (!response.ok) {
+        throw new Error('Failed to create note');
       }
+
+      toast.success('Note added successfully');
+      setNewNote('');
+      setIsAdding(false);
+      router.refresh();
     } catch (error) {
       console.error('Failed to create note:', error);
+      toast.error('Failed to add note');
     } finally {
       setIsSubmitting(false);
     }
@@ -164,7 +193,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
       {sortedNotes.length > 0 ? (
         <div className="space-y-3">
           {sortedNotes.map((note) => (
-            <NoteCard key={note.id} note={note} />
+            <NoteCard key={note.id} note={note} onDelete={() => router.refresh()} />
           ))}
         </div>
       ) : (

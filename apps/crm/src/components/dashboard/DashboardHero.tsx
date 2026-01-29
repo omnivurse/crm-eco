@@ -19,6 +19,7 @@ interface DashboardHeroProps {
   overdueCount: number;
   newThisWeek: number;
   atRiskCount: number;
+  onRefresh?: () => void;
 }
 
 export function DashboardHero({
@@ -27,6 +28,7 @@ export function DashboardHero({
   overdueCount,
   newThisWeek,
   atRiskCount,
+  onRefresh,
 }: DashboardHeroProps) {
   const [mounted, setMounted] = useState(false);
   const [dateInfo, setDateInfo] = useState({ greeting: 'Hello', formattedDate: '' });
@@ -117,6 +119,7 @@ export function DashboardHero({
             <Button
               variant="ghost"
               size="sm"
+              onClick={onRefresh}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white text-sm font-medium transition-all"
             >
               <RefreshCw className="w-4 h-4" />

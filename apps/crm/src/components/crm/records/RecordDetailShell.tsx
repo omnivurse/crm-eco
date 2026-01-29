@@ -384,14 +384,23 @@ export function RecordDetailShell({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-                    <DropdownMenuItem className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10">
+                    <DropdownMenuItem
+                      className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
+                      onClick={() => toast.info('Clone functionality coming soon')}
+                    >
                       Clone Record
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10">
+                    <DropdownMenuItem
+                      className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
+                      onClick={() => window.print()}
+                    >
                       Print
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                    <DropdownMenuItem className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10">
+                    <DropdownMenuItem
+                      className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
+                      onClick={() => toast.info('Delete functionality coming soon')}
+                    >
                       Delete Record
                     </DropdownMenuItem>
                   </DropdownMenuContent>
