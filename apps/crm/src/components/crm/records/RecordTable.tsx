@@ -607,7 +607,7 @@ export function RecordTable({
     
     if (col === 'created_at') {
       return (
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-500" suppressHydrationWarning>
           {new Date(record.created_at).toLocaleDateString()}
         </span>
       );
@@ -615,7 +615,7 @@ export function RecordTable({
 
     if (col === 'updated_at') {
       return (
-        <span className="text-sm text-slate-500">
+        <span className="text-sm text-slate-500" suppressHydrationWarning>
           {new Date(record.updated_at).toLocaleDateString()}
         </span>
       );
