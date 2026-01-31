@@ -975,6 +975,63 @@ export type Database = {
           },
         ]
       }
+      advisor_playbooks: {
+        Row: {
+          category: string | null
+          content_json: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          organization_id: string
+          sort_order: number | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          content_json?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          organization_id: string
+          sort_order?: number | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          content_json?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          organization_id?: string
+          sort_order?: number | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_playbooks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_playbooks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_product_access: {
         Row: {
           advisor_id: string
@@ -8744,6 +8801,76 @@ export type Database = {
           },
         ]
       }
+      engagement_events: {
+        Row: {
+          actor_profile_id: string
+          advisor_id: string | null
+          body: string | null
+          channel: string | null
+          contact_id: string | null
+          contact_type: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          occurred_at: string | null
+          organization_id: string
+          payload_json: Json | null
+          subject: string | null
+        }
+        Insert: {
+          actor_profile_id: string
+          advisor_id?: string | null
+          body?: string | null
+          channel?: string | null
+          contact_id?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          occurred_at?: string | null
+          organization_id: string
+          payload_json?: Json | null
+          subject?: string | null
+        }
+        Update: {
+          actor_profile_id?: string
+          advisor_id?: string | null
+          body?: string | null
+          channel?: string | null
+          contact_id?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          occurred_at?: string | null
+          organization_id?: string
+          payload_json?: Json | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engagement_events_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_events_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       enrollment_audit_log: {
         Row: {
           actor_profile_id: string | null
@@ -13633,6 +13760,133 @@ export type Database = {
           },
         ]
       }
+      presentation_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          status: string | null
+          template_json: Json | null
+          thumbnail_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          status?: string | null
+          template_json?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          status?: string | null
+          template_json?: Json | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentations: {
+        Row: {
+          contact_id: string | null
+          contact_type: string | null
+          created_at: string | null
+          created_by: string
+          doc_json: Json | null
+          id: string
+          is_public: boolean | null
+          last_viewed_at: string | null
+          organization_id: string
+          share_slug: string | null
+          template_id: string | null
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          contact_id?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          created_by: string
+          doc_json?: Json | null
+          id?: string
+          is_public?: boolean | null
+          last_viewed_at?: string | null
+          organization_id: string
+          share_slug?: string | null
+          template_id?: string | null
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          contact_id?: string | null
+          contact_type?: string | null
+          created_at?: string | null
+          created_by?: string
+          doc_json?: Json | null
+          id?: string
+          is_public?: boolean | null
+          last_viewed_at?: string | null
+          organization_id?: string
+          share_slug?: string | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       procedure_pricing: {
         Row: {
           avg_estimate: number
@@ -14499,6 +14753,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          advisor_id: string | null
+          advisor_role: string | null
           avatar_url: string | null
           created_at: string | null
           crm_role: string | null
@@ -14517,6 +14773,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          advisor_id?: string | null
+          advisor_role?: string | null
           avatar_url?: string | null
           created_at?: string | null
           crm_role?: string | null
@@ -14535,6 +14793,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          advisor_id?: string | null
+          advisor_role?: string | null
           avatar_url?: string | null
           created_at?: string | null
           crm_role?: string | null
@@ -14553,6 +14813,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "profiles_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "profiles_organization_id_fkey"
             columns: ["organization_id"]
@@ -17472,6 +17739,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_my_advisor_id: { Args: never; Returns: string }
       get_next_round_robin_agent: {
         Args: { p_rule_id: string }
         Returns: string
@@ -17714,6 +17982,10 @@ export type Database = {
       is_crm_member: { Args: { p_org_id: string }; Returns: boolean }
       is_email_unsubscribed: {
         Args: { p_email: string; p_org_id: string }
+        Returns: boolean
+      }
+      is_in_my_downline: {
+        Args: { target_advisor_id: string }
         Returns: boolean
       }
       is_staff_or_admin: { Args: never; Returns: boolean }
@@ -18016,52 +18288,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
-// Helper types for table rows
-export type Organization = Tables<'organizations'>;
-export type Profile = Tables<'profiles'>;
-export type Advisor = Tables<'advisors'>;
-export type Member = Tables<'members'>;
-export type Lead = Tables<'leads'>;
-export type Activity = Tables<'activities'>;
-export type Ticket = Tables<'tickets'>;
-export type TicketComment = Tables<'ticket_comments'>;
-export type Need = Tables<'needs'>;
-export type NeedEvent = Tables<'need_events'>;
-export type CustomFieldDefinition = Tables<'custom_field_definitions'>;
-export type FieldMapping = Tables<'field_mappings'>;
-export type ImportJob = Tables<'import_jobs'>;
-export type ImportJobRow = Tables<'import_job_rows'>;
-export type ImportSnapshot = Tables<'import_snapshots'>;
-export type Plan = Tables<'plans'>;
-export type Membership = Tables<'memberships'>;
-export type Enrollment = Tables<'enrollments'>;
-export type EnrollmentStep = Tables<'enrollment_steps'>;
-export type EnrollmentAuditLog = Tables<'enrollment_audit_log'>;
-export type CommissionTier = Tables<'commission_tiers'>;
-export type CommissionTransaction = Tables<'commission_transactions'>;
-export type CommissionPayout = Tables<'commission_payouts'>;
-
-// Vendor management types
-export type Vendor = Tables<'vendors'>;
-export type VendorInsert = TablesInsert<'vendors'>;
-export type VendorUpdate = TablesUpdate<'vendors'>;
-export type VendorFile = Tables<'vendor_files'>;
-export type VendorFileInsert = TablesInsert<'vendor_files'>;
-export type VendorFileUpdate = TablesUpdate<'vendor_files'>;
-export type VendorFileRow = Tables<'vendor_file_rows'>;
-export type VendorFileRowInsert = TablesInsert<'vendor_file_rows'>;
-export type VendorChange = Tables<'vendor_changes'>;
-export type VendorChangeInsert = TablesInsert<'vendor_changes'>;
-export type VendorConnector = Tables<'vendor_connectors'>;
-export type VendorConnectorInsert = TablesInsert<'vendor_connectors'>;
-export type VendorConnectorUpdate = TablesUpdate<'vendor_connectors'>;
-
-// Status enum types
-export type ImportJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
-export type ImportRowStatus = 'pending' | 'valid' | 'invalid' | 'imported' | 'skipped' | 'error';
-export type MembershipStatus = 'pending' | 'active' | 'suspended' | 'terminated' | 'cancelled';
-export type EnrollmentStatus = 'draft' | 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'expired';
-export type BillingStatus = 'current' | 'past_due' | 'delinquent' | 'suspended' | 'collections';
-export type CommissionTransactionStatus = 'pending' | 'approved' | 'paid' | 'cancelled' | 'reversed';
-export type CommissionPayoutStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';

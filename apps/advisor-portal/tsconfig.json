@@ -1,0 +1,48 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@crm-eco/lib": [
+        "../../packages/lib/src"
+      ],
+      "@crm-eco/lib/*": [
+        "../../packages/lib/src/*"
+      ],
+      "@crm-eco/ui": [
+        "../../packages/ui/src"
+      ],
+      "@crm-eco/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@crm-eco/shared": [
+        "../../shared/src"
+      ],
+      "@crm-eco/shared/*": [
+        "../../shared/src/*"
+      ]
+    },
+    "allowJs": true,
+    "incremental": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "jsx": "preserve"
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
