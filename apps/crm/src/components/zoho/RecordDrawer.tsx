@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -39,12 +39,6 @@ export function RecordDrawer() {
 
   // Local state for optimistic updates
   const [localRecordData, setLocalRecordData] = useState<Record<string, unknown> | null>(null);
-
-  // Supabase client for mutations only
-  const supabase = useMemo(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  ), []);
 
   const handleFieldUpdate = async (fieldKey: string, value: unknown) => {
     if (!data?.record) return;

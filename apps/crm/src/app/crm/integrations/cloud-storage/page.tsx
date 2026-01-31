@@ -19,7 +19,7 @@ import {
 import { Button } from '@crm-eco/ui/components/button';
 import { Switch } from '@crm-eco/ui/components/switch';
 import { toast } from 'sonner';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 
 interface CloudProvider {
   id: string;
@@ -97,11 +97,6 @@ export default function CloudStoragePage() {
   const [providers, setProviders] = useState<CloudProvider[]>(CLOUD_PROVIDERS);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
     loadConnections();

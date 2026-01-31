@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
   Card,
   CardContent,
@@ -42,10 +42,6 @@ import type { CrmMessageProvider, CrmMessageTemplate } from '@/lib/comms/types';
 import { generatePreview } from '@/lib/comms/mergeFields';
 
 export default function CommsSettingsPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const [providers, setProviders] = useState<CrmMessageProvider[]>([]);
   const [templates, setTemplates] = useState<CrmMessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);

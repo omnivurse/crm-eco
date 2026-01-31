@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
   MessageSquare,
   Mail,
@@ -209,11 +209,6 @@ export default function CommunicationsPage() {
   const [channels, setChannels] = useState<CommunicationChannel[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [stats, setStats] = useState({ sent: 0, received: 0, pending: 0, responseRate: 0 });
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
     async function loadData() {

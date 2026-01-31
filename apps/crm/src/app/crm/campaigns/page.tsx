@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
   Mail,
   Plus,
@@ -261,11 +261,6 @@ export default function CampaignsPage() {
   // Live search with debounce
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
     loadCampaigns();

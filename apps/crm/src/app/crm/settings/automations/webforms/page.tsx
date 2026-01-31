@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Switch } from '@crm-eco/ui/components/switch';
 import { Input } from '@crm-eco/ui/components/input';
@@ -78,10 +78,6 @@ interface Field {
 }
 
 export default function WebformsPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const [webforms, setWebforms] = useState<CrmWebform[]>([]);
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState<Module[]>([]);

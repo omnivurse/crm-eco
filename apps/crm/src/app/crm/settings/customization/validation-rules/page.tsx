@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
   Card,
   CardContent,
@@ -124,10 +124,6 @@ const defaultFormState: RuleFormState = {
 };
 
 export default function ValidationRulesSettingsPage() {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const [rules, setRules] = useState<ValidationRule[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [fields, setFields] = useState<Record<string, Field[]>>({});

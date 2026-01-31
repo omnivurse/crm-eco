@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 
 interface UploadFile {
   file: File;
@@ -69,11 +69,6 @@ export default function DocumentUploadPage() {
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();

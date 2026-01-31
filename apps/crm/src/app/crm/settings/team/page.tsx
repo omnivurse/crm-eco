@@ -19,7 +19,7 @@ import {
   Trash2,
   Edit,
 } from 'lucide-react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -133,11 +133,6 @@ export default function TeamManagementPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<InvitableRole>('staff');
   const [inviting, setInviting] = useState(false);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
     loadTeamData();

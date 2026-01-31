@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import Link from 'next/link';
 import {
   Mail,
@@ -112,11 +112,6 @@ export default function InboxPage() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   // Load conversations
   const loadConversations = useCallback(async () => {

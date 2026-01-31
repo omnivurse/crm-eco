@@ -1,16 +1,8 @@
 'use client';
 
 import { createContext, useContext, useEffect, useRef, useCallback, useState, ReactNode } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
 import type { RealtimeChannel, RealtimePostgresChangesPayload, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
-
-// Create Supabase client for realtime
-function getSupabaseClient() {
-    return createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-}
+import { supabase } from '@/lib/supabase-client';
 
 interface RealtimeState {
     isConnected: boolean;
@@ -70,7 +62,6 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
         lastUpdate: null,
     });
 
-    const supabase = getSupabaseClient();
     const channelRef = useRef<RealtimeChannel | null>(null);
     const subscriptionsRef = useRef<Map<string, RealtimeSubscription>>(new Map());
     const idCounterRef = useRef(0);
@@ -103,7 +94,7 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
             channel.unsubscribe();
             channelRef.current = null;
         };
-    }, [supabase]);
+    }, []);
 
     const subscribe = useCallback(
         (subscription: RealtimeSubscription) => {

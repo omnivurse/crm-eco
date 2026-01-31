@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
   Calendar,
   TrendingUp,
@@ -329,11 +329,6 @@ export default function ActivityReportPage() {
   const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
   const [weeklyTrend, setWeeklyTrend] = useState<DailyActivity[]>([]);
   const [profiles, setProfiles] = useState<Map<string, ProfileData>>(new Map());
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
     loadData();

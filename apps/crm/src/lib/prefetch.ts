@@ -1,19 +1,6 @@
 import { getQueryClient } from '@/components/providers/QueryProvider';
 import { queryKeys } from '@/lib/query-keys';
-import { createBrowserClient } from '@supabase/ssr';
-
-// Singleton Supabase client for prefetching
-let supabaseClient: ReturnType<typeof createBrowserClient> | null = null;
-
-function getSupabase() {
-  if (!supabaseClient) {
-    supabaseClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-  }
-  return supabaseClient;
-}
+import { supabase } from '@/lib/supabase-client';
 
 /**
  * Prefetch record data for the drawer on row hover
@@ -21,7 +8,6 @@ function getSupabase() {
  */
 export async function prefetchRecordForDrawer(recordId: string) {
   const queryClient = getQueryClient();
-  const supabase = getSupabase();
 
   // Check if already in cache and fresh
   const existingData = queryClient.getQueryData(queryKeys.records.detail(recordId));

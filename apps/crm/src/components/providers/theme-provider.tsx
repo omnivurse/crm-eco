@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 
 type Theme = 'light' | 'dark' | 'system';
 
@@ -33,10 +33,6 @@ export function ThemeProvider({
   const [mounted, setMounted] = useState(false);
 
   // Create Supabase client for DB persistence
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   // Resolve system theme
   const getSystemTheme = useCallback((): 'light' | 'dark' => {
