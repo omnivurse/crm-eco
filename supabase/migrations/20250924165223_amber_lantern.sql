@@ -27,20 +27,22 @@ CREATE TABLE IF NOT EXISTS ticket_actions (
   created_at timestamptz DEFAULT now()
 );
 
--- Add foreign key constraint if tickets table exists
+-- Add foreign key constraint if tickets table exists and constraint doesn't
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tickets') THEN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'tickets') 
+     AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ticket_actions_ticket_id_fkey') THEN
     ALTER TABLE ticket_actions 
     ADD CONSTRAINT ticket_actions_ticket_id_fkey 
     FOREIGN KEY (ticket_id) REFERENCES tickets(id) ON DELETE CASCADE;
   END IF;
 END $$;
 
--- Add foreign key constraint if profiles table exists  
+-- Add foreign key constraint if profiles table exists and constraint doesn't  
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles') THEN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'profiles') 
+     AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ticket_actions_actor_id_fkey') THEN
     ALTER TABLE ticket_actions 
     ADD CONSTRAINT ticket_actions_actor_id_fkey 
     FOREIGN KEY (actor_id) REFERENCES profiles(id) ON DELETE SET NULL;
@@ -58,11 +60,17 @@ CREATE INDEX IF NOT EXISTS idx_ticket_actions_ticket
 ALTER TABLE ticket_actions ENABLE ROW LEVEL SECURITY;
 
 -- Policies for agents/admins to insert and read actions
+DROP POLICY IF EXISTS "ticket_actions_insert" ON ticket_actions;
+DROP POLICY IF EXISTS "ticket_actions_insert" ON ticket_actions;
+DROP POLICY IF EXISTS "ticket_actions_insert" ON ticket_actions;
 CREATE POLICY "ticket_actions_insert" ON ticket_actions
   FOR INSERT
   TO public
   WITH CHECK (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "ticket_actions_read" ON ticket_actions;
+DROP POLICY IF EXISTS "ticket_actions_read" ON ticket_actions;
+DROP POLICY IF EXISTS "ticket_actions_read" ON ticket_actions;
 CREATE POLICY "ticket_actions_read" ON ticket_actions
   FOR SELECT
   TO public

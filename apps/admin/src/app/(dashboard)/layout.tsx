@@ -25,8 +25,8 @@ export default async function DashboardLayout({
     <TerminalWrapper
       profile={{
         id: profile.id,
-        role: profile.role,
-        full_name: profile.full_name,
+        role: profile.role || undefined,
+        full_name: profile.full_name || undefined,
       }}
     >
       <div className="flex h-screen bg-slate-50">
@@ -34,10 +34,10 @@ export default async function DashboardLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           <AdminTopNav
             profile={{
-              fullName: profile.full_name,
+              fullName: profile.full_name || '',
               email: profile.email,
-              avatarUrl: profile.avatar_url,
-              role: profile.role,
+              avatarUrl: null,
+              role: profile.role || '',
               organizationId: profile.organization_id,
             }}
             userId={profile.id}

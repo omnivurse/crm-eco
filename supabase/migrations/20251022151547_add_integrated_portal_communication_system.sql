@@ -209,6 +209,8 @@ ALTER TABLE canned_responses ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for ticket_watchers
 
 -- Users can view watchers for tickets they have access to
+DROP POLICY IF EXISTS "ticket_watchers_view_accessible" ON ticket_watchers;
+DROP POLICY IF EXISTS "ticket_watchers_view_accessible" ON ticket_watchers;
 CREATE POLICY "ticket_watchers_view_accessible" ON ticket_watchers
   FOR SELECT
   USING (
@@ -230,6 +232,8 @@ CREATE POLICY "ticket_watchers_view_accessible" ON ticket_watchers
   );
 
 -- Users can watch tickets they have access to
+DROP POLICY IF EXISTS "ticket_watchers_insert" ON ticket_watchers;
+DROP POLICY IF EXISTS "ticket_watchers_insert" ON ticket_watchers;
 CREATE POLICY "ticket_watchers_insert" ON ticket_watchers
   FOR INSERT
   WITH CHECK (
@@ -251,6 +255,8 @@ CREATE POLICY "ticket_watchers_insert" ON ticket_watchers
   );
 
 -- Users can remove themselves from watching
+DROP POLICY IF EXISTS "ticket_watchers_delete" ON ticket_watchers;
+DROP POLICY IF EXISTS "ticket_watchers_delete" ON ticket_watchers;
 CREATE POLICY "ticket_watchers_delete" ON ticket_watchers
   FOR DELETE
   USING (user_id = auth.uid());
@@ -258,6 +264,8 @@ CREATE POLICY "ticket_watchers_delete" ON ticket_watchers
 -- RLS Policies for ticket_read_status
 
 -- Users can view their own read status
+DROP POLICY IF EXISTS "ticket_read_status_self" ON ticket_read_status;
+DROP POLICY IF EXISTS "ticket_read_status_self" ON ticket_read_status;
 CREATE POLICY "ticket_read_status_self" ON ticket_read_status
   FOR ALL
   USING (user_id = auth.uid())
@@ -266,6 +274,8 @@ CREATE POLICY "ticket_read_status_self" ON ticket_read_status
 -- RLS Policies for notification_preferences
 
 -- Users can manage their own preferences
+DROP POLICY IF EXISTS "notification_preferences_self" ON notification_preferences;
+DROP POLICY IF EXISTS "notification_preferences_self" ON notification_preferences;
 CREATE POLICY "notification_preferences_self" ON notification_preferences
   FOR ALL
   USING (user_id = auth.uid())
@@ -274,17 +284,23 @@ CREATE POLICY "notification_preferences_self" ON notification_preferences
 -- RLS Policies for ticket_notifications
 
 -- Users can view their own notifications
+DROP POLICY IF EXISTS "ticket_notifications_self_read" ON ticket_notifications;
+DROP POLICY IF EXISTS "ticket_notifications_self_read" ON ticket_notifications;
 CREATE POLICY "ticket_notifications_self_read" ON ticket_notifications
   FOR SELECT
   USING (user_id = auth.uid());
 
 -- Users can update their own notifications
+DROP POLICY IF EXISTS "ticket_notifications_self_update" ON ticket_notifications;
+DROP POLICY IF EXISTS "ticket_notifications_self_update" ON ticket_notifications;
 CREATE POLICY "ticket_notifications_self_update" ON ticket_notifications
   FOR UPDATE
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
 -- System can create notifications for any user
+DROP POLICY IF EXISTS "ticket_notifications_insert" ON ticket_notifications;
+DROP POLICY IF EXISTS "ticket_notifications_insert" ON ticket_notifications;
 CREATE POLICY "ticket_notifications_insert" ON ticket_notifications
   FOR INSERT
   WITH CHECK (true);
@@ -292,6 +308,8 @@ CREATE POLICY "ticket_notifications_insert" ON ticket_notifications
 -- RLS Policies for ticket_status_history
 
 -- Users can view status history for tickets they have access to
+DROP POLICY IF EXISTS "ticket_status_history_view" ON ticket_status_history;
+DROP POLICY IF EXISTS "ticket_status_history_view" ON ticket_status_history;
 CREATE POLICY "ticket_status_history_view" ON ticket_status_history
   FOR SELECT
   USING (
@@ -312,6 +330,8 @@ CREATE POLICY "ticket_status_history_view" ON ticket_status_history
   );
 
 -- System can insert status history
+DROP POLICY IF EXISTS "ticket_status_history_insert" ON ticket_status_history;
+DROP POLICY IF EXISTS "ticket_status_history_insert" ON ticket_status_history;
 CREATE POLICY "ticket_status_history_insert" ON ticket_status_history
   FOR INSERT
   WITH CHECK (true);
@@ -319,6 +339,8 @@ CREATE POLICY "ticket_status_history_insert" ON ticket_status_history
 -- RLS Policies for canned_responses
 
 -- Staff can view active canned responses
+DROP POLICY IF EXISTS "canned_responses_staff_read" ON canned_responses;
+DROP POLICY IF EXISTS "canned_responses_staff_read" ON canned_responses;
 CREATE POLICY "canned_responses_staff_read" ON canned_responses
   FOR SELECT
   USING (
@@ -331,6 +353,8 @@ CREATE POLICY "canned_responses_staff_read" ON canned_responses
   );
 
 -- Staff can manage canned responses
+DROP POLICY IF EXISTS "canned_responses_staff_all" ON canned_responses;
+DROP POLICY IF EXISTS "canned_responses_staff_all" ON canned_responses;
 CREATE POLICY "canned_responses_staff_all" ON canned_responses
   FOR ALL
   USING (

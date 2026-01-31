@@ -1,31 +1,59 @@
- -- Tickets
- create table if not exists tickets (
-   id uuid primary key default gen_random_uuid(),
-   requester_id uuid references profiles(id) on delete set null,
-   assignee_id uuid references profiles(id) on delete set null,
-+  origin text not null check (origin in ('member','advisor','staff')),
-   subject text not null,
-   description text,
--  status ticket_status default 'new',
-+  status ticket_status default 'open',
-   priority ticket_priority default 'medium',
-   category text,
-+  subcategory text,
-   sla_due_at timestamptz,
-+  submitter_email text,
-+  submitter_name text,
-+  submitter_phone text,
-+  member_id_optional text,
-+  advisor_id_optional text,
-+  platform text,
-+  browser text,
-+  app_version text,
-+  attachments text[],
-   created_at timestamptz default now(),
-   updated_at timestamptz default now()
- );
+-- Add additional columns to tickets table
+-- These columns enhance the original tickets schema with origin tracking and additional metadata
 
- create index if not exists idx_tickets_status on tickets(status);
-+create index if not exists idx_tickets_origin on tickets(origin);
- create index if not exists idx_tickets_assignee on tickets(assignee_id);
-+create index if not exists idx_tickets_created_at on tickets(created_at desc);
+DO $$
+BEGIN
+  -- Add origin column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'origin') THEN
+    ALTER TABLE tickets ADD COLUMN origin text NOT NULL DEFAULT 'member' CHECK (origin IN ('member','advisor','staff'));
+  END IF;
+  
+  -- Add subcategory column
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'subcategory') THEN
+    ALTER TABLE tickets ADD COLUMN subcategory text;
+  END IF;
+  
+  -- Add submitter fields for anonymous tickets
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'submitter_email') THEN
+    ALTER TABLE tickets ADD COLUMN submitter_email text;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'submitter_name') THEN
+    ALTER TABLE tickets ADD COLUMN submitter_name text;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'submitter_phone') THEN
+    ALTER TABLE tickets ADD COLUMN submitter_phone text;
+  END IF;
+  
+  -- Add optional reference IDs
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'member_id_optional') THEN
+    ALTER TABLE tickets ADD COLUMN member_id_optional text;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'advisor_id_optional') THEN
+    ALTER TABLE tickets ADD COLUMN advisor_id_optional text;
+  END IF;
+  
+  -- Add device/context info
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'platform') THEN
+    ALTER TABLE tickets ADD COLUMN platform text;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'browser') THEN
+    ALTER TABLE tickets ADD COLUMN browser text;
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'app_version') THEN
+    ALTER TABLE tickets ADD COLUMN app_version text;
+  END IF;
+  
+  -- Add attachments array
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'tickets' AND column_name = 'attachments') THEN
+    ALTER TABLE tickets ADD COLUMN attachments text[];
+  END IF;
+END $$;
+
+-- Create indexes for new columns
+CREATE INDEX IF NOT EXISTS idx_tickets_origin ON tickets(origin);
+CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at DESC);

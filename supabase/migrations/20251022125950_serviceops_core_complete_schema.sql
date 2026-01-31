@@ -563,6 +563,8 @@ ALTER TABLE ticket_events ENABLE ROW LEVEL SECURITY;
 -- =====================================================
 
 -- Teams policies
+DROP POLICY IF EXISTS "teams_staff_read" ON teams;
+DROP POLICY IF EXISTS "teams_staff_read" ON teams;
 CREATE POLICY "teams_staff_read" ON teams FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -572,6 +574,8 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "teams_admin_manage" ON teams;
+DROP POLICY IF EXISTS "teams_admin_manage" ON teams;
 CREATE POLICY "teams_admin_manage" ON teams FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -589,7 +593,11 @@ WITH CHECK (
 );
 
 -- Services policies (readable by all authenticated, manageable by admin)
+DROP POLICY IF EXISTS "services_auth_read" ON services;
+DROP POLICY IF EXISTS "services_auth_read" ON services;
 CREATE POLICY "services_auth_read" ON services FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "services_admin_manage" ON services;
+DROP POLICY IF EXISTS "services_admin_manage" ON services;
 CREATE POLICY "services_admin_manage" ON services FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -607,7 +615,11 @@ WITH CHECK (
 );
 
 -- SLA policies (readable by all authenticated, manageable by admin)
+DROP POLICY IF EXISTS "sla_policies_auth_read" ON sla_policies;
+DROP POLICY IF EXISTS "sla_policies_auth_read" ON sla_policies;
 CREATE POLICY "sla_policies_auth_read" ON sla_policies FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "sla_policies_admin_manage" ON sla_policies;
+DROP POLICY IF EXISTS "sla_policies_admin_manage" ON sla_policies;
 CREATE POLICY "sla_policies_admin_manage" ON sla_policies FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -625,6 +637,8 @@ WITH CHECK (
 );
 
 -- SLA timers (readable by staff+, system managed)
+DROP POLICY IF EXISTS "sla_timers_staff_read" ON sla_timers;
+DROP POLICY IF EXISTS "sla_timers_staff_read" ON sla_timers;
 CREATE POLICY "sla_timers_staff_read" ON sla_timers FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -635,7 +649,11 @@ USING (
 );
 
 -- Catalog categories (public read, admin write)
+DROP POLICY IF EXISTS "catalog_categories_auth_read" ON catalog_categories;
+DROP POLICY IF EXISTS "catalog_categories_auth_read" ON catalog_categories;
 CREATE POLICY "catalog_categories_auth_read" ON catalog_categories FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "catalog_categories_admin_manage" ON catalog_categories;
+DROP POLICY IF EXISTS "catalog_categories_admin_manage" ON catalog_categories;
 CREATE POLICY "catalog_categories_admin_manage" ON catalog_categories FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -653,7 +671,11 @@ WITH CHECK (
 );
 
 -- Catalog items (public read, admin write)
+DROP POLICY IF EXISTS "catalog_items_auth_read" ON catalog_items;
+DROP POLICY IF EXISTS "catalog_items_auth_read" ON catalog_items;
 CREATE POLICY "catalog_items_auth_read" ON catalog_items FOR SELECT TO authenticated USING (is_active = true);
+DROP POLICY IF EXISTS "catalog_items_admin_manage" ON catalog_items;
+DROP POLICY IF EXISTS "catalog_items_admin_manage" ON catalog_items;
 CREATE POLICY "catalog_items_admin_manage" ON catalog_items FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -671,6 +693,8 @@ WITH CHECK (
 );
 
 -- Requests (users see own, staff see all)
+DROP POLICY IF EXISTS "requests_own_read" ON requests;
+DROP POLICY IF EXISTS "requests_own_read" ON requests;
 CREATE POLICY "requests_own_read" ON requests FOR SELECT TO authenticated
 USING (
   requester_id = auth.uid()
@@ -682,9 +706,13 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "requests_own_insert" ON requests;
+DROP POLICY IF EXISTS "requests_own_insert" ON requests;
 CREATE POLICY "requests_own_insert" ON requests FOR INSERT TO authenticated
 WITH CHECK (requester_id = auth.uid());
 
+DROP POLICY IF EXISTS "requests_staff_manage" ON requests;
+DROP POLICY IF EXISTS "requests_staff_manage" ON requests;
 CREATE POLICY "requests_staff_manage" ON requests FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -702,6 +730,8 @@ WITH CHECK (
 );
 
 -- Request approvals (approvers can see and update theirs)
+DROP POLICY IF EXISTS "request_approvals_read" ON request_approvals;
+DROP POLICY IF EXISTS "request_approvals_read" ON request_approvals;
 CREATE POLICY "request_approvals_read" ON request_approvals FOR SELECT TO authenticated
 USING (
   approver_id = auth.uid()
@@ -712,11 +742,15 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "request_approvals_update" ON request_approvals;
+DROP POLICY IF EXISTS "request_approvals_update" ON request_approvals;
 CREATE POLICY "request_approvals_update" ON request_approvals FOR UPDATE TO authenticated
 USING (approver_id = auth.uid())
 WITH CHECK (approver_id = auth.uid());
 
 -- Problems (staff+ can read/manage)
+DROP POLICY IF EXISTS "problems_staff_access" ON problems;
+DROP POLICY IF EXISTS "problems_staff_access" ON problems;
 CREATE POLICY "problems_staff_access" ON problems FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -733,6 +767,8 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "problem_tickets_staff_access" ON problem_tickets;
+DROP POLICY IF EXISTS "problem_tickets_staff_access" ON problem_tickets;
 CREATE POLICY "problem_tickets_staff_access" ON problem_tickets FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -750,6 +786,8 @@ WITH CHECK (
 );
 
 -- Changes (staff+ can read/manage)
+DROP POLICY IF EXISTS "changes_staff_access" ON changes;
+DROP POLICY IF EXISTS "changes_staff_access" ON changes;
 CREATE POLICY "changes_staff_access" ON changes FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -766,6 +804,8 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "change_approvals_read" ON change_approvals;
+DROP POLICY IF EXISTS "change_approvals_read" ON change_approvals;
 CREATE POLICY "change_approvals_read" ON change_approvals FOR SELECT TO authenticated
 USING (
   approver_id = auth.uid()
@@ -776,11 +816,15 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "change_approvals_update" ON change_approvals;
+DROP POLICY IF EXISTS "change_approvals_update" ON change_approvals;
 CREATE POLICY "change_approvals_update" ON change_approvals FOR UPDATE TO authenticated
 USING (approver_id = auth.uid())
 WITH CHECK (approver_id = auth.uid());
 
 -- CMDB (staff+ can read, IT+ can manage)
+DROP POLICY IF EXISTS "cmdb_ci_staff_read" ON cmdb_ci;
+DROP POLICY IF EXISTS "cmdb_ci_staff_read" ON cmdb_ci;
 CREATE POLICY "cmdb_ci_staff_read" ON cmdb_ci FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -790,6 +834,8 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "cmdb_ci_it_manage" ON cmdb_ci;
+DROP POLICY IF EXISTS "cmdb_ci_it_manage" ON cmdb_ci;
 CREATE POLICY "cmdb_ci_it_manage" ON cmdb_ci FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -806,6 +852,8 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "ci_relationships_staff_read" ON ci_relationships;
+DROP POLICY IF EXISTS "ci_relationships_staff_read" ON ci_relationships;
 CREATE POLICY "ci_relationships_staff_read" ON ci_relationships FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -816,6 +864,8 @@ USING (
 );
 
 -- Assets (staff+ can read, IT+ can manage)
+DROP POLICY IF EXISTS "assets_staff_read" ON assets;
+DROP POLICY IF EXISTS "assets_staff_read" ON assets;
 CREATE POLICY "assets_staff_read" ON assets FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -825,6 +875,8 @@ USING (
   )
 );
 
+DROP POLICY IF EXISTS "assets_it_manage" ON assets;
+DROP POLICY IF EXISTS "assets_it_manage" ON assets;
 CREATE POLICY "assets_it_manage" ON assets FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -841,6 +893,8 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "asset_assignments_read" ON asset_assignments;
+DROP POLICY IF EXISTS "asset_assignments_read" ON asset_assignments;
 CREATE POLICY "asset_assignments_read" ON asset_assignments FOR SELECT TO authenticated
 USING (
   assigned_to = auth.uid()
@@ -852,6 +906,8 @@ USING (
 );
 
 -- Workflows (admin only)
+DROP POLICY IF EXISTS "workflows_admin_access" ON workflows;
+DROP POLICY IF EXISTS "workflows_admin_access" ON workflows;
 CREATE POLICY "workflows_admin_access" ON workflows FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -868,6 +924,8 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "workflow_steps_admin_access" ON workflow_steps;
+DROP POLICY IF EXISTS "workflow_steps_admin_access" ON workflow_steps;
 CREATE POLICY "workflow_steps_admin_access" ON workflow_steps FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -884,6 +942,8 @@ WITH CHECK (
   )
 );
 
+DROP POLICY IF EXISTS "workflow_executions_admin_read" ON workflow_executions;
+DROP POLICY IF EXISTS "workflow_executions_admin_read" ON workflow_executions;
 CREATE POLICY "workflow_executions_admin_read" ON workflow_executions FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -894,6 +954,8 @@ USING (
 );
 
 -- Metrics (staff+ can read, system writes)
+DROP POLICY IF EXISTS "metrics_staff_read" ON metrics_daily;
+DROP POLICY IF EXISTS "metrics_staff_read" ON metrics_daily;
 CREATE POLICY "metrics_staff_read" ON metrics_daily FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -904,6 +966,8 @@ USING (
 );
 
 -- Ticket events (follow ticket access)
+DROP POLICY IF EXISTS "ticket_events_access" ON ticket_events;
+DROP POLICY IF EXISTS "ticket_events_access" ON ticket_events;
 CREATE POLICY "ticket_events_access" ON ticket_events FOR SELECT TO authenticated
 USING (
   EXISTS(

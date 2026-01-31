@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('organization_id, role')
       .eq('user_id', user.id)
-      .single() as { data: Pick<Database['public']['Tables']['profiles']['Row'], 'organization_id' | 'role'> | null };
+      .single() as { data: { organization_id: string; role: string | null } | null };
 
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!profile || !profile.role || !['owner', 'admin', 'staff'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

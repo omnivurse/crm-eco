@@ -167,11 +167,15 @@ ALTER TABLE ticket_files ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy: Allow anonymous and authenticated ticket creation
 DROP POLICY IF EXISTS "tickets_public_insert" ON tickets;
+DROP POLICY IF EXISTS "tickets_public_insert" ON tickets;
+DROP POLICY IF EXISTS "tickets_public_insert" ON tickets;
 CREATE POLICY "tickets_public_insert" ON tickets
   FOR INSERT
   WITH CHECK (true);
 
 -- RLS Policy: Ticket files follow ticket access
+DROP POLICY IF EXISTS "ticket_files_read" ON ticket_files;
+DROP POLICY IF EXISTS "ticket_files_read" ON ticket_files;
 DROP POLICY IF EXISTS "ticket_files_read" ON ticket_files;
 CREATE POLICY "ticket_files_read" ON ticket_files
   FOR SELECT
@@ -194,6 +198,8 @@ CREATE POLICY "ticket_files_read" ON ticket_files
   );
 
 -- RLS Policy: Allow file upload for ticket creators and anonymous
+DROP POLICY IF EXISTS "ticket_files_insert" ON ticket_files;
+DROP POLICY IF EXISTS "ticket_files_insert" ON ticket_files;
 DROP POLICY IF EXISTS "ticket_files_insert" ON ticket_files;
 CREATE POLICY "ticket_files_insert" ON ticket_files
   FOR INSERT

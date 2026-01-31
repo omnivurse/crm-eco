@@ -159,6 +159,10 @@ ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for Champion Charlie tables
 
 -- Agent messages: Only accessible to agents/admins
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
 CREATE POLICY "agent_messages_agent_only" ON agent_messages
   FOR ALL USING (
     EXISTS (
@@ -168,9 +172,17 @@ CREATE POLICY "agent_messages_agent_only" ON agent_messages
   );
 
 -- KB docs: Read-only for all authenticated users, admin manage
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
 CREATE POLICY "kb_docs_read_all" ON kb_docs
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
 CREATE POLICY "kb_docs_admin_manage" ON kb_docs
   FOR ALL USING (
     EXISTS (
@@ -180,6 +192,10 @@ CREATE POLICY "kb_docs_admin_manage" ON kb_docs
   );
 
 -- Reminders: Users can manage their own
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
 CREATE POLICY "reminders_self_manage" ON reminders
   FOR ALL USING (
     user_id = auth.uid() OR
@@ -190,6 +206,10 @@ CREATE POLICY "reminders_self_manage" ON reminders
   );
 
 -- Audit log: Read-only for admins, system can insert
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
 CREATE POLICY "audit_log_admin_read" ON audit_log
   FOR SELECT USING (
     EXISTS (
@@ -198,5 +218,9 @@ CREATE POLICY "audit_log_admin_read" ON audit_log
     )
   );
 
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
 CREATE POLICY "audit_log_system_insert" ON audit_log
   FOR INSERT WITH CHECK (true);

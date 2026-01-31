@@ -100,11 +100,15 @@ CREATE TRIGGER apply_sla_on_ticket_creation
 
 -- Ensure sla_events allows system inserts (already has policy but verify it works)
 DROP POLICY IF EXISTS "sla_events_system_insert" ON sla_events;
+DROP POLICY IF EXISTS "sla_events_system_insert" ON sla_events;
+DROP POLICY IF EXISTS "sla_events_system_insert" ON sla_events;
 CREATE POLICY "sla_events_system_insert" ON sla_events
   FOR INSERT
   WITH CHECK (true);
 
 -- Allow system updates to tickets for SLA fields
+DROP POLICY IF EXISTS "tickets_system_update_sla" ON tickets;
+DROP POLICY IF EXISTS "tickets_system_update_sla" ON tickets;
 DROP POLICY IF EXISTS "tickets_system_update_sla" ON tickets;
 CREATE POLICY "tickets_system_update_sla" ON tickets
   FOR UPDATE
@@ -112,6 +116,8 @@ CREATE POLICY "tickets_system_update_sla" ON tickets
   WITH CHECK (true);
 
 -- Ensure anonymous ticket viewing for tickets they created (by email)
+DROP POLICY IF EXISTS "tickets_anonymous_view_own" ON tickets;
+DROP POLICY IF EXISTS "tickets_anonymous_view_own" ON tickets;
 DROP POLICY IF EXISTS "tickets_anonymous_view_own" ON tickets;
 CREATE POLICY "tickets_anonymous_view_own" ON tickets
   FOR SELECT
@@ -175,6 +181,8 @@ END $$;
 -- Allow reading profiles for system operations and anonymous contexts
 -- This helps prevent 400 errors when auth.uid() is null
 DROP POLICY IF EXISTS "profiles_public_read_for_tickets" ON profiles;
+DROP POLICY IF EXISTS "profiles_public_read_for_tickets" ON profiles;
+DROP POLICY IF EXISTS "profiles_public_read_for_tickets" ON profiles;
 CREATE POLICY "profiles_public_read_for_tickets" ON profiles
   FOR SELECT
   USING (
@@ -199,6 +207,8 @@ CREATE POLICY "profiles_public_read_for_tickets" ON profiles
 -- Update policies to be more permissive for system operations
 
 DROP POLICY IF EXISTS "audit_logs_read_policy" ON audit_logs;
+DROP POLICY IF EXISTS "audit_logs_read_policy" ON audit_logs;
+DROP POLICY IF EXISTS "audit_logs_read_policy" ON audit_logs;
 CREATE POLICY "audit_logs_read_policy" ON audit_logs
   FOR SELECT
   USING (
@@ -209,6 +219,8 @@ CREATE POLICY "audit_logs_read_policy" ON audit_logs
     )
   );
 
+DROP POLICY IF EXISTS "audit_logs_insert_policy" ON audit_logs;
+DROP POLICY IF EXISTS "audit_logs_insert_policy" ON audit_logs;
 DROP POLICY IF EXISTS "audit_logs_insert_policy" ON audit_logs;
 CREATE POLICY "audit_logs_insert_policy" ON audit_logs
   FOR INSERT

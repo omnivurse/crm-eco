@@ -2,7 +2,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { cache } from 'react';
 import type { Database } from '@crm-eco/lib/types';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type Profile = Database['public']['Tables']['profiles']['Row'] & { organization_id: string };
 
 export type UserRole = 'owner' | 'admin' | 'advisor' | 'staff';
 

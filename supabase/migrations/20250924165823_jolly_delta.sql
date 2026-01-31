@@ -27,8 +27,9 @@ BEGIN
   END IF;
 END $$;
 
--- Add RLS policies for ticket_actions if not exists
-CREATE POLICY IF NOT EXISTS "ticket_actions_agent_insert"
+-- Add RLS policies for ticket_actions (using DROP + CREATE pattern for idempotency)
+DROP POLICY IF EXISTS "ticket_actions_agent_insert" ON ticket_actions;
+CREATE POLICY "ticket_actions_agent_insert"
   ON ticket_actions
   FOR INSERT
   TO authenticated
@@ -40,7 +41,8 @@ CREATE POLICY IF NOT EXISTS "ticket_actions_agent_insert"
     )
   );
 
-CREATE POLICY IF NOT EXISTS "ticket_actions_agent_select"
+DROP POLICY IF EXISTS "ticket_actions_agent_select" ON ticket_actions;
+CREATE POLICY "ticket_actions_agent_select"
   ON ticket_actions
   FOR SELECT
   TO authenticated

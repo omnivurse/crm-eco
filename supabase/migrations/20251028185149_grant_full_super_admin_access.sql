@@ -34,6 +34,8 @@
 
 -- Profiles: Super admins can read ALL profiles
 DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
 CREATE POLICY "profiles_self_read" ON profiles
   FOR SELECT 
   USING (
@@ -46,6 +48,8 @@ CREATE POLICY "profiles_self_read" ON profiles
   );
 
 -- Profiles: Allow admins/super_admins to update other profiles
+DROP POLICY IF EXISTS "profiles_admin_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_admin_update" ON profiles;
 DROP POLICY IF EXISTS "profiles_admin_update" ON profiles;
 CREATE POLICY "profiles_admin_update" ON profiles
   FOR UPDATE
@@ -66,6 +70,8 @@ CREATE POLICY "profiles_admin_update" ON profiles
 
 -- Tickets: Super admins see ALL tickets
 DROP POLICY IF EXISTS "tickets_requester_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_requester_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_requester_read" ON tickets;
 CREATE POLICY "tickets_requester_read" ON tickets
   FOR SELECT 
   USING (
@@ -78,6 +84,8 @@ CREATE POLICY "tickets_requester_read" ON tickets
     )
   );
 
+DROP POLICY IF EXISTS "tickets_agent_all" ON tickets;
+DROP POLICY IF EXISTS "tickets_agent_all" ON tickets;
 DROP POLICY IF EXISTS "tickets_agent_all" ON tickets;
 CREATE POLICY "tickets_agent_all" ON tickets
   FOR ALL
@@ -98,6 +106,8 @@ CREATE POLICY "tickets_agent_all" ON tickets
 
 -- Ticket Comments: Super admins access all comments
 DROP POLICY IF EXISTS "comments_ticket_access" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_ticket_access" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_ticket_access" ON ticket_comments;
 CREATE POLICY "comments_ticket_access" ON ticket_comments
   FOR SELECT 
   USING (
@@ -116,6 +126,8 @@ CREATE POLICY "comments_ticket_access" ON ticket_comments
     )
   );
 
+DROP POLICY IF EXISTS "comments_insert" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_insert" ON ticket_comments;
 DROP POLICY IF EXISTS "comments_insert" ON ticket_comments;
 CREATE POLICY "comments_insert" ON ticket_comments
   FOR INSERT 
@@ -138,6 +150,8 @@ CREATE POLICY "comments_insert" ON ticket_comments
 
 -- Ticket Attachments: Super admins access all attachments
 DROP POLICY IF EXISTS "attachments_ticket_access" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_ticket_access" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_ticket_access" ON ticket_attachments;
 CREATE POLICY "attachments_ticket_access" ON ticket_attachments
   FOR SELECT 
   USING (
@@ -156,6 +170,8 @@ CREATE POLICY "attachments_ticket_access" ON ticket_attachments
     )
   );
 
+DROP POLICY IF EXISTS "attachments_insert" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_insert" ON ticket_attachments;
 DROP POLICY IF EXISTS "attachments_insert" ON ticket_attachments;
 CREATE POLICY "attachments_insert" ON ticket_attachments
   FOR INSERT 
@@ -176,6 +192,8 @@ CREATE POLICY "attachments_insert" ON ticket_attachments
   );
 
 -- KB Articles: Super admins have full access
+DROP POLICY IF EXISTS "kb_author_all" ON kb_articles;
+DROP POLICY IF EXISTS "kb_author_all" ON kb_articles;
 DROP POLICY IF EXISTS "kb_author_all" ON kb_articles;
 CREATE POLICY "kb_author_all" ON kb_articles
   FOR ALL

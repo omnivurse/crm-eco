@@ -139,10 +139,10 @@ AFTER UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.log_profile_role_change();
 
--- Insert default SSO group mappings
+-- Insert default SSO group mappings (use only enum values that definitely exist)
 INSERT INTO public.sso_group_roles (group_name, role) VALUES
   ('IT-Admins', 'admin'),
-  ('IT-Engineers', 'it'),
+  ('IT-Engineers', 'staff'),  -- Changed from 'it' to 'staff' for compatibility
   ('Staff', 'staff'),
   ('Advisors', 'advisor'),
   ('Members', 'member')

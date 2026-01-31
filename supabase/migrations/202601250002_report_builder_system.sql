@@ -472,16 +472,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE;
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read organizations" ON public.organizations;
   DROP POLICY IF EXISTS "Admins can manage organizations" ON public.organizations;
-  CREATE POLICY "Staff can read organizations" ON public.organizations FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Admins can manage organizations" ON public.organizations FOR ALL USING (public.is_admin());
+CREATE POLICY "Staff can read organizations" ON public.organizations FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Admins can manage organizations" ON public.organizations FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read agent levels" ON public.agent_levels;
   DROP POLICY IF EXISTS "Admins can manage agent levels" ON public.agent_levels;
-  CREATE POLICY "Staff can read agent levels" ON public.agent_levels FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Admins can manage agent levels" ON public.agent_levels FOR ALL USING (public.is_admin());
+CREATE POLICY "Staff can read agent levels" ON public.agent_levels FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Admins can manage agent levels" ON public.agent_levels FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
@@ -489,20 +489,20 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read advisors" ON public.advisors;
   DROP POLICY IF EXISTS "Advisors can read own record" ON public.advisors;
   DROP POLICY IF EXISTS "Admins can manage advisors" ON public.advisors;
-  CREATE POLICY "Staff can read advisors" ON public.advisors FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read advisors" ON public.advisors FOR SELECT USING (public.is_staff_or_admin());
   -- Only create profile_id-based policy if column exists
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'advisors' AND column_name = 'profile_id') THEN
-    CREATE POLICY "Advisors can read own record" ON public.advisors FOR SELECT USING (profile_id = auth.uid());
+CREATE POLICY "Advisors can read own record" ON public.advisors FOR SELECT USING (profile_id = auth.uid());
   END IF;
-  CREATE POLICY "Admins can manage advisors" ON public.advisors FOR ALL USING (public.is_admin());
+CREATE POLICY "Admins can manage advisors" ON public.advisors FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
 END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read products" ON public.products;
   DROP POLICY IF EXISTS "Admins can manage products" ON public.products;
-  CREATE POLICY "Staff can read products" ON public.products FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Admins can manage products" ON public.products FOR ALL USING (public.is_admin());
+CREATE POLICY "Staff can read products" ON public.products FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Admins can manage products" ON public.products FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
@@ -511,26 +511,26 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Members can read own record" ON public.members;
   DROP POLICY IF EXISTS "Advisors can read their members" ON public.members;
   DROP POLICY IF EXISTS "Admins can manage members" ON public.members;
-  CREATE POLICY "Staff can read members" ON public.members FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read members" ON public.members FOR SELECT USING (public.is_staff_or_admin());
   -- Only create profile_id-based policy if column exists
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'members' AND column_name = 'profile_id') THEN
-    CREATE POLICY "Members can read own record" ON public.members FOR SELECT USING (profile_id = auth.uid());
+CREATE POLICY "Members can read own record" ON public.members FOR SELECT USING (profile_id = auth.uid());
   END IF;
   -- Only create advisor_id-based policy if column exists
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'members' AND column_name = 'advisor_id') THEN
-    CREATE POLICY "Advisors can read their members" ON public.members FOR SELECT USING (
+CREATE POLICY "Advisors can read their members" ON public.members FOR SELECT USING (
       EXISTS (SELECT 1 FROM public.advisors a WHERE a.profile_id = auth.uid() AND public.members.advisor_id = a.id)
     );
   END IF;
-  CREATE POLICY "Admins can manage members" ON public.members FOR ALL USING (public.is_admin());
+CREATE POLICY "Admins can manage members" ON public.members FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
 END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read enrollments" ON public.enrollments;
   DROP POLICY IF EXISTS "Admins can manage enrollments" ON public.enrollments;
-  CREATE POLICY "Staff can read enrollments" ON public.enrollments FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Admins can manage enrollments" ON public.enrollments FOR ALL USING (public.is_admin());
+CREATE POLICY "Staff can read enrollments" ON public.enrollments FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Admins can manage enrollments" ON public.enrollments FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
@@ -538,14 +538,14 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read commissions" ON public.commissions;
   DROP POLICY IF EXISTS "Advisors can read own commissions" ON public.commissions;
   DROP POLICY IF EXISTS "Admins can manage commissions" ON public.commissions;
-  CREATE POLICY "Staff can read commissions" ON public.commissions FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read commissions" ON public.commissions FOR SELECT USING (public.is_staff_or_admin());
   -- Only create advisor-based policy if advisor_id column exists
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'advisor_id') THEN
-    CREATE POLICY "Advisors can read own commissions" ON public.commissions FOR SELECT USING (
+CREATE POLICY "Advisors can read own commissions" ON public.commissions FOR SELECT USING (
       EXISTS (SELECT 1 FROM public.advisors a WHERE a.profile_id = auth.uid() AND public.commissions.advisor_id = a.id)
     );
   END IF;
-  CREATE POLICY "Admins can manage commissions" ON public.commissions FOR ALL USING (public.is_admin());
+CREATE POLICY "Admins can manage commissions" ON public.commissions FOR ALL USING (public.is_admin());
 EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
 END $$;
 
@@ -554,34 +554,34 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can create reports" ON public.crm_reports;
   DROP POLICY IF EXISTS "Users can update own reports" ON public.crm_reports;
   DROP POLICY IF EXISTS "Users can delete own reports" ON public.crm_reports;
-  CREATE POLICY "Staff can read reports" ON public.crm_reports FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Staff can create reports" ON public.crm_reports FOR INSERT WITH CHECK (public.is_staff_or_admin());
-  CREATE POLICY "Users can update own reports" ON public.crm_reports FOR UPDATE USING (created_by = auth.uid() OR public.is_admin());
-  CREATE POLICY "Users can delete own reports" ON public.crm_reports FOR DELETE USING (created_by = auth.uid() OR public.is_admin());
+CREATE POLICY "Staff can read reports" ON public.crm_reports FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can create reports" ON public.crm_reports FOR INSERT WITH CHECK (public.is_staff_or_admin());
+CREATE POLICY "Users can update own reports" ON public.crm_reports FOR UPDATE USING (created_by = auth.uid() OR public.is_admin());
+CREATE POLICY "Users can delete own reports" ON public.crm_reports FOR DELETE USING (created_by = auth.uid() OR public.is_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read scheduled reports" ON public.crm_scheduled_reports;
   DROP POLICY IF EXISTS "Staff can manage scheduled reports" ON public.crm_scheduled_reports;
-  CREATE POLICY "Staff can read scheduled reports" ON public.crm_scheduled_reports FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Staff can manage scheduled reports" ON public.crm_scheduled_reports FOR ALL USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read scheduled reports" ON public.crm_scheduled_reports FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can manage scheduled reports" ON public.crm_scheduled_reports FOR ALL USING (public.is_staff_or_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read segments" ON public.report_segments;
   DROP POLICY IF EXISTS "Staff can manage segments" ON public.report_segments;
-  CREATE POLICY "Staff can read segments" ON public.report_segments FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Staff can manage segments" ON public.report_segments FOR ALL USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read segments" ON public.report_segments FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can manage segments" ON public.report_segments FOR ALL USING (public.is_staff_or_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
 DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read alerts" ON public.report_alerts;
   DROP POLICY IF EXISTS "Staff can manage alerts" ON public.report_alerts;
-  CREATE POLICY "Staff can read alerts" ON public.report_alerts FOR SELECT USING (public.is_staff_or_admin());
-  CREATE POLICY "Staff can manage alerts" ON public.report_alerts FOR ALL USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read alerts" ON public.report_alerts FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can manage alerts" ON public.report_alerts FOR ALL USING (public.is_staff_or_admin());
 EXCEPTION WHEN undefined_table THEN NULL;
 END $$;
 
@@ -589,14 +589,14 @@ DO $$ BEGIN
   DROP POLICY IF EXISTS "Staff can read milestone progress" ON public.advisor_milestone_progress;
   DROP POLICY IF EXISTS "Advisors can read own progress" ON public.advisor_milestone_progress;
   DROP POLICY IF EXISTS "Staff can manage milestone progress" ON public.advisor_milestone_progress;
-  CREATE POLICY "Staff can read milestone progress" ON public.advisor_milestone_progress FOR SELECT USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can read milestone progress" ON public.advisor_milestone_progress FOR SELECT USING (public.is_staff_or_admin());
   -- Only create advisor-based policy if advisor_id column exists
   IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'advisor_milestone_progress' AND column_name = 'advisor_id') THEN
-    CREATE POLICY "Advisors can read own progress" ON public.advisor_milestone_progress FOR SELECT USING (
+CREATE POLICY "Advisors can read own progress" ON public.advisor_milestone_progress FOR SELECT USING (
       EXISTS (SELECT 1 FROM public.advisors a WHERE a.profile_id = auth.uid() AND public.advisor_milestone_progress.advisor_id = a.id)
     );
   END IF;
-  CREATE POLICY "Staff can manage milestone progress" ON public.advisor_milestone_progress FOR ALL USING (public.is_staff_or_admin());
+CREATE POLICY "Staff can manage milestone progress" ON public.advisor_milestone_progress FOR ALL USING (public.is_staff_or_admin());
 EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
 END $$;
 

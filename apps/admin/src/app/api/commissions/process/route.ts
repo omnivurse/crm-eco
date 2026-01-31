@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('id, organization_id, role')
       .eq('user_id', user.id)
-      .single() as { data: Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'organization_id' | 'role'> | null };
+      .single() as { data: { id: string; organization_id: string; role: string | null } | null };
 
-    if (!profile || !['owner', 'admin'].includes(profile.role)) {
+    if (!profile || !profile.role || !['owner', 'admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       p_entity_type: 'commission_transaction',
       p_entity_id: enrollmentId,
       p_action: 'process_enrollment',
-      p_metadata: { 
+      p_metadata: {
         transactionCount: transactions.length,
         enrollmentId,
       },

@@ -56,6 +56,7 @@ END $$;
 ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
 
 -- Only admins can manage OAuth states for their org
+DROP POLICY IF EXISTS "Admins can manage oauth states" ON oauth_states;
 CREATE POLICY "Admins can manage oauth states" ON oauth_states
   FOR ALL
   USING (
@@ -67,6 +68,7 @@ CREATE POLICY "Admins can manage oauth states" ON oauth_states
   );
 
 -- Service role has full access for OAuth callback processing
+DROP POLICY IF EXISTS "Service role full access to oauth states" ON oauth_states;
 CREATE POLICY "Service role full access to oauth states" ON oauth_states
   FOR ALL
   USING (auth.role() = 'service_role');

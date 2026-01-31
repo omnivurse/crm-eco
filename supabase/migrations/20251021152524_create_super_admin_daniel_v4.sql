@@ -24,7 +24,11 @@
 */
 
 -- Ensure pgcrypto extension is enabled for password hashing
-CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- In Supabase, extensions are installed in the 'extensions' schema
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
+-- Add extensions schema to search path so we can use crypt and gen_salt
+SET search_path TO extensions, public;
 
 -- Create the super admin user
 DO $$

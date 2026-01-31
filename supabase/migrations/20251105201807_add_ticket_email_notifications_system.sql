@@ -83,6 +83,8 @@ ALTER TABLE ticket_email_notifications ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policy: Staff can read all notifications
 DROP POLICY IF EXISTS "ticket_email_notifications_staff_read" ON ticket_email_notifications;
+DROP POLICY IF EXISTS "ticket_email_notifications_staff_read" ON ticket_email_notifications;
+DROP POLICY IF EXISTS "ticket_email_notifications_staff_read" ON ticket_email_notifications;
 CREATE POLICY "ticket_email_notifications_staff_read" ON ticket_email_notifications
   FOR SELECT
   TO authenticated
@@ -95,6 +97,8 @@ CREATE POLICY "ticket_email_notifications_staff_read" ON ticket_email_notificati
   );
 
 -- RLS Policy: Users can read notifications for their tickets
+DROP POLICY IF EXISTS "ticket_email_notifications_requester_read" ON ticket_email_notifications;
+DROP POLICY IF EXISTS "ticket_email_notifications_requester_read" ON ticket_email_notifications;
 DROP POLICY IF EXISTS "ticket_email_notifications_requester_read" ON ticket_email_notifications;
 CREATE POLICY "ticket_email_notifications_requester_read" ON ticket_email_notifications
   FOR SELECT
@@ -109,11 +113,15 @@ CREATE POLICY "ticket_email_notifications_requester_read" ON ticket_email_notifi
 
 -- RLS Policy: System can insert notifications (triggers)
 DROP POLICY IF EXISTS "ticket_email_notifications_system_insert" ON ticket_email_notifications;
+DROP POLICY IF EXISTS "ticket_email_notifications_system_insert" ON ticket_email_notifications;
+DROP POLICY IF EXISTS "ticket_email_notifications_system_insert" ON ticket_email_notifications;
 CREATE POLICY "ticket_email_notifications_system_insert" ON ticket_email_notifications
   FOR INSERT
   WITH CHECK (true);
 
 -- RLS Policy: Staff can update notification status
+DROP POLICY IF EXISTS "ticket_email_notifications_staff_update" ON ticket_email_notifications;
+DROP POLICY IF EXISTS "ticket_email_notifications_staff_update" ON ticket_email_notifications;
 DROP POLICY IF EXISTS "ticket_email_notifications_staff_update" ON ticket_email_notifications;
 CREATE POLICY "ticket_email_notifications_staff_update" ON ticket_email_notifications
   FOR UPDATE

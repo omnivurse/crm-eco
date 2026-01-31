@@ -17,6 +17,37 @@
 */
 
 -- =====================================================
+-- KNOWLEDGE ARTICLES TABLE (required for versioning)
+-- =====================================================
+
+-- Create knowledge_articles table if it doesn't exist
+-- This is a superset of kb_articles with additional fields for versioning
+CREATE TABLE IF NOT EXISTS knowledge_articles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL,
+  content_md text NOT NULL DEFAULT '',
+  category_id uuid,
+  author_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  is_published boolean DEFAULT false,
+  tags text[] DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_knowledge_articles_author ON knowledge_articles(author_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_articles_published ON knowledge_articles(is_published);
+
+ALTER TABLE knowledge_articles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "knowledge_articles_public_read" ON knowledge_articles;
+CREATE POLICY "knowledge_articles_public_read" ON knowledge_articles FOR SELECT USING (is_published = true);
+
+DROP POLICY IF EXISTS "knowledge_articles_staff_all" ON knowledge_articles;
+CREATE POLICY "knowledge_articles_staff_all" ON knowledge_articles FOR ALL USING (
+  EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('staff', 'agent', 'admin', 'super_admin'))
+);
+
+-- =====================================================
 -- KNOWLEDGE VERSIONING SYSTEM
 -- =====================================================
 
@@ -36,6 +67,8 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_versions_article ON knowledge_versions(
 ALTER TABLE knowledge_versions ENABLE ROW LEVEL SECURITY;
 
 -- Staff+ can view version history
+DROP POLICY IF EXISTS "knowledge_versions_staff_read" ON knowledge_versions;
+DROP POLICY IF EXISTS "knowledge_versions_staff_read" ON knowledge_versions;
 CREATE POLICY "knowledge_versions_staff_read" ON knowledge_versions FOR SELECT TO authenticated
 USING (
   EXISTS(
@@ -46,6 +79,8 @@ USING (
 );
 
 -- System can insert versions
+DROP POLICY IF EXISTS "knowledge_versions_system_write" ON knowledge_versions;
+DROP POLICY IF EXISTS "knowledge_versions_system_write" ON knowledge_versions;
 CREATE POLICY "knowledge_versions_system_write" ON knowledge_versions FOR INSERT TO authenticated
 WITH CHECK (true);
 

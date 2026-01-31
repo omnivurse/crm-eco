@@ -99,6 +99,8 @@ ALTER TABLE chat_session_notes ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for chat_quick_responses
 
 -- All agents can read active quick responses
+DROP POLICY IF EXISTS "quick_responses_agent_read" ON chat_quick_responses;
+DROP POLICY IF EXISTS "quick_responses_agent_read" ON chat_quick_responses;
 CREATE POLICY "quick_responses_agent_read" ON chat_quick_responses
   FOR SELECT
   USING (
@@ -111,6 +113,8 @@ CREATE POLICY "quick_responses_agent_read" ON chat_quick_responses
   );
 
 -- Agents can create quick responses
+DROP POLICY IF EXISTS "quick_responses_agent_insert" ON chat_quick_responses;
+DROP POLICY IF EXISTS "quick_responses_agent_insert" ON chat_quick_responses;
 CREATE POLICY "quick_responses_agent_insert" ON chat_quick_responses
   FOR INSERT
   WITH CHECK (
@@ -123,6 +127,8 @@ CREATE POLICY "quick_responses_agent_insert" ON chat_quick_responses
   );
 
 -- Agents can update their own quick responses
+DROP POLICY IF EXISTS "quick_responses_creator_update" ON chat_quick_responses;
+DROP POLICY IF EXISTS "quick_responses_creator_update" ON chat_quick_responses;
 CREATE POLICY "quick_responses_creator_update" ON chat_quick_responses
   FOR UPDATE
   USING (
@@ -135,6 +141,8 @@ CREATE POLICY "quick_responses_creator_update" ON chat_quick_responses
   );
 
 -- Agents can delete their own quick responses
+DROP POLICY IF EXISTS "quick_responses_creator_delete" ON chat_quick_responses;
+DROP POLICY IF EXISTS "quick_responses_creator_delete" ON chat_quick_responses;
 CREATE POLICY "quick_responses_creator_delete" ON chat_quick_responses
   FOR DELETE
   USING (
@@ -149,12 +157,16 @@ CREATE POLICY "quick_responses_creator_delete" ON chat_quick_responses
 -- RLS Policies for agent_chat_preferences
 
 -- Agents can read and manage their own preferences
+DROP POLICY IF EXISTS "chat_prefs_agent_all" ON agent_chat_preferences;
+DROP POLICY IF EXISTS "chat_prefs_agent_all" ON agent_chat_preferences;
 CREATE POLICY "chat_prefs_agent_all" ON agent_chat_preferences
   FOR ALL
   USING (agent_id = auth.uid())
   WITH CHECK (agent_id = auth.uid());
 
 -- Admins can read all preferences
+DROP POLICY IF EXISTS "chat_prefs_admin_read" ON agent_chat_preferences;
+DROP POLICY IF EXISTS "chat_prefs_admin_read" ON agent_chat_preferences;
 CREATE POLICY "chat_prefs_admin_read" ON agent_chat_preferences
   FOR SELECT
   USING (
@@ -168,6 +180,8 @@ CREATE POLICY "chat_prefs_admin_read" ON agent_chat_preferences
 -- RLS Policies for chat_session_notes
 
 -- Agents can read notes for sessions they're involved in
+DROP POLICY IF EXISTS "session_notes_agent_read" ON chat_session_notes;
+DROP POLICY IF EXISTS "session_notes_agent_read" ON chat_session_notes;
 CREATE POLICY "session_notes_agent_read" ON chat_session_notes
   FOR SELECT
   USING (
@@ -184,6 +198,8 @@ CREATE POLICY "session_notes_agent_read" ON chat_session_notes
   );
 
 -- Agents can create notes for their assigned sessions
+DROP POLICY IF EXISTS "session_notes_agent_insert" ON chat_session_notes;
+DROP POLICY IF EXISTS "session_notes_agent_insert" ON chat_session_notes;
 CREATE POLICY "session_notes_agent_insert" ON chat_session_notes
   FOR INSERT
   WITH CHECK (

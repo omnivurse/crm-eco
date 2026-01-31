@@ -328,6 +328,7 @@ ALTER TABLE payable_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payable_line_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payable_payments ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "payables_org_access" ON payables;
 CREATE POLICY "payables_org_access" ON payables
   FOR ALL USING (
     organization_id IN (
@@ -335,6 +336,7 @@ CREATE POLICY "payables_org_access" ON payables
     )
   );
 
+DROP POLICY IF EXISTS "payable_categories_org_access" ON payable_categories;
 CREATE POLICY "payable_categories_org_access" ON payable_categories
   FOR ALL USING (
     organization_id IN (
@@ -342,6 +344,7 @@ CREATE POLICY "payable_categories_org_access" ON payable_categories
     )
   );
 
+DROP POLICY IF EXISTS "payable_line_items_access" ON payable_line_items;
 CREATE POLICY "payable_line_items_access" ON payable_line_items
   FOR ALL USING (
     payable_id IN (
@@ -351,6 +354,7 @@ CREATE POLICY "payable_line_items_access" ON payable_line_items
     )
   );
 
+DROP POLICY IF EXISTS "payable_payments_access" ON payable_payments;
 CREATE POLICY "payable_payments_access" ON payable_payments
   FOR ALL USING (
     payable_id IN (
@@ -365,6 +369,7 @@ ALTER TABLE invoice_groups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_group_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoice_generation_jobs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "invoice_groups_org_access" ON invoice_groups;
 CREATE POLICY "invoice_groups_org_access" ON invoice_groups
   FOR ALL USING (
     organization_id IN (
@@ -372,6 +377,7 @@ CREATE POLICY "invoice_groups_org_access" ON invoice_groups
     )
   );
 
+DROP POLICY IF EXISTS "invoice_group_members_access" ON invoice_group_members;
 CREATE POLICY "invoice_group_members_access" ON invoice_group_members
   FOR ALL USING (
     invoice_group_id IN (
@@ -381,6 +387,7 @@ CREATE POLICY "invoice_group_members_access" ON invoice_group_members
     )
   );
 
+DROP POLICY IF EXISTS "invoice_generation_jobs_org_access" ON invoice_generation_jobs;
 CREATE POLICY "invoice_generation_jobs_org_access" ON invoice_generation_jobs
   FOR ALL USING (
     organization_id IN (
@@ -392,6 +399,7 @@ CREATE POLICY "invoice_generation_jobs_org_access" ON invoice_generation_jobs
 ALTER TABLE commission_bonus_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE commission_copy_history ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "commission_bonus_types_org_access" ON commission_bonus_types;
 CREATE POLICY "commission_bonus_types_org_access" ON commission_bonus_types
   FOR ALL USING (
     organization_id IN (
@@ -399,6 +407,7 @@ CREATE POLICY "commission_bonus_types_org_access" ON commission_bonus_types
     )
   );
 
+DROP POLICY IF EXISTS "commission_copy_history_org_access" ON commission_copy_history;
 CREATE POLICY "commission_copy_history_org_access" ON commission_copy_history
   FOR ALL USING (
     organization_id IN (
@@ -409,6 +418,7 @@ CREATE POLICY "commission_copy_history_org_access" ON commission_copy_history
 -- Financial audit log RLS
 ALTER TABLE financial_audit_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "financial_audit_log_org_access" ON financial_audit_log;
 CREATE POLICY "financial_audit_log_org_access" ON financial_audit_log
   FOR ALL USING (
     organization_id IN (

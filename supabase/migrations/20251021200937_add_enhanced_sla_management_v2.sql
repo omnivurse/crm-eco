@@ -108,40 +108,60 @@ ALTER TABLE sla_escalations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sla_events ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
+DROP POLICY IF EXISTS "sla_policies_staff_read" ON sla_policies;
+DROP POLICY IF EXISTS "sla_policies_staff_read" ON sla_policies;
 CREATE POLICY "sla_policies_staff_read" ON sla_policies FOR SELECT USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('staff', 'it', 'admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "sla_policies_admin_all" ON sla_policies;
+DROP POLICY IF EXISTS "sla_policies_admin_all" ON sla_policies;
 CREATE POLICY "sla_policies_admin_all" ON sla_policies FOR ALL USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "business_hours_staff_read" ON business_hours;
+DROP POLICY IF EXISTS "business_hours_staff_read" ON business_hours;
 CREATE POLICY "business_hours_staff_read" ON business_hours FOR SELECT USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('staff', 'it', 'admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "business_hours_admin_all" ON business_hours;
+DROP POLICY IF EXISTS "business_hours_admin_all" ON business_hours;
 CREATE POLICY "business_hours_admin_all" ON business_hours FOR ALL USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "holidays_public_read" ON holidays;
+DROP POLICY IF EXISTS "holidays_public_read" ON holidays;
 CREATE POLICY "holidays_public_read" ON holidays FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "holidays_admin_all" ON holidays;
+DROP POLICY IF EXISTS "holidays_admin_all" ON holidays;
 CREATE POLICY "holidays_admin_all" ON holidays FOR ALL USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "sla_escalations_staff_read" ON sla_escalations;
+DROP POLICY IF EXISTS "sla_escalations_staff_read" ON sla_escalations;
 CREATE POLICY "sla_escalations_staff_read" ON sla_escalations FOR SELECT USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('staff', 'it', 'admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "sla_escalations_admin_all" ON sla_escalations;
+DROP POLICY IF EXISTS "sla_escalations_admin_all" ON sla_escalations;
 CREATE POLICY "sla_escalations_admin_all" ON sla_escalations FOR ALL USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "sla_events_staff_read" ON sla_events;
+DROP POLICY IF EXISTS "sla_events_staff_read" ON sla_events;
 CREATE POLICY "sla_events_staff_read" ON sla_events FOR SELECT USING (
   EXISTS(SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role IN ('staff', 'it', 'admin', 'super_admin'))
 );
 
+DROP POLICY IF EXISTS "sla_events_system_insert" ON sla_events;
+DROP POLICY IF EXISTS "sla_events_system_insert" ON sla_events;
 CREATE POLICY "sla_events_system_insert" ON sla_events FOR INSERT WITH CHECK (true);
 
 -- Insert default business hours
@@ -232,19 +252,20 @@ CREATE TRIGGER apply_sla_on_ticket_creation
   FOR EACH ROW
   EXECUTE FUNCTION apply_sla_to_ticket();
 
--- Create view for SLA compliance dashboard
+-- Create view for SLA compliance dashboard (uses only sla_events, no ticket_metrics dependency)
 CREATE OR REPLACE VIEW sla_compliance_dashboard AS
 SELECT 
   sp.name as policy_name,
-  COUNT(t.id) as total_tickets,
-  COUNT(CASE WHEN tm.sla_breached THEN 1 END) as breached_count,
-  COUNT(CASE WHEN NOT tm.sla_breached AND t.status IN ('resolved', 'closed') THEN 1 END) as met_count,
-  (COUNT(CASE WHEN NOT tm.sla_breached AND t.status IN ('resolved', 'closed') THEN 1 END)::float / 
-   NULLIF(COUNT(CASE WHEN t.status IN ('resolved', 'closed') THEN 1 END), 0) * 100)::numeric(5,2) as compliance_rate
+  COUNT(DISTINCT t.id) as total_tickets,
+  COUNT(DISTINCT CASE WHEN se_breach.id IS NOT NULL THEN t.id END) as breached_count,
+  COUNT(DISTINCT CASE WHEN se_met.id IS NOT NULL THEN t.id END) as met_count,
+  (COUNT(DISTINCT CASE WHEN se_met.id IS NOT NULL THEN t.id END)::float / 
+   NULLIF(COUNT(DISTINCT CASE WHEN t.status IN ('resolved', 'closed') THEN t.id END), 0) * 100)::numeric(5,2) as compliance_rate
 FROM sla_policies sp
 LEFT JOIN sla_events se ON se.sla_policy_id = sp.id AND se.event_type = 'started'
 LEFT JOIN tickets t ON t.id = se.ticket_id
-LEFT JOIN ticket_metrics tm ON tm.ticket_id = t.id
+LEFT JOIN sla_events se_breach ON se_breach.ticket_id = t.id AND se_breach.event_type = 'breached'
+LEFT JOIN sla_events se_met ON se_met.ticket_id = t.id AND se_met.event_type = 'met'
 WHERE sp.is_active = true
 GROUP BY sp.id, sp.name
 ORDER BY sp.priority;

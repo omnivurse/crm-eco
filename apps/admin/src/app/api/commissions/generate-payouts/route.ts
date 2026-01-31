@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('id, organization_id, role')
       .eq('user_id', user.id)
-      .single() as { data: Pick<Database['public']['Tables']['profiles']['Row'], 'id' | 'organization_id' | 'role'> | null };
+      .single() as { data: { id: string; organization_id: string; role: string | null } | null };
 
-    if (!profile || !['owner', 'admin'].includes(profile.role)) {
+    if (!profile || !profile.role || !['owner', 'admin'].includes(profile.role)) {
       return NextResponse.json(
         { error: 'Only admins and owners can generate payouts' },
         { status: 403 }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     // Default to last month if not specified
     const now = new Date();
-    const start = periodStart 
+    const start = periodStart
       ? new Date(periodStart)
       : new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const end = periodEnd
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       p_entity_type: 'commission_payout',
       p_entity_id: 'batch',
       p_action: 'generate_payouts',
-      p_metadata: { 
+      p_metadata: {
         payoutCount: createdCount,
         periodStart: start.toISOString(),
         periodEnd: end.toISOString(),
