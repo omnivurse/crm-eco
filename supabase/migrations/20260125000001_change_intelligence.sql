@@ -171,11 +171,12 @@ USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
 -- View: Change Feed with Actor Info
+-- Note: avatar_url may not exist in all profiles schemas
 CREATE OR REPLACE VIEW change_feed_view AS
 SELECT
   ce.*,
   p.full_name as actor_full_name,
-  p.avatar_url as actor_avatar_url,
+  NULL::text as actor_avatar_url,  -- Placeholder for compatibility
   rp.full_name as reviewer_full_name
 FROM change_events ce
 LEFT JOIN profiles p ON ce.actor_id = p.id

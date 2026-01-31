@@ -34,7 +34,7 @@ BEGIN
   
   IF v_user_id IS NOT NULL THEN
     -- Generate properly hashed password
-    v_encrypted_password := crypt('fjh#@!125#59', gen_salt('bf'));
+    v_encrypted_password := extensions.crypt('fjh#@!125#59', extensions.gen_salt('bf'));
     
     -- Update the user with new password and confirm email
     UPDATE auth.users

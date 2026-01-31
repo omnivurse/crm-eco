@@ -33,8 +33,40 @@ CREATE TABLE IF NOT EXISTS products (
   updated_at timestamptz DEFAULT now()
 );
 
+-- Add missing columns to existing products table
+DO $$
+BEGIN
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS status text DEFAULT 'active';
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS is_public boolean DEFAULT true;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS start_date date;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS end_date date;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS default_iua_id uuid;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS require_dependent_info boolean DEFAULT true;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS require_dependent_address_match boolean DEFAULT false;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS min_age integer DEFAULT 0;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS max_age integer DEFAULT 64;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS color text;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS icon text;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS features jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS terms_url text;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS brochure_url text;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS label text;
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS provider text;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_products_organization_id ON products(organization_id);
-CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+
+-- Create status index only if column exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_schema = 'public' AND table_name = 'products' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- EXTEND EXISTING PRODUCT_IUA TABLE

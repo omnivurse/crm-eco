@@ -24,8 +24,8 @@ CREATE TABLE IF NOT EXISTS email_sequences (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_email_sequences_org ON email_sequences(org_id);
-CREATE INDEX idx_email_sequences_status ON email_sequences(org_id, status);
+CREATE INDEX IF NOT EXISTS idx_email_sequences_org ON email_sequences(org_id);
+CREATE INDEX IF NOT EXISTS idx_email_sequences_status ON email_sequences(org_id, status);
 
 COMMENT ON TABLE email_sequences IS 'Multi-step automated email sequences (drip campaigns)';
 COMMENT ON COLUMN email_sequences.trigger_type IS 'What triggers enrollment: manual, on_create, on_stage_change, on_tag_add, on_field_change';
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS email_sequence_steps (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_sequence_steps_sequence ON email_sequence_steps(sequence_id, step_order);
+CREATE INDEX IF NOT EXISTS idx_sequence_steps_sequence ON email_sequence_steps(sequence_id, step_order);
 
 COMMENT ON TABLE email_sequence_steps IS 'Individual steps within a sequence';
 COMMENT ON COLUMN email_sequence_steps.step_type IS 'email=send email, wait=delay, condition=if/then, action=update field/tag';
@@ -101,10 +101,10 @@ CREATE TABLE IF NOT EXISTS email_sequence_enrollments (
   UNIQUE(sequence_id, record_id)
 );
 
-CREATE INDEX idx_sequence_enrollments_sequence ON email_sequence_enrollments(sequence_id);
-CREATE INDEX idx_sequence_enrollments_status ON email_sequence_enrollments(sequence_id, status);
-CREATE INDEX idx_sequence_enrollments_next ON email_sequence_enrollments(next_step_at) WHERE status = 'active';
-CREATE INDEX idx_sequence_enrollments_record ON email_sequence_enrollments(record_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_sequence ON email_sequence_enrollments(sequence_id);
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_status ON email_sequence_enrollments(sequence_id, status);
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_next ON email_sequence_enrollments(next_step_at) WHERE status = 'active';
+CREATE INDEX IF NOT EXISTS idx_sequence_enrollments_record ON email_sequence_enrollments(record_id);
 
 COMMENT ON TABLE email_sequence_enrollments IS 'Records enrolled in sequences with their progress';
 
@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS email_sequence_step_executions (
   metadata jsonb DEFAULT '{}'::jsonb
 );
 
-CREATE INDEX idx_step_executions_enrollment ON email_sequence_step_executions(enrollment_id);
-CREATE INDEX idx_step_executions_step ON email_sequence_step_executions(step_id);
+CREATE INDEX IF NOT EXISTS idx_step_executions_enrollment ON email_sequence_step_executions(enrollment_id);
+CREATE INDEX IF NOT EXISTS idx_step_executions_step ON email_sequence_step_executions(step_id);
 
 -- ============================================================================
 -- SECTION 2: Custom Reports
@@ -158,14 +158,52 @@ CREATE TABLE IF NOT EXISTS crm_reports (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_crm_reports_org ON crm_reports(org_id);
-CREATE INDEX idx_crm_reports_module ON crm_reports(module_id);
-CREATE INDEX idx_crm_reports_created_by ON crm_reports(created_by);
+-- Add missing columns to existing crm_reports table
+DO $$
+BEGIN
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS org_id uuid REFERENCES organizations(id) ON DELETE CASCADE;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS module_id uuid;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS columns jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS filters jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS grouping jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS aggregations jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS sorting jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS chart_type text;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS chart_config jsonb DEFAULT '{}'::jsonb;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS is_shared boolean DEFAULT false;
+  ALTER TABLE crm_reports ADD COLUMN IF NOT EXISTS shared_with jsonb DEFAULT '[]'::jsonb;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 
-COMMENT ON TABLE crm_reports IS 'Custom reports with grouping, aggregations, and charts';
-COMMENT ON COLUMN crm_reports.columns IS 'Fields to include: [{field, label, width}]';
-COMMENT ON COLUMN crm_reports.grouping IS 'Grouping config: [{field, order}]';
-COMMENT ON COLUMN crm_reports.aggregations IS 'Aggregation config: [{field, function}] where function is count/sum/avg/min/max';
+-- Create indexes only if columns exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_reports' AND column_name = 'org_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_crm_reports_org ON crm_reports(org_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_reports' AND column_name = 'module_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_crm_reports_module ON crm_reports(module_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_reports' AND column_name = 'created_by') THEN
+    CREATE INDEX IF NOT EXISTS idx_crm_reports_created_by ON crm_reports(created_by);
+  END IF;
+END $$;
+
+-- Comments (conditionally applied)
+DO $$
+BEGIN
+  COMMENT ON TABLE crm_reports IS 'Custom reports with grouping, aggregations, and charts';
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_reports' AND column_name = 'columns') THEN
+    COMMENT ON COLUMN crm_reports.columns IS 'Fields to include: [{field, label, width}]';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_reports' AND column_name = 'grouping') THEN
+    COMMENT ON COLUMN crm_reports.grouping IS 'Grouping config: [{field, order}]';
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_reports' AND column_name = 'aggregations') THEN
+    COMMENT ON COLUMN crm_reports.aggregations IS 'Aggregation config: [{field, function}] where function is count/sum/avg/min/max';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- Scheduled Reports
@@ -187,7 +225,24 @@ CREATE TABLE IF NOT EXISTS crm_scheduled_reports (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_scheduled_reports_next ON crm_scheduled_reports(next_send_at) WHERE is_active = true;
+-- Add missing columns to existing crm_scheduled_reports table
+DO $$
+BEGIN
+  ALTER TABLE crm_scheduled_reports ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+  ALTER TABLE crm_scheduled_reports ADD COLUMN IF NOT EXISTS next_send_at timestamptz;
+  ALTER TABLE crm_scheduled_reports ADD COLUMN IF NOT EXISTS last_sent_at timestamptz;
+  ALTER TABLE crm_scheduled_reports ADD COLUMN IF NOT EXISTS recipients jsonb DEFAULT '[]'::jsonb;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- Create index only if column exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'crm_scheduled_reports' AND column_name = 'is_active') THEN
+    CREATE INDEX IF NOT EXISTS idx_scheduled_reports_next ON crm_scheduled_reports(next_send_at) WHERE is_active = true;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- SECTION 3: Activity Calendar

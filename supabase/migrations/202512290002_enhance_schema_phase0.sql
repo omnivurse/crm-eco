@@ -1,5 +1,161 @@
 -- CRM-ECO Phase 0 Schema Enhancement
 -- Adds additional fields specified in the Phase 0 requirements
+-- Also creates CRM tables if they don't exist (to handle Portal vs CRM schema issues)
+
+-- ============================================================================
+-- ENSURE ORGANIZATIONS TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS organizations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  settings jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug);
+
+-- ============================================================================
+-- ENSURE ADVISORS TABLE EXISTS (needed before we can alter it)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS advisors (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  parent_advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL,
+  first_name text NOT NULL DEFAULT '',
+  last_name text NOT NULL DEFAULT '',
+  email text NOT NULL DEFAULT '',
+  phone text,
+  license_number text,
+  license_states text[] DEFAULT '{}',
+  status text NOT NULL DEFAULT 'pending',
+  commission_tier text,
+  custom_fields jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- ENSURE MEMBERS TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS members (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL,
+  first_name text NOT NULL DEFAULT '',
+  last_name text NOT NULL DEFAULT '',
+  email text NOT NULL DEFAULT '',
+  phone text,
+  date_of_birth date,
+  address_line1 text,
+  address_line2 text,
+  city text,
+  state text,
+  zip_code text,
+  status text NOT NULL DEFAULT 'pending',
+  plan_name text,
+  plan_type text,
+  effective_date date,
+  termination_date date,
+  monthly_share numeric(10,2),
+  custom_fields jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- ENSURE LEADS TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS leads (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL,
+  first_name text NOT NULL DEFAULT '',
+  last_name text NOT NULL DEFAULT '',
+  email text NOT NULL DEFAULT '',
+  phone text,
+  source text,
+  status text NOT NULL DEFAULT 'new',
+  notes text,
+  custom_fields jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- ENSURE NEEDS TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS needs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  member_id uuid REFERENCES members(id) ON DELETE CASCADE,
+  advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL,
+  need_type text NOT NULL DEFAULT '',
+  description text NOT NULL DEFAULT '',
+  total_amount numeric(12,2) DEFAULT 0,
+  iua_amount numeric(12,2) DEFAULT 0,
+  eligible_amount numeric(12,2) DEFAULT 0,
+  reimbursed_amount numeric(12,2) DEFAULT 0,
+  status text NOT NULL DEFAULT 'open',
+  urgency_light text NOT NULL DEFAULT 'green',
+  sla_target_date date,
+  custom_fields jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- ENSURE NEED_EVENTS TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS need_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  need_id uuid REFERENCES needs(id) ON DELETE CASCADE,
+  event_type text NOT NULL DEFAULT '',
+  description text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_by_profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- ENSURE ACTIVITIES TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS activities (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  entity_type text NOT NULL DEFAULT '',
+  entity_id uuid,
+  action text NOT NULL DEFAULT '',
+  description text,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  created_at timestamptz DEFAULT now()
+);
+
+-- ============================================================================
+-- ENSURE CUSTOM_FIELD_DEFINITIONS TABLE EXISTS
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS custom_field_definitions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  entity_type text NOT NULL,
+  field_name text NOT NULL,
+  field_type text NOT NULL,
+  field_label text NOT NULL,
+  options jsonb DEFAULT '[]'::jsonb,
+  is_required boolean DEFAULT false,
+  display_order integer DEFAULT 0,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now(),
+  UNIQUE(organization_id, entity_type, field_name)
+);
+
+-- ============================================================================
+-- PROFILES - Add organization_id for CRM multi-tenancy support
+-- ============================================================================
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES organizations(id);
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS user_id uuid REFERENCES auth.users(id);
 
 -- ============================================================================
 -- PROFILES - Add missing fields
@@ -200,6 +356,31 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ============================================================================
+-- HELPER FUNCTIONS (needed for RLS policies)
+-- ============================================================================
+
+-- Helper function to get current user's organization_id
+CREATE OR REPLACE FUNCTION get_user_organization_id()
+RETURNS uuid AS $$
+  SELECT organization_id FROM profiles WHERE user_id = auth.uid() LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Helper function to get current user's role
+CREATE OR REPLACE FUNCTION get_user_role()
+RETURNS text AS $$
+  SELECT role FROM profiles WHERE user_id = auth.uid() LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- Helper function to check if user is advisor
+CREATE OR REPLACE FUNCTION get_user_advisor_id()
+RETURNS uuid AS $$
+  SELECT a.id FROM advisors a
+  JOIN profiles p ON p.id = a.profile_id
+  WHERE p.user_id = auth.uid()
+  LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
 
 -- ============================================================================
 -- NEED_EVENTS RLS - Add organization scoping

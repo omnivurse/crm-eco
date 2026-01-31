@@ -38,22 +38,26 @@ END $$;
 -- Change events (used by CrmTopBar change ticker)
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime' AND tablename = 'change_events'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE change_events;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'change_events') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname = 'supabase_realtime' AND tablename = 'change_events'
+    ) THEN
+      ALTER PUBLICATION supabase_realtime ADD TABLE change_events;
+    END IF;
   END IF;
 END $$;
 
--- Admin notifications (used by AdminNotificationListener)
+-- Admin notifications (used by AdminNotificationListener) - only if table exists
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_publication_tables
-    WHERE pubname = 'supabase_realtime' AND tablename = 'admin_notifications'
-  ) THEN
-    ALTER PUBLICATION supabase_realtime ADD TABLE admin_notifications;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'admin_notifications') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication_tables
+      WHERE pubname = 'supabase_realtime' AND tablename = 'admin_notifications'
+    ) THEN
+      ALTER PUBLICATION supabase_realtime ADD TABLE admin_notifications;
+    END IF;
   END IF;
 END $$;
 
@@ -64,10 +68,20 @@ END $$;
 -- ============================================================================
 
 -- Change events needs full replica identity for org_id filtering
-ALTER TABLE change_events REPLICA IDENTITY FULL;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'change_events') THEN
+    ALTER TABLE change_events REPLICA IDENTITY FULL;
+  END IF;
+END $$;
 
--- Admin notifications needs full replica identity for user_id filtering
-ALTER TABLE admin_notifications REPLICA IDENTITY FULL;
+-- Admin notifications needs full replica identity for user_id filtering - only if table exists
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'admin_notifications') THEN
+    ALTER TABLE admin_notifications REPLICA IDENTITY FULL;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- NOTE: After applying this migration, restart the Realtime service

@@ -20,6 +20,23 @@
 */
 
 -- ============================================================================
+-- PART 0: ENSURE REQUIRED COLUMNS EXIST
+-- ============================================================================
+
+-- Add notify_on_comment column to ticket_watchers if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+    AND table_name = 'ticket_watchers'
+    AND column_name = 'notify_on_comment'
+  ) THEN
+    ALTER TABLE public.ticket_watchers ADD COLUMN notify_on_comment boolean DEFAULT true;
+  END IF;
+END $$;
+
+-- ============================================================================
 -- PART 1: CREATE HELPER FUNCTION FOR TICKET ACCESS CHECK
 -- ============================================================================
 
@@ -84,6 +101,9 @@ DROP POLICY IF EXISTS "ticket_watchers_insert" ON public.ticket_watchers;
 DROP POLICY IF EXISTS "Staff can add watchers to tickets" ON public.ticket_watchers;
 DROP POLICY IF EXISTS "ticket_watchers_delete" ON public.ticket_watchers;
 DROP POLICY IF EXISTS "Users can remove themselves as watchers" ON public.ticket_watchers;
+DROP POLICY IF EXISTS "ticket_watchers_select_policy" ON public.ticket_watchers;
+DROP POLICY IF EXISTS "ticket_watchers_insert_policy" ON public.ticket_watchers;
+DROP POLICY IF EXISTS "ticket_watchers_delete_policy" ON public.ticket_watchers;
 
 -- Create simplified SELECT policy using helper function
 CREATE POLICY "ticket_watchers_select_policy"

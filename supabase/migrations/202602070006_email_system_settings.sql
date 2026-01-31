@@ -25,8 +25,35 @@ CREATE TABLE IF NOT EXISTS email_templates (
   UNIQUE(organization_id, slug)
 );
 
-CREATE INDEX IF NOT EXISTS idx_email_templates_organization_id ON email_templates(organization_id);
-CREATE INDEX IF NOT EXISTS idx_email_templates_is_active ON email_templates(is_active);
+-- Add missing columns to existing email_templates table
+DO $$
+BEGIN
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS slug text;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS description text;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS body_html text;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS body_text text;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS available_variables jsonb DEFAULT '[]'::jsonb;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS is_system boolean DEFAULT false;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS version integer DEFAULT 1;
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES profiles(id);
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+  ALTER TABLE email_templates ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- Create indexes only if columns exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'email_templates' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_email_templates_organization_id ON email_templates(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'email_templates' AND column_name = 'is_active') THEN
+    CREATE INDEX IF NOT EXISTS idx_email_templates_is_active ON email_templates(is_active);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- EXTEND SENT EMAILS TABLE (if it exists)
@@ -302,9 +329,38 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_notification_preferences_organization_id ON notification_preferences(organization_id);
-CREATE INDEX IF NOT EXISTS idx_notification_preferences_profile_id ON notification_preferences(profile_id);
-CREATE INDEX IF NOT EXISTS idx_notification_preferences_member_id ON notification_preferences(member_id);
+-- Add missing columns to existing notification_preferences table
+DO $$
+BEGIN
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS profile_id uuid REFERENCES profiles(id) ON DELETE CASCADE;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS member_id uuid REFERENCES members(id) ON DELETE CASCADE;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS notification_type text;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS email_enabled boolean DEFAULT true;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS sms_enabled boolean DEFAULT false;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS push_enabled boolean DEFAULT false;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS in_app_enabled boolean DEFAULT true;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS frequency text DEFAULT 'immediate';
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS unsubscribed boolean DEFAULT false;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS unsubscribed_at timestamptz;
+  ALTER TABLE notification_preferences ADD COLUMN IF NOT EXISTS unsubscribe_reason text;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- Create indexes only if columns exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_preferences' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_notification_preferences_organization_id ON notification_preferences(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_preferences' AND column_name = 'profile_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_notification_preferences_profile_id ON notification_preferences(profile_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_preferences' AND column_name = 'member_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_notification_preferences_member_id ON notification_preferences(member_id);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- NOTIFICATION QUEUE (Pending notifications)

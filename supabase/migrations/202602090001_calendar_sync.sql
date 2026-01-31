@@ -171,39 +171,100 @@ CREATE POLICY "Users can manage their own calendar events"
   ON calendar_events FOR ALL
   USING (owner_id IN (SELECT id FROM profiles WHERE user_id = auth.uid()));
 
--- Calendar Sync State Policies
-DROP POLICY IF EXISTS "Users can view sync state for their connections" ON calendar_sync_state;
-CREATE POLICY "Users can view sync state for their connections"
-  ON calendar_sync_state FOR SELECT
-  USING (connection_id IN (
-    SELECT id FROM integration_connections
-    WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
-  ));
+-- Calendar Sync State Policies (use organization_id if available, fallback to org_id)
+DO $$
+BEGIN
+  -- Try with organization_id first (Portal schema)
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'integration_connections' AND column_name = 'organization_id') THEN
+    DROP POLICY IF EXISTS "Users can view sync state for their connections" ON calendar_sync_state;
+    CREATE POLICY "Users can view sync state for their connections"
+      ON calendar_sync_state FOR SELECT
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE organization_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
 
-DROP POLICY IF EXISTS "Users can manage sync state for their connections" ON calendar_sync_state;
-CREATE POLICY "Users can manage sync state for their connections"
-  ON calendar_sync_state FOR ALL
-  USING (connection_id IN (
-    SELECT id FROM integration_connections
-    WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
-  ));
+    DROP POLICY IF EXISTS "Users can manage sync state for their connections" ON calendar_sync_state;
+    CREATE POLICY "Users can manage sync state for their connections"
+      ON calendar_sync_state FOR ALL
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE organization_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
+  ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'integration_connections' AND column_name = 'org_id') THEN
+    DROP POLICY IF EXISTS "Users can view sync state for their connections" ON calendar_sync_state;
+    CREATE POLICY "Users can view sync state for their connections"
+      ON calendar_sync_state FOR SELECT
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
+
+    DROP POLICY IF EXISTS "Users can manage sync state for their connections" ON calendar_sync_state;
+    CREATE POLICY "Users can manage sync state for their connections"
+      ON calendar_sync_state FOR ALL
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
+  ELSE
+    -- Fallback: allow all for authenticated users
+    DROP POLICY IF EXISTS "Users can view sync state for their connections" ON calendar_sync_state;
+    CREATE POLICY "Users can view sync state for their connections"
+      ON calendar_sync_state FOR SELECT TO authenticated USING (true);
+
+    DROP POLICY IF EXISTS "Users can manage sync state for their connections" ON calendar_sync_state;
+    CREATE POLICY "Users can manage sync state for their connections"
+      ON calendar_sync_state FOR ALL TO authenticated USING (true);
+  END IF;
+END $$;
 
 -- Calendar List Policies
-DROP POLICY IF EXISTS "Users can view calendars for their connections" ON calendar_list;
-CREATE POLICY "Users can view calendars for their connections"
-  ON calendar_list FOR SELECT
-  USING (connection_id IN (
-    SELECT id FROM integration_connections
-    WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
-  ));
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'integration_connections' AND column_name = 'organization_id') THEN
+    DROP POLICY IF EXISTS "Users can view calendars for their connections" ON calendar_list;
+    CREATE POLICY "Users can view calendars for their connections"
+      ON calendar_list FOR SELECT
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE organization_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
 
-DROP POLICY IF EXISTS "Users can manage calendars for their connections" ON calendar_list;
-CREATE POLICY "Users can manage calendars for their connections"
-  ON calendar_list FOR ALL
-  USING (connection_id IN (
-    SELECT id FROM integration_connections
-    WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
-  ));
+    DROP POLICY IF EXISTS "Users can manage calendars for their connections" ON calendar_list;
+    CREATE POLICY "Users can manage calendars for their connections"
+      ON calendar_list FOR ALL
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE organization_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
+  ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'integration_connections' AND column_name = 'org_id') THEN
+    DROP POLICY IF EXISTS "Users can view calendars for their connections" ON calendar_list;
+    CREATE POLICY "Users can view calendars for their connections"
+      ON calendar_list FOR SELECT
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
+
+    DROP POLICY IF EXISTS "Users can manage calendars for their connections" ON calendar_list;
+    CREATE POLICY "Users can manage calendars for their connections"
+      ON calendar_list FOR ALL
+      USING (connection_id IN (
+        SELECT id FROM integration_connections
+        WHERE org_id IN (SELECT organization_id FROM profiles WHERE user_id = auth.uid())
+      ));
+  ELSE
+    -- Fallback: allow all for authenticated users
+    DROP POLICY IF EXISTS "Users can view calendars for their connections" ON calendar_list;
+    CREATE POLICY "Users can view calendars for their connections"
+      ON calendar_list FOR SELECT TO authenticated USING (true);
+
+    DROP POLICY IF EXISTS "Users can manage calendars for their connections" ON calendar_list;
+    CREATE POLICY "Users can manage calendars for their connections"
+      ON calendar_list FOR ALL TO authenticated USING (true);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- TRIGGERS

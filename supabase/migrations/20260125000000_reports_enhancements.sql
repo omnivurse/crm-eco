@@ -4,6 +4,23 @@
 -- Description: Add report tracking columns and run history table
 -- ============================================================================
 
+-- Create crm_reports table if it doesn't exist
+CREATE TABLE IF NOT EXISTS public.crm_reports (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  org_id uuid REFERENCES organizations(id) ON DELETE CASCADE,  -- Alias for organization_id
+  name text NOT NULL DEFAULT '',
+  description text,
+  report_type text DEFAULT 'custom',
+  query_config jsonb DEFAULT '{}'::jsonb,
+  visualization_config jsonb DEFAULT '{}'::jsonb,
+  is_public boolean DEFAULT false,
+  created_by uuid REFERENCES profiles(id) ON DELETE SET NULL,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_crm_reports_org ON crm_reports(organization_id);
+
 -- Add columns to crm_reports for enhanced tracking
 ALTER TABLE public.crm_reports
 ADD COLUMN IF NOT EXISTS run_count integer DEFAULT 0,

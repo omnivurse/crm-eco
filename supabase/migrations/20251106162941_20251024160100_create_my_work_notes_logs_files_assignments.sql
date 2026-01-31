@@ -188,6 +188,36 @@ ALTER TABLE public.assignment_attachments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for notes
 
+-- Drop existing policies first to avoid conflicts
+DROP POLICY IF EXISTS "Users can read own notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can read shared notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can create notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can update own notes" ON public.notes;
+DROP POLICY IF EXISTS "Users can delete own notes" ON public.notes;
+
+DROP POLICY IF EXISTS "Users can read own daily logs" ON public.daily_logs;
+DROP POLICY IF EXISTS "Users can create daily logs" ON public.daily_logs;
+DROP POLICY IF EXISTS "Users can update own daily logs" ON public.daily_logs;
+DROP POLICY IF EXISTS "Users can delete own daily logs" ON public.daily_logs;
+
+DROP POLICY IF EXISTS "Users can read own files" ON public.files;
+DROP POLICY IF EXISTS "Users can read team files" ON public.files;
+DROP POLICY IF EXISTS "Users can read org files" ON public.files;
+DROP POLICY IF EXISTS "Users can create files" ON public.files;
+DROP POLICY IF EXISTS "Users can update own files" ON public.files;
+DROP POLICY IF EXISTS "Users can delete own files" ON public.files;
+
+DROP POLICY IF EXISTS "Users can read assigned tasks" ON public.assignments;
+DROP POLICY IF EXISTS "Assigners can read own assignments" ON public.assignments;
+DROP POLICY IF EXISTS "Admins can create assignments" ON public.assignments;
+DROP POLICY IF EXISTS "Users can update assigned tasks" ON public.assignments;
+DROP POLICY IF EXISTS "Assigners can update own assignments" ON public.assignments;
+DROP POLICY IF EXISTS "Assigners can delete assignments" ON public.assignments;
+
+DROP POLICY IF EXISTS "Users can read assignment attachments" ON public.assignment_attachments;
+DROP POLICY IF EXISTS "Assigners can add attachments" ON public.assignment_attachments;
+DROP POLICY IF EXISTS "Assigners can remove attachments" ON public.assignment_attachments;
+
 -- Owners can read their own notes
 CREATE POLICY "Users can read own notes"
   ON public.notes
