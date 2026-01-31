@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase-client';
 import {
   Card,
   CardContent,
@@ -91,61 +92,65 @@ function MessageItem({ message }: { message: CrmMessage }) {
 }
 
 export function CommunicationsTab({ recordId, orgId, email, phone }: CommunicationsTabProps) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  const [messages, setMessages] = useState<CrmMessage[]>([]);
-  const [templates, setTemplates] = useState<CrmMessageTemplate[]>([]);
-  const [preferences, setPreferences] = useState<CrmContactPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [sending, setSending] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
-  
+
   // Compose form state
   const [channel, setChannel] = useState<'email' | 'sms'>('email');
   const [templateId, setTemplateId] = useState<string>('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
 
-  // Load data
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      
-      // Load messages
-      const { data: messagesData } = await supabase
+  // Load messages with React Query (cached, deduplicated)
+  const messagesQuery = useQuery({
+    queryKey: ['communications', 'messages', recordId],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('crm_messages')
         .select('*')
         .eq('record_id', recordId)
         .order('created_at', { ascending: false });
-      
-      setMessages((messagesData || []) as CrmMessage[]);
-      
-      // Load templates
-      const { data: templatesData } = await supabase
+      if (error) throw error;
+      return (data || []) as CrmMessage[];
+    },
+    staleTime: 30_000, // 30 seconds
+  });
+
+  // Load templates with React Query (longer cache - templates rarely change)
+  const templatesQuery = useQuery({
+    queryKey: ['communications', 'templates', orgId],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('crm_message_templates')
         .select('*')
         .eq('org_id', orgId)
         .eq('is_active', true)
         .order('name');
-      
-      setTemplates((templatesData || []) as CrmMessageTemplate[]);
-      
-      // Load preferences
-      const { data: prefsData } = await supabase
+      if (error) throw error;
+      return (data || []) as CrmMessageTemplate[];
+    },
+    staleTime: 5 * 60_000, // 5 minutes - templates rarely change
+  });
+
+  // Load preferences with React Query
+  const preferencesQuery = useQuery({
+    queryKey: ['communications', 'preferences', recordId],
+    queryFn: async () => {
+      const { data } = await supabase
         .from('crm_contact_preferences')
         .select('*')
         .eq('record_id', recordId)
         .single();
-      
-      setPreferences(prefsData as CrmContactPreferences | null);
-      
-      setLoading(false);
-    }
-    
-    loadData();
-  }, [recordId, orgId, supabase]);
+      return data as CrmContactPreferences | null;
+    },
+    staleTime: 60_000, // 1 minute
+  });
+
+  const messages = messagesQuery.data || [];
+  const templates = templatesQuery.data || [];
+  const preferences = preferencesQuery.data;
+  const loading = messagesQuery.isLoading || templatesQuery.isLoading || preferencesQuery.isLoading;
 
   // Handle template selection
   const handleTemplateChange = (id: string) => {
@@ -161,7 +166,7 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
   // Handle send
   const handleSend = async () => {
     if (!body.trim()) return;
-    
+
     setSending(true);
     try {
       const response = await fetch('/api/comms/send', {
@@ -175,19 +180,13 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
           body,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (result.success) {
-        // Reload messages
-        const { data: messagesData } = await supabase
-          .from('crm_messages')
-          .select('*')
-          .eq('record_id', recordId)
-          .order('created_at', { ascending: false });
-        
-        setMessages((messagesData || []) as CrmMessage[]);
-        
+        // Invalidate cache to trigger refetch (React Query handles this efficiently)
+        queryClient.invalidateQueries({ queryKey: ['communications', 'messages', recordId] });
+
         // Reset form
         setSubject('');
         setBody('');

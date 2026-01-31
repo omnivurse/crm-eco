@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { queryKeys } from '@/lib/query-keys';
 
 interface RecordData {
@@ -33,12 +33,6 @@ export interface EditRecordData {
   record: RecordData;
   fields: Field[];
 }
-
-// Create a singleton Supabase client for queries
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // Fetch record data with module info
 async function fetchRecordWithModule(recordId: string): Promise<RecordData | null> {

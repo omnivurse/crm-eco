@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { Button, Badge, cn } from '@crm-eco/ui';
 import { ChevronRight, Check, Lock, ArrowRight } from 'lucide-react';
 import { TransitionModal } from './TransitionModal';
@@ -21,10 +21,6 @@ interface StageInfo extends BlueprintStage {
 }
 
 export function StageBar({ recordId, moduleId, currentStage, onStageChange }: StageBarProps) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const [loading, setLoading] = useState(true);
   const [hasBlueprint, setHasBlueprint] = useState(false);
   const [stages, setStages] = useState<StageInfo[]>([]);
