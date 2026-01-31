@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueries } from '@tanstack/react-query';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { queryKeys } from '@/lib/query-keys';
 import type { CrmRecord, CrmField } from '@/lib/crm/types';
 
@@ -17,12 +17,6 @@ export interface RecordDrawerData {
   fields: CrmField[];
   timeline: TimelineEvent[];
 }
-
-// Create a singleton Supabase client for queries
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 // Fetch record data
 async function fetchRecord(recordId: string): Promise<CrmRecord | null> {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
   Card,
   CardContent,
@@ -57,10 +57,6 @@ interface ActionWithActor extends CrmApprovalAction {
 }
 
 export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
   const [loading, setLoading] = useState(true);
   const [approval, setApproval] = useState<ApprovalWithDetails | null>(null);
   const [history, setHistory] = useState<ActionWithActor[]>([]);
