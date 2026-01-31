@@ -11,7 +11,7 @@ import {
 } from '@crm-eco/ui/components/popover';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Braces, Eye, Sparkles } from 'lucide-react';
-import { EmailEditor } from '@/components/email/EmailEditor';
+import { LazyEmailEditor } from '@/components/email/LazyEmailEditor';
 import {
   MERGE_FIELDS,
   MERGE_FIELD_CATEGORIES,
@@ -188,7 +188,7 @@ export function CampaignComposer({
       {/* Email Body with TipTap Editor */}
       <div className="space-y-2">
         <Label className="text-sm font-medium">Email Body</Label>
-        <EmailEditor
+        <LazyEmailEditor
           content={bodyHtml}
           onChange={onBodyChange}
           placeholder="Start typing your email content..."

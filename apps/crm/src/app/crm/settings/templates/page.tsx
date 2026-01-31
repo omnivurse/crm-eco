@@ -47,7 +47,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { EmailEditor } from '@/components/email';
+import { LazyEmailEditor } from '@/components/email';
 
 // ============================================================================
 // Types
@@ -557,7 +557,7 @@ export default function TemplatesPage() {
                 {formChannel === 'email' ? 'Email Body' : 'Message'}
               </Label>
               {formChannel === 'email' ? (
-                <EmailEditor
+                <LazyEmailEditor
                   content={formBody}
                   onChange={setFormBody}
                   placeholder="Start composing your email template..."

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -265,7 +265,7 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }
   'Closed Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
 };
 
-export function RecordTable({
+export const RecordTable = memo(function RecordTable({
   records,
   fields,
   view,
@@ -996,4 +996,4 @@ export function RecordTable({
       </Dialog>
     </div>
   );
-}
+});

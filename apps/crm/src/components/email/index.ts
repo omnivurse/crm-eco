@@ -1,5 +1,6 @@
 // Email Editor Components
 export { EmailEditor } from './EmailEditor';
+export { LazyEmailEditor } from './LazyEmailEditor';
 export { EmailToolbar } from './EmailToolbar';
 export { MergeFieldExtension } from './extensions/MergeFieldExtension';
 

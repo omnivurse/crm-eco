@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -26,7 +26,7 @@ import {
   Star,
   Mail,
 } from 'lucide-react';
-import { EmailEditor } from './EmailEditor';
+import { LazyEmailEditor } from './LazyEmailEditor';
 import { EmailAttachments, EmailAttachment } from './EmailAttachments';
 import { SenderSelector } from './SenderSelector';
 import { toast } from 'sonner';
@@ -88,7 +88,7 @@ export interface EmailComposerData {
   track_clicks?: boolean;
 }
 
-export function EmailComposer({
+export const EmailComposer = memo(function EmailComposer({
   initialTo = [],
   initialCc = [],
   initialBcc = [],
@@ -494,7 +494,7 @@ export function EmailComposer({
       </div>
 
       {/* Editor Section */}
-      <EmailEditor
+      <LazyEmailEditor
         content={body}
         onChange={setBody}
         placeholder="Start typing your email..."
@@ -698,6 +698,6 @@ export function EmailComposer({
       </div>
     </div>
   );
-}
+});
 
 export default EmailComposer;
