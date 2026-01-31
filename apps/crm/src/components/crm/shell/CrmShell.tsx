@@ -54,33 +54,27 @@ function CrmShellInner({
           {/* Animated Gradient Mesh Background */}
           <div className="fixed inset-0 gradient-mesh" />
 
-          {/* Animated Orbs for depth - more subtle in light mode */}
+          {/* Static background orbs for depth - subtle in light mode */}
           <div className="fixed inset-0 overflow-hidden pointer-events-none">
             {/* Teal orb - top left */}
             <div
-              className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10 dark:opacity-20 animate-float"
+              className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10 dark:opacity-20"
               style={{
                 background: 'radial-gradient(circle, rgba(4, 116, 116, 0.4) 0%, transparent 70%)',
-                animationDelay: '0s',
-                animationDuration: '15s',
               }}
             />
             {/* Emerald orb - bottom right */}
             <div
-              className="absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full opacity-8 dark:opacity-15 animate-float"
+              className="absolute -bottom-48 -right-48 w-[500px] h-[500px] rounded-full opacity-8 dark:opacity-15"
               style={{
                 background: 'radial-gradient(circle, rgba(2, 115, 67, 0.4) 0%, transparent 70%)',
-                animationDelay: '5s',
-                animationDuration: '20s',
               }}
             />
             {/* Navy orb - center */}
             <div
-              className="absolute top-1/3 left-1/2 w-[600px] h-[600px] rounded-full opacity-5 dark:opacity-10 animate-float"
+              className="absolute top-1/3 left-1/2 w-[600px] h-[600px] rounded-full opacity-5 dark:opacity-10"
               style={{
                 background: 'radial-gradient(circle, rgba(0, 53, 96, 0.5) 0%, transparent 70%)',
-                animationDelay: '2s',
-                animationDuration: '25s',
               }}
             />
           </div>
