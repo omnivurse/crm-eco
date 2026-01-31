@@ -16,6 +16,7 @@ import {
   FileSignature,
   Globe,
   Image,
+  Shield,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 
@@ -110,6 +111,14 @@ const settingsCards: SettingCard[] = [
     href: '/crm/settings/system-health',
     icon: <Activity className="w-6 h-6" />,
     adminOnly: true,
+  },
+  {
+    title: 'Audit Logs',
+    description: 'Track system activity and security events',
+    href: '/crm/settings/audit-logs',
+    icon: <Shield className="w-6 h-6" />,
+    adminOnly: true,
+    highlight: true,
   },
 ];
 

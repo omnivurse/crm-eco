@@ -80,6 +80,7 @@ const navItems: NavItem[] = [
       { label: 'General', href: '/settings' },
       { label: 'User Security', href: '/settings/security' },
       { label: 'Automations', href: '/settings/automations' },
+      { label: 'Audit Logs', href: '/settings/audit-logs' },
     ],
   },
 ];
