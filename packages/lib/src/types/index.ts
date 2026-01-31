@@ -1,52 +1,57 @@
 export type { Database, Json } from './database';
+import type { Database } from './database';
 
-// Re-export table types
-export type {
-  Organization,
-  Profile,
-  Advisor,
-  Member,
-  Lead,
-  Activity,
-  Ticket,
-  TicketComment,
-  Need,
-  NeedEvent,
-  CustomFieldDefinition,
-  FieldMapping,
-  ImportJob,
-  ImportJobRow,
-  ImportSnapshot,
-  Plan,
-  Membership,
-  Enrollment,
-  EnrollmentStep,
-  EnrollmentAuditLog,
-  CommissionTier,
-  CommissionTransaction,
-  CommissionPayout,
-  ImportJobStatus,
-  ImportRowStatus,
-  MembershipStatus,
-  EnrollmentStatus,
-  BillingStatus,
-  CommissionTransactionStatus,
-  CommissionPayoutStatus,
-  // Vendor management types
-  Vendor,
-  VendorInsert,
-  VendorUpdate,
-  VendorFile,
-  VendorFileInsert,
-  VendorFileUpdate,
-  VendorFileRow,
-  VendorFileRowInsert,
-  VendorChange,
-  VendorChangeInsert,
-  VendorConnector,
-  VendorConnectorInsert,
-  VendorConnectorUpdate,
-} from './database';
+// Helper type to extract Row types from Database tables
+type Tables = Database['public']['Tables'];
+
+// Core Table Row Types
+export type Organization = Tables['organizations']['Row'];
+export type Profile = Tables['profiles']['Row'];
+export type Advisor = Tables['advisors']['Row'];
+export type Member = Tables['members']['Row'];
+export type Lead = Tables['leads']['Row'];
+export type Activity = Tables['activities']['Row'];
+export type Ticket = Tables['tickets']['Row'];
+export type TicketComment = Tables['ticket_comments']['Row'];
+export type Need = Tables['needs']['Row'];
+export type NeedEvent = Tables['need_events']['Row'];
+export type CustomFieldDefinition = Tables['custom_field_definitions']['Row'];
+export type FieldMapping = Tables['field_mappings']['Row'];
+export type ImportJob = Tables['import_jobs']['Row'];
+export type ImportJobRow = Tables['import_job_rows']['Row'];
+export type ImportSnapshot = Tables['import_snapshots']['Row'];
+export type Plan = Tables['plans']['Row'];
+export type Membership = Tables['memberships']['Row'];
+export type Enrollment = Tables['enrollments']['Row'];
+export type EnrollmentStep = Tables['enrollment_steps']['Row'];
+export type EnrollmentAuditLog = Tables['enrollment_audit_log']['Row'];
+export type CommissionTier = Tables['commission_tiers']['Row'];
+export type CommissionTransaction = Tables['commission_transactions']['Row'];
+export type CommissionPayout = Tables['commission_payouts']['Row'];
+
+// Status types (from enums or string literals)
+export type ImportJobStatus = Tables['import_jobs']['Row']['status'];
+export type ImportRowStatus = Tables['import_job_rows']['Row']['status'];
+export type MembershipStatus = Tables['memberships']['Row']['status'];
+export type EnrollmentStatus = Tables['enrollments']['Row']['status'];
+export type BillingStatus = string; // Generic billing status
+export type CommissionTransactionStatus = Tables['commission_transactions']['Row']['status'];
+export type CommissionPayoutStatus = Tables['commission_payouts']['Row']['status'];
+
+// Vendor management types
+export type Vendor = Tables['vendors']['Row'];
+export type VendorInsert = Tables['vendors']['Insert'];
+export type VendorUpdate = Tables['vendors']['Update'];
+export type VendorFile = Tables['vendor_files']['Row'];
+export type VendorFileInsert = Tables['vendor_files']['Insert'];
+export type VendorFileUpdate = Tables['vendor_files']['Update'];
+export type VendorFileRow = Tables['vendor_file_rows']['Row'];
+export type VendorFileRowInsert = Tables['vendor_file_rows']['Insert'];
+export type VendorChange = Tables['vendor_changes']['Row'];
+export type VendorChangeInsert = Tables['vendor_changes']['Insert'];
+export type VendorConnector = Tables['vendor_connectors']['Row'];
+export type VendorConnectorInsert = Tables['vendor_connectors']['Insert'];
+export type VendorConnectorUpdate = Tables['vendor_connectors']['Update'];
 
 // Re-export common types for convenience
 export type UserRole = 'owner' | 'super_admin' | 'admin' | 'advisor' | 'staff';
