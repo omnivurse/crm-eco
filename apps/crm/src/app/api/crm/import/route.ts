@@ -86,12 +86,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: jobError.message }, { status: 500 });
     }
 
-    // Process records
-    let success = 0;
-    let errors = 0;
-    let skipped = 0;
-    const errorDetails: Array<{ row: number; error: string }> = [];
-
     // Build mapping lookup
     const fieldMappings = new Map<string, string>();
     mappings.forEach(m => {
@@ -100,128 +94,190 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
+    // PHASE 1: Transform all rows and collect emails/phones for batch duplicate check
+    interface TransformedRow {
+      index: number;
+      raw: Record<string, string>;
+      recordData: Record<string, unknown>;
+      email: string | null;
+      phone: string | null;
+      title: string | null;
+      status: string | null;
+      error?: string;
+    }
 
-      try {
-        // Transform row data according to mappings
-        const recordData: Record<string, unknown> = {};
-        let email: string | null = null;
-        let phone: string | null = null;
-        let title: string | null = null;
-        let status: string | null = null;
+    const transformedRows: TransformedRow[] = data.map((row, i) => {
+      const recordData: Record<string, unknown> = {};
+      let email: string | null = null;
+      let phone: string | null = null;
+      let title: string | null = null;
+      let status: string | null = null;
 
-        // System fields that should be stored at top level, not in data
-        const SYSTEM_FIELDS = ['email', 'phone', 'mobile', 'title', 'status', 'lead_status', 'contact_status'];
-
-        fieldMappings.forEach((targetField, sourceCol) => {
-          const value = row[sourceCol];
-          if (value !== undefined && value !== '') {
-            // Extract system fields
-            if (targetField === 'email') {
-              email = value;
-            } else if (targetField === 'phone' || targetField === 'mobile') {
-              phone = value;
-            } else if (targetField === 'title' || targetField === 'first_name') {
-              // Use first_name as title if title not explicitly mapped
-              if (targetField === 'title') {
-                title = value;
-              } else if (!title) {
-                title = value; // Will be overridden if title is also mapped
-              }
-            } else if (targetField === 'status' || targetField === 'lead_status' || targetField === 'contact_status') {
-              status = value;
+      fieldMappings.forEach((targetField, sourceCol) => {
+        const value = row[sourceCol];
+        if (value !== undefined && value !== '') {
+          if (targetField === 'email') {
+            email = value;
+          } else if (targetField === 'phone' || targetField === 'mobile') {
+            phone = value;
+          } else if (targetField === 'title' || targetField === 'first_name') {
+            if (targetField === 'title') {
+              title = value;
+            } else if (!title) {
+              title = value;
             }
-
-            // All fields also go into data for custom field access
-            recordData[targetField] = value;
+          } else if (targetField === 'status' || targetField === 'lead_status' || targetField === 'contact_status') {
+            status = value;
           }
-        });
-
-        // Build title from first_name + last_name if no explicit title
-        if (!title && (recordData.first_name || recordData.last_name)) {
-          title = [recordData.first_name, recordData.last_name].filter(Boolean).join(' ') || null;
+          recordData[targetField] = value;
         }
+      });
 
-        // Check for duplicates if skipDuplicates is enabled
-        if (skipDuplicates && (email || phone)) {
-          let query = supabase
-            .from('crm_records')
-            .select('id')
-            .eq('org_id', organizationId)
-            .eq('module_id', moduleId);
+      // Build title from first_name + last_name if no explicit title
+      if (!title && (recordData.first_name || recordData.last_name)) {
+        title = [recordData.first_name, recordData.last_name].filter(Boolean).join(' ') || null;
+      }
 
-          // Check by email first (primary duplicate key)
-          if (email) {
-            query = query.eq('email', email);
-          } else if (phone) {
-            // Fall back to phone if no email
-            query = query.eq('phone', phone);
-          }
+      return { index: i, raw: row, recordData, email, phone, title, status };
+    });
 
-          const { data: existing } = await query.limit(1);
+    // PHASE 2: Batch duplicate check (single query instead of N queries)
+    let duplicateEmails = new Set<string>();
+    let duplicatePhones = new Set<string>();
 
-          if (existing && existing.length > 0) {
-            // Record is a duplicate - skip it
-            skipped++;
-            await supabase.from('crm_import_rows').insert({
-              job_id: importJob.id,
-              row_index: i,
-              raw: row,
-              normalized: recordData,
-              status: 'skipped',
-              match_type: 'duplicate',
-            });
-            continue;
-          }
-        }
+    if (skipDuplicates) {
+      const emailsToCheck = transformedRows.map(r => r.email).filter((e): e is string => !!e);
+      const phonesToCheck = transformedRows.map(r => r.phone).filter((p): p is string => !!p);
 
-        // Insert the record
-        const { data: record, error: insertError } = await supabase
+      // Batch check emails
+      if (emailsToCheck.length > 0) {
+        const { data: existingByEmail } = await supabase
           .from('crm_records')
-          .insert({
-            org_id: organizationId,
-            module_id: moduleId,
-            owner_id: profile.id,
-            title,
-            status,
-            data: recordData,
-            email,
-            phone,
-            created_by: profile.id,
-          })
-          .select('id')
-          .single();
+          .select('email')
+          .eq('org_id', organizationId)
+          .eq('module_id', moduleId)
+          .in('email', emailsToCheck);
 
-        if (insertError) {
-          throw insertError;
+        if (existingByEmail) {
+          duplicateEmails = new Set(existingByEmail.map(r => r.email).filter((e): e is string => !!e));
         }
+      }
 
-        // Record import row
-        await supabase.from('crm_import_rows').insert({
-          job_id: importJob.id,
-          row_index: i,
-          raw: row,
-          normalized: recordData,
-          record_id: record.id,
-          status: 'inserted',
+      // Batch check phones (only for rows without email)
+      if (phonesToCheck.length > 0) {
+        const { data: existingByPhone } = await supabase
+          .from('crm_records')
+          .select('phone')
+          .eq('org_id', organizationId)
+          .eq('module_id', moduleId)
+          .in('phone', phonesToCheck);
+
+        if (existingByPhone) {
+          duplicatePhones = new Set(existingByPhone.map(r => r.phone).filter((p): p is string => !!p));
+        }
+      }
+    }
+
+    // PHASE 3: Categorize rows into duplicates, valid, and errors
+    const duplicateRows: TransformedRow[] = [];
+    const validRows: TransformedRow[] = [];
+
+    for (const row of transformedRows) {
+      if (skipDuplicates) {
+        const isDuplicateByEmail = row.email && duplicateEmails.has(row.email);
+        const isDuplicateByPhone = !row.email && row.phone && duplicatePhones.has(row.phone);
+
+        if (isDuplicateByEmail || isDuplicateByPhone) {
+          duplicateRows.push(row);
+          continue;
+        }
+      }
+      validRows.push(row);
+    }
+
+    // PHASE 4: Batch insert valid records
+    const BATCH_SIZE = 100;
+    let success = 0;
+    let errors = 0;
+    const skipped = duplicateRows.length;
+    const errorDetails: Array<{ row: number; error: string }> = [];
+    const insertedRecords: Array<{ rowIndex: number; recordId: string; row: TransformedRow }> = [];
+
+    // Process in batches
+    for (let batchStart = 0; batchStart < validRows.length; batchStart += BATCH_SIZE) {
+      const batch = validRows.slice(batchStart, batchStart + BATCH_SIZE);
+
+      const recordsToInsert = batch.map(row => ({
+        org_id: organizationId,
+        module_id: moduleId,
+        owner_id: profile.id,
+        title: row.title,
+        status: row.status,
+        data: row.recordData,
+        email: row.email,
+        phone: row.phone,
+        created_by: profile.id,
+      }));
+
+      const { data: insertedBatch, error: batchError } = await supabase
+        .from('crm_records')
+        .insert(recordsToInsert)
+        .select('id');
+
+      if (batchError) {
+        // If batch insert fails, mark all rows in batch as errors
+        batch.forEach(row => {
+          errors++;
+          errorDetails.push({ row: row.index + 1, error: batchError.message });
+          row.error = batchError.message;
         });
-
-        success++;
-      } catch (err) {
-        errors++;
-        const errorMsg = err instanceof Error ? err.message : 'Unknown error';
-        errorDetails.push({ row: i + 1, error: errorMsg });
-
-        // Record failed import row
-        await supabase.from('crm_import_rows').insert({
-          job_id: importJob.id,
-          row_index: i,
-          raw: row,
-          status: 'error',
-          error: errorMsg,
+      } else if (insertedBatch) {
+        // Map inserted records back to their rows
+        insertedBatch.forEach((record, idx) => {
+          success++;
+          insertedRecords.push({
+            rowIndex: batch[idx].index,
+            recordId: record.id,
+            row: batch[idx],
+          });
         });
       }
+    }
+
+    // PHASE 5: Batch insert import rows (tracking records)
+    const importRowsToInsert = [
+      // Duplicate rows
+      ...duplicateRows.map(row => ({
+        job_id: importJob.id,
+        row_index: row.index,
+        raw: row.raw,
+        normalized: row.recordData,
+        status: 'skipped' as const,
+        match_type: 'duplicate',
+      })),
+      // Successfully inserted rows
+      ...insertedRecords.map(({ rowIndex, recordId, row }) => ({
+        job_id: importJob.id,
+        row_index: rowIndex,
+        raw: row.raw,
+        normalized: row.recordData,
+        record_id: recordId,
+        status: 'inserted' as const,
+      })),
+      // Error rows
+      ...validRows.filter(r => r.error).map(row => ({
+        job_id: importJob.id,
+        row_index: row.index,
+        raw: row.raw,
+        status: 'error' as const,
+        error: row.error,
+      })),
+    ];
+
+    // Insert import rows in batches
+    for (let i = 0; i < importRowsToInsert.length; i += BATCH_SIZE) {
+      const batch = importRowsToInsert.slice(i, i + BATCH_SIZE);
+      await supabase.from('crm_import_rows').insert(batch);
     }
 
     // Update import job status
