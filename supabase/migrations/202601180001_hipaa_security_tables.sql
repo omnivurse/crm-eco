@@ -165,6 +165,7 @@ CREATE TABLE IF NOT EXISTS mfa_settings (
 -- PHI Access Log: Only admins/owners can view
 ALTER TABLE phi_access_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Owners can view all PHI access logs" ON phi_access_log;
 CREATE POLICY "Owners can view all PHI access logs" ON phi_access_log
   FOR SELECT USING (
     EXISTS (
@@ -175,30 +176,36 @@ CREATE POLICY "Owners can view all PHI access logs" ON phi_access_log
     )
   );
 
+DROP POLICY IF EXISTS "System can insert PHI access logs" ON phi_access_log;
 CREATE POLICY "System can insert PHI access logs" ON phi_access_log
   FOR INSERT WITH CHECK (true);
 
 -- Auth Events: Users can view own, admins can view all
 ALTER TABLE auth_events ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own auth events" ON auth_events;
 CREATE POLICY "Users can view own auth events" ON auth_events
   FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can insert auth events" ON auth_events;
 CREATE POLICY "System can insert auth events" ON auth_events
   FOR INSERT WITH CHECK (true);
 
 -- User Sessions: Users can view/manage own sessions
 ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own sessions" ON user_sessions;
 CREATE POLICY "Users can view own sessions" ON user_sessions
   FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can invalidate own sessions" ON user_sessions;
 CREATE POLICY "Users can invalidate own sessions" ON user_sessions
   FOR UPDATE USING (user_id = auth.uid());
 
 -- MFA Settings: Users can manage own MFA
 ALTER TABLE mfa_settings ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage own MFA settings" ON mfa_settings;
 CREATE POLICY "Users can manage own MFA settings" ON mfa_settings
   FOR ALL USING (user_id = auth.uid());
 

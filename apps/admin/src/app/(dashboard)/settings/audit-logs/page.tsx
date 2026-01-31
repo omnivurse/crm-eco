@@ -49,7 +49,6 @@ async function getAuditData() {
 
   return {
     profile,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     initialLogs: (initialLogs || []) as any[],
     users: users || [],
   };

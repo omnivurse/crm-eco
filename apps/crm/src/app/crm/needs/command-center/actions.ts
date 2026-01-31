@@ -18,15 +18,15 @@ const OPS_ROLES = ['owner', 'admin', 'staff'];
  */
 async function verifyOpsAccess() {
   const profile = await getCurrentProfile();
-  
+
   if (!profile) {
     throw new Error('Not authenticated');
   }
-  
-  if (!OPS_ROLES.includes(profile.role)) {
+
+  if (!profile.role || !OPS_ROLES.includes(profile.role)) {
     throw new Error('Not authorized - Ops role required');
   }
-  
+
   return profile;
 }
 
@@ -44,11 +44,11 @@ async function verifyNeedOwnership(
     .eq('id', needId)
     .eq('organization_id', organizationId)
     .single();
-  
+
   if (error || !need) {
     throw new Error('Need not found or access denied');
   }
-  
+
   return need as { id: string; status: string; organization_id: string };
 }
 
@@ -78,9 +78,9 @@ async function insertNeedEvent(
     new_status: params.newStatus || null,
     note: params.note || null,
   };
-  
+
   const { error } = await (supabase as any).from('need_events').insert(insertData);
-  
+
   if (error) {
     console.error('Failed to insert need event:', error);
     // Don't throw - the main action succeeded
@@ -106,21 +106,21 @@ export async function updateNeedStatus(
   try {
     const profile = await verifyOpsAccess();
     const supabase = await createServerSupabaseClient();
-    
+
     // Verify ownership and get current status
     const need = await verifyNeedOwnership(supabase, needId, profile.organization_id);
     const oldStatus = need.status;
-    
+
     // Update the need status (trigger will handle urgency_light and last_status_change_at)
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ status: newStatus })
       .eq('id', needId);
-    
+
     if (updateError) {
       throw new Error(`Failed to update status: ${updateError.message}`);
     }
-    
+
     // Insert audit event
     await insertNeedEvent(supabase, {
       needId,
@@ -131,16 +131,16 @@ export async function updateNeedStatus(
       oldStatus,
       newStatus,
     });
-    
+
     revalidatePath('/needs/command-center');
     revalidatePath('/needs');
-    
+
     return { success: true };
   } catch (error) {
     console.error('updateNeedStatus error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -155,20 +155,20 @@ export async function updateNeedTargetDate(
   try {
     const profile = await verifyOpsAccess();
     const supabase = await createServerSupabaseClient();
-    
+
     // Verify ownership
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
-    
+
     // Update sla_target_date (trigger will recompute urgency_light)
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ sla_target_date: newDate })
       .eq('id', needId);
-    
+
     if (updateError) {
       throw new Error(`Failed to update target date: ${updateError.message}`);
     }
-    
+
     // Insert audit event
     await insertNeedEvent(supabase, {
       needId,
@@ -177,16 +177,16 @@ export async function updateNeedTargetDate(
       eventType: 'field_update',
       description: `Target completion date updated to ${new Date(newDate).toLocaleDateString()}`,
     });
-    
+
     revalidatePath('/needs/command-center');
     revalidatePath('/needs');
-    
+
     return { success: true };
   } catch (error) {
     console.error('updateNeedTargetDate error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -201,20 +201,20 @@ export async function toggleNeedIuaMet(
   try {
     const profile = await verifyOpsAccess();
     const supabase = await createServerSupabaseClient();
-    
+
     // Verify ownership
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
-    
+
     // Update iua_met
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ iua_met: nextValue })
       .eq('id', needId);
-    
+
     if (updateError) {
       throw new Error(`Failed to update IUA status: ${updateError.message}`);
     }
-    
+
     // Insert audit event
     await insertNeedEvent(supabase, {
       needId,
@@ -223,16 +223,16 @@ export async function toggleNeedIuaMet(
       eventType: 'field_update',
       description: nextValue ? 'IUA marked as met' : 'IUA marked as not met',
     });
-    
+
     revalidatePath('/needs/command-center');
     revalidatePath('/needs');
-    
+
     return { success: true };
   } catch (error) {
     console.error('toggleNeedIuaMet error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -248,13 +248,13 @@ export async function addNeedOpsNote(
     if (!note.trim()) {
       return { success: false, error: 'Note cannot be empty' };
     }
-    
+
     const profile = await verifyOpsAccess();
     const supabase = await createServerSupabaseClient();
-    
+
     // Verify ownership
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
-    
+
     // Insert note event (no need to update the need itself)
     await insertNeedEvent(supabase, {
       needId,
@@ -264,16 +264,16 @@ export async function addNeedOpsNote(
       description: 'Ops note added',
       note: note.trim(),
     });
-    
+
     revalidatePath('/needs/command-center');
     revalidatePath(`/needs/${needId}`);
-    
+
     return { success: true };
   } catch (error) {
     console.error('addNeedOpsNote error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -285,20 +285,20 @@ export async function assignNeedToMe(needId: string): Promise<ActionResult> {
   try {
     const profile = await verifyOpsAccess();
     const supabase = await createServerSupabaseClient();
-    
+
     // Verify ownership
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
-    
+
     // Update assignee to current user
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ assigned_to_profile_id: profile.id })
       .eq('id', needId);
-    
+
     if (updateError) {
       throw new Error(`Failed to assign need: ${updateError.message}`);
     }
-    
+
     // Insert audit event
     await insertNeedEvent(supabase, {
       needId,
@@ -307,16 +307,16 @@ export async function assignNeedToMe(needId: string): Promise<ActionResult> {
       eventType: 'field_update',
       description: `Assigned to ${profile.full_name}`,
     });
-    
+
     revalidatePath('/needs/command-center');
     revalidatePath('/needs');
-    
+
     return { success: true };
   } catch (error) {
     console.error('assignNeedToMe error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -331,39 +331,39 @@ export async function assignNeedToProfile(
   try {
     const profile = await verifyOpsAccess();
     const supabase = await createServerSupabaseClient();
-    
+
     // Verify need ownership
     await verifyNeedOwnership(supabase, needId, profile.organization_id);
-    
+
     // Verify assignee is a valid Ops profile in the same org
     const { data: assignee, error: assigneeError } = await (supabase as any)
       .from('profiles')
       .select('id, full_name, role, organization_id')
       .eq('id', assigneeProfileId)
       .single();
-    
+
     if (assigneeError || !assignee) {
       throw new Error('Assignee not found');
     }
-    
+
     if (assignee.organization_id !== profile.organization_id) {
       throw new Error('Cross-org assignment not allowed');
     }
-    
-    if (!OPS_ROLES.includes(assignee.role)) {
+
+    if (!assignee.role || !OPS_ROLES.includes(assignee.role)) {
       throw new Error('Assignee must be an Ops role (owner, admin, or staff)');
     }
-    
+
     // Update assignee
     const { error: updateError } = await (supabase as any)
       .from('needs')
       .update({ assigned_to_profile_id: assignee.id })
       .eq('id', needId);
-    
+
     if (updateError) {
       throw new Error(`Failed to assign need: ${updateError.message}`);
     }
-    
+
     // Insert audit event
     await insertNeedEvent(supabase, {
       needId,
@@ -372,16 +372,16 @@ export async function assignNeedToProfile(
       eventType: 'field_update',
       description: `Assigned to ${assignee.full_name}`,
     });
-    
+
     revalidatePath('/needs/command-center');
     revalidatePath('/needs');
-    
+
     return { success: true };
   } catch (error) {
     console.error('assignNeedToProfile error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }

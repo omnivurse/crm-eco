@@ -21,7 +21,7 @@ async function verifyAccess() {
     throw new Error('Not authenticated');
   }
 
-  if (!ALLOWED_ROLES.includes(profile.role)) {
+  if (!profile.role || !ALLOWED_ROLES.includes(profile.role)) {
     throw new Error('Not authorized');
   }
 

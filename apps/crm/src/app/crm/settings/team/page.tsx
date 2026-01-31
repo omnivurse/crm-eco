@@ -157,7 +157,7 @@ export default function TeamManagementPage() {
       setCurrentUser(profile as TeamMember);
 
       // Check if user has permission
-      if (!['owner', 'super_admin', 'admin'].includes(profile.role)) {
+      if (!profile.role || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
         toast.error('You do not have permission to access this page');
         return;
       }

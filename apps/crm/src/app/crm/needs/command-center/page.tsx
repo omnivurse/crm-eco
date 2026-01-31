@@ -78,17 +78,17 @@ export default async function NeedsCommandCenterPage() {
   }
 
   // Check role authorization
-  if (!OPS_ROLES.includes(profile.role)) {
+  if (!profile.role || !OPS_ROLES.includes(profile.role)) {
     return (
-      <UnauthorizedMessage 
-        message="This page is restricted to Operations staff. Advisors do not have access to the Command Center." 
+      <UnauthorizedMessage
+        message="This page is restricted to Operations staff. Advisors do not have access to the Command Center."
       />
     );
   }
 
   // Fetch needs for this organization
   const supabase = await createServerSupabaseClient();
-  
+
   const { data: needsData, error: needsError } = await (supabase as any)
     .from('needs')
     .select(`
@@ -128,15 +128,15 @@ export default async function NeedsCommandCenterPage() {
   const memberIds = Array.from(
     new Set(needs.map(n => n.member_id).filter((id): id is string => Boolean(id)))
   );
-  
+
   let membersMap: Record<string, { first_name: string; last_name: string }> = {};
-  
+
   if (memberIds.length > 0) {
     const { data: membersData } = await (supabase as any)
       .from('members')
       .select('id, first_name, last_name')
       .in('id', memberIds);
-    
+
     const members: RawMember[] = membersData || [];
     membersMap = members.reduce((acc, m) => {
       acc[m.id] = { first_name: m.first_name, last_name: m.last_name };
@@ -156,7 +156,7 @@ export default async function NeedsCommandCenterPage() {
       .from('profiles')
       .select('id, full_name')
       .in('id', assigneeIds);
-    
+
     const profiles: RawProfile[] = profilesData || [];
     assigneesMap = profiles.reduce((acc, p) => {
       acc[p.id] = { full_name: p.full_name };
@@ -184,8 +184,8 @@ export default async function NeedsCommandCenterPage() {
     member_first_name: need.member_id ? membersMap[need.member_id]?.first_name || null : null,
     member_last_name: need.member_id ? membersMap[need.member_id]?.last_name || null : null,
     assigned_to_profile_id: need.assigned_to_profile_id,
-    assigned_to_name: need.assigned_to_profile_id 
-      ? assigneesMap[need.assigned_to_profile_id]?.full_name || null 
+    assigned_to_name: need.assigned_to_profile_id
+      ? assigneesMap[need.assigned_to_profile_id]?.full_name || null
       : null,
   }));
 
@@ -197,7 +197,7 @@ export default async function NeedsCommandCenterPage() {
   };
 
   // Compute workload metrics for open needs only
-  const openNeeds = enrichedNeeds.filter(n => 
+  const openNeeds = enrichedNeeds.filter(n =>
     OPEN_NEED_STATUSES.includes(n.status)
   );
 
@@ -287,8 +287,8 @@ export default async function NeedsCommandCenterPage() {
   const defaultSavedView = savedViews.find(v => v.is_default) ?? null;
 
   return (
-    <NeedsCommandCenterShell 
-      needs={enrichedNeeds} 
+    <NeedsCommandCenterShell
+      needs={enrichedNeeds}
       slaCounts={slaCounts}
       workload={workload}
       assignableProfiles={assignableProfiles}

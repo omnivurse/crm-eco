@@ -162,6 +162,8 @@ ALTER TABLE email_delivery_tracking ENABLE ROW LEVEL SECURITY;
 
 -- Email templates policies
 DROP POLICY IF EXISTS "email_templates_staff_read" ON email_templates;
+DROP POLICY IF EXISTS "email_templates_staff_read" ON email_templates;
+DROP POLICY IF EXISTS "email_templates_staff_read" ON email_templates;
 CREATE POLICY "email_templates_staff_read" ON email_templates
   FOR SELECT
   TO authenticated
@@ -173,6 +175,8 @@ CREATE POLICY "email_templates_staff_read" ON email_templates
     )
   );
 
+DROP POLICY IF EXISTS "email_templates_admin_all" ON email_templates;
+DROP POLICY IF EXISTS "email_templates_admin_all" ON email_templates;
 DROP POLICY IF EXISTS "email_templates_admin_all" ON email_templates;
 CREATE POLICY "email_templates_admin_all" ON email_templates
   FOR ALL
@@ -194,6 +198,8 @@ CREATE POLICY "email_templates_admin_all" ON email_templates
 
 -- Activity log policies
 DROP POLICY IF EXISTS "activity_log_staff_read" ON ticket_activity_log;
+DROP POLICY IF EXISTS "activity_log_staff_read" ON ticket_activity_log;
+DROP POLICY IF EXISTS "activity_log_staff_read" ON ticket_activity_log;
 CREATE POLICY "activity_log_staff_read" ON ticket_activity_log
   FOR SELECT
   TO authenticated
@@ -205,6 +211,8 @@ CREATE POLICY "activity_log_staff_read" ON ticket_activity_log
     )
   );
 
+DROP POLICY IF EXISTS "activity_log_requester_read" ON ticket_activity_log;
+DROP POLICY IF EXISTS "activity_log_requester_read" ON ticket_activity_log;
 DROP POLICY IF EXISTS "activity_log_requester_read" ON ticket_activity_log;
 CREATE POLICY "activity_log_requester_read" ON ticket_activity_log
   FOR SELECT
@@ -218,11 +226,15 @@ CREATE POLICY "activity_log_requester_read" ON ticket_activity_log
   );
 
 DROP POLICY IF EXISTS "activity_log_system_insert" ON ticket_activity_log;
+DROP POLICY IF EXISTS "activity_log_system_insert" ON ticket_activity_log;
+DROP POLICY IF EXISTS "activity_log_system_insert" ON ticket_activity_log;
 CREATE POLICY "activity_log_system_insert" ON ticket_activity_log
   FOR INSERT
   WITH CHECK (true);
 
 -- Mentions policies
+DROP POLICY IF EXISTS "mentions_user_read" ON ticket_mentions;
+DROP POLICY IF EXISTS "mentions_user_read" ON ticket_mentions;
 DROP POLICY IF EXISTS "mentions_user_read" ON ticket_mentions;
 CREATE POLICY "mentions_user_read" ON ticket_mentions
   FOR SELECT
@@ -230,10 +242,14 @@ CREATE POLICY "mentions_user_read" ON ticket_mentions
   USING (mentioned_user_id = auth.uid());
 
 DROP POLICY IF EXISTS "mentions_system_insert" ON ticket_mentions;
+DROP POLICY IF EXISTS "mentions_system_insert" ON ticket_mentions;
+DROP POLICY IF EXISTS "mentions_system_insert" ON ticket_mentions;
 CREATE POLICY "mentions_system_insert" ON ticket_mentions
   FOR INSERT
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "mentions_user_update" ON ticket_mentions;
+DROP POLICY IF EXISTS "mentions_user_update" ON ticket_mentions;
 DROP POLICY IF EXISTS "mentions_user_update" ON ticket_mentions;
 CREATE POLICY "mentions_user_update" ON ticket_mentions
   FOR UPDATE
@@ -242,6 +258,8 @@ CREATE POLICY "mentions_user_update" ON ticket_mentions
   WITH CHECK (mentioned_user_id = auth.uid());
 
 -- Email tracking policies
+DROP POLICY IF EXISTS "email_tracking_staff_read" ON email_delivery_tracking;
+DROP POLICY IF EXISTS "email_tracking_staff_read" ON email_delivery_tracking;
 DROP POLICY IF EXISTS "email_tracking_staff_read" ON email_delivery_tracking;
 CREATE POLICY "email_tracking_staff_read" ON email_delivery_tracking
   FOR SELECT
@@ -254,6 +272,8 @@ CREATE POLICY "email_tracking_staff_read" ON email_delivery_tracking
     )
   );
 
+DROP POLICY IF EXISTS "email_tracking_system_all" ON email_delivery_tracking;
+DROP POLICY IF EXISTS "email_tracking_system_all" ON email_delivery_tracking;
 DROP POLICY IF EXISTS "email_tracking_system_all" ON email_delivery_tracking;
 CREATE POLICY "email_tracking_system_all" ON email_delivery_tracking
   FOR ALL

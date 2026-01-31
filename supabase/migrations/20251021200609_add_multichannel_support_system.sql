@@ -190,6 +190,8 @@ ALTER TABLE channel_routing_rules ENABLE ROW LEVEL SECURITY;
 -- RLS Policies for support_channels
 
 -- Staff and above can read all channels
+DROP POLICY IF EXISTS "channels_staff_read" ON support_channels;
+DROP POLICY IF EXISTS "channels_staff_read" ON support_channels;
 CREATE POLICY "channels_staff_read" ON support_channels
   FOR SELECT
   USING (
@@ -201,6 +203,8 @@ CREATE POLICY "channels_staff_read" ON support_channels
   );
 
 -- Only admins can manage channels
+DROP POLICY IF EXISTS "channels_admin_all" ON support_channels;
+DROP POLICY IF EXISTS "channels_admin_all" ON support_channels;
 CREATE POLICY "channels_admin_all" ON support_channels
   FOR ALL
   USING (
@@ -214,6 +218,8 @@ CREATE POLICY "channels_admin_all" ON support_channels
 -- RLS Policies for channel_messages
 
 -- Agents can read all messages
+DROP POLICY IF EXISTS "messages_agent_read" ON channel_messages;
+DROP POLICY IF EXISTS "messages_agent_read" ON channel_messages;
 CREATE POLICY "messages_agent_read" ON channel_messages
   FOR SELECT
   USING (
@@ -225,6 +231,8 @@ CREATE POLICY "messages_agent_read" ON channel_messages
   );
 
 -- Customers can read their own messages
+DROP POLICY IF EXISTS "messages_customer_read" ON channel_messages;
+DROP POLICY IF EXISTS "messages_customer_read" ON channel_messages;
 CREATE POLICY "messages_customer_read" ON channel_messages
   FOR SELECT
   USING (
@@ -237,11 +245,15 @@ CREATE POLICY "messages_customer_read" ON channel_messages
   );
 
 -- Authenticated users can insert messages
+DROP POLICY IF EXISTS "messages_insert" ON channel_messages;
+DROP POLICY IF EXISTS "messages_insert" ON channel_messages;
 CREATE POLICY "messages_insert" ON channel_messages
   FOR INSERT
   WITH CHECK (true);
 
 -- Agents can update messages
+DROP POLICY IF EXISTS "messages_agent_update" ON channel_messages;
+DROP POLICY IF EXISTS "messages_agent_update" ON channel_messages;
 CREATE POLICY "messages_agent_update" ON channel_messages
   FOR UPDATE
   USING (
@@ -255,6 +267,8 @@ CREATE POLICY "messages_agent_update" ON channel_messages
 -- RLS Policies for email_accounts
 
 -- Staff and above can read email accounts
+DROP POLICY IF EXISTS "email_accounts_staff_read" ON email_accounts;
+DROP POLICY IF EXISTS "email_accounts_staff_read" ON email_accounts;
 CREATE POLICY "email_accounts_staff_read" ON email_accounts
   FOR SELECT
   USING (
@@ -266,6 +280,8 @@ CREATE POLICY "email_accounts_staff_read" ON email_accounts
   );
 
 -- Only admins can manage email accounts
+DROP POLICY IF EXISTS "email_accounts_admin_all" ON email_accounts;
+DROP POLICY IF EXISTS "email_accounts_admin_all" ON email_accounts;
 CREATE POLICY "email_accounts_admin_all" ON email_accounts
   FOR ALL
   USING (
@@ -279,6 +295,8 @@ CREATE POLICY "email_accounts_admin_all" ON email_accounts
 -- RLS Policies for chat_sessions
 
 -- Agents can read all chat sessions
+DROP POLICY IF EXISTS "chat_sessions_agent_read" ON chat_sessions;
+DROP POLICY IF EXISTS "chat_sessions_agent_read" ON chat_sessions;
 CREATE POLICY "chat_sessions_agent_read" ON chat_sessions
   FOR SELECT
   USING (
@@ -290,11 +308,15 @@ CREATE POLICY "chat_sessions_agent_read" ON chat_sessions
   );
 
 -- Public can create chat sessions
+DROP POLICY IF EXISTS "chat_sessions_public_insert" ON chat_sessions;
+DROP POLICY IF EXISTS "chat_sessions_public_insert" ON chat_sessions;
 CREATE POLICY "chat_sessions_public_insert" ON chat_sessions
   FOR INSERT
   WITH CHECK (true);
 
 -- Agents can update chat sessions
+DROP POLICY IF EXISTS "chat_sessions_agent_update" ON chat_sessions;
+DROP POLICY IF EXISTS "chat_sessions_agent_update" ON chat_sessions;
 CREATE POLICY "chat_sessions_agent_update" ON chat_sessions
   FOR UPDATE
   USING (
@@ -309,6 +331,8 @@ CREATE POLICY "chat_sessions_agent_update" ON chat_sessions
 -- RLS Policies for channel_routing_rules
 
 -- Staff can read routing rules
+DROP POLICY IF EXISTS "routing_rules_staff_read" ON channel_routing_rules;
+DROP POLICY IF EXISTS "routing_rules_staff_read" ON channel_routing_rules;
 CREATE POLICY "routing_rules_staff_read" ON channel_routing_rules
   FOR SELECT
   USING (
@@ -320,6 +344,8 @@ CREATE POLICY "routing_rules_staff_read" ON channel_routing_rules
   );
 
 -- Only admins can manage routing rules
+DROP POLICY IF EXISTS "routing_rules_admin_all" ON channel_routing_rules;
+DROP POLICY IF EXISTS "routing_rules_admin_all" ON channel_routing_rules;
 CREATE POLICY "routing_rules_admin_all" ON channel_routing_rules
   FOR ALL
   USING (

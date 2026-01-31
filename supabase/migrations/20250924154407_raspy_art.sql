@@ -1,27 +1,8 @@
 /*
   # Champion Charlie Database Schema
 
-  This migration sets up the complete database schema for Champion Charlie AI agent:
-  
-  1. Tables
-    - profiles (user management)
-    - tickets (support tickets with origin awareness)
-    - ticket_comments (threaded comments)
-    - agent_messages (AI conversation logs)
-    - kb_docs (knowledge base with vector embeddings)
-    - reminders (scheduled tasks)
-    - audit_log (activity tracking)
-    
-  2. Extensions
-    - Enable pgvector for embeddings
-    
-  3. Security
-    - Row Level Security policies
-    - Role-based access control
-    
-  4. Indexes
-    - Performance indexes for common queries
-    - Vector similarity index
+  This migration sets up the complete database schema for Champion Charlie AI agent.
+  Made idempotent to handle cases where objects already exist.
 */
 
 -- Enable extensions
@@ -113,7 +94,7 @@ CREATE TABLE IF NOT EXISTS kb_docs (
   title text NOT NULL,
   source text NOT NULL,
   chunk text NOT NULL,
-  embedding vector(1536), -- OpenAI text-embedding-3-large dimensions
+  embedding vector(1536),
   created_at timestamptz DEFAULT now()
 );
 
@@ -178,9 +159,13 @@ ALTER TABLE kb_docs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
+-- RLS Policies (drop first for idempotency)
 
--- Profiles: Users can read/update own profile, agents/admins can read all
+-- Profiles policies
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
 CREATE POLICY "profiles_self_read" ON profiles
   FOR SELECT USING (
     auth.uid() = id OR 
@@ -190,22 +175,32 @@ CREATE POLICY "profiles_self_read" ON profiles
     )
   );
 
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
 CREATE POLICY "profiles_self_update" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
--- Tickets: Role-based access
+-- Tickets policies
+DROP POLICY IF EXISTS "tickets_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_read" ON tickets;
 CREATE POLICY "tickets_read" ON tickets
   FOR SELECT USING (
-    -- Own tickets
     requester_id = auth.uid() OR
     assignee_id = auth.uid() OR
-    -- Staff/agents/admins can see all
     EXISTS (
       SELECT 1 FROM profiles p 
       WHERE p.id = auth.uid() AND p.role IN ('staff', 'agent', 'admin')
     )
   );
 
+DROP POLICY IF EXISTS "tickets_create" ON tickets;
+DROP POLICY IF EXISTS "tickets_create" ON tickets;
+DROP POLICY IF EXISTS "tickets_create" ON tickets;
+DROP POLICY IF EXISTS "tickets_create" ON tickets;
 CREATE POLICY "tickets_create" ON tickets
   FOR INSERT WITH CHECK (
     requester_id = auth.uid() OR
@@ -215,6 +210,10 @@ CREATE POLICY "tickets_create" ON tickets
     )
   );
 
+DROP POLICY IF EXISTS "tickets_update" ON tickets;
+DROP POLICY IF EXISTS "tickets_update" ON tickets;
+DROP POLICY IF EXISTS "tickets_update" ON tickets;
+DROP POLICY IF EXISTS "tickets_update" ON tickets;
 CREATE POLICY "tickets_update" ON tickets
   FOR UPDATE USING (
     EXISTS (
@@ -223,7 +222,11 @@ CREATE POLICY "tickets_update" ON tickets
     )
   );
 
--- Comments: Can read/write comments on tickets you have access to
+-- Comments policies
+DROP POLICY IF EXISTS "comments_read" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_read" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_read" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_read" ON ticket_comments;
 CREATE POLICY "comments_read" ON ticket_comments
   FOR SELECT USING (
     EXISTS (
@@ -239,6 +242,10 @@ CREATE POLICY "comments_read" ON ticket_comments
     )
   );
 
+DROP POLICY IF EXISTS "comments_create" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_create" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_create" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_create" ON ticket_comments;
 CREATE POLICY "comments_create" ON ticket_comments
   FOR INSERT WITH CHECK (
     author_id = auth.uid() AND
@@ -255,7 +262,11 @@ CREATE POLICY "comments_create" ON ticket_comments
     )
   );
 
--- Agent messages: Only accessible to agents/admins
+-- Agent messages policies
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
+DROP POLICY IF EXISTS "agent_messages_agent_only" ON agent_messages;
 CREATE POLICY "agent_messages_agent_only" ON agent_messages
   FOR ALL USING (
     EXISTS (
@@ -264,10 +275,18 @@ CREATE POLICY "agent_messages_agent_only" ON agent_messages
     )
   );
 
--- KB docs: Read-only for all authenticated users
+-- KB docs policies
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_read_all" ON kb_docs;
 CREATE POLICY "kb_docs_read_all" ON kb_docs
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
+DROP POLICY IF EXISTS "kb_docs_admin_manage" ON kb_docs;
 CREATE POLICY "kb_docs_admin_manage" ON kb_docs
   FOR ALL USING (
     EXISTS (
@@ -276,7 +295,11 @@ CREATE POLICY "kb_docs_admin_manage" ON kb_docs
     )
   );
 
--- Reminders: Users can manage their own
+-- Reminders policies
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
+DROP POLICY IF EXISTS "reminders_self_manage" ON reminders;
 CREATE POLICY "reminders_self_manage" ON reminders
   FOR ALL USING (
     user_id = auth.uid() OR
@@ -286,7 +309,11 @@ CREATE POLICY "reminders_self_manage" ON reminders
     )
   );
 
--- Audit log: Read-only for admins
+-- Audit log policies
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_admin_read" ON audit_log;
 CREATE POLICY "audit_log_admin_read" ON audit_log
   FOR SELECT USING (
     EXISTS (
@@ -295,5 +322,9 @@ CREATE POLICY "audit_log_admin_read" ON audit_log
     )
   );
 
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
+DROP POLICY IF EXISTS "audit_log_system_insert" ON audit_log;
 CREATE POLICY "audit_log_system_insert" ON audit_log
   FOR INSERT WITH CHECK (true);

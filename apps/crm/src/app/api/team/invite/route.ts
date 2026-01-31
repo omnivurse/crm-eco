@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check permissions
-    if (!['owner', 'super_admin', 'admin'].includes(profile.role)) {
+    if (!profile.role || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user can invite this role
-    if (role === 'super_admin' && !['owner', 'super_admin'].includes(profile.role)) {
+    if (role === 'super_admin' && (!profile.role || !['owner', 'super_admin'].includes(profile.role))) {
       return NextResponse.json({ error: 'Cannot invite super admin' }, { status: 403 });
     }
 

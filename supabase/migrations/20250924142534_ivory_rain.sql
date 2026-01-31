@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   email text UNIQUE NOT NULL,
   full_name text,
   role text CHECK (role IN ('requester', 'agent', 'admin')) DEFAULT 'requester',
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
 -- Tickets table
@@ -142,6 +143,9 @@ ALTER TABLE kb_articles ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 
 -- Profiles: Users can read their own profile, agents/admins can read all
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_read" ON profiles;
 CREATE POLICY "profiles_self_read" ON profiles
   FOR SELECT 
   USING (
@@ -153,12 +157,18 @@ CREATE POLICY "profiles_self_read" ON profiles
     )
   );
 
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_self_update" ON profiles;
 CREATE POLICY "profiles_self_update" ON profiles
   FOR UPDATE 
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
 -- Tickets: Requesters see own, agents/admins see all
+DROP POLICY IF EXISTS "tickets_requester_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_requester_read" ON tickets;
+DROP POLICY IF EXISTS "tickets_requester_read" ON tickets;
 CREATE POLICY "tickets_requester_read" ON tickets
   FOR SELECT 
   USING (
@@ -171,10 +181,16 @@ CREATE POLICY "tickets_requester_read" ON tickets
     )
   );
 
+DROP POLICY IF EXISTS "tickets_requester_insert" ON tickets;
+DROP POLICY IF EXISTS "tickets_requester_insert" ON tickets;
+DROP POLICY IF EXISTS "tickets_requester_insert" ON tickets;
 CREATE POLICY "tickets_requester_insert" ON tickets
   FOR INSERT 
   WITH CHECK (requester_id = auth.uid());
 
+DROP POLICY IF EXISTS "tickets_agent_all" ON tickets;
+DROP POLICY IF EXISTS "tickets_agent_all" ON tickets;
+DROP POLICY IF EXISTS "tickets_agent_all" ON tickets;
 CREATE POLICY "tickets_agent_all" ON tickets
   FOR ALL
   USING (
@@ -193,6 +209,9 @@ CREATE POLICY "tickets_agent_all" ON tickets
   );
 
 -- Ticket comments: Follow ticket access rules
+DROP POLICY IF EXISTS "comments_ticket_access" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_ticket_access" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_ticket_access" ON ticket_comments;
 CREATE POLICY "comments_ticket_access" ON ticket_comments
   FOR SELECT 
   USING (
@@ -211,6 +230,9 @@ CREATE POLICY "comments_ticket_access" ON ticket_comments
     )
   );
 
+DROP POLICY IF EXISTS "comments_insert" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_insert" ON ticket_comments;
+DROP POLICY IF EXISTS "comments_insert" ON ticket_comments;
 CREATE POLICY "comments_insert" ON ticket_comments
   FOR INSERT 
   WITH CHECK (
@@ -231,6 +253,9 @@ CREATE POLICY "comments_insert" ON ticket_comments
   );
 
 -- Ticket attachments: Follow ticket access rules
+DROP POLICY IF EXISTS "attachments_ticket_access" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_ticket_access" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_ticket_access" ON ticket_attachments;
 CREATE POLICY "attachments_ticket_access" ON ticket_attachments
   FOR SELECT 
   USING (
@@ -249,6 +274,9 @@ CREATE POLICY "attachments_ticket_access" ON ticket_attachments
     )
   );
 
+DROP POLICY IF EXISTS "attachments_insert" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_insert" ON ticket_attachments;
+DROP POLICY IF EXISTS "attachments_insert" ON ticket_attachments;
 CREATE POLICY "attachments_insert" ON ticket_attachments
   FOR INSERT 
   WITH CHECK (
@@ -268,10 +296,16 @@ CREATE POLICY "attachments_insert" ON ticket_attachments
   );
 
 -- KB Articles: Public read, admin/agent write
+DROP POLICY IF EXISTS "kb_public_read" ON kb_articles;
+DROP POLICY IF EXISTS "kb_public_read" ON kb_articles;
+DROP POLICY IF EXISTS "kb_public_read" ON kb_articles;
 CREATE POLICY "kb_public_read" ON kb_articles
   FOR SELECT 
   USING (is_published = true);
 
+DROP POLICY IF EXISTS "kb_author_all" ON kb_articles;
+DROP POLICY IF EXISTS "kb_author_all" ON kb_articles;
+DROP POLICY IF EXISTS "kb_author_all" ON kb_articles;
 CREATE POLICY "kb_author_all" ON kb_articles
   FOR ALL
   USING (

@@ -59,6 +59,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_team_invitations_unique_pending
 -- ============================================================================
 
 -- Users can view invitations for their organization (admin+ only)
+DROP POLICY IF EXISTS "team_invitations_select_policy" ON team_invitations;
 CREATE POLICY "team_invitations_select_policy" ON team_invitations
   FOR SELECT USING (
     organization_id IN (
@@ -70,6 +71,7 @@ CREATE POLICY "team_invitations_select_policy" ON team_invitations
   );
 
 -- Only admin+ can create invitations
+DROP POLICY IF EXISTS "team_invitations_insert_policy" ON team_invitations;
 CREATE POLICY "team_invitations_insert_policy" ON team_invitations
   FOR INSERT WITH CHECK (
     organization_id IN (
@@ -81,6 +83,7 @@ CREATE POLICY "team_invitations_insert_policy" ON team_invitations
   );
 
 -- Only admin+ can update invitations (revoke, etc)
+DROP POLICY IF EXISTS "team_invitations_update_policy" ON team_invitations;
 CREATE POLICY "team_invitations_update_policy" ON team_invitations
   FOR UPDATE USING (
     organization_id IN (
@@ -92,6 +95,7 @@ CREATE POLICY "team_invitations_update_policy" ON team_invitations
   );
 
 -- Only admin+ can delete invitations
+DROP POLICY IF EXISTS "team_invitations_delete_policy" ON team_invitations;
 CREATE POLICY "team_invitations_delete_policy" ON team_invitations
   FOR DELETE USING (
     organization_id IN (

@@ -59,7 +59,7 @@ export async function DELETE(
     }
 
     // Check permissions
-    if (!['owner', 'super_admin', 'admin'].includes(profile.role)) {
+    if (!profile.role || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 

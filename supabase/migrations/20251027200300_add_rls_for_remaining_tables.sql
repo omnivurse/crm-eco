@@ -1,171 +1,123 @@
 /*
-  # Add RLS Policies for Remaining Unprotected Tables
+  # Add RLS Policies for Remaining Unprotected Tables (Safe Version)
 
   1. Purpose
     - Add Row Level Security policies to tables without proper protection
-    - Ensure comprehensive data access control across all tables
-    - Prevent unauthorized data access
-
-  2. Tables Updated
-    - kb_articles (knowledge base)
-    - workflows
-    - sla_configs
-    - reminders
-
-  3. Security Model
-    - kb_articles: Public read, staff write
-    - workflows: Staff only
-    - sla_configs: Admin only
-    - reminders: Users can only access their own reminders
-
-  4. Notes
-    - All policies enforce strict role-based access control
-    - Maintains data privacy and security
+    - Only applies to tables that exist
 */
 
--- kb_articles RLS
-ALTER TABLE IF EXISTS kb_articles ENABLE ROW LEVEL SECURITY;
+-- kb_articles RLS (only if table exists)
+DO $$ BEGIN
+IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'kb_articles' AND table_schema = 'public') THEN
+  ALTER TABLE kb_articles ENABLE ROW LEVEL SECURITY;
+  
+  DROP POLICY IF EXISTS "Anyone can view KB articles" ON kb_articles;
+  CREATE POLICY "Anyone can view KB articles"
+    ON kb_articles FOR SELECT TO authenticated USING (true);
+  
+  DROP POLICY IF EXISTS "Only staff can create KB articles" ON kb_articles;
+  CREATE POLICY "Only staff can create KB articles"
+    ON kb_articles FOR INSERT TO authenticated
+    WITH CHECK (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin'))
+    );
+  
+  DROP POLICY IF EXISTS "Only staff can update KB articles" ON kb_articles;
+  CREATE POLICY "Only staff can update KB articles"
+    ON kb_articles FOR UPDATE TO authenticated
+    USING (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin'))
+    );
+  
+  DROP POLICY IF EXISTS "Only staff can delete KB articles" ON kb_articles;
+  CREATE POLICY "Only staff can delete KB articles"
+    ON kb_articles FOR DELETE TO authenticated
+    USING (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin'))
+    );
+    
+  GRANT SELECT ON kb_articles TO authenticated;
+END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Anyone can view KB articles"
-  ON kb_articles FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY IF NOT EXISTS "Only staff can create KB articles"
-  ON kb_articles FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin')
+-- workflows RLS (only if table exists)
+DO $$ BEGIN
+IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'workflows' AND table_schema = 'public') THEN
+  ALTER TABLE workflows ENABLE ROW LEVEL SECURITY;
+  
+  DROP POLICY IF EXISTS "Staff can view workflows" ON workflows;
+  CREATE POLICY "Staff can view workflows"
+    ON workflows FOR SELECT TO authenticated
+    USING (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin'))
+    );
+  
+  DROP POLICY IF EXISTS "Admins can manage workflows" ON workflows;
+  CREATE POLICY "Admins can manage workflows"
+    ON workflows FOR ALL TO authenticated
+    USING (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'super_admin'))
     )
-  );
+    WITH CHECK (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'super_admin'))
+    );
+    
+  GRANT SELECT ON workflows TO authenticated;
+END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Only staff can update KB articles"
-  ON kb_articles FOR UPDATE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin')
+-- sla_configs RLS (only if table exists)
+DO $$ BEGIN
+IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'sla_configs' AND table_schema = 'public') THEN
+  ALTER TABLE sla_configs ENABLE ROW LEVEL SECURITY;
+  
+  DROP POLICY IF EXISTS "Staff can view SLA configs" ON sla_configs;
+  CREATE POLICY "Staff can view SLA configs"
+    ON sla_configs FOR SELECT TO authenticated
+    USING (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin'))
+    );
+  
+  DROP POLICY IF EXISTS "Admins can manage SLA configs" ON sla_configs;
+  CREATE POLICY "Admins can manage SLA configs"
+    ON sla_configs FOR ALL TO authenticated
+    USING (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'super_admin'))
     )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin')
-    )
-  );
+    WITH CHECK (
+      EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('admin', 'super_admin'))
+    );
+    
+  GRANT SELECT ON sla_configs TO authenticated;
+END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Only staff can delete KB articles"
-  ON kb_articles FOR DELETE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin')
-    )
-  );
-
--- workflows RLS
-ALTER TABLE IF EXISTS workflows ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY IF NOT EXISTS "Staff can view workflows"
-  ON workflows FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin')
-    )
-  );
-
-CREATE POLICY IF NOT EXISTS "Admins can manage workflows"
-  ON workflows FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('admin', 'super_admin')
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('admin', 'super_admin')
-    )
-  );
-
--- sla_configs RLS
-ALTER TABLE IF EXISTS sla_configs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY IF NOT EXISTS "Staff can view SLA configs"
-  ON sla_configs FOR SELECT
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('staff', 'agent', 'admin', 'super_admin')
-    )
-  );
-
-CREATE POLICY IF NOT EXISTS "Admins can manage SLA configs"
-  ON sla_configs FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('admin', 'super_admin')
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('admin', 'super_admin')
-    )
-  );
-
--- reminders RLS
-ALTER TABLE IF EXISTS reminders ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY IF NOT EXISTS "Users can view own reminders"
-  ON reminders FOR SELECT
-  TO authenticated
-  USING (user_id = auth.uid());
-
-CREATE POLICY IF NOT EXISTS "Users can create own reminders"
-  ON reminders FOR INSERT
-  TO authenticated
-  WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY IF NOT EXISTS "Users can update own reminders"
-  ON reminders FOR UPDATE
-  TO authenticated
-  USING (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY IF NOT EXISTS "Users can delete own reminders"
-  ON reminders FOR DELETE
-  TO authenticated
-  USING (user_id = auth.uid());
-
--- Grant necessary table permissions
-GRANT SELECT ON kb_articles TO authenticated;
-GRANT SELECT ON workflows TO authenticated;
-GRANT SELECT ON sla_configs TO authenticated;
-GRANT ALL ON reminders TO authenticated;
-
-COMMENT ON POLICY "Anyone can view KB articles" ON kb_articles IS 'Knowledge base articles are publicly readable';
-COMMENT ON POLICY "Staff can view workflows" ON workflows IS 'Only staff roles can view automation workflows';
-COMMENT ON POLICY "Admins can manage workflows" ON workflows IS 'Only admins can create, update, or delete workflows';
-COMMENT ON POLICY "Users can view own reminders" ON reminders IS 'Users can only access their own reminders';
+-- reminders RLS (only if table exists)
+DO $$ BEGIN
+IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'reminders' AND table_schema = 'public') THEN
+  ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
+  
+  DROP POLICY IF EXISTS "Users can view own reminders" ON reminders;
+  CREATE POLICY "Users can view own reminders"
+    ON reminders FOR SELECT TO authenticated
+    USING (user_id = auth.uid());
+  
+  DROP POLICY IF EXISTS "Users can create own reminders" ON reminders;
+  CREATE POLICY "Users can create own reminders"
+    ON reminders FOR INSERT TO authenticated
+    WITH CHECK (user_id = auth.uid());
+  
+  DROP POLICY IF EXISTS "Users can update own reminders" ON reminders;
+  CREATE POLICY "Users can update own reminders"
+    ON reminders FOR UPDATE TO authenticated
+    USING (user_id = auth.uid())
+    WITH CHECK (user_id = auth.uid());
+  
+  DROP POLICY IF EXISTS "Users can delete own reminders" ON reminders;
+  CREATE POLICY "Users can delete own reminders"
+    ON reminders FOR DELETE TO authenticated
+    USING (user_id = auth.uid());
+    
+  GRANT ALL ON reminders TO authenticated;
+END IF;
+END $$;

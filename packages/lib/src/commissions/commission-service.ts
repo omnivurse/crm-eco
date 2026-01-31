@@ -217,7 +217,7 @@ export class CommissionService {
 
     while (level <= maxLevels) {
       // Get the parent advisor
-      const { data: advisor } = await this.supabase
+      const { data: advisor } = await (this.supabase as any)
         .from('advisors')
         .select('parent_advisor_id, commission_eligible')
         .eq('id', currentAdvisorId)

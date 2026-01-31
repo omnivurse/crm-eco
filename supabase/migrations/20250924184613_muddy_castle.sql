@@ -87,17 +87,26 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
--- Role checking functions
+-- Role checking functions - handles both text and user_role types
+CREATE OR REPLACE FUNCTION public.has_role(u uuid, r text)
+RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS(
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = u AND p.role::text = r
+  );
+$$;
+
+-- Overload for user_role enum type
 CREATE OR REPLACE FUNCTION public.has_role(u uuid, r user_role)
 RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS(
     SELECT 1 FROM public.profiles p
-    WHERE p.id = u AND p.role = r
+    WHERE p.id = u AND p.role::text = r::text
   );
 $$;
 
--- Role hierarchy ranking
-CREATE OR REPLACE FUNCTION public.role_rank(r user_role)
+-- Role hierarchy ranking - handles text input
+CREATE OR REPLACE FUNCTION public.role_rank(r text)
 RETURNS int LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE r
     WHEN 'super_admin' THEN 6
@@ -105,16 +114,30 @@ RETURNS int LANGUAGE sql IMMUTABLE AS $$
     WHEN 'it' THEN 4
     WHEN 'staff' THEN 3
     WHEN 'advisor' THEN 2
+    WHEN 'agent' THEN 3
+    WHEN 'requester' THEN 1
     ELSE 1
   END;
 $$;
 
--- Check if user has minimum role level
-CREATE OR REPLACE FUNCTION public.role_at_least(u uuid, min_role user_role)
+-- Overload for user_role enum
+CREATE OR REPLACE FUNCTION public.role_rank(r user_role)
+RETURNS int LANGUAGE sql IMMUTABLE AS $$
+  SELECT public.role_rank(r::text);
+$$;
+
+-- Check if user has minimum role level - handles text type
+CREATE OR REPLACE FUNCTION public.role_at_least(u uuid, min_role text)
 RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT role_rank(p.role) >= role_rank(min_role)
+  SELECT public.role_rank(p.role::text) >= public.role_rank(min_role)
   FROM public.profiles p
   WHERE p.id = u;
+$$;
+
+-- Overload for user_role enum
+CREATE OR REPLACE FUNCTION public.role_at_least(u uuid, min_role user_role)
+RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT public.role_at_least(u, min_role::text);
 $$;
 
 -- Enable RLS
@@ -149,10 +172,8 @@ CREATE POLICY "profiles_admin_update_roles"
   TO authenticated
   USING (public.role_at_least(auth.uid(), 'admin'))
   WITH CHECK (
-    CASE
-      WHEN NEW.role = 'super_admin' THEN public.has_role(auth.uid(), 'super_admin')
-      ELSE true
-    END
+    -- Only super_admins can grant super_admin role
+    role::text <> 'super_admin' OR public.has_role(auth.uid(), 'super_admin')
   );
 
 -- Policy: Only super_admin can insert profiles directly

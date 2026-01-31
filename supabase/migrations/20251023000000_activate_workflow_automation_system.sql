@@ -55,6 +55,8 @@ CREATE INDEX IF NOT EXISTS idx_workflow_queue_event ON workflow_queue(event_type
 ALTER TABLE workflow_queue ENABLE ROW LEVEL SECURITY;
 
 -- Admin only access to workflow queue
+DROP POLICY IF EXISTS "workflow_queue_admin_access" ON workflow_queue;
+DROP POLICY IF EXISTS "workflow_queue_admin_access" ON workflow_queue;
 CREATE POLICY "workflow_queue_admin_access" ON workflow_queue FOR ALL TO authenticated
 USING (
   EXISTS(
@@ -413,10 +415,14 @@ END $$;
 
 -- Update workflow_executions RLS to allow system writes
 DROP POLICY IF EXISTS "workflow_executions_system_write" ON workflow_executions;
+DROP POLICY IF EXISTS "workflow_executions_system_write" ON workflow_executions;
+DROP POLICY IF EXISTS "workflow_executions_system_write" ON workflow_executions;
 CREATE POLICY "workflow_executions_system_write" ON workflow_executions
 FOR INSERT TO authenticated
 WITH CHECK (true);
 
+DROP POLICY IF EXISTS "workflow_executions_system_update" ON workflow_executions;
+DROP POLICY IF EXISTS "workflow_executions_system_update" ON workflow_executions;
 DROP POLICY IF EXISTS "workflow_executions_system_update" ON workflow_executions;
 CREATE POLICY "workflow_executions_system_update" ON workflow_executions
 FOR UPDATE TO authenticated
