@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowLeft,
   Building2,
@@ -199,9 +200,9 @@ export default function VendorDetailPage() {
             </Button>
           </Link>
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center">
+            <div className="w-14 h-14 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
               {vendor.logo_url ? (
-                <img src={vendor.logo_url} alt={vendor.name} className="w-10 h-10 object-contain" />
+                <Image src={vendor.logo_url} alt={vendor.name} width={40} height={40} className="object-contain" />
               ) : (
                 <Building2 className="w-8 h-8 text-slate-400" />
               )}

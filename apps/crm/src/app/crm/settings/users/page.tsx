@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Shield, User, Mail, Check, X } from 'lucide-react';
+import { Avatar } from '@/components/shared';
 import { getCurrentProfile, getOrganizationProfiles } from '@/lib/crm/queries';
 import type { CrmProfile, CrmRole } from '@/lib/crm/types';
 
@@ -33,13 +34,7 @@ function UserRow({ user }: { user: CrmProfile }) {
 
   return (
     <div className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-        {user.avatar_url ? (
-          <img src={user.avatar_url} alt="" className="w-10 h-10 rounded-full" />
-        ) : (
-          <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-        )}
-      </div>
+      <Avatar src={user.avatar_url} alt={user.full_name} size="md" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
