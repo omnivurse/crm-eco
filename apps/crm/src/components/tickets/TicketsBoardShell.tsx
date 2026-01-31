@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useTransition } from 'react';
+import { useState, useMemo, useEffect, useRef, useTransition, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -111,7 +111,7 @@ interface TicketsBoardShellProps {
 // COMPONENT
 // ============================================================================
 
-export function TicketsBoardShell({
+export const TicketsBoardShell = memo(function TicketsBoardShell({
   tickets,
   savedViews,
   defaultSavedViewId,
@@ -721,5 +721,5 @@ export function TicketsBoardShell({
       </Dialog>
     </div>
   );
-}
+});
 

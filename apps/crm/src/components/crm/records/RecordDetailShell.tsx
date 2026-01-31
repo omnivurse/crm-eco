@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -125,7 +125,7 @@ function StageIndicator({
   );
 }
 
-export function RecordDetailShell({
+export const RecordDetailShell = memo(function RecordDetailShell({
   record,
   module,
   fields,
@@ -771,4 +771,4 @@ export function RecordDetailShell({
       </Dialog>
     </div>
   );
-}
+});

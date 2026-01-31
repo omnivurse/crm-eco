@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -29,7 +29,7 @@ interface ModuleShellProps {
   className?: string;
 }
 
-export function ModuleShell({
+export const ModuleShell = memo(function ModuleShell({
   module,
   records,
   fields,
@@ -824,4 +824,4 @@ export function ModuleShell({
       </Dialog>
     </div>
   );
-}
+});
