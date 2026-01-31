@@ -145,7 +145,7 @@ export function CrmTopBar({
         <img
           src="/logo.png"
           alt="Pay It Forward HealthShare"
-          className="h-8 w-auto object-contain"
+          className="h-10 w-auto object-contain"
         />
       </Link>
 
