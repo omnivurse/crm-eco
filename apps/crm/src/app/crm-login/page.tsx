@@ -92,7 +92,7 @@ function PremiumOrbitAnimation() {
           {/* Top node */}
           <div className="absolute -top-3 left-1/2 -translate-x-1/2">
             <div className="relative group">
-              <div className="absolute -inset-2 bg-teal-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-teal-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-teal-400/70 shadow-[0_0_25px_8px_rgba(20,184,166,0.4)]">
                 <Users className="w-5 h-5 text-teal-400" />
               </div>
@@ -101,7 +101,7 @@ function PremiumOrbitAnimation() {
           {/* Bottom node */}
           <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
             <div className="relative group">
-              <div className="absolute -inset-2 bg-violet-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-violet-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-violet-400/70 shadow-[0_0_25px_8px_rgba(139,92,246,0.4)]">
                 <BarChart3 className="w-5 h-5 text-violet-400" />
               </div>
@@ -117,7 +117,7 @@ function PremiumOrbitAnimation() {
           {/* Top left node */}
           <div className="absolute top-6 -left-3">
             <div className="relative">
-              <div className="absolute -inset-2 bg-blue-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-blue-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-blue-400/70 shadow-[0_0_25px_8px_rgba(59,130,246,0.4)]">
                 <Briefcase className="w-5 h-5 text-blue-400" />
               </div>
@@ -126,7 +126,7 @@ function PremiumOrbitAnimation() {
           {/* Bottom right node */}
           <div className="absolute bottom-6 -right-3">
             <div className="relative">
-              <div className="absolute -inset-2 bg-emerald-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-emerald-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-emerald-400/70 shadow-[0_0_25px_8px_rgba(16,185,129,0.4)]">
                 <Database className="w-5 h-5 text-emerald-400" />
               </div>
@@ -135,7 +135,7 @@ function PremiumOrbitAnimation() {
           {/* Left node */}
           <div className="absolute top-1/2 -left-4 -translate-y-1/2">
             <div className="relative">
-              <div className="absolute -inset-2 bg-amber-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-amber-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-amber-400/70 shadow-[0_0_25px_8px_rgba(245,158,11,0.4)]">
                 <Zap className="w-5 h-5 text-amber-400" />
               </div>
@@ -151,7 +151,7 @@ function PremiumOrbitAnimation() {
           {/* Top node */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <div className="relative">
-              <div className="absolute -inset-2 bg-cyan-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-cyan-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-cyan-400/70 shadow-[0_0_25px_8px_rgba(6,182,212,0.4)]">
                 <Target className="w-5 h-5 text-cyan-400" />
               </div>
@@ -160,7 +160,7 @@ function PremiumOrbitAnimation() {
           {/* Bottom node */}
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
             <div className="relative">
-              <div className="absolute -inset-2 bg-rose-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-rose-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-rose-400/70 shadow-[0_0_25px_8px_rgba(244,63,94,0.4)]">
                 <HeartHandshake className="w-5 h-5 text-rose-400" />
               </div>
@@ -169,7 +169,7 @@ function PremiumOrbitAnimation() {
           {/* Right node */}
           <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
             <div className="relative">
-              <div className="absolute -inset-2 bg-indigo-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-indigo-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-indigo-400/70 shadow-[0_0_25px_8px_rgba(99,102,241,0.4)]">
                 <Globe className="w-5 h-5 text-indigo-400" />
               </div>
@@ -178,7 +178,7 @@ function PremiumOrbitAnimation() {
           {/* Left node */}
           <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
             <div className="relative">
-              <div className="absolute -inset-2 bg-green-400 rounded-full blur-lg opacity-70 animate-pulse" />
+              <div className="absolute -inset-2 bg-green-400 rounded-full blur-lg opacity-70" />
               <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-green-400/70 shadow-[0_0_25px_8px_rgba(34,197,94,0.4)]">
                 <TrendingUp className="w-5 h-5 text-green-400" />
               </div>

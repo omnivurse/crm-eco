@@ -196,8 +196,8 @@ export default function LearnPage() {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-500 p-8 md:p-12">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-white/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-white/10 rounded-full blur-2xl" style={{ animationDelay: '1s' }} />
         </div>
 
         <div className="relative z-10">
@@ -309,7 +309,7 @@ export default function LearnPage() {
 
       {/* Selected Category Articles */}
       {selectedCategory && (
-        <div className="animate-fade-in-up">
+        <div className="">
           {(() => {
             const category = CATEGORIES.find(c => c.id === selectedCategory);
             if (!category) return null;
