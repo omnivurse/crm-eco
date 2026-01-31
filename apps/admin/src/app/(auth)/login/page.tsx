@@ -199,6 +199,19 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Log authentication events
+  const logAuthEvent = async (action: string, details?: Record<string, unknown>) => {
+    try {
+      await fetch('/api/auth/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, email, details }),
+      });
+    } catch (err) {
+      console.error('Failed to log auth event:', err);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -216,6 +229,8 @@ export default function LoginPage() {
       });
 
       if (signInError) {
+        // Log failed login attempt
+        await logAuthEvent('login_failed', { reason: signInError.message });
         setError(signInError.message);
         setLoading(false);
         return;
@@ -229,6 +244,7 @@ export default function LoginPage() {
           .single();
 
         if (profileError || !profile) {
+          await logAuthEvent('login_failed', { reason: 'No profile found', profileError: profileError?.message });
           setError('No profile found. Please contact your administrator.');
           await supabase.auth.signOut();
           setLoading(false);
@@ -237,16 +253,21 @@ export default function LoginPage() {
 
         // Check if user has admin access
         if (!['owner', 'super_admin', 'admin', 'staff'].includes(profile.role)) {
+          await logAuthEvent('login_failed', { reason: 'No admin access', role: profile.role });
           setError('You do not have admin access. Please contact your administrator.');
           await supabase.auth.signOut();
           setLoading(false);
           return;
         }
 
+        // Log successful login
+        await logAuthEvent('login_success', { role: profile.role });
+
         router.push('/dashboard');
         router.refresh();
       }
     } catch {
+      await logAuthEvent('login_failed', { reason: 'Unexpected error' });
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
