@@ -8,7 +8,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 
 const iconOptions = [
   { value: 'file', label: 'File' },
@@ -39,11 +39,6 @@ export default function NewModulePage() {
     icon: 'file',
     description: '',
   });
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   // Auto-generate key from name
   const handleNameChange = (name: string) => {

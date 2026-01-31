@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import {
     ChevronLeft,
     ChevronRight,
@@ -113,11 +113,6 @@ export default function CalendarPage() {
     const [profileData, setProfileData] = useState<{ id: string; organization_id: string } | null>(null);
     const [showEventDetailModal, setShowEventDetailModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
-
-    const supabase = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
 
     // Load data
     useEffect(() => {

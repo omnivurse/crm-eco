@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
@@ -161,11 +161,6 @@ export default function CampaignDetailPage({ params }: { params: Promise<{ id: s
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [rates, setRates] = useState<CampaignRates | null>(null);
   const [topLinks, setTopLinks] = useState<TopLink[]>([]);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   async function loadData(showRefresh = false) {
     if (showRefresh) setRefreshing(true);

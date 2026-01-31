@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@crm-eco/ui/components/avatar';
@@ -69,11 +69,6 @@ export function CrmTopBar({
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const router = useRouter();
   const { toggle: toggleTerminal } = useTerminal();
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   // Change feed for ticker - scoped to high-value entity types only
   // Reduces noise and improves performance by filtering on server-side

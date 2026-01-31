@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -81,11 +81,6 @@ export function RecipientSelector({
   const [excludeUnsubscribed, setExcludeUnsubscribed] = useState(true);
   const [excludeRecentlyContacted, setExcludeRecentlyContacted] = useState(false);
   const [recentDays, setRecentDays] = useState(7);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   // Load modules on mount
   useEffect(() => {
