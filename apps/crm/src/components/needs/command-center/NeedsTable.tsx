@@ -1,7 +1,9 @@
 'use client';
 
+import { useRef } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Table,
   TableBody,
@@ -58,6 +60,16 @@ function formatCurrency(amount: number | null | undefined): string {
 }
 
 export function NeedsTable({ needs, assignableProfiles, currentProfileId }: NeedsTableProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const ROW_HEIGHT = 72; // Estimated row height
+  const rowVirtualizer = useVirtualizer({
+    count: needs.length,
+    getScrollElement: () => containerRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5,
+  });
+
   if (needs.length === 0) {
     return (
       <Card>
@@ -79,109 +91,132 @@ export function NeedsTable({ needs, assignableProfiles, currentProfileId }: Need
   return (
     <Card>
       <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Member</TableHead>
-              <TableHead>Need</TableHead>
-              <TableHead>Assignee</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>SLA</TableHead>
-              <TableHead>Target Date</TableHead>
-              <TableHead>Amounts</TableHead>
-              <TableHead>IUA Met</TableHead>
-              <TableHead>Updated</TableHead>
-              <TableHead className="w-12"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {needs.map((need) => (
-              <TableRow key={need.id} className="hover:bg-slate-50">
-                <TableCell>
-                  {need.member_id ? (
-                    <Link 
-                      href={`/members/${need.member_id}`}
-                      className="font-medium text-blue-600 hover:underline"
-                    >
-                      {need.member_first_name} {need.member_last_name}
-                    </Link>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="max-w-[200px]">
-                    <p className="font-medium text-slate-900 truncate">
-                      {need.need_type.replace(/_/g, ' ')}
-                    </p>
-                    {need.description && (
-                      <p className="text-xs text-slate-500 truncate">
-                        {need.description}
-                      </p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {need.assigned_to_name ? (
-                    <span className="text-sm text-slate-700">{need.assigned_to_name}</span>
-                  ) : (
-                    <span className="text-sm text-slate-400 italic">Unassigned</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <NeedStatusBadge status={need.status} />
-                </TableCell>
-                <TableCell>
-                  <UrgencyBadge urgency={need.urgency_light} />
-                </TableCell>
-                <TableCell className="text-sm text-slate-600">
-                  {need.sla_target_date 
-                    ? format(new Date(need.sla_target_date), 'MMM d, yyyy')
-                    : <span className="text-slate-400">—</span>
-                  }
-                </TableCell>
-                <TableCell>
-                  <div className="text-xs space-y-0.5">
-                    <div className="text-slate-600">
-                      <span className="text-slate-400">Billed:</span>{' '}
-                      {formatCurrency(need.billed_amount)}
-                    </div>
-                    <div className="text-slate-600">
-                      <span className="text-slate-400">Approved:</span>{' '}
-                      {formatCurrency(need.approved_amount || need.eligible_amount)}
-                    </div>
-                    <div className="text-slate-600">
-                      <span className="text-slate-400">Member:</span>{' '}
-                      {formatCurrency(need.member_responsibility_amount)}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                    need.iua_met 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {need.iua_met ? 'Yes' : 'No'}
-                  </span>
-                </TableCell>
-                <TableCell className="text-sm text-slate-500">
-                  {format(new Date(need.updated_at), 'MMM d')}
-                </TableCell>
-                <TableCell>
-                  <NeedActionsMenu
-                    needId={need.id}
-                    currentStatus={need.status}
-                    currentTargetDate={need.sla_target_date}
-                    currentIuaMet={need.iua_met}
-                    assignableProfiles={assignableProfiles}
-                    currentProfileId={currentProfileId}
-                  />
-                </TableCell>
+        <div ref={containerRef} className="overflow-auto max-h-[600px]">
+          <Table>
+            <TableHeader className="sticky top-0 z-10 bg-white">
+              <TableRow>
+                <TableHead>Member</TableHead>
+                <TableHead>Need</TableHead>
+                <TableHead>Assignee</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>SLA</TableHead>
+                <TableHead>Target Date</TableHead>
+                <TableHead>Amounts</TableHead>
+                <TableHead>IUA Met</TableHead>
+                <TableHead>Updated</TableHead>
+                <TableHead className="w-12"></TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                position: 'relative',
+                display: 'block',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const need = needs[virtualRow.index];
+                return (
+                  <TableRow
+                    key={need.id}
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className="hover:bg-slate-50 flex"
+                  >
+                    <TableCell className="flex-1">
+                      {need.member_id ? (
+                        <Link
+                          href={`/members/${need.member_id}`}
+                          className="font-medium text-blue-600 hover:underline"
+                        >
+                          {need.member_first_name} {need.member_last_name}
+                        </Link>
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="flex-1">
+                      <div className="max-w-[200px]">
+                        <p className="font-medium text-slate-900 truncate">
+                          {need.need_type.replace(/_/g, ' ')}
+                        </p>
+                        {need.description && (
+                          <p className="text-xs text-slate-500 truncate">
+                            {need.description}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="flex-1">
+                      {need.assigned_to_name ? (
+                        <span className="text-sm text-slate-700">{need.assigned_to_name}</span>
+                      ) : (
+                        <span className="text-sm text-slate-400 italic">Unassigned</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="flex-1">
+                      <NeedStatusBadge status={need.status} />
+                    </TableCell>
+                    <TableCell className="flex-1">
+                      <UrgencyBadge urgency={need.urgency_light} />
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-600 flex-1">
+                      {need.sla_target_date
+                        ? format(new Date(need.sla_target_date), 'MMM d, yyyy')
+                        : <span className="text-slate-400">—</span>
+                      }
+                    </TableCell>
+                    <TableCell className="flex-1">
+                      <div className="text-xs space-y-0.5">
+                        <div className="text-slate-600">
+                          <span className="text-slate-400">Billed:</span>{' '}
+                          {formatCurrency(need.billed_amount)}
+                        </div>
+                        <div className="text-slate-600">
+                          <span className="text-slate-400">Approved:</span>{' '}
+                          {formatCurrency(need.approved_amount || need.eligible_amount)}
+                        </div>
+                        <div className="text-slate-600">
+                          <span className="text-slate-400">Member:</span>{' '}
+                          {formatCurrency(need.member_responsibility_amount)}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="flex-1">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${need.iua_met
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-slate-100 text-slate-600'
+                        }`}>
+                        {need.iua_met ? 'Yes' : 'No'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-slate-500 flex-1">
+                      {format(new Date(need.updated_at), 'MMM d')}
+                    </TableCell>
+                    <TableCell className="w-12 flex-shrink-0">
+                      <NeedActionsMenu
+                        needId={need.id}
+                        currentStatus={need.status}
+                        currentTargetDate={need.sla_target_date}
+                        currentIuaMet={need.iua_met}
+                        assignableProfiles={assignableProfiles}
+                        currentProfileId={currentProfileId}
+                      />
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   );

@@ -75,13 +75,15 @@ export function CrmTopBar({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Change feed for ticker
+  // Change feed for ticker - scoped to high-value entity types only
+  // Reduces noise and improves performance by filtering on server-side
   const changeFeed = useChangeFeed({
     orgId: profile.organization_id,
-    entityTypes: ['record', 'lead', 'member', 'enrollment', 'deal', 'task', 'activity'],
-    minSeverity: 'info',
-    maxEvents: 20,
+    entityTypes: ['deal', 'task', 'lead'], // Focus on sales-critical events
+    minSeverity: 'medium', // Filter out info-level noise
+    maxEvents: 10,
     realtime: true,
+    autoRefresh: false, // Rely on realtime only, no polling
   });
 
   // Subscribe to Supabase realtime for change events

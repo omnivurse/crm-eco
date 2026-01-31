@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { StickyNote, ArrowRight, Pin } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';

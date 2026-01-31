@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { Trophy, ArrowRight, Medal } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';

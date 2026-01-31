@@ -1,5 +1,3 @@
-'use client';
-
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { ReactNode } from 'react';
 
