@@ -29,7 +29,7 @@ export function Footer() {
               <img
                 src="/logo.png"
                 alt="Pay It Forward HealthShare"
-                className="h-9 w-auto object-contain"
+                className="h-12 max-w-[180px] w-auto object-contain"
               />
             </Link>
             <span className="hidden md:inline text-slate-400 dark:text-slate-600">|</span>
