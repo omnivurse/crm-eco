@@ -71,11 +71,51 @@ CREATE TABLE IF NOT EXISTS public.import_mapping_templates (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Create indexes
-CREATE INDEX IF NOT EXISTS idx_import_jobs_org ON public.import_jobs(organization_id);
-CREATE INDEX IF NOT EXISTS idx_import_jobs_status ON public.import_jobs(status);
-CREATE INDEX IF NOT EXISTS idx_import_jobs_type ON public.import_jobs(import_type);
-CREATE INDEX IF NOT EXISTS idx_import_jobs_created ON public.import_jobs(created_at DESC);
+-- Add missing columns to existing import_jobs table
+DO $$
+BEGIN
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES public.organizations(id) ON DELETE CASCADE;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS import_type text;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS file_name text;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS file_size integer;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS file_type text;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending';
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS field_mapping jsonb DEFAULT '{}';
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS mapping_template_id uuid;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS total_rows integer DEFAULT 0;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS processed_rows integer DEFAULT 0;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS success_count integer DEFAULT 0;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS error_count integer DEFAULT 0;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS skip_count integer DEFAULT 0;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS validation_errors jsonb DEFAULT '[]';
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS result_summary jsonb;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS error_log jsonb DEFAULT '[]';
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS options jsonb DEFAULT '{}';
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS started_at timestamptz;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS completed_at timestamptz;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS created_by uuid;
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+  ALTER TABLE public.import_jobs ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- Create indexes only if columns exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'import_jobs' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_import_jobs_org ON public.import_jobs(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'import_jobs' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_import_jobs_status ON public.import_jobs(status);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'import_jobs' AND column_name = 'import_type') THEN
+    CREATE INDEX IF NOT EXISTS idx_import_jobs_type ON public.import_jobs(import_type);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'import_jobs' AND column_name = 'created_at') THEN
+    CREATE INDEX IF NOT EXISTS idx_import_jobs_created ON public.import_jobs(created_at DESC);
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_import_staging_job ON public.import_staging(import_job_id);
 CREATE INDEX IF NOT EXISTS idx_import_staging_status ON public.import_staging(status);

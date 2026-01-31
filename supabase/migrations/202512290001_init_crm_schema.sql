@@ -4,7 +4,7 @@
 -- ============================================================================
 -- ORGANIZATIONS
 -- ============================================================================
-CREATE TABLE organizations (
+CREATE TABLE IF NOT EXISTS organizations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   slug text NOT NULL UNIQUE,
@@ -13,12 +13,12 @@ CREATE TABLE organizations (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_organizations_slug ON organizations(slug);
+CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug);
 
 -- ============================================================================
 -- PROFILES (linked to auth.users)
 -- ============================================================================
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -32,14 +32,24 @@ CREATE TABLE profiles (
   UNIQUE(user_id, organization_id)
 );
 
-CREATE INDEX idx_profiles_user_id ON profiles(user_id);
-CREATE INDEX idx_profiles_organization_id ON profiles(organization_id);
-CREATE INDEX idx_profiles_email ON profiles(email);
+-- Create indexes only if the columns exist (handles Portal vs CRM schema differences)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'user_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_profiles_organization_id ON profiles(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'email') THEN
+    CREATE INDEX IF NOT EXISTS idx_profiles_email ON profiles(email);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- ADVISORS
 -- ============================================================================
-CREATE TABLE advisors (
+CREATE TABLE IF NOT EXISTS advisors (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -57,16 +67,16 @@ CREATE TABLE advisors (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_advisors_organization_id ON advisors(organization_id);
-CREATE INDEX idx_advisors_profile_id ON advisors(profile_id);
-CREATE INDEX idx_advisors_parent_advisor_id ON advisors(parent_advisor_id);
-CREATE INDEX idx_advisors_status ON advisors(status);
-CREATE INDEX idx_advisors_email ON advisors(email);
+CREATE INDEX IF NOT EXISTS idx_advisors_organization_id ON advisors(organization_id);
+CREATE INDEX IF NOT EXISTS idx_advisors_profile_id ON advisors(profile_id);
+CREATE INDEX IF NOT EXISTS idx_advisors_parent_advisor_id ON advisors(parent_advisor_id);
+CREATE INDEX IF NOT EXISTS idx_advisors_status ON advisors(status);
+CREATE INDEX IF NOT EXISTS idx_advisors_email ON advisors(email);
 
 -- ============================================================================
 -- MEMBERS
 -- ============================================================================
-CREATE TABLE members (
+CREATE TABLE IF NOT EXISTS members (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL,
@@ -91,16 +101,16 @@ CREATE TABLE members (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_members_organization_id ON members(organization_id);
-CREATE INDEX idx_members_advisor_id ON members(advisor_id);
-CREATE INDEX idx_members_status ON members(status);
-CREATE INDEX idx_members_email ON members(email);
-CREATE INDEX idx_members_state ON members(state);
+CREATE INDEX IF NOT EXISTS idx_members_organization_id ON members(organization_id);
+CREATE INDEX IF NOT EXISTS idx_members_advisor_id ON members(advisor_id);
+CREATE INDEX IF NOT EXISTS idx_members_status ON members(status);
+CREATE INDEX IF NOT EXISTS idx_members_email ON members(email);
+CREATE INDEX IF NOT EXISTS idx_members_state ON members(state);
 
 -- ============================================================================
 -- LEADS
 -- ============================================================================
-CREATE TABLE leads (
+CREATE TABLE IF NOT EXISTS leads (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL,
@@ -116,15 +126,15 @@ CREATE TABLE leads (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_leads_organization_id ON leads(organization_id);
-CREATE INDEX idx_leads_advisor_id ON leads(advisor_id);
-CREATE INDEX idx_leads_status ON leads(status);
-CREATE INDEX idx_leads_email ON leads(email);
+CREATE INDEX IF NOT EXISTS idx_leads_organization_id ON leads(organization_id);
+CREATE INDEX IF NOT EXISTS idx_leads_advisor_id ON leads(advisor_id);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email);
 
 -- ============================================================================
 -- ACTIVITIES (audit log)
 -- ============================================================================
-CREATE TABLE activities (
+CREATE TABLE IF NOT EXISTS activities (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   profile_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
@@ -136,15 +146,15 @@ CREATE TABLE activities (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_activities_organization_id ON activities(organization_id);
-CREATE INDEX idx_activities_profile_id ON activities(profile_id);
-CREATE INDEX idx_activities_entity_type_id ON activities(entity_type, entity_id);
-CREATE INDEX idx_activities_created_at ON activities(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activities_organization_id ON activities(organization_id);
+CREATE INDEX IF NOT EXISTS idx_activities_profile_id ON activities(profile_id);
+CREATE INDEX IF NOT EXISTS idx_activities_entity_type_id ON activities(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_activities_created_at ON activities(created_at DESC);
 
 -- ============================================================================
 -- TICKETS
 -- ============================================================================
-CREATE TABLE tickets (
+CREATE TABLE IF NOT EXISTS tickets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   created_by_profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
@@ -162,20 +172,36 @@ CREATE TABLE tickets (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_tickets_organization_id ON tickets(organization_id);
-CREATE INDEX idx_tickets_created_by_profile_id ON tickets(created_by_profile_id);
-CREATE INDEX idx_tickets_assigned_to_profile_id ON tickets(assigned_to_profile_id);
-CREATE INDEX idx_tickets_member_id ON tickets(member_id);
-CREATE INDEX idx_tickets_advisor_id ON tickets(advisor_id);
-CREATE INDEX idx_tickets_status ON tickets(status);
-CREATE INDEX idx_tickets_priority ON tickets(priority);
-CREATE INDEX idx_tickets_category ON tickets(category);
-CREATE INDEX idx_tickets_created_at ON tickets(created_at DESC);
+-- Create ticket indexes only if columns exist (handles Portal vs CRM schema differences)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_tickets_organization_id ON tickets(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'created_by_profile_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_tickets_created_by_profile_id ON tickets(created_by_profile_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'assigned_to_profile_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_tickets_assigned_to_profile_id ON tickets(assigned_to_profile_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'member_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_tickets_member_id ON tickets(member_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'advisor_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_tickets_advisor_id ON tickets(advisor_id);
+  END IF;
+  CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status);
+  CREATE INDEX IF NOT EXISTS idx_tickets_priority ON tickets(priority);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'tickets' AND column_name = 'category') THEN
+    CREATE INDEX IF NOT EXISTS idx_tickets_category ON tickets(category);
+  END IF;
+  CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON tickets(created_at DESC);
+END $$;
 
 -- ============================================================================
 -- TICKET COMMENTS
 -- ============================================================================
-CREATE TABLE ticket_comments (
+CREATE TABLE IF NOT EXISTS ticket_comments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_id uuid NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
   created_by_profile_id uuid NOT NULL REFERENCES profiles(id) ON DELETE RESTRICT,
@@ -184,13 +210,18 @@ CREATE TABLE ticket_comments (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
-CREATE INDEX idx_ticket_comments_created_by_profile_id ON ticket_comments(created_by_profile_id);
+CREATE INDEX IF NOT EXISTS idx_ticket_comments_ticket_id ON ticket_comments(ticket_id);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'ticket_comments' AND column_name = 'created_by_profile_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_ticket_comments_created_by_profile_id ON ticket_comments(created_by_profile_id);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- NEEDS (healthshare reimbursement requests)
 -- ============================================================================
-CREATE TABLE needs (
+CREATE TABLE IF NOT EXISTS needs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   member_id uuid NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -209,17 +240,17 @@ CREATE TABLE needs (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_needs_organization_id ON needs(organization_id);
-CREATE INDEX idx_needs_member_id ON needs(member_id);
-CREATE INDEX idx_needs_advisor_id ON needs(advisor_id);
-CREATE INDEX idx_needs_status ON needs(status);
-CREATE INDEX idx_needs_urgency_light ON needs(urgency_light);
-CREATE INDEX idx_needs_created_at ON needs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_needs_organization_id ON needs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_needs_member_id ON needs(member_id);
+CREATE INDEX IF NOT EXISTS idx_needs_advisor_id ON needs(advisor_id);
+CREATE INDEX IF NOT EXISTS idx_needs_status ON needs(status);
+CREATE INDEX IF NOT EXISTS idx_needs_urgency_light ON needs(urgency_light);
+CREATE INDEX IF NOT EXISTS idx_needs_created_at ON needs(created_at DESC);
 
 -- ============================================================================
 -- NEED EVENTS (timeline/history for needs)
 -- ============================================================================
-CREATE TABLE need_events (
+CREATE TABLE IF NOT EXISTS need_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   need_id uuid NOT NULL REFERENCES needs(id) ON DELETE CASCADE,
   event_type text NOT NULL,
@@ -229,13 +260,13 @@ CREATE TABLE need_events (
   created_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX idx_need_events_need_id ON need_events(need_id);
-CREATE INDEX idx_need_events_created_at ON need_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_need_events_need_id ON need_events(need_id);
+CREATE INDEX IF NOT EXISTS idx_need_events_created_at ON need_events(created_at DESC);
 
 -- ============================================================================
 -- CUSTOM FIELD DEFINITIONS
 -- ============================================================================
-CREATE TABLE custom_field_definitions (
+CREATE TABLE IF NOT EXISTS custom_field_definitions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id uuid NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
   entity_type text NOT NULL CHECK (entity_type IN ('advisor', 'member', 'lead', 'need', 'ticket')),
@@ -250,8 +281,8 @@ CREATE TABLE custom_field_definitions (
   UNIQUE(organization_id, entity_type, field_name)
 );
 
-CREATE INDEX idx_custom_field_definitions_organization_id ON custom_field_definitions(organization_id);
-CREATE INDEX idx_custom_field_definitions_entity_type ON custom_field_definitions(entity_type);
+CREATE INDEX IF NOT EXISTS idx_custom_field_definitions_organization_id ON custom_field_definitions(organization_id);
+CREATE INDEX IF NOT EXISTS idx_custom_field_definitions_entity_type ON custom_field_definitions(entity_type);
 
 -- ============================================================================
 -- UPDATED_AT TRIGGER FUNCTION
@@ -264,7 +295,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Apply updated_at triggers
+-- Apply updated_at triggers (drop first to avoid conflicts)
+DROP TRIGGER IF EXISTS update_organizations_updated_at ON organizations;
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON profiles;
+DROP TRIGGER IF EXISTS update_advisors_updated_at ON advisors;
+DROP TRIGGER IF EXISTS update_members_updated_at ON members;
+DROP TRIGGER IF EXISTS update_leads_updated_at ON leads;
+DROP TRIGGER IF EXISTS update_tickets_updated_at ON tickets;
+DROP TRIGGER IF EXISTS update_needs_updated_at ON needs;
+DROP TRIGGER IF EXISTS update_custom_field_definitions_updated_at ON custom_field_definitions;
+
 CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_advisors_updated_at BEFORE UPDATE ON advisors FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -311,6 +351,40 @@ RETURNS uuid AS $$
   WHERE p.user_id = auth.uid()
   LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER STABLE;
+
+-- ============================================================================
+-- DROP EXISTING POLICIES (to make migration idempotent)
+-- ============================================================================
+DROP POLICY IF EXISTS "Users can view their organization" ON organizations;
+DROP POLICY IF EXISTS "Owners can update their organization" ON organizations;
+DROP POLICY IF EXISTS "Users can view profiles in their organization" ON profiles;
+DROP POLICY IF EXISTS "Users can update their own profile" ON profiles;
+DROP POLICY IF EXISTS "Admins can insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can view advisors in their organization" ON advisors;
+DROP POLICY IF EXISTS "Admins can manage advisors" ON advisors;
+DROP POLICY IF EXISTS "Advisors can update their own record" ON advisors;
+DROP POLICY IF EXISTS "Admins can view all members in organization" ON members;
+DROP POLICY IF EXISTS "Advisors can view their assigned members" ON members;
+DROP POLICY IF EXISTS "Admins can manage members" ON members;
+DROP POLICY IF EXISTS "Advisors can update their assigned members" ON members;
+DROP POLICY IF EXISTS "Admins can view all leads" ON leads;
+DROP POLICY IF EXISTS "Advisors can view their assigned leads" ON leads;
+DROP POLICY IF EXISTS "Admins can manage leads" ON leads;
+DROP POLICY IF EXISTS "Users can view activities in their organization" ON activities;
+DROP POLICY IF EXISTS "Users can create activities" ON activities;
+DROP POLICY IF EXISTS "Users can view tickets in their organization" ON tickets;
+DROP POLICY IF EXISTS "Users can create tickets" ON tickets;
+DROP POLICY IF EXISTS "Admins can manage tickets" ON tickets;
+DROP POLICY IF EXISTS "Users can update their created tickets" ON tickets;
+DROP POLICY IF EXISTS "Users can view ticket comments" ON ticket_comments;
+DROP POLICY IF EXISTS "Users can create ticket comments" ON ticket_comments;
+DROP POLICY IF EXISTS "Admins can view all needs" ON needs;
+DROP POLICY IF EXISTS "Advisors can view their members' needs" ON needs;
+DROP POLICY IF EXISTS "Admins can manage needs" ON needs;
+DROP POLICY IF EXISTS "Users can view need events" ON need_events;
+DROP POLICY IF EXISTS "Users can create need events" ON need_events;
+DROP POLICY IF EXISTS "Users can view custom field definitions" ON custom_field_definitions;
+DROP POLICY IF EXISTS "Admins can manage custom field definitions" ON custom_field_definitions;
 
 -- ============================================================================
 -- ORGANIZATIONS POLICIES

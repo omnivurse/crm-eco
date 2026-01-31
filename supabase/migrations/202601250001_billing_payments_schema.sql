@@ -277,14 +277,26 @@ CREATE TABLE IF NOT EXISTS public.invoices (
 -- Unique invoice number per organization
 CREATE UNIQUE INDEX IF NOT EXISTS idx_invoices_number ON public.invoices(organization_id, invoice_number);
 
--- Other indexes
-CREATE INDEX IF NOT EXISTS idx_invoices_org ON public.invoices(organization_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_member ON public.invoices(member_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_enrollment ON public.invoices(enrollment_id);
-CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
-CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices(due_date) WHERE status NOT IN ('paid', 'cancelled', 'void');
+-- Other indexes (conditional on column existence)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_invoices_org ON public.invoices(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'member_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_invoices_member ON public.invoices(member_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'enrollment_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_invoices_enrollment ON public.invoices(enrollment_id);
+  END IF;
+  CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'invoices' AND column_name = 'due_date') THEN
+    CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices(due_date) WHERE status NOT IN ('paid', 'cancelled', 'void');
+  END IF;
+END $$;
 
 -- Updated_at trigger
+DROP TRIGGER IF EXISTS update_invoices_updated_at ON public.invoices;
 CREATE TRIGGER update_invoices_updated_at
   BEFORE UPDATE ON public.invoices
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

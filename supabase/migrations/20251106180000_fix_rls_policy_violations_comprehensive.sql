@@ -45,6 +45,9 @@ DROP POLICY IF EXISTS "metrics_staff_read" ON public.sla_metrics;
 DROP POLICY IF EXISTS "metrics_agent_read" ON public.sla_metrics;
 DROP POLICY IF EXISTS "metrics_agent_insert" ON public.sla_metrics;
 DROP POLICY IF EXISTS "metrics_agent_update" ON public.sla_metrics;
+DROP POLICY IF EXISTS "sla_metrics_staff_select" ON public.sla_metrics;
+DROP POLICY IF EXISTS "sla_metrics_trigger_insert" ON public.sla_metrics;
+DROP POLICY IF EXISTS "sla_metrics_trigger_update" ON public.sla_metrics;
 
 -- SELECT Policy: Staff+ can view all metrics
 CREATE POLICY "sla_metrics_staff_select"
@@ -137,6 +140,10 @@ DROP POLICY IF EXISTS "audit_service_role_insert" ON public.audit_logs;
 DROP POLICY IF EXISTS "audit_no_client_insert" ON public.audit_logs;
 DROP POLICY IF EXISTS "audit_no_client_update" ON public.audit_logs;
 DROP POLICY IF EXISTS "audit_no_client_delete" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_admin_select" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_system_insert" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_no_update" ON public.audit_logs;
+DROP POLICY IF EXISTS "audit_logs_no_delete" ON public.audit_logs;
 
 -- SELECT Policy: Admins and super_admins can read all audit logs
 CREATE POLICY "audit_logs_admin_select"
@@ -183,6 +190,10 @@ DROP POLICY IF EXISTS "Staff can view all tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Staff can update all tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Users can view own tickets" ON public.tickets;
 DROP POLICY IF EXISTS "Members and advisors can create tickets" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_select_policy" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_insert_policy" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_update_policy" ON public.tickets;
+DROP POLICY IF EXISTS "tickets_delete_policy" ON public.tickets;
 
 -- ============================================================================
 -- CONSOLIDATED TICKETS RLS POLICIES (Clear Security Model)

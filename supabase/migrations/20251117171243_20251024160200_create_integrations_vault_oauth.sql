@@ -113,6 +113,21 @@ ALTER TABLE public.password_refs ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for integrations
 
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can read own integrations" ON public.integrations;
+DROP POLICY IF EXISTS "Users can create integrations" ON public.integrations;
+DROP POLICY IF EXISTS "Users can update own integrations" ON public.integrations;
+DROP POLICY IF EXISTS "Users can delete own integrations" ON public.integrations;
+
+DROP POLICY IF EXISTS "Users can see own token existence" ON public.oauth_tokens;
+DROP POLICY IF EXISTS "Service role can manage tokens" ON public.oauth_tokens;
+DROP POLICY IF EXISTS "Users can delete own tokens" ON public.oauth_tokens;
+
+DROP POLICY IF EXISTS "Users can read own password refs" ON public.password_refs;
+DROP POLICY IF EXISTS "Users can create password refs" ON public.password_refs;
+DROP POLICY IF EXISTS "Users can update own password refs" ON public.password_refs;
+DROP POLICY IF EXISTS "Users can delete own password refs" ON public.password_refs;
+
 -- Users can read their own integrations
 CREATE POLICY "Users can read own integrations"
   ON public.integrations

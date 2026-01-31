@@ -155,6 +155,18 @@ ALTER TABLE public.daily_log_reports ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies for daily_log_entries
 
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can read own daily log entries" ON public.daily_log_entries;
+DROP POLICY IF EXISTS "Super admins can read all daily log entries" ON public.daily_log_entries;
+DROP POLICY IF EXISTS "Users can create daily log entries" ON public.daily_log_entries;
+DROP POLICY IF EXISTS "Users can update own daily log entries" ON public.daily_log_entries;
+DROP POLICY IF EXISTS "Users can delete own daily log entries" ON public.daily_log_entries;
+DROP POLICY IF EXISTS "Users can read own daily log reports" ON public.daily_log_reports;
+DROP POLICY IF EXISTS "Super admins can read all daily log reports" ON public.daily_log_reports;
+DROP POLICY IF EXISTS "Authenticated users can create daily log reports" ON public.daily_log_reports;
+DROP POLICY IF EXISTS "Super admins can update daily log reports" ON public.daily_log_reports;
+DROP POLICY IF EXISTS "Super admins can read all daily logs" ON public.daily_logs;
+
 -- Users can read their own entries
 CREATE POLICY "Users can read own daily log entries"
   ON public.daily_log_entries

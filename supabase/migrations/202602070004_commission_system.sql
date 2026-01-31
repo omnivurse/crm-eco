@@ -26,8 +26,38 @@ CREATE TABLE IF NOT EXISTS agent_levels (
   UNIQUE(organization_id, code)
 );
 
-CREATE INDEX IF NOT EXISTS idx_agent_levels_organization_id ON agent_levels(organization_id);
-CREATE INDEX IF NOT EXISTS idx_agent_levels_level_rank ON agent_levels(level_rank);
+-- Add missing columns to existing agent_levels table
+DO $$
+BEGIN
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS name text;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS code text;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS description text;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS level_rank integer;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS min_active_members integer DEFAULT 0;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS max_active_members integer;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS min_monthly_enrollments integer DEFAULT 0;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS min_downline_agents integer DEFAULT 0;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS base_commission_multiplier numeric(5,2) DEFAULT 1.0;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS is_active boolean DEFAULT true;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS color text;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS icon text;
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+  ALTER TABLE agent_levels ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- Create indexes only if columns exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_levels_organization_id ON agent_levels(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'agent_levels' AND column_name = 'level_rank') THEN
+    CREATE INDEX IF NOT EXISTS idx_agent_levels_level_rank ON agent_levels(level_rank);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- COMMISSION RATES (Rates per product/plan type/agent level)
@@ -91,13 +121,63 @@ CREATE TABLE IF NOT EXISTS commissions (
   updated_at timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_commissions_organization_id ON commissions(organization_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_advisor_id ON commissions(advisor_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_enrollment_id ON commissions(enrollment_id);
-CREATE INDEX IF NOT EXISTS idx_commissions_commission_type ON commissions(commission_type);
-CREATE INDEX IF NOT EXISTS idx_commissions_commission_period ON commissions(commission_period);
-CREATE INDEX IF NOT EXISTS idx_commissions_status ON commissions(status);
-CREATE INDEX IF NOT EXISTS idx_commissions_payment_batch_id ON commissions(payment_batch_id);
+-- Add missing columns to existing commissions table
+DO $$
+BEGIN
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS advisor_id uuid REFERENCES advisors(id) ON DELETE CASCADE;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS enrollment_id uuid REFERENCES enrollments(id) ON DELETE SET NULL;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS member_id uuid REFERENCES members(id) ON DELETE SET NULL;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS billing_id uuid;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS commission_type text;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS source_advisor_id uuid REFERENCES advisors(id) ON DELETE SET NULL;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS override_level integer;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS base_amount numeric(10,2);
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS commission_rate numeric(10,2);
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS commission_rate_type text;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS commission_amount numeric(10,2);
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS vendor_cost numeric(10,2) DEFAULT 0;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS net_amount numeric(10,2);
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS commission_period date;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending';
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS status_reason text;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS payment_batch_id uuid;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS paid_at timestamptz;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS payment_method text;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS payment_reference text;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS notes text;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS metadata jsonb DEFAULT '{}'::jsonb;
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS created_at timestamptz DEFAULT now();
+  ALTER TABLE commissions ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+-- Create indexes only if columns exist
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'organization_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_organization_id ON commissions(organization_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'advisor_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_advisor_id ON commissions(advisor_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'enrollment_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_enrollment_id ON commissions(enrollment_id);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'commission_type') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_commission_type ON commissions(commission_type);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'commission_period') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_commission_period ON commissions(commission_period);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'status') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_status ON commissions(status);
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'commissions' AND column_name = 'payment_batch_id') THEN
+    CREATE INDEX IF NOT EXISTS idx_commissions_payment_batch_id ON commissions(payment_batch_id);
+  END IF;
+END $$;
 
 -- ============================================================================
 -- COMMISSION PAYMENT BATCHES (Batch payments to advisors)

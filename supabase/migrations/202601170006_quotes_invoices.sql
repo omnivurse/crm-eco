@@ -4,6 +4,24 @@
 -- ============================================================================
 
 -- ============================================================================
+-- PRODUCTS TABLE (needed for line item references)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS products (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  description text,
+  sku text,
+  price numeric(12,2) DEFAULT 0,
+  is_active boolean DEFAULT true,
+  category text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_products_org ON products(organization_id);
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+
+-- ============================================================================
 -- QUOTES TABLE
 -- ============================================================================
 

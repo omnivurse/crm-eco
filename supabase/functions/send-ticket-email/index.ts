@@ -61,7 +61,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const ticketUrl = `${supabaseUrl.replace('https://', 'https://').replace('.supabase.co', '.supabase.co')}/tickets/${ticketId}`;
+    // Construct ticket URL for email links
+    const ticketUrl = `${supabaseUrl}/tickets/${ticketId}`;
 
     const enhancedBodyText = `${bodyText}
 

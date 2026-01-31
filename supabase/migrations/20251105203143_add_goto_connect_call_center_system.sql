@@ -371,10 +371,7 @@ CREATE POLICY "Users can view their own call logs"
   ON call_logs FOR SELECT
   TO authenticated
   USING (
-    caller_phone IN (
-      SELECT phone FROM profiles WHERE id = auth.uid()
-    )
-    OR assigned_agent_id = auth.uid()
+    assigned_agent_id = auth.uid()
     OR ticket_id IN (
       SELECT id FROM tickets WHERE requester_id = auth.uid()
     )

@@ -1,6 +1,26 @@
 -- OAuth Foundation for Integration Marketplace
 -- Adds OAuth state management and enhances integration_connections
 
+-- Create integration_connections table if it doesn't exist
+CREATE TABLE IF NOT EXISTS integration_connections (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid REFERENCES organizations(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES profiles(id) ON DELETE CASCADE,
+  provider text NOT NULL,
+  connection_type text DEFAULT 'default',
+  status text DEFAULT 'pending',
+  access_token_encrypted text,
+  refresh_token_encrypted text,
+  token_expires_at timestamptz,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  scopes text[],
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_org ON integration_connections(organization_id);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_user ON integration_connections(user_id);
+CREATE INDEX IF NOT EXISTS idx_integration_connections_provider ON integration_connections(provider);
+
 -- OAuth state management (CSRF protection during OAuth flows)
 CREATE TABLE IF NOT EXISTS oauth_states (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
