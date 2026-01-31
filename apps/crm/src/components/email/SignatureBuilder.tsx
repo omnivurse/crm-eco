@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -342,9 +343,11 @@ export function SignatureBuilder({
                         : 'border-slate-200 dark:border-slate-700'
                     )}
                   >
-                    <img
+                    <Image
                       src={preset.image}
                       alt={preset.name}
+                      width={800}
+                      height={200}
                       className="w-full h-auto"
                     />
                     {selectedPreset === preset.id && (

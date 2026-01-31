@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Building2,
   Upload,
@@ -255,9 +256,9 @@ async function VendorHubContent() {
                     className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 flex items-center justify-center">
+                      <div className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
                         {vendor.logo_url ? (
-                          <img src={vendor.logo_url} alt={vendor.name} className="w-6 h-6 object-contain" />
+                          <Image src={vendor.logo_url} alt={vendor.name} width={24} height={24} className="object-contain" />
                         ) : (
                           <Building2 className="w-5 h-5 text-slate-400" />
                         )}

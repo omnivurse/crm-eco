@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Avatar } from '@/components/shared';
 import {
   ArrowLeft,
   Plus,
@@ -616,13 +617,7 @@ function MemberRow({ member, currentUser, onEditRole, onDeactivate, onReactivate
 
   return (
     <div className="flex items-center gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-      <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-        {member.avatar_url ? (
-          <img src={member.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-        ) : (
-          <User className="w-5 h-5 text-slate-500 dark:text-slate-400" />
-        )}
-      </div>
+      <Avatar src={member.avatar_url} alt={member.full_name} size="md" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
