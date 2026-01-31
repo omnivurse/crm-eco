@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { Timer } from 'lucide-react';
 

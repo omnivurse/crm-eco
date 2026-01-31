@@ -8,3 +8,4 @@ export { WidgetCatalog } from './WidgetCatalog';
 export { WidgetControls } from './WidgetControls';
 export { WidgetRenderer } from './WidgetRenderer';
 export { SortableWidget } from './SortableWidget';
+export { ServerWidgetRenderer, preRenderWidgets } from './ServerWidgetRenderer';

@@ -2,14 +2,24 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
-import { CommandPalette } from './CommandPalette';
 import { Footer } from './Footer';
 import { ModuleProvider } from '@/contexts/ModuleContext';
-import { TerminalProvider, TerminalWindow, useTerminal } from '@/components/terminal';
-import { VoiceProvider, VoiceCommandCenter } from '@/components/voice';
+import { TerminalProvider, useTerminal } from '@/components/terminal';
+import { VoiceProvider } from '@/components/voice';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+
+const CommandPalette = dynamic(() => import('./CommandPalette').then((mod) => mod.CommandPalette), {
+  ssr: false,
+});
+const TerminalWindow = dynamic(() => import('@/components/terminal').then((mod) => mod.TerminalWindow), {
+  ssr: false,
+});
+const VoiceCommandCenter = dynamic(() => import('@/components/voice').then((mod) => mod.VoiceCommandCenter), {
+  ssr: false,
+});
 
 interface CrmShellProps {
   children: React.ReactNode;

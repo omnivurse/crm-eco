@@ -1,17 +1,17 @@
 'use client';
 
+import { type ReactNode } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { WidgetRenderer } from './WidgetRenderer';
 import { WidgetControls } from './WidgetControls';
-import { WIDGET_REGISTRY } from '@/lib/dashboard/widget-registry';
 import type { WidgetInstance } from '@/lib/dashboard/types';
 
 interface SortableWidgetProps {
   widget: WidgetInstance;
-  data: unknown;
   isEditMode: boolean;
+  /** Pre-rendered widget content from server */
+  children: ReactNode;
 }
 
 const sizeToSpan: Record<string, string> = {
@@ -21,7 +21,7 @@ const sizeToSpan: Record<string, string> = {
   full: 'lg:col-span-5',
 };
 
-export function SortableWidget({ widget, data, isEditMode }: SortableWidgetProps) {
+export function SortableWidget({ widget, isEditMode, children }: SortableWidgetProps) {
   const {
     attributes,
     listeners,
@@ -35,8 +35,6 @@ export function SortableWidget({ widget, data, isEditMode }: SortableWidgetProps
     transform: CSS.Transform.toString(transform),
     transition,
   };
-
-  const definition = WIDGET_REGISTRY[widget.type];
 
   return (
     <div
@@ -55,11 +53,12 @@ export function SortableWidget({ widget, data, isEditMode }: SortableWidgetProps
           dragHandleProps={{ ...attributes, ...listeners }}
         />
       )}
-      <WidgetRenderer
-        widget={widget}
-        data={data}
-        isDragging={isDragging}
-      />
+      <div className={cn(
+        'h-full transition-all duration-200',
+        isDragging && 'ring-2 ring-teal-500 ring-offset-2'
+      )}>
+        {children}
+      </div>
     </div>
   );
 }

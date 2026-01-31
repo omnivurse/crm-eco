@@ -14,8 +14,8 @@
    Modern glass effects with gradients and blur
 */
 
-/* Google Fonts - Plus Jakarta Sans for headings, Inter for body */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+/* Fonts are loaded via next/font/google in layout.tsx for optimal performance */
+/* CSS variables --font-body and --font-heading are set there */
 
 :root {
   /* Surfaces */
@@ -72,9 +72,11 @@
   --radius-lg: 1.5rem;                /* 24px for large elements */
   --radius-xl: 2rem;                  /* 32px for hero elements */
 
-  /* Typography */
+  /* Typography - CSS variables are set by next/font/google in layout.tsx */
+  /* These serve as fallbacks if the font variables aren't injected */
   --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-body: 'Inter', system-ui, sans-serif;
+  --font-geist-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
 
   /* Glassmorphism - Light Mode */
   --glass-bg: rgba(255, 255, 255, 0.7);

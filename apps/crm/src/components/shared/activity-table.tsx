@@ -1,15 +1,17 @@
 'use client';
 
+import { useRef } from 'react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow, 
-  Badge 
+import { useVirtualizer } from '@tanstack/react-virtual';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Badge
 } from '@crm-eco/ui';
 import { Activity } from 'lucide-react';
 
@@ -73,11 +75,30 @@ function getTypeLabel(type: string): string {
   return labels[type] || type.replace(/_/g, ' ');
 }
 
-export function ActivityTable({ 
-  activities, 
+// Row height for virtualization
+const ROW_HEIGHT = 56;
+
+// Threshold for enabling virtualization (only virtualize for large lists)
+const VIRTUALIZATION_THRESHOLD = 50;
+
+export function ActivityTable({
+  activities,
   showEntity = false,
   emptyMessage = 'No activity recorded'
 }: ActivityTableProps) {
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+
+  // Use virtualization for large lists
+  const shouldVirtualize = activities.length > VIRTUALIZATION_THRESHOLD;
+
+  const rowVirtualizer = useVirtualizer({
+    count: activities.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5,
+    enabled: shouldVirtualize,
+  });
+
   if (activities.length === 0) {
     return (
       <div className="text-center py-12 text-slate-500">
@@ -90,61 +111,108 @@ export function ActivityTable({
     );
   }
 
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Type</TableHead>
-          <TableHead>Subject</TableHead>
-          {showEntity && <TableHead>Entity</TableHead>}
-          <TableHead>By</TableHead>
-          <TableHead>Time</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {activities.map((activity) => (
-          <TableRow key={activity.id}>
-            <TableCell>
-              <Badge 
-                variant="secondary" 
-                className={typeColors[activity.type || ''] || 'bg-slate-100 text-slate-700'}
-              >
-                {getTypeLabel(activity.type || '')}
-              </Badge>
-            </TableCell>
-            <TableCell className="font-medium max-w-[300px]">
-              <div className="truncate">{activity.subject || '—'}</div>
-              {activity.description && (
-                <div className="text-xs text-slate-400 truncate">{activity.description}</div>
-              )}
-            </TableCell>
-            {showEntity && (
-              <TableCell>
-                {activity.ticket_id && (
-                  <Link href={`/tickets/${activity.ticket_id}`} className="text-blue-600 hover:underline">
-                    Ticket
-                  </Link>
-                )}
-                {activity.need_id && (
-                  <Link href={`/needs/${activity.need_id}`} className="text-blue-600 hover:underline">
-                    Need
-                  </Link>
-                )}
-                {!activity.ticket_id && !activity.need_id && (
-                  <span className="text-slate-400">—</span>
-                )}
-              </TableCell>
-            )}
-            <TableCell className="text-slate-600">
-              {activity.profiles?.full_name ?? 'System'}
-            </TableCell>
-            <TableCell className="text-slate-400 text-sm whitespace-nowrap">
-              {formatDistanceToNow(new Date(activity.occurred_at || activity.created_at), { addSuffix: true })}
-            </TableCell>
+  // Render a single row (used by both virtualized and non-virtualized modes)
+  const renderRow = (activity: ActivityItem, style?: React.CSSProperties) => (
+    <TableRow
+      key={activity.id}
+      style={style}
+      className={style ? 'absolute left-0 w-full flex items-center' : ''}
+    >
+      <TableCell className={style ? 'flex-shrink-0 w-32' : ''}>
+        <Badge
+          variant="secondary"
+          className={typeColors[activity.type || ''] || 'bg-slate-100 text-slate-700'}
+        >
+          {getTypeLabel(activity.type || '')}
+        </Badge>
+      </TableCell>
+      <TableCell className={`font-medium ${style ? 'flex-1 min-w-0' : 'max-w-[300px]'}`}>
+        <div className="truncate">{activity.subject || '—'}</div>
+        {activity.description && (
+          <div className="text-xs text-slate-400 truncate">{activity.description}</div>
+        )}
+      </TableCell>
+      {showEntity && (
+        <TableCell className={style ? 'flex-shrink-0 w-24' : ''}>
+          {activity.ticket_id && (
+            <Link href={`/tickets/${activity.ticket_id}`} className="text-blue-600 hover:underline">
+              Ticket
+            </Link>
+          )}
+          {activity.need_id && (
+            <Link href={`/needs/${activity.need_id}`} className="text-blue-600 hover:underline">
+              Need
+            </Link>
+          )}
+          {!activity.ticket_id && !activity.need_id && (
+            <span className="text-slate-400">—</span>
+          )}
+        </TableCell>
+      )}
+      <TableCell className={`text-slate-600 ${style ? 'flex-shrink-0 w-28' : ''}`}>
+        {activity.profiles?.full_name ?? 'System'}
+      </TableCell>
+      <TableCell className={`text-slate-400 text-sm whitespace-nowrap ${style ? 'flex-shrink-0 w-32' : ''}`}>
+        {formatDistanceToNow(new Date(activity.occurred_at || activity.created_at), { addSuffix: true })}
+      </TableCell>
+    </TableRow>
+  );
+
+  // Non-virtualized rendering for small lists
+  if (!shouldVirtualize) {
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Type</TableHead>
+            <TableHead>Subject</TableHead>
+            {showEntity && <TableHead>Entity</TableHead>}
+            <TableHead>By</TableHead>
+            <TableHead>Time</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {activities.map((activity) => renderRow(activity))}
+        </TableBody>
+      </Table>
+    );
+  }
+
+  // Virtualized rendering for large lists
+  return (
+    <div
+      ref={tableContainerRef}
+      className="overflow-auto max-h-[600px] border rounded-lg"
+    >
+      <Table>
+        <TableHeader className="sticky top-0 z-10 bg-white dark:bg-slate-900">
+          <TableRow>
+            <TableHead className="w-32">Type</TableHead>
+            <TableHead>Subject</TableHead>
+            {showEntity && <TableHead className="w-24">Entity</TableHead>}
+            <TableHead className="w-28">By</TableHead>
+            <TableHead className="w-32">Time</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            position: 'relative',
+            display: 'block',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            const activity = activities[virtualRow.index];
+            return renderRow(activity, {
+              position: 'absolute',
+              top: 0,
+              transform: `translateY(${virtualRow.start}px)`,
+              height: `${virtualRow.size}px`,
+            });
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

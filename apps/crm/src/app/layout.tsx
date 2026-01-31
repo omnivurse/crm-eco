@@ -5,14 +5,14 @@ import './globals.css';
 
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-body',
   display: 'swap',
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  variable: '--font-plus-jakarta',
-  weight: ['600', '700'],
+  variable: '--font-heading',
+  weight: ['500', '600', '700', '800'],
   display: 'swap',
 });
 

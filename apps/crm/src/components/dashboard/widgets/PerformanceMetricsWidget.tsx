@@ -1,5 +1,3 @@
-'use client';
-
 import { BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';
 import { EmptyState } from './shared';

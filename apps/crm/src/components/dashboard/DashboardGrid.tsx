@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -19,14 +19,13 @@ import {
 } from '@dnd-kit/sortable';
 import { useDashboardLayout } from '@/contexts/DashboardLayoutContext';
 import { SortableWidget } from './SortableWidget';
-import { WidgetRenderer } from './WidgetRenderer';
-import { WIDGET_REGISTRY } from '@/lib/dashboard/widget-registry';
 
 interface DashboardGridProps {
-  widgetData: Record<string, unknown>;
+  /** Pre-rendered widget content keyed by widget ID */
+  renderedWidgets: Record<string, ReactNode>;
 }
 
-export function DashboardGrid({ widgetData }: DashboardGridProps) {
+export function DashboardGrid({ renderedWidgets }: DashboardGridProps) {
   const { layout, reorderWidgets, isEditMode } = useDashboardLayout();
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -56,9 +55,6 @@ export function DashboardGrid({ widgetData }: DashboardGridProps) {
   );
 
   const activeWidget = layout.widgets.find((w) => w.id === activeId);
-  const activeDefinition = activeWidget
-    ? WIDGET_REGISTRY[activeWidget.type]
-    : null;
 
   return (
     <DndContext
@@ -73,33 +69,22 @@ export function DashboardGrid({ widgetData }: DashboardGridProps) {
         disabled={!isEditMode}
       >
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {layout.widgets.map((widget) => {
-            const definition = WIDGET_REGISTRY[widget.type];
-            const dataKey = definition?.dataKey;
-            return (
-              <SortableWidget
-                key={widget.id}
-                widget={widget}
-                data={dataKey ? widgetData[dataKey] : null}
-                isEditMode={isEditMode}
-              />
-            );
-          })}
+          {layout.widgets.map((widget) => (
+            <SortableWidget
+              key={widget.id}
+              widget={widget}
+              isEditMode={isEditMode}
+            >
+              {renderedWidgets[widget.id]}
+            </SortableWidget>
+          ))}
         </div>
       </SortableContext>
 
       <DragOverlay>
-        {activeWidget && activeDefinition ? (
+        {activeWidget ? (
           <div className="opacity-90 scale-105 shadow-2xl rotate-2">
-            <WidgetRenderer
-              widget={activeWidget}
-              data={
-                activeDefinition.dataKey
-                  ? widgetData[activeDefinition.dataKey]
-                  : null
-              }
-              isDragging
-            />
+            {renderedWidgets[activeWidget.id]}
           </div>
         ) : null}
       </DragOverlay>

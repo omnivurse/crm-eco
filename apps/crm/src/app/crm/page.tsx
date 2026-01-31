@@ -18,6 +18,7 @@ import {
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
+import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import type { CrmTask } from '@/lib/crm/types';
 
 interface AtRiskDeal {
@@ -111,8 +112,8 @@ async function DashboardContent() {
         {/* Dashboard Toolbar - Edit mode toggle, Add Widget, Save/Reset */}
         <DashboardToolbar />
 
-        {/* Customizable Widget Grid */}
-        <DashboardGrid widgetData={widgetData} />
+        {/* Customizable Widget Grid - widgets pre-rendered on server */}
+        <DashboardGrid renderedWidgets={preRenderWidgets(layout.widgets, widgetData)} />
       </div>
     </DashboardLayoutProvider>
   );

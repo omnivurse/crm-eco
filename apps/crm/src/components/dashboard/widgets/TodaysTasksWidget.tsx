@@ -1,6 +1,3 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Sun, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';
@@ -20,28 +17,25 @@ const sizeToDisplayCount: Record<WidgetSize, number> = {
   full: 10,
 };
 
+// Format date on the server - will be consistent
+const formatTodayString = () => {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  });
+};
+
 export default function TodaysTasksWidget({
   data: todaysTasks,
   size,
 }: TodaysTasksWidgetProps) {
-  const [mounted, setMounted] = useState(false);
   const tasks = todaysTasks || [];
   const overdueTasks = tasks.filter(
     (t) => t.due_at && new Date(t.due_at) < new Date()
   );
   const displayCount = sizeToDisplayCount[size] || 5;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const todayString = mounted
-    ? new Date().toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric',
-      })
-    : 'Today';
+  const todayString = formatTodayString();
 
   return (
     <WidgetCard

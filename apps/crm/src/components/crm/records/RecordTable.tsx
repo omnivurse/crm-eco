@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -373,6 +374,15 @@ export function RecordTable({
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Virtualization setup - estimate row height at 56px (h-14)
+  const ROW_HEIGHT = 56;
+  const rowVirtualizer = useVirtualizer({
+    count: records.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5,
+  });
+
   // Create field lookup map
   const fieldMap = useMemo(() => {
     return fields.reduce((acc, field) => {
@@ -529,7 +539,7 @@ export function RecordTable({
       const firstName = record.data?.first_name || '';
       const lastName = record.data?.last_name || '';
       const displayName = [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
-      
+
       return (
         <Link
           href={`/crm/r/${record.id}`}
@@ -540,10 +550,10 @@ export function RecordTable({
         </Link>
       );
     }
-    
+
     // Handle text fields that come from record.data
     if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone' ||
-        col === 'middle_name' || col === 'middle_initial' || col === 'salutation' || col === 'contact_name') {
+      col === 'middle_name' || col === 'middle_initial' || col === 'salutation' || col === 'contact_name') {
       const value = record.data?.[col] as string | undefined;
 
       const content = !value ? (
@@ -578,7 +588,7 @@ export function RecordTable({
 
       return content;
     }
-    
+
     if (col === 'status' || col === 'lead_status' || col === 'contact_status') {
       // Get status value, handling null, undefined, and boolean false properly
       const rawStatus = record.status ?? record.data?.[col] ?? record.data?.status;
@@ -612,7 +622,7 @@ export function RecordTable({
 
       return content;
     }
-    
+
     if (col === 'owner_id') {
       return record.owner_id ? (
         <span className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
@@ -625,7 +635,7 @@ export function RecordTable({
         <span className="text-slate-400 dark:text-slate-600">Unassigned</span>
       );
     }
-    
+
     if (col === 'created_at') {
       return (
         <span className="text-sm text-slate-500" suppressHydrationWarning>
@@ -690,7 +700,7 @@ export function RecordTable({
   };
 
   return (
-    <div 
+    <div
       ref={tableContainerRef}
       className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)]"
     >
@@ -728,7 +738,13 @@ export function RecordTable({
             <TableHead className="w-28 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" />
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody
+          style={{
+            height: records.length > 0 ? `${rowVirtualizer.getTotalSize()}px` : undefined,
+            position: 'relative',
+            display: 'block',
+          }}
+        >
           {records.length === 0 ? (
             <TableRow>
               <TableCell colSpan={visibleColumns.length + 2} className="h-64">
@@ -741,7 +757,7 @@ export function RecordTable({
                     Get started by creating a new record or importing data.
                   </p>
                   <div className="flex items-center gap-3">
-                    <Button 
+                    <Button
                       variant="outline"
                       className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                       asChild
@@ -751,7 +767,7 @@ export function RecordTable({
                         Import Data
                       </Link>
                     </Button>
-                    <Button 
+                    <Button
                       className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400"
                       asChild
                     >
@@ -765,119 +781,132 @@ export function RecordTable({
               </TableCell>
             </TableRow>
           ) : (
-            records.map((record, idx) => (
-              <TableRow
-                key={record.id}
-                className={cn(
-                  'group border-b border-slate-100 dark:border-white/5 cursor-pointer transition-colors',
-                  'hover:bg-slate-50 dark:hover:bg-white/5',
-                  selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5'
-                )}
-                onClick={() => handleRowClick(record)}
-                onMouseEnter={() => handleRowMouseEnter(record.id)}
-                onMouseLeave={handleRowMouseLeave}
-              >
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selectedIds.has(record.id)}
-                    onCheckedChange={() => handleSelectRow(record.id)}
-                    className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
-                  />
-                </TableCell>
-                {visibleColumns.map((col) => (
-                  <TableCell key={col} className="text-sm">
-                    {renderCellValue(record, col)}
+            rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const record = records[virtualRow.index];
+              return (
+                <TableRow
+                  key={record.id}
+                  data-index={virtualRow.index}
+                  ref={rowVirtualizer.measureElement}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                  className={cn(
+                    'group border-b border-slate-100 dark:border-white/5 cursor-pointer transition-colors flex',
+                    'hover:bg-slate-50 dark:hover:bg-white/5',
+                    selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5'
+                  )}
+                  onClick={() => handleRowClick(record)}
+                  onMouseEnter={() => handleRowMouseEnter(record.id)}
+                  onMouseLeave={handleRowMouseLeave}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-12 flex-shrink-0">
+                    <Checkbox
+                      checked={selectedIds.has(record.id)}
+                      onCheckedChange={() => handleSelectRow(record.id)}
+                      className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                    />
                   </TableCell>
-                ))}
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  {/* Row Quick Actions - visible on hover */}
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {/* Call - only if phone exists */}
-                    {record.phone && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `tel:${record.phone}`;
-                        }}
-                        className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10"
-                        title="Call"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-
-                    {/* Email - only if email exists */}
-                    {record.email && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `mailto:${record.email}`;
-                        }}
-                        className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10"
-                        title="Send Email"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                      </Button>
-                    )}
-
-                    {/* Add Task */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openTaskDialog(record.id);
-                      }}
-                      className="h-7 w-7 text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:text-violet-400 dark:hover:bg-violet-500/10"
-                      title="Add Task"
-                    >
-                      <CheckSquare className="w-3.5 h-3.5" />
-                    </Button>
-
-                    {/* More Actions Dropdown */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  {visibleColumns.map((col) => (
+                    <TableCell key={col} className="text-sm flex-1">
+                      {renderCellValue(record, col)}
+                    </TableCell>
+                  ))}
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0">
+                    {/* Row Quick Actions - visible on hover */}
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Call - only if phone exists */}
+                      {record.phone && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `tel:${record.phone}`;
+                          }}
+                          className="h-7 w-7 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10"
+                          title="Call"
                         >
-                          <MoreHorizontal className="w-3.5 h-3.5" />
+                          <Phone className="w-3.5 h-3.5" />
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-                        <DropdownMenuItem 
-                          onClick={() => router.push(`/crm/r/${record.id}`)}
-                          className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                      )}
+
+                      {/* Email - only if email exists */}
+                      {record.email && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `mailto:${record.email}`;
+                          }}
+                          className="h-7 w-7 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10"
+                          title="Send Email"
                         >
-                          <Eye className="w-4 h-4 mr-2" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => router.push(`/crm/r/${record.id}?edit=true`)}
-                          className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
-                        >
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
-                        <DropdownMenuItem
-                          className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
-                          onClick={() => onBulkDelete?.([record.id])}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
+                          <Mail className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+
+                      {/* Add Task */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openTaskDialog(record.id);
+                        }}
+                        className="h-7 w-7 text-slate-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:text-violet-400 dark:hover:bg-violet-500/10"
+                        title="Add Task"
+                      >
+                        <CheckSquare className="w-3.5 h-3.5" />
+                      </Button>
+
+                      {/* More Actions Dropdown */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                          >
+                            <MoreHorizontal className="w-3.5 h-3.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/crm/r/${record.id}`)}
+                            className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => router.push(`/crm/r/${record.id}?edit=true`)}
+                            className="text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer"
+                          >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                          <DropdownMenuItem
+                            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer"
+                            onClick={() => onBulkDelete?.([record.id])}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

@@ -1,5 +1,3 @@
-'use client';
-
 import { Sparkles, Activity, AlertCircle } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmAuditLog } from '@/lib/crm/types';

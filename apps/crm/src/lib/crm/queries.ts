@@ -741,10 +741,11 @@ export async function getAuditLogForRecord(recordId: string, limit = 50): Promis
 
 export async function getRecentActivity(orgId: string, limit = 20): Promise<CrmAuditLog[]> {
   const supabase = await createCrmClient();
-  
+
+  // Only select fields needed for display - reduces payload size
   const { data, error } = await supabase
     .from('crm_audit_log')
-    .select('*')
+    .select('id, action, entity, created_at')
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -795,84 +796,74 @@ export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const oneWeekAgoISO = oneWeekAgo.toISOString();
 
-  const { data: modules } = await supabase
+  // Single query to get modules with their record counts using a raw SQL query
+  // This replaces N+1 queries with a single aggregated query
+  const { data: modulesWithCounts, error } = await supabase
     .from('crm_modules')
-    .select('id, key, name, name_plural')
+    .select(`
+      id,
+      key,
+      name,
+      name_plural,
+      crm_records!left(id, created_at)
+    `)
     .eq('org_id', orgId)
     .eq('is_enabled', true);
 
-  if (!modules || modules.length === 0) return [];
+  if (error || !modulesWithCounts || modulesWithCounts.length === 0) {
+    return [];
+  }
 
-  // Legacy table mappings for backwards compatibility
+  // Calculate counts from the joined data (single query result)
+  const results = modulesWithCounts.map(module => {
+    const records = (module.crm_records || []) as Array<{ id: string; created_at: string }>;
+    const totalRecords = records.length;
+    const createdThisWeek = records.filter(r => r.created_at >= oneWeekAgoISO).length;
+
+    return {
+      moduleKey: module.key,
+      moduleName: module.name_plural || module.name + 's',
+      totalRecords,
+      createdThisWeek,
+    };
+  });
+
+  // Legacy table counts - run in parallel (only 2-3 queries max for backwards compat)
   const legacyTableMap: Record<string, string> = {
     leads: 'leads',
     contacts: 'members',
-    deals: 'members',
   };
 
-  // Build all queries in parallel - eliminates N+1 problem
-  // Run all module queries in parallel (much faster than sequential)
-  const crmTotalsMap: Record<string, number> = {};
-  const crmThisWeekMap: Record<string, number> = {};
-
-  const crmQueries = modules.flatMap(m => [
-    supabase
-      .from('crm_records')
-      .select('*', { count: 'exact', head: true })
-      .eq('module_id', m.id)
-      .then(r => ({ moduleId: m.id, type: 'total' as const, count: r.count || 0 })),
-    supabase
-      .from('crm_records')
-      .select('*', { count: 'exact', head: true })
-      .eq('module_id', m.id)
-      .gte('created_at', oneWeekAgoISO)
-      .then(r => ({ moduleId: m.id, type: 'week' as const, count: r.count || 0 })),
-  ]);
-
-  const crmResults = await Promise.all(crmQueries);
-  crmResults.forEach(r => {
-    if (r.type === 'total') crmTotalsMap[r.moduleId] = r.count;
-    else crmThisWeekMap[r.moduleId] = r.count;
-  });
-
-  // Legacy queries in parallel - wrapped in async functions for proper error handling
-  const legacyTotalsMap: Record<string, number> = {};
-  const legacyThisWeekMap: Record<string, number> = {};
-
-  const legacyModules = modules.filter(m => legacyTableMap[m.key]);
+  const legacyModules = results.filter(m => legacyTableMap[m.moduleKey]);
   if (legacyModules.length > 0) {
-    const legacyQueries = legacyModules.flatMap(m => {
-      const table = legacyTableMap[m.key];
-      return [
-        (async () => {
-          try {
-            const r = await supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId);
-            return { moduleKey: m.key, type: 'total' as const, count: r.count || 0 };
-          } catch { return { moduleKey: m.key, type: 'total' as const, count: 0 }; }
-        })(),
-        (async () => {
-          try {
-            const r = await supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', oneWeekAgoISO);
-            return { moduleKey: m.key, type: 'week' as const, count: r.count || 0 };
-          } catch { return { moduleKey: m.key, type: 'week' as const, count: 0 }; }
-        })(),
-      ];
+    const legacyQueries = legacyModules.map(async (m) => {
+      const table = legacyTableMap[m.moduleKey];
+      try {
+        const [totalResult, weekResult] = await Promise.all([
+          supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
+          supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', oneWeekAgoISO),
+        ]);
+        return {
+          moduleKey: m.moduleKey,
+          total: totalResult.count || 0,
+          week: weekResult.count || 0,
+        };
+      } catch {
+        return { moduleKey: m.moduleKey, total: 0, week: 0 };
+      }
     });
 
     const legacyResults = await Promise.all(legacyQueries);
-    legacyResults.forEach(r => {
-      if (r.type === 'total') legacyTotalsMap[r.moduleKey] = r.count;
-      else legacyThisWeekMap[r.moduleKey] = r.count;
+    legacyResults.forEach(lr => {
+      const result = results.find(r => r.moduleKey === lr.moduleKey);
+      if (result) {
+        result.totalRecords += lr.total;
+        result.createdThisWeek += lr.week;
+      }
     });
   }
 
-  // Combine results
-  return modules.map(m => ({
-    moduleKey: m.key,
-    moduleName: m.name_plural || m.name + 's',
-    totalRecords: (crmTotalsMap[m.id] || 0) + (legacyTotalsMap[m.key] || 0),
-    createdThisWeek: (crmThisWeekMap[m.id] || 0) + (legacyThisWeekMap[m.key] || 0),
-  }));
+  return results;
 }
 
 export interface AtRiskDeal {
@@ -889,17 +880,8 @@ export interface AtRiskDeal {
 export async function getAtRiskDeals(orgId: string, limit: number = 5): Promise<AtRiskDeal[]> {
   const supabase = await createCrmClient();
 
-  // Get deals module
-  const { data: dealsModule } = await supabase
-    .from('crm_modules')
-    .select('id')
-    .eq('org_id', orgId)
-    .eq('key', 'deals')
-    .single();
-
-  if (!dealsModule) return [];
-
   // Get deals that have been in the same stage for more than 7 days
+  // Single query using inner join with crm_modules to filter by org and module key
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -910,20 +892,22 @@ export async function getAtRiskDeals(orgId: string, limit: number = 5): Promise<
       data,
       owner_id,
       stage_updated_at,
-      profiles:owner_id (full_name)
+      profiles:owner_id (full_name),
+      crm_modules!inner (org_id, key)
     `)
-    .eq('module_id', dealsModule.id)
+    .eq('crm_modules.org_id', orgId)
+    .eq('crm_modules.key', 'deals')
     .lt('stage_updated_at', sevenDaysAgo.toISOString())
     .not('data->stage', 'in', '("Closed Won","Closed Lost","closed_won","closed_lost")')
     .order('stage_updated_at', { ascending: true })
     .limit(limit);
 
-  if (!records) return [];
+  if (!records || records.length === 0) return [];
 
   const now = new Date();
   return records.map(record => {
     const data = record.data as Record<string, unknown>;
-    const stageUpdated = record.stage_updated_at ? new Date(record.stage_updated_at) : new Date(record.stage_updated_at || now);
+    const stageUpdated = record.stage_updated_at ? new Date(record.stage_updated_at) : now;
     const daysInStage = Math.floor((now.getTime() - stageUpdated.getTime()) / (1000 * 60 * 60 * 24));
 
     return {

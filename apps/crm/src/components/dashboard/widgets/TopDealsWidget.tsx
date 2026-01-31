@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { DollarSign, ArrowRight } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';

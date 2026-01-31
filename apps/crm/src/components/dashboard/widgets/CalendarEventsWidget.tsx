@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { CalendarDays, ArrowRight, Clock, MapPin } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';

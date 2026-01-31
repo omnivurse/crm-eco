@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { Mail, ArrowRight, Send, Eye, Reply, MousePointer } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';

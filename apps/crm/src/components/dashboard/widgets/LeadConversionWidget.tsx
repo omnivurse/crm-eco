@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { Target, ArrowRight, ArrowDown } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';

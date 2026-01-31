@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { LineChart, ArrowRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';
