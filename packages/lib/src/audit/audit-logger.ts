@@ -97,7 +97,8 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<AuditLogResul
       });
 
     // Call the RPC function
-    const { data, error } = await supabase.rpc('log_audit_event', {
+    // Note: Type assertion needed until Supabase types are regenerated with the new function
+    const { data, error } = await (supabase.rpc as CallableFunction)('log_audit_event', {
       p_app_source: entry.appSource,
       p_action: entry.action,
       p_action_category: entry.actionCategory,
@@ -112,14 +113,14 @@ export async function logAuditEvent(entry: AuditLogEntry): Promise<AuditLogResul
       p_user_agent: userAgent,
       p_request_id: entry.requestId || null,
       p_session_id: entry.sessionId || null,
-    });
+    }) as { data: string | null; error: Error | null };
 
     if (error) {
       console.error('[AuditLogger] Failed to log event:', error);
       return { success: false, error: error.message };
     }
 
-    return { success: true, auditId: data };
+    return { success: true, auditId: data ?? undefined };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     console.error('[AuditLogger] Exception while logging:', errorMessage);

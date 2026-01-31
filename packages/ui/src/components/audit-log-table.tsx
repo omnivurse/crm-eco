@@ -7,12 +7,6 @@ import { cn } from '../lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { RiskLevelBadge, type RiskLevel } from './risk-level-badge';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from './tooltip';
-import {
   User,
   Clock,
   Activity,
@@ -181,20 +175,13 @@ const AuditLogRow = memo(function AuditLogRow({
       </div>
 
       {/* Timestamp */}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 w-24">
-              <Clock className="w-3 h-3" />
-              <span className="truncate">{timeAgo}</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            <p>{fullTime}</p>
-            {log.ip_address && <p className="text-xs opacity-70">IP: {log.ip_address}</p>}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <div
+        className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 flex-shrink-0 w-24 cursor-help"
+        title={`${fullTime}${log.ip_address ? `\nIP: ${log.ip_address}` : ''}`}
+      >
+        <Clock className="w-3 h-3" />
+        <span className="truncate">{timeAgo}</span>
+      </div>
 
       {/* Chevron */}
       {onClick && (

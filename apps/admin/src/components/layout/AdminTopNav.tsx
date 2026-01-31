@@ -183,6 +183,16 @@ export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
   };
 
   const handleSignOut = async () => {
+    // Log logout event before signing out
+    try {
+      await fetch('/api/auth/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout', email: profile.email }),
+      });
+    } catch (err) {
+      console.error('Failed to log logout:', err);
+    }
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();

@@ -237,6 +237,19 @@ export default function CrmLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  // Log authentication events
+  const logAuthEvent = async (action: string, details?: Record<string, unknown>) => {
+    try {
+      await fetch('/api/auth/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, email, details }),
+      });
+    } catch (err) {
+      console.error('Failed to log auth event:', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -249,12 +262,15 @@ export default function CrmLoginPage() {
       });
 
       if (authError) {
+        // Log failed login attempt
+        await logAuthEvent('login_failed', { reason: authError.message });
         setError(authError.message);
         setLoading(false);
         return;
       }
 
       if (!authData.user) {
+        await logAuthEvent('login_failed', { reason: 'No user returned' });
         setError('Authentication failed');
         setLoading(false);
         return;
@@ -268,15 +284,20 @@ export default function CrmLoginPage() {
         .single();
 
       if (profileError || !profile) {
+        await logAuthEvent('login_failed', { reason: 'No CRM access', profileError: profileError?.message });
         await supabase.auth.signOut();
         setError('You do not have access to the CRM. Please contact your administrator.');
         setLoading(false);
         return;
       }
 
+      // Log successful login
+      await logAuthEvent('login_success', { role: profile.crm_role });
+
       router.push('/crm');
       router.refresh();
     } catch (err) {
+      await logAuthEvent('login_failed', { reason: 'Unexpected error' });
       setError('An unexpected error occurred');
       setLoading(false);
     }

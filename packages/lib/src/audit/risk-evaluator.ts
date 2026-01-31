@@ -135,20 +135,13 @@ export function evaluateRiskLevel(context: RiskEvaluationContext): RiskLevel {
     return 'high';
   }
 
-  // Check bulk operations
+  // Check bulk operations (data_deletion already returned 'high' above, so bulk deletion returns high too)
   if (details?.bulk === true || details?.count && (details.count as number) > 10) {
-    if (actionCategory === 'data_deletion') {
-      return 'critical';
-    }
     return 'high';
   }
 
   // Check if PHI is involved
   if (targetEntityType && PHI_ENTITY_TYPES.has(targetEntityType.toLowerCase())) {
-    // PHI deletion is critical
-    if (actionCategory === 'data_deletion') {
-      return 'critical';
-    }
     // PHI export is high risk
     if (actionCategory === 'data_export') {
       return 'high';
@@ -172,7 +165,7 @@ export function evaluateRiskLevel(context: RiskEvaluationContext): RiskLevel {
   if (changes?.old || changes?.new) {
     const oldFields = changes.old ? Object.keys(changes.old) : [];
     const newFields = changes.new ? Object.keys(changes.new) : [];
-    const modifiedFields = [...new Set([...oldFields, ...newFields])];
+    const modifiedFields = Array.from(new Set([...oldFields, ...newFields]));
 
     const hasSensitiveChanges = modifiedFields.some((field) =>
       SENSITIVE_FIELDS.has(field.toLowerCase())

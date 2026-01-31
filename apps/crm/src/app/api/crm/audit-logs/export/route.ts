@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       .from('profiles')
       .select('organization_id, crm_role')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { organization_id: string; crm_role: string | null } | null };
 
     if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

@@ -20,7 +20,7 @@ async function getAuditData() {
     .from('profiles')
     .select('id, organization_id, crm_role, full_name, email')
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: { id: string; organization_id: string; crm_role: string | null; full_name: string; email: string } | null };
 
   if (!profile) {
     redirect('/crm-login');
@@ -45,11 +45,12 @@ async function getAuditData() {
     .select('id, full_name, email')
     .eq('organization_id', profile.organization_id)
     .eq('is_active', true)
-    .order('full_name');
+    .order('full_name') as { data: { id: string; full_name: string; email: string }[] | null };
 
   return {
     profile,
-    initialLogs: initialLogs || [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    initialLogs: (initialLogs || []) as any[],
     users: users || [],
   };
 }
