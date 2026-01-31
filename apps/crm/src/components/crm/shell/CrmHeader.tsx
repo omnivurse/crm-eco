@@ -177,7 +177,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
           className="relative h-10 w-10 rounded-xl text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 transition-all duration-200"
         >
           <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-teal-500 rounded-full" />
         </Button>
 
         {/* User Menu */}

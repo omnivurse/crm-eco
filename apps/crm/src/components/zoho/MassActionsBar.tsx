@@ -79,7 +79,7 @@ export function MassActionsBar({
           'flex items-center gap-3 px-4 py-3 rounded-2xl',
           'bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10',
           'shadow-xl shadow-slate-900/10 dark:shadow-black/30',
-          'animate-fade-in-up',
+          '',
           className
         )}
       >

@@ -45,7 +45,7 @@ export function BulkActions({
 
   return (
     <>
-      <div className="flex items-center gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-500/10 border-y border-teal-200 dark:border-teal-500/20 animate-fade-in-up">
+      <div className="flex items-center gap-2 px-4 py-2 bg-teal-50 dark:bg-teal-500/10 border-y border-teal-200 dark:border-teal-500/20">
         {/* Selection Count */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-teal-700 dark:text-teal-300">

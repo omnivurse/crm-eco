@@ -357,7 +357,7 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
             />
           </div>
           {!collapsed && (
-            <div className="min-w-0 animate-fade-in-up" style={{ animationDuration: '0.2s' }}>
+            <div className="min-w-0" style={{ animationDuration: '0.2s' }}>
               <h1 className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">
                 {organizationName || 'Pay It Forward'}
               </h1>
