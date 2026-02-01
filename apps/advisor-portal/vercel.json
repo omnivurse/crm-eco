@@ -1,5 +1,5 @@
 {
-  "installCommand": "rm -rf /vercel/.npm && cd ../.. && npm install --legacy-peer-deps",
+  "installCommand": "cd ../.. && npm_config_cache=/tmp/npm-$(date +%s) npm install --legacy-peer-deps",
   "buildCommand": "cd ../.. && npm run build:advisor-portal",
   "outputDirectory": ".next",
   "framework": "nextjs"
