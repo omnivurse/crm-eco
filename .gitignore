@@ -10,7 +10,7 @@ dist
 build
 
 # Testing
-coverage
+/coverage
 
 # Misc
 .DS_Store
