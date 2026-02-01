@@ -1,6 +1,6 @@
 {
-  "installCommand": "corepack enable && cd ../.. && corepack prepare pnpm@latest --activate && pnpm install --no-frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm run build:portal",
+  "installCommand": "cd ../.. && npm install --legacy-peer-deps",
+  "buildCommand": "cd ../.. && npm run build:portal",
   "outputDirectory": ".next",
   "framework": "nextjs"
 }
