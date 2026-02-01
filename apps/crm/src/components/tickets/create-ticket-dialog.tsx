@@ -40,13 +40,13 @@ export function CreateTicketDialog() {
     subject: string;
     description: string;
     category: 'need' | 'enrollment' | 'billing' | 'service' | 'other';
-    priority: 'low' | 'normal' | 'high' | 'urgent';
+    priority: 'low' | 'medium' | 'high' | 'urgent';
     memberId: string;
   }>({
     subject: '',
     description: '',
     category: 'service',
-    priority: 'normal',
+    priority: 'medium',
     memberId: '',
   });
 
@@ -127,7 +127,7 @@ export function CreateTicketDialog() {
         subject: '',
         description: '',
         category: 'service',
-        priority: 'normal',
+        priority: 'medium',
         memberId: '',
       });
       router.refresh();
@@ -212,7 +212,7 @@ export function CreateTicketDialog() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
                       <SelectItem value="high">High</SelectItem>
                       <SelectItem value="urgent">Urgent</SelectItem>
                     </SelectContent>
