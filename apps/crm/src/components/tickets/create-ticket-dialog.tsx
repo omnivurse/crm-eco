@@ -202,7 +202,7 @@ export function CreateTicketDialog() {
                   <Label htmlFor="priority">Priority *</Label>
                   <Select
                     value={formData.priority}
-                    onValueChange={(value: 'low' | 'normal' | 'high' | 'urgent') => 
+                    onValueChange={(value: 'low' | 'medium' | 'high' | 'urgent') =>
                       setFormData({ ...formData, priority: value })
                     }
                   >
