@@ -24,6 +24,10 @@ export default async function SupportPage() {
 
   const { member } = context;
 
+  if (!member.organization_id) {
+    redirect('/');
+  }
+
   // Fetch recent tickets
   const tickets = await getMemberTickets(supabase, member.id, member.organization_id, 20);
 
