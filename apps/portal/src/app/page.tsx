@@ -48,7 +48,11 @@ export default async function MemberDashboard() {
   }
 
   const { member } = context;
-  
+
+  if (!member.organization_id) {
+    redirect('/');
+  }
+
   // Fetch all dashboard data in parallel
   const [memberships, latestEnrollment, needs, tickets] = await Promise.all([
     getMemberMemberships(supabase, member.id, member.organization_id),

@@ -37,6 +37,10 @@ export default async function NeedDetailPage({ params }: { params: { id: string 
   const { member } = context;
   const needId = params.id;
 
+  if (!member.organization_id) {
+    redirect('/');
+  }
+
   // Fetch the need with ownership check
   const need = await getNeedForMember(supabase, needId, member.id, member.organization_id);
 
