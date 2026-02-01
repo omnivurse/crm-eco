@@ -57,6 +57,10 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
 
   const { member, profile } = context;
 
+  if (!member.organization_id) {
+    return { success: false, message: 'Organization not found.' };
+  }
+
   // Validate required fields
   const errors: Record<string, string[]> = {};
   if (!data.needType || data.needType.trim().length === 0) {

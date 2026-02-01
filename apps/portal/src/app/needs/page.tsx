@@ -90,6 +90,10 @@ export default async function NeedsPage() {
 
   const { member } = context;
 
+  if (!member.organization_id) {
+    redirect('/');
+  }
+
   // Fetch needs with a higher limit for the full list view
   const needs = await getMemberNeeds(supabase, member.id, member.organization_id, 50) as NeedRow[];
 
