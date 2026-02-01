@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd ../.. && rm -rf /vercel/.npm && npm install --legacy-peer-deps",
+  "installCommand": "npm install --legacy-peer-deps --prefix ../.. --cache /tmp/npm-cache",
   "buildCommand": "cd ../.. && npm run build:crm",
   "outputDirectory": ".next",
   "framework": "nextjs"
