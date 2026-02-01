@@ -23,8 +23,30 @@ import {
   Textarea,
 } from '@crm-eco/ui';
 import { Plus, User, MapPin, Target, FileText } from 'lucide-react';
-import type { Database } from '@crm-eco/lib/types';
 import { logActivityForLead, ActivityTypes } from '@crm-eco/lib';
+
+interface LeadInsert {
+  organization_id: string;
+  first_name: string;
+  last_name: string;
+  email?: string | null;
+  phone?: string | null;
+  state?: string | null;
+  source?: string | null;
+  campaign?: string | null;
+  household_size?: number | null;
+  desired_start_date?: string | null;
+  current_coverage?: string | null;
+  status: 'new' | 'contacted' | 'working' | 'qualified' | 'unqualified' | 'converted' | 'lost';
+  advisor_id?: string | null;
+  notes?: string | null;
+}
+
+interface Advisor {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
@@ -61,9 +83,6 @@ const LEAD_STATUS_OPTIONS = [
   { value: 'qualified', label: 'Qualified' },
   { value: 'unqualified', label: 'Unqualified' },
 ];
-
-type LeadInsert = Database['public']['Tables']['leads']['Insert'];
-type Advisor = Database['public']['Tables']['advisors']['Row'];
 
 export function CreateLeadDialog() {
   const router = useRouter();
