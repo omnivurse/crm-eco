@@ -22,7 +22,6 @@ import {
   Separator,
 } from '@crm-eco/ui';
 import { Plus, User, Building2, FileText } from 'lucide-react';
-import type { Database } from '@crm-eco/lib/types';
 import { logActivityForAdvisor, ActivityTypes } from '@crm-eco/lib';
 import { CustomFieldsForm } from '@/components/shared/custom-fields-form';
 
@@ -34,7 +33,20 @@ const US_STATES = [
   'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'
 ];
 
-type AdvisorInsert = Database['public']['Tables']['advisors']['Insert'];
+interface AdvisorInsert {
+  organization_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string | null;
+  agency_name?: string | null;
+  license_number?: string | null;
+  license_states?: string[];
+  npn?: string | null;
+  status: 'pending' | 'active' | 'paused' | 'inactive' | 'terminated';
+  primary_channel?: string | null;
+  comp_level?: string | null;
+}
 
 export function AddAdvisorDialog() {
   const router = useRouter();
