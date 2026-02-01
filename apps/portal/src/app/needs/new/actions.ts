@@ -149,6 +149,10 @@ export async function updateNeedBillsAndCashPay(
 
   const { member, profile } = context;
 
+  if (!member.organization_id) {
+    return { success: false, message: 'Organization not found.' };
+  }
+
   // Verify ownership
   const { data: existingNeed, error: fetchError } = await supabase
     .from('needs')
@@ -235,6 +239,10 @@ export async function updateNeedConsentAndDocs(
 
   const { member, profile } = context;
 
+  if (!member.organization_id) {
+    return { success: false, message: 'Organization not found.' };
+  }
+
   // Verify ownership
   const { data: existingNeed, error: fetchError } = await supabase
     .from('needs')
@@ -306,6 +314,10 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
   }
 
   const { member, profile } = context;
+
+  if (!member.organization_id) {
+    return { success: false, message: 'Organization not found.' };
+  }
 
   // Verify ownership and get current status
   const { data: existingNeed, error: fetchError } = await (supabase as any)
