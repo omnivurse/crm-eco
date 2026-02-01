@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd ../.. && npm cache clean --force && npm install --legacy-peer-deps",
+  "installCommand": "cd ../.. && rm -rf /vercel/.npm && npm install --legacy-peer-deps",
   "buildCommand": "cd ../.. && npm run build:admin",
   "outputDirectory": ".next",
   "framework": "nextjs"
