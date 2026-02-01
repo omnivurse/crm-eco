@@ -41,6 +41,10 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
   const { member } = context;
 
   // Fetch enrollment with ownership check
+  if (!member.organization_id) {
+    redirect('/');
+  }
+
   const enrollment = await getEnrollmentForMember(
     supabase,
     params.id,
