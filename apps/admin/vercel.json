@@ -1,5 +1,5 @@
 {
-  "installCommand": "npm install --legacy-peer-deps --prefix ../.. --cache /tmp/npm-cache",
+  "installCommand": "cd ../.. && npm ci --legacy-peer-deps",
   "buildCommand": "cd ../.. && npm run build:admin",
   "outputDirectory": ".next",
   "framework": "nextjs"
