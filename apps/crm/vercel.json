@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd ../.. && npm install",
+  "installCommand": "cd ../.. && yarn install --ignore-engines",
   "buildCommand": "cd ../.. && npm run build:crm",
   "outputDirectory": ".next",
   "framework": "nextjs"
