@@ -91,14 +91,13 @@ export function CreateTicketDialog() {
       if (!profile) throw new Error('Profile not found');
 
       const insertData: TicketInsert = {
-        organization_id: profile.organization_id,
-        created_by_profile_id: profile.id,
         subject: formData.subject,
         description: formData.description,
         category: formData.category,
         priority: formData.priority,
         status: 'open',
         member_id: formData.memberId || null,
+        requester_id: profile.id,
       };
 
       const { data: insertedTicket, error: insertError } = await supabase
