@@ -1,6 +1,7 @@
 {
-  "installCommand": "cd ../.. && npm install --legacy-peer-deps",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
   "buildCommand": "cd ../.. && npm run build:advisor-portal",
   "outputDirectory": ".next",
-  "framework": "nextjs"
+  "installCommand": "cd ../.. && npm install --legacy-peer-deps"
 }
