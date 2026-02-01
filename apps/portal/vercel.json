@@ -1,5 +1,5 @@
 {
-  "installCommand": "cd ../.. && npm_config_cache=/tmp/npm-$(date +%s) npm install --legacy-peer-deps",
+  "installCommand": "cd ../.. && npm install --legacy-peer-deps --no-package-lock",
   "buildCommand": "cd ../.. && npm run build:portal",
   "outputDirectory": ".next",
   "framework": "nextjs"
