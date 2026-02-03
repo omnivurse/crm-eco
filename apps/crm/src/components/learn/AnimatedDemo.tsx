@@ -339,8 +339,7 @@ export function StepList({
       {steps.map((step, index) => (
         <div
           key={index}
-          className="flex gap-4 animate-fade-in-up"
-          style={{ animationDelay: `${index * 100}ms` }}
+          className="flex gap-4"
         >
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white font-semibold text-sm">
             {index + 1}
