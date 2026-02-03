@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { Button, Input, Label } from '@crm-eco/ui';
@@ -24,167 +24,86 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-// Admin Portal Orbit Animation - with admin/system icons
-function AdminOrbitAnimation() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
+// Static Admin Visual (no animations)
+function StaticAdminVisual() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {/* Ambient glow layers - purple/blue for admin */}
-      <div className="absolute w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute w-[300px] h-[300px] bg-blue-500/15 rounded-full blur-[80px] animate-[pulse_4s_ease-in-out_infinite]" />
-      <div className="absolute w-[200px] h-[200px] bg-purple-400/20 rounded-full blur-[60px] animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
+      {/* Static ambient glow layers - purple/blue for admin */}
+      <div className="absolute w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px]" />
+      <div className="absolute w-[300px] h-[300px] bg-blue-500/15 rounded-full blur-[80px]" />
+      <div className="absolute w-[200px] h-[200px] bg-purple-400/20 rounded-full blur-[60px]" />
 
       {/* Core nucleus - Company Logo */}
       <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-purple-400/30 to-blue-500/20 backdrop-blur-xl border border-purple-400/40 flex items-center justify-center z-20 shadow-[0_0_60px_20px_rgba(147,51,234,0.3)]">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-400/20 to-transparent animate-[spin_8s_linear_infinite]" />
         <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-[0_0_30px_10px_rgba(147,51,234,0.4)] overflow-hidden">
           <Image
             src="/logo-icon.png"
             alt="Pay It Forward"
             width={48}
             height={48}
-            className="w-12 h-12 object-contain animate-[pulse_2s_ease-in-out_infinite]"
+            className="w-12 h-12 object-contain"
           />
         </div>
       </div>
 
-      {/* Pulsing core ring */}
-      <div className="absolute w-32 h-32 rounded-full border border-purple-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-      <div className="absolute w-36 h-36 rounded-full border border-purple-400/20 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]" />
-
-      {/* Orbit Ring 1 - Fast inner - Admin icons */}
+      {/* Inner orbit ring with static icons */}
       <div className="absolute w-[220px] h-[220px]">
-        <div className="absolute inset-0 rounded-full border border-white/10" />
-        <div className="absolute inset-0 rounded-full border border-purple-400/20 animate-[spin_15s_linear_infinite]">
-          <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-purple-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-2.5 rounded-full border border-purple-400/50 shadow-[0_0_20px_5px_rgba(147,51,234,0.3)]">
-                <Shield className="w-4 h-4 text-purple-400" />
-              </div>
-            </div>
+        <div className="absolute inset-0 rounded-full border border-purple-400/20" />
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+          <div className="relative bg-slate-900 p-2.5 rounded-full border border-purple-400/50 shadow-[0_0_20px_5px_rgba(147,51,234,0.3)]">
+            <Shield className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-2.5 rounded-full border border-blue-400/50 shadow-[0_0_20px_5px_rgba(96,165,250,0.3)]">
-                <Settings className="w-4 h-4 text-blue-400" />
-              </div>
-            </div>
+        </div>
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+          <div className="relative bg-slate-900 p-2.5 rounded-full border border-blue-400/50 shadow-[0_0_20px_5px_rgba(96,165,250,0.3)]">
+            <Settings className="w-4 h-4 text-blue-400" />
           </div>
         </div>
       </div>
 
-      {/* Orbit Ring 2 - Medium */}
+      {/* Middle orbit ring */}
       <div className="absolute w-[360px] h-[360px]">
-        <div className="absolute inset-0 rounded-full border border-white/5" />
-        <div className="absolute inset-0 rounded-full border border-dashed border-purple-500/10 animate-[spin_25s_linear_infinite_reverse]">
-          <div className="absolute top-8 -left-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-indigo-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-3 rounded-full border border-indigo-400/50 shadow-[0_0_20px_5px_rgba(129,140,248,0.3)]">
-                <Users className="w-5 h-5 text-indigo-400" />
-              </div>
-            </div>
+        <div className="absolute inset-0 rounded-full border border-dashed border-purple-500/10" />
+        <div className="absolute top-8 -left-2">
+          <div className="relative bg-slate-900 p-3 rounded-full border border-indigo-400/50 shadow-[0_0_20px_5px_rgba(129,140,248,0.3)]">
+            <Users className="w-5 h-5 text-indigo-400" />
           </div>
-          <div className="absolute bottom-8 -right-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-3 rounded-full border border-emerald-400/50 shadow-[0_0_20px_5px_rgba(52,211,153,0.3)]">
-                <Database className="w-5 h-5 text-emerald-400" />
-              </div>
-            </div>
+        </div>
+        <div className="absolute bottom-8 -right-2">
+          <div className="relative bg-slate-900 p-3 rounded-full border border-emerald-400/50 shadow-[0_0_20px_5px_rgba(52,211,153,0.3)]">
+            <Database className="w-5 h-5 text-emerald-400" />
           </div>
-          <div className="absolute top-1/2 -left-3 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-violet-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-2.5 rounded-full border border-violet-400/50 shadow-[0_0_20px_5px_rgba(167,139,250,0.3)]">
-                <Sparkles className="w-4 h-4 text-violet-400" />
-              </div>
-            </div>
+        </div>
+        <div className="absolute top-1/2 -left-3 -translate-y-1/2">
+          <div className="relative bg-slate-900 p-2.5 rounded-full border border-violet-400/50 shadow-[0_0_20px_5px_rgba(167,139,250,0.3)]">
+            <Sparkles className="w-4 h-4 text-violet-400" />
           </div>
         </div>
       </div>
 
-      {/* Orbit Ring 3 - Outer slow */}
+      {/* Outer orbit ring */}
       <div className="absolute w-[500px] h-[500px]">
         <div className="absolute inset-0 rounded-full border border-white/5" />
-        <div className="absolute inset-0 rounded-full animate-[spin_40s_linear_infinite]">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-amber-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-3 rounded-full border border-amber-400/50 shadow-[0_0_20px_5px_rgba(251,191,36,0.3)]">
-                <Building2 className="w-5 h-5 text-amber-400" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-pink-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-3 rounded-full border border-pink-400/50 shadow-[0_0_20px_5px_rgba(244,114,182,0.3)]">
-                <BarChart3 className="w-5 h-5 text-pink-400" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-cyan-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-2.5 rounded-full border border-cyan-400/50 shadow-[0_0_20px_5px_rgba(34,211,238,0.3)]">
-                <UserCog className="w-4 h-4 text-cyan-400" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-lime-400 rounded-full blur-md animate-pulse" />
-              <div className="relative bg-slate-900 p-2.5 rounded-full border border-lime-400/50 shadow-[0_0_20px_5px_rgba(163,230,53,0.3)]">
-                <Zap className="w-4 h-4 text-lime-400" />
-              </div>
-            </div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative bg-slate-900 p-3 rounded-full border border-amber-400/50 shadow-[0_0_20px_5px_rgba(251,191,36,0.3)]">
+            <Building2 className="w-5 h-5 text-amber-400" />
           </div>
         </div>
-      </div>
-
-      {/* Floating particles */}
-      {[...Array(40)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: Math.random() * 4 + 2 + 'px',
-            height: Math.random() * 4 + 2 + 'px',
-            background: `rgba(${Math.random() > 0.5 ? '147, 51, 234' : '96, 165, 250'}, ${Math.random() * 0.5 + 0.3})`,
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            animation: `float-particle ${Math.random() * 10 + 15}s linear infinite`,
-            animationDelay: `${Math.random() * -20}s`,
-            boxShadow: `0 0 ${Math.random() * 10 + 5}px rgba(147, 51, 234, 0.5)`,
-          }}
-        />
-      ))}
-
-      {/* Shooting stars */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(5)].map((_, i) => (
-          <div
-            key={`stream-${i}`}
-            className="absolute h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-60"
-            style={{
-              width: Math.random() * 100 + 50 + 'px',
-              top: `${Math.random() * 100}%`,
-              left: '-100px',
-              animation: `shooting-star ${Math.random() * 3 + 2}s linear infinite`,
-              animationDelay: `${Math.random() * 5}s`,
-            }}
-          />
-        ))}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+          <div className="relative bg-slate-900 p-3 rounded-full border border-pink-400/50 shadow-[0_0_20px_5px_rgba(244,114,182,0.3)]">
+            <BarChart3 className="w-5 h-5 text-pink-400" />
+          </div>
+        </div>
+        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
+          <div className="relative bg-slate-900 p-2.5 rounded-full border border-cyan-400/50 shadow-[0_0_20px_5px_rgba(34,211,238,0.3)]">
+            <UserCog className="w-4 h-4 text-cyan-400" />
+          </div>
+        </div>
+        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative bg-slate-900 p-2.5 rounded-full border border-lime-400/50 shadow-[0_0_20px_5px_rgba(163,230,53,0.3)]">
+            <Zap className="w-4 h-4 text-lime-400" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -275,67 +194,19 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <style jsx global>{`
-        @keyframes float-particle {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          50% {
-            transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(1.5);
-          }
-          90% {
-            opacity: 1;
-          }
-        }
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Left Side - Premium Visuals */}
+      <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-slate-950">
+        {/* Static gradient background - purple/blue for admin */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-purple-950" />
 
-        @keyframes shooting-star {
-          0% {
-            transform: translateX(0) translateY(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateX(calc(100vw + 200px)) translateY(100px);
-            opacity: 0;
-          }
-        }
+        {/* Mesh gradient overlay */}
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,rgba(147,51,234,0.3),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(96,165,250,0.2),transparent_50%)]" />
 
-        @keyframes gradient-flow {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-      `}</style>
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
 
-      <div className="min-h-screen grid lg:grid-cols-2">
-        {/* Left Side - Premium Visuals */}
-        <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-slate-950">
-          {/* Animated gradient background - purple/blue for admin */}
-          <div
-            className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-purple-950"
-            style={{
-              backgroundSize: '400% 400%',
-              animation: 'gradient-flow 15s ease infinite',
-            }}
-          />
-
-          {/* Mesh gradient overlay */}
-          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,rgba(147,51,234,0.3),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(96,165,250,0.2),transparent_50%)]" />
-
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
-
-          <AdminOrbitAnimation />
+        <StaticAdminVisual />
 
           {/* Bottom branding */}
           <div className="absolute bottom-12 left-12 z-10">
@@ -487,6 +358,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
