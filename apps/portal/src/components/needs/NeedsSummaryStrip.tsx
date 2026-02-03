@@ -33,19 +33,19 @@ export function NeedsSummaryStrip({ openCount, approvedCount, paidCount }: Needs
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
       {stats.map((stat) => (
         <Card key={stat.label} className={stat.bgClass}>
-          <CardContent className="pt-4 pb-4">
+          <CardContent className="pt-3 pb-3 sm:pt-4 sm:pb-4">
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
                 {stat.icon}
               </div>
-              <div>
-                <p className={`text-2xl font-bold ${stat.textClass}`}>
+              <div className="flex-1 min-w-0">
+                <p className={`text-xl sm:text-2xl font-bold ${stat.textClass}`}>
                   {stat.value}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 truncate">
                   {stat.label}
                 </p>
               </div>

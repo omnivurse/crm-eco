@@ -40,6 +40,8 @@ import {
   Receipt,
   Terminal,
   Activity,
+  Menu,
+  X,
 } from 'lucide-react';
 import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
 import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
@@ -57,13 +59,17 @@ interface CrmTopBarProps {
   profile: CrmProfile;
   organizationName?: string;
   onOpenCommandPalette?: () => void;
+  mobileMenuOpen?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
 export function CrmTopBar({
   modules,
   profile,
   organizationName,
-  onOpenCommandPalette
+  onOpenCommandPalette,
+  mobileMenuOpen,
+  onMobileMenuToggle,
 }: CrmTopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
@@ -149,23 +155,37 @@ export function CrmTopBar({
   };
 
   return (
-    <header className="h-14 flex items-center px-6 glass border-b border-slate-200 dark:border-white/5">
+    <header className="h-14 flex items-center px-3 lg:px-6 glass border-b border-slate-200 dark:border-white/5">
+      {/* Mobile Menu Toggle */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden h-10 w-10 mr-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        onClick={onMobileMenuToggle}
+        aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+      >
+        {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </Button>
+
       {/* Left Section: Logo */}
       <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
         <img
           src="/logo.png"
           alt="Pay It Forward HealthShare"
-          className="h-12 max-w-[180px] w-auto object-contain"
+          className="h-10 lg:h-12 max-w-[140px] lg:max-w-[180px] w-auto object-contain"
         />
       </Link>
 
-      {/* Center Section: Module Tabs - pushed towards center-right */}
-      <div className="flex-1 flex justify-center px-8">
+      {/* Center Section: Module Tabs - hidden on mobile */}
+      <div className="hidden lg:flex flex-1 justify-center px-8">
         <ZohoModuleBar />
       </div>
 
+      {/* Spacer for mobile to push actions to right */}
+      <div className="flex-1 lg:hidden" />
+
       {/* Right Section: Search + Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 lg:gap-2">
         {/* Visible Search Button - Opens GlobalSearchOverlay */}
         <button
           onClick={() => setSearchOpen(true)}
@@ -193,17 +213,21 @@ export function CrmTopBar({
           <Search className="w-4 h-4" />
         </Button>
 
-        {/* Split Create Button with Dropdown */}
-        <SplitCreateButton />
+        {/* Split Create Button with Dropdown - hidden on mobile (available in sidebar) */}
+        <div className="hidden sm:block">
+          <SplitCreateButton />
+        </div>
 
-        {/* Theme Toggle */}
-        <ThemeToggle variant="icon" />
+        {/* Theme Toggle - hidden on small mobile */}
+        <div className="hidden xs:block">
+          <ThemeToggle variant="icon" />
+        </div>
 
-        {/* Command Center */}
+        {/* Command Center - hidden on mobile */}
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg text-cyan-500 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
+          className="hidden sm:flex h-9 w-9 rounded-lg text-cyan-500 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
           onClick={toggleTerminal}
           title="Command Center (Ctrl+K)"
         >
@@ -213,7 +237,8 @@ export function CrmTopBar({
         {/* Notifications */}
         <NotificationsPanel />
 
-        {/* Change Feed Ticker */}
+        {/* Change Feed Ticker - hidden on mobile */}
+        <div className="hidden md:block">
         <ChangeTickerPopover
           events={tickerEvents}
           isPaused={changeFeed.isPaused}
@@ -236,12 +261,13 @@ export function CrmTopBar({
             }
           }}
         />
+        </div>
 
-        {/* Settings Gear */}
+        {/* Settings Gear - hidden on mobile */}
         <Button
           variant="ghost"
           size="icon"
-          className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+          className="hidden sm:flex h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
           onClick={() => router.push('/crm/settings')}
         >
           <Settings className="w-4 h-4" />

@@ -13,7 +13,7 @@ import {
   Badge,
   ScrollArea,
 } from '@crm-eco/ui';
-import { Bell, User, LogOut, Settings, ChevronDown, Shield, FileText, CheckCircle, AlertTriangle, Check, ExternalLink, Activity } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, Shield, FileText, CheckCircle, AlertTriangle, Check, ExternalLink, Activity, Menu, X } from 'lucide-react';
 import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
 import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
 import { useRouter } from 'next/navigation';
@@ -41,6 +41,8 @@ interface AdminTopNavProps {
     organizationId: string;
   };
   userId: string;
+  mobileMenuOpen?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
 const roleColors: Record<string, string> = {
@@ -66,7 +68,7 @@ function getNotificationIcon(type?: string, icon?: string) {
   return <Bell className="w-4 h-4 text-slate-500" />;
 }
 
-export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
+export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggle }: AdminTopNavProps) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -206,20 +208,32 @@ export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
     .slice(0, 2);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
-      {/* Left side - App Switcher + Title */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 lg:px-6 shadow-sm">
+      {/* Left side - Mobile Menu + App Switcher + Title */}
+      <div className="flex items-center gap-2 lg:gap-4">
+        {/* Mobile Menu Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden h-10 w-10 rounded-lg text-slate-600 hover:text-slate-900"
+          onClick={onMobileMenuToggle}
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </Button>
+
         <AppSwitcher currentApp="admin" />
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
-        <div className="hidden sm:flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-2">
           <Shield className="w-4 h-4 text-[#047474]" />
           <span className="text-sm font-semibold text-[#003560]">System Administration</span>
         </div>
       </div>
 
       {/* Right side - actions and user menu */}
-      <div className="flex items-center gap-3">
-        {/* Change Feed Ticker */}
+      <div className="flex items-center gap-1 lg:gap-3">
+        {/* Change Feed Ticker - hidden on mobile */}
+        <div className="hidden md:block">
         <ChangeTickerPopover
           events={tickerEvents}
           isPaused={changeFeed.isPaused}
@@ -244,11 +258,12 @@ export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
             }
           }}
         />
+        </div>
 
         {/* Notifications */}
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative hover:bg-slate-100 rounded-xl">
+            <Button variant="ghost" size="icon" className="relative hover:bg-slate-100 rounded-xl h-9 w-9 lg:h-10 lg:w-10">
               <Bell className="h-5 w-5 text-slate-500" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#047474] rounded-full ring-2 ring-white text-[10px] font-bold text-white px-1">
@@ -257,7 +272,7 @@ export function AdminTopNav({ profile, userId }: AdminTopNavProps) {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 rounded-xl shadow-lg border-slate-200">
+          <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-2rem)] rounded-xl shadow-lg border-slate-200">
             <DropdownMenuLabel className="px-4 py-3 flex items-center justify-between">
               <span className="font-semibold text-[#003560]">Notifications</span>
               {unreadCount > 0 && (

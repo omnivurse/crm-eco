@@ -313,12 +313,12 @@ function Step2Bills({ state, setState, onNext, onBack }: StepProps) {
           </p>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
+      <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+        <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <Button onClick={onNext} disabled={state.isSubmitting}>
+        <Button onClick={onNext} disabled={state.isSubmitting} className="w-full sm:w-auto">
           {state.isSubmitting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : null}
@@ -386,12 +386,12 @@ function Step3Consent({ state, setState, onNext, onBack }: StepProps) {
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
+      <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+        <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <Button onClick={onNext} disabled={state.isSubmitting || !state.consent.hasConsent}>
+        <Button onClick={onNext} disabled={state.isSubmitting || !state.consent.hasConsent} className="w-full sm:w-auto">
           {state.isSubmitting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : null}
@@ -505,12 +505,12 @@ function Step4Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
           </p>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onBack}>
+      <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+        <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
           <ChevronLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        <Button onClick={onNext} disabled={state.isSubmitting} className="bg-green-600 hover:bg-green-700">
+        <Button onClick={onNext} disabled={state.isSubmitting} className="w-full sm:w-auto bg-green-600 hover:bg-green-700">
           {state.isSubmitting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (

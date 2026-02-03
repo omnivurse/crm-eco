@@ -265,6 +265,208 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; border: string }
   'Closed Lost': { bg: 'bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-500/30' },
 };
 
+/**
+ * Mobile-friendly card component for displaying records on small screens.
+ * Shows key information in a touch-friendly format.
+ */
+interface RecordCardProps {
+  record: CrmRecord;
+  isSelected: boolean;
+  onSelect: () => void;
+  onClick: () => void;
+  moduleKey: string;
+  onCall?: () => void;
+  onEmail?: () => void;
+  onAddTask?: () => void;
+  onDelete?: () => void;
+}
+
+const RecordCard = memo(function RecordCard({
+  record,
+  isSelected,
+  onSelect,
+  onClick,
+  moduleKey,
+  onCall,
+  onEmail,
+  onAddTask,
+  onDelete,
+}: RecordCardProps) {
+  // Build display name from first_name and last_name if available
+  const firstName = record.data?.first_name || '';
+  const lastName = record.data?.last_name || '';
+  const displayName = [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
+
+  // Get status
+  const rawStatus = record.status ?? record.data?.status ?? record.data?.lead_status ?? record.data?.contact_status;
+  const status = rawStatus ? String(rawStatus) : '';
+  const statusStyle = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
+
+  // Get email and phone
+  const email = record.data?.email as string | undefined;
+  const phone = record.data?.phone as string | undefined;
+
+  return (
+    <div
+      className={cn(
+        'bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10 p-4 transition-all',
+        'active:scale-[0.98]',
+        isSelected && 'ring-2 ring-teal-500 border-teal-500'
+      )}
+      onClick={onClick}
+    >
+      {/* Header Row */}
+      <div className="flex items-start gap-3 mb-3">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onSelect()}
+          onClick={(e) => e.stopPropagation()}
+          className="mt-1 border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+        />
+        <div className="flex-1 min-w-0">
+          <Link
+            href={`/crm/r/${record.id}`}
+            className="font-semibold text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors block truncate"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {displayName}
+          </Link>
+          {status && (
+            <span className={cn(
+              'inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium border',
+              statusStyle.bg, statusStyle.text, statusStyle.border
+            )}>
+              {status}
+            </span>
+          )}
+        </div>
+        {/* More Actions */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => e.stopPropagation()}
+              className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:hover:text-white flex-shrink-0"
+            >
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+              className="text-slate-700 dark:text-slate-300 cursor-pointer"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddTask?.();
+              }}
+              className="text-slate-700 dark:text-slate-300 cursor-pointer"
+            >
+              <CheckSquare className="w-4 h-4 mr-2" />
+              Add Task
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.();
+              }}
+              className="text-red-600 dark:text-red-400 cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Contact Info */}
+      <div className="space-y-2 text-sm">
+        {email && (
+          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+            <Mail className="w-4 h-4 flex-shrink-0" />
+            <a
+              href={`mailto:${email}`}
+              className="truncate hover:text-teal-600 dark:hover:text-teal-400"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {email}
+            </a>
+          </div>
+        )}
+        {phone && (
+          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+            <Phone className="w-4 h-4 flex-shrink-0" />
+            <a
+              href={`tel:${phone}`}
+              className="hover:text-teal-600 dark:hover:text-teal-400"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {phone}
+            </a>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Actions Footer */}
+      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 dark:border-white/5">
+        {phone && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `tel:${phone}`;
+            }}
+            className="flex-1 h-9 text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:text-emerald-400 dark:border-emerald-500/30 dark:hover:bg-emerald-500/10"
+          >
+            <Phone className="w-4 h-4 mr-1" />
+            Call
+          </Button>
+        )}
+        {email && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `mailto:${email}`;
+            }}
+            className="flex-1 h-9 text-blue-600 border-blue-200 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-500/30 dark:hover:bg-blue-500/10"
+          >
+            <Mail className="w-4 h-4 mr-1" />
+            Email
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddTask?.();
+          }}
+          className="h-9 px-3 text-violet-600 border-violet-200 hover:bg-violet-50 dark:text-violet-400 dark:border-violet-500/30 dark:hover:bg-violet-500/10"
+        >
+          <CheckSquare className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Date footer */}
+      <p className="text-xs text-slate-400 dark:text-slate-500 mt-3" suppressHydrationWarning>
+        Created {new Date(record.created_at).toLocaleDateString()}
+      </p>
+    </div>
+  );
+});
+
 export const RecordTable = memo(function RecordTable({
   records,
   fields,
@@ -674,19 +876,40 @@ export const RecordTable = memo(function RecordTable({
 
   if (isLoading) {
     return (
-      <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-        <div className="animate-pulse">
-          <div className="h-12 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-white/5" />
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-4">
-              <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
-              <div className="flex-1 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
-              <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
-              <div className="w-20 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+      <>
+        {/* Desktop Loading Skeleton */}
+        <div className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+          <div className="animate-pulse">
+            <div className="h-12 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-white/5" />
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-14 border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-4">
+                <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="flex-1 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="w-20 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* Mobile Loading Skeleton */}
+        <div className="md:hidden space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10 p-4 animate-pulse">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
+                <div className="flex-1">
+                  <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-2/3 mb-2" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/4" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4" />
+                <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+              </div>
             </div>
           ))}
         </div>
-      </div>
+      </>
     );
   }
 
@@ -700,10 +923,64 @@ export const RecordTable = memo(function RecordTable({
   };
 
   return (
-    <div
-      ref={tableContainerRef}
-      className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)]"
-    >
+    <>
+      {/* Mobile Card View */}
+      <div className="md:hidden">
+        {records.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-white/10 p-8 text-center">
+            <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 inline-block mb-4">
+              <Inbox className="w-10 h-10 text-slate-400 dark:text-slate-600" />
+            </div>
+            <p className="text-lg font-medium text-slate-900 dark:text-white mb-1">No records found</p>
+            <p className="text-sm text-slate-500 mb-4">
+              Get started by creating a new record.
+            </p>
+            <Button
+              className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400"
+              asChild
+            >
+              <Link href={`/crm/modules/${moduleKey}/new`}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Record
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Mobile Select All */}
+            {records.length > 0 && (
+              <div className="flex items-center gap-3 px-1 py-2">
+                <Checkbox
+                  checked={allSelected}
+                  onCheckedChange={handleSelectAll}
+                  className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                />
+                <span className="text-sm text-slate-600 dark:text-slate-400">
+                  {selectedIds.size > 0 ? `${selectedIds.size} selected` : `Select all (${records.length})`}
+                </span>
+              </div>
+            )}
+            {records.map((record) => (
+              <RecordCard
+                key={record.id}
+                record={record}
+                isSelected={selectedIds.has(record.id)}
+                onSelect={() => handleSelectRow(record.id)}
+                onClick={() => handleRowClick(record)}
+                moduleKey={moduleKey}
+                onAddTask={() => openTaskDialog(record.id)}
+                onDelete={() => onBulkDelete?.([record.id])}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div
+        ref={tableContainerRef}
+        className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)]"
+      >
       <Table>
         <TableHeader className={cn(
           'sticky top-0 z-10 transition-shadow',
@@ -911,9 +1188,11 @@ export const RecordTable = memo(function RecordTable({
         </TableBody>
       </Table>
 
-      {/* Add Task Dialog */}
+      </div>
+
+      {/* Add Task Dialog - shared between mobile and desktop */}
       <Dialog open={taskDialogOpen} onOpenChange={(open) => !open && closeTaskDialog()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Create Task</DialogTitle>
             <DialogDescription>
@@ -948,7 +1227,7 @@ export const RecordTable = memo(function RecordTable({
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
                   Due Date
@@ -977,11 +1256,11 @@ export const RecordTable = memo(function RecordTable({
               </div>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeTaskDialog} disabled={isCreatingTask}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={closeTaskDialog} disabled={isCreatingTask} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={handleCreateTask} disabled={!taskTitle.trim() || isCreatingTask}>
+            <Button onClick={handleCreateTask} disabled={!taskTitle.trim() || isCreatingTask} className="w-full sm:w-auto">
               {isCreatingTask ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -994,6 +1273,6 @@ export const RecordTable = memo(function RecordTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 });

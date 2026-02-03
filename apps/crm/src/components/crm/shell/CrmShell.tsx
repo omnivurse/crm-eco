@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
@@ -38,7 +38,26 @@ function CrmShellInner({
 }: CrmShellProps & { navigate: (path: string) => void }) {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const terminal = useTerminal();
+  const pathname = usePathname();
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileMenuOpen]);
 
   return (
     <VoiceProvider
@@ -87,7 +106,18 @@ function CrmShellInner({
               profile={profile}
               organizationName={organizationName}
               onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+              mobileMenuOpen={mobileMenuOpen}
+              onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
             />
+
+            {/* Mobile Menu Overlay */}
+            {mobileMenuOpen && (
+              <div
+                className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-hidden="true"
+              />
+            )}
 
             {/* Main Content Area */}
             <div className="flex-1 flex min-h-0">
@@ -95,18 +125,22 @@ function CrmShellInner({
               <ZohoContextualSidebar
                 isOpen={sidebarOpen}
                 onToggle={() => setSidebarOpen(!sidebarOpen)}
+                mobileMenuOpen={mobileMenuOpen}
+                onMobileClose={() => setMobileMenuOpen(false)}
               />
 
               {/* Page Content */}
-              <main className="flex-1 overflow-auto p-6 scrollbar-thin">
+              <main className="flex-1 overflow-auto p-4 lg:p-6 scrollbar-thin">
                 <div className="max-w-7xl mx-auto pb-16">
                   {children}
                 </div>
               </main>
             </div>
 
-            {/* Footer */}
-            <Footer />
+            {/* Footer - hidden on mobile */}
+            <div className="hidden lg:block">
+              <Footer />
+            </div>
           </div>
 
           {/* Command Palette */}

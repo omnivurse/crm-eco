@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { AdminSidebar, AdminTopNav, Breadcrumbs } from '@/components/layout';
+import { AdminShell } from '@/components/layout/AdminShell';
 import { AdminNotificationListener } from '@/components/notifications/AdminNotificationListener';
 import { TerminalWrapper } from '@/components/terminal/TerminalWrapper';
 import { getAdminProfile } from '@/lib/profile';
@@ -29,26 +29,19 @@ export default async function DashboardLayout({
         full_name: profile.full_name || undefined,
       }}
     >
-      <div className="flex h-screen bg-slate-50">
-        <AdminSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <AdminTopNav
-            profile={{
-              fullName: profile.full_name || '',
-              email: profile.email,
-              avatarUrl: null,
-              role: profile.role || '',
-              organizationId: profile.organization_id,
-            }}
-            userId={profile.id}
-          />
-          <AdminNotificationListener userId={profile.id} />
-          <main className="flex-1 overflow-auto p-6">
-            <Breadcrumbs />
-            {children}
-          </main>
-        </div>
-      </div>
+      <AdminShell
+        profile={{
+          fullName: profile.full_name || '',
+          email: profile.email,
+          avatarUrl: null,
+          role: profile.role || '',
+          organizationId: profile.organization_id,
+        }}
+        userId={profile.id}
+      >
+        <AdminNotificationListener userId={profile.id} />
+        {children}
+      </AdminShell>
     </TerminalWrapper>
   );
 }
