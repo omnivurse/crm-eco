@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Button, Input, Label } from '@crm-eco/ui';
@@ -24,195 +24,86 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 
-// Pre-generate particle data to avoid hydration mismatches
-function generateParticleData() {
-  return [...Array(40)].map(() => ({
-    width: Math.random() * 4 + 2,
-    height: Math.random() * 4 + 2,
-    isTeal: Math.random() > 0.5,
-    opacity: Math.random() * 0.5 + 0.3,
-    top: Math.random() * 100,
-    left: Math.random() * 100,
-    duration: Math.random() * 10 + 15,
-    delay: Math.random() * -20,
-    blur: Math.random() * 10 + 5,
-  }));
-}
-
-function generateShootingStarData() {
-  return [...Array(5)].map(() => ({
-    width: Math.random() * 100 + 50,
-    top: Math.random() * 100,
-    duration: Math.random() * 3 + 2,
-    delay: Math.random() * 5,
-  }));
-}
-
-// Premium Healthcare Orbit Animation
-function PremiumOrbitAnimation() {
-  const [mounted, setMounted] = useState(false);
-  const [particleData, setParticleData] = useState<ReturnType<typeof generateParticleData>>([]);
-  const [shootingStarData, setShootingStarData] = useState<ReturnType<typeof generateShootingStarData>>([]);
-
-  useEffect(() => {
-    setParticleData(generateParticleData());
-    setShootingStarData(generateShootingStarData());
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
+// Static Healthcare Visual (no animations)
+function StaticHealthcareVisual() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      {/* Ambient glow layers */}
+      {/* Static ambient glow layers */}
       <div className="absolute w-[500px] h-[500px] bg-brand-teal-500/10 rounded-full blur-[120px]" />
-      <div className="absolute w-[300px] h-[300px] bg-brand-emerald-500/15 rounded-full blur-[80px] animate-[pulse_4s_ease-in-out_infinite]" />
-      <div className="absolute w-[200px] h-[200px] bg-brand-teal-400/20 rounded-full blur-[60px] animate-[pulse_3s_ease-in-out_infinite_0.5s]" />
+      <div className="absolute w-[300px] h-[300px] bg-brand-emerald-500/15 rounded-full blur-[80px]" />
+      <div className="absolute w-[200px] h-[200px] bg-brand-teal-400/20 rounded-full blur-[60px]" />
 
       {/* Core nucleus - Company Logo */}
       <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-brand-teal-400/30 to-brand-emerald-500/20 backdrop-blur-xl border border-brand-teal-400/40 flex items-center justify-center z-20 shadow-[0_0_60px_20px_rgba(6,155,154,0.3)]">
-        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-brand-teal-400/20 to-transparent animate-[spin_8s_linear_infinite]" />
         <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-[0_0_30px_10px_rgba(6,155,154,0.4)] overflow-hidden">
           <Image
             src="/logo-icon.png"
             alt="Pay It Forward"
             width={48}
             height={48}
-            className="w-12 h-12 object-contain animate-[pulse_2s_ease-in-out_infinite]"
+            className="w-12 h-12 object-contain"
           />
         </div>
       </div>
 
-      {/* Pulsing core ring */}
-      <div className="absolute w-32 h-32 rounded-full border border-brand-teal-400/30 animate-[ping_2s_cubic-bezier(0,0,0.2,1)_infinite]" />
-      <div className="absolute w-36 h-36 rounded-full border border-brand-teal-400/20 animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite_0.5s]" />
-
-      {/* Orbit Ring 1 - Fast inner - Healthcare icons */}
+      {/* Static orbit rings with icons */}
       <div className="absolute w-[220px] h-[220px]">
-        <div className="absolute inset-0 rounded-full border border-white/10" />
-        <div className="absolute inset-0 rounded-full border border-brand-teal-400/20 animate-[spin_15s_linear_infinite]">
-          <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-brand-teal-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-brand-teal-400/50 shadow-[0_0_20px_5px_rgba(6,155,154,0.3)]">
-                <HeartPulse className="w-4 h-4 text-brand-teal-400" />
-              </div>
-            </div>
+        <div className="absolute inset-0 rounded-full border border-brand-teal-400/20" />
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+          <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-brand-teal-400/50 shadow-[0_0_20px_5px_rgba(6,155,154,0.3)]">
+            <HeartPulse className="w-4 h-4 text-brand-teal-400" />
           </div>
-          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-rose-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-rose-400/50 shadow-[0_0_20px_5px_rgba(251,113,133,0.3)]">
-                <Activity className="w-4 h-4 text-rose-400" />
-              </div>
-            </div>
+        </div>
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+          <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-rose-400/50 shadow-[0_0_20px_5px_rgba(251,113,133,0.3)]">
+            <Activity className="w-4 h-4 text-rose-400" />
           </div>
         </div>
       </div>
 
-      {/* Orbit Ring 2 - Medium */}
+      {/* Middle orbit ring */}
       <div className="absolute w-[360px] h-[360px]">
-        <div className="absolute inset-0 rounded-full border border-white/5" />
-        <div className="absolute inset-0 rounded-full border border-dashed border-brand-teal-500/10 animate-[spin_25s_linear_infinite_reverse]">
-          <div className="absolute top-8 -left-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-3 rounded-full border border-blue-400/50 shadow-[0_0_20px_5px_rgba(96,165,250,0.3)]">
-                <Users className="w-5 h-5 text-blue-400" />
-              </div>
-            </div>
+        <div className="absolute inset-0 rounded-full border border-dashed border-brand-teal-500/10" />
+        <div className="absolute top-8 -left-2">
+          <div className="relative bg-brand-navy-800 p-3 rounded-full border border-blue-400/50 shadow-[0_0_20px_5px_rgba(96,165,250,0.3)]">
+            <Users className="w-5 h-5 text-blue-400" />
           </div>
-          <div className="absolute bottom-8 -right-2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-emerald-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-3 rounded-full border border-emerald-400/50 shadow-[0_0_20px_5px_rgba(52,211,153,0.3)]">
-                <Stethoscope className="w-5 h-5 text-emerald-400" />
-              </div>
-            </div>
+        </div>
+        <div className="absolute bottom-8 -right-2">
+          <div className="relative bg-brand-navy-800 p-3 rounded-full border border-emerald-400/50 shadow-[0_0_20px_5px_rgba(52,211,153,0.3)]">
+            <Stethoscope className="w-5 h-5 text-emerald-400" />
           </div>
-          <div className="absolute top-1/2 -left-3 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-violet-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-violet-400/50 shadow-[0_0_20px_5px_rgba(167,139,250,0.3)]">
-                <Sparkles className="w-4 h-4 text-violet-400" />
-              </div>
-            </div>
+        </div>
+        <div className="absolute top-1/2 -left-3 -translate-y-1/2">
+          <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-violet-400/50 shadow-[0_0_20px_5px_rgba(167,139,250,0.3)]">
+            <Sparkles className="w-4 h-4 text-violet-400" />
           </div>
         </div>
       </div>
 
-      {/* Orbit Ring 3 - Outer slow */}
+      {/* Outer orbit ring */}
       <div className="absolute w-[500px] h-[500px]">
         <div className="absolute inset-0 rounded-full border border-white/5" />
-        <div className="absolute inset-0 rounded-full animate-[spin_40s_linear_infinite]">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-amber-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-3 rounded-full border border-amber-400/50 shadow-[0_0_20px_5px_rgba(251,191,36,0.3)]">
-                <Shield className="w-5 h-5 text-amber-400" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-pink-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-3 rounded-full border border-pink-400/50 shadow-[0_0_20px_5px_rgba(244,114,182,0.3)]">
-                <HeartHandshake className="w-5 h-5 text-pink-400" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-cyan-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-cyan-400/50 shadow-[0_0_20px_5px_rgba(34,211,238,0.3)]">
-                <UserCheck className="w-4 h-4 text-cyan-400" />
-              </div>
-            </div>
-          </div>
-          <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
-            <div className="relative">
-              <div className="absolute inset-0 bg-lime-400 rounded-full blur-md" />
-              <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-lime-400/50 shadow-[0_0_20px_5px_rgba(163,230,53,0.3)]">
-                <Zap className="w-4 h-4 text-lime-400" />
-              </div>
-            </div>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative bg-brand-navy-800 p-3 rounded-full border border-amber-400/50 shadow-[0_0_20px_5px_rgba(251,191,36,0.3)]">
+            <Shield className="w-5 h-5 text-amber-400" />
           </div>
         </div>
-      </div>
-
-      {/* Floating particles */}
-      {particleData.map((particle, i) => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: particle.width + 'px',
-            height: particle.height + 'px',
-            background: `rgba(${particle.isTeal ? '6, 155, 154' : '2, 115, 67'}, ${particle.opacity})`,
-            top: `${particle.top}%`,
-            left: `${particle.left}%`,
-            animation: `float-particle ${particle.duration}s linear infinite`,
-            animationDelay: `${particle.delay}s`,
-            boxShadow: `0 0 ${particle.blur}px rgba(6, 155, 154, 0.5)`,
-          }}
-        />
-      ))}
-
-      {/* Shooting stars */}
-      <div className="absolute inset-0 overflow-hidden">
-        {shootingStarData.map((star, i) => (
-          <div
-            key={`stream-${i}`}
-            className="absolute h-px bg-gradient-to-r from-transparent via-brand-teal-400 to-transparent opacity-60"
-            style={{
-              width: star.width + 'px',
-              top: `${star.top}%`,
-              left: '-100px',
-              animation: `shooting-star ${star.duration}s linear infinite`,
-              animationDelay: `${star.delay}s`,
-            }}
-          />
-        ))}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
+          <div className="relative bg-brand-navy-800 p-3 rounded-full border border-pink-400/50 shadow-[0_0_20px_5px_rgba(244,114,182,0.3)]">
+            <HeartHandshake className="w-5 h-5 text-pink-400" />
+          </div>
+        </div>
+        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
+          <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-cyan-400/50 shadow-[0_0_20px_5px_rgba(34,211,238,0.3)]">
+            <UserCheck className="w-4 h-4 text-cyan-400" />
+          </div>
+        </div>
+        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
+          <div className="relative bg-brand-navy-800 p-2.5 rounded-full border border-lime-400/50 shadow-[0_0_20px_5px_rgba(163,230,53,0.3)]">
+            <Zap className="w-4 h-4 text-lime-400" />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -270,67 +161,19 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <style jsx global>{`
-        @keyframes float-particle {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          50% {
-            transform: translate(25px, -25px) scale(1.5);
-          }
-          90% {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes shooting-star {
-          0% {
-            transform: translateX(0) translateY(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateX(calc(100vw + 200px)) translateY(100px);
-            opacity: 0;
-          }
-        }
+    <div className="min-h-screen grid lg:grid-cols-2">
+      {/* Left Side - Premium Visuals */}
+      <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-brand-navy-950">
+        {/* Static gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-brand-navy-900 via-brand-navy-950 to-brand-teal-950" />
 
-        @keyframes gradient-flow {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-      `}</style>
+        {/* Mesh gradient overlay */}
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,rgba(6,155,154,0.3),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(2,115,67,0.2),transparent_50%)]" />
 
-      <div className="min-h-screen grid lg:grid-cols-2">
-        {/* Left Side - Premium Visuals */}
-        <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-brand-navy-950">
-          {/* Animated gradient background */}
-          <div
-            className="absolute inset-0 bg-gradient-to-br from-brand-navy-900 via-brand-navy-950 to-brand-teal-950"
-            style={{
-              backgroundSize: '400% 400%',
-              animation: 'gradient-flow 15s ease infinite',
-            }}
-          />
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
 
-          {/* Mesh gradient overlay */}
-          <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,rgba(6,155,154,0.3),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(2,115,67,0.2),transparent_50%)]" />
-
-          {/* Grid pattern */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
-
-          <PremiumOrbitAnimation />
+        <StaticHealthcareVisual />
 
           {/* Bottom branding */}
           <div className="absolute bottom-12 left-12 z-10">
@@ -502,6 +345,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
