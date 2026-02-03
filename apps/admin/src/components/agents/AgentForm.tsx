@@ -204,7 +204,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Personal Information</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="first_name">First Name *</Label>
             <Input
@@ -227,7 +227,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email *</Label>
             <Input
@@ -256,7 +256,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">License Information</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="license_number">License Number</Label>
             <Input
@@ -313,7 +313,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Commission & Hierarchy</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="parent_advisor_id">Upline (Parent Agent)</Label>
             <Select
@@ -373,7 +373,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Branding (Optional)</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="company_name">Company Name</Label>
             <Input
@@ -396,7 +396,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label htmlFor="primary_color">Primary</Label>
             <Input
@@ -468,7 +468,7 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="city">City</Label>
             <Input
@@ -509,12 +509,22 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
+      {/* Actions - stack on mobile */}
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => router.back()} 
+          disabled={loading}
+          className="w-full sm:w-auto h-11 sm:h-10"
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={loading}>
+        <Button 
+          type="submit" 
+          disabled={loading}
+          className="w-full sm:w-auto h-11 sm:h-10"
+        >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

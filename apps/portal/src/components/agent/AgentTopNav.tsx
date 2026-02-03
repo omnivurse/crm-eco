@@ -14,6 +14,8 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Menu,
+  X,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -35,9 +37,11 @@ interface AgentTopNavProps {
     enrollment_code?: string | null;
     primary_color?: string;
   };
+  mobileMenuOpen?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
-export function AgentTopNav({ agent }: AgentTopNavProps) {
+export function AgentTopNav({ agent, mobileMenuOpen, onMobileMenuToggle }: AgentTopNavProps) {
   const router = useRouter();
   const supabase = createClient();
   const [copied, setCopied] = useState(false);
@@ -63,10 +67,22 @@ export function AgentTopNav({ agent }: AgentTopNavProps) {
   const primaryColor = agent?.primary_color || '#1e40af';
 
   return (
-    <header className="h-16 bg-white border-b flex items-center justify-between px-6">
-      {/* Search */}
-      <div className="flex items-center gap-4 flex-1 max-w-md">
-        <div className="relative w-full">
+    <header className="h-16 bg-white border-b flex items-center justify-between px-3 lg:px-6">
+      {/* Left side - Mobile Menu + Search */}
+      <div className="flex items-center gap-2 lg:gap-4 flex-1 max-w-md">
+        {/* Mobile Menu Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="lg:hidden h-10 w-10 rounded-lg text-slate-600 hover:text-slate-900 flex-shrink-0"
+          onClick={onMobileMenuToggle}
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </Button>
+
+        {/* Search - hidden on mobile */}
+        <div className="relative w-full hidden sm:block">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input 
             placeholder="Search members, enrollments..."
@@ -76,7 +92,7 @@ export function AgentTopNav({ agent }: AgentTopNavProps) {
       </div>
 
       {/* Quick Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 lg:gap-3">
         {/* Enrollment Link Quick Copy */}
         {enrollmentLink && (
           <Button

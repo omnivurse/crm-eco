@@ -1,7 +1,6 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { AgentSidebar } from '@/components/agent/AgentSidebar';
-import { AgentTopNav } from '@/components/agent/AgentTopNav';
+import { AgentShell } from '@/components/agent/AgentShell';
 import { Toaster } from 'sonner';
 
 async function getAgentForUser(supabase: any, userId: string) {
@@ -64,15 +63,11 @@ export default async function AgentLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      <AgentSidebar agent={agent} />
-      <div className="flex-1 flex flex-col">
-        <AgentTopNav agent={agent} />
-        <main className="flex-1 p-6 overflow-auto">
-          {children}
-        </main>
-      </div>
+    <>
+      <AgentShell agent={agent}>
+        {children}
+      </AgentShell>
       <Toaster position="top-right" richColors />
-    </div>
+    </>
   );
 }

@@ -175,7 +175,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Personal Information</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="first_name">First Name *</Label>
             <Input
@@ -184,6 +184,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
               required
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
           <div className="space-y-2">
@@ -194,11 +195,12 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
               required
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="date_of_birth">Date of Birth</Label>
             <Input
@@ -207,6 +209,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               value={formData.date_of_birth}
               onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
           <div className="space-y-2">
@@ -216,7 +219,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onValueChange={(value) => setFormData({ ...formData, gender: value })}
               disabled={loading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10">
                 <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
@@ -233,7 +236,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Contact Information</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email *</Label>
             <Input
@@ -243,6 +246,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
           <div className="space-y-2">
@@ -253,6 +257,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
         </div>
@@ -264,6 +269,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
             value={formData.address_line1}
             onChange={(e) => setFormData({ ...formData, address_line1: e.target.value })}
             disabled={loading}
+            className="h-11 sm:h-10"
           />
         </div>
 
@@ -274,17 +280,19 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
             value={formData.address_line2}
             onChange={(e) => setFormData({ ...formData, address_line2: e.target.value })}
             disabled={loading}
+            className="h-11 sm:h-10"
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-2 sm:col-span-1">
             <Label htmlFor="city">City</Label>
             <Input
               id="city"
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
           <div className="space-y-2">
@@ -294,7 +302,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onValueChange={(value) => setFormData({ ...formData, state: value })}
               disabled={loading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
@@ -313,6 +321,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               value={formData.zip_code}
               onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
               disabled={loading}
+              className="h-11 sm:h-10"
             />
           </div>
         </div>
@@ -366,7 +375,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Assignment & Status</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="advisor_id">Assigned Agent</Label>
             <Select
@@ -374,7 +383,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onValueChange={(value) => setFormData({ ...formData, advisor_id: value })}
               disabled={loading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10">
                 <SelectValue placeholder="Select agent" />
               </SelectTrigger>
               <SelectContent>
@@ -393,7 +402,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
               onValueChange={(value) => setFormData({ ...formData, status: value })}
               disabled={loading}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-11 sm:h-10">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -419,12 +428,22 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
+      {/* Actions - stack on mobile */}
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4 border-t">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={() => router.back()} 
+          disabled={loading}
+          className="w-full sm:w-auto h-11 sm:h-10"
+        >
           Cancel
         </Button>
-        <Button type="submit" disabled={loading}>
+        <Button 
+          type="submit" 
+          disabled={loading}
+          className="w-full sm:w-auto h-11 sm:h-10"
+        >
           {loading ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

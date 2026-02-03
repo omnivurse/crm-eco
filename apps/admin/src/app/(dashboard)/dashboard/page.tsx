@@ -362,7 +362,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8 pb-8">
       {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-8 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-4 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
         {/* Static background elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#047474]/30 to-transparent rounded-full blur-3xl" />
@@ -383,9 +383,9 @@ export default async function DashboardPage() {
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-start justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="text-xs font-medium text-white/80">System Online</span>
@@ -395,11 +395,12 @@ export default async function DashboardPage() {
                   <span className="text-xs font-medium text-[#E9B61F]">Admin Access</span>
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-white mb-2">{greeting}!</h1>
-              <p className="text-white/60 text-lg">Welcome to your Admin Dashboard</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{greeting}!</h1>
+              <p className="text-white/60 text-base sm:text-lg">Welcome to your Admin Dashboard</p>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Desktop only header actions */}
+            <div className="hidden lg:flex items-center gap-3">
               <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white text-sm font-medium transition-all">
                 <RefreshCw className="w-4 h-4" />
                 Refresh
@@ -413,45 +414,45 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Quick stats in header */}
-          <div className="flex items-center gap-6 mt-8 pt-6 border-t border-white/10">
-            <div className="flex items-center gap-3">
+          {/* Quick stats in header - horizontally scrollable on mobile */}
+          <div className="flex items-center gap-4 sm:gap-6 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <div className="p-2 rounded-lg bg-emerald-500/20">
-                <TrendingUp className="w-5 h-5 text-emerald-400" />
+                <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.activeEnrollments ?? 0}</p>
-                <p className="text-xs text-white/50">Active Enrollments</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.activeEnrollments ?? 0}</p>
+                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Active Enrollments</p>
               </div>
             </div>
-            <div className="w-px h-12 bg-white/10" />
-            <div className="flex items-center gap-3">
+            <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
+            <div className="flex items-center gap-3 flex-shrink-0">
               <div className="p-2 rounded-lg bg-amber-500/20">
-                <AlertCircle className="w-5 h-5 text-amber-400" />
+                <AlertCircle className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.pendingEnrollments ?? 0}</p>
-                <p className="text-xs text-white/50">Pending Review</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.pendingEnrollments ?? 0}</p>
+                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Pending Review</p>
               </div>
             </div>
-            <div className="w-px h-12 bg-white/10" />
-            <div className="flex items-center gap-3">
+            <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
+            <div className="flex items-center gap-3 flex-shrink-0">
               <div className="p-2 rounded-lg bg-[#047474]/30">
-                <Users className="w-5 h-5 text-[#069B9A]" />
+                <Users className="w-4 sm:w-5 h-4 sm:h-5 text-[#069B9A]" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.totalMembers ?? 0}</p>
-                <p className="text-xs text-white/50">Total Members</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.totalMembers ?? 0}</p>
+                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Total Members</p>
               </div>
             </div>
-            <div className="w-px h-12 bg-white/10" />
-            <div className="flex items-center gap-3">
+            <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
+            <div className="flex items-center gap-3 flex-shrink-0">
               <div className="p-2 rounded-lg bg-purple-500/20">
-                <UserCheck className="w-5 h-5 text-purple-400" />
+                <UserCheck className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.totalAgents ?? 0}</p>
-                <p className="text-xs text-white/50">Active Agents</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.totalAgents ?? 0}</p>
+                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Active Agents</p>
               </div>
             </div>
           </div>
