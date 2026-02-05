@@ -2,13 +2,14 @@ import { Suspense } from 'react';
 import {
   getCurrentProfile,
   getCachedModuleStats,
+  getCachedDashboardHeroStats,
   getUpcomingTasks,
   getRecentActivity,
   getCachedAtRiskDeals,
   getTodaysTasks,
   getCalendarEvents,
 } from '@/lib/crm/queries';
-import type { CalendarEvent } from '@/lib/crm/queries';
+import type { CalendarEvent, DashboardHeroStats } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
@@ -21,15 +22,6 @@ import {
 import type { HeroCalendarEvent, PipelineHealth, WeeklyGoalProgress } from '@/components/dashboard/DashboardHero';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
-import type { CrmTask } from '@/lib/crm/types';
-
-interface AtRiskDeal {
-  id: string;
-  name: string;
-  value: number;
-  stage: string;
-  daysInStage: number;
-}
 
 // Server-side data fetching based on widget types
 async function fetchWidgetData(
@@ -99,35 +91,39 @@ async function DashboardContent() {
   // Get widget types from layout to fetch only needed data
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all required widget data in parallel - using cached versions for expensive queries
-  // Always fetch calendar events for the hero section
+  // Fetch all required data in parallel - using cached RPC for hero stats
   // Each fetch is wrapped individually so one failure doesn't crash the page
   let stats: Awaited<ReturnType<typeof getCachedModuleStats>> = [];
+  let heroStats: DashboardHeroStats = { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
   let widgetData: Record<string, unknown> = {};
-  let calendarEvents: Awaited<ReturnType<typeof getCalendarEvents>> = [];
 
-  const [statsResult, widgetDataResult, calendarResult] = await Promise.allSettled([
+  const [statsResult, heroResult, widgetDataResult] = await Promise.allSettled([
     getCachedModuleStats(profile.organization_id),
+    getCachedDashboardHeroStats(profile.organization_id, profile.id),
     fetchWidgetData(profile, widgetTypes),
-    getCalendarEvents(profile.organization_id, 1), // Today's events only
   ]);
 
   if (statsResult.status === 'fulfilled') stats = statsResult.value;
   else console.error('[Dashboard] Stats fetch failed:', statsResult.reason);
 
+  if (heroResult.status === 'fulfilled') heroStats = heroResult.value;
+  else console.error('[Dashboard] Hero stats fetch failed:', heroResult.reason);
+
   if (widgetDataResult.status === 'fulfilled') widgetData = widgetDataResult.value;
   else console.error('[Dashboard] Widget data fetch failed:', widgetDataResult.reason);
 
-  if (calendarResult.status === 'fulfilled') calendarEvents = calendarResult.value;
-  else console.error('[Dashboard] Calendar fetch failed:', calendarResult.reason);
-
-  const todaysTasks = (widgetData.todaysTasks as CrmTask[]) || [];
-  const atRiskDeals = (widgetData.atRiskDeals as AtRiskDeal[]) || [];
-  const newThisWeek = stats.reduce((sum, s) => sum + s.createdThisWeek, 0);
   const totalDeals = stats.find((s) => s.moduleKey === 'deals')?.totalRecords || 0;
 
+  // Use calendar events from widget data (fetched once for 14-day range), filter to today for hero
+  const allCalendarEvents = (widgetData.calendarEvents as CalendarEvent[]) || [];
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+  const todayCalendarEvents = allCalendarEvents.filter(
+    (e) => new Date(e.start_time) <= todayEnd
+  );
+
   // Transform calendar events for hero display
-  const upcomingMeetings: HeroCalendarEvent[] = (calendarEvents || []).map((event: CalendarEvent) => ({
+  const upcomingMeetings: HeroCalendarEvent[] = todayCalendarEvents.map((event: CalendarEvent) => ({
     id: event.id,
     title: event.title,
     start_time: event.start_time,
@@ -137,16 +133,16 @@ async function DashboardContent() {
 
   // Calculate pipeline health based on at-risk deals ratio
   const pipelineHealth: PipelineHealth = {
-    percent: totalDeals > 0 
-      ? Math.max(0, Math.min(100, Math.round(100 - (atRiskDeals.length / Math.max(totalDeals, 1)) * 100)))
+    percent: totalDeals > 0
+      ? Math.max(0, Math.min(100, Math.round(100 - (heroStats.atRiskCount / Math.max(totalDeals, 1)) * 100)))
       : 100,
-    status: atRiskDeals.length > 3 ? 'critical' : atRiskDeals.length > 0 ? 'warning' : 'healthy',
+    status: heroStats.atRiskCount > 3 ? 'critical' : heroStats.atRiskCount > 0 ? 'warning' : 'healthy',
     trend: 'stable',
   };
 
   // Weekly goal based on new records this week (target: 10 new records)
   const weeklyGoal: WeeklyGoalProgress = {
-    current: newThisWeek,
+    current: heroStats.newThisWeek,
     target: 10,
     label: 'Weekly Records Goal',
   };
@@ -157,14 +153,10 @@ async function DashboardContent() {
         {/* Hero Header - Fixed, not customizable */}
         <DashboardHero
           profile={profile}
-          todaysTaskCount={todaysTasks.length}
-          overdueCount={
-            todaysTasks.filter(
-              (t) => t.due_at && new Date(t.due_at) < new Date()
-            ).length
-          }
-          newThisWeek={newThisWeek}
-          atRiskCount={atRiskDeals.length}
+          todaysTaskCount={heroStats.todaysTaskCount}
+          overdueCount={heroStats.overdueCount}
+          newThisWeek={heroStats.newThisWeek}
+          atRiskCount={heroStats.atRiskCount}
           upcomingMeetings={upcomingMeetings}
           pipelineHealth={pipelineHealth}
           weeklyGoal={weeklyGoal}

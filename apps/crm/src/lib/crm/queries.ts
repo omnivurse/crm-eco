@@ -826,78 +826,47 @@ export async function getImportJob(jobId: string): Promise<CrmImportJob | null> 
 export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
   const supabase = await createCrmClient();
 
-  const oneWeekAgo = new Date();
-  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-  const oneWeekAgoISO = oneWeekAgo.toISOString();
+  const { data, error } = await supabase.rpc('get_module_stats', {
+    p_org_id: orgId,
+  });
 
-  // Single query to get modules with their record counts using a raw SQL query
-  // This replaces N+1 queries with a single aggregated query
-  const { data: modulesWithCounts, error } = await supabase
-    .from('crm_modules')
-    .select(`
-      id,
-      key,
-      name,
-      name_plural,
-      crm_records!left(id, created_at)
-    `)
-    .eq('org_id', orgId)
-    .eq('is_enabled', true);
-
-  if (error || !modulesWithCounts || modulesWithCounts.length === 0) {
+  if (error) {
+    console.error('[getModuleStats] RPC error:', error);
     return [];
   }
 
-  // Calculate counts from the joined data (single query result)
-  const results = modulesWithCounts.map(module => {
-    const records = (module.crm_records || []) as Array<{ id: string; created_at: string }>;
-    const totalRecords = records.length;
-    const createdThisWeek = records.filter(r => r.created_at >= oneWeekAgoISO).length;
+  return (data || []) as ModuleStats[];
+}
 
-    return {
-      moduleKey: module.key,
-      moduleName: module.name_plural || module.name + 's',
-      totalRecords,
-      createdThisWeek,
-    };
+export interface DashboardHeroStats {
+  todaysTaskCount: number;
+  overdueCount: number;
+  atRiskCount: number;
+  newThisWeek: number;
+}
+
+export async function getDashboardHeroStats(
+  orgId: string,
+  userId: string
+): Promise<DashboardHeroStats> {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase.rpc('get_dashboard_hero_stats', {
+    p_org_id: orgId,
+    p_user_id: userId,
   });
 
-  // Legacy table counts - run in parallel (only 2-3 queries max for backwards compat)
-  const legacyTableMap: Record<string, string> = {
-    leads: 'leads',
-    contacts: 'members',
-  };
-
-  const legacyModules = results.filter(m => legacyTableMap[m.moduleKey]);
-  if (legacyModules.length > 0) {
-    const legacyQueries = legacyModules.map(async (m) => {
-      const table = legacyTableMap[m.moduleKey];
-      try {
-        const [totalResult, weekResult] = await Promise.all([
-          supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
-          supabase.from(table).select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', oneWeekAgoISO),
-        ]);
-        return {
-          moduleKey: m.moduleKey,
-          total: totalResult.count || 0,
-          week: weekResult.count || 0,
-        };
-      } catch {
-        return { moduleKey: m.moduleKey, total: 0, week: 0 };
-      }
-    });
-
-    const legacyResults = await Promise.all(legacyQueries);
-    legacyResults.forEach(lr => {
-      const result = results.find(r => r.moduleKey === lr.moduleKey);
-      if (result) {
-        result.totalRecords += lr.total;
-        result.createdThisWeek += lr.week;
-      }
-    });
+  if (error) {
+    console.error('[getDashboardHeroStats] RPC error:', error);
+    return { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
   }
 
-  return results;
+  return {
+    todaysTaskCount: data?.todaysTaskCount ?? 0,
+    overdueCount: data?.overdueCount ?? 0,
+    atRiskCount: data?.atRiskCount ?? 0,
+    newThisWeek: data?.newThisWeek ?? 0,
+  };
 }
 
 export interface AtRiskDeal {
@@ -1072,6 +1041,13 @@ export const getCachedModuleStats = (orgId: string) =>
     async () => getModuleStats(orgId),
     [`module-stats-${orgId}`],
     { revalidate: 60, tags: [`org-${orgId}`, 'module-stats'] }
+  )();
+
+export const getCachedDashboardHeroStats = (orgId: string, userId: string) =>
+  unstable_cache(
+    async () => getDashboardHeroStats(orgId, userId),
+    [`hero-stats-${orgId}-${userId}`],
+    { revalidate: 60, tags: [`org-${orgId}`, 'hero-stats'] }
   )();
 
 /**
