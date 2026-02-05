@@ -3,8 +3,21 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { PipelineBoard } from '@/components/crm/pipeline';
+import { Loader2 } from 'lucide-react';
 import type { CrmRecord, CrmDealStage } from '@/lib/crm/types';
+
+// Lazy load heavy components - DnD kit adds ~50KB
+const PipelineBoard = dynamic(
+  () => import('@/components/crm/pipeline').then((mod) => mod.PipelineBoard),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
+      </div>
+    ),
+  }
+);
 
 // Lazy load the gate dialog - only needed when stage transition is blocked
 const TransitionGateDialog = dynamic(
