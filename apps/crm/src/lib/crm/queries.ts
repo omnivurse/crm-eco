@@ -151,11 +151,23 @@ function getDateRangeForPreset(preset: FilterOperator, nValue?: number): DateRan
 // ============================================================================
 
 export async function createCrmClient() {
+  // Validate environment variables early
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('[CRM] Missing Supabase environment variables:', {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseKey,
+    });
+    throw new Error('Missing Supabase configuration. Check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+  }
+  
   const cookieStore = await cookies();
   
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
@@ -180,18 +192,33 @@ export async function createCrmClient() {
 // ============================================================================
 
 export async function getCurrentProfile(): Promise<CrmProfile | null> {
-  const supabase = await createCrmClient();
+  try {
+    const supabase = await createCrmClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('[CRM] Auth error getting user:', authError.message);
+      return null;
+    }
+    
+    if (!user) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .single();
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
 
-  return profile as CrmProfile | null;
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('[CRM] Error fetching profile:', profileError.message);
+    }
+
+    return profile as CrmProfile | null;
+  } catch (error) {
+    console.error('[CRM] getCurrentProfile failed:', error);
+    throw error; // Re-throw so the layout can catch and redirect
+  }
 }
 
 /**
