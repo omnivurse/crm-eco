@@ -238,18 +238,18 @@ export default function ConvertingPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/leads/scoring">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/leads/scoring">
             <ArrowLeft className="w-4 h-4" />
             Previous: Lead Scoring
-          </Button>
-        </Link>
-        <Link href="/crm/learn/leads/assignment">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/leads/assignment">
             Next: Lead Assignment
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

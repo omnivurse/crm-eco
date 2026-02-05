@@ -279,11 +279,11 @@ export default function VoiceLearnPage() {
         <p className="text-rose-100 mb-6">
           Press <kbd className="px-2 py-1 bg-white/20 rounded">Ctrl + Space</kbd> anywhere in the CRM to get started
         </p>
-        <Link href="/crm">
-          <Button variant="secondary" size="lg" className="gap-2">
+        <Button variant="secondary" size="lg" className="gap-2" asChild>
+          <Link href="/crm">
             <Mic className="w-4 h-4" /> Go to Dashboard
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

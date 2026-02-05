@@ -261,12 +261,12 @@ export default function SavedReportDetailPage() {
         <p className="text-slate-500 dark:text-slate-400 mb-4">
           The report you're looking for doesn't exist.
         </p>
-        <Link href="/crm/reports/saved">
-          <Button variant="outline">
+        <Button variant="outline" asChild>
+          <Link href="/crm/reports/saved">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Saved Reports
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     );
   }

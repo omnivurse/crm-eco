@@ -116,11 +116,11 @@ export default function VendorConnectorsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/vendors">
-            <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full" asChild>
+            <Link href="/crm/vendors">
               <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-purple-100 dark:bg-purple-900/50 rounded-lg">
               <Link2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />

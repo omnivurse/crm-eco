@@ -278,22 +278,22 @@ export default function FAQPage() {
               Email Support
             </Button>
           </a>
-          <Link href="/crm/learn">
-            <Button className="bg-teal-500 hover:bg-teal-600">
+          <Button className="bg-teal-500 hover:bg-teal-600" asChild>
+            <Link href="/crm/learn">
               Browse Guides
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
       {/* Navigation */}
       <div className="flex items-center justify-center border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn">
             <ArrowLeft className="w-4 h-4" />
             Back to Learning Center
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

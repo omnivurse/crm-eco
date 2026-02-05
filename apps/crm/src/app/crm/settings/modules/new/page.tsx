@@ -244,11 +244,11 @@ export default function NewModulePage() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
-          <Link href="/crm/settings/modules">
-            <Button type="button" variant="outline" className="border-slate-200 dark:border-white/10">
+          <Button type="button" variant="outline" className="border-slate-200 dark:border-white/10" asChild>
+            <Link href="/crm/settings/modules">
               Cancel
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <Button
             type="submit"
             disabled={saving || !formData.name.trim() || !formData.key.trim()}

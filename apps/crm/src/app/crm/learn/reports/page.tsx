@@ -404,18 +404,18 @@ export default function ReportsLearnPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/workflows">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/workflows">
             <ArrowLeft className="w-4 h-4" />
             Previous: Workflow Automation
-          </Button>
-        </Link>
-        <Link href="/crm/learn">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn">
             Back to Learning Center
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

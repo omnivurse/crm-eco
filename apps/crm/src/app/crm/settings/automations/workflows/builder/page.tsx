@@ -160,11 +160,11 @@ function WorkflowBuilderContent() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings/automations">
-            <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/crm/settings/automations">
               <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <button
               onClick={() => {

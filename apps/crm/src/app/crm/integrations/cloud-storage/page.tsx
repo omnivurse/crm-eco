@@ -254,11 +254,11 @@ export default function CloudStoragePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/crm/integrations">
-          <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/crm/integrations">
             <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div className="flex items-center gap-4">
           <div className="p-3 bg-gradient-to-br from-sky-500/20 to-blue-500/20 rounded-xl">
             <Cloud className="w-6 h-6 text-sky-600 dark:text-sky-400" />
@@ -392,12 +392,12 @@ export default function CloudStoragePage() {
           Cloud storage integrations require OAuth setup. Contact your administrator
           to configure API credentials for each provider.
         </p>
-        <Link href="/crm/integrations">
-          <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/crm/integrations">
             <ExternalLink className="w-4 h-4 mr-2" />
             View All Integrations
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

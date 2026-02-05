@@ -273,11 +273,11 @@ export default function TerminalLearnPage() {
         <p className="text-slate-300 mb-6">
           Press <kbd className="px-2 py-1 bg-white/20 rounded">Ctrl + K</kbd> anywhere in the CRM to open the command terminal
         </p>
-        <Link href="/crm">
-          <Button variant="secondary" size="lg" className="gap-2">
+        <Button variant="secondary" size="lg" className="gap-2" asChild>
+          <Link href="/crm">
             <Terminal className="w-4 h-4" /> Go to Dashboard
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

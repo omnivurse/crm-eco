@@ -241,18 +241,18 @@ export default function StagesPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/deals/creating">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/deals/creating">
             <ArrowLeft className="w-4 h-4" />
             Previous: Creating Deals
-          </Button>
-        </Link>
-        <Link href="/crm/learn/deals/forecasting">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/deals/forecasting">
             Next: Forecasting Sales
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

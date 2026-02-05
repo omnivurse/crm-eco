@@ -326,18 +326,18 @@ export default function ImportingContactsPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/contacts/creating">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/contacts/creating">
             <ArrowLeft className="w-4 h-4" />
             Previous: Creating Contacts
-          </Button>
-        </Link>
-        <Link href="/crm/learn/contacts/fields">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/contacts/fields">
             Next: Custom Fields
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

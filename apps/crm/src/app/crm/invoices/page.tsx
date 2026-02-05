@@ -422,12 +422,12 @@ export default function InvoicesPage() {
           </div>
         </div>
 
-        <Link href="/crm/invoices/new">
-          <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400">
+        <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400" asChild>
+          <Link href="/crm/invoices/new">
             <Plus className="w-4 h-4 mr-2" />
             Create Invoice
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -492,12 +492,12 @@ export default function InvoicesPage() {
             }
           </p>
           {!searchQuery && statusFilter === 'all' && (
-            <Link href="/crm/invoices/new">
-              <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400">
+            <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400" asChild>
+              <Link href="/crm/invoices/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Invoice
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       )}

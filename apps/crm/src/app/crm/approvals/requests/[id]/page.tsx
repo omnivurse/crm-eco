@@ -220,12 +220,12 @@ export default function ApprovalDetailPage({ params }: PageProps) {
         </div>
         <div className="flex items-center gap-2">
           {getStatusBadge(approval.status)}
-          <Link href={`/crm/r/${approval.record_id}`}>
-            <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/crm/r/${approval.record_id}`}>
               <ExternalLink className="w-4 h-4 mr-2" />
               View Record
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -144,11 +144,11 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings">
-            <Button variant="ghost" size="icon" className="rounded-xl">
+          <Button variant="ghost" size="icon" className="rounded-xl" asChild>
+            <Link href="/crm/settings">
               <ChevronLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500 to-purple-500 shadow-lg">
               <Shield className="w-5 h-5 text-white" />

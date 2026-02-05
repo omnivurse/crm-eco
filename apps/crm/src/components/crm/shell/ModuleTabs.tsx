@@ -89,8 +89,7 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
   return (
     <div ref={tabsRef} className="flex items-center gap-1">
       {/* Dashboard Tab */}
-      <Link href="/crm">
-        <Button
+      <Button
           variant="ghost"
           size="sm"
           className={cn(
@@ -100,11 +99,12 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
             isActive('/crm') && pathname === '/crm' && 
               'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
           )}
-        >
+         asChild>
+        <Link href="/crm">
           <LayoutDashboard className="w-4 h-4" />
           <span className="hidden sm:inline">Dashboard</span>
-        </Button>
-      </Link>
+        </Link>
+      </Button>
 
       {/* Divider */}
       <div className="w-px h-6 bg-slate-200 dark:bg-white/10 mx-1" />
@@ -114,8 +114,7 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
         const Icon = getIcon(module.icon);
         const path = `/crm/modules/${module.key}`;
         return (
-          <Link key={module.id} href={path}>
-            <Button
+          <Button
               variant="ghost"
               size="sm"
               className={cn(
@@ -125,7 +124,8 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
                 isActive(path) && 
                   'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
               )}
-            >
+             asChild>
+            <Link key={module.id} href={path}>
               <Icon className={cn(
                 'w-4 h-4',
                 isActive(path) && 'text-teal-600 dark:text-teal-400'
@@ -133,8 +133,8 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
               <span className="hidden sm:inline">
                 {module.name_plural || module.name + 's'}
               </span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         );
       })}
 

@@ -219,12 +219,12 @@ export default function ScorecardsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/settings">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-amber-500/10 rounded-lg">
               <Trophy className="w-5 h-5 text-amber-600 dark:text-amber-400" />

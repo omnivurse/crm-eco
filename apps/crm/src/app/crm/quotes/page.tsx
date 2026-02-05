@@ -374,12 +374,12 @@ export default function QuotesPage() {
           </div>
         </div>
 
-        <Link href="/crm/quotes/new">
-          <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400">
+        <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400" asChild>
+          <Link href="/crm/quotes/new">
             <Plus className="w-4 h-4 mr-2" />
             Create Quote
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -443,12 +443,12 @@ export default function QuotesPage() {
             }
           </p>
           {!searchQuery && statusFilter === 'all' && (
-            <Link href="/crm/quotes/new">
-              <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400">
+            <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400" asChild>
+              <Link href="/crm/quotes/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Create First Quote
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       )}

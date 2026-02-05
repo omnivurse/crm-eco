@@ -144,12 +144,12 @@ export default function MacrosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings/automations">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/settings/automations">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500/10 rounded-lg">
               <Zap className="w-5 h-5 text-purple-600 dark:text-purple-400" />

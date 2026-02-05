@@ -180,9 +180,9 @@ export default function VendorDetailPage() {
         <p className="text-slate-500 dark:text-slate-400 mb-4">
           The vendor you're looking for doesn't exist.
         </p>
-        <Link href="/crm/vendors">
-          <Button>Back to Vendors</Button>
-        </Link>
+        <Button asChild>
+          <Link href="/crm/vendors">Back to Vendors</Link>
+        </Button>
       </div>
     );
   }
@@ -194,11 +194,11 @@ export default function VendorDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/vendors">
-            <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full" asChild>
+            <Link href="/crm/vendors">
               <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
               {vendor.logo_url ? (
@@ -219,12 +219,12 @@ export default function VendorDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Link href={`/crm/vendors/upload?vendor=${vendorId}`}>
-            <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" asChild>
+            <Link href={`/crm/vendors/upload?vendor=${vendorId}`}>
               <Upload className="w-4 h-4" />
               Upload File
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="icon">
@@ -398,12 +398,12 @@ export default function VendorDetailPage() {
                 <CardTitle>Uploaded Files</CardTitle>
                 <CardDescription>File processing history for this vendor</CardDescription>
               </div>
-              <Link href={`/crm/vendors/upload?vendor=${vendorId}`}>
-                <Button className="gap-2">
+              <Button className="gap-2" asChild>
+                <Link href={`/crm/vendors/upload?vendor=${vendorId}`}>
                   <Upload className="w-4 h-4" />
                   Upload File
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent>
               {jobs.length === 0 ? (
@@ -452,12 +452,12 @@ export default function VendorDetailPage() {
                 <CardTitle>Detected Changes</CardTitle>
                 <CardDescription>Changes detected from vendor file uploads</CardDescription>
               </div>
-              <Link href={`/crm/vendors/changes?vendor=${vendorId}`}>
-                <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="gap-2" asChild>
+                <Link href={`/crm/vendors/changes?vendor=${vendorId}`}>
                   View All
                   <ChevronRight className="w-4 h-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </CardHeader>
             <CardContent>
               {changes.length === 0 ? (

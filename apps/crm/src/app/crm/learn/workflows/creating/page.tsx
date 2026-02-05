@@ -260,18 +260,18 @@ export default function CreatingWorkflowsPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/workflows/basics">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/workflows/basics">
             <ArrowLeft className="w-4 h-4" />
             Previous: Workflow Basics
-          </Button>
-        </Link>
-        <Link href="/crm/learn/workflows/triggers">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/workflows/triggers">
             Next: Triggers & Actions
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

@@ -126,11 +126,11 @@ export default function VendorJobsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/vendors">
-            <Button variant="ghost" size="icon" className="rounded-full">
+          <Button variant="ghost" size="icon" className="rounded-full" asChild>
+            <Link href="/crm/vendors">
               <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
               <RefreshCw className="w-6 h-6 text-blue-600 dark:text-blue-400" />
@@ -205,12 +205,12 @@ export default function VendorJobsPage() {
               <p className="text-slate-500 dark:text-slate-400 mb-4">
                 No files have been uploaded yet.
               </p>
-              <Link href="/crm/vendors/upload">
-                <Button className="gap-2">
+              <Button className="gap-2" asChild>
+                <Link href="/crm/vendors/upload">
                   <FileText className="w-4 h-4" />
                   Upload File
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -233,11 +233,11 @@ export default function VendorJobsPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           <StatusBadge status={job.status} />
-                          <Link href={`/crm/vendors/${job.vendor_id}`}>
-                            <Button variant="ghost" size="sm" className="gap-1">
+                          <Button variant="ghost" size="sm" className="gap-1" asChild>
+                            <Link href={`/crm/vendors/${job.vendor_id}`}>
                               View <ChevronRight className="w-4 h-4" />
-                            </Button>
-                          </Link>
+                            </Link>
+                          </Button>
                         </div>
                       </div>
 

@@ -205,11 +205,11 @@ function SavedReportCard({
             <Play className="w-3 h-3 mr-1" />
             Run
           </Button>
-          <Link href={`/crm/reports/saved/${id}`}>
-            <Button size="sm" variant="outline" className="h-7 px-2">
+          <Button size="sm" variant="outline" className="h-7 px-2" asChild>
+            <Link href={`/crm/reports/saved/${id}`}>
               View
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
@@ -329,12 +329,12 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/crm/reports/new">
-            <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+          <Button className="bg-teal-600 hover:bg-teal-700 text-white" asChild>
+            <Link href="/crm/reports/new">
               <Plus className="w-4 h-4 mr-2" />
               Create Report
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <Button
             variant="outline"
             className="border-slate-300 dark:border-white/10"
@@ -395,12 +395,12 @@ export default function ReportsPage() {
                 className="pl-9 w-64"
               />
             </div>
-            <Link href="/crm/reports/templates">
-              <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/crm/reports/templates">
                 View All
                 <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
 
@@ -439,12 +439,12 @@ export default function ReportsPage() {
 
         {filteredTemplates.length > 8 && (
           <div className="text-center">
-            <Link href="/crm/reports/templates">
-              <Button variant="outline">
+            <Button variant="outline" asChild>
+              <Link href="/crm/reports/templates">
                 View All {filteredTemplates.length} Templates
                 <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         )}
 
@@ -467,12 +467,12 @@ export default function ReportsPage() {
             </h2>
             <span className="text-sm text-slate-500">({savedReports.length})</span>
           </div>
-          <Link href="/crm/reports/saved">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/reports/saved">
               View All
               <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         {savedReports.length > 0 ? (
@@ -500,15 +500,15 @@ export default function ReportsPage() {
               Create your first report from a template or build a custom report
             </p>
             <div className="flex items-center justify-center gap-3">
-              <Link href="/crm/reports/templates">
-                <Button variant="outline">Browse Templates</Button>
-              </Link>
-              <Link href="/crm/reports/new">
-                <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+              <Button variant="outline" asChild>
+                <Link href="/crm/reports/templates">Browse Templates</Link>
+              </Button>
+              <Button className="bg-teal-600 hover:bg-teal-700 text-white" asChild>
+                <Link href="/crm/reports/new">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Report
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
         )}

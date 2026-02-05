@@ -232,18 +232,18 @@ export default function FieldsPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/contacts/importing">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/contacts/importing">
             <ArrowLeft className="w-4 h-4" />
             Previous: Importing Contacts
-          </Button>
-        </Link>
-        <Link href="/crm/learn/contacts/merging">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/contacts/merging">
             Next: Merging Duplicates
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

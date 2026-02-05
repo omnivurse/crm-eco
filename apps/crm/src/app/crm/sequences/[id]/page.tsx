@@ -363,11 +363,11 @@ export default function SequenceDetailPage({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <Link href="/crm/sequences">
-            <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/crm/sequences">
               <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-slate-900 dark:text-white">

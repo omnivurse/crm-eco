@@ -129,12 +129,12 @@ export default function SavedReportsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/crm/reports/new">
-            <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+          <Button className="bg-teal-600 hover:bg-teal-700 text-white" asChild>
+            <Link href="/crm/reports/new">
               <Plus className="w-4 h-4 mr-2" />
               New Report
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -254,12 +254,12 @@ export default function SavedReportsPage() {
                   >
                     <Star className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
                   </Button>
-                  <Link href={`/crm/reports/saved/${report.id}?run=true`}>
-                    <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white">
+                  <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white" asChild>
+                    <Link href={`/crm/reports/saved/${report.id}?run=true`}>
                       <Play className="w-4 h-4 mr-1" />
                       Run
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" variant="ghost">
@@ -302,15 +302,15 @@ export default function SavedReportsPage() {
               : 'Create your first report from a template'}
           </p>
           <div className="flex items-center justify-center gap-3">
-            <Link href="/crm/reports/templates">
-              <Button variant="outline">Browse Templates</Button>
-            </Link>
-            <Link href="/crm/reports/new">
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+            <Button variant="outline" asChild>
+              <Link href="/crm/reports/templates">Browse Templates</Link>
+            </Button>
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white" asChild>
+              <Link href="/crm/reports/new">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Report
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       )}

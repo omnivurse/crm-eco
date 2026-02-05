@@ -192,12 +192,12 @@ export function SalesReportClient({ deals, stats, monthlyData }: SalesReportClie
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/reports">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/reports">
               <ChevronLeft className="w-4 h-4 mr-1" />
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <div className="flex items-center gap-2">
               <div className="p-2 bg-gradient-to-br from-emerald-500/20 to-green-500/20 rounded-lg">

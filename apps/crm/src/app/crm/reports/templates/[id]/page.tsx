@@ -71,12 +71,12 @@ export default function TemplateDetailPage() {
         <p className="text-slate-500 dark:text-slate-400 mb-4">
           The template you're looking for doesn't exist.
         </p>
-        <Link href="/crm/reports/templates">
-          <Button variant="outline">
+        <Button variant="outline" asChild>
+          <Link href="/crm/reports/templates">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Templates
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     );
   }

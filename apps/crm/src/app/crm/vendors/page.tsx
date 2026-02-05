@@ -172,18 +172,18 @@ async function VendorHubContent() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Link href="/crm/vendors/upload">
-            <Button variant="outline" className="gap-2">
+          <Button variant="outline" className="gap-2" asChild>
+            <Link href="/crm/vendors/upload">
               <Upload className="w-4 h-4" />
               Upload File
-            </Button>
-          </Link>
-          <Link href="/crm/vendors/connectors">
-            <Button variant="outline" className="gap-2">
+            </Link>
+          </Button>
+          <Button variant="outline" className="gap-2" asChild>
+            <Link href="/crm/vendors/connectors">
               <Settings2 className="w-4 h-4" />
               Connectors
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -231,11 +231,11 @@ async function VendorHubContent() {
               <CardTitle>Vendors</CardTitle>
               <CardDescription>Connected vendor integrations</CardDescription>
             </div>
-            <Link href="/crm/vendors">
-              <Button variant="ghost" size="sm" className="gap-1">
+            <Button variant="ghost" size="sm" className="gap-1" asChild>
+              <Link href="/crm/vendors">
                 View All <ChevronRight className="w-4 h-4" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardHeader>
           <CardContent>
             {vendors.length === 0 ? (
@@ -295,9 +295,9 @@ async function VendorHubContent() {
                 <CardTitle className="text-base">Recent Jobs</CardTitle>
                 <CardDescription>Latest file processing</CardDescription>
               </div>
-              <Link href="/crm/vendors/jobs">
-                <Button variant="ghost" size="sm">View All</Button>
-              </Link>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/crm/vendors/jobs">View All</Link>
+              </Button>
             </CardHeader>
             <CardContent>
               {recentJobs.length === 0 ? (
@@ -373,12 +373,12 @@ async function VendorHubContent() {
                       </p>
                     </div>
                   ))}
-                  <Link href="/crm/vendors/changes">
-                    <Button variant="outline" size="sm" className="w-full mt-2 gap-2">
+                  <Button variant="outline" size="sm" className="w-full mt-2 gap-2" asChild>
+                    <Link href="/crm/vendors/changes">
                       <GitBranch className="w-4 h-4" />
                       Review All Changes
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
               )}
             </CardContent>
