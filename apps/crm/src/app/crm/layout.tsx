@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import nextDynamic from 'next/dynamic';
 import { CrmShell } from '@/components/crm/shell';
 import {
   getCachedCurrentProfile,
@@ -9,20 +8,9 @@ import {
   getModules,
 } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
-
-// Lazy load non-critical providers for faster initial render
-const SecurityProvider = nextDynamic(
-  () => import('@/providers/SecurityProvider').then((mod) => mod.SecurityProvider),
-  { ssr: true }
-);
-const QueryProvider = nextDynamic(
-  () => import('@/components/providers/QueryProvider').then((mod) => mod.QueryProvider),
-  { ssr: true }
-);
-const Toaster = nextDynamic(
-  () => import('@/components/ui/sonner').then((mod) => mod.Toaster),
-  { ssr: false }
-);
+import { SecurityProvider } from '@/providers/SecurityProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
+import { Toaster } from '@/components/ui/sonner';
 
 export const dynamic = 'force-dynamic';
 
