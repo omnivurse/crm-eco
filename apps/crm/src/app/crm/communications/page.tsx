@@ -206,6 +206,7 @@ function getTimeAgo(dateString: string): string {
 // ============================================================================
 
 export default function CommunicationsPage() {
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState<CommunicationChannel[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
@@ -213,17 +214,9 @@ export default function CommunicationsPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!authProfile) return;
+
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .single();
-
-        if (!profile) return;
 
         // Get date 7 days ago
         const sevenDaysAgo = new Date();
@@ -233,7 +226,7 @@ export default function CommunicationsPage() {
         const { data: activitiesData } = await supabase
           .from('crm_tasks')
           .select('activity_type, status, call_type')
-          .eq('org_id', profile.organization_id)
+          .eq('org_id', authProfile.organization_id)
           .in('activity_type', ['email', 'call', 'meeting'])
           .gte('created_at', sevenDaysAgo.toISOString());
 
@@ -323,7 +316,7 @@ export default function CommunicationsPage() {
             created_at,
             record:crm_records(title)
           `)
-          .eq('org_id', profile.organization_id)
+          .eq('org_id', authProfile.organization_id)
           .in('activity_type', ['email', 'call', 'meeting'])
           .order('created_at', { ascending: false })
           .limit(10);
@@ -355,7 +348,7 @@ export default function CommunicationsPage() {
     }
 
     loadData();
-  }, [supabase]);
+  }, [authProfile]);
 
   if (loading) {
     return <CommunicationsSkeleton />;

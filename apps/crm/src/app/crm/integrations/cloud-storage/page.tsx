@@ -95,32 +95,28 @@ const CLOUD_PROVIDERS: CloudProvider[] = [
 ];
 
 export default function CloudStoragePage() {
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [providers, setProviders] = useState<CloudProvider[]>(CLOUD_PROVIDERS);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
 
   useEffect(() => {
-    loadConnections();
-  }, []);
+    if (!authLoading && authProfile) {
+      loadConnections();
+    } else if (!authLoading && !authProfile) {
+      setLoading(false);
+    }
+  }, [authLoading, authProfile]);
 
   async function loadConnections() {
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-
       // Check for existing cloud storage connections
       const { data: connections } = await supabase
         .from('integration_connections')
         .select('*')
-        .eq('org_id', profile.organization_id)
+        .eq('org_id', authProfile.organization_id)
         .in('provider', ['google', 'dropbox', 'onedrive', 'box']);
 
       if (connections) {
@@ -187,24 +183,15 @@ export default function CloudStoragePage() {
       return;
     }
 
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-
       const providerKey = providerId === 'google_drive' ? 'google' : providerId;
 
       await supabase
         .from('integration_connections')
         .update({ status: 'disconnected' })
-        .eq('org_id', profile.organization_id)
+        .eq('org_id', authProfile.organization_id)
         .eq('provider', providerKey);
 
       setProviders((prev) =>

@@ -218,6 +218,7 @@ function StatCard({
 // ============================================================================
 
 export default function DocumentsPage() {
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -228,26 +229,18 @@ export default function DocumentsPage() {
 
   useEffect(() => {
     loadDocuments();
-  }, []);
+  }, [authProfile]);
 
   async function loadDocuments() {
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrganizationId(profile.organization_id);
+      setOrganizationId(authProfile.organization_id);
 
       // List files from organization's document storage
       const { data, error } = await supabase.storage
         .from('documents')
-        .list(`${profile.organization_id}`, {
+        .list(`${authProfile.organization_id}`, {
           limit: 100,
           sortBy: { column: 'created_at', order: 'desc' },
         });
