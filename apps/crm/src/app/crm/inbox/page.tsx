@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import Link from 'next/link';
 import {
   Mail,
@@ -104,6 +105,9 @@ const STATUS_COLORS: Record<ConversationStatus, string> = {
 type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
 
 export default function InboxPage() {
+  // Use cached client auth - deduplicates auth calls
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
+  
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<InboxConversation[]>([]);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
@@ -120,26 +124,19 @@ export default function InboxPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Use profile ID from cached auth
+  const currentUserId = authProfile?.id || null;
   
   // Mobile responsive state
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
-  // Load conversations
+  // Load conversations - uses cached auth profile
   const loadConversations = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setCurrentUserId(profile.id);
+      const profile = authProfile;
 
       // Build query
       let query = supabase
@@ -233,7 +230,7 @@ export default function InboxPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, filter, channelFilter, statusFilter, debouncedQuery]);
+  }, [authProfile, filter, channelFilter, statusFilter, debouncedQuery]);
 
   useEffect(() => {
     loadConversations();
@@ -287,31 +284,23 @@ export default function InboxPage() {
     setSelectedConversation(null);
   };
 
-  // Send reply
+  // Send reply - uses cached auth profile and user
   const handleSendReply = async () => {
-    if (!selectedConversation || !replyText.trim()) return;
+    if (!selectedConversation || !replyText.trim() || !authProfile || !authUser) return;
 
     setSending(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Use email from cached auth user
+      const userEmail = authUser.email || '';
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id, full_name, email')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-
-      // Create message
+      // Create message using cached profile
       const { error } = await supabase.from('inbox_messages').insert({
-        org_id: profile.organization_id,
+        org_id: authProfile.organization_id,
         conversation_id: selectedConversation.id,
         channel: selectedConversation.channel,
         direction: 'outbound',
-        from_name: profile.full_name || profile.email,
-        from_address: profile.email,
+        from_name: authProfile.full_name || userEmail,
+        from_address: userEmail,
         to_address: selectedConversation.contact_email || selectedConversation.contact_phone,
         to_name: selectedConversation.contact_name,
         body_text: replyText,

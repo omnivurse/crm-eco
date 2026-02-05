@@ -1,4 +1,3 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { CrmShell } from '@/components/crm/shell';
 import {
@@ -8,9 +7,7 @@ import {
   getModules,
 } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
-import { SecurityProvider } from '@/providers/SecurityProvider';
-import { QueryProvider } from '@/components/providers/QueryProvider';
-import { Toaster } from '@/components/ui/sonner';
+import { ClientProviders } from '@/components/ClientProviders';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +36,7 @@ export default async function CrmLayout({
   // Fetch organization and modules in parallel with caching
   let organization = null;
   let modules: Awaited<ReturnType<typeof getCachedModules>> = [];
-  
+
   try {
     [organization, modules] = await Promise.all([
       getCachedOrganization(profile.organization_id),
@@ -63,22 +60,17 @@ export default async function CrmLayout({
   }
 
   return (
-    <SecurityProvider
+    <ClientProviders
       userName={profile.full_name || ''}
       userEmail={profile.email || ''}
     >
-      <QueryProvider>
-        <CrmShell
-          modules={activeModules}
-          profile={profile}
-          organizationName={organization?.name}
-        >
-          {children}
-        </CrmShell>
-        <Suspense fallback={null}>
-          <Toaster />
-        </Suspense>
-      </QueryProvider>
-    </SecurityProvider>
+      <CrmShell
+        modules={activeModules}
+        profile={profile}
+        organizationName={organization?.name}
+      >
+        {children}
+      </CrmShell>
+    </ClientProviders>
   );
 }
