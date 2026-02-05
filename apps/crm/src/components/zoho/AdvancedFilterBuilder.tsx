@@ -18,6 +18,7 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Filter, Plus, X, ChevronDown, Trash2 } from 'lucide-react';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 export interface FilterRule {
   field: string;
@@ -196,7 +197,7 @@ function FilterRow({
             <SelectValue placeholder="Value" />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-            {field.options.map((option) => (
+            {getFieldOptions(field.options).map((option) => (
               <SelectItem key={option} value={option} className="text-xs">
                 {option}
               </SelectItem>

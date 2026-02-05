@@ -18,6 +18,7 @@ import {
 } from '@crm-eco/ui/components/popover';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 interface FilterBuilderProps {
   fields: CrmField[];
@@ -77,7 +78,7 @@ function FilterRow({
             <SelectValue placeholder="Select value" />
           </SelectTrigger>
           <SelectContent className="glass-card border-white/10">
-            {field.options.map((option) => (
+            {getFieldOptions(field.options).map((option) => (
               <SelectItem 
                 key={option} 
                 value={option}

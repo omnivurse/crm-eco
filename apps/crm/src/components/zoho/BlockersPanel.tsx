@@ -12,6 +12,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { AlertCircle, CheckCircle, Circle } from 'lucide-react';
 import type { CrmField } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 interface Blocker {
   fieldKey: string;
@@ -110,7 +111,7 @@ function BlockerItem({
             <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-            {field.options.map((option) => (
+            {getFieldOptions(field.options).map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>

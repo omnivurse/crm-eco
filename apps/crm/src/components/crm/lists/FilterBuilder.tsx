@@ -26,6 +26,7 @@ import {
     ChevronDown,
 } from 'lucide-react';
 import type { CrmField, FieldType } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 // ============================================================================
 // Types
@@ -234,7 +235,7 @@ function ConditionRow({
                         <SelectValue placeholder="Select value" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-slate-900">
-                        {selectedField.options.map((option) => (
+                        {getFieldOptions(selectedField.options).map((option) => (
                             <SelectItem key={option} value={option}>
                                 {option}
                             </SelectItem>

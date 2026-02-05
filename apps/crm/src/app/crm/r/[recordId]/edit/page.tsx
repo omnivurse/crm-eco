@@ -10,6 +10,7 @@ import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
 import { use } from 'react';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 interface Field {
   id: string;
@@ -127,7 +128,7 @@ export default function EditRecordPage({ params }: { params: Promise<{ recordId:
             className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
           >
             <option value="">Select {field.label}...</option>
-            {(field.options || []).map((opt) => (
+            {getFieldOptions(field.options).map((opt) => (
               <option key={opt} value={opt}>{opt}</option>
             ))}
           </select>

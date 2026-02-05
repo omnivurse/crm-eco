@@ -4,6 +4,26 @@ import { supabase } from '../../lib/supabase';
 import { ArrowLeft, Send, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+/**
+ * Safely extract options array from field.options
+ * Handles cases where options might be a string, object, or undefined
+ */
+function getFieldOptions(options: unknown): string[] {
+  if (Array.isArray(options)) return options.map(String);
+  if (typeof options === 'string') {
+    const trimmed = options.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed.map(String) : [];
+      } catch { /* fall through */ }
+    }
+    return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 interface CatalogItem {
   id: string;
   name: string;
@@ -111,7 +131,7 @@ export function EnhancedCatalogItemRequest() {
             className={commonClasses}
           >
             <option value="">Select an option</option>
-            {field.options?.map((option: string) => (
+            {getFieldOptions(field.options).map((option) => (
               <option key={option} value={option}>{option}</option>
             ))}
           </select>
