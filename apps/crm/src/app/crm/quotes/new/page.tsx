@@ -8,11 +8,11 @@ export default function NewQuotePage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Link href="/crm/quotes">
-                    <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/crm/quotes">
                         <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                </Link>
+                    </Link>
+                </Button>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New Quote</h1>
                     <p className="text-slate-500 dark:text-slate-400">
@@ -31,9 +31,9 @@ export default function NewQuotePage() {
                 <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
                     The quote builder will allow you to create professional quotes with products, pricing, terms, and e-signature capabilities.
                 </p>
-                <Link href="/crm/quotes">
-                    <Button variant="outline">Back to Quotes</Button>
-                </Link>
+                <Button variant="outline" asChild>
+                    <Link href="/crm/quotes">Back to Quotes</Link>
+                </Button>
             </div>
         </div>
     );

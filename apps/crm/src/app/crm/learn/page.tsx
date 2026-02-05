@@ -257,12 +257,12 @@ export default function LearnPage() {
             Start with our 5-minute quick start guide and learn the essentials to get up and running.
           </p>
         </div>
-        <Link href="/crm/learn/getting-started">
-          <Button size="lg" className="gap-2">
+        <Button size="lg" className="gap-2" asChild>
+          <Link href="/crm/learn/getting-started">
             Get Started
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       {/* Feature Categories */}
@@ -339,12 +339,12 @@ export default function LearnPage() {
                       </p>
                     </div>
                   </div>
-                  <Link href={`/crm/learn/${category.id}`}>
-                    <Button variant="outline" size="sm">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/crm/learn/${category.id}`}>
                       View All
                       <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </Link>
+                    </Link>
+                  </Button>
                 </div>
 
                 <div className="grid gap-3">
@@ -443,12 +443,12 @@ export default function LearnPage() {
               Email Support
             </Button>
           </a>
-          <Link href="/crm/learn/faq">
-            <Button className="bg-teal-500 hover:bg-teal-600">
+          <Button className="bg-teal-500 hover:bg-teal-600" asChild>
+            <Link href="/crm/learn/faq">
               <HelpCircle className="w-4 h-4 mr-2" />
               Browse FAQs
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
     </div>

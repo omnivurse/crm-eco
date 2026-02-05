@@ -192,9 +192,9 @@ export default function EditRecordPage({ params }: { params: Promise<{ recordId:
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <p className="text-slate-600 dark:text-slate-400 mb-4">Record not found</p>
-        <Link href="/crm">
-          <Button variant="outline">Back to CRM</Button>
-        </Link>
+        <Button variant="outline" asChild>
+          <Link href="/crm">Back to CRM</Link>
+        </Button>
       </div>
     );
   }

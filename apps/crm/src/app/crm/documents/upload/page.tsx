@@ -241,11 +241,11 @@ export default function DocumentUploadPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/crm/documents">
-          <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/crm/documents">
             <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Upload Documents

@@ -378,18 +378,18 @@ export default function DocumentsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/crm/integrations/cloud-storage">
-            <Button variant="outline">
+          <Button variant="outline" asChild>
+            <Link href="/crm/integrations/cloud-storage">
               <Cloud className="w-4 h-4 mr-2" />
               Connect Storage
-            </Button>
-          </Link>
-          <Link href="/crm/documents/upload">
-            <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400">
+            </Link>
+          </Button>
+          <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400" asChild>
+            <Link href="/crm/documents/upload">
               <Upload className="w-4 h-4 mr-2" />
               Upload
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -481,12 +481,12 @@ export default function DocumentsPage() {
             }
           </p>
           {!searchQuery && (
-            <Link href="/crm/documents/upload">
-              <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400">
+            <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400" asChild>
+              <Link href="/crm/documents/upload">
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Document
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       )}

@@ -208,11 +208,11 @@ export default function VendorUploadPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/crm/vendors">
-          <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="rounded-full" asChild>
+          <Link href="/crm/vendors">
             <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Upload Vendor File</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-0.5">
@@ -237,9 +237,9 @@ export default function VendorUploadPage() {
                 <Button variant="outline" onClick={handleReset}>
                   Upload Another
                 </Button>
-                <Link href={`/crm/vendors/${selectedVendorId}`}>
-                  <Button>View Vendor Files</Button>
-                </Link>
+                <Button asChild>
+                  <Link href={`/crm/vendors/${selectedVendorId}`}>View Vendor Files</Link>
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -425,9 +425,9 @@ export default function VendorUploadPage() {
 
           {/* Upload Button */}
           <div className="flex justify-end gap-3">
-            <Link href="/crm/vendors">
-              <Button variant="outline">Cancel</Button>
-            </Link>
+            <Button variant="outline" asChild>
+              <Link href="/crm/vendors">Cancel</Link>
+            </Button>
             <Button
               onClick={handleUpload}
               disabled={!selectedFile || !selectedVendorId || uploadStatus === 'uploading'}

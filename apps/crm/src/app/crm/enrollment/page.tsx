@@ -100,16 +100,16 @@ function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
           </span>
           <span className="font-mono text-xs">{enrollment.enrollment_number}</span>
         </div>
-        <Link href={`/crm/enrollment/${enrollment.id}`}>
-          <Button
+        <Button
             variant="ghost"
             size="sm"
             className="h-8 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-500/10"
-          >
+           asChild>
+          <Link href={`/crm/enrollment/${enrollment.id}`}>
             Review
             <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );
@@ -230,14 +230,14 @@ async function EnrollmentContent() {
             <Filter className="w-4 h-4 mr-2" />
             Filter
           </Button>
-          <Link href="/crm/enrollment?new=true">
-            <Button
+          <Button
               className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md"
-            >
+             asChild>
+            <Link href="/crm/enrollment?new=true">
               <Plus className="w-4 h-4 mr-2" />
               New Enrollment
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -315,12 +315,12 @@ async function EnrollmentContent() {
                 </div>
                 <p className="text-slate-900 dark:text-white font-medium mb-1">No enrollments yet</p>
                 <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">New enrollment applications will appear here.</p>
-                <Link href="/crm/enrollment?new=true">
-                  <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white">
+                <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white" asChild>
+                  <Link href="/crm/enrollment?new=true">
                     <Plus className="w-4 h-4 mr-2" />
                     Start First Enrollment
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </div>
             )}
           </div>
@@ -373,33 +373,33 @@ async function EnrollmentContent() {
           <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
             <h3 className="text-slate-900 dark:text-white font-medium mb-3">Quick Actions</h3>
             <div className="space-y-2">
-              <Link href="/members">
-                <Button
+              <Button
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                >
+                 asChild>
+                <Link href="/members">
                   <Users className="w-4 h-4 mr-2" />
                   View All Members
-                </Button>
-              </Link>
-              <Link href="/crm/documents">
-                <Button
+                </Link>
+              </Button>
+              <Button
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                >
+                 asChild>
+                <Link href="/crm/documents">
                   <FileText className="w-4 h-4 mr-2" />
                   Pending Documents
-                </Button>
-              </Link>
-              <Link href="/crm/approvals">
-                <Button
+                </Link>
+              </Button>
+              <Button
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                >
+                 asChild>
+                <Link href="/crm/approvals">
                   <AlertCircle className="w-4 h-4 mr-2" />
                   Review Exceptions
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </div>
           </div>
         </div>

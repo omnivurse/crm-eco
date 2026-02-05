@@ -292,11 +292,11 @@ function ReportBuilderContent() {
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/crm/reports">
-          <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/crm/reports">
             <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             {reportId ? 'Edit Report' : 'Create Report'}

@@ -263,18 +263,18 @@ export default function CustomReportsPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/reports/dashboard">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/reports/dashboard">
             <ArrowLeft className="w-4 h-4" />
             Previous: Dashboard Overview
-          </Button>
-        </Link>
-        <Link href="/crm/learn/reports/scheduling">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/reports/scheduling">
             Next: Scheduling Reports
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

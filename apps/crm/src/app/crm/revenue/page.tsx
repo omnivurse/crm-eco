@@ -406,18 +406,18 @@ export default function RevenuePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/crm/reports">
-            <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/crm/reports">
               <BarChart3 className="w-4 h-4 mr-2" />
               Reports
-            </Button>
-          </Link>
-          <Link href="/crm/pipeline">
-            <Button className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400">
+            </Link>
+          </Button>
+          <Button className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400" asChild>
+            <Link href="/crm/pipeline">
               <Target className="w-4 h-4 mr-2" />
               View Pipeline
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 

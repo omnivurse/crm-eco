@@ -409,12 +409,12 @@ export default function ForecastingPage() {
           </div>
         </div>
 
-        <Link href="/crm/pipeline">
-          <Button variant="outline">
+        <Button variant="outline" asChild>
+          <Link href="/crm/pipeline">
             <BarChart3 className="w-4 h-4 mr-2" />
             View Pipeline
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       {/* Stats Overview */}

@@ -254,18 +254,18 @@ export default function BuildingSequencePage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/sequences/overview">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/sequences/overview">
             <ArrowLeft className="w-4 h-4" />
             Previous: What are Sequences?
-          </Button>
-        </Link>
-        <Link href="/crm/learn/sequences/enrolling">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/sequences/enrolling">
             Next: Enrolling Contacts
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

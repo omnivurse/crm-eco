@@ -102,11 +102,11 @@ export default function NewSequencePage() {
     <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/crm/sequences">
-          <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/crm/sequences">
             <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Create Email Sequence
@@ -201,11 +201,11 @@ export default function NewSequencePage() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-3">
-          <Link href="/crm/sequences">
-            <Button type="button" variant="outline">
+          <Button type="button" variant="outline" asChild>
+            <Link href="/crm/sequences">
               Cancel
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <Button type="submit" disabled={saving}>
             {saving ? (
               <>

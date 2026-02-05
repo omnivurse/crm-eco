@@ -169,12 +169,12 @@ export default function TestWorkflowPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings/automations/workflows">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/settings/automations/workflows">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-500/10 rounded-lg">
               <Play className="w-5 h-5 text-purple-600 dark:text-purple-400" />
@@ -189,12 +189,12 @@ export default function TestWorkflowPage() {
             </div>
           </div>
         </div>
-        <Link href={`/crm/settings/automations/workflows/${workflowId}`}>
-          <Button variant="outline">
+        <Button variant="outline" asChild>
+          <Link href={`/crm/settings/automations/workflows/${workflowId}`}>
             <GitBranch className="w-4 h-4 mr-2" />
             Edit Workflow
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -345,12 +345,12 @@ export function PipelineReportClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-2 sm:gap-4">
-          <Link href="/crm/reports">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/reports">
               <ChevronLeft className="w-4 h-4 mr-1" />
               <span className="hidden sm:inline">Back</span>
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <div className="flex items-center gap-2">
               <div className="p-1.5 sm:p-2 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg">

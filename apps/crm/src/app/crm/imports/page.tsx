@@ -274,11 +274,11 @@ export default function ImportsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/crm">
-          <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/crm">
             <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div className="flex items-center gap-4">
           <div className="p-3 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-xl">
             <Upload className="w-6 h-6 text-violet-600 dark:text-violet-400" />

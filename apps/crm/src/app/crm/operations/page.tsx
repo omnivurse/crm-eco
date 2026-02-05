@@ -364,18 +364,18 @@ export default function OperationsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/crm/settings/automations">
-            <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/crm/settings/automations">
               <Zap className="w-4 h-4 mr-2" />
               Automations
-            </Button>
-          </Link>
-          <Link href="/crm/tasks">
-            <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400">
+            </Link>
+          </Button>
+          <Button className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400" asChild>
+            <Link href="/crm/tasks">
               <ListTodo className="w-4 h-4 mr-2" />
               View Tasks
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 

@@ -345,12 +345,12 @@ export default function CommissionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/settings">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 rounded-lg">
               <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />

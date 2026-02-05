@@ -335,18 +335,18 @@ export default function LeadsLearnPage() {
 
       {/* Navigation */}
       <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-8">
-        <Link href="/crm/learn/contacts">
-          <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" asChild>
+          <Link href="/crm/learn/contacts">
             <ArrowLeft className="w-4 h-4" />
             Previous: Contacts
-          </Button>
-        </Link>
-        <Link href="/crm/learn/deals">
-          <Button className="gap-2">
+          </Link>
+        </Button>
+        <Button className="gap-2" asChild>
+          <Link href="/crm/learn/deals">
             Next: Deals & Pipeline
             <ArrowRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </div>
   );

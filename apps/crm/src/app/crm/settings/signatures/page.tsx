@@ -177,11 +177,11 @@ export default function SignaturesSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings">
-            <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/crm/settings">
               <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
               Email Signatures

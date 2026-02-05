@@ -197,11 +197,11 @@ const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Link href={`/crm/campaigns/${campaign.id}`}>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" asChild>
+            <Link href={`/crm/campaigns/${campaign.id}`}>
               <BarChart2 className="w-4 h-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

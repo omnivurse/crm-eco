@@ -383,12 +383,12 @@ export default function CommunicationsPage() {
             <Filter className="w-4 h-4 mr-2" />
             Filters
           </Button>
-          <Link href="/crm/communications/new">
-            <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400">
+          <Button className="bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-400 hover:to-purple-400" asChild>
+            <Link href="/crm/communications/new">
               <Plus className="w-4 h-4 mr-2" />
               New Message
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 

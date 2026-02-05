@@ -147,11 +147,11 @@ function FeatureCard({ icon, title, description, features, href, isNew, isBeta }
         ))}
       </ul>
       {href && (
-        <Link href={href}>
-          <Button variant="ghost" size="sm" className="gap-1 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 p-0">
+        <Button variant="ghost" size="sm" className="gap-1 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 p-0" asChild>
+          <Link href={href}>
             Explore <ChevronRight className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       )}
     </div>
   );
@@ -204,16 +204,16 @@ export default function FeaturesPage() {
           Manage contacts, automate communications, track revenue, and streamline operations - all in one powerful platform.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <Link href="/crm">
-            <Button size="lg" className="gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400">
+          <Button size="lg" className="gap-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400" asChild>
+            <Link href="/crm">
               Go to Dashboard <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link href="/crm/learn">
-            <Button size="lg" variant="outline" className="gap-2">
+            </Link>
+          </Button>
+          <Button size="lg" variant="outline" className="gap-2" asChild>
+            <Link href="/crm/learn">
               <GraduationCap className="w-4 h-4" /> Learning Center
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -1569,16 +1569,16 @@ export default function FeaturesPage() {
             Start using all these powerful features today and take your customer relationships to the next level.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/crm">
-              <Button size="lg" variant="secondary" className="gap-2">
+            <Button size="lg" variant="secondary" className="gap-2" asChild>
+              <Link href="/crm">
                 Go to Dashboard <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/crm/learn/getting-started">
-              <Button size="lg" variant="outline" className="gap-2 bg-transparent border-white text-white hover:bg-white/10">
+              </Link>
+            </Button>
+            <Button size="lg" variant="outline" className="gap-2 bg-transparent border-white text-white hover:bg-white/10" asChild>
+              <Link href="/crm/learn/getting-started">
                 <BookOpen className="w-4 h-4" /> Getting Started Guide
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </div>

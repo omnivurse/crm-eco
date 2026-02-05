@@ -8,11 +8,11 @@ export default function NewInvoicePage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
-                <Link href="/crm/invoices">
-                    <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/crm/invoices">
                         <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                </Link>
+                    </Link>
+                </Button>
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New Invoice</h1>
                     <p className="text-slate-500 dark:text-slate-400">
@@ -31,9 +31,9 @@ export default function NewInvoicePage() {
                 <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
                     The invoice builder will allow you to generate professional invoices, track payments, and send reminders.
                 </p>
-                <Link href="/crm/invoices">
-                    <Button variant="outline">Back to Invoices</Button>
-                </Link>
+                <Button variant="outline" asChild>
+                    <Link href="/crm/invoices">Back to Invoices</Link>
+                </Button>
             </div>
         </div>
     );

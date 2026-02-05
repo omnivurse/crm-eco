@@ -213,12 +213,12 @@ export default function ApprovalProcessEditorPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/crm/settings/automations/approvals">
-            <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/crm/settings/automations/approvals">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back
-            </Button>
-          </Link>
+            </Link>
+          </Button>
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
               {isNew ? 'Create Approval Process' : 'Edit Approval Process'}
