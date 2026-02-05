@@ -146,12 +146,12 @@ export function StaffDashboard() {
         openTickets: {
           value: openTickets || 0,
           change: openYesterday ? ((((openTickets || 0) - openYesterday) / openYesterday) * 100) : 0,
-          isPositive: (openTickets || 0) > openYesterday,
+          isPositive: (openTickets || 0) > (openYesterday ?? 0),
         },
         resolvedToday: {
           value: resolvedToday || 0,
           change: resolvedYesterday ? ((((resolvedToday || 0) - resolvedYesterday) / resolvedYesterday) * 100) : 0,
-          isPositive: (resolvedToday || 0) > resolvedYesterday,
+          isPositive: (resolvedToday || 0) > (resolvedYesterday ?? 0),
         },
       });
 
