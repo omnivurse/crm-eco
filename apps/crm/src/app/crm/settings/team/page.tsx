@@ -20,6 +20,7 @@ import {
   Edit,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { toast } from 'sonner';
 import {
   DropdownMenu,

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { Button } from '@crm-eco/ui/components/button';
 import { Switch } from '@crm-eco/ui/components/switch';
 import { Input } from '@crm-eco/ui/components/input';

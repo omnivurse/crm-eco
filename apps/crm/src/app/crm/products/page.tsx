@@ -437,6 +437,7 @@ function ProductModal({
 // ============================================================================
 
 export default function ProductsPage() {
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -446,30 +447,23 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProducts();
-  }, []);
+    if (authProfile) {
+      loadProducts();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [authProfile, authLoading]);
 
   async function loadProducts() {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrganizationId(profile.organization_id);
-
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
@@ -483,7 +477,7 @@ export default function ProductsPage() {
   }
 
   async function handleSaveProduct(data: ProductFormData) {
-    if (!organizationId) return;
+    if (!authProfile?.organization_id) return;
 
     try {
       if (editingProduct) {
@@ -512,7 +506,7 @@ export default function ProductsPage() {
         const { error } = await supabase
           .from('products')
           .insert({
-            organization_id: organizationId,
+            organization_id: authProfile.organization_id,
             name: data.name,
             label: data.label || null,
             description: data.description || null,
@@ -558,13 +552,13 @@ export default function ProductsPage() {
   }
 
   async function handleDuplicateProduct(product: Product) {
-    if (!organizationId) return;
+    if (!authProfile?.organization_id) return;
 
     try {
       const { error } = await supabase
         .from('products')
         .insert({
-          organization_id: organizationId,
+          organization_id: authProfile.organization_id,
           name: `${product.name} (Copy)`,
           label: product.label,
           description: product.description,
