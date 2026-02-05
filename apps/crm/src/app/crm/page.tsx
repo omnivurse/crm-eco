@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
 import {
   getCurrentProfile,
   getCachedModuleStats,
@@ -21,22 +20,8 @@ import {
 } from '@/components/dashboard';
 import type { HeroCalendarEvent, PipelineHealth, WeeklyGoalProgress } from '@/components/dashboard/DashboardHero';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
+import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
 import type { CrmTask } from '@/lib/crm/types';
-
-// Lazy load DashboardGrid - contains @dnd-kit (~50KB)
-const DashboardGrid = dynamic(
-  () => import('@/components/dashboard/DashboardGrid').then((mod) => mod.DashboardGrid),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
-        {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="h-64 bg-slate-200 dark:bg-slate-800 rounded-xl" />
-        ))}
-      </div>
-    ),
-  }
-);
 
 interface AtRiskDeal {
   id: string;
