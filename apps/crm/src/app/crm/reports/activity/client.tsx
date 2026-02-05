@@ -331,30 +331,30 @@ export function ActivityReportClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link href="/crm/reports">
             <Button variant="ghost" size="sm">
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg">
-                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-lg">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Activity Report</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Activity Report</h1>
             </div>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">
               Team productivity and engagement
             </p>
           </div>
         </div>
 
-        <Button variant="outline">
+        <Button variant="outline" className="w-full sm:w-auto">
           <Download className="w-4 h-4 mr-2" />
-          Export Report
+          <span>Export Report</span>
         </Button>
       </div>
 
