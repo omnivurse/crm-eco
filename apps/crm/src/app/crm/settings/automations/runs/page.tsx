@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { Button } from '@crm-eco/ui/components/button';
 import {
   Table,
@@ -34,9 +35,14 @@ import {
   RotateCcw,
   ExternalLink,
 } from 'lucide-react';
-import { RunDetailDialog } from '@/components/automation';
 import { toast } from 'sonner';
 import type { CrmAutomationRun } from '@/lib/automation/types';
+
+// Lazy load the detail dialog - only needed when viewing run details
+const RunDetailDialog = dynamic(
+  () => import('@/components/automation').then((mod) => mod.RunDetailDialog),
+  { ssr: false }
+);
 
 export default function AutomationRunsPage() {
   const [runs, setRuns] = useState<CrmAutomationRun[]>([]);
