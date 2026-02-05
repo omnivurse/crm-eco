@@ -402,25 +402,25 @@ export default function CampaignsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-xl">
-            <Mail className="w-6 h-6 text-teal-600 dark:text-teal-400" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="p-2.5 sm:p-3 bg-gradient-to-br from-teal-500/20 to-cyan-500/20 rounded-xl">
+            <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
               Email Campaigns
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">
               Create and manage mass email campaigns
             </p>
           </div>
         </div>
 
         <Link href="/crm/campaigns/new">
-          <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400">
+          <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             New Campaign
           </Button>
@@ -428,7 +428,7 @@ export default function CampaignsPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
         <StatCard
           label="Total Campaigns"
           value={stats.total}
@@ -464,21 +464,21 @@ export default function CampaignsPage() {
       {/* Campaigns Table */}
       <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl">
         {/* Toolbar */}
-        <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search campaigns..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-64 h-9"
+                className="pl-9 w-full sm:w-64 h-9"
               />
             </div>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
+              className="h-9 px-3 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 w-full sm:w-auto"
             >
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
@@ -551,7 +551,7 @@ function CampaignsSkeleton() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="h-20 bg-slate-200 dark:bg-slate-800 rounded-xl" />
         ))}

@@ -215,17 +215,17 @@ export default function AnalyticsPage() {
   const { summary, pipeline, dailyActivity, needsBreakdown } = data;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h1>
-          <p className="text-slate-600 dark:text-slate-400">Real-time insights into your organization</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h1>
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">Real-time insights into your organization</p>
         </div>
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline" 
-          className="border-slate-300 dark:border-slate-700"
+        <Button
+          onClick={handleRefresh}
+          variant="outline"
+          className="border-slate-300 dark:border-slate-700 w-full sm:w-auto"
           disabled={refreshing}
         >
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -234,7 +234,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <StatCard
           title="Active Members"
           value={summary.activeMembers}
@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Activity Chart */}
         <Card className="glass-card border-slate-200 dark:border-white/10 lg:col-span-2">
           <CardHeader>
@@ -311,7 +311,7 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Needs Overview */}
         <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
@@ -319,7 +319,7 @@ export default function AnalyticsPage() {
             <CardDescription>Healthcare needs status</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="p-4 rounded-lg bg-slate-100 dark:bg-slate-800/50">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />

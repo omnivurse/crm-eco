@@ -67,11 +67,11 @@ export default async function PresentationsPage() {
     ]);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Presentations</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Presentations</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
                         Create and share presentations with your contacts
                     </p>
@@ -86,11 +86,11 @@ export default async function PresentationsPage() {
             {templates.length > 0 && (
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Templates</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         {templates.map((template) => (
                             <div
                                 key={template.id}
-                                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow cursor-pointer group"
+                                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4 hover:shadow-md transition-shadow cursor-pointer group"
                             >
                                 <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg mb-3 flex items-center justify-center">
                                     {template.thumbnail_url ? (
@@ -143,7 +143,7 @@ export default async function PresentationsPage() {
                             {presentations.map((pres) => (
                                 <div
                                     key={pres.id}
-                                    className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                    className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                                 >
                                     <div className="w-10 h-10 bg-advisor-100 dark:bg-advisor-900/30 rounded-lg flex items-center justify-center">
                                         <Presentation className="w-5 h-5 text-advisor-600 dark:text-advisor-400" />

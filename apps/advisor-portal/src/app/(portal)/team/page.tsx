@@ -60,18 +60,18 @@ export default async function TeamPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Team</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Team</h1>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
                     View your downline and team performance
                 </p>
             </div>
 
             {/* Team Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-5">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                             <Users2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -82,7 +82,7 @@ export default async function TeamPage() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-5">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-advisor-100 dark:bg-advisor-900/30 rounded-lg flex items-center justify-center">
                             <TrendingUp className="w-5 h-5 text-advisor-600 dark:text-advisor-400" />
@@ -95,7 +95,7 @@ export default async function TeamPage() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-5">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
                             <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -112,7 +112,7 @@ export default async function TeamPage() {
 
             {/* Team List */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="font-semibold text-gray-900 dark:text-white">Direct Reports</h2>
                 </div>
 
@@ -131,7 +131,7 @@ export default async function TeamPage() {
                         {downline.map((advisor) => (
                             <div
                                 key={advisor.id}
-                                className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
                                 <div className="w-10 h-10 rounded-full bg-advisor-100 dark:bg-advisor-900/30 flex items-center justify-center">
                                     <span className="text-advisor-700 dark:text-advisor-400 font-medium">

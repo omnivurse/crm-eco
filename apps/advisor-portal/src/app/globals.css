@@ -58,3 +58,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Mobile-first responsive utilities */
+@layer utilities {
+  .page-header {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+  .action-group {
+    @apply flex flex-wrap items-center gap-2;
+  }
+  .page-title {
+    @apply text-xl sm:text-2xl font-bold text-gray-900 dark:text-white;
+  }
+  .stat-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4;
+  }
+  .card-mobile {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+  .table-responsive {
+    @apply overflow-x-auto -mx-3 sm:mx-0;
+  }
+  .layout-split {
+    @apply flex flex-col lg:flex-row gap-4 lg:gap-6;
+  }
+  .layout-sidebar {
+    @apply w-full lg:w-80 flex-shrink-0;
+  }
+  .layout-main {
+    @apply flex-1 min-w-0;
+  }
+}

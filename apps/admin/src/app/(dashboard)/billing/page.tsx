@@ -211,19 +211,19 @@ export default async function BillingPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Billing</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Billing</h1>
         <p className="text-slate-500">Manage payments, transactions, and billing schedules</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {statCards.map((card) => {
           const cardContent = (
             <Card className={card.href ? 'hover:shadow-md transition-shadow cursor-pointer' : ''}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-500">
                   {card.title}
                 </CardTitle>
@@ -232,7 +232,7 @@ export default async function BillingPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-xl sm:text-2xl font-bold">
                   {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{card.description}</p>
@@ -251,10 +251,10 @@ export default async function BillingPage() {
       </div>
 
       {/* Recent Transactions & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         {/* Recent Transactions */}
         <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between space-y-0">
             <div>
               <CardTitle>Recent Transactions</CardTitle>
               <CardDescription>Latest payment activity</CardDescription>

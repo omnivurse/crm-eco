@@ -54,9 +54,9 @@ async function RecordDetailContent({ params }: PageProps) {
     >
       {{
         overview: (
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Record Details Form */}
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 p-6">
+            <div className="bg-white dark:bg-slate-800/50 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-white/10 p-3 sm:p-4 lg:p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Record Details</h3>
               <DynamicRecordForm
                 record={record}
@@ -110,43 +110,43 @@ export default function RecordDetailPage(props: PageProps) {
 
 function RecordDetailSkeleton() {
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-64px)]">
       <div className="flex-1 overflow-hidden">
         {/* Header skeleton */}
-        <div className="bg-white dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/5 p-6">
-          <div className="max-w-6xl mx-auto space-y-4 animate-pulse">
+        <div className="bg-white dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/5 p-3 sm:p-4 lg:p-6">
+          <div className="max-w-6xl mx-auto space-y-3 sm:space-y-4 animate-pulse">
             <div className="flex items-center gap-2">
               <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
               <div className="h-4 w-4 bg-slate-200 dark:bg-slate-800 rounded" />
               <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800 rounded-xl" />
-              <div className="space-y-2">
-                <div className="h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
-                <div className="flex gap-4">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-14 sm:h-14 bg-slate-200 dark:bg-slate-800 rounded-xl flex-shrink-0" />
+              <div className="space-y-2 min-w-0">
+                <div className="h-6 sm:h-8 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
+                <div className="flex gap-3 sm:gap-4 flex-wrap">
                   <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
                   <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
                 </div>
               </div>
             </div>
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-3 sm:pt-4 overflow-x-auto">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-10 w-24 bg-slate-100 dark:bg-slate-800/50 rounded" />
+                <div key={i} className="h-9 sm:h-10 w-20 sm:w-24 bg-slate-100 dark:bg-slate-800/50 rounded flex-shrink-0" />
               ))}
             </div>
           </div>
         </div>
 
         {/* Content skeleton */}
-        <div className="max-w-6xl mx-auto p-6 space-y-6">
-          <div className="h-96 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
-          <div className="h-48 bg-slate-100 dark:bg-slate-800/30 rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
+        <div className="max-w-6xl mx-auto p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
+          <div className="h-64 sm:h-96 bg-slate-100 dark:bg-slate-800/30 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
+          <div className="h-32 sm:h-48 bg-slate-100 dark:bg-slate-800/30 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-white/5 animate-pulse" />
         </div>
       </div>
 
-      {/* Rail skeleton */}
-      <div className="w-64 border-l border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/50 p-4 animate-pulse">
+      {/* Rail skeleton - hidden on mobile */}
+      <div className="hidden lg:block w-64 border-l border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/50 p-4 animate-pulse">
         <div className="h-6 w-24 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (

@@ -68,7 +68,7 @@ export function DashboardGrid({ renderedWidgets }: DashboardGridProps) {
         strategy={rectSortingStrategy}
         disabled={!isEditMode}
       >
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
           {layout.widgets.map((widget) => (
             <SortableWidget
               key={widget.id}

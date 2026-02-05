@@ -308,9 +308,9 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <div className="p-1.5 rounded-lg bg-gradient-to-br from-violet-500/20 to-purple-500/20">
@@ -320,15 +320,15 @@ export default function ReportsPage() {
               Analytics
             </span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">
             Reports & Analytics
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-0.5">
+          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 mt-0.5">
             Run reports, analyze data, and export insights
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Link href="/crm/reports/new">
             <Button className="bg-teal-600 hover:bg-teal-700 text-white">
               <Plus className="w-4 h-4 mr-2" />
@@ -345,7 +345,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         <QuickStatCard
           title="Total Reports"
           value={stats.totalReports}
@@ -385,14 +385,14 @@ export default function ReportsPage() {
               ({REPORT_TEMPLATES.length} available)
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 placeholder="Search templates..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-64"
+                className="pl-9 w-full sm:w-64"
               />
             </div>
             <Link href="/crm/reports/templates">
@@ -406,7 +406,7 @@ export default function ReportsPage() {
 
         {/* Category Tabs */}
         <Tabs value={activeCategory} onValueChange={(v) => setActiveCategory(v as TemplateCategory)}>
-          <TabsList className="bg-slate-100 dark:bg-slate-800/50 p-1 h-auto flex-wrap">
+          <TabsList className="bg-slate-100 dark:bg-slate-800/50 p-1 h-auto flex-wrap overflow-x-auto">
             {TEMPLATE_CATEGORIES.map((cat) => {
               const IconComponent = categoryIcons[cat.id] || LayoutGrid;
               return (
@@ -515,7 +515,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         <Link
           href="/crm/reports/templates"
           className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-violet-500/30 transition-all group"

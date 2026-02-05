@@ -142,7 +142,7 @@ async function PipelineContent() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10">
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">Total Pipeline</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">${totalPipelineValue.toLocaleString()}</p>
@@ -207,7 +207,7 @@ function PipelineSkeleton() {
       </div>
 
       {/* Stats skeleton */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="h-24 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-slate-200 dark:border-white/5 animate-pulse" />
         ))}

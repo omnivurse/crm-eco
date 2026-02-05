@@ -129,11 +129,11 @@ export default async function AgentDashboardPage() {
   const data = await getAgentDashboardData(supabase, agent.id, agent.organization_id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Welcome Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
             Welcome back, {agent.first_name}!
           </h1>
           <p className="text-slate-600">
@@ -149,7 +149,7 @@ export default async function AgentDashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">
@@ -236,7 +236,7 @@ export default async function AgentDashboardPage() {
               {data.recentEnrollments.map((enrollment: any) => (
                 <div 
                   key={enrollment.id}
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-lg"
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-slate-50 rounded-lg"
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -273,10 +273,10 @@ export default async function AgentDashboardPage() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <Link href="/agent/members">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-3 sm:p-4 lg:p-6">
               <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
@@ -290,7 +290,7 @@ export default async function AgentDashboardPage() {
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <Link href="/agent/commissions">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-3 sm:p-4 lg:p-6">
               <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
                 <DollarSign className="h-6 w-6 text-green-600" />
               </div>
@@ -304,7 +304,7 @@ export default async function AgentDashboardPage() {
 
         <Card className="hover:shadow-md transition-shadow cursor-pointer">
           <Link href="/agent/links">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-4 p-3 sm:p-4 lg:p-6">
               <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
                 <TrendingUp className="h-6 w-6 text-purple-600" />
               </div>

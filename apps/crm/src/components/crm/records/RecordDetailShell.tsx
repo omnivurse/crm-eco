@@ -308,9 +308,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
-          <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
               <Link 
                 href={backUrl}
                 className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -325,16 +325,16 @@ export const RecordDetailShell = memo(function RecordDetailShell({
             </div>
 
             {/* Title Row */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className={cn('p-3 rounded-xl', colors.bg, colors.text)}>
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                <div className={cn('p-2 sm:p-3 rounded-lg sm:rounded-xl flex-shrink-0', colors.bg, colors.text)}>
                   {icon}
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white truncate">
                     {record.title || 'Untitled'}
                   </h1>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
                     {record.email && (
                       <a 
                         href={`mailto:${record.email}`}
@@ -426,25 +426,25 @@ export const RecordDetailShell = memo(function RecordDetailShell({
             )}
 
             {/* Tabs */}
-            <div className="mt-6 -mb-px">
+            <div className="mt-4 sm:mt-6 -mb-px">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
+                <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0 overflow-x-auto flex-nowrap">
                   <TabsTrigger 
                     value="overview"
-                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap"
                   >
                     Overview
                   </TabsTrigger>
                   <TabsTrigger 
                     value="related"
-                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap"
                   >
                     <Link2 className="w-4 h-4 mr-1.5" />
                     Related
                   </TabsTrigger>
                   <TabsTrigger 
                     value="timeline"
-                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                    className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap"
                   >
                     <Clock className="w-4 h-4 mr-1.5" />
                     Timeline
@@ -452,7 +452,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   {children.notes && (
                     <TabsTrigger 
                       value="notes"
-                      className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                      className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap"
                     >
                       <StickyNote className="w-4 h-4 mr-1.5" />
                       Notes
@@ -461,7 +461,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   {children.communications && (
                     <TabsTrigger 
                       value="communications"
-                      className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                      className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap"
                     >
                       <MessageSquare className="w-4 h-4 mr-1.5" />
                       Communications
@@ -470,7 +470,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   {children.attachments && (
                     <TabsTrigger 
                       value="attachments"
-                      className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
+                      className="px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors whitespace-nowrap"
                     >
                       <Upload className="w-4 h-4 mr-1.5" />
                       Files
@@ -484,7 +484,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
 
         {/* Composer Bar - shown on Timeline tab */}
         {showComposer && (
-          <div className="max-w-6xl mx-auto px-6 pt-4">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 pt-3 sm:pt-4">
             <ComposerBar
               recordId={record.id}
               onNoteCreated={onRefresh}
@@ -495,7 +495,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
         )}
 
         {/* Tab Content */}
-        <div className="max-w-6xl mx-auto px-6 py-6">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsContent value="overview" className="mt-0">
               {children.overview}

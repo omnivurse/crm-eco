@@ -135,10 +135,10 @@ export default async function DashboardPage() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                     Welcome back, {advisor?.first_name || 'Advisor'}!
                 </h1>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
                 {kpis.map((kpi) => (
                     <div
                         key={kpi.name}
-                        className="bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm"
+                        className="bg-white dark:bg-gray-800 rounded-xl p-3 sm:p-5 border border-gray-200 dark:border-gray-700 shadow-sm"
                     >
                         <div className="flex items-center gap-3">
                             <div className={`w-10 h-10 ${kpi.color} rounded-lg flex items-center justify-center`}>
@@ -179,7 +179,7 @@ export default async function DashboardPage() {
 
             {/* Recent Activity */}
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="p-5 border-b border-gray-200 dark:border-gray-700">
+                <div className="p-3 sm:p-5 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-2">
                         <MessageSquare className="w-5 h-5 text-advisor-500" />
                         <h2 className="font-semibold text-gray-900 dark:text-white">Recent Activity</h2>
@@ -196,7 +196,7 @@ export default async function DashboardPage() {
                         </div>
                     ) : (
                         recentActivity.map((event) => (
-                            <div key={event.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <div key={event.id} className="p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                 <div className="flex items-start gap-3">
                                     <div className="w-8 h-8 bg-advisor-100 dark:bg-advisor-900/30 rounded-full flex items-center justify-center flex-shrink-0">
                                         <MessageSquare className="w-4 h-4 text-advisor-600 dark:text-advisor-400" />

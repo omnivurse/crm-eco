@@ -85,7 +85,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
   const statusClass = STATUS_COLORS[activity.status] || STATUS_COLORS.open;
 
   return (
-    <div className="flex items-center gap-4 p-4 border-b border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
+    <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 border-b border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
       <div className={`p-2 rounded-lg ${colorClass}`}>
         {Icon}
       </div>
@@ -260,15 +260,15 @@ export default function ActivitiesPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-500 dark:text-blue-400">
-            <Calendar className="w-6 h-6" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="p-2.5 sm:p-3 rounded-xl bg-blue-500/10 text-blue-500 dark:text-blue-400">
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Activities</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Activities</h1>
             <p className="text-slate-500 dark:text-slate-400 mt-0.5">
               {total.toLocaleString()} {total === 1 ? 'activity' : 'activities'}
             </p>
@@ -301,9 +301,9 @@ export default function ActivitiesPage() {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {/* Activity Type Filters */}
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-white/10 overflow-x-auto">
               <Link
                 href="/crm/activities"
                 className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
@@ -375,7 +375,7 @@ export default function ActivitiesPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+        <div className="glass-card rounded-xl p-3 sm:p-4 border border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing{' '}
             <span className="text-slate-900 dark:text-white font-medium">

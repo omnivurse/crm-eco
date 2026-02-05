@@ -498,7 +498,7 @@ export const ModuleShell = memo(function ModuleShell({
       <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 p-3">
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Left: Views + Search */}
-          <div className="flex items-center gap-2 flex-1">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <ViewsDropdown
               views={views}
               activeViewId={activeViewId}
@@ -506,7 +506,7 @@ export const ModuleShell = memo(function ModuleShell({
               onCreateView={handleCreateView}
             />
 
-            <form onSubmit={handleSearch} className="relative flex-1 max-w-sm">
+            <form onSubmit={handleSearch} className="relative flex-1 max-w-none sm:max-w-sm">
               <Search className={cn(
                 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors',
                 searchFocused ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'
@@ -529,7 +529,7 @@ export const ModuleShell = memo(function ModuleShell({
           </div>
 
           {/* Right: Filters + Columns + Density */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             <AdvancedFilterBuilder
               fields={fields}
               filters={filters}

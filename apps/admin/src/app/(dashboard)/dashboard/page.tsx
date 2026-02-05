@@ -263,11 +263,11 @@ function PremiumStatCard({
       {/* Glow effect on hover */}
       <div className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${gradient} blur-xl`} />
 
-      <div className="relative p-6">
+      <div className="relative p-3 sm:p-4 lg:p-6">
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
           </div>
           <div className={`p-3 rounded-xl ${gradient.replace('bg-gradient-to-r', 'bg-gradient-to-br')} bg-opacity-10 backdrop-blur-sm`}>
             <div className="text-white">{icon}</div>
@@ -326,7 +326,7 @@ function CommissionCard({
           </svg>
         </div>
 
-        <div className="relative p-6">
+        <div className="relative p-3 sm:p-4 lg:p-6">
           <div className="flex items-start justify-between mb-4">
             <p className="text-sm font-semibold text-slate-600 tracking-wide">{title}</p>
             <div className={`p-3 rounded-xl ${iconBg}`}>
@@ -335,7 +335,7 @@ function CommissionCard({
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p className={`text-4xl font-bold tracking-tight bg-clip-text text-transparent ${gradient}`}>
+              <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight bg-clip-text text-transparent ${gradient}`}>
                 {value}
               </p>
               <p className="text-xs text-slate-400 mt-2">{subtitle}</p>
@@ -360,7 +360,7 @@ export default async function DashboardPage() {
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8 pb-4 sm:pb-8">
       {/* Hero Header */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-4 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
         {/* Static background elements */}
@@ -460,7 +460,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5">
         <PremiumStatCard
           title="Total Members"
           value={stats?.totalMembers ?? 0}
@@ -497,7 +497,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Commission Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-5">
         <CommissionCard
           title="Pending Commissions"
           value={`$${(stats?.pendingCommissions ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
@@ -520,7 +520,7 @@ export default async function DashboardPage() {
 
       {/* Dashboard Widgets: ToDo, Jobs, Recently Visited */}
       {stats?.profileId && stats?.organizationId && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
           <TodoListWidget
             profileId={stats.profileId}
             organizationId={stats.organizationId}
@@ -536,14 +536,14 @@ export default async function DashboardPage() {
       )}
 
       {/* Activity Feed and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
         {/* Recent Activity - Takes 3 columns */}
         <div className="lg:col-span-3">
           <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
 
-            <div className="p-6 border-b border-slate-100">
-              <div className="flex items-center justify-between">
+            <div className="p-3 sm:p-4 lg:p-6 border-b border-slate-100">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A]">
                     <Activity className="w-5 h-5 text-white" />
@@ -563,7 +563,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               {recentActivity.length > 0 ? (
                 <div className="space-y-2">
                   {recentActivity.map((activity, index) => (
@@ -609,7 +609,7 @@ export default async function DashboardPage() {
           <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] h-full">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#003560] via-[#047474] to-[#E9B61F]" />
 
-            <div className="p-6 border-b border-slate-100">
+            <div className="p-3 sm:p-4 lg:p-6 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#003560] to-[#047474]">
                   <Zap className="w-5 h-5 text-white" />
@@ -621,7 +621,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="p-4 space-y-2">
+            <div className="p-3 sm:p-4 space-y-2">
               <Link
                 href="/members/new"
                 className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-[#047474]/20 hover:bg-gradient-to-r hover:from-[#047474]/5 hover:to-transparent transition-all"

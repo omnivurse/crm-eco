@@ -162,7 +162,7 @@ export function PortalShell({ profile, children }: PortalShellProps) {
                 </header>
 
                 {/* Page content */}
-                <main className="p-6">
+                <main className="p-3 sm:p-4 lg:p-6">
                     {children}
                 </main>
             </div>

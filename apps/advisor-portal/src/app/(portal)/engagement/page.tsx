@@ -60,11 +60,11 @@ export default async function EngagementPage() {
     const events = await getEngagementEvents(advisorInfo.advisor_id);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Engagement</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Engagement</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
                         Track your outreach and follow-ups
                     </p>
@@ -92,12 +92,12 @@ export default async function EngagementPage() {
                         </button>
                     </div>
                 ) : (
-                    <div className="p-4">
+                    <div className="p-3 sm:p-4">
                         <div className="relative">
                             {/* Timeline line */}
                             <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
 
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                                 {events.map((event, index) => {
                                     const Icon = eventTypeIcons[event.event_type] || MessageSquare;
                                     const colorClass = eventTypeColors[event.event_type] || 'bg-gray-100 text-gray-600';
@@ -113,7 +113,7 @@ export default async function EngagementPage() {
 
                                             {/* Content */}
                                             <div className="flex-1 min-w-0 pb-6">
-                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                                                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3 sm:p-4">
                                                     <div className="flex items-start justify-between gap-2">
                                                         <div>
                                                             <p className="font-medium text-gray-900 dark:text-white capitalize">

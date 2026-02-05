@@ -173,9 +173,9 @@ export default function AgentCommissionsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">My Commissions</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">My Commissions</h1>
         <Button variant="outline" className="gap-2">
           <Download className="h-4 w-4" />
           Export
@@ -183,7 +183,7 @@ export default function AgentCommissionsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -248,7 +248,7 @@ export default function AgentCommissionsPage() {
 
       {/* Payout Info */}
       <Card className="bg-blue-50 border-blue-200">
-        <CardContent className="flex items-center justify-between py-4">
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-3 sm:py-4">
           <div className="flex items-center gap-3">
             <Calendar className="h-5 w-5 text-blue-600" />
             <div>

@@ -46,14 +46,14 @@ export default async function AgentsPage() {
   const agents = await getAgents();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Agents</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Agents</h1>
           <p className="text-slate-500">Manage agent accounts and commissions</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/agents/bill-groups">
             <Button variant="outline">
               <Users className="h-4 w-4 mr-2" />
@@ -93,7 +93,7 @@ export default async function AgentsPage() {
           <CardTitle>All Agents</CardTitle>
           <CardDescription>{agents.length} agents found</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <AgentTable agents={agents} />
         </CardContent>
       </Card>

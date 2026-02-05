@@ -130,7 +130,7 @@ function CrmShellInner({
               />
 
               {/* Page Content */}
-              <main className="flex-1 overflow-auto p-4 lg:p-6 scrollbar-thin">
+              <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6 scrollbar-thin">
                 <div className="max-w-7xl mx-auto pb-16">
                   {children}
                 </div>

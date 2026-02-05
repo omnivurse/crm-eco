@@ -79,11 +79,11 @@ export default async function EnrollmentsPage() {
   const enrollments = await getEnrollments();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Enrollments</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Enrollments</h1>
           <p className="text-slate-500">Manage enrollment applications</p>
         </div>
       </div>
@@ -101,18 +101,18 @@ export default async function EnrollmentsPage() {
               <p className="text-slate-500">No enrollments found</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6 px-3 sm:px-4 lg:px-6">
+              <table className="w-full min-w-[800px]">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Enrollment #</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Member</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Plan</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Agent</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Status</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Effective Date</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Created</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Actions</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Enrollment #</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Member</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Plan</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Agent</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Status</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Effective Date</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Created</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm whitespace-nowrap pr-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

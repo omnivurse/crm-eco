@@ -67,11 +67,11 @@ export default async function ContactsPage() {
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Contacts</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Contacts</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
                         {leads.length} leads, {members.length} members
                     </p>
@@ -106,7 +106,7 @@ export default async function ContactsPage() {
                             <Link
                                 key={`${contact.type}-${contact.id}`}
                                 href={`/contacts/${contact.type}/${contact.id}`}
-                                className="flex items-center gap-4 p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                                className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                             >
                                 <div className="w-10 h-10 rounded-full bg-advisor-100 dark:bg-advisor-900/30 flex items-center justify-center flex-shrink-0">
                                     <span className="text-advisor-700 dark:text-advisor-400 font-medium">
@@ -127,7 +127,7 @@ export default async function ContactsPage() {
                                             {contact.type}
                                         </span>
                                     </div>
-                                    <div className="flex items-center gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
                                         {contact.email && (
                                             <span className="flex items-center gap-1 truncate">
                                                 <Mail className="w-3.5 h-3.5" />

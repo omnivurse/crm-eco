@@ -68,7 +68,7 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
           mobileMenuOpen={mobileMenuOpen}
           onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           <Breadcrumbs />
           {children}
         </main>

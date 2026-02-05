@@ -355,16 +355,16 @@ export default function InboxPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)]">
+    <div className="min-h-0 lg:h-[calc(100vh-8rem)]">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Inbox</h1>
-          <p className="text-slate-500 dark:text-slate-400">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Inbox</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {stats ? `${stats.total_unread} unread, ${stats.total_open + stats.total_pending} active` : 'Unified communications inbox'}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={loadConversations}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -373,7 +373,7 @@ export default function InboxPage() {
           </button>
           <button
             onClick={() => setShowComposeModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors text-sm sm:text-base"
           >
             <Plus className="w-4 h-4" />
             Compose
@@ -382,9 +382,9 @@ export default function InboxPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex gap-6 h-[calc(100%-5rem)]">
-        {/* Filters Sidebar */}
-        <div className="w-56 flex-shrink-0 space-y-6">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[calc(100%-5rem)]">
+        {/* Filters Sidebar - horizontal scroll on mobile, vertical on desktop */}
+        <div className="w-full lg:w-56 flex-shrink-0 space-y-3 lg:space-y-6">
           {/* Status Filters */}
           <div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Inbox</h3>
@@ -458,7 +458,10 @@ export default function InboxPage() {
         </div>
 
         {/* Conversation List */}
-        <div className="w-96 flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col">
+        <div className={cn(
+          "w-full lg:w-96 flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
+          selectedConversation && "hidden lg:flex"
+        )}>
           {/* Search */}
           <div className="p-3 border-b border-slate-200 dark:border-slate-700">
             <div className="relative">
@@ -539,14 +542,23 @@ export default function InboxPage() {
         </div>
 
         {/* Conversation Detail */}
-        <div className="flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col">
+        <div className={cn(
+          "flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col min-h-[50vh] lg:min-h-0",
+          !selectedConversation && "hidden lg:flex"
+        )}>
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
+              <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <button
+                      onClick={() => setSelectedConversation(null)}
+                      className="lg:hidden p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <X className="w-5 h-5 text-slate-500" />
+                    </button>
+                    <Avatar className="w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                       <AvatarFallback className={cn('text-sm font-medium', CHANNEL_COLORS[selectedConversation.channel])}>
                         {getInitials(selectedConversation.contact_name)}
                       </AvatarFallback>
@@ -560,12 +572,12 @@ export default function InboxPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     <Select
                       value={selectedConversation.status}
                       onValueChange={(value) => updateStatus(selectedConversation.id, value as ConversationStatus)}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-24 sm:w-32 text-xs sm:text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -575,8 +587,8 @@ export default function InboxPage() {
                         <SelectItem value="archived">Archived</SelectItem>
                       </SelectContent>
                     </Select>
-                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-                      <MoreVertical className="w-5 h-5 text-slate-400" />
+                    <button className="p-1.5 sm:p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                      <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                     </button>
                   </div>
                 </div>
@@ -602,7 +614,7 @@ export default function InboxPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              <div className="flex-1 p-3 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4">
                 {loadingMessages ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
@@ -649,8 +661,8 @@ export default function InboxPage() {
               </div>
 
               {/* Reply Input */}
-              <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex gap-3">
+              <div className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex gap-2 sm:gap-3">
                   <textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}

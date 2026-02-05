@@ -40,13 +40,13 @@ function PremiumStatCard({
         className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${gradient} blur-xl`}
       />
 
-      <div className="relative p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="relative p-4 sm:p-6">
+        <div className="flex items-start justify-between mb-3 sm:mb-4">
           <div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
+            <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
               {title}
             </p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <p className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
               {value}
             </p>
           </div>
@@ -110,7 +110,7 @@ const statConfigs: Record<
 export function DashboardStats({ stats }: DashboardStatsProps) {
   if (stats.length === 0) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
         <PremiumStatCard
           title="Accounts"
           value="0"
@@ -148,7 +148,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
       {stats.map((stat) => {
         const config = statConfigs[stat.moduleKey] || statConfigs.contacts;
         return (

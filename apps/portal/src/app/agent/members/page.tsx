@@ -164,9 +164,9 @@ export default function AgentMembersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">My Members</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">My Members</h1>
         <div className="text-sm text-slate-500">
           {filteredMembers.length} member{filteredMembers.length !== 1 ? 's' : ''}
         </div>
@@ -311,7 +311,7 @@ export default function AgentMembersPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 sm:mt-6 pt-4 border-t">
                   <p className="text-sm text-slate-500">
                     Showing {(page - 1) * itemsPerPage + 1} to {Math.min(page * itemsPerPage, filteredMembers.length)} of {filteredMembers.length}
                   </p>

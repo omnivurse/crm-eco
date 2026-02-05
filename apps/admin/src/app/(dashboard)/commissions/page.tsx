@@ -205,19 +205,19 @@ export default async function CommissionsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Commissions</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Commissions</h1>
         <p className="text-slate-500">Manage commission tiers, transactions, and payouts</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {statCards.map((card) => (
           <Link key={card.title} href={card.href}>
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-500">
                   {card.title}
                 </CardTitle>
@@ -226,7 +226,7 @@ export default async function CommissionsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                <div className="text-xl sm:text-2xl font-bold">
                   {typeof card.value === 'number' ? card.value.toLocaleString() : card.value}
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{card.description}</p>
@@ -237,7 +237,7 @@ export default async function CommissionsPage() {
       </div>
 
       {/* Recent Transactions & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Recent Commissions</CardTitle>

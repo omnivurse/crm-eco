@@ -46,22 +46,22 @@ export default async function MembersPage() {
   const members = await getMembers();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4 lg:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Members</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Members</h1>
           <p className="text-slate-500">Manage member accounts and information</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Link href="/members/import">
-            <Button variant="outline">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
           </Link>
           <Link href="/members/new">
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Member
             </Button>

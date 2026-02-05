@@ -44,10 +44,10 @@ export default async function TrainingPage() {
     const playbooks = await getPlaybooks(advisorInfo.organization_id);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Training</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Training</h1>
                 <p className="text-gray-500 dark:text-gray-400 mt-1">
                     Playbooks and resources to help you succeed
                 </p>
@@ -65,11 +65,11 @@ export default async function TrainingPage() {
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {playbooks.map((playbook) => (
                         <div
                             key={playbook.id}
-                            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 hover:shadow-md transition-shadow cursor-pointer group"
+                            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-5 hover:shadow-md transition-shadow cursor-pointer group"
                         >
                             <div className="flex items-start gap-4">
                                 <div className="w-12 h-12 bg-advisor-100 dark:bg-advisor-900/30 rounded-lg flex items-center justify-center flex-shrink-0">

@@ -109,53 +109,53 @@ export function ModuleHeader({
       </nav>
 
       {/* Title Row */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={cn('p-2.5 rounded-xl', colors.bg, colors.text)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn('p-2 sm:p-2.5 rounded-lg sm:rounded-xl flex-shrink-0', colors.bg, colors.text)}>
             {icon}
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">
               {module.name_plural || module.name}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
               {totalCount.toLocaleString()} {totalCount === 1 ? 'record' : 'records'}
             </p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
-            className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
+            className="h-8 sm:h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
             asChild
           >
             <Link href={`/crm/import?module=${module.key}`}>
-              <Upload className="w-4 h-4 mr-1.5" />
-              Import
+              <Upload className="w-4 h-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Import</span>
             </Link>
           </Button>
 
           <Button
             variant="outline"
             size="sm"
-            className="h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
+            className="h-8 sm:h-9 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
             onClick={onExport}
           >
-            <Download className="w-4 h-4 mr-1.5" />
-            Export
+            <Download className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
 
           <Button
             size="sm"
-            className="h-9 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm"
+            className="h-8 sm:h-9 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm"
             asChild
           >
             <Link href={`/crm/modules/${module.key}/new`}>
-              <Plus className="w-4 h-4 mr-1.5" />
-              New {module.name}
+              <Plus className="w-4 h-4 mr-1" />
+              <span className="hidden xs:inline">New</span> <span className="hidden sm:inline">{module.name}</span>
             </Link>
           </Button>
 

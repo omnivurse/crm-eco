@@ -17,3 +17,51 @@
     font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 }
+
+/* Mobile-first responsive utilities */
+@layer utilities {
+  /* Page header pattern - stacks on mobile, row on desktop */
+  .page-header {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between;
+  }
+
+  /* Action button groups - wrap on mobile */
+  .action-group {
+    @apply flex flex-wrap items-center gap-2;
+  }
+
+  /* Responsive page title */
+  .page-title {
+    @apply text-xl sm:text-2xl font-bold text-slate-900 dark:text-white;
+  }
+
+  /* Responsive stat grid */
+  .stat-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4;
+  }
+
+  /* Mobile-friendly card padding */
+  .card-mobile {
+    @apply p-3 sm:p-4 lg:p-6;
+  }
+
+  /* Responsive table wrapper */
+  .table-responsive {
+    @apply overflow-x-auto -mx-3 sm:mx-0;
+  }
+
+  /* Responsive multi-column layout that stacks on mobile */
+  .layout-split {
+    @apply flex flex-col lg:flex-row gap-4 lg:gap-6;
+  }
+
+  /* Mobile-friendly sidebar in split layouts */
+  .layout-sidebar {
+    @apply w-full lg:w-80 flex-shrink-0;
+  }
+
+  /* Mobile-friendly main content in split layouts */
+  .layout-main {
+    @apply flex-1 min-w-0;
+  }
+}

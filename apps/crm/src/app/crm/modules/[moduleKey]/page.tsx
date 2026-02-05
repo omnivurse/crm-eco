@@ -76,14 +76,14 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="max-w-7xl mx-auto mt-4 glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10 flex items-center justify-between">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+        <div className="max-w-7xl mx-auto mt-4 glass-card rounded-xl p-3 sm:p-4 border border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
             <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
             <span className="text-slate-900 dark:text-white font-medium">{total.toLocaleString()}</span> results
           </p>
-          
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant="outline"
               size="sm"

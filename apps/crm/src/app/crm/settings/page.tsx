@@ -132,25 +132,25 @@ async function SettingsContent() {
   const visibleCards = settingsCards.filter(card => !card.adminOnly || isAdmin);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <Settings className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className="p-2.5 sm:p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 dark:text-slate-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">CRM Settings</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">CRM Settings</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 sm:mt-1">
             Configure your CRM modules, fields, and preferences
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {visibleCards.map((card) => (
           <Link
             key={card.href}
             href={card.href}
-            className="group glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 hover:border-teal-500/50 transition-all"
+            className="group glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4 sm:p-6 hover:border-teal-500/50 transition-all"
           >
             <div className="flex items-start justify-between mb-4">
               <div className={`p-3 rounded-lg ${card.highlight ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-teal-500/10 text-teal-600 dark:text-teal-400'}`}>
@@ -179,7 +179,7 @@ function SettingsSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
       <div className="h-20 bg-slate-200 dark:bg-slate-800/50 rounded-lg" />
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {[1, 2, 3, 4, 5].map((i) => (
           <div key={i} className="h-40 bg-slate-200 dark:bg-slate-800/50 rounded-xl" />
         ))}
