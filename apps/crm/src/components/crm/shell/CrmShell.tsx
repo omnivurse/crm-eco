@@ -89,7 +89,7 @@ function CrmShellInner({
     <ModuleProvider>
       <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-transparent">
         {/* Animated Gradient Mesh Background */}
-        <div className="fixed inset-0 gradient-mesh" />
+        <div className="fixed inset-0 gradient-mesh pointer-events-none" />
 
         {/* Static background orbs for depth - subtle in light mode */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">

@@ -47,86 +47,61 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
 
         {/* Icon-only navigation */}
         <div className="flex flex-col gap-1">
-          <Link href="/crm/import">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
+          <Button asChild variant="ghost" size="icon" className={cn(
                 'h-8 w-8 rounded-lg transition-all',
                 'text-slate-500 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/import') && 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-              )}
-              title="Import Data"
-            >
+              )}>
+            <Link href="/crm/import" title="Import Data">
               <Upload className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link href="/crm/pipeline">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="icon" className={cn(
                 'h-8 w-8 rounded-lg transition-all',
                 'text-slate-500 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/pipeline') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400'
-              )}
-              title="Pipeline"
-            >
+              )}>
+            <Link href="/crm/pipeline" title="Pipeline">
               <TrendingUp className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link href="/crm/reports">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="icon" className={cn(
                 'h-8 w-8 rounded-lg transition-all',
                 'text-slate-500 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/reports') && 'bg-violet-50 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400'
-              )}
-              title="Reports"
-            >
+              )}>
+            <Link href="/crm/reports" title="Reports">
               <BarChart3 className="w-4 h-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         <div className="w-6 h-px bg-slate-200 dark:bg-white/10 my-3" />
 
         <div className="flex flex-col gap-1">
-          <Link href="/crm/enrollment">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
+          <Button asChild variant="ghost" size="icon" className={cn(
                 'h-8 w-8 rounded-lg transition-all',
                 'text-slate-500 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/enrollment') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400'
-              )}
-              title="Enrollment"
-            >
+              )}>
+            <Link href="/crm/enrollment" title="Enrollment">
               <ClipboardList className="w-4 h-4" />
-            </Button>
-          </Link>
-          <Link href="/crm/needs">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="icon" className={cn(
                 'h-8 w-8 rounded-lg transition-all',
                 'text-slate-500 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/needs') && 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
-              )}
-              title="Needs"
-            >
+              )}>
+            <Link href="/crm/needs" title="Needs">
               <Heart className="w-4 h-4" />
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         <div className="flex-1" />

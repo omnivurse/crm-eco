@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -45,13 +45,23 @@ import {
   X,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
-import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
-import { useTerminal } from '@/components/terminal';
+import { useTerminalOptional } from '@/components/terminal';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+
+// Lazy load heavy components - defer until after initial paint
+const ChangeTickerPopover = dynamic(
+  () => import('@crm-eco/ui/components/change-ticker').then((mod) => mod.ChangeTickerPopover),
+  { ssr: false }
+);
+
+// Lazy load the change ticker wrapper to defer subscription setup
+const DeferredChangeTicker = dynamic(
+  () => import('./DeferredChangeTicker').then((mod) => mod.DeferredChangeTicker),
+  { ssr: false }
+);
 
 // Lazy load heavy components - only loaded when user interacts
 // These reduce initial bundle by ~50KB+ combined
@@ -87,38 +97,17 @@ export function CrmTopBar({
 }: CrmTopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [showChangeTicker, setShowChangeTicker] = useState(false);
   const router = useRouter();
-  const { toggle: toggleTerminal } = useTerminal();
+  
+  // Use optional terminal hook - works even if provider isn't loaded yet
+  const { toggle: toggleTerminal } = useTerminalOptional();
 
-  // Change feed for ticker - scoped to high-value entity types only
-  // Reduces noise and improves performance by filtering on server-side
-  const changeFeed = useChangeFeed({
-    orgId: profile.organization_id,
-    entityTypes: ['deal', 'task', 'lead'], // Focus on sales-critical events
-    minSeverity: 'medium', // Filter out info-level noise
-    maxEvents: 10,
-    realtime: true,
-    autoRefresh: false, // Rely on realtime only, no polling
-  });
-
-  // Subscribe to Supabase realtime for change events
-  useChangeSubscription(supabase, profile.organization_id);
-
-  // Convert change feed events to ticker format
-  const tickerEvents = changeFeed.events.map((event) => ({
-    id: event.id,
-    title: event.title,
-    description: event.description || undefined,
-    severity: event.severity,
-    entityType: event.entity_type,
-    entityTitle: event.entity_title || undefined,
-    actorName: event.actor_full_name || undefined,
-    sourceName: event.source_name || undefined,
-    sourceType: event.source_type,
-    requiresReview: event.requires_review,
-    syncStatus: event.sync_status,
-    createdAt: event.created_at,
-  }));
+  // Defer change ticker until after initial render for faster page load
+  useEffect(() => {
+    const timer = setTimeout(() => setShowChangeTicker(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSignOut = async () => {
     // Log logout event before signing out
