@@ -51,13 +51,7 @@ import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
-// Lazy load heavy components - defer until after initial paint
-const ChangeTickerPopover = dynamic(
-  () => import('@crm-eco/ui/components/change-ticker').then((mod) => mod.ChangeTickerPopover),
-  { ssr: false }
-);
-
-// Lazy load the change ticker wrapper to defer subscription setup
+// Lazy load the change ticker wrapper to defer subscription setup (2s after initial render)
 const DeferredChangeTicker = dynamic(
   () => import('./DeferredChangeTicker').then((mod) => mod.DeferredChangeTicker),
   { ssr: false }
@@ -245,30 +239,11 @@ export function CrmTopBar({
         {/* Notifications */}
         <NotificationsPanel />
 
-        {/* Change Feed Ticker - hidden on mobile */}
+        {/* Change Feed Ticker - deferred load, hidden on mobile */}
         <div className="hidden md:block">
-        <ChangeTickerPopover
-          events={tickerEvents}
-          isPaused={changeFeed.isPaused}
-          newEventCount={changeFeed.newEventCount}
-          isLoading={changeFeed.isLoading}
-          syncStatus={tickerEvents.length === 0 ? 'synced' : 'pending'}
-          showSyncStatus={true}
-          onPause={changeFeed.pause}
-          onResume={changeFeed.resume}
-          onClear={changeFeed.clear}
-          onRefresh={changeFeed.refresh}
-          onEventClick={(event) => {
-            // Navigate to entity based on type
-            if (event.entityType === 'record' || event.entityType === 'lead' || event.entityType === 'member') {
-              router.push(`/crm/records/${event.entityType}s`);
-            } else if (event.entityType === 'enrollment') {
-              router.push('/enrollments');
-            } else if (event.entityType === 'deal') {
-              router.push('/crm/deals');
-            }
-          }}
-        />
+          {showChangeTicker && (
+            <DeferredChangeTicker orgId={profile.organization_id} />
+          )}
         </div>
 
         {/* Settings Gear - hidden on mobile */}
