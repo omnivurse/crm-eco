@@ -75,10 +75,16 @@ async function fetchWidgetData(
 
   const results: Record<string, unknown> = {};
 
+  // Fetch each widget's data independently so one failure doesn't crash the dashboard
   await Promise.all(
     Array.from(dataKeys).map(async (key) => {
       if (fetchers[key]) {
-        results[key] = await fetchers[key]();
+        try {
+          results[key] = await fetchers[key]();
+        } catch (err) {
+          console.error(`[Dashboard] Widget data fetch failed for "${key}":`, err);
+          results[key] = null;
+        }
       }
     })
   );
@@ -87,23 +93,48 @@ async function fetchWidgetData(
 }
 
 async function DashboardContent() {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Dashboard] Failed to get profile:', err);
+    return null;
+  }
   if (!profile) return null;
 
   // Load user's saved layout or use default
-  const savedLayout = await loadDashboardLayout();
-  const layout = savedLayout || DEFAULT_LAYOUT;
+  let layout = DEFAULT_LAYOUT;
+  try {
+    const savedLayout = await loadDashboardLayout();
+    if (savedLayout) layout = savedLayout;
+  } catch (err) {
+    console.error('[Dashboard] Failed to load layout, using default:', err);
+  }
 
   // Get widget types from layout to fetch only needed data
   const widgetTypes = layout.widgets.map((w) => w.type);
 
   // Fetch all required widget data in parallel - using cached versions for expensive queries
   // Always fetch calendar events for the hero section
-  const [stats, widgetData, calendarEvents] = await Promise.all([
+  // Each fetch is wrapped individually so one failure doesn't crash the page
+  let stats: Awaited<ReturnType<typeof getCachedModuleStats>> = [];
+  let widgetData: Record<string, unknown> = {};
+  let calendarEvents: Awaited<ReturnType<typeof getCalendarEvents>> = [];
+
+  const [statsResult, widgetDataResult, calendarResult] = await Promise.allSettled([
     getCachedModuleStats(profile.organization_id),
     fetchWidgetData(profile, widgetTypes),
     getCalendarEvents(profile.organization_id, 1), // Today's events only
   ]);
+
+  if (statsResult.status === 'fulfilled') stats = statsResult.value;
+  else console.error('[Dashboard] Stats fetch failed:', statsResult.reason);
+
+  if (widgetDataResult.status === 'fulfilled') widgetData = widgetDataResult.value;
+  else console.error('[Dashboard] Widget data fetch failed:', widgetDataResult.reason);
+
+  if (calendarResult.status === 'fulfilled') calendarEvents = calendarResult.value;
+  else console.error('[Dashboard] Calendar fetch failed:', calendarResult.reason);
 
   const todaysTasks = (widgetData.todaysTasks as CrmTask[]) || [];
   const atRiskDeals = (widgetData.atRiskDeals as AtRiskDeal[]) || [];

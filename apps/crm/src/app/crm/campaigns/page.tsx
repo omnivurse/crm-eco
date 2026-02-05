@@ -5,6 +5,7 @@ import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Mail,
   Plus,
@@ -253,6 +254,9 @@ const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign
 
 export default function CampaignsPage() {
   const router = useRouter();
+  // Use cached client auth - deduplicates auth calls
+  const { profile: authProfile, loading: authLoading } = useClientAuth();
+  
   const [loading, setLoading] = useState(true);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [stats, setStats] = useState<CampaignStats>({ total: 0, draft: 0, scheduled: 0, sending: 0, sent: 0 });
@@ -262,22 +266,12 @@ export default function CampaignsPage() {
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadCampaigns();
-  }, []);
-
-  async function loadCampaigns() {
+  // Load campaigns when profile is available
+  const loadCampaigns = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
+      const profile = authProfile;
 
       const { data, error } = await supabase
         .from('email_campaigns')
@@ -304,7 +298,12 @@ export default function CampaignsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [authProfile]);
+
+  // Load campaigns when profile becomes available
+  useEffect(() => {
+    loadCampaigns();
+  }, [loadCampaigns]);
 
   const handleAction = useCallback(async (action: string, campaignId: string) => {
     setActionLoading(campaignId);

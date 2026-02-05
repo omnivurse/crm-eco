@@ -46,10 +46,16 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
     const router = useRouter();
     const pathname = usePathname();
 
+    // Mounted guard: ensures server and client initial render match to prevent hydration mismatch
+    const [mounted, setMounted] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
     const [lastActivity, setLastActivity] = useState(Date.now());
     const [timeUntilTimeout, setTimeUntilTimeout] = useState<number | null>(null);
     const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     // Skip security for public pages
     const isPublicPage = pathname?.startsWith('/crm-login') || pathname?.startsWith('/login');
@@ -180,8 +186,8 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
         lockSession,
     };
 
-    // Show lock screen when session is locked
-    if (isLocked && !isPublicPage) {
+    // Show lock screen when session is locked (only after mount to prevent hydration mismatch)
+    if (mounted && isLocked && !isPublicPage) {
         return (
             <SessionLock
                 userName={userName}
@@ -196,8 +202,8 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
         <SecurityContext.Provider value={value}>
             {children}
 
-            {/* Timeout Warning Toast */}
-            {showTimeoutWarning && !isPublicPage && (
+            {/* Timeout Warning Toast (only after mount) */}
+            {mounted && showTimeoutWarning && !isPublicPage && (
                 <div className="fixed bottom-4 right-4 z-50 bg-amber-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-4 animate-in slide-in-from-right">
                     <div>
                         <p className="font-semibold">Session Expiring Soon</p>

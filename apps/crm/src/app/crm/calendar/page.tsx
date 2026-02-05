@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
     ChevronLeft,
     ChevronRight,
@@ -103,6 +104,9 @@ const PROVIDER_NAMES: Record<CalendarProvider, string> = {
 };
 
 export default function CalendarPage() {
+    // Use cached client auth - deduplicates auth calls across components
+    const { profile: authProfile, loading: authLoading } = useClientAuth();
+    
     const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [view, setView] = useState<'month' | 'week' | 'day'>('month');
@@ -119,123 +123,114 @@ export default function CalendarPage() {
     const [newEventDescription, setNewEventDescription] = useState('');
     const [newEventType, setNewEventType] = useState<'meeting' | 'call' | 'task' | 'email'>('meeting');
     const [isCreatingEvent, setIsCreatingEvent] = useState(false);
-    const [profileData, setProfileData] = useState<{ id: string; organization_id: string } | null>(null);
+    // Use profile from cached auth hook
+    const profileData = authProfile ? { id: authProfile.id, organization_id: authProfile.organization_id } : null;
     const [showEventDetailModal, setShowEventDetailModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
     const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
-    // Load data
+    // Load calendar data when profile is available
     useEffect(() => {
         async function loadData() {
+            if (!authProfile) return;
+            
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
+                const profile = authProfile;
 
-                // Get profile
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('id, organization_id')
-                    .eq('user_id', user.id)
-                    .single();
+                // Load tasks (activity_type = 'task')
+                const { data: tasksData } = await supabase
+                    .from('crm_tasks')
+                    .select('id, title, due_at, priority, status')
+                    .eq('org_id', profile.organization_id)
+                    .eq('activity_type', 'task')
+                    .neq('status', 'completed')
+                    .order('due_at', { ascending: true })
+                    .limit(10);
 
-                if (profile) {
-                    setProfileData({ id: profile.id, organization_id: profile.organization_id });
-                    
-                    // Load tasks (activity_type = 'task')
-                    const { data: tasksData } = await supabase
-                        .from('crm_tasks')
-                        .select('id, title, due_at, priority, status')
-                        .eq('org_id', profile.organization_id)
-                        .eq('activity_type', 'task')
-                        .neq('status', 'completed')
-                        .order('due_at', { ascending: true })
-                        .limit(10);
+                setTasks((tasksData || []) as Task[]);
 
-                    setTasks((tasksData || []) as Task[]);
+                // Load meetings and calls from crm_tasks
+                const { data: activitiesData } = await supabase
+                    .from('crm_tasks')
+                    .select(`
+                        id,
+                        title,
+                        description,
+                        due_at,
+                        activity_type,
+                        meeting_location,
+                        meeting_type,
+                        status,
+                        assigned_to,
+                        record:crm_records(id, title)
+                    `)
+                    .eq('org_id', profile.organization_id)
+                    .in('activity_type', ['meeting', 'call'])
+                    .neq('status', 'completed')
+                    .not('due_at', 'is', null)
+                    .order('due_at', { ascending: true });
 
-                    // Load meetings and calls from crm_tasks
-                    const { data: activitiesData } = await supabase
-                        .from('crm_tasks')
-                        .select(`
-                            id,
-                            title,
-                            description,
-                            due_at,
-                            activity_type,
-                            meeting_location,
-                            meeting_type,
-                            status,
-                            assigned_to,
-                            record:crm_records(id, title)
-                        `)
-                        .eq('org_id', profile.organization_id)
-                        .in('activity_type', ['meeting', 'call'])
-                        .neq('status', 'completed')
-                        .not('due_at', 'is', null)
-                        .order('due_at', { ascending: true });
+                // Convert activities to calendar events
+                const calendarEvents: CalendarEvent[] = ((activitiesData || []) as unknown as CrmTask[]).map(activity => {
+                    const startDate = new Date(activity.due_at!);
+                    const endDate = new Date(startDate.getTime() + (activity.activity_type === 'call' ? 1800000 : 3600000));
 
-                    // Convert activities to calendar events
-                    const calendarEvents: CalendarEvent[] = ((activitiesData || []) as unknown as CrmTask[]).map(activity => {
-                        const startDate = new Date(activity.due_at!);
-                        const endDate = new Date(startDate.getTime() + (activity.activity_type === 'call' ? 1800000 : 3600000)); // 30min for calls, 1hr for meetings
+                    return {
+                        id: activity.id,
+                        title: activity.title,
+                        description: activity.description || undefined,
+                        start: startDate,
+                        end: endDate,
+                        location: activity.meeting_location || undefined,
+                        provider: 'personal' as CalendarProvider,
+                        color: activity.activity_type === 'meeting' ? '#10B981' : '#8B5CF6',
+                        status: activity.status === 'cancelled' ? 'cancelled' : 'confirmed',
+                    };
+                });
 
-                        return {
-                            id: activity.id,
-                            title: activity.title,
-                            description: activity.description || undefined,
-                            start: startDate,
-                            end: endDate,
-                            location: activity.meeting_location || undefined,
-                            provider: 'personal' as CalendarProvider,
-                            color: activity.activity_type === 'meeting' ? '#10B981' : '#8B5CF6', // green for meetings, purple for calls
-                            status: activity.status === 'cancelled' ? 'cancelled' : 'confirmed',
-                        };
-                    });
+                setEvents(calendarEvents);
 
-                    setEvents(calendarEvents);
+                // Load connected calendars from integration_connections table
+                const { data: connections } = await supabase
+                    .from('integration_connections')
+                    .select('id, provider, external_account_email, external_account_name, status')
+                    .eq('org_id', profile.organization_id)
+                    .eq('connection_type', 'calendar')
+                    .eq('status', 'connected');
 
-                    // Load connected calendars from integration_connections table
-                    const { data: connections } = await supabase
-                        .from('integration_connections')
-                        .select('id, provider, external_account_email, external_account_name, status')
-                        .eq('org_id', profile.organization_id)
-                        .eq('connection_type', 'calendar')
-                        .eq('status', 'connected');
+                if (connections) {
+                    const calendars: ConnectedCalendar[] = connections.map(conn => ({
+                        id: conn.id,
+                        provider: conn.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
+                        email: conn.external_account_email || '',
+                        name: conn.provider === 'google_calendar' ? 'Google Calendar' : 'Outlook Calendar',
+                        color: conn.provider === 'google_calendar' ? PROVIDER_COLORS.google : PROVIDER_COLORS.outlook,
+                        enabled: true,
+                    }));
+                    setConnectedCalendars(calendars);
 
-                    if (connections) {
-                        const calendars: ConnectedCalendar[] = connections.map(conn => ({
-                            id: conn.id,
-                            provider: conn.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
-                            email: conn.external_account_email || '',
-                            name: conn.provider === 'google_calendar' ? 'Google Calendar' : 'Outlook Calendar',
-                            color: conn.provider === 'google_calendar' ? PROVIDER_COLORS.google : PROVIDER_COLORS.outlook,
-                            enabled: true,
+                    // Load synced calendar events
+                    const { data: syncedEvents } = await supabase
+                        .from('calendar_events')
+                        .select('*')
+                        .eq('owner_id', profile.id)
+                        .neq('status', 'cancelled');
+
+                    if (syncedEvents) {
+                        const calEvents: CalendarEvent[] = syncedEvents.map(e => ({
+                            id: e.id,
+                            title: e.title,
+                            description: e.description,
+                            start: new Date(e.start_time),
+                            end: new Date(e.end_time),
+                            allDay: e.is_all_day,
+                            location: e.location,
+                            provider: e.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
+                            color: e.provider === 'google_calendar' ? PROVIDER_COLORS.google : PROVIDER_COLORS.outlook,
+                            status: e.status,
                         }));
-                        setConnectedCalendars(calendars);
-
-                        // Load synced calendar events
-                        const { data: syncedEvents } = await supabase
-                            .from('calendar_events')
-                            .select('*')
-                            .eq('owner_id', profile.id)
-                            .neq('status', 'cancelled');
-
-                        if (syncedEvents) {
-                            const calEvents: CalendarEvent[] = syncedEvents.map(e => ({
-                                id: e.id,
-                                title: e.title,
-                                description: e.description,
-                                start: new Date(e.start_time),
-                                end: new Date(e.end_time),
-                                allDay: e.is_all_day,
-                                location: e.location,
-                                provider: e.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
-                                color: e.provider === 'google_calendar' ? PROVIDER_COLORS.google : PROVIDER_COLORS.outlook,
-                                status: e.status,
-                            }));
-                            // Merge with CRM task events
-                            setEvents(prev => [...prev, ...calEvents]);
-                        }
+                        // Merge with CRM task events
+                        setEvents(prev => [...prev, ...calEvents]);
                     }
                 }
             } catch (error) {
@@ -247,7 +242,7 @@ export default function CalendarPage() {
         }
 
         loadData();
-    }, [supabase]);
+    }, [authProfile]);
 
     // Calendar navigation
     const goToPrevious = () => {
