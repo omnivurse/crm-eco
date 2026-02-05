@@ -36,7 +36,7 @@ interface ProfileData {
 
 export default function ProfilePage() {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
+    const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
     const [saving, setSaving] = useState(false);
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [form, setForm] = useState({
@@ -46,38 +46,39 @@ export default function ProfilePage() {
     });
 
     useEffect(() => {
-        async function loadProfile() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
-                    router.push('/crm-login');
-                    return;
-                }
-
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .single();
-
-                if (error) throw error;
-
-                setProfile(data);
-                setForm({
-                    full_name: data.full_name || '',
-                    phone: data.phone || '',
-                    ui_theme: data.ui_theme || 'light',
-                });
-            } catch (error) {
-                console.error('Failed to load profile:', error);
-                toast.error('Failed to load profile');
-            } finally {
-                setLoading(false);
-            }
+        if (!authLoading && !authUser) {
+            router.push('/crm-login');
+            return;
         }
 
-        loadProfile();
-    }, [supabase, router]);
+        if (authProfile) {
+            // Fetch full profile data since authProfile has limited fields
+            async function loadFullProfile() {
+                try {
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', authProfile.id)
+                        .single();
+
+                    if (error) throw error;
+
+                    setProfile(data);
+                    setForm({
+                        full_name: data.full_name || '',
+                        phone: data.phone || '',
+                        ui_theme: data.ui_theme || 'light',
+                    });
+                } catch (error) {
+                    console.error('Failed to load profile:', error);
+                    toast.error('Failed to load profile');
+                }
+            }
+            loadFullProfile();
+        }
+    }, [authLoading, authUser, authProfile, router]);
+
+    const loading = authLoading || (!profile && authProfile);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -119,6 +119,7 @@ interface CommissionPayout {
 }
 
 export default function CommissionsPage() {
+  const { profile: authProfile } = useClientAuth();
 
   const [tiers, setTiers] = useState<CommissionTier[]>([]);
   const [transactions, setTransactions] = useState<CommissionTransaction[]>([]);
@@ -147,24 +148,16 @@ export default function CommissionsPage() {
   });
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       const [tiersRes, transactionsRes, payoutsRes] = await Promise.all([
         supabase
           .from('commission_tiers')
           .select('*')
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', authProfile.organization_id)
           .order('level'),
         supabase
           .from('commission_transactions')
@@ -172,7 +165,7 @@ export default function CommissionsPage() {
             *,
             advisors(full_name)
           `)
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', authProfile.organization_id)
           .order('created_at', { ascending: false })
           .limit(100),
         supabase
@@ -181,7 +174,7 @@ export default function CommissionsPage() {
             *,
             advisors(full_name)
           `)
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', authProfile.organization_id)
           .order('created_at', { ascending: false })
           .limit(50),
       ]);
@@ -204,7 +197,7 @@ export default function CommissionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [authProfile]);
 
   useEffect(() => {
     fetchData();

@@ -122,6 +122,7 @@ const REPORT_TYPES = [
 ];
 
 export default function CustomReportsPage() {
+  const { profile: authProfile } = useClientAuth();
 
   const [reports, setReports] = useState<CustomReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -232,25 +233,16 @@ export default function CustomReportsPage() {
   };
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      setUserId(user.id);
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setUserId(authProfile.user_id);
+      setOrgId(authProfile.organization_id);
 
       const { data: reportsData } = await supabase
         .from('custom_reports')
         .select(`*, profiles(full_name)`)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .order('name');
 
       setReports(
@@ -264,7 +256,7 @@ export default function CustomReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [authProfile]);
 
   useEffect(() => {
     fetchData();

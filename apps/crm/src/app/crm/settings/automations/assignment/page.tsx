@@ -77,6 +77,7 @@ interface Module {
 }
 
 export default function AssignmentRulesPage() {
+  const { profile: authProfile } = useClientAuth();
   const [rules, setRules] = useState<CrmAssignmentRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState<Module[]>([]);
@@ -101,24 +102,16 @@ export default function AssignmentRulesPage() {
   });
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       // Fetch modules, rules, and users in parallel
       const [modulesRes, rulesRes, usersRes] = await Promise.all([
-        supabase.from('crm_modules').select('id, key, name').eq('org_id', profile.organization_id).eq('is_enabled', true),
-        supabase.from('crm_assignment_rules').select('*').eq('org_id', profile.organization_id).order('priority'),
-        supabase.from('profiles').select('id, display_name, email').eq('organization_id', profile.organization_id),
+        supabase.from('crm_modules').select('id, key, name').eq('org_id', authProfile.organization_id).eq('is_enabled', true),
+        supabase.from('crm_assignment_rules').select('*').eq('org_id', authProfile.organization_id).order('priority'),
+        supabase.from('profiles').select('id, display_name, email').eq('organization_id', authProfile.organization_id),
       ]);
 
       setModules((modulesRes.data || []) as Module[]);
@@ -129,7 +122,7 @@ export default function AssignmentRulesPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [authProfile]);
 
   useEffect(() => {
     fetchData();

@@ -54,6 +54,7 @@ interface Field {
 }
 
 export default function BlueprintsSettingsPage() {
+  const { profile: authProfile } = useClientAuth();
   const [blueprints, setBlueprints] = useState<CrmBlueprint[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [fields, setFields] = useState<Record<string, Field[]>>({});
@@ -92,21 +93,13 @@ export default function BlueprintsSettingsPage() {
   // Load data
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authProfile) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       const [blueprintsRes, modulesRes] = await Promise.all([
-        supabase.from('crm_blueprints').select('*').eq('org_id', profile.organization_id),
-        supabase.from('crm_modules').select('id, key, name').eq('org_id', profile.organization_id).eq('is_enabled', true),
+        supabase.from('crm_blueprints').select('*').eq('org_id', authProfile.organization_id),
+        supabase.from('crm_modules').select('id, key, name').eq('org_id', authProfile.organization_id).eq('is_enabled', true),
       ]);
 
       setBlueprints((blueprintsRes.data || []) as CrmBlueprint[]);
@@ -127,7 +120,7 @@ export default function BlueprintsSettingsPage() {
     }
 
     loadData();
-  }, [supabase]);
+  }, [authProfile]);
 
   // Blueprint CRUD
   const handleSaveBlueprint = async () => {

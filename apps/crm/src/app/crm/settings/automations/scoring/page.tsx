@@ -87,6 +87,7 @@ const OPERATORS: { value: ConditionOperator; label: string }[] = [
 ];
 
 export default function ScoringRulesPage() {
+  const { profile: authProfile } = useClientAuth();
   const [scoringRules, setScoringRules] = useState<CrmScoringRules[]>([]);
   const [loading, setLoading] = useState(true);
   const [modules, setModules] = useState<Module[]>([]);
@@ -112,22 +113,14 @@ export default function ScoringRulesPage() {
   const [newRule, setNewRule] = useState({ field: '', operator: 'eq' as ConditionOperator, value: '', points: 10 });
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       const [modulesRes, rulesRes] = await Promise.all([
-        supabase.from('crm_modules').select('id, key, name').eq('org_id', profile.organization_id).eq('is_enabled', true),
-        supabase.from('crm_scoring_rules').select('*').eq('org_id', profile.organization_id),
+        supabase.from('crm_modules').select('id, key, name').eq('org_id', authProfile.organization_id).eq('is_enabled', true),
+        supabase.from('crm_scoring_rules').select('*').eq('org_id', authProfile.organization_id),
       ]);
 
       setModules((modulesRes.data || []) as Module[]);
@@ -148,7 +141,7 @@ export default function ScoringRulesPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [authProfile]);
 
   useEffect(() => {
     fetchData();

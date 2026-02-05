@@ -78,6 +78,7 @@ interface Advisor {
 }
 
 export default function ScorecardsPage() {
+  const { profile: authProfile } = useClientAuth();
 
   const [scorecards, setScorecards] = useState<AdvisorScorecard[]>([]);
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
@@ -91,24 +92,16 @@ export default function ScorecardsPage() {
   const [sortBy, setSortBy] = useState<string>('personal_production');
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       // Build query
       let query = supabase
         .from('advisor_scorecards')
         .select(`*, advisors(full_name)`)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .eq('period_type', periodType)
         .order('period_start', { ascending: false });
 
@@ -118,7 +111,7 @@ export default function ScorecardsPage() {
 
       const [scorecardsRes, advisorsRes] = await Promise.all([
         query.limit(100),
-        supabase.from('advisors').select('id, full_name').eq('organization_id', profile.organization_id).eq('status', 'active'),
+        supabase.from('advisors').select('id, full_name').eq('organization_id', authProfile.organization_id).eq('status', 'active'),
       ]);
 
       const scorecardsWithNames = (scorecardsRes.data || []).map((s: any) => ({
@@ -149,7 +142,7 @@ export default function ScorecardsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, periodType, selectedAdvisor]);
+  }, [authProfile, periodType, selectedAdvisor]);
 
   useEffect(() => {
     fetchData();

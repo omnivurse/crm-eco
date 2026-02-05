@@ -209,6 +209,7 @@ function PipelineOverview({ stages }: { stages: PipelineStage[] }) {
 // ============================================================================
 
 export default function RevenuePage() {
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [pipelineStages, setPipelineStages] = useState<PipelineStage[]>([]);
   const [modules, setModules] = useState<RevenueModule[]>([]);
@@ -220,169 +221,164 @@ export default function RevenuePage() {
   });
 
   useEffect(() => {
-    async function loadData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+    if (authProfile) {
+      loadData();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [authProfile, authLoading]);
 
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .single();
+  async function loadData() {
+    if (!authProfile) return;
+    
+    try {
+      // Get deals module
+      const { data: dealsModule } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('org_id', authProfile.organization_id)
+        .eq('key', 'deals')
+        .single();
 
-        if (!profile) return;
+      if (!dealsModule) {
+        setLoading(false);
+        return;
+      }
 
-        // Get deals module
-        const { data: dealsModule } = await supabase
-          .from('crm_modules')
-          .select('id')
-          .eq('org_id', profile.organization_id)
-          .eq('key', 'deals')
-          .single();
+      // Fetch deals with stage info
+      const { data: dealsData } = await supabase
+        .from('crm_records')
+        .select('id, stage, data')
+        .eq('module_id', dealsModule.id);
 
-        if (!dealsModule) {
-          setLoading(false);
-          return;
+      const deals = (dealsData || []) as unknown as DealData[];
+
+      // Group by stage
+      const stageMap = new Map<string, { count: number; value: number }>();
+      let totalPipelineValue = 0;
+      let closedWonValue = 0;
+
+      deals.forEach(deal => {
+        const stage = deal.stage || 'Qualification';
+        const amount = deal.data?.amount || 0;
+
+        if (!stageMap.has(stage)) {
+          stageMap.set(stage, { count: 0, value: 0 });
         }
+        const stageData = stageMap.get(stage)!;
+        stageData.count++;
+        stageData.value += amount;
 
-        // Fetch deals with stage info
-        const { data: dealsData } = await supabase
-          .from('crm_records')
-          .select('id, stage, data')
-          .eq('module_id', dealsModule.id);
+        if (stage !== 'Closed Won' && stage !== 'Closed Lost') {
+          totalPipelineValue += amount;
+        }
+        if (stage === 'Closed Won') {
+          closedWonValue += amount;
+        }
+      });
 
-        const deals = (dealsData || []) as unknown as DealData[];
+      // Convert to pipeline stages array
+      const orderedStages = ['Qualification', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
+      const stages: PipelineStage[] = orderedStages
+        .filter(stageName => stageMap.has(stageName))
+        .map(stageName => ({
+          name: stageName,
+          count: stageMap.get(stageName)!.count,
+          value: stageMap.get(stageName)!.value,
+          color: STAGE_COLORS[stageName] || 'bg-slate-500',
+        }));
 
-        // Group by stage
-        const stageMap = new Map<string, { count: number; value: number }>();
-        let totalPipelineValue = 0;
-        let closedWonValue = 0;
+      setPipelineStages(stages);
 
-        deals.forEach(deal => {
-          const stage = deal.stage || 'Qualification';
-          const amount = deal.data?.amount || 0;
+      // Calculate win rate
+      const closedDeals = deals.filter(d => d.stage === 'Closed Won' || d.stage === 'Closed Lost');
+      const wonDeals = deals.filter(d => d.stage === 'Closed Won');
+      const winRate = closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
 
-          if (!stageMap.has(stage)) {
-            stageMap.set(stage, { count: 0, value: 0 });
-          }
-          const stageData = stageMap.get(stage)!;
-          stageData.count++;
-          stageData.value += amount;
+      setStats({
+        pipelineValue: totalPipelineValue,
+        closedWonValue: closedWonValue,
+        activeDeals: deals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length,
+        winRate: winRate,
+      });
 
-          if (stage !== 'Closed Won' && stage !== 'Closed Lost') {
-            totalPipelineValue += amount;
-          }
-          if (stage === 'Closed Won') {
-            closedWonValue += amount;
-          }
-        });
-
-        // Convert to pipeline stages array
-        const orderedStages = ['Qualification', 'Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
-        const stages: PipelineStage[] = orderedStages
-          .filter(stageName => stageMap.has(stageName))
-          .map(stageName => ({
-            name: stageName,
-            count: stageMap.get(stageName)!.count,
-            value: stageMap.get(stageName)!.value,
-            color: STAGE_COLORS[stageName] || 'bg-slate-500',
-          }));
-
-        setPipelineStages(stages);
-
-        // Calculate win rate
-        const closedDeals = deals.filter(d => d.stage === 'Closed Won' || d.stage === 'Closed Lost');
-        const wonDeals = deals.filter(d => d.stage === 'Closed Won');
-        const winRate = closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
-
-        setStats({
-          pipelineValue: totalPipelineValue,
-          closedWonValue: closedWonValue,
-          activeDeals: deals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length,
-          winRate: winRate,
-        });
-
-        // Fetch products count
-        const { count: productsCount } = await supabase
-          .from('products')
-          .select('id', { count: 'exact', head: true })
-          .eq('organization_id', profile.organization_id);
+      // Fetch products count
+      const { count: productsCount } = await supabase
+        .from('products')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', authProfile.organization_id);
 
         // Create revenue modules
-        const revenueModules: RevenueModule[] = [
-          {
-            key: 'pipeline',
-            name: 'Sales Pipeline',
-            description: 'Manage your deal pipeline and stages',
-            icon: <Target className="w-5 h-5" />,
-            href: '/crm/pipeline',
-            color: 'teal',
-            count: deals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length,
-            value: totalPipelineValue,
-          },
-          {
-            key: 'deals',
-            name: 'Deals',
-            description: 'Track opportunities and close deals',
-            icon: <DollarSign className="w-5 h-5" />,
-            href: '/crm/deals',
-            color: 'emerald',
-            count: deals.length,
-            value: deals.reduce((sum, d) => sum + (d.data?.amount || 0), 0),
-          },
-          {
-            key: 'quotes',
-            name: 'Quotes',
-            description: 'Create and send professional quotes',
-            icon: <FileCheck className="w-5 h-5" />,
-            href: '/crm/quotes',
-            color: 'blue',
-            count: 0,
-            value: 0,
-          },
-          {
-            key: 'invoices',
-            name: 'Invoices',
-            description: 'Generate and track invoices',
-            icon: <Receipt className="w-5 h-5" />,
-            href: '/crm/invoices',
-            color: 'violet',
-            count: 0,
-            value: 0,
-          },
-          {
-            key: 'products',
-            name: 'Products',
-            description: 'Manage your product catalog',
-            icon: <Package className="w-5 h-5" />,
-            href: '/crm/products',
-            color: 'amber',
-            count: productsCount || 0,
-          },
-          {
-            key: 'commissions',
-            name: 'Commissions',
-            description: 'Track sales commissions and payouts',
-            icon: <Percent className="w-5 h-5" />,
-            href: '/crm/commissions',
-            color: 'rose',
-            count: 0,
-            value: 0,
-          },
-        ];
+      const revenueModules: RevenueModule[] = [
+        {
+          key: 'pipeline',
+          name: 'Sales Pipeline',
+          description: 'Manage your deal pipeline and stages',
+          icon: <Target className="w-5 h-5" />,
+          href: '/crm/pipeline',
+          color: 'teal',
+          count: deals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length,
+          value: totalPipelineValue,
+        },
+        {
+          key: 'deals',
+          name: 'Deals',
+          description: 'Track opportunities and close deals',
+          icon: <DollarSign className="w-5 h-5" />,
+          href: '/crm/deals',
+          color: 'emerald',
+          count: deals.length,
+          value: deals.reduce((sum, d) => sum + (d.data?.amount || 0), 0),
+        },
+        {
+          key: 'quotes',
+          name: 'Quotes',
+          description: 'Create and send professional quotes',
+          icon: <FileCheck className="w-5 h-5" />,
+          href: '/crm/quotes',
+          color: 'blue',
+          count: 0,
+          value: 0,
+        },
+        {
+          key: 'invoices',
+          name: 'Invoices',
+          description: 'Generate and track invoices',
+          icon: <Receipt className="w-5 h-5" />,
+          href: '/crm/invoices',
+          color: 'violet',
+          count: 0,
+          value: 0,
+        },
+        {
+          key: 'products',
+          name: 'Products',
+          description: 'Manage your product catalog',
+          icon: <Package className="w-5 h-5" />,
+          href: '/crm/products',
+          color: 'amber',
+          count: productsCount || 0,
+        },
+        {
+          key: 'commissions',
+          name: 'Commissions',
+          description: 'Track sales commissions and payouts',
+          icon: <Percent className="w-5 h-5" />,
+          href: '/crm/commissions',
+          color: 'rose',
+          count: 0,
+          value: 0,
+        },
+      ];
 
-        setModules(revenueModules);
-      } catch (error) {
-        console.error('Error loading revenue data:', error);
-        toast.error('Failed to load revenue data');
-      } finally {
-        setLoading(false);
-      }
+      setModules(revenueModules);
+    } catch (error) {
+      console.error('Error loading revenue data:', error);
+      toast.error('Failed to load revenue data');
+    } finally {
+      setLoading(false);
     }
-
-    loadData();
-  }, [supabase]);
+  }
 
   if (loading) {
     return <RevenueSkeleton />;

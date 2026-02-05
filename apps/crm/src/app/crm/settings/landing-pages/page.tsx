@@ -115,6 +115,7 @@ interface Advisor {
 }
 
 export default function LandingPagesPage() {
+  const { profile: authProfile } = useClientAuth();
 
   const [pages, setPages] = useState<LandingPage[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -153,31 +154,23 @@ export default function LandingPagesPage() {
   });
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       // Get org slug
       const { data: org } = await supabase
         .from('organizations')
         .select('slug')
-        .eq('id', profile.organization_id)
+        .eq('id', authProfile.organization_id)
         .single();
       setOrgSlug(org?.slug || '');
 
       const [pagesRes, plansRes, advisorsRes] = await Promise.all([
-        supabase.from('landing_pages').select('*').eq('organization_id', profile.organization_id).order('name'),
-        supabase.from('plans').select('id, name').eq('organization_id', profile.organization_id).eq('is_active', true),
-        supabase.from('advisors').select('id, full_name').eq('organization_id', profile.organization_id).eq('status', 'active'),
+        supabase.from('landing_pages').select('*').eq('organization_id', authProfile.organization_id).order('name'),
+        supabase.from('plans').select('id, name').eq('organization_id', authProfile.organization_id).eq('is_active', true),
+        supabase.from('advisors').select('id, full_name').eq('organization_id', authProfile.organization_id).eq('status', 'active'),
       ]);
 
       setPages((pagesRes.data || []) as LandingPage[]);
@@ -188,7 +181,7 @@ export default function LandingPagesPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [authProfile]);
 
   useEffect(() => {
     fetchData();
