@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Button,
   Dialog,
@@ -38,6 +39,7 @@ type MemberInsert = Database['public']['Tables']['members']['Insert'];
 
 export function AddMemberDialog() {
   const router = useRouter();
+  const { profile: authProfile } = useClientAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,27 +74,15 @@ export function AddMemberDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authProfile) return;
     setError(null);
     setLoading(true);
 
     try {
       const supabase = createClient();
-      
-      // Get current user's profile to get organization_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      const profile = profileData as { id: string; organization_id: string } | null;
-      if (!profile) throw new Error('Profile not found');
 
       const insertData: MemberInsert = {
-        organization_id: profile.organization_id,
+        organization_id: authProfile.organization_id,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -118,8 +108,8 @@ export function AddMemberDialog() {
       // Log activity
       if (insertedMember) {
         await logActivityForMember({
-          organizationId: profile.organization_id,
-          createdByProfileId: profile.id,
+          organizationId: authProfile.organization_id,
+          createdByProfileId: authProfile.id,
           memberId: (insertedMember as { id: string }).id,
           type: ActivityTypes.MEMBER_CREATED,
           subject: `New member: ${formData.firstName} ${formData.lastName}`,

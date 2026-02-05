@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { Button, Label, Textarea } from '@crm-eco/ui';
 import { Send, Lock } from 'lucide-react';
 import { logActivityForTicket, ActivityTypes } from '@crm-eco/lib';

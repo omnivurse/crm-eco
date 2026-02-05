@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Card,
   CardContent,
@@ -57,6 +58,7 @@ interface ActionWithActor extends CrmApprovalAction {
 }
 
 export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps) {
+  const { profile: authProfile } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [approval, setApproval] = useState<ApprovalWithDetails | null>(null);
   const [history, setHistory] = useState<ActionWithActor[]>([]);
@@ -89,23 +91,14 @@ export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps
           const historyData = await historyResponse.json();
           setHistory(historyData.history || []);
           
-          // Check if current user is approver
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('id, crm_role')
-              .eq('user_id', user.id)
-              .single();
-            
-            if (profile) {
-              const currentStep = pendingApproval.process.steps[pendingApproval.current_step];
-              if (currentStep) {
-                if (currentStep.type === 'role' && currentStep.value === profile.crm_role) {
-                  setIsApprover(true);
-                } else if (currentStep.type === 'user' && currentStep.value === profile.id) {
-                  setIsApprover(true);
-                }
+          // Check if current user is approver using authProfile
+          if (authProfile) {
+            const currentStep = pendingApproval.process.steps[pendingApproval.current_step];
+            if (currentStep) {
+              if (currentStep.type === 'role' && currentStep.value === authProfile.crm_role) {
+                setIsApprover(true);
+              } else if (currentStep.type === 'user' && currentStep.value === authProfile.id) {
+                setIsApprover(true);
               }
             }
           }
@@ -120,7 +113,7 @@ export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps
     }
     
     loadApproval();
-  }, [recordId, supabase]);
+  }, [recordId, authProfile]);
 
   const handleAction = async () => {
     if (!approval || !actionType) return;

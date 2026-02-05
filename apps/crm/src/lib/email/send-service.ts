@@ -1,4 +1,4 @@
-import { createServerSupabaseClient as createClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { createLog } from '@/lib/integrations';
 import { decrypt } from '@/lib/integrations/adapters/credentials';
 
@@ -45,11 +45,6 @@ export interface SendSmsResult {
   error?: string;
 }
 
-// Helper to get supabase client with any table access
-async function getSupabaseAny() {
-  const supabase = await createClient();
-  return supabase as any;
-}
 
 // ============================================================================
 // Email Sending
@@ -59,12 +54,13 @@ async function getSupabaseAny() {
  * Send an email through the configured provider
  */
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
-  // Get current user and org
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  // Get current user and org using cached auth helpers
+  const { user, error: authError } = await getAuthUser();
+  if (!user || authError) throw new Error('User not authenticated');
   
+  // Get extended profile with email and full_name
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, organization_id, email, full_name')
@@ -205,18 +201,13 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
  * Send an SMS through Twilio
  */
 export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
-  // Get current user and org
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
+  // Get current user and org using cached auth helpers
+  const { user, error: authError } = await getAuthUser();
+  if (!user || authError) throw new Error('User not authenticated');
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .single();
-  
+  const profile = await getAuthProfile();
   if (!profile) throw new Error('User profile not found');
   
   // Get Twilio connection

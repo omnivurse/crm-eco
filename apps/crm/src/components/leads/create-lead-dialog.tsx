@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Button,
   Dialog,
@@ -86,6 +87,7 @@ const LEAD_STATUS_OPTIONS = [
 
 export function CreateLeadDialog() {
   const router = useRouter();
+  const { profile: authProfile } = useClientAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,27 +130,15 @@ export function CreateLeadDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authProfile) return;
     setError(null);
     setLoading(true);
 
     try {
       const supabase = createClient();
-      
-      // Get current user's profile to get organization_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      const profile = profileData as { id: string; organization_id: string } | null;
-      if (!profile) throw new Error('Profile not found');
 
       const insertData: LeadInsert = {
-        organization_id: profile.organization_id,
+        organization_id: authProfile.organization_id,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -175,8 +165,8 @@ export function CreateLeadDialog() {
       // Log activity
       if (insertedLead) {
         await logActivityForLead({
-          organizationId: profile.organization_id,
-          createdByProfileId: profile.id,
+          organizationId: authProfile.organization_id,
+          createdByProfileId: authProfile.id,
           leadId: (insertedLead as { id: string }).id,
           type: ActivityTypes.LEAD_CREATED,
           subject: `New lead: ${formData.firstName} ${formData.lastName}`,
