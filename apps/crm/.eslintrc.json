@@ -24,7 +24,8 @@
         "src/lib/supabase-server.ts",
         "src/lib/crm/mutations.ts",
         "src/middleware.ts",
-        "src/lib/auth.ts"
+        "src/lib/auth.ts",
+        "src/hooks/useClientAuth.ts"
       ],
       "rules": {
         "no-restricted-syntax": "off"

@@ -1,30 +1,20 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { verifyCrmAccess, createClient } from '@/lib/supabase-server';
 import { AuditLogsClient } from './client';
 
 export const dynamic = 'force-dynamic';
 
 async function getAuditData() {
-  const supabase = await createServerSupabaseClient();
+  // Use verifyCrmAccess for request-scoped cached auth
+  const { user, profile } = await verifyCrmAccess();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  if (!user || !profile) {
     redirect('/crm-login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id, crm_role, full_name, email')
-    .eq('user_id', user.id)
-    .single() as { data: { id: string; organization_id: string; crm_role: string | null; full_name: string; email: string } | null };
-
-  if (!profile) {
-    redirect('/crm-login');
-  }
+  // Get Supabase client for queries (also request-scoped cached)
+  const supabase = await createClient();
 
   // Only admin and manager can view audit logs
   if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {

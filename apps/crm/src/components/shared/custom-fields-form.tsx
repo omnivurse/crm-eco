@@ -15,33 +15,26 @@ interface CustomFieldsFormProps {
 }
 
 export function CustomFieldsForm({ entityType, values, onChange }: CustomFieldsFormProps) {
+  const { profile: authProfile } = useClientAuth();
   const [definitions, setDefinitions] = useState<CustomFieldDefinition[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDefinitions = async () => {
+      if (!authProfile) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       try {
         const supabase = createClient();
-        
-        // Get the user's organization
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .single();
-
-        const profile = profileData as { organization_id: string } | null;
-        if (!profile) return;
 
         // Get custom field definitions for this entity type
         const { data } = await supabase
           .from('custom_field_definitions')
           .select('*')
-          .eq('organization_id', profile.organization_id)
+          .eq('organization_id', authProfile.organization_id)
           .eq('entity_type', entityType)
           .eq('is_visible', true)
           .order('order_index');
@@ -57,7 +50,7 @@ export function CustomFieldsForm({ entityType, values, onChange }: CustomFieldsF
     };
 
     fetchDefinitions();
-  }, [entityType]);
+  }, [entityType, authProfile]);
 
   const handleFieldChange = (fieldName: string, value: any) => {
     onChange({

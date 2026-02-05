@@ -14,6 +14,7 @@ interface AddCommentFormProps {
 
 export function AddCommentForm({ ticketId }: AddCommentFormProps) {
   const router = useRouter();
+  const { profile: authProfile } = useClientAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [body, setBody] = useState('');
@@ -22,32 +23,20 @@ export function AddCommentForm({ ticketId }: AddCommentFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
+    if (!authProfile) return;
 
     setError(null);
     setLoading(true);
 
     try {
       const supabase = createClient();
-      
-      // Get current user's profile
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, organization_id, full_name')
-        .eq('user_id', user.id)
-        .single();
-
-      const profile = profileData as { id: string; organization_id: string; full_name: string } | null;
-      if (!profile) throw new Error('Profile not found');
 
       // Insert comment
       const { error: insertError } = await supabase
         .from('ticket_comments')
         .insert({
           ticket_id: ticketId,
-          created_by_profile_id: profile.id,
+          created_by_profile_id: authProfile.id,
           body: body.trim(),
           is_internal: isInternal,
         } as any);
@@ -56,11 +45,11 @@ export function AddCommentForm({ ticketId }: AddCommentFormProps) {
 
       // Log activity
       await logActivityForTicket({
-        organizationId: profile.organization_id,
-        createdByProfileId: profile.id,
+        organizationId: authProfile.organization_id,
+        createdByProfileId: authProfile.id,
         ticketId: ticketId,
         type: ActivityTypes.TICKET_COMMENT_ADDED,
-        subject: `Comment added by ${profile.full_name}`,
+        subject: `Comment added by ${authProfile.full_name}`,
         description: isInternal ? 'Internal note added' : 'Comment added to ticket',
       });
 

@@ -1,4 +1,4 @@
-import { createServerSupabaseClient as createClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import type {
   InboxConversation,
   InboxMessage,
@@ -16,14 +16,8 @@ import type {
 // Fetch and manage conversations across all channels
 // ============================================================================
 
-// Helper to get supabase client with any table access
-async function getSupabaseAny() {
-  const supabase = await createClient();
-  return supabase as any;
-}
-
 /**
- * Cached auth context helper to reduce redundant auth calls.
+ * Cached auth context helper using request-scoped auth helpers.
  * Returns supabase client, user, and profile in a single call.
  */
 interface AuthContext {
@@ -33,17 +27,13 @@ interface AuthContext {
 }
 
 async function getAuthContext(): Promise<AuthContext | null> {
-  const supabase = await getSupabaseAny();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { user, error } = await getAuthUser();
+  if (!user || error) return null;
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .single();
-  
+  const profile = await getAuthProfile();
   if (!profile) return null;
+  
+  const supabase = await createClient() as any;
   
   return { supabase, user, profile };
 }
@@ -60,7 +50,7 @@ export async function getConversations(
   page: number = 1,
   limit: number = 25
 ): Promise<ConversationsResult> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   let query = supabase
     .from('inbox_conversations')
@@ -121,7 +111,7 @@ export async function getConversations(
  * Get a single conversation by ID
  */
 export async function getConversation(id: string): Promise<InboxConversation | null> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { data, error } = await supabase
     .from('inbox_conversations')
@@ -208,7 +198,7 @@ export async function updateConversation(
     linked_account_id: string | null;
   }>
 ): Promise<InboxConversation> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const updateData: Record<string, unknown> = { ...params };
   
@@ -275,7 +265,7 @@ export async function getMessages(
   page: number = 1,
   limit: number = 50
 ): Promise<{ messages: InboxMessage[]; total: number; hasMore: boolean }> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const offset = (page - 1) * limit;
   
@@ -314,7 +304,7 @@ export async function addMessage(params: {
   external_id?: string;
   external_provider?: string;
 }): Promise<InboxMessage> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   // Get conversation to get org_id and channel
   const conversation = await getConversation(params.conversation_id);

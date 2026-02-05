@@ -28,12 +28,11 @@ export function ThemeProvider({
   defaultTheme = 'light',
   storageKey = STORAGE_KEY,
 }: ThemeProviderProps) {
+  const { profile: authProfile, user: authUser } = useClientAuth();
   const [theme, setThemeState] = useState<Theme>(defaultTheme);
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  // Cache user ID to avoid repeated auth calls
-  const [cachedUserId, setCachedUserId] = useState<string | null>(null);
 
   // Resolve system theme
   const getSystemTheme = useCallback((): 'light' | 'dark' => {
@@ -55,11 +54,11 @@ export function ThemeProvider({
     setResolvedTheme(resolved);
   }, [getSystemTheme]);
 
-  // Load theme from localStorage first (fast), then DB (authoritative)
+  // Load theme from localStorage first (fast), then from authProfile (authoritative)
   useEffect(() => {
     setMounted(true);
     
-    // Load from localStorage (fast). Only fall back to DB when localStorage is empty.
+    // Load from localStorage (fast). Only fall back to authProfile when localStorage is empty.
     // setTheme() writes to both localStorage and DB simultaneously, so they stay in sync.
     const storedTheme = localStorage.getItem(storageKey) as Theme | null;
     if (storedTheme && ['light', 'dark', 'system'].includes(storedTheme)) {
@@ -69,37 +68,36 @@ export function ThemeProvider({
     } else {
       // Default to light immediately
       applyTheme(defaultTheme);
-
-      // No localStorage value — query DB as fallback (first visit / cleared cache)
-      const loadFromDB = async () => {
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            // Cache user ID for later use (avoids repeated getUser calls)
-            setCachedUserId(user.id);
-            
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('ui_theme')
-              .eq('user_id', user.id)
-              .single();
-
-            if (profile?.ui_theme && ['light', 'dark', 'system'].includes(profile.ui_theme)) {
-              setThemeState(profile.ui_theme as Theme);
-              applyTheme(profile.ui_theme as Theme);
-              localStorage.setItem(storageKey, profile.ui_theme);
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to load theme from DB:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      loadFromDB();
+      setIsLoading(false);
     }
   }, [storageKey, defaultTheme, applyTheme]);
+
+  // Sync theme from profile if no localStorage value exists
+  useEffect(() => {
+    if (!mounted) return;
+    const storedTheme = localStorage.getItem(storageKey);
+    if (!storedTheme && authProfile) {
+      // Fetch ui_theme from profile (authProfile doesn't include ui_theme, so query it)
+      const loadThemeFromProfile = async () => {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('ui_theme')
+            .eq('user_id', authProfile.user_id)
+            .single();
+
+          if (profile?.ui_theme && ['light', 'dark', 'system'].includes(profile.ui_theme)) {
+            setThemeState(profile.ui_theme as Theme);
+            applyTheme(profile.ui_theme as Theme);
+            localStorage.setItem(storageKey, profile.ui_theme);
+          }
+        } catch (error) {
+          console.warn('Failed to load theme from profile:', error);
+        }
+      };
+      loadThemeFromProfile();
+    }
+  }, [mounted, authProfile, storageKey, applyTheme]);
 
   // Listen for system theme changes
   useEffect(() => {
@@ -123,11 +121,10 @@ export function ThemeProvider({
     applyTheme(newTheme);
     localStorage.setItem(storageKey, newTheme);
 
-    // Persist to DB using cached user ID if available (avoids extra auth call)
+    // Persist to DB using authProfile user_id (avoids extra auth call)
     try {
-      const userId = cachedUserId || (await supabase.auth.getUser()).data.user?.id;
+      const userId = authProfile?.user_id || authUser?.id;
       if (userId) {
-        if (!cachedUserId) setCachedUserId(userId);
         await supabase
           .from('profiles')
           .update({ ui_theme: newTheme })
@@ -136,7 +133,7 @@ export function ThemeProvider({
     } catch (error) {
       console.warn('Failed to save theme to DB:', error);
     }
-  }, [storageKey, applyTheme, cachedUserId]);
+  }, [storageKey, applyTheme, authProfile, authUser]);
 
   // Always render children - the script in layout.tsx handles initial theme class
   // This prevents blank page flash while still avoiding hydration mismatch

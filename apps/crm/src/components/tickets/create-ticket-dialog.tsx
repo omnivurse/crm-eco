@@ -32,6 +32,7 @@ type TicketInsert = Database['public']['Tables']['tickets']['Insert'];
 
 export function CreateTicketDialog() {
   const router = useRouter();
+  const { profile: authProfile } = useClientAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,23 +74,12 @@ export function CreateTicketDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authProfile) return;
     setError(null);
     setLoading(true);
 
     try {
       const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      const profile = profileData as { id: string; organization_id: string } | null;
-      if (!profile) throw new Error('Profile not found');
 
       const insertData: TicketInsert = {
         subject: formData.subject,
@@ -98,7 +88,7 @@ export function CreateTicketDialog() {
         priority: formData.priority,
         status: 'open',
         member_id: formData.memberId || null,
-        requester_id: profile.id,
+        requester_id: authProfile.id,
       };
 
       const { data: insertedTicket, error: insertError } = await supabase
@@ -112,8 +102,8 @@ export function CreateTicketDialog() {
       // Log activity
       if (insertedTicket) {
         await logActivityForTicket({
-          organizationId: profile.organization_id,
-          createdByProfileId: profile.id,
+          organizationId: authProfile.organization_id,
+          createdByProfileId: authProfile.id,
           ticketId: (insertedTicket as { id: string }).id,
           memberId: formData.memberId || undefined,
           type: ActivityTypes.TICKET_CREATED,

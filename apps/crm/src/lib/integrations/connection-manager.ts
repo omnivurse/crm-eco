@@ -1,4 +1,4 @@
-import { createServerSupabaseClient as createClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import type {
   IntegrationConnection,
   IntegrationProvider,
@@ -76,11 +76,6 @@ export interface HealthSummary {
   last_sync_at: string | null;
 }
 
-// Helper to get supabase client with any table access
-async function getSupabaseAny() {
-  const supabase = await createClient();
-  return supabase as any;
-}
 
 // ============================================================================
 // Service Functions
@@ -90,7 +85,7 @@ async function getSupabaseAny() {
  * Get all connections for the current organization
  */
 export async function getConnections(filters?: ConnectionFilters): Promise<ConnectionsResult> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   let query = supabase
     .from('integration_connections')
@@ -128,7 +123,7 @@ export async function getConnections(filters?: ConnectionFilters): Promise<Conne
  * Get a single connection by ID
  */
 export async function getConnection(id: string): Promise<IntegrationConnection | null> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { data, error } = await supabase
     .from('integration_connections')
@@ -154,7 +149,7 @@ export async function getConnectionByProvider(
   provider: IntegrationProvider,
   connection_type: ConnectionType
 ): Promise<IntegrationConnection | null> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { data, error } = await supabase
     .from('integration_connections')
@@ -178,20 +173,16 @@ export async function getConnectionByProvider(
  * Create a new connection
  */
 export async function createConnection(params: CreateConnectionParams): Promise<IntegrationConnection> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
-  // Get current user profile for created_by
-  const { data: { user } } = await supabase.auth.getUser();
+  // Get current user profile for created_by using cached auth helpers
+  const { user, error: authError } = await getAuthUser();
   
-  if (!user) {
+  if (!user || authError) {
     throw new Error('User not authenticated');
   }
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .single();
+  const profile = await getAuthProfile();
   
   if (!profile) {
     throw new Error('User profile not found');
@@ -241,20 +232,11 @@ export async function updateConnection(
   id: string,
   params: UpdateConnectionParams
 ): Promise<IntegrationConnection> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
-  // Get current user profile for updated_by
-  const { data: { user } } = await supabase.auth.getUser();
-  
-  let profileId: string | undefined;
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-    profileId = profile?.id;
-  }
+  // Get current user profile for updated_by using cached auth helpers
+  const profile = await getAuthProfile();
+  const profileId = profile?.id;
   
   const updateData = {
     ...params,
@@ -281,7 +263,7 @@ export async function updateConnection(
  * Delete a connection
  */
 export async function deleteConnection(id: string): Promise<void> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { error } = await supabase
     .from('integration_connections')
@@ -351,7 +333,7 @@ export async function recordConnectionError(
   id: string,
   errorMessage: string
 ): Promise<IntegrationConnection> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   // Get current error count
   const { data: current } = await supabase
@@ -410,7 +392,7 @@ export async function updateSyncStatus(
  * Get health summary for the organization
  */
 export async function getHealthSummary(): Promise<HealthSummary> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { data: connections } = await supabase
     .from('integration_connections')
