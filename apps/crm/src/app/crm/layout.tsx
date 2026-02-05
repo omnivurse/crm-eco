@@ -7,7 +7,7 @@ import {
   getModules,
 } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
-import { ClientProviders } from '@/components/ClientProviders';
+import { ClientProviders } from '@/components/providers/ClientProviders';
 
 export const dynamic = 'force-dynamic';
 
