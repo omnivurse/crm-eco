@@ -214,8 +214,8 @@ export default async function BillingPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Billing</h1>
-        <p className="text-slate-500">Manage payments, transactions, and billing schedules</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Billing</h1>
+        <p className="text-sm sm:text-base text-slate-500">Manage payments, transactions, and billing schedules</p>
       </div>
 
       {/* Stats Grid */}

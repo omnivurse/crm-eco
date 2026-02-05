@@ -52,20 +52,20 @@ export default async function ProductsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Products</h1>
-          <p className="text-slate-500">Manage health plans, pricing, and features</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Products</h1>
+          <p className="text-sm sm:text-base text-slate-500">Manage health plans, pricing, and features</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/products/features">
-            <Button variant="outline">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/products/features" className="flex-1 sm:flex-none">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Sparkles className="h-4 w-4 mr-2" />
-              Features Library
+              <span className="hidden xs:inline">Features</span>
             </Button>
           </Link>
-          <Link href="/products/new">
-            <Button>
+          <Link href="/products/new" className="flex-1 sm:flex-none">
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
