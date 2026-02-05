@@ -278,7 +278,7 @@ export function JobsWidget({ organizationId }: JobsWidgetProps) {
           {selectedJob && (
             <div className="space-y-4">
               {/* Stats */}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="p-3 bg-slate-50 rounded-lg">
                   <p className="text-xs text-slate-500">Status</p>
                   <p className="font-semibold text-slate-700 capitalize">{selectedJob.status}</p>

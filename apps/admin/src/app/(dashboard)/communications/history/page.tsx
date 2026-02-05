@@ -354,7 +354,7 @@ export default function EmailHistoryPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-4 gap-4 text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-slate-500">Created</p>
                   <p>{new Date(selectedEmail.created_at).toLocaleString()}</p>

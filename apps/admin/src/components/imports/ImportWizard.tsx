@@ -692,7 +692,7 @@ export function ImportWizard({
                 <h2 className="text-xl font-semibold text-slate-900 mb-2">Import Complete</h2>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-lg mx-auto">
                 <div className="p-4 bg-slate-50 rounded-lg">
                   <p className="text-2xl font-bold text-slate-900">{results.total}</p>
                   <p className="text-xs text-slate-500">Total</p>

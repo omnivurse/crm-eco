@@ -20,6 +20,8 @@ import {
     RefreshCcw,
     X,
     Check,
+    Menu,
+    ListTodo,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
@@ -30,6 +32,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@crm-eco/ui/components/dialog';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@crm-eco/ui/components/sheet';
 
 // Calendar provider types
 type CalendarProvider = 'google' | 'outlook' | 'personal';
@@ -113,6 +122,7 @@ export default function CalendarPage() {
     const [profileData, setProfileData] = useState<{ id: string; organization_id: string } | null>(null);
     const [showEventDetailModal, setShowEventDetailModal] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const [showMobileSidebar, setShowMobileSidebar] = useState(false);
 
     // Load data
     useEffect(() => {
@@ -461,7 +471,15 @@ export default function CalendarPage() {
                     <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Calendar</h1>
                     <p className="text-slate-500 dark:text-slate-400">Manage your schedule and appointments</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Mobile sidebar toggle */}
+                    <button
+                        onClick={() => setShowMobileSidebar(true)}
+                        className="lg:hidden inline-flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    >
+                        <ListTodo className="w-4 h-4" />
+                        <span className="hidden sm:inline">Tasks</span>
+                    </button>
                     <button
                         onClick={() => setShowIntegrationModal(true)}
                         className="inline-flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -471,17 +489,17 @@ export default function CalendarPage() {
                     </button>
                     <button
                         onClick={() => setShowNewEventModal(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
+                        className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
                     >
                         <Plus className="w-4 h-4" />
-                        New Event
+                        <span className="hidden sm:inline">New Event</span>
                     </button>
                 </div>
             </div>
 
             {/* Navigation */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                     <button
                         onClick={goToPrevious}
                         className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -490,7 +508,7 @@ export default function CalendarPage() {
                     </button>
                     <button
                         onClick={goToToday}
-                        className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
+                        className="px-3 sm:px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700"
                     >
                         Today
                     </button>
@@ -500,17 +518,17 @@ export default function CalendarPage() {
                     >
                         <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                     </button>
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white ml-4">{formatHeader()}</h2>
+                    <h2 className="text-base sm:text-xl font-semibold text-slate-900 dark:text-white ml-2 sm:ml-4 truncate">{formatHeader()}</h2>
                 </div>
 
                 {/* View Toggle */}
-                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg w-full sm:w-auto">
                     {(['month', 'week', 'day'] as const).map((v) => (
                         <button
                             key={v}
                             onClick={() => setView(v)}
                             className={cn(
-                                'px-4 py-1.5 text-sm font-medium rounded-md transition-colors capitalize',
+                                'flex-1 sm:flex-none px-3 sm:px-4 py-1.5 text-sm font-medium rounded-md transition-colors capitalize',
                                 view === v
                                     ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -525,18 +543,20 @@ export default function CalendarPage() {
             {/* Main Content */}
             <div className="flex gap-6">
                 {/* Calendar Grid */}
-                <div className="flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                <div className="flex-1 min-w-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                     {/* Month View */}
                     {view === 'month' && (
-                        <>
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[500px]">
                             {/* Day Headers */}
                             <div className="grid grid-cols-7 border-b border-slate-200 dark:border-slate-700">
-                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
                                     <div
                                         key={day}
-                                        className="py-3 text-center text-sm font-medium text-slate-600 dark:text-slate-400"
+                                        className="py-2 sm:py-3 text-center text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-400"
                                     >
-                                        {day}
+                                        <span className="hidden sm:inline">{day}</span>
+                                        <span className="sm:hidden">{['M', 'T', 'W', 'T', 'F', 'S', 'S'][i]}</span>
                                     </div>
                                 ))}
                             </div>
@@ -544,7 +564,7 @@ export default function CalendarPage() {
                             {/* Calendar Days */}
                             <div className="grid grid-cols-7">
                                 {calendarDays.map((date, index) => {
-                                    if (!date) return <div key={index} className="h-28 border-b border-r border-slate-100 dark:border-slate-800" />;
+                                    if (!date) return <div key={index} className="h-20 sm:h-28 border-b border-r border-slate-100 dark:border-slate-800" />;
 
                                     const dayEvents = getEventsForDate(date);
                                     const isCurrentMonthDay = isCurrentMonth(date);
@@ -555,16 +575,16 @@ export default function CalendarPage() {
                                             key={index}
                                             onClick={() => handleDateClick(date)}
                                             className={cn(
-                                                'h-28 p-2 border-b border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50',
+                                                'h-20 sm:h-28 p-1 sm:p-2 border-b border-r border-slate-100 dark:border-slate-800 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50',
                                                 !isCurrentMonthDay && 'bg-slate-50 dark:bg-slate-900/50',
                                                 isTodayDate && 'bg-teal-50/50 dark:bg-teal-900/20',
                                                 selectedDate?.toDateString() === date.toDateString() && 'ring-2 ring-teal-500 ring-inset'
                                             )}
                                         >
-                                            <div className="flex items-center justify-center mb-1">
+                                            <div className="flex items-center justify-center mb-0.5 sm:mb-1">
                                                 <span
                                                     className={cn(
-                                                        'w-7 h-7 flex items-center justify-center text-sm font-medium rounded-full',
+                                                        'w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-xs sm:text-sm font-medium rounded-full',
                                                         isTodayDate && 'bg-teal-600 text-white',
                                                         !isTodayDate && isCurrentMonthDay && 'text-slate-900 dark:text-white',
                                                         !isTodayDate && !isCurrentMonthDay && 'text-slate-400 dark:text-slate-600'
@@ -573,47 +593,51 @@ export default function CalendarPage() {
                                                     {date.getDate()}
                                                 </span>
                                             </div>
-                                            <div className="space-y-1">
+                                            <div className="space-y-0.5 sm:space-y-1">
                                                 {dayEvents.slice(0, 2).map((event) => (
                                                     <button
                                                         key={event.id}
                                                         onClick={(e) => handleEventClick(event, e)}
-                                                        className="w-full text-left text-xs px-1.5 py-0.5 rounded truncate hover:opacity-80"
+                                                        className="w-full text-left text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded truncate hover:opacity-80"
                                                         style={{ backgroundColor: `${event.color}20`, color: event.color }}
                                                     >
-                                                        {event.title}
+                                                        <span className="hidden sm:inline">{event.title}</span>
+                                                        <span className="sm:hidden">•</span>
                                                     </button>
                                                 ))}
                                                 {dayEvents.length > 2 && (
-                                                    <div className="text-xs text-slate-500 pl-1">+{dayEvents.length - 2} more</div>
+                                                    <div className="text-[10px] sm:text-xs text-slate-500 pl-1">+{dayEvents.length - 2}</div>
                                                 )}
                                             </div>
                                         </div>
                                     );
                                 })}
                             </div>
-                        </>
+                            </div>
+                        </div>
                     )}
 
                     {/* Week View */}
                     {view === 'week' && (
-                        <>
+                        <div className="overflow-x-auto">
+                            <div className="min-w-[600px]">
                             {/* Day Headers with dates */}
                             <div className="grid grid-cols-8 border-b border-slate-200 dark:border-slate-700">
-                                <div className="py-3 text-center text-sm font-medium text-slate-400 border-r border-slate-200 dark:border-slate-700 w-16" />
+                                <div className="py-2 sm:py-3 text-center text-sm font-medium text-slate-400 border-r border-slate-200 dark:border-slate-700 w-12 sm:w-16" />
                                 {weekDays.map((date, i) => (
                                     <div
                                         key={i}
                                         className={cn(
-                                            'py-3 text-center border-r border-slate-200 dark:border-slate-700 last:border-r-0',
+                                            'py-2 sm:py-3 text-center border-r border-slate-200 dark:border-slate-700 last:border-r-0',
                                             isToday(date) && 'bg-teal-50/50 dark:bg-teal-900/20'
                                         )}
                                     >
-                                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                            {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                                        <div className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">
+                                            <span className="hidden sm:inline">{date.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                                            <span className="sm:hidden">{date.toLocaleDateString('en-US', { weekday: 'narrow' })}</span>
                                         </div>
                                         <div className={cn(
-                                            'text-lg font-semibold mt-0.5',
+                                            'text-base sm:text-lg font-semibold mt-0.5',
                                             isToday(date) ? 'text-teal-600 dark:text-teal-400' : 'text-slate-900 dark:text-white'
                                         )}>
                                             {date.getDate()}
@@ -623,11 +647,11 @@ export default function CalendarPage() {
                             </div>
 
                             {/* Time Grid */}
-                            <div className="overflow-y-auto max-h-[600px]">
+                            <div className="overflow-y-auto max-h-[500px] sm:max-h-[600px]">
                                 {hours.slice(6, 22).map((hour) => (
                                     <div key={hour} className="grid grid-cols-8 border-b border-slate-100 dark:border-slate-800">
-                                        <div className="py-2 px-2 text-xs text-slate-400 text-right border-r border-slate-200 dark:border-slate-700 w-16">
-                                            {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                                        <div className="py-2 px-1 sm:px-2 text-[10px] sm:text-xs text-slate-400 text-right border-r border-slate-200 dark:border-slate-700 w-12 sm:w-16">
+                                            {hour === 0 ? '12A' : hour < 12 ? `${hour}A` : hour === 12 ? '12P' : `${hour - 12}P`}
                                         </div>
                                         {weekDays.map((date, i) => {
                                             const hourEvents = getEventsForHour(date, hour);
@@ -638,7 +662,7 @@ export default function CalendarPage() {
                                                     key={i}
                                                     onClick={() => handleDateClick(slotDate)}
                                                     className={cn(
-                                                        'min-h-[48px] p-1 border-r border-slate-100 dark:border-slate-800 last:border-r-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors',
+                                                        'min-h-[40px] sm:min-h-[48px] p-0.5 sm:p-1 border-r border-slate-100 dark:border-slate-800 last:border-r-0 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors',
                                                         isToday(date) && 'bg-teal-50/30 dark:bg-teal-900/10'
                                                     )}
                                                 >
@@ -646,7 +670,7 @@ export default function CalendarPage() {
                                                         <button
                                                             key={event.id}
                                                             onClick={(e) => handleEventClick(event, e)}
-                                                            className="w-full text-left text-xs px-1.5 py-1 rounded mb-1 truncate hover:opacity-80"
+                                                            className="w-full text-left text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5 sm:py-1 rounded mb-0.5 sm:mb-1 truncate hover:opacity-80"
                                                             style={{ backgroundColor: `${event.color}20`, color: event.color }}
                                                         >
                                                             {event.title}
@@ -658,60 +682,61 @@ export default function CalendarPage() {
                                     </div>
                                 ))}
                             </div>
-                        </>
+                            </div>
+                        </div>
                     )}
 
                     {/* Day View */}
                     {view === 'day' && (
                         <>
                             {/* Day Header */}
-                            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                            <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
                                 <div className={cn(
                                     'text-center',
                                     isToday(currentDate) && 'text-teal-600 dark:text-teal-400'
                                 )}>
-                                    <div className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                                    <div className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
                                         {currentDate.toLocaleDateString('en-US', { weekday: 'long' })}
                                     </div>
-                                    <div className="text-3xl font-bold mt-1">
+                                    <div className="text-2xl sm:text-3xl font-bold mt-1">
                                         {currentDate.getDate()}
                                     </div>
-                                    <div className="text-sm text-slate-500 dark:text-slate-400">
+                                    <div className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                                         {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                                     </div>
                                 </div>
                             </div>
 
                             {/* Time Grid */}
-                            <div className="overflow-y-auto max-h-[600px]">
+                            <div className="overflow-y-auto max-h-[500px] sm:max-h-[600px]">
                                 {hours.slice(6, 22).map((hour) => {
                                     const hourEvents = getEventsForHour(currentDate, hour);
                                     const slotDate = new Date(currentDate);
                                     slotDate.setHours(hour, 0, 0, 0);
                                     return (
                                         <div key={hour} className="flex border-b border-slate-100 dark:border-slate-800">
-                                            <div className="py-3 px-4 text-sm text-slate-400 text-right w-20 flex-shrink-0 border-r border-slate-200 dark:border-slate-700">
-                                                {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                                            <div className="py-2 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm text-slate-400 text-right w-14 sm:w-20 flex-shrink-0 border-r border-slate-200 dark:border-slate-700">
+                                                {hour === 0 ? '12A' : hour < 12 ? `${hour}A` : hour === 12 ? '12P' : `${hour - 12}P`}
                                             </div>
                                             <div
                                                 onClick={() => handleDateClick(slotDate)}
-                                                className="flex-1 min-h-[60px] p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                                className="flex-1 min-h-[50px] sm:min-h-[60px] p-1.5 sm:p-2 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                                             >
                                                 {hourEvents.map((event) => (
                                                     <button
                                                         key={event.id}
                                                         onClick={(e) => handleEventClick(event, e)}
-                                                        className="w-full text-left text-sm px-3 py-2 rounded-lg mb-1 hover:opacity-80"
+                                                        className="w-full text-left text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg mb-1 hover:opacity-80"
                                                         style={{ backgroundColor: `${event.color}15`, borderLeft: `3px solid ${event.color}` }}
                                                     >
-                                                        <div className="font-medium" style={{ color: event.color }}>{event.title}</div>
-                                                        <div className="text-xs text-slate-500 mt-0.5">
+                                                        <div className="font-medium truncate" style={{ color: event.color }}>{event.title}</div>
+                                                        <div className="text-[10px] sm:text-xs text-slate-500 mt-0.5">
                                                             {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(event.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </div>
                                                         {event.location && (
-                                                            <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
-                                                                <MapPin className="w-3 h-3" />
-                                                                {event.location}
+                                                            <div className="text-[10px] sm:text-xs text-slate-500 mt-0.5 flex items-center gap-1 truncate">
+                                                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                                                <span className="truncate">{event.location}</span>
                                                             </div>
                                                         )}
                                                     </button>
@@ -725,8 +750,8 @@ export default function CalendarPage() {
                     )}
                 </div>
 
-                {/* Sidebar */}
-                <div className="w-80 space-y-4 flex-shrink-0">
+                {/* Desktop Sidebar - Hidden on mobile */}
+                <div className="hidden lg:block w-80 space-y-4 flex-shrink-0">
                     {/* Upcoming Tasks */}
                     <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                         <div className="p-4 border-b border-slate-200 dark:border-slate-700">
@@ -860,6 +885,137 @@ export default function CalendarPage() {
                 </div>
             </div>
 
+            {/* Mobile Sidebar Sheet */}
+            <Sheet open={showMobileSidebar} onOpenChange={setShowMobileSidebar}>
+                <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0 overflow-y-auto">
+                    <SheetHeader className="p-4 border-b border-slate-200 dark:border-slate-700">
+                        <SheetTitle>Tasks & Events</SheetTitle>
+                    </SheetHeader>
+                    <div className="p-4 space-y-4">
+                        {/* Upcoming Tasks */}
+                        <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                                <div className="flex items-center gap-2">
+                                    <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                    <h3 className="font-semibold text-slate-900 dark:text-white">Upcoming Tasks</h3>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-3 max-h-[250px] overflow-y-auto">
+                                {tasks.length === 0 ? (
+                                    <p className="text-sm text-slate-500 text-center py-4">No upcoming tasks</p>
+                                ) : (
+                                    tasks.slice(0, 5).map((task) => (
+                                        <div key={task.id} className="flex items-start gap-3">
+                                            <button
+                                                onClick={() => completeTask(task.id)}
+                                                className="mt-0.5 w-4 h-4 rounded border-2 border-slate-300 dark:border-slate-600 hover:border-teal-500 hover:bg-teal-500 transition-colors flex-shrink-0 flex items-center justify-center group"
+                                            >
+                                                <Check className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </button>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-900 dark:text-white truncate">{task.title}</p>
+                                                <p className="text-xs text-slate-500">
+                                                    {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'No due date'}
+                                                </p>
+                                            </div>
+                                            <span className={cn('w-2 h-2 rounded-full mt-1.5', getPriorityColor(task.priority))} />
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Today's Events */}
+                        <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                                <div className="flex items-center gap-2">
+                                    <CalendarIcon className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                                    <h3 className="font-semibold text-slate-900 dark:text-white">Today's Events</h3>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-3">
+                                {todaysEvents.length === 0 ? (
+                                    <div className="text-center py-4">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center mx-auto mb-2">
+                                            <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                        </div>
+                                        <p className="text-sm text-slate-500">No events today</p>
+                                    </div>
+                                ) : (
+                                    todaysEvents.map((event) => (
+                                        <button
+                                            key={event.id}
+                                            onClick={() => {
+                                                handleEventClick(event);
+                                                setShowMobileSidebar(false);
+                                            }}
+                                            className="w-full text-left p-3 rounded-lg hover:opacity-80 transition-opacity"
+                                            style={{ backgroundColor: `${event.color}10` }}
+                                        >
+                                            <p className="text-sm font-medium text-slate-900 dark:text-white">{event.title}</p>
+                                            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Connected Calendars */}
+                        <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                            <div className="p-4 border-b border-slate-200 dark:border-slate-700">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Link2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                        <h3 className="font-semibold text-slate-900 dark:text-white">Connected</h3>
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            setShowMobileSidebar(false);
+                                            setShowIntegrationModal(true);
+                                        }}
+                                        className="text-xs text-teal-600 hover:underline"
+                                    >
+                                        + Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-4 space-y-2">
+                                {connectedCalendars.length === 0 ? (
+                                    <div className="text-center py-4">
+                                        <p className="text-sm text-slate-500 mb-3">No calendars connected</p>
+                                        <button
+                                            onClick={() => {
+                                                setShowMobileSidebar(false);
+                                                setShowIntegrationModal(true);
+                                            }}
+                                            className="text-sm text-teal-600 hover:underline"
+                                        >
+                                            Connect a calendar
+                                        </button>
+                                    </div>
+                                ) : (
+                                    connectedCalendars.map((cal) => (
+                                        <div key={cal.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                            <div
+                                                className="w-3 h-3 rounded-full"
+                                                style={{ backgroundColor: cal.color }}
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{cal.name}</p>
+                                                <p className="text-xs text-slate-500 truncate">{cal.email}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </SheetContent>
+            </Sheet>
+
             {/* Integration Modal */}
             <Dialog open={showIntegrationModal} onOpenChange={setShowIntegrationModal}>
                 <DialogContent className="sm:max-w-md">
@@ -945,7 +1101,7 @@ export default function CalendarPage() {
                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                 Activity Type
                             </label>
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {[
                                     { type: 'meeting' as const, label: 'Meeting', icon: Users, activeBorder: 'border-teal-500', activeBg: 'bg-teal-50 dark:bg-teal-900/20', activeIcon: 'text-teal-600', activeText: 'text-teal-700 dark:text-teal-400' },
                                     { type: 'call' as const, label: 'Call', icon: Video, activeBorder: 'border-purple-500', activeBg: 'bg-purple-50 dark:bg-purple-900/20', activeIcon: 'text-purple-600', activeText: 'text-purple-700 dark:text-purple-400' },
