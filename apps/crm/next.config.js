@@ -6,7 +6,7 @@ const nextConfig = {
       bodySizeLimit: '50mb',
     },
     // Enable optimized package imports for better tree-shaking
-    optimizePackageImports: ['lucide-react', '@dnd-kit/core', '@dnd-kit/sortable', 'framer-motion'],
+    optimizePackageImports: ['lucide-react', '@dnd-kit/core', '@dnd-kit/sortable', 'framer-motion', '@tiptap/react', '@tiptap/starter-kit', '@tiptap/core'],
   },
   // Image optimization
   images: {
