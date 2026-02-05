@@ -36,6 +36,8 @@ import {
   UserPlus,
   Tag,
   AlertCircle,
+  ChevronLeft,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
@@ -112,6 +114,10 @@ export default function InboxPage() {
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Mobile responsive state
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
 
   // Load conversations
   const loadConversations = useCallback(async () => {
@@ -226,6 +232,7 @@ export default function InboxPage() {
   // Select conversation
   const handleSelectConversation = async (conv: InboxConversation) => {
     setSelectedConversation(conv);
+    setMobileView('detail'); // Switch to detail view on mobile
     await loadMessages(conv.id);
 
     // Mark as read
@@ -243,6 +250,12 @@ export default function InboxPage() {
         prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c)
       );
     }
+  };
+
+  // Handle back to list on mobile
+  const handleBackToList = () => {
+    setMobileView('list');
+    setSelectedConversation(null);
   };
 
   // Send reply

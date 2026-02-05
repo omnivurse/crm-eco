@@ -139,26 +139,28 @@ export default function ForecastingPage() {
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
           Forecast Example
         </h2>
-        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-4 gap-4 p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Stage</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Total Value</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Probability</div>
-            <div className="text-sm font-medium text-slate-500 uppercase tracking-wider">Weighted</div>
-          </div>
-          {FORECAST_EXAMPLE.map((row) => (
-            <div key={row.stage} className="grid grid-cols-4 gap-4 p-4 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
-              <div className="font-medium text-slate-900 dark:text-white">{row.stage}</div>
-              <div className="text-slate-600 dark:text-slate-400">{row.value}</div>
-              <div className="text-slate-600 dark:text-slate-400">{row.probability}</div>
-              <div className="font-semibold text-emerald-600 dark:text-emerald-400">{row.weighted}</div>
+        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="min-w-[400px]">
+            <div className="grid grid-cols-4 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+              <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Stage</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Total Value</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Probability</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-wider">Weighted</div>
             </div>
-          ))}
-          <div className="grid grid-cols-4 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50">
-            <div className="col-span-3 text-right font-semibold text-slate-900 dark:text-white">
-              Total Weighted Forecast:
+            {FORECAST_EXAMPLE.map((row) => (
+              <div key={row.stage} className="grid grid-cols-4 gap-2 sm:gap-4 p-3 sm:p-4 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
+                <div className="font-medium text-sm sm:text-base text-slate-900 dark:text-white">{row.stage}</div>
+                <div className="text-sm sm:text-base text-slate-600 dark:text-slate-400">{row.value}</div>
+                <div className="text-sm sm:text-base text-slate-600 dark:text-slate-400">{row.probability}</div>
+                <div className="font-semibold text-sm sm:text-base text-emerald-600 dark:text-emerald-400">{row.weighted}</div>
+              </div>
+            ))}
+            <div className="grid grid-cols-4 gap-2 sm:gap-4 p-3 sm:p-4 bg-slate-50 dark:bg-slate-800/50">
+              <div className="col-span-3 text-right font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
+                Total Weighted Forecast:
+              </div>
+              <div className="font-bold text-base sm:text-lg text-emerald-600 dark:text-emerald-400">$118,750</div>
             </div>
-            <div className="font-bold text-lg text-emerald-600 dark:text-emerald-400">$118,750</div>
           </div>
         </div>
       </section>
