@@ -52,13 +52,14 @@ export default function ProfilePage() {
         }
 
         if (authProfile) {
+            const profileId = authProfile.id;
             // Fetch full profile data since authProfile has limited fields
             async function loadFullProfile() {
                 try {
                     const { data, error } = await supabase
                         .from('profiles')
                         .select('*')
-                        .eq('id', authProfile.id)
+                        .eq('id', profileId)
                         .single();
 
                     if (error) throw error;
