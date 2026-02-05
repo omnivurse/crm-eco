@@ -1,26 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-}
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 // PATCH /api/settings/email-domains/[id]/senders/[senderId] - Update sender address
 export async function PATCH(
@@ -28,25 +7,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; senderId: string }> }
 ) {
   try {
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const supabase = await createClient();
     const { id, senderId } = await params;
     const body = await request.json();
     const { name, isDefault } = body;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
 
     // Verify domain and sender belong to org
     const { data: sender } = await supabase
@@ -96,23 +65,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; senderId: string }> }
 ) {
   try {
-    const supabase = await createClient();
-    const { id, senderId } = await params;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+    const supabase = await createClient();
+    const { id, senderId } = await params;
 
     // Delete sender (verifying it belongs to org)
     const { error } = await supabase

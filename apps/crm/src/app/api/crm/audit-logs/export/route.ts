@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,28 +36,17 @@ function convertToCSV(logs: Record<string, unknown>[]): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { searchParams } = request.nextUrl;
-
-    // Verify authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get profile and verify permissions
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, crm_role')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; crm_role: string | null } | null };
-
-    if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+
+    const supabase = await createClient();
+    const { searchParams } = request.nextUrl;
 
     // Build query with filters
     let query = supabase

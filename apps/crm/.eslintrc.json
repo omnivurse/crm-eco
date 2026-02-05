@@ -4,7 +4,31 @@
   "rules": {
     "react/no-unescaped-entities": "off",
     "react-hooks/exhaustive-deps": "off",
-    "@next/next/no-img-element": "off"
+    "@next/next/no-img-element": "off",
+    "no-restricted-syntax": [
+      "warn",
+      {
+        "selector": "MemberExpression[object.property.name='auth'][property.name='getUser']",
+        "message": "Direct supabase.auth.getUser() calls are prohibited. Use getAuthUser() or verifyCrmAccess() from @/lib/supabase-server instead to benefit from request-scoped caching."
+      },
+      {
+        "selector": "CallExpression[callee.property.name='getUser'][callee.object.property.name='auth']",
+        "message": "Direct supabase.auth.getUser() calls are prohibited. Use getAuthUser() or verifyCrmAccess() from @/lib/supabase-server instead to benefit from request-scoped caching."
+      }
+    ]
   },
-  "ignorePatterns": ["node_modules/", ".next/", "out/"]
+  "ignorePatterns": ["node_modules/", ".next/", "out/"],
+  "overrides": [
+    {
+      "files": [
+        "src/lib/supabase-server.ts",
+        "src/lib/crm/mutations.ts",
+        "src/middleware.ts",
+        "src/lib/auth.ts"
+      ],
+      "rules": {
+        "no-restricted-syntax": "off"
+      }
+    }
+  ]
 }

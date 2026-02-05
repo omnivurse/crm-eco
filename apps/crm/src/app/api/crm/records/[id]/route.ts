@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
 import { getModuleBlueprint } from '@/lib/blueprints';
 import {
@@ -11,28 +10,6 @@ import {
 import { logPHIAccess, identifyPHIFields } from '@/lib/security';
 import type { CrmRecord } from '@/lib/crm/types';
 
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch { }
-        },
-      },
-    }
-  );
-}
-
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -40,19 +17,13 @@ export async function PATCH(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -130,7 +101,7 @@ export async function PATCH(
         trigger: 'on_update',
         previousRecord: previousRecord as CrmRecord,
         dryRun: false,
-        userId: user.id,
+        userId: profile.user_id,
         profileId: profile.id,
       }).catch(err => {
         console.error('Workflow execution error:', err);
@@ -180,19 +151,13 @@ export async function DELETE(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

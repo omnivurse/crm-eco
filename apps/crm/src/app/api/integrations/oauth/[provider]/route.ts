@@ -6,37 +6,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { OAUTH_PROVIDERS, getOAuthCredentials } from '@/lib/integrations/oauth/providers';
 import crypto from 'crypto';
 
 interface RouteParams {
   params: Promise<{ provider: string }>;
-}
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Ignore cookie errors in edge runtime
-          }
-        },
-      },
-    }
-  );
 }
 
 /**
@@ -73,26 +48,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 
   try {
-    const supabase = await createClient();
-
-    // Verify user is authenticated
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.redirect(
-        new URL('/crm-login?redirect=/crm/integrations', request.url)
-      );
-    }
-
-    // Get user profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, crm_role')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.redirect(
-        new URL('/crm/integrations?error=profile_not_found', request.url)
+        new URL('/crm-login?redirect=/crm/integrations', request.url)
       );
     }
 
@@ -102,6 +61,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         new URL('/crm/integrations?error=admin_only', request.url)
       );
     }
+
+    const supabase = await createClient();
 
     // Generate OAuth state for CSRF protection
     const state = crypto.randomUUID();

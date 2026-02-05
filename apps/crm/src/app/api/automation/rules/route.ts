@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 /**
  * GET /api/automation/rules
@@ -7,7 +7,12 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
     
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get('active') === 'true';
@@ -41,24 +46,13 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
-    const body = await request.json();
-    
-    // Get user profile
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+
+    const supabase = await createClient();
+    const body = await request.json();
     
     // Validate required fields
     if (!body.name || !body.trigger_type || !body.trigger_config || !body.actions) {

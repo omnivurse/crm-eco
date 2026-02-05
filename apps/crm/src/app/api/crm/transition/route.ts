@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { executeTransition, getModuleBlueprint, getAvailableTransitions, validateTransition } from '@/lib/blueprints';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
 
 const transitionSchema = z.object({
   recordId: z.string().uuid(),
@@ -46,9 +23,9 @@ const validateSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -59,14 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
     }
 
-    // Get user profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -84,7 +54,7 @@ export async function POST(request: NextRequest) {
     // Execute transition
     const result = await executeTransition(parsed.data, {
       profileId: profile.id,
-      userId: user.id,
+      userId: profile.user_id,
       userRole: profile.crm_role || undefined,
     });
 
@@ -114,9 +84,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -126,17 +96,6 @@ export async function GET(request: NextRequest) {
 
     if (!recordId) {
       return NextResponse.json({ error: 'recordId is required' }, { status: 400 });
-    }
-
-    // Get user profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get record

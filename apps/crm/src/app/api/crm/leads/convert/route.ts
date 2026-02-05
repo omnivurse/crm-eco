@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 // Create admin client for conversion (bypasses RLS)
 function createAdminClient() {
@@ -12,7 +11,7 @@ function createAdminClient() {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for lead conversion');
   }
   
-  return createClient(supabaseUrl, supabaseServiceKey, {
+  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   });
 }
@@ -28,46 +27,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the current user from the session
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) =>
-                cookieStore.set(name, value, options)
-              );
-            } catch {
-              // The `setAll` method was called from a Server Component.
-            }
-          },
-        },
-      }
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const supabase = await createClient();
     
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user profile to verify permissions
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
       return NextResponse.json(
         { success: false, error: 'You do not have permission to convert leads' },
         { status: 403 }
@@ -80,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Call the conversion function
     const { data, error } = await adminClient.rpc('convert_lead_to_member', {
       p_lead_record_id: recordId,
-      p_user_id: user.id,
+      p_user_id: profile.user_id,
     });
 
     if (error) {

@@ -398,6 +398,10 @@ async function advanceEnrollment(
 
 /**
  * Process all pending cadence steps (called by cron)
+ * 
+ * OPTIMIZED: Uses batch fetching to avoid N+1 queries.
+ * Previously: 2 queries per enrollment (cadence + record) = O(2n)
+ * Now: 2 batch queries + O(1) lookups = O(2)
  */
 export async function processPendingCadenceSteps(): Promise<{
   processed: number;
@@ -419,6 +423,37 @@ export async function processPendingCadenceSteps(): Promise<{
     return { processed: 0, succeeded: 0, failed: 0 };
   }
 
+  // ============================================================================
+  // BATCH FETCH: Collect unique IDs and fetch all cadences/records upfront
+  // This replaces N+1 individual queries with 2 batch queries
+  // ============================================================================
+  
+  const cadenceIds = [...new Set(enrollments.map(e => e.cadence_id))];
+  const recordIds = [...new Set(enrollments.map(e => e.record_id))];
+
+  // Batch fetch all cadences
+  const { data: cadencesData } = await supabase
+    .from('crm_cadences')
+    .select('*')
+    .in('id', cadenceIds);
+  
+  // Batch fetch all records
+  const { data: recordsData } = await supabase
+    .from('crm_records')
+    .select('*')
+    .in('id', recordIds);
+
+  // Create lookup maps for O(1) access
+  const cadenceMap = new Map(
+    (cadencesData || []).map(c => [c.id, c as CrmCadence])
+  );
+  const recordMap = new Map(
+    (recordsData || []).map(r => [r.id, r as CrmRecord])
+  );
+
+  // Track enrollments to cancel in batch
+  const enrollmentsToCancel: string[] = [];
+
   let processed = 0;
   let succeeded = 0;
   let failed = 0;
@@ -426,35 +461,21 @@ export async function processPendingCadenceSteps(): Promise<{
   for (const enrollment of enrollments) {
     const typedEnrollment = enrollment as CrmCadenceEnrollment;
 
-    // Get the cadence
-    const { data: cadence } = await supabase
-      .from('crm_cadences')
-      .select('*')
-      .eq('id', typedEnrollment.cadence_id)
-      .single();
+    // O(1) lookup from pre-fetched map
+    const cadence = cadenceMap.get(typedEnrollment.cadence_id);
 
     if (!cadence || !cadence.is_enabled) {
-      // Cadence disabled or deleted, cancel enrollment
-      await supabase
-        .from('crm_cadence_enrollments')
-        .update({ status: 'cancelled' })
-        .eq('id', typedEnrollment.id);
+      // Cadence disabled or deleted, mark for batch cancellation
+      enrollmentsToCancel.push(typedEnrollment.id);
       continue;
     }
 
-    // Get the record
-    const { data: record } = await supabase
-      .from('crm_records')
-      .select('*')
-      .eq('id', typedEnrollment.record_id)
-      .single();
+    // O(1) lookup from pre-fetched map
+    const record = recordMap.get(typedEnrollment.record_id);
 
     if (!record) {
-      // Record deleted, cancel enrollment
-      await supabase
-        .from('crm_cadence_enrollments')
-        .update({ status: 'cancelled' })
-        .eq('id', typedEnrollment.id);
+      // Record deleted, mark for batch cancellation
+      enrollmentsToCancel.push(typedEnrollment.id);
       continue;
     }
 
@@ -476,15 +497,15 @@ export async function processPendingCadenceSteps(): Promise<{
     // Process the step
     const result = await processEnrollmentStep(
       typedEnrollment,
-      cadence as CrmCadence,
-      record as CrmRecord
+      cadence,
+      record
     );
 
     processed++;
 
     if (result.success) {
       succeeded++;
-      await advanceEnrollment(typedEnrollment, cadence as CrmCadence);
+      await advanceEnrollment(typedEnrollment, cadence);
 
       await completeAutomationRun({
         runId,
@@ -507,6 +528,14 @@ export async function processPendingCadenceSteps(): Promise<{
         error: result.error,
       });
     }
+  }
+
+  // Batch cancel enrollments with missing cadences or records
+  if (enrollmentsToCancel.length > 0) {
+    await supabase
+      .from('crm_cadence_enrollments')
+      .update({ status: 'cancelled' })
+      .in('id', enrollmentsToCancel);
   }
 
   return { processed, succeeded, failed };

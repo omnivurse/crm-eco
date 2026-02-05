@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,26 +7,16 @@ export const dynamic = 'force-dynamic';
 // GET - List user's signatures
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org and profile ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile?.organization_id) {
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
+
+    const supabase = await createClient() as any;
 
     // Get signatures - user's own signatures
     const { data: signatures, error } = await supabase
@@ -51,26 +41,16 @@ export async function GET(request: NextRequest) {
 // POST - Create new signature
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org and profile ID
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile?.organization_id) {
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
+
+    const supabase = await createClient() as any;
 
     const body = await request.json();
     const {

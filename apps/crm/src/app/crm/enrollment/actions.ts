@@ -4,41 +4,48 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { computeEnrollmentWarnings, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 import type { WizardSnapshot, HouseholdMember, EnrollmentMode } from '@/components/enrollment/wizard';
+import { createClient, verifyCrmAccess } from '@/lib/supabase-server';
 
 // Helper to get untyped Supabase client due to @supabase/ssr 0.5.x type inference limitations
 async function getSupabase(): Promise<any> {
-  return await createServerSupabaseClient();
+  return await createClient();
 }
 
 /**
- * Get authenticated user and profile in a single helper.
- * Reduces auth calls from 2 to 1 per action by caching the result.
+ * Get authenticated user and profile using request-scoped cached auth.
+ * Uses verifyCrmAccess() from supabase-server which deduplicates auth calls
+ * across all actions in the same request via React's cache().
  */
 interface AuthContext {
   supabase: any;
   user: { id: string };
-  profile: { id: string; organization_id: string; role?: string };
+  profile: { id: string; organization_id: string; role?: string; crm_role?: string | null };
 }
 
 async function getAuthContext(): Promise<{ success: true; context: AuthContext } | { success: false; error: string }> {
+  // Use the cached verifyCrmAccess which deduplicates auth calls per-request
+  const auth = await verifyCrmAccess();
+  
+  if (!auth.isAuthorized || !auth.user || !auth.profile) {
+    return { success: false, error: auth.error || 'Not authenticated' };
+  }
+  
+  // Get a fresh supabase client for database operations
   const supabase = await getSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!user) {
-    return { success: false, error: 'Not authenticated' };
-  }
-  
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id, role')
-    .eq('user_id', user.id)
-    .single();
-  
-  if (!profile) {
-    return { success: false, error: 'Profile not found' };
-  }
-  
-  return { success: true, context: { supabase, user, profile } };
+  return { 
+    success: true, 
+    context: { 
+      supabase, 
+      user: auth.user, 
+      profile: {
+        id: auth.profile.id,
+        organization_id: auth.profile.organization_id,
+        role: auth.profile.crm_role || undefined,
+        crm_role: auth.profile.crm_role,
+      }
+    } 
+  };
 }
 
 // ============================================================================

@@ -627,7 +627,7 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
 // Notes Queries
 // ============================================================================
 
-export async function getNotesForRecord(recordId: string): Promise<CrmNoteWithAuthor[]> {
+export async function getNotesForRecord(recordId: string, limit = 100): Promise<CrmNoteWithAuthor[]> {
   const supabase = await createCrmClient();
   
   const { data, error } = await supabase
@@ -641,7 +641,8 @@ export async function getNotesForRecord(recordId: string): Promise<CrmNoteWithAu
       )
     `)
     .eq('record_id', recordId)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (error) throw error;
   return (data || []) as CrmNoteWithAuthor[];
@@ -651,20 +652,21 @@ export async function getNotesForRecord(recordId: string): Promise<CrmNoteWithAu
 // Tasks Queries
 // ============================================================================
 
-export async function getTasksForRecord(recordId: string): Promise<CrmTask[]> {
+export async function getTasksForRecord(recordId: string, limit = 100): Promise<CrmTask[]> {
   const supabase = await createCrmClient();
   
   const { data, error } = await supabase
     .from('crm_tasks')
     .select('*')
     .eq('record_id', recordId)
-    .order('due_at', { ascending: true, nullsFirst: false });
+    .order('due_at', { ascending: true, nullsFirst: false })
+    .limit(limit);
 
   if (error) throw error;
   return (data || []) as CrmTask[];
 }
 
-export async function getMyTasks(profileId: string, includeCompleted = false): Promise<CrmTask[]> {
+export async function getMyTasks(profileId: string, includeCompleted = false, limit = 200): Promise<CrmTask[]> {
   const supabase = await createCrmClient();
   
   let query = supabase
@@ -676,13 +678,15 @@ export async function getMyTasks(profileId: string, includeCompleted = false): P
     query = query.neq('status', 'completed');
   }
 
-  const { data, error } = await query.order('due_at', { ascending: true, nullsFirst: false });
+  const { data, error } = await query
+    .order('due_at', { ascending: true, nullsFirst: false })
+    .limit(limit);
 
   if (error) throw error;
   return (data || []) as CrmTask[];
 }
 
-export async function getUpcomingTasks(profileId: string, days = 7): Promise<CrmTask[]> {
+export async function getUpcomingTasks(profileId: string, days = 7, limit = 100): Promise<CrmTask[]> {
   const supabase = await createCrmClient();
   
   const futureDate = new Date();
@@ -694,7 +698,8 @@ export async function getUpcomingTasks(profileId: string, days = 7): Promise<Crm
     .eq('assigned_to', profileId)
     .neq('status', 'completed')
     .lte('due_at', futureDate.toISOString())
-    .order('due_at', { ascending: true });
+    .order('due_at', { ascending: true })
+    .limit(limit);
 
   if (error) throw error;
   return (data || []) as CrmTask[];
@@ -957,7 +962,7 @@ export async function getAtRiskDeals(orgId: string, limit: number = 5): Promise<
   });
 }
 
-export async function getTodaysTasks(userId: string): Promise<CrmTask[]> {
+export async function getTodaysTasks(userId: string, limit = 100): Promise<CrmTask[]> {
   const supabase = await createCrmClient();
 
   const today = new Date();
@@ -972,7 +977,8 @@ export async function getTodaysTasks(userId: string): Promise<CrmTask[]> {
     .neq('status', 'completed')
     .gte('due_at', today.toISOString())
     .lt('due_at', tomorrow.toISOString())
-    .order('due_at', { ascending: true });
+    .order('due_at', { ascending: true })
+    .limit(limit);
 
   return (data || []) as CrmTask[];
 }

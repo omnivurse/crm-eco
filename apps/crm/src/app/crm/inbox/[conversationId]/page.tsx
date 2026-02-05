@@ -360,7 +360,7 @@ export default function ConversationDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: taskTitle,
-          due_date: taskDueDate || null,
+          due_at: taskDueDate || null,
           related_to: 'conversation',
           related_id: conversationId,
           description: `Task created from inbox conversation with ${conversation?.contact_name || 'contact'}`,

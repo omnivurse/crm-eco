@@ -1,31 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile, getAuthUser } from '@/lib/supabase-server';
 import { executeWorkflow, getAutomationRunById, scheduleWorkflowRetry } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
 import type { CrmWorkflow, TriggerType } from '@/lib/automation/types';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
 
 /**
  * POST /api/automation/runs/[id]/retry
@@ -37,22 +14,22 @@ export async function POST(
 ) {
   try {
     const { id: runId } = await params;
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
+    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Get user for userId in executeWorkflow
+    const { user } = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, crm_role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const supabase = await createClient();
 
     // Get the original run
     const originalRun = await getAutomationRunById(runId);

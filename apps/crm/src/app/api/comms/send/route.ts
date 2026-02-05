@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { dispatchMessage } from '@/lib/comms';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
 
 const sendMessageSchema = z.object({
   recordId: z.string().uuid(),
@@ -42,11 +19,13 @@ const sendMessageSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+      return NextResponse.json({ error: 'Forbidden: CRM agent role required' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -56,16 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
     }
 
-    // Get user profile and verify CRM access
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Forbidden: CRM agent role required' }, { status: 403 });
-    }
+    const supabase = await createClient();
 
     // Verify record belongs to user's org
     const { data: record } = await supabase

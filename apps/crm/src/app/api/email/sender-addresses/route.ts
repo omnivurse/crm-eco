@@ -1,28 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-
-    // Check auth
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string } | null };
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+    const supabase = await createClient();
 
     // Check if user has domain restrictions
     // Note: Using type assertion since user_email_settings table is not in generated types yet
