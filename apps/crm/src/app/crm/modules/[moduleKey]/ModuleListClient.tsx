@@ -1,12 +1,19 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { ModuleShell } from '@/components/zoho/ModuleShell';
-import { RecordDrawer } from '@/components/zoho/RecordDrawer';
 import { RecordDrawerProvider, useRecordDrawer } from '@/components/zoho/RecordDrawerContext';
 import { useModuleShellOptional } from '@/components/zoho/ModuleShellContext';
 import { RecordTable } from '@/components/crm/records/RecordTable';
 import type { CrmModule, CrmField, CrmView, CrmRecord } from '@/lib/crm/types';
+
+// Lazy load RecordDrawer - only loaded when drawer is opened
+// Reduces initial bundle by ~30KB+
+const RecordDrawer = dynamic(
+  () => import('@/components/zoho/RecordDrawer').then((mod) => mod.RecordDrawer),
+  { ssr: false }
+);
 
 interface ModuleListClientProps {
   module: CrmModule;
