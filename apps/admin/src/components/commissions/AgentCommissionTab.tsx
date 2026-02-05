@@ -312,7 +312,7 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
           {currentTier && (
             <div className="mt-4 p-4 bg-slate-50 rounded-lg">
               <h4 className="font-medium mb-2">{currentTier.name} Rates</h4>
-              <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <div>
                   <p className="text-slate-500">Base Rate</p>
                   <p className="text-lg font-bold text-green-600">{currentTier.base_rate_pct}%</p>
