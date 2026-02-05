@@ -192,19 +192,14 @@ export default function NewCampaignPage() {
   };
 
   const handleSave = async (send: boolean = false) => {
+    if (!authProfile) {
+      toast.error('Not authenticated');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) throw new Error('Profile not found');
 
       // Calculate scheduled time
       let scheduledAt = null;
@@ -226,7 +221,7 @@ export default function NewCampaignPage() {
           status: send ? (scheduledAt ? 'scheduled' : 'sending') : 'draft',
           scheduled_at: scheduledAt,
           total_recipients: recipients.length,
-          created_by: profile.id,
+          created_by: authProfile.id,
         })
         .select()
         .single();

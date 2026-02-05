@@ -44,8 +44,8 @@ const COLOR_OPTIONS = [
 
 export default function NewProductPage() {
   const router = useRouter();
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [saving, setSaving] = useState(false);
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     label: '',
@@ -60,25 +60,10 @@ export default function NewProductPage() {
   });
 
   useEffect(() => {
-    async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/crm-login');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profile) {
-        setOrganizationId(profile.organization_id);
-      }
+    if (!authLoading && !authUser) {
+      router.push('/crm-login');
     }
-    loadProfile();
-  }, []);
+  }, [authLoading, authUser, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +71,7 @@ export default function NewProductPage() {
       toast.error('Product name is required');
       return;
     }
-    if (!organizationId) {
+    if (!authProfile?.organization_id) {
       toast.error('Organization not found');
       return;
     }
@@ -96,7 +81,7 @@ export default function NewProductPage() {
       const { error } = await supabase
         .from('products')
         .insert({
-          organization_id: organizationId,
+          organization_id: authProfile.organization_id,
           name: formData.name,
           label: formData.label || null,
           description: formData.description || null,

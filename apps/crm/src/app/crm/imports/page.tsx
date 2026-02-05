@@ -92,6 +92,7 @@ const IMPORT_MODULES: ImportModule[] = [
 export default function ImportsPage() {
   const searchParams = useSearchParams();
   const preselectedModule = searchParams.get('module');
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
 
   const [selectedModule, setSelectedModule] = useState(preselectedModule || '');
   const [file, setFile] = useState<File | null>(null);
@@ -101,22 +102,13 @@ export default function ImportsPage() {
   const [dragActive, setDragActive] = useState(false);
 
   const loadImportJobs = useCallback(async () => {
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-
       const { data: jobs } = await supabase
         .from('crm_import_jobs')
         .select('*')
-        .eq('org_id', profile.organization_id)
+        .eq('org_id', authProfile.organization_id)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -126,11 +118,15 @@ export default function ImportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [authProfile]);
 
   useEffect(() => {
-    loadImportJobs();
-  }, [loadImportJobs]);
+    if (!authLoading && authProfile) {
+      loadImportJobs();
+    } else if (!authLoading && !authProfile) {
+      setLoading(false);
+    }
+  }, [authLoading, authProfile, loadImportJobs]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -173,31 +169,19 @@ export default function ImportsPage() {
       return;
     }
 
+    if (!authUser || !authProfile) {
+      toast.error('Please sign in');
+      return;
+    }
+
     setUploading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Please sign in');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) {
-        toast.error('Profile not found');
-        return;
-      }
-
       // Create import job record
       const { data: job, error: jobError } = await supabase
         .from('crm_import_jobs')
         .insert({
-          org_id: profile.organization_id,
+          org_id: authProfile.organization_id,
           module_key: selectedModule,
           file_name: file.name,
           status: 'pending',
@@ -205,7 +189,7 @@ export default function ImportsPage() {
           processed_rows: 0,
           success_count: 0,
           error_count: 0,
-          created_by: user.id,
+          created_by: authUser.id,
         })
         .select()
         .single();
@@ -213,7 +197,7 @@ export default function ImportsPage() {
       if (jobError) throw jobError;
 
       // Upload file to storage
-      const filePath = `${profile.organization_id}/imports/${job.id}/${file.name}`;
+      const filePath = `${authProfile.organization_id}/imports/${job.id}/${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from('crm-attachments')
         .upload(filePath, file);
