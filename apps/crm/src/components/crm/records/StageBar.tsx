@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { supabase } from '@/lib/supabase-client';
 import { Button, Badge, cn } from '@crm-eco/ui';
 import { ChevronRight, Check, Lock, ArrowRight } from 'lucide-react';
-import { TransitionModal } from './TransitionModal';
 import type { BlueprintStage, AvailableTransition } from '@/lib/blueprints/types';
+
+// Lazy load modal - only needed when user clicks to transition
+const TransitionModal = dynamic(
+  () => import('./TransitionModal').then((mod) => mod.TransitionModal),
+  { ssr: false }
+);
 
 interface StageBarProps {
   recordId: string;
