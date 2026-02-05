@@ -81,6 +81,8 @@ export const supabase = new Proxy({} as SupabaseClient, {
     if (!client) {
       throw new Error('Failed to initialize Supabase client');
     }
-    return (client as unknown as Record<string, unknown>)[prop as string];
+    // Cast to unknown first, then to Record to satisfy TypeScript
+    const clientRecord = client as unknown as Record<string, unknown>;
+    return clientRecord[prop as string];
   },
 });
