@@ -283,6 +283,5 @@ async function sendCampaignEmail(
   //   text: campaign.body_text,
   // });
 
-  console.log(`[Campaign ${campaign.id}] Sent email to ${email}`);
   return true;
 }

@@ -164,8 +164,8 @@ export default function BillGroupsPage() {
             member_count: countMap[g.id] || 0
           })));
         }
-      } catch (err) {
-        console.log('agent_bill_groups table not available:', err);
+      } catch {
+        // Table may not exist yet
       }
     } catch (error) {
       console.error('Error loading data:', error);

@@ -31,8 +31,6 @@ router.post('/tick', async (req: AuthenticatedRequest, res) => {
           .eq('id', reminder.id);
         
         // Could trigger webhook, email, Slack notification, etc.
-        console.log(`Processed reminder ${reminder.id}:`, reminder.payload);
-        
         processed.push(reminder.id);
       } catch (error) {
         console.error(`Failed to process reminder ${reminder.id}:`, error);

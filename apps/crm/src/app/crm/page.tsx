@@ -8,6 +8,7 @@ import {
   getTodaysTasks,
   getCalendarEvents,
 } from '@/lib/crm/queries';
+import type { CalendarEvent } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
@@ -18,6 +19,7 @@ import {
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
+import type { HeroCalendarEvent, PipelineHealth, WeeklyGoalProgress } from '@/components/dashboard/DashboardHero';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import type { CrmTask } from '@/lib/crm/types';
 
@@ -81,14 +83,42 @@ async function DashboardContent() {
   const widgetTypes = layout.widgets.map((w) => w.type);
 
   // Fetch all required widget data in parallel - using cached versions for expensive queries
-  const [stats, widgetData] = await Promise.all([
+  // Always fetch calendar events for the hero section
+  const [stats, widgetData, calendarEvents] = await Promise.all([
     getCachedModuleStats(profile.organization_id),
     fetchWidgetData(profile, widgetTypes),
+    getCalendarEvents(profile.organization_id, 1), // Today's events only
   ]);
 
   const todaysTasks = (widgetData.todaysTasks as CrmTask[]) || [];
   const atRiskDeals = (widgetData.atRiskDeals as AtRiskDeal[]) || [];
   const newThisWeek = stats.reduce((sum, s) => sum + s.createdThisWeek, 0);
+  const totalDeals = stats.find((s) => s.moduleKey === 'deals')?.totalRecords || 0;
+
+  // Transform calendar events for hero display
+  const upcomingMeetings: HeroCalendarEvent[] = (calendarEvents || []).map((event: CalendarEvent) => ({
+    id: event.id,
+    title: event.title,
+    start_time: event.start_time,
+    type: event.type,
+    location: event.location,
+  }));
+
+  // Calculate pipeline health based on at-risk deals ratio
+  const pipelineHealth: PipelineHealth = {
+    percent: totalDeals > 0 
+      ? Math.max(0, Math.min(100, Math.round(100 - (atRiskDeals.length / Math.max(totalDeals, 1)) * 100)))
+      : 100,
+    status: atRiskDeals.length > 3 ? 'critical' : atRiskDeals.length > 0 ? 'warning' : 'healthy',
+    trend: 'stable',
+  };
+
+  // Weekly goal based on new records this week (target: 10 new records)
+  const weeklyGoal: WeeklyGoalProgress = {
+    current: newThisWeek,
+    target: 10,
+    label: 'Weekly Records Goal',
+  };
 
   return (
     <DashboardLayoutProvider initialLayout={layout}>
@@ -104,6 +134,9 @@ async function DashboardContent() {
           }
           newThisWeek={newThisWeek}
           atRiskCount={atRiskDeals.length}
+          upcomingMeetings={upcomingMeetings}
+          pipelineHealth={pipelineHealth}
+          weeklyGoal={weeklyGoal}
         />
 
         {/* Stats Grid - Fixed, not customizable */}

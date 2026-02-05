@@ -65,7 +65,6 @@ export async function callGeminiForRxPricing(
 
   // If no API key, return null to trigger fallback
   if (!apiKey) {
-    console.log('Gemini API key not configured, using mock fallback');
     return null;
   }
 

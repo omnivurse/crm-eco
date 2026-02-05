@@ -39,21 +39,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) throw error;
-      console.log('✅ Profile fetched successfully:', {
-        userId: userId,
-        email: data?.email,
-        role: data?.role,
-        full_name: data?.full_name,
-        timestamp: new Date().toISOString()
-      });
-
-      if (data?.role === 'super_admin') {
-        console.log('🔑 SUPER ADMIN ACCESS GRANTED:', {
-          email: data.email,
-          full_name: data.full_name,
-          message: 'User has unrestricted access to all features'
-        });
-      }
 
       setProfile(data);
       return data;
@@ -85,7 +70,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const timeUntilExpiry = expiresAt ? expiresAt - now : 0;
 
         if (timeUntilExpiry < 300) {
-          console.log('🔄 Token expiring soon, refreshing session...');
           const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
 
           if (refreshError) {
@@ -94,7 +78,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (refreshedSession) {
-            console.log('✅ Session refreshed successfully');
             setSession(refreshedSession);
             setUser(refreshedSession.user);
             return true;
@@ -105,7 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentSession.user);
         return true;
       } else {
-        console.log('⚠️ No active session found');
         setSession(null);
         setUser(null);
         setProfile(null);
@@ -124,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        console.log('🔐 Initializing authentication...');
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -134,16 +115,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (initialSession) {
-          console.log('✅ Session recovered from storage:', {
-            userId: initialSession.user.id,
-            expiresAt: new Date((initialSession.expires_at || 0) * 1000).toISOString()
-          });
-
           setSession(initialSession);
           setUser(initialSession.user);
           await fetchProfile(initialSession.user.id);
         } else {
-          console.log('ℹ️ No existing session found');
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -158,8 +133,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, currentSession) => {
       (async () => {
-        console.log('🔔 Auth state changed:', event);
-
         if (event === 'SIGNED_OUT') {
           setSession(null);
           setUser(null);
@@ -204,7 +177,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener('storage', (e) => {
       if (e.key === 'mpb-health-auth-token' && e.newValue === null) {
-        console.log('🚪 Session cleared in another tab, logging out...');
         setSession(null);
         setUser(null);
         setProfile(null);

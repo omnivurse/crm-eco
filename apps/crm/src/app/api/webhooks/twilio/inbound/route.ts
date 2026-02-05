@@ -56,8 +56,6 @@ export async function POST(request: NextRequest) {
     if (!record) {
       // No matching record found - could create a new lead here
       // For now, just acknowledge receipt
-      console.log('Inbound SMS from unknown number:', from);
-      
       return new NextResponse(
         '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
         { status: 200, headers: { 'Content-Type': 'text/xml' } }

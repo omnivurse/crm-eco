@@ -477,7 +477,6 @@ export function EnhancedTicketDetail() {
           isOpen={showEmailModal}
           onClose={() => setShowEmailModal(false)}
           onEmailSent={() => {
-            console.log('Email sent successfully');
           }}
         />
       )}
