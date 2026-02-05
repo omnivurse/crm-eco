@@ -24,6 +24,8 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 
+export const dynamic = 'force-dynamic';
+
 // Static Healthcare Visual (no animations)
 function StaticHealthcareVisual() {
   return (
