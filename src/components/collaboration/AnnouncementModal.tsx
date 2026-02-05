@@ -149,7 +149,7 @@ export function AnnouncementModal({ isOpen, onClose, onSuccess }: AnnouncementMo
               <AlertCircle className="inline mr-2" size={16} />
               Priority
             </label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {priorityOptions.map(option => (
                 <button
                   key={option.value}

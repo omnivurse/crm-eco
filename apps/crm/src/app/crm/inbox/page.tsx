@@ -49,6 +49,12 @@ import {
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@crm-eco/ui/components/sheet';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -107,6 +113,7 @@ export default function InboxPage() {
   const [channelFilter, setChannelFilter] = useState<InboxChannel | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<ConversationStatus | 'active'>('active');
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Live search with debounce (300ms for API calls)
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 300 });
@@ -368,16 +375,25 @@ export default function InboxPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)]">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Inbox</h1>
-          <p className="text-slate-500 dark:text-slate-400">
-            {stats ? `${stats.total_unread} unread, ${stats.total_open + stats.total_pending} active` : 'Unified communications inbox'}
-          </p>
-        </div>
+    <div className="h-[calc(100vh-8rem)] flex flex-col">
+      {/* Header - Responsive */}
+      <div className="flex items-center justify-between mb-4 lg:mb-6">
         <div className="flex items-center gap-3">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setShowMobileSidebar(true)}
+            className="lg:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          </button>
+          <div>
+            <h1 className="text-xl lg:text-2xl font-bold text-slate-900 dark:text-white">Inbox</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 hidden sm:block">
+              {stats ? `${stats.total_unread} unread, ${stats.total_open + stats.total_pending} active` : 'Unified communications inbox'}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 lg:gap-3">
           <button
             onClick={loadConversations}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -386,18 +402,119 @@ export default function InboxPage() {
           </button>
           <button
             onClick={() => setShowComposeModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-3 lg:px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors text-sm lg:text-base"
           >
             <Plus className="w-4 h-4" />
-            Compose
+            <span className="hidden sm:inline">Compose</span>
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex gap-6 h-[calc(100%-5rem)]">
-        {/* Filters Sidebar */}
-        <div className="w-56 flex-shrink-0 space-y-6">
+      {/* Mobile Sidebar Overlay */}
+      {showMobileSidebar && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div 
+            className="absolute inset-0 bg-black/50" 
+            onClick={() => setShowMobileSidebar(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white dark:bg-slate-900 p-4 overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Filters</h2>
+              <button
+                onClick={() => setShowMobileSidebar(false)}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            
+            {/* Status Filters */}
+            <div className="mb-6">
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Inbox</h3>
+              <div className="space-y-1">
+                {[
+                  { key: 'all' as FilterType, label: 'All Messages', icon: <InboxIcon className="w-4 h-4" />, count: conversations.length },
+                  { key: 'unread' as FilterType, label: 'Unread', icon: <Mail className="w-4 h-4" />, count: stats?.total_unread || 0, highlight: true },
+                  { key: 'assigned_to_me' as FilterType, label: 'Assigned to Me', icon: <User className="w-4 h-4" />, count: stats?.assigned_to_me || 0 },
+                  { key: 'unassigned' as FilterType, label: 'Unassigned', icon: <UserPlus className="w-4 h-4" />, count: stats?.unassigned || 0 },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => {
+                      setFilter(item.key);
+                      setShowMobileSidebar(false);
+                    }}
+                    className={cn(
+                      'w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      filter === item.key
+                        ? 'bg-teal-600 text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      {item.icon}
+                      {item.label}
+                    </div>
+                    {item.count > 0 && (
+                      <span className={cn(
+                        'text-xs px-2 py-0.5 rounded-full',
+                        filter === item.key ? 'bg-teal-500' : item.highlight ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-slate-700'
+                      )}>
+                        {item.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Channel Filter */}
+            <div>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Channels</h3>
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    setChannelFilter('all');
+                    setShowMobileSidebar(false);
+                  }}
+                  className={cn(
+                    'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    channelFilter === 'all'
+                      ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  )}
+                >
+                  <Filter className="w-4 h-4" />
+                  All Channels
+                </button>
+                {(['email', 'sms', 'whatsapp', 'phone', 'chat'] as InboxChannel[]).map((channel) => (
+                  <button
+                    key={channel}
+                    onClick={() => {
+                      setChannelFilter(channel);
+                      setShowMobileSidebar(false);
+                    }}
+                    className={cn(
+                      'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize',
+                      channelFilter === channel
+                        ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-white'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    )}
+                  >
+                    {CHANNEL_ICONS[channel]}
+                    {channel}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content - Responsive */}
+      <div className="flex-1 flex gap-4 lg:gap-6 min-h-0 overflow-hidden">
+        {/* Filters Sidebar - Desktop only */}
+        <div className="hidden lg:block w-56 flex-shrink-0 space-y-6 overflow-y-auto">
           {/* Status Filters */}
           <div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Inbox</h3>
@@ -470,8 +587,12 @@ export default function InboxPage() {
           </div>
         </div>
 
-        {/* Conversation List */}
-        <div className="w-96 flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col">
+        {/* Conversation List - Responsive */}
+        <div className={cn(
+          "flex-1 lg:flex-none lg:w-80 xl:w-96 flex-shrink-0 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
+          // On mobile, hide list when viewing detail
+          mobileView === 'detail' ? 'hidden lg:flex' : 'flex'
+        )}>
           {/* Search */}
           <div className="p-3 border-b border-slate-200 dark:border-slate-700">
             <div className="relative">
@@ -551,34 +672,45 @@ export default function InboxPage() {
           </div>
         </div>
 
-        {/* Conversation Detail */}
-        <div className="flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col">
+        {/* Conversation Detail - Responsive */}
+        <div className={cn(
+          "flex-1 glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col",
+          // On mobile, hide detail when viewing list (unless a conversation is selected)
+          mobileView === 'list' ? 'hidden lg:flex' : 'flex'
+        )}>
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-slate-700">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
-                      <AvatarFallback className={cn('text-sm font-medium', CHANNEL_COLORS[selectedConversation.channel])}>
+              <div className="p-3 lg:p-4 border-b border-slate-200 dark:border-slate-700">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+                    {/* Mobile back button */}
+                    <button
+                      onClick={handleBackToList}
+                      className="lg:hidden p-2 -ml-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                    </button>
+                    <Avatar className="w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0">
+                      <AvatarFallback className={cn('text-xs lg:text-sm font-medium', CHANNEL_COLORS[selectedConversation.channel])}>
                         {getInitials(selectedConversation.contact_name)}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-white">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-slate-900 dark:text-white truncate text-sm lg:text-base">
                         {selectedConversation.contact_name || 'Unknown Contact'}
                       </h3>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-xs lg:text-sm text-slate-500 truncate">
                         {selectedConversation.contact_email || selectedConversation.contact_phone}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 lg:gap-2 flex-shrink-0">
                     <Select
                       value={selectedConversation.status}
                       onValueChange={(value) => updateStatus(selectedConversation.id, value as ConversationStatus)}
                     >
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className="w-24 lg:w-32 text-xs lg:text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -588,7 +720,7 @@ export default function InboxPage() {
                         <SelectItem value="archived">Archived</SelectItem>
                       </SelectContent>
                     </Select>
-                    <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                    <button className="hidden sm:block p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
                       <MoreVertical className="w-5 h-5 text-slate-400" />
                     </button>
                   </div>
@@ -596,18 +728,18 @@ export default function InboxPage() {
               </div>
 
               {/* Subject & Info */}
-              <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="px-3 lg:px-4 py-2 lg:py-3 border-b border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
-                  <span className={cn('p-1.5 rounded', CHANNEL_COLORS[selectedConversation.channel])}>
+                  <span className={cn('p-1 lg:p-1.5 rounded flex-shrink-0', CHANNEL_COLORS[selectedConversation.channel])}>
                     {CHANNEL_ICONS[selectedConversation.channel]}
                   </span>
-                  <h2 className="font-medium text-slate-900 dark:text-white">
+                  <h2 className="font-medium text-slate-900 dark:text-white text-sm lg:text-base truncate">
                     {selectedConversation.subject || 'No subject'}
                   </h2>
                 </div>
-                <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                <div className="flex flex-wrap items-center gap-2 lg:gap-4 mt-1 lg:mt-2 text-xs lg:text-sm text-slate-500">
                   <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
+                    <Clock className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
                     Started {formatTime(selectedConversation.first_message_at)}
                   </span>
                   <span>{selectedConversation.message_count} messages</span>
