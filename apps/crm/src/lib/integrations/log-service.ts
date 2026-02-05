@@ -1,4 +1,4 @@
-import { createServerSupabaseClient as createClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import type {
   IntegrationLog,
   LogEventType,
@@ -61,11 +61,6 @@ export interface LogStats {
   by_event_type: Record<string, number>;
 }
 
-// Helper to get supabase client with any table access
-async function getSupabaseAny() {
-  const supabase = await createClient();
-  return supabase as any;
-}
 
 // ============================================================================
 // Service Functions
@@ -75,20 +70,16 @@ async function getSupabaseAny() {
  * Create a new log entry
  */
 export async function createLog(params: CreateLogParams): Promise<IntegrationLog> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
-  // Get org_id from profile
-  const { data: { user } } = await supabase.auth.getUser();
+  // Get org_id from profile using cached auth helpers
+  const { user, error: authError } = await getAuthUser();
   
-  if (!user) {
+  if (!user || authError) {
     throw new Error('User not authenticated');
   }
   
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single();
+  const profile = await getAuthProfile();
   
   if (!profile) {
     throw new Error('User profile not found');
@@ -137,7 +128,7 @@ export async function getLogs(
   page: number = 1,
   limit: number = 50
 ): Promise<LogsResult> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   let query = supabase
     .from('integration_logs')
@@ -200,7 +191,7 @@ export async function getLogs(
  * Get a single log by ID
  */
 export async function getLog(id: string): Promise<IntegrationLog | null> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { data, error } = await supabase
     .from('integration_logs')
@@ -225,7 +216,7 @@ export async function getLog(id: string): Promise<IntegrationLog | null> {
 export async function getLogStats(
   periodDays: number = 7
 ): Promise<LogStats> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const fromDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString();
   
@@ -273,7 +264,7 @@ export async function getRecentErrors(
   connectionId: string,
   limit: number = 10
 ): Promise<IntegrationLog[]> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const { data, error } = await supabase
     .from('integration_logs')
@@ -295,7 +286,7 @@ export async function getRecentErrors(
  * Delete old logs (cleanup)
  */
 export async function deleteOldLogs(retentionDays: number = 30): Promise<number> {
-  const supabase = await getSupabaseAny();
+  const supabase = await createClient() as any;
   
   const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
   
