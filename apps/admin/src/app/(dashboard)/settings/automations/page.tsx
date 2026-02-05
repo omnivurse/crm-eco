@@ -193,9 +193,8 @@ export default function AutomationsPage() {
         if (rulesData) {
           setRules(rulesData);
         }
-      } catch (err) {
+      } catch {
         // Table may not exist
-        console.log('automation_rules table not available:', err);
       }
 
       // Load recent rule runs
@@ -210,8 +209,8 @@ export default function AutomationsPage() {
         if (runsData) {
           setRecentRuns(runsData);
         }
-      } catch (err) {
-        console.log('automation_rule_runs table not available:', err);
+      } catch {
+        // Table may not exist
       }
     } catch (error) {
       console.error('Error loading automation data:', error);

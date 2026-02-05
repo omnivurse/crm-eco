@@ -97,8 +97,6 @@ export function TasksPage() {
         created_by_id: user.id
       };
 
-      // Removed console.log
-
       const { data, error } = await supabase
         .from('tasks')
         .insert(taskData)
@@ -108,8 +106,6 @@ export function TasksPage() {
         console.error('Supabase error:', error);
         throw error;
       }
-
-      // Removed console.log
 
       setNewTaskTitle('');
       setNewTaskDescription('');

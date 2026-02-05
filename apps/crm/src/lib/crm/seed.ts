@@ -99,8 +99,6 @@ export async function seedDefaultModules(orgId: string): Promise<{ success: bool
       return { success: true };
     }
 
-    console.log(`Seeding CRM modules for organization: ${orgId}`);
-
     // Create modules
     for (const moduleConfig of DEFAULT_MODULES) {
       // Insert module
@@ -188,7 +186,6 @@ export async function seedDefaultModules(orgId: string): Promise<{ success: bool
       }
     }
 
-    console.log(`Successfully seeded CRM modules for organization: ${orgId}`);
     return { success: true };
   } catch (error) {
     console.error('Error seeding modules:', error);

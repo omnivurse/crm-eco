@@ -98,7 +98,6 @@ export async function getRxPricingEstimate(
       return aiResult;
     }
     // Fall through to mock if AI fails
-    console.log('Gemini Rx pricing failed, falling back to mock');
   }
 
   // Fallback: Generate mock pricing options

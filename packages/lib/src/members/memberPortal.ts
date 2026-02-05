@@ -53,7 +53,6 @@ export async function getMemberForUser(
 
   if (memberError || !member) {
     // Member not found - this might be a staff user without a member record
-    console.log('No member record found for profile:', profile.email);
     return null;
   }
 

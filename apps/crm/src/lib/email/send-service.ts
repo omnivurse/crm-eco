@@ -417,8 +417,6 @@ async function simulateSend(to: string[], subject: string): Promise<SendEmailRes
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 100));
   
-  console.log(`[SIMULATED] Sending email to ${to.join(', ')}: ${subject}`);
-  
   return {
     success: true,
     message_id: `sim_${Date.now()}`,

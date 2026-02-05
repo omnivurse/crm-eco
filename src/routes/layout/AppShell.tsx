@@ -41,14 +41,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const isDeskMode = location.pathname.startsWith('/desk');
 
-  console.log('AppShell Debug:', {
-    profile,
-    role: profile?.role,
-    isAdmin,
-    isStaff,
-    isDeskMode
-  });
-
   const consoleNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, show: true },
     { name: 'My Work', href: '/desk', icon: Briefcase, show: isStaff },
@@ -72,12 +64,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   ];
 
   const navigation = isDeskMode ? deskNavigation : consoleNavigation;
-
-  console.log('Navigation items:', {
-    total: navigation.length,
-    filtered: navigation.filter(item => item.show).length,
-    items: navigation.map(item => ({ name: item.name, show: item.show }))
-  });
 
   const adminNavigation = [
     { name: 'Admin', href: '/admin', icon: Settings },

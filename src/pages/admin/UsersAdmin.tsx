@@ -153,13 +153,6 @@ export default function UsersAdmin() {
         return;
       }
 
-      console.log('Creating user with payload:', {
-        email: newUser.email,
-        full_name: newUser.full_name,
-        role: newUser.role,
-        hasPassword: !!newUser.password,
-      });
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-create-user`,
         {
@@ -172,10 +165,7 @@ export default function UsersAdmin() {
         }
       );
 
-      // Removed console.log
-
       const responseData = await response.text();
-      // Removed console.log
 
       if (!response.ok) {
         let errorMessage = 'Failed to create user';
@@ -196,7 +186,6 @@ export default function UsersAdmin() {
         result = { success: true };
       }
 
-      // Removed console.log
       showToast(`User created successfully! ${result.invite_url ? 'Invite link generated.' : ''}`, 'success');
 
       setShowCreateModal(false);

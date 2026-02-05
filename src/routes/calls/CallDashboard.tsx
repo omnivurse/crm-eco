@@ -136,7 +136,6 @@ export default function CallDashboard() {
           table: 'call_logs',
         },
         (payload) => {
-          console.log('Call log change:', payload);
           loadDashboardData();
         }
       )
@@ -153,7 +152,6 @@ export default function CallDashboard() {
           table: 'call_queue',
         },
         (payload) => {
-          console.log('Queue change:', payload);
           loadDashboardData();
         }
       )
@@ -179,7 +177,6 @@ export default function CallDashboard() {
     const audio = new Audio('/sounds/ringtone.mp3');
     audio.loop = true;
     audio.play().catch(() => {
-      console.log('Could not play ringtone');
     });
   }
 

@@ -158,9 +158,8 @@ export default function AgentAssignmentPage() {
         if (rulesData) {
           setRules(rulesData);
         }
-      } catch (err) {
+      } catch {
         // Table may not exist
-        console.log('crm_assignment_rules table not available:', err);
       }
     } catch (error) {
       console.error('Error loading data:', error);

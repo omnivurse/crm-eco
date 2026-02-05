@@ -138,7 +138,6 @@ export default function SecuritySettingsPage() {
         }
       } catch {
         // Table may not exist yet
-        console.log('crm_roles table not available');
       }
     } catch (error) {
       console.error('Error loading security data:', error);
