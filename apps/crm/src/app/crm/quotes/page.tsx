@@ -210,32 +210,26 @@ function StatCard({
 
 export default function QuotesPage() {
   const router = useRouter();
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Live search with debounce
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadQuotes();
-  }, []);
+    if (authProfile) {
+      loadQuotes();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [authProfile, authLoading]);
 
   async function loadQuotes() {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrganizationId(profile.organization_id);
-
       const { data, error } = await supabase
         .from('quotes')
         .select(`
@@ -251,7 +245,7 @@ export default function QuotesPage() {
           created_at,
           contact:crm_records!quotes_contact_id_fkey(id, title)
         `)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -283,18 +277,18 @@ export default function QuotesPage() {
   }
 
   async function handleDuplicateQuote(quote: Quote) {
-    if (!organizationId) return;
+    if (!authProfile?.organization_id) return;
 
     try {
       // Get next quote number
       const { data: nextNumberData } = await supabase.rpc('generate_quote_number', {
-        org_id: organizationId,
+        org_id: authProfile.organization_id,
       });
 
       const { error } = await supabase
         .from('quotes')
         .insert({
-          organization_id: organizationId,
+          organization_id: authProfile.organization_id,
           quote_number: nextNumberData || `Q-${Date.now()}`,
           title: `${quote.title || 'Quote'} (Copy)`,
           status: 'draft',

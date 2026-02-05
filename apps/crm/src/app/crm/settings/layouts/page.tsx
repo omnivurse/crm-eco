@@ -57,6 +57,7 @@ interface LayoutWithModule extends CrmLayout {
 }
 
 export default function LayoutsPage() {
+  const { profile: authProfile } = useClientAuth();
   const router = useRouter();
 
   const [layouts, setLayouts] = useState<LayoutWithModule[]>([]);
@@ -83,26 +84,19 @@ export default function LayoutsPage() {
   const [newSectionLabel, setNewSectionLabel] = useState('');
 
   const fetchData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id, crm_role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile || profile.crm_role !== 'crm_admin') {
+      if (authProfile.crm_role !== 'crm_admin') {
         router.push('/crm/settings?error=admin_only');
         return;
       }
 
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       const [modulesRes, layoutsRes] = await Promise.all([
-        supabase.from('crm_modules').select('*').eq('org_id', profile.organization_id).eq('is_enabled', true).order('display_order'),
-        supabase.from('crm_layouts').select('*').eq('org_id', profile.organization_id).order('name'),
+        supabase.from('crm_modules').select('*').eq('org_id', authProfile.organization_id).eq('is_enabled', true).order('display_order'),
+        supabase.from('crm_layouts').select('*').eq('org_id', authProfile.organization_id).order('name'),
       ]);
 
       setModules((modulesRes.data || []) as CrmModule[]);
@@ -119,7 +113,7 @@ export default function LayoutsPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, router]);
+  }, [authProfile, router]);
 
   useEffect(() => {
     fetchData();

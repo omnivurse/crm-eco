@@ -233,32 +233,26 @@ function StatCard({
 
 export default function InvoicesPage() {
   const router = useRouter();
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Live search with debounce
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadInvoices();
-  }, []);
+    if (!authLoading && authProfile) {
+      loadInvoices();
+    } else if (!authLoading && !authProfile) {
+      setLoading(false);
+    }
+  }, [authLoading, authProfile]);
 
   async function loadInvoices() {
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrganizationId(profile.organization_id);
-
       const { data, error } = await supabase
         .from('invoices')
         .select(`
@@ -276,7 +270,7 @@ export default function InvoicesPage() {
           created_at,
           contact:crm_records!invoices_contact_id_fkey(id, title)
         `)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -308,17 +302,17 @@ export default function InvoicesPage() {
   }
 
   async function handleDuplicateInvoice(invoice: Invoice) {
-    if (!organizationId) return;
+    if (!authProfile) return;
 
     try {
       const { data: nextNumberData } = await supabase.rpc('generate_invoice_number', {
-        org_id: organizationId,
+        org_id: authProfile.organization_id,
       });
 
       const { error } = await supabase
         .from('invoices')
         .insert({
-          organization_id: organizationId,
+          organization_id: authProfile.organization_id,
           invoice_number: nextNumberData || `INV-${Date.now()}`,
           title: `${invoice.title || 'Invoice'} (Copy)`,
           status: 'draft',

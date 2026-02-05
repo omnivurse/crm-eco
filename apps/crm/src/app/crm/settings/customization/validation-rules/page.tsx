@@ -125,6 +125,7 @@ const defaultFormState: RuleFormState = {
 };
 
 export default function ValidationRulesSettingsPage() {
+  const { profile: authProfile } = useClientAuth();
   const [rules, setRules] = useState<ValidationRule[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [fields, setFields] = useState<Record<string, Field[]>>({});
@@ -140,21 +141,13 @@ export default function ValidationRulesSettingsPage() {
   // Load data
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authProfile) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       const [rulesRes, modulesRes] = await Promise.all([
-        supabase.from('crm_validation_rules').select('*').eq('org_id', profile.organization_id).order('priority'),
-        supabase.from('crm_modules').select('id, key, name').eq('org_id', profile.organization_id).eq('is_enabled', true),
+        supabase.from('crm_validation_rules').select('*').eq('org_id', authProfile.organization_id).order('priority'),
+        supabase.from('crm_modules').select('id, key, name').eq('org_id', authProfile.organization_id).eq('is_enabled', true),
       ]);
 
       setRules((rulesRes.data || []) as ValidationRule[]);
@@ -175,7 +168,7 @@ export default function ValidationRulesSettingsPage() {
     }
 
     loadData();
-  }, [supabase]);
+  }, [authProfile]);
 
   // Build config from form state
   const buildConfig = (): Record<string, unknown> => {

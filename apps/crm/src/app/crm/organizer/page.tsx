@@ -49,6 +49,7 @@ interface Note {
 }
 
 export default function OrganizerPage() {
+    const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
     const [loading, setLoading] = useState(true);
     const [userName, setUserName] = useState('');
     const [stats, setStats] = useState({ tasksDue: 0, overdue: 0, newLeads: 0, dealsAtRisk: 0 });
@@ -67,102 +68,92 @@ export default function OrganizerPage() {
     // Load data
     useEffect(() => {
         async function loadData() {
-            try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
+            if (!authProfile || !authUser) return;
 
-                // Get profile
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('full_name, organization_id')
-                    .eq('user_id', user.id)
+            try {
+                setUserName(authProfile.full_name?.split(' ')[0] || 'there');
+
+                // Get tasks due today
+                const today = new Date().toISOString().split('T')[0];
+                const { data: todayTasks, count: tasksDueCount } = await supabase
+                    .from('crm_tasks')
+                    .select('*', { count: 'exact' })
+                    .eq('org_id', authProfile.organization_id)
+                    .gte('due_at', today)
+                    .lte('due_at', today + 'T23:59:59')
+                    .neq('status', 'completed')
+                    .limit(5);
+
+                // Get overdue tasks
+                const { count: overdueCount } = await supabase
+                    .from('crm_tasks')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('org_id', authProfile.organization_id)
+                    .lt('due_at', today)
+                    .neq('status', 'completed');
+
+                // Get new leads (last 7 days)
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+
+                // First get leads module ID
+                const { data: leadsModule } = await supabase
+                    .from('crm_modules')
+                    .select('id')
+                    .eq('org_id', authProfile.organization_id)
+                    .eq('key', 'leads')
                     .single();
 
-                if (profile) {
-                    setUserName(profile.full_name?.split(' ')[0] || 'there');
-
-                    // Get tasks due today
-                    const today = new Date().toISOString().split('T')[0];
-                    const { data: todayTasks, count: tasksDueCount } = await supabase
-                        .from('crm_tasks')
-                        .select('*', { count: 'exact' })
-                        .eq('org_id', profile.organization_id)
-                        .gte('due_at', today)
-                        .lte('due_at', today + 'T23:59:59')
-                        .neq('status', 'completed')
-                        .limit(5);
-
-                    // Get overdue tasks
-                    const { count: overdueCount } = await supabase
-                        .from('crm_tasks')
+                let newLeadsCount = 0;
+                if (leadsModule) {
+                    const { count } = await supabase
+                        .from('crm_records')
                         .select('*', { count: 'exact', head: true })
-                        .eq('org_id', profile.organization_id)
-                        .lt('due_at', today)
-                        .neq('status', 'completed');
-
-                    // Get new leads (last 7 days)
-                    const weekAgo = new Date();
-                    weekAgo.setDate(weekAgo.getDate() - 7);
-
-                    // First get leads module ID
-                    const { data: leadsModule } = await supabase
-                        .from('crm_modules')
-                        .select('id')
-                        .eq('org_id', profile.organization_id)
-                        .eq('key', 'leads')
-                        .single();
-
-                    let newLeadsCount = 0;
-                    if (leadsModule) {
-                        const { count } = await supabase
-                            .from('crm_records')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('module_id', leadsModule.id)
-                            .gte('created_at', weekAgo.toISOString());
-                        newLeadsCount = count || 0;
-                    }
-
-                    // Get deals at risk (stale deals)
-                    const { data: dealsModule } = await supabase
-                        .from('crm_modules')
-                        .select('id')
-                        .eq('org_id', profile.organization_id)
-                        .eq('key', 'deals')
-                        .single();
-
-                    let dealsAtRiskCount = 0;
-                    if (dealsModule) {
-                        const { count } = await supabase
-                            .from('crm_records')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('module_id', dealsModule.id)
-                            .lt('updated_at', weekAgo.toISOString());
-                        dealsAtRiskCount = count || 0;
-                    }
-
-                    setStats({
-                        tasksDue: tasksDueCount || 0,
-                        overdue: overdueCount || 0,
-                        newLeads: newLeadsCount,
-                        dealsAtRisk: dealsAtRiskCount,
-                    });
-
-                    setTasks(todayTasks || []);
-
-                    // Get recent notes
-                    const { data: recentNotes } = await supabase
-                        .from('notes')
-                        .select('id, title, content, created_at')
-                        .eq('user_id', user.id)
-                        .order('created_at', { ascending: false })
-                        .limit(5);
-
-                    setNotes(recentNotes || []);
-
-                    // Get scratchpad
-                    const saved = localStorage.getItem('crm-scratchpad');
-                    if (saved) setScratchpad(saved);
+                        .eq('module_id', leadsModule.id)
+                        .gte('created_at', weekAgo.toISOString());
+                    newLeadsCount = count || 0;
                 }
+
+                // Get deals at risk (stale deals)
+                const { data: dealsModule } = await supabase
+                    .from('crm_modules')
+                    .select('id')
+                    .eq('org_id', authProfile.organization_id)
+                    .eq('key', 'deals')
+                    .single();
+
+                let dealsAtRiskCount = 0;
+                if (dealsModule) {
+                    const { count } = await supabase
+                        .from('crm_records')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('module_id', dealsModule.id)
+                        .lt('updated_at', weekAgo.toISOString());
+                    dealsAtRiskCount = count || 0;
+                }
+
+                setStats({
+                    tasksDue: tasksDueCount || 0,
+                    overdue: overdueCount || 0,
+                    newLeads: newLeadsCount,
+                    dealsAtRisk: dealsAtRiskCount,
+                });
+
+                setTasks(todayTasks || []);
+
+                // Get recent notes
+                const { data: recentNotes } = await supabase
+                    .from('notes')
+                    .select('id, title, content, created_at')
+                    .eq('user_id', authUser.id)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                setNotes(recentNotes || []);
+
+                // Get scratchpad
+                const saved = localStorage.getItem('crm-scratchpad');
+                if (saved) setScratchpad(saved);
             } catch (error) {
                 console.error('Error loading organizer data:', error);
                 toast.error('Failed to load organizer data');
@@ -171,8 +162,12 @@ export default function OrganizerPage() {
             }
         }
 
-        loadData();
-    }, [supabase]);
+        if (!authLoading && authProfile) {
+            loadData();
+        } else if (!authLoading && !authProfile) {
+            setLoading(false);
+        }
+    }, [authLoading, authUser, authProfile]);
 
     // Auto-save scratchpad
     useEffect(() => {
@@ -184,15 +179,17 @@ export default function OrganizerPage() {
 
     const saveNote = async () => {
         if (!scratchpad.trim()) return;
+        if (!authUser) {
+            toast.error('Not authenticated');
+            return;
+        }
+
         setSavingNote(true);
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('Not authenticated');
-
             const { data, error } = await supabase
                 .from('notes')
                 .insert({
-                    user_id: user.id,
+                    user_id: authUser.id,
                     title: 'Quick Note',
                     content: scratchpad,
                 })

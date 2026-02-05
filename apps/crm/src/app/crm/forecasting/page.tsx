@@ -236,6 +236,7 @@ function StageBreakdownCard({ stages }: { stages: StageBreakdown[] }) {
 // ============================================================================
 
 export default function ForecastingPage() {
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [deals, setDeals] = useState<DealData[]>([]);
   const [forecastData, setForecastData] = useState<ForecastData[]>([]);
@@ -249,26 +250,17 @@ export default function ForecastingPage() {
 
   useEffect(() => {
     loadForecastData();
-  }, []);
+  }, [authProfile]);
 
   async function loadForecastData() {
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-
       // Get deals module
       const { data: dealsModule } = await supabase
         .from('crm_modules')
         .select('id')
-        .eq('org_id', profile.organization_id)
+        .eq('org_id', authProfile.organization_id)
         .eq('key', 'deals')
         .single();
 

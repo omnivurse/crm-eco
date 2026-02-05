@@ -43,6 +43,7 @@ import type { CrmMessageProvider, CrmMessageTemplate } from '@/lib/comms/types';
 import { generatePreview } from '@/lib/comms/mergeFields';
 
 export default function CommsSettingsPage() {
+  const { profile: authProfile } = useClientAuth();
   const [providers, setProviders] = useState<CrmMessageProvider[]>([]);
   const [templates, setTemplates] = useState<CrmMessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,21 +77,13 @@ export default function CommsSettingsPage() {
   // Load data
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authProfile) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setOrgId(profile.organization_id);
+      setOrgId(authProfile.organization_id);
 
       const [providersRes, templatesRes] = await Promise.all([
-        supabase.from('crm_message_providers').select('*').eq('org_id', profile.organization_id),
-        supabase.from('crm_message_templates').select('*').eq('org_id', profile.organization_id).order('name'),
+        supabase.from('crm_message_providers').select('*').eq('org_id', authProfile.organization_id),
+        supabase.from('crm_message_templates').select('*').eq('org_id', authProfile.organization_id).order('name'),
       ]);
 
       setProviders((providersRes.data || []) as CrmMessageProvider[]);
@@ -99,7 +92,7 @@ export default function CommsSettingsPage() {
     }
 
     loadData();
-  }, [supabase]);
+  }, [authProfile]);
 
   // Provider CRUD
   const handleSaveProvider = async () => {

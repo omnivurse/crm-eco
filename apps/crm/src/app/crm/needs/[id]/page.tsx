@@ -109,6 +109,7 @@ export default function NeedDetailPage() {
   const router = useRouter();
   const params = useParams();
   const needId = params.id as string;
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
 
   const [need, setNeed] = useState<NeedRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,35 +119,23 @@ export default function NeedDetailPage() {
   const [activeEstimate, setActiveEstimate] = useState<PricingEstimate | null>(null);
 
   const fetchNeed = useCallback(async () => {
+    if (!authProfile) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push('/crm-login');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-
       // For demo, we'll use a mock need if none exists
       // In production, this would be a real database query
       const { data: needData, error } = await supabase
         .from('crm_records')
         .select('*')
         .eq('id', needId)
-        .eq('org_id', profile.organization_id)
+        .eq('org_id', authProfile.organization_id)
         .single();
 
       if (error || !needData) {
         // Demo data for showcase
         setNeed({
           id: needId,
-          org_id: profile.organization_id,
+          org_id: authProfile.organization_id,
           title: 'Emergency Room Visit',
           status: 'in_review',
           data: {
@@ -182,11 +171,19 @@ export default function NeedDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, needId, router]);
+  }, [authProfile, needId]);
 
   useEffect(() => {
-    fetchNeed();
-  }, [fetchNeed]);
+    if (!authLoading && !authUser) {
+      router.push('/crm-login');
+      return;
+    }
+    if (!authLoading && authProfile) {
+      fetchNeed();
+    } else if (!authLoading && !authProfile) {
+      setLoading(false);
+    }
+  }, [authLoading, authUser, authProfile, fetchNeed, router]);
 
   const handleSave = async () => {
     if (!need) return;

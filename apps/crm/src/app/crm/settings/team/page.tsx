@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/shared';
 import {
@@ -124,6 +124,7 @@ function canManageRole(userRole: UserRole, targetRole: UserRole): boolean {
 }
 
 export default function TeamManagementPage() {
+  const { profile: authProfile } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<TeamMember | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -135,30 +136,23 @@ export default function TeamManagementPage() {
   const [inviteRole, setInviteRole] = useState<InvitableRole>('staff');
   const [inviting, setInviting] = useState(false);
 
-  useEffect(() => {
-    loadTeamData();
-  }, []);
-
-  async function loadTeamData() {
+  const loadTeamData = useCallback(async () => {
+    if (!authProfile) return;
+    
     try {
       setLoading(true);
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Get current user's profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) return;
-      setCurrentUser(profile as TeamMember);
+      // Use authProfile data to set current user info
+      setCurrentUser({
+        id: authProfile.id,
+        user_id: authProfile.user_id,
+        full_name: authProfile.full_name || '',
+        role: (authProfile.crm_role || 'staff') as UserRole,
+      } as TeamMember);
 
       // Check if user has permission
-      if (!profile.role || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
+      const userRole = authProfile.crm_role;
+      if (!userRole || !['owner', 'super_admin', 'admin'].includes(userRole)) {
         toast.error('You do not have permission to access this page');
         return;
       }
@@ -167,7 +161,7 @@ export default function TeamManagementPage() {
       const { data: members } = await supabase
         .from('profiles')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .order('role')
         .order('full_name');
 
@@ -180,7 +174,7 @@ export default function TeamManagementPage() {
           *,
           inviter:profiles!team_invitations_invited_by_fkey(full_name)
         `)
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .eq('status', 'pending')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
@@ -195,7 +189,11 @@ export default function TeamManagementPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [authProfile]);
+
+  useEffect(() => {
+    loadTeamData();
+  }, [loadTeamData]);
 
   async function handleInvite() {
     if (!inviteEmail || !inviteRole) {

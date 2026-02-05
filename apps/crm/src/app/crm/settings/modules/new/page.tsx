@@ -31,6 +31,7 @@ const iconOptions = [
 ];
 
 export default function NewModulePage() {
+  const { profile: authProfile } = useClientAuth();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -77,38 +78,25 @@ export default function NewModulePage() {
       return;
     }
 
+    if (!authProfile) {
+      toast.error('Not authenticated');
+      router.push('/crm-login');
+      return;
+    }
+
+    if (authProfile.crm_role !== 'crm_admin') {
+      toast.error('Only CRM admins can create modules');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      // Get current user's org_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Not authenticated');
-        router.push('/crm-login');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id, crm_role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) {
-        toast.error('Profile not found');
-        return;
-      }
-
-      if (profile.crm_role !== 'crm_admin') {
-        toast.error('Only CRM admins can create modules');
-        return;
-      }
-
       const response = await fetch('/api/crm/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          org_id: profile.organization_id,
+          org_id: authProfile.organization_id,
           key: formData.key,
           name: formData.name,
           name_plural: formData.name_plural || formData.name + 's',

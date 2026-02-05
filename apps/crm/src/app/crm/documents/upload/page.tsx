@@ -65,6 +65,7 @@ const ALLOWED_TYPES = [
 
 export default function DocumentUploadPage() {
   const router = useRouter();
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [category, setCategory] = useState('other');
   const [description, setDescription] = useState('');
@@ -146,26 +147,14 @@ export default function DocumentUploadPage() {
       return;
     }
 
+    if (!authProfile || !authUser) {
+      toast.error('Please sign in to upload files');
+      return;
+    }
+
     setUploading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Please sign in to upload files');
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) {
-        toast.error('Profile not found');
-        return;
-      }
-
       for (let i = 0; i < files.length; i++) {
         const uploadFile = files[i];
         if (uploadFile.status !== 'pending' || uploadFile.error) continue;
@@ -178,7 +167,7 @@ export default function DocumentUploadPage() {
 
         try {
           const fileExt = uploadFile.file.name.split('.').pop();
-          const fileName = `${profile.organization_id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const fileName = `${authProfile.organization_id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
           // Upload to Supabase Storage
           const { error: uploadError } = await supabase.storage
@@ -193,7 +182,7 @@ export default function DocumentUploadPage() {
 
           // Create attachment record
           const { error: dbError } = await supabase.from('crm_attachments').insert({
-            org_id: profile.organization_id,
+            org_id: authProfile.organization_id,
             file_name: uploadFile.file.name,
             file_path: fileName,
             file_size: uploadFile.file.size,
@@ -201,7 +190,7 @@ export default function DocumentUploadPage() {
             storage_bucket: 'crm-attachments',
             description: description || null,
             meta: { category },
-            created_by: user.id,
+            created_by: authUser.id,
           });
 
           if (dbError) throw dbError;
