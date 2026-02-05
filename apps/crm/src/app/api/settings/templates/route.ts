@@ -1,49 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-}
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 
 // GET /api/settings/templates - List templates
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const searchParams = request.nextUrl.searchParams;
-    const channel = searchParams.get('channel');
-    const category = searchParams.get('category');
-
-    const { data: { user } } = await supabase.auth.getUser();
+    // Use cached auth to prevent concurrent token refresh conflicts
+    const { user } = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
+
+    const supabase = await createClient();
+    const searchParams = request.nextUrl.searchParams;
+    const channel = searchParams.get('channel');
+    const category = searchParams.get('category');
 
     // Build query
     let query = supabase
@@ -76,7 +51,6 @@ export async function GET(request: NextRequest) {
 // POST /api/settings/templates - Create template
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
     const body = await request.json();
     const { name, subject, body: templateBody, channel, category, moduleId } = body;
 
@@ -94,20 +68,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Subject is required for email templates' }, { status: 400 });
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Use cached auth to prevent concurrent token refresh conflicts
+    const { user } = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, id')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
+
+    const supabase = await createClient();
 
     // Create template
     const { data: template, error } = await supabase

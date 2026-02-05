@@ -190,22 +190,44 @@ export default function InboxPage() {
 
       setConversations(data || []);
 
-      // Load stats
-      const { data: allConvos } = await supabase
-        .from('inbox_conversations')
-        .select('status, unread_count, assigned_to')
-        .eq('org_id', profile.organization_id)
-        .neq('status', 'archived');
+      // Load stats using count queries (optimized - avoids fetching all records)
+      const [openCount, pendingCount, unreadCount, assignedCount, unassignedCount] = await Promise.all([
+        supabase
+          .from('inbox_conversations')
+          .select('*', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('status', 'open'),
+        supabase
+          .from('inbox_conversations')
+          .select('*', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('status', 'pending'),
+        supabase
+          .from('inbox_conversations')
+          .select('*', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .in('status', ['open', 'pending'])
+          .gt('unread_count', 0),
+        supabase
+          .from('inbox_conversations')
+          .select('*', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('assigned_to', profile.id),
+        supabase
+          .from('inbox_conversations')
+          .select('*', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .in('status', ['open', 'pending'])
+          .is('assigned_to', null),
+      ]);
 
-      if (allConvos) {
-        setStats({
-          total_open: allConvos.filter(c => c.status === 'open').length,
-          total_pending: allConvos.filter(c => c.status === 'pending').length,
-          total_unread: allConvos.filter(c => c.unread_count > 0).length,
-          assigned_to_me: allConvos.filter(c => c.assigned_to === profile.id).length,
-          unassigned: allConvos.filter(c => !c.assigned_to && ['open', 'pending'].includes(c.status)).length,
-        });
-      }
+      setStats({
+        total_open: openCount.count || 0,
+        total_pending: pendingCount.count || 0,
+        total_unread: unreadCount.count || 0,
+        assigned_to_me: assignedCount.count || 0,
+        unassigned: unassignedCount.count || 0,
+      });
     } catch (error) {
       console.error('Failed to load conversations:', error);
     } finally {

@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { createClient } from '@crm-eco/lib/supabase/client';
 import { SessionLock } from '@/components/auth/SessionLock';
 
 // Session timeout: 30 minutes of inactivity
@@ -48,7 +47,6 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
     const pathname = usePathname();
 
     const [isLocked, setIsLocked] = useState(false);
-    const [isMFARequired, setIsMFARequired] = useState(false);
     const [lastActivity, setLastActivity] = useState(Date.now());
     const [timeUntilTimeout, setTimeUntilTimeout] = useState<number | null>(null);
     const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
@@ -173,35 +171,9 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
         };
     }, [isPublicPage, isLocked, updateActivity]);
 
-    // Check MFA status on mount
-    useEffect(() => {
-        if (isPublicPage) return;
-
-        const checkMFA = async () => {
-            try {
-                const supabase = createClient();
-                const { data: factors } = await supabase.auth.mfa.listFactors();
-
-                // If MFA is enrolled, check if verified
-                if (factors?.totp && factors.totp.length > 0) {
-                    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-                    // If current AAL is less than required, MFA is needed
-                    if (aal?.currentLevel === 'aal1' && aal?.nextLevel === 'aal2') {
-                        setIsMFARequired(true);
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to check MFA status:', error);
-            }
-        };
-
-        checkMFA();
-    }, [isPublicPage]);
-
     const value: SecurityContextType = {
         isLocked,
-        isMFARequired,
+        isMFARequired: false,
         timeUntilTimeout,
         showTimeoutWarning,
         extendSession,

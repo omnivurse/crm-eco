@@ -1,31 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
 
 /**
  * GET /api/crm/records
@@ -34,9 +11,9 @@ async function createClient() {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const profile = await getAuthProfile();
 
-    if (!user) {
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -50,28 +27,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'module_key is required' }, { status: 400 });
     }
 
-    // Fetch profile and module in parallel (both depend only on user.id/moduleKey)
-    const [profileResult, moduleResult] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, organization_id, crm_role')
-        .eq('user_id', user.id)
-        .single(),
-      // Note: We fetch module by key without org_id filter first,
-      // then validate org_id after profile is available
-      supabase
-        .from('crm_modules')
-        .select('id, org_id')
-        .eq('key', moduleKey)
-        .single(),
-    ]);
-
-    const { data: profile } = profileResult;
-    const { data: module, error: moduleError } = moduleResult;
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+    // Fetch module by key
+    const { data: module, error: moduleError } = await supabase
+      .from('crm_modules')
+      .select('id, org_id')
+      .eq('key', moduleKey)
+      .single();
 
     // Validate module belongs to user's organization
     if (moduleError || !module || module.org_id !== profile.organization_id) {
@@ -130,33 +91,21 @@ const createRecordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
+    const { user } = await getAuthUser();
+    const profile = await getAuthProfile();
 
-    // Parse body and get auth in parallel
-    const [body, authResult] = await Promise.all([
-      request.json(),
-      supabase.auth.getUser(),
-    ]);
-
-    const { data: { user } } = authResult;
-
-    if (!user) {
+    if (!user || !profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const body = await request.json();
     const parsed = createRecordSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
     }
 
-    // Fetch profile (needed for role check and owner_id fallback)
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
