@@ -13,6 +13,7 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Check, X, Pencil, Loader2 } from 'lucide-react';
 import type { CrmField } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 interface InlineFieldProps {
   field: CrmField;
@@ -114,7 +115,7 @@ export function InlineField({
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
-            {field.options.map((option) => (
+            {getFieldOptions(field.options).map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>

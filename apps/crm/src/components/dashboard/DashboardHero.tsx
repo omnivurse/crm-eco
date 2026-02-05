@@ -99,7 +99,7 @@ function BentoCell({
         hover:bg-white/[0.10] hover:border-white/20
         transition-all duration-300 ease-out
         group
-        animate-[fadeSlideUp_0.5s_ease-out_forwards]
+        animate-fadeSlideUp
         opacity-0
         ${spanClasses[span]}
         ${className}
@@ -155,12 +155,15 @@ function QuickActionButton({
 /**
  * MeetingItem - Single meeting preview
  */
-function MeetingItem({ event }: { event: HeroCalendarEvent }) {
-  const time = new Date(event.start_time).toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true,
-  });
+function MeetingItem({ event, mounted }: { event: HeroCalendarEvent; mounted: boolean }) {
+  // Format time only on client to avoid hydration mismatch
+  const time = mounted
+    ? new Date(event.start_time).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      })
+    : '';
 
   const TypeIcon = event.type === 'call' ? Phone : event.type === 'meeting' ? Video : Calendar;
 
@@ -262,7 +265,7 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
         />
         {/* Animated shine effect */}
         <div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_ease-in-out_infinite]"
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"
           style={{ animationDelay: '1s' }}
         />
       </div>
@@ -403,7 +406,7 @@ export function DashboardHero({
       <div className="relative z-10">
         {/* Top Row: Header */}
         <div className="flex items-start justify-between mb-4">
-          <div className="animate-[fadeSlideUp_0.4s_ease-out_forwards]">
+          <div className="animate-fadeSlideUp">
             <div className="flex items-center gap-3 mb-3">
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/15 transition-colors cursor-default">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -438,7 +441,7 @@ export function DashboardHero({
 
         {/* AI Insight Banner */}
         <div 
-          className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 hover:border-[#E9B61F]/40 transition-all duration-300 cursor-pointer group animate-[fadeSlideUp_0.4s_ease-out_forwards] opacity-0"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 hover:border-[#E9B61F]/40 transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
           style={{ animationDelay: '50ms' }}
         >
           <div className="p-1.5 rounded-lg bg-[#E9B61F]/20 group-hover:bg-[#E9B61F]/30 transition-colors">
@@ -505,7 +508,7 @@ export function DashboardHero({
             {todaysMeetings.length > 0 ? (
               <div className="space-y-0.5">
                 {todaysMeetings.map((event) => (
-                  <MeetingItem key={event.id} event={event} />
+                  <MeetingItem key={event.id} event={event} mounted={mounted} />
                 ))}
               </div>
             ) : (
@@ -522,24 +525,6 @@ export function DashboardHero({
           </BentoCell>
         </div>
       </div>
-
-      {/* CSS for animations */}
-      <style jsx>{`
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
-        }
-        @keyframes fadeSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

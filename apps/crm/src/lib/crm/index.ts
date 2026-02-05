@@ -2,6 +2,9 @@
  * CRM Library Exports
  */
 
+// Utils - export utility functions
+export * from './utils';
+
 // Types - export everything
 export * from './types';
 

@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import { getFieldOptions } from '@/lib/crm/utils';
 import {
   Dialog,
   DialogContent,
@@ -685,9 +686,9 @@ export default function BulkUpdatePage() {
                         <SelectValue placeholder="Select value" />
                       </SelectTrigger>
                       <SelectContent>
-                        {selectFields
-                          .find(f => f.key === selectedFieldKey)
-                          ?.options.map((option) => (
+                        {getFieldOptions(
+                          selectFields.find(f => f.key === selectedFieldKey)?.options
+                        ).map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
                             </SelectItem>

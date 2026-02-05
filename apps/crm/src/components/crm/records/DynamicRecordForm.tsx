@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 interface DynamicRecordFormProps {
@@ -232,7 +233,7 @@ export function DynamicRecordForm({
               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
             </SelectTrigger>
             <SelectContent>
-              {(field.options || []).map((option) => (
+              {getFieldOptions(field.options).map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
                 </SelectItem>
@@ -245,7 +246,7 @@ export function DynamicRecordForm({
         const selectedValues = (value as string[]) || [];
         return (
           <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-            {(field.options || []).map((option) => (
+            {getFieldOptions(field.options).map((option) => (
               <div key={option} className="flex items-center space-x-2">
                 <Checkbox
                   id={`${field.key}-${option}`}
