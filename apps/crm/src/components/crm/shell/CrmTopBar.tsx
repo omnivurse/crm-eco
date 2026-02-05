@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -167,12 +168,17 @@ export function CrmTopBar({
         {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </Button>
 
-      {/* Left Section: Logo */}
+      {/* Left Section: Logo - optimized with Next.js Image */}
       <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
-        <img
+        <Image
           src="/logo.png"
           alt="Pay It Forward HealthShare"
-          className="h-10 lg:h-12 max-w-[140px] lg:max-w-[180px] w-auto object-contain"
+          width={180}
+          height={48}
+          className="h-10 lg:h-12 w-auto object-contain"
+          priority={false}
+          loading="lazy"
+          quality={80}
         />
       </Link>
 
