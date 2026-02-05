@@ -146,28 +146,30 @@ export default function SequenceAnalyticsPage() {
           Each email step in your sequence has its own metrics, helping you identify
           which emails perform best.
         </p>
-        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-          <div className="grid grid-cols-5 gap-4 p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
-            <div className="text-sm font-medium text-slate-500">Step</div>
-            <div className="text-sm font-medium text-slate-500">Sent</div>
-            <div className="text-sm font-medium text-slate-500">Opens</div>
-            <div className="text-sm font-medium text-slate-500">Clicks</div>
-            <div className="text-sm font-medium text-slate-500">Replies</div>
-          </div>
-          {[
-            { step: 'Email 1: Introduction', sent: 500, opens: '62%', clicks: '15%', replies: '5%' },
-            { step: 'Email 2: Value Add', sent: 450, opens: '58%', clicks: '12%', replies: '4%' },
-            { step: 'Email 3: Case Study', sent: 400, opens: '55%', clicks: '18%', replies: '6%' },
-            { step: 'Email 4: Final Touch', sent: 320, opens: '45%', clicks: '8%', replies: '10%' },
-          ].map((row) => (
-            <div key={row.step} className="grid grid-cols-5 gap-4 p-4 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
-              <div className="text-sm font-medium text-slate-900 dark:text-white">{row.step}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{row.sent}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{row.opens}</div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">{row.clicks}</div>
-              <div className="text-sm text-emerald-600 dark:text-emerald-400">{row.replies}</div>
+        <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="min-w-[500px]">
+            <div className="grid grid-cols-5 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+              <div className="text-xs sm:text-sm font-medium text-slate-500">Step</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500">Sent</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500">Opens</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500">Clicks</div>
+              <div className="text-xs sm:text-sm font-medium text-slate-500">Replies</div>
             </div>
-          ))}
+            {[
+              { step: 'Email 1: Introduction', sent: 500, opens: '62%', clicks: '15%', replies: '5%' },
+              { step: 'Email 2: Value Add', sent: 450, opens: '58%', clicks: '12%', replies: '4%' },
+              { step: 'Email 3: Case Study', sent: 400, opens: '55%', clicks: '18%', replies: '6%' },
+              { step: 'Email 4: Final Touch', sent: 320, opens: '45%', clicks: '8%', replies: '10%' },
+            ].map((row) => (
+              <div key={row.step} className="grid grid-cols-5 gap-2 sm:gap-4 p-3 sm:p-4 border-b last:border-b-0 border-slate-200 dark:border-slate-700">
+                <div className="text-xs sm:text-sm font-medium text-slate-900 dark:text-white truncate">{row.step}</div>
+                <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{row.sent}</div>
+                <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{row.opens}</div>
+                <div className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">{row.clicks}</div>
+                <div className="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">{row.replies}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
