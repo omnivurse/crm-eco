@@ -1,7 +1,7 @@
 'use client';
 
 // Terminal Exports - Starship Command Center
-export { TerminalProvider, useTerminal } from './terminal-provider';
+export { TerminalProvider, useTerminal, useTerminalOptional } from './terminal-provider';
 export { TerminalWindow } from './terminal-window';
 export { CommandInput } from './command-input';
 export { CommandOutput } from './command-output';

@@ -295,18 +295,19 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
     const active = isActive(item.href);
 
     return (
-      <Link key={item.href} href={item.href}>
-        <Button
-          variant="ghost"
-          className={cn(
-            'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
-            'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
-            active &&
-            'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
-            collapsed ? 'justify-center px-2' : 'justify-start px-3'
-          )}
-          title={collapsed ? item.name : undefined}
-        >
+      <Button
+        key={item.href}
+        asChild
+        variant="ghost"
+        className={cn(
+          'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+          'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
+          active &&
+          'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
+          collapsed ? 'justify-center px-2' : 'justify-start px-3'
+        )}
+      >
+        <Link href={item.href} title={collapsed ? item.name : undefined}>
           <Icon className={cn(
             'w-5 h-5 flex-shrink-0 transition-colors',
             active && 'text-teal-600 dark:text-teal-400'
@@ -331,8 +332,8 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
               BETA
             </Badge>
           )}
-        </Button>
-      </Link>
+        </Link>
+      </Button>
     );
   };
 
@@ -379,24 +380,25 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
         <nav className="py-4 px-3">
           {/* Dashboard */}
           <div className="mb-4">
-            <Link href="/crm">
-              <Button
-                variant="ghost"
-                className={cn(
-                  'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
-                  'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-11',
-                  isActive('/crm') && pathname === '/crm' &&
-                  'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-emerald-500/10 text-teal-700 dark:text-white border border-teal-200 dark:border-teal-500/30',
-                  collapsed ? 'justify-center px-2' : 'justify-start px-3'
-                )}
-              >
+            <Button
+              asChild
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-11',
+                isActive('/crm') && pathname === '/crm' &&
+                'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-emerald-500/10 text-teal-700 dark:text-white border border-teal-200 dark:border-teal-500/30',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+            >
+              <Link href="/crm">
                 <LayoutDashboard className={cn(
                   'w-5 h-5 flex-shrink-0 transition-colors',
                   isActive('/crm') && pathname === '/crm' && 'text-teal-600 dark:text-teal-400'
                 )} />
                 {!collapsed && <span className="font-medium">Dashboard</span>}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
 
           {/* Modules Section */}
@@ -415,16 +417,20 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
                   const Icon = getIcon(module.icon);
                   const path = `/crm/modules/${module.key}`;
                   return (
-                    <Link key={module.id} href={path}>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
-                          'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
-                          isActive(path) &&
-                          'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
-                          collapsed ? 'justify-center px-2' : 'justify-start px-3'
-                        )}
+                    <Button
+                      key={module.id}
+                      asChild
+                      variant="ghost"
+                      className={cn(
+                        'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                        'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
+                        isActive(path) &&
+                        'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
+                        collapsed ? 'justify-center px-2' : 'justify-start px-3'
+                      )}
+                    >
+                      <Link
+                        href={path}
                         title={collapsed ? module.name : undefined}
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
@@ -437,8 +443,8 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
                             {module.name_plural || module.name + 's'}
                           </span>
                         )}
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   );
                 })}
               </div>

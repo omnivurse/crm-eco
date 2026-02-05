@@ -3,17 +3,23 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import './globals.css';
 
+// Optimize font loading - reduce weights and preload critical subset
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-body',
   display: 'swap',
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
+// Reduce font weights for faster loading - only load what's needed
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-heading',
-  weight: ['500', '600', '700', '800'],
+  weight: ['600', '700'], // Reduced from 4 weights to 2
   display: 'swap',
+  preload: true,
+  fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
 export const metadata: Metadata = {

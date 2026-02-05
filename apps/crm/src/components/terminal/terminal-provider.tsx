@@ -224,3 +224,25 @@ export function useTerminal(): TerminalContextValue {
   }
   return context;
 }
+
+// Optional hook that returns stub values when provider isn't available
+// Useful for components that render before providers are loaded
+const TERMINAL_STUB: TerminalContextValue = {
+  isOpen: false,
+  currentPanel: null,
+  history: [],
+  historyIndex: -1,
+  open: () => {},
+  close: () => {},
+  toggle: () => {},
+  switchPanel: () => {},
+  executeCommand: () => Promise.resolve(),
+  navigateHistory: () => null,
+  addToHistory: () => {},
+  getSuggestions: () => [],
+};
+
+export function useTerminalOptional(): TerminalContextValue {
+  const context = useContext(TerminalContext);
+  return context || TERMINAL_STUB;
+}
