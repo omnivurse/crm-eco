@@ -82,30 +82,58 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
         setShowTimeoutWarning(false);
     }, []);
 
-    // Check session timeout
+    // Check session timeout using timeouts instead of a 1-second interval
+    // to avoid re-rendering the entire provider tree every second
     useEffect(() => {
         if (isPublicPage || isLocked) return;
 
-        const interval = setInterval(() => {
-            const elapsed = Date.now() - lastActivity;
-            const remaining = SESSION_TIMEOUT_MS - elapsed;
+        const elapsed = Date.now() - lastActivity;
+        const warningDelay = SESSION_TIMEOUT_MS - WARNING_BEFORE_TIMEOUT_MS - elapsed;
+        const lockDelay = SESSION_TIMEOUT_MS - elapsed;
 
-            setTimeUntilTimeout(Math.max(0, remaining));
+        // If already past lock time, lock immediately
+        if (lockDelay <= 0) {
+            setIsLocked(true);
+            setShowTimeoutWarning(false);
+            return;
+        }
 
-            // Show warning 5 minutes before timeout
-            if (remaining <= WARNING_BEFORE_TIMEOUT_MS && remaining > 0) {
+        // If already in warning window, show warning immediately
+        if (warningDelay <= 0) {
+            setShowTimeoutWarning(true);
+            setTimeUntilTimeout(Math.max(0, lockDelay));
+        }
+
+        const timers: ReturnType<typeof setTimeout>[] = [];
+
+        // Warning timeout: fires when entering the warning window
+        if (warningDelay > 0) {
+            timers.push(setTimeout(() => {
                 setShowTimeoutWarning(true);
-            }
+                setTimeUntilTimeout(WARNING_BEFORE_TIMEOUT_MS);
+            }, warningDelay));
+        }
 
-            // Lock session on timeout
-            if (remaining <= 0) {
-                setIsLocked(true);
-                setShowTimeoutWarning(false);
-            }
-        }, 1000);
+        // Lock timeout: fires when session should lock
+        timers.push(setTimeout(() => {
+            setIsLocked(true);
+            setShowTimeoutWarning(false);
+        }, lockDelay));
+
+        return () => timers.forEach(t => clearTimeout(t));
+    }, [lastActivity, isPublicPage, isLocked]);
+
+    // Update displayed minutes remaining every 60 seconds while warning is visible
+    useEffect(() => {
+        if (!showTimeoutWarning || isPublicPage || isLocked) return;
+
+        const interval = setInterval(() => {
+            const remaining = SESSION_TIMEOUT_MS - (Date.now() - lastActivity);
+            setTimeUntilTimeout(Math.max(0, remaining));
+        }, 60000);
 
         return () => clearInterval(interval);
-    }, [lastActivity, isPublicPage, isLocked]);
+    }, [showTimeoutWarning, lastActivity, isPublicPage, isLocked]);
 
     // Track user activity - deferred initialization for faster initial load
     useEffect(() => {
