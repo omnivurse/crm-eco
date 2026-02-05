@@ -1076,3 +1076,46 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   MOBILE PERFORMANCE OPTIMIZATIONS
+   Disable heavy animations on mobile devices for better performance
+   ============================================================ */
+@media (max-width: 1023px) {
+  /* Disable mesh-movement animation - very CPU/GPU intensive */
+  .enterprise-hero-modern::before,
+  .cta-section::before {
+    animation: none !important;
+  }
+
+  /* Disable floating animations */
+  .animate-float {
+    animation: none !important;
+  }
+
+  /* Disable glow animations */
+  .animate-glow {
+    animation: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Reduce transition durations for snappier interactions */
+  .enterprise-card,
+  .enterprise-stat-card,
+  .feature-card,
+  .portal-card-enhanced,
+  .btn-enterprise-primary,
+  .btn-enterprise-secondary,
+  .btn-hero-primary,
+  .btn-hero-secondary {
+    transition-duration: 0.1s !important;
+  }
+
+  /* Disable hover transforms on mobile (touch devices) */
+  .feature-card:hover,
+  .portal-card-enhanced:hover,
+  .btn-enterprise-primary:hover,
+  .btn-hero-primary:hover {
+    transform: none !important;
+  }
+}
