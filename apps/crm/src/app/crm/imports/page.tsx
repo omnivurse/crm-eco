@@ -32,6 +32,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 
 interface ImportModule {
   key: string;

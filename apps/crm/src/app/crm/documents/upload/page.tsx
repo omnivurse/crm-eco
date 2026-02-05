@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Upload,
   FileText,

@@ -20,6 +20,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Switch } from '@crm-eco/ui/components/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 
 interface CloudProvider {
   id: string;
