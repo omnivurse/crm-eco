@@ -1,6 +1,7 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { ServiceWorkerRegistration } from '@/components/pwa';
 import './globals.css';
 
 // Optimize font loading - reduce weights and preload critical subset
@@ -22,13 +23,41 @@ const plusJakarta = Plus_Jakarta_Sans({
   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
+/**
+ * PWA Metadata Configuration
+ */
 export const metadata: Metadata = {
   title: 'Pay It Forward CRM | Healthshare Management Platform',
   description: 'Modern CRM platform for healthshare and insurance organizations',
+  manifest: '/manifest.json',
   icons: {
     icon: '/favicon.svg',
-    apple: '/favicon.svg',
+    apple: '/icons/icon-192x192.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'PIF CRM',
+  },
+  formatDetection: {
+    telephone: true,
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
+};
+
+/**
+ * Viewport Configuration for PWA
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
+  ],
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 // Inline script to prevent theme flash - runs synchronously before any paint
@@ -79,6 +108,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
         <ThemeProvider defaultTheme="light">
+          <ServiceWorkerRegistration />
           {children}
         </ThemeProvider>
       </body>
