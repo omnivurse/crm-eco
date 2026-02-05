@@ -31,8 +31,14 @@ export default async function CrmLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Use cached profile - deduplicates requests within same render
-  const profile = await getCachedCurrentProfile();
+  // Wrap all data fetching in try-catch to prevent server crash
+  let profile;
+  try {
+    profile = await getCachedCurrentProfile();
+  } catch (error) {
+    console.error('[CRM Layout] Failed to get profile:', error);
+    redirect('/crm-login?error=profile_fetch_failed');
+  }
 
   if (!profile) {
     redirect('/crm-login');
@@ -43,19 +49,28 @@ export default async function CrmLayout({
   }
 
   // Fetch organization and modules in parallel with caching
-  const [organization, modules] = await Promise.all([
-    getCachedOrganization(profile.organization_id),
-    getCachedModules(profile.organization_id),
-  ]);
+  let organization = null;
+  let modules: Awaited<ReturnType<typeof getCachedModules>> = [];
+  
+  try {
+    [organization, modules] = await Promise.all([
+      getCachedOrganization(profile.organization_id),
+      getCachedModules(profile.organization_id),
+    ]);
+  } catch (error) {
+    console.error('[CRM Layout] Failed to fetch org/modules:', error);
+    // Continue with empty modules - the shell can still render
+  }
 
   // Auto-seed modules if none exist (rare case, first login)
-  let activeModules = modules;
+  let activeModules = modules || [];
   if (activeModules.length === 0) {
     try {
       await ensureDefaultModules(profile.organization_id);
       activeModules = await getModules(profile.organization_id);
     } catch (error) {
-      console.error('Failed to auto-seed modules:', error);
+      console.error('[CRM Layout] Failed to auto-seed modules:', error);
+      // Continue with empty modules
     }
   }
 
