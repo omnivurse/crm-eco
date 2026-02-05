@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { ShieldX, ArrowLeft, Mail } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default function CrmAccessDeniedPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
