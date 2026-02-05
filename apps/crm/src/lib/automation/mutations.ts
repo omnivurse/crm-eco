@@ -2,8 +2,7 @@
  * CRM Automation Pack - Mutation Functions
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import type {
   CrmWorkflow,
   CrmAssignmentRule,
@@ -15,32 +14,6 @@ import type {
 } from './types';
 
 // ============================================================================
-// Supabase Client Helper
-// ============================================================================
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
-
-// ============================================================================
 // Workflow Mutations
 // ============================================================================
 
@@ -48,13 +21,9 @@ export async function createWorkflow(
   input: Omit<CrmWorkflow, 'id' | 'created_at' | 'updated_at'>
 ): Promise<CrmWorkflow> {
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  
+  // Use cached auth helper instead of direct getUser() call
+  const profile = await getAuthProfile();
 
   const { data, error } = await supabase
     .from('crm_workflows')
@@ -351,13 +320,9 @@ export async function createMacro(
   input: Omit<CrmMacro, 'id' | 'created_at' | 'updated_at'>
 ): Promise<CrmMacro> {
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  
+  // Use cached auth helper instead of direct getUser() call
+  const profile = await getAuthProfile();
 
   const { data, error } = await supabase
     .from('crm_macros')

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Button,
   Dialog,

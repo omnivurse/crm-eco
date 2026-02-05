@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { computeEnrollmentWarnings, getWarningMessages } from '@crm-eco/lib';
 
 // Note: Using type assertion due to @supabase/ssr 0.5.x type inference limitations
@@ -56,6 +57,7 @@ interface CreateEnrollmentDialogProps {
 
 export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrollmentDialogProps) {
   const router = useRouter();
+  const { profile: authProfile } = useClientAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,23 +101,12 @@ export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrol
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authProfile) return;
     setError(null);
     setLoading(true);
 
     try {
       const supabase = getSupabase();
-
-      // Get current user's profile
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile) throw new Error('Profile not found');
 
       // Get selected member for warnings
       const member = members.find(m => m.id === formData.memberId);
@@ -127,7 +118,7 @@ export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrol
       const { data: enrollment, error: insertError } = await supabase
         .from('enrollments')
         .insert({
-          organization_id: profile.organization_id,
+          organization_id: authProfile.organization_id,
           primary_member_id: formData.memberId,
           advisor_id: formData.advisorId || null,
           selected_plan_id: formData.planId || null,
@@ -145,7 +136,7 @@ export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrol
       // Create initial enrollment steps
       const steps = ['intake', 'household', 'plan_selection', 'compliance', 'payment', 'confirmation'];
       const stepInserts = steps.map((step, index) => ({
-        organization_id: profile.organization_id,
+        organization_id: authProfile.organization_id,
         enrollment_id: enrollment.id,
         step_key: step,
         is_completed: false,
@@ -155,9 +146,9 @@ export function CreateEnrollmentDialog({ members, plans, advisors }: CreateEnrol
 
       // Log audit event
       await supabase.from('enrollment_audit_log').insert({
-        organization_id: profile.organization_id,
+        organization_id: authProfile.organization_id,
         enrollment_id: enrollment.id,
-        actor_profile_id: profile.id,
+        actor_profile_id: authProfile.id,
         event_type: 'created',
         new_status: 'draft',
         message: 'Enrollment created',

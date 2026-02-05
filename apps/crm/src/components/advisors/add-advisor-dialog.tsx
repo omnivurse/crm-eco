@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   Button,
   Dialog,
@@ -50,6 +51,7 @@ interface AdvisorInsert {
 
 export function AddAdvisorDialog() {
   const router = useRouter();
+  const { profile: authProfile } = useClientAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,26 +84,15 @@ export function AddAdvisorDialog() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!authProfile) return;
     setError(null);
     setLoading(true);
 
     try {
       const supabase = createClient();
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('id, organization_id')
-        .eq('user_id', user.id)
-        .single();
-
-      const profile = profileData as { id: string; organization_id: string } | null;
-      if (!profile) throw new Error('Profile not found');
 
       const insertData: AdvisorInsert = {
-        organization_id: profile.organization_id,
+        organization_id: authProfile.organization_id,
         first_name: formData.firstName,
         last_name: formData.lastName,
         email: formData.email,
@@ -126,8 +117,8 @@ export function AddAdvisorDialog() {
       // Log activity
       if (insertedAdvisor) {
         await logActivityForAdvisor({
-          organizationId: profile.organization_id,
-          createdByProfileId: profile.id,
+          organizationId: authProfile.organization_id,
+          createdByProfileId: authProfile.id,
           advisorId: (insertedAdvisor as { id: string }).id,
           type: ActivityTypes.ADVISOR_CREATED,
           subject: `New advisor: ${formData.firstName} ${formData.lastName}`,

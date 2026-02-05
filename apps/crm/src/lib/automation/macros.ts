@@ -3,8 +3,7 @@
  * One-click action bundles for quick record operations
  */
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import type { CrmRecord } from '../crm/types';
 import type {
   CrmMacro,
@@ -14,34 +13,6 @@ import type {
   AutomationContext,
 } from './types';
 import { executeActions } from './actions';
-
-// ============================================================================
-// Supabase Client Helpers
-// ============================================================================
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Server Component context
-          }
-        },
-      },
-    }
-  );
-}
 
 // ============================================================================
 // Macro Execution
@@ -296,16 +267,8 @@ export async function getMacrosForRecord(recordId: string): Promise<CrmMacro[]> 
     return [];
   }
 
-  // Get the current user's profile
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('crm_role')
-    .eq('user_id', user.id)
-    .single();
-
+  // Get the current user's profile using cached auth helper
+  const profile = await getAuthProfile();
   if (!profile?.crm_role) return [];
 
   // Get macros for this module that the user can execute
