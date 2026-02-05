@@ -147,7 +147,7 @@ export function AnimatedDemo({
                     ))}
                   </div>
                 </div>
-                <div className="p-4 grid grid-cols-4 gap-4">
+                <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="bg-slate-700 rounded-lg p-3 space-y-2">
                       <div className="w-full h-3 bg-slate-600 rounded" />

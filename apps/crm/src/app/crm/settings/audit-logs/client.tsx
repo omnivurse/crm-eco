@@ -201,7 +201,7 @@ export function AuditLogsClient({ initialLogs, users, profile }: AuditLogsClient
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">

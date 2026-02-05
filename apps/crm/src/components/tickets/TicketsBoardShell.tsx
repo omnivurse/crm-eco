@@ -444,7 +444,7 @@ export const TicketsBoardShell = memo(function TicketsBoardShell({
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="pt-4">
             <div className="text-2xl font-bold text-slate-900">{stats.total}</div>

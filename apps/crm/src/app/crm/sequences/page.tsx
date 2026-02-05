@@ -162,7 +162,7 @@ function SequenceCard({
         </DropdownMenu>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <div className="text-center">
           <div className="flex items-center justify-center gap-1.5 text-slate-500 dark:text-slate-400 mb-1">
             <Mail className="w-4 h-4" />

@@ -489,8 +489,8 @@ export function DashboardHero({
             <div className="grid grid-cols-2 gap-2">
               <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" color="teal" />
               <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" color="emerald" />
-              <QuickActionButton href="/crm/tasks/new?type=call" icon={Phone} label="Log Call" color="amber" />
-              <QuickActionButton href="/crm/tasks/new?type=email" icon={Mail} label="Email" color="violet" />
+              <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" color="amber" />
+              <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" color="violet" />
             </div>
           </BentoCell>
 
