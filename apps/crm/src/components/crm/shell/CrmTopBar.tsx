@@ -44,16 +44,29 @@ import {
   Menu,
   X,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
 import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
 import { useTerminal } from '@/components/terminal';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
-import { NotificationsPanel } from '../NotificationsPanel';
-import { GlobalSearchOverlay } from '@/components/zoho/GlobalSearchOverlay';
-import { QuickCreateDrawer } from '@/components/zoho/QuickCreateDrawer';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+
+// Lazy load heavy components - only loaded when user interacts
+// These reduce initial bundle by ~50KB+ combined
+const NotificationsPanel = dynamic(
+  () => import('../NotificationsPanel').then((mod) => mod.NotificationsPanel),
+  { ssr: false }
+);
+const GlobalSearchOverlay = dynamic(
+  () => import('@/components/zoho/GlobalSearchOverlay').then((mod) => mod.GlobalSearchOverlay),
+  { ssr: false }
+);
+const QuickCreateDrawer = dynamic(
+  () => import('@/components/zoho/QuickCreateDrawer').then((mod) => mod.QuickCreateDrawer),
+  { ssr: false }
+);
 
 interface CrmTopBarProps {
   modules: CrmModule[];

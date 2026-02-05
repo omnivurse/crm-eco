@@ -2,11 +2,24 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { WorkflowBuilder } from '@/components/automation';
+import dynamic from 'next/dynamic';
 import type { CrmModule } from '@/lib/crm/types';
 import type { CrmWorkflow } from '@/lib/automation/types';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Lazy load the heavy WorkflowBuilder component
+const WorkflowBuilder = dynamic(
+  () => import('@/components/automation').then((mod) => mod.WorkflowBuilder),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+      </div>
+    ),
+  }
+);
 
 export default function EditWorkflowPage() {
   const router = useRouter();
