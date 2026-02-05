@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
@@ -350,10 +351,14 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       <div className="flex items-center h-16 px-4 border-b border-slate-200 dark:border-white/5">
         <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
           <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
-            <img
+            <Image
               src="/logo.png"
               alt="Pay It Forward HealthShare"
+              width={32}
+              height={32}
               className="w-full h-full object-contain"
+              loading="lazy"
+              quality={80}
             />
           </div>
           {!collapsed && (

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   BookOpen,
   HelpCircle,
@@ -23,13 +24,17 @@ export function Footer() {
       <div className="px-6 py-3">
         {/* Main Row - Logo, Links, Security Badge */}
         <div className="flex items-center justify-between">
-          {/* Logo & Tagline */}
+          {/* Logo & Tagline - optimized with Next.js Image */}
           <div className="flex items-center gap-3">
             <Link href="/crm" className="flex items-center gap-2 flex-shrink-0">
-              <img
+              <Image
                 src="/logo.png"
                 alt="Pay It Forward HealthShare"
-                className="h-12 max-w-[180px] w-auto object-contain"
+                width={180}
+                height={48}
+                className="h-12 w-auto object-contain"
+                loading="lazy"
+                quality={80}
               />
             </Link>
             <span className="hidden md:inline text-slate-400 dark:text-slate-600">|</span>

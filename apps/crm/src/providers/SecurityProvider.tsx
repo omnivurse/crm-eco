@@ -107,29 +107,41 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
         return () => clearInterval(interval);
     }, [lastActivity, isPublicPage, isLocked]);
 
-    // Track user activity
+    // Track user activity - deferred initialization for faster initial load
     useEffect(() => {
         if (isPublicPage || isLocked) return;
 
-        const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
+        // Defer activity tracking by 2 seconds after initial render
+        // This significantly improves perceived page load time on mobile
+        const deferTimer = setTimeout(() => {
+            const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+            // Note: removed 'mousemove' to reduce event listener overhead on mobile
 
-        // Throttle activity updates (max once per second)
-        let throttled = false;
-        const handleActivity = () => {
-            if (throttled) return;
-            throttled = true;
-            updateActivity();
-            setTimeout(() => { throttled = false; }, 1000);
-        };
+            // Throttle activity updates more aggressively (max once per 2 seconds)
+            let throttled = false;
+            const handleActivity = () => {
+                if (throttled) return;
+                throttled = true;
+                updateActivity();
+                setTimeout(() => { throttled = false; }, 2000);
+            };
 
-        events.forEach(event => {
-            window.addEventListener(event, handleActivity, { passive: true });
-        });
+            events.forEach(event => {
+                window.addEventListener(event, handleActivity, { passive: true });
+            });
+
+            // Store cleanup function
+            (window as unknown as { __securityCleanup?: () => void }).__securityCleanup = () => {
+                events.forEach(event => {
+                    window.removeEventListener(event, handleActivity);
+                });
+            };
+        }, 2000);
 
         return () => {
-            events.forEach(event => {
-                window.removeEventListener(event, handleActivity);
-            });
+            clearTimeout(deferTimer);
+            const cleanup = (window as unknown as { __securityCleanup?: () => void }).__securityCleanup;
+            if (cleanup) cleanup();
         };
     }, [isPublicPage, isLocked, updateActivity]);
 
