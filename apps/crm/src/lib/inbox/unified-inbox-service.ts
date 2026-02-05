@@ -50,8 +50,10 @@ export async function getConversations(
   page: number = 1,
   limit: number = 25
 ): Promise<ConversationsResult> {
-  const supabase = await createClient() as any;
-  
+  const auth = await getAuthContext();
+  if (!auth) return { conversations: [], total: 0, hasMore: false };
+
+  const { supabase } = auth;
   let query = supabase
     .from('inbox_conversations')
     .select('*', { count: 'exact' })
@@ -111,7 +113,10 @@ export async function getConversations(
  * Get a single conversation by ID
  */
 export async function getConversation(id: string): Promise<InboxConversation | null> {
-  const supabase = await createClient() as any;
+  const auth = await getAuthContext();
+  if (!auth) return null;
+
+  const { supabase } = auth;
   
   const { data, error } = await supabase
     .from('inbox_conversations')
@@ -198,7 +203,10 @@ export async function updateConversation(
     linked_account_id: string | null;
   }>
 ): Promise<InboxConversation> {
-  const supabase = await createClient() as any;
+  const auth = await getAuthContext();
+  if (!auth) throw new Error('User not authenticated');
+
+  const { supabase } = auth;
   
   const updateData: Record<string, unknown> = { ...params };
   
@@ -265,7 +273,10 @@ export async function getMessages(
   page: number = 1,
   limit: number = 50
 ): Promise<{ messages: InboxMessage[]; total: number; hasMore: boolean }> {
-  const supabase = await createClient() as any;
+  const auth = await getAuthContext();
+  if (!auth) return { messages: [], total: 0, hasMore: false };
+
+  const { supabase } = auth;
   
   const offset = (page - 1) * limit;
   
@@ -304,7 +315,10 @@ export async function addMessage(params: {
   external_id?: string;
   external_provider?: string;
 }): Promise<InboxMessage> {
-  const supabase = await createClient() as any;
+  const auth = await getAuthContext();
+  if (!auth) throw new Error('User not authenticated');
+
+  const { supabase } = auth;
   
   // Get conversation to get org_id and channel
   const conversation = await getConversation(params.conversation_id);
