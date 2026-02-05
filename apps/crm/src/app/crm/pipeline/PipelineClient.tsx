@@ -2,9 +2,15 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { PipelineBoard } from '@/components/crm/pipeline';
-import { TransitionGateDialog } from '@/components/crm/blueprints';
 import type { CrmRecord, CrmDealStage } from '@/lib/crm/types';
+
+// Lazy load the gate dialog - only needed when stage transition is blocked
+const TransitionGateDialog = dynamic(
+  () => import('@/components/crm/blueprints').then((mod) => mod.TransitionGateDialog),
+  { ssr: false }
+);
 
 interface PipelineClientProps {
   deals: CrmRecord[];
