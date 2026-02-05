@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import {
   FileText,
   Search,

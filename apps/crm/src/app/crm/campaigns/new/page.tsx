@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -121,6 +122,7 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
 
 export default function NewCampaignPage() {
   const router = useRouter();
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
@@ -143,38 +145,28 @@ export default function NewCampaignPage() {
   // Load user profile and sender addresses
   useEffect(() => {
     async function loadData() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!authProfile) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id, full_name, email')
-        .eq('user_id', user.id)
-        .single();
+      setOrganizationId(authProfile.organization_id);
+      setFromName(authProfile.full_name || '');
 
-      if (profile) {
-        setOrganizationId(profile.organization_id);
-        setFromName(profile.full_name || '');
-        setReplyTo(profile.email || '');
+      // Load sender addresses
+      const { data: addresses } = await supabase
+        .from('email_sender_addresses')
+        .select('*')
+        .eq('org_id', authProfile.organization_id)
+        .eq('is_verified', true)
+        .order('is_default', { ascending: false });
 
-        // Load sender addresses
-        const { data: addresses } = await supabase
-          .from('email_sender_addresses')
-          .select('*')
-          .eq('org_id', profile.organization_id)
-          .eq('is_verified', true)
-          .order('is_default', { ascending: false });
-
-        if (addresses && addresses.length > 0) {
-          setSenderAddresses(addresses);
-          const defaultAddress = addresses.find(a => a.is_default) || addresses[0];
-          setFromEmail(defaultAddress.email);
-          if (defaultAddress.name) setFromName(defaultAddress.name);
-        }
+      if (addresses && addresses.length > 0) {
+        setSenderAddresses(addresses);
+        const defaultAddress = addresses.find(a => a.is_default) || addresses[0];
+        setFromEmail(defaultAddress.email);
+        if (defaultAddress.name) setFromName(defaultAddress.name);
       }
     }
     loadData();
-  }, [supabase]);
+  }, [authProfile]);
 
   const canProceed = () => {
     switch (currentStep) {
