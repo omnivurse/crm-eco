@@ -52,6 +52,9 @@ export async function GET(request: NextRequest) {
       attendees?: Array<{ email: string; name?: string; responseStatus?: string }>;
     }> = [];
 
+    // Maximum events to return to prevent memory issues with large date ranges
+    const MAX_EVENTS = 500;
+
     // Get synced calendar events
     if (source === 'all' || source === 'synced') {
       const { data: calendarEvents } = await supabase
@@ -60,7 +63,9 @@ export async function GET(request: NextRequest) {
         .eq('owner_id', profile.id)
         .gte('start_time', startDate)
         .lte('end_time', endDate)
-        .neq('status', 'cancelled');
+        .neq('status', 'cancelled')
+        .order('start_time', { ascending: true })
+        .limit(MAX_EVENTS);
 
       if (calendarEvents) {
         for (const event of calendarEvents) {
@@ -91,7 +96,9 @@ export async function GET(request: NextRequest) {
         .in('activity_type', ['meeting', 'call'])
         .gte('due_at', startDate)
         .lte('due_at', endDate)
-        .neq('status', 'cancelled');
+        .neq('status', 'cancelled')
+        .order('due_at', { ascending: true })
+        .limit(MAX_EVENTS);
 
       if (tasks) {
         for (const task of tasks) {

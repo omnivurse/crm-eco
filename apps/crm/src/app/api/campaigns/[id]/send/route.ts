@@ -134,6 +134,10 @@ export async function POST(
 
 /**
  * Process campaign emails (runs asynchronously)
+ * 
+ * OPTIMIZED: Uses paginated batching to handle large campaigns.
+ * Fetches recipients in pages of MAX_RECIPIENTS_PER_BATCH to avoid
+ * loading all recipients into memory at once.
  */
 async function processCampaignEmails(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -141,87 +145,107 @@ async function processCampaignEmails(
   orgId: string
 ) {
   const campaignId = campaign.id as string;
+  
+  // Maximum recipients to process per batch to prevent memory issues
+  const MAX_RECIPIENTS_PER_BATCH = 500;
 
   try {
-    // Get all recipients
-    const { data: recipients, error: recipientError } = await supabase
-      .from('email_campaign_recipients')
-      .select('*')
-      .eq('campaign_id', campaignId)
-      .eq('status', 'pending');
+    // Track totals across all batches
+    let totalSent = 0;
+    let totalFailed = 0;
+    let offset = 0;
+    let hasMore = true;
 
-    if (recipientError || !recipients) {
-      throw new Error('Failed to fetch recipients');
-    }
+    // Process recipients in paginated batches
+    while (hasMore) {
+      // Fetch next batch of recipients with limit
+      const { data: recipients, error: recipientError } = await supabase
+        .from('email_campaign_recipients')
+        .select('*')
+        .eq('campaign_id', campaignId)
+        .eq('status', 'pending')
+        .order('id', { ascending: true })
+        .range(offset, offset + MAX_RECIPIENTS_PER_BATCH - 1);
 
-    // OPTIMIZED: Batch process recipients to avoid N+1 queries
-    const BATCH_SIZE = 50;
-    let sentCount = 0;
-    let failedCount = 0;
-    const sentIds: string[] = [];
-    const failedRecipients: { id: string; error: string }[] = [];
+      if (recipientError) {
+        throw new Error('Failed to fetch recipients');
+      }
 
-    // Process recipients in batches
-    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
-      const batch = recipients.slice(i, i + BATCH_SIZE);
-      
-      // Send emails in parallel for this batch
-      const results = await Promise.allSettled(
-        batch.map(async (recipient) => {
-          const success = await sendCampaignEmail(campaign, recipient);
-          return { id: recipient.id as string, success };
-        })
-      );
-      
-      // Collect results
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value.success) {
-          sentIds.push(result.value.id);
-          sentCount++;
-        } else {
-          const id = result.status === 'fulfilled' ? result.value.id : '';
-          const error = result.status === 'rejected' 
-            ? (result.reason instanceof Error ? result.reason.message : 'Unknown error')
-            : 'Failed to send email';
-          if (id) failedRecipients.push({ id, error });
-          failedCount++;
+      if (!recipients || recipients.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      // Check if we've fetched less than the batch size (last page)
+      hasMore = recipients.length === MAX_RECIPIENTS_PER_BATCH;
+      offset += recipients.length;
+
+      // Process this batch of recipients
+      const BATCH_SIZE = 50;
+      const sentIds: string[] = [];
+      const failedRecipients: { id: string; error: string }[] = [];
+
+      // Process recipients in smaller parallel batches
+      for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+        const batch = recipients.slice(i, i + BATCH_SIZE);
+        
+        // Send emails in parallel for this batch
+        const results = await Promise.allSettled(
+          batch.map(async (recipient) => {
+            const success = await sendCampaignEmail(campaign, recipient);
+            return { id: recipient.id as string, success };
+          })
+        );
+        
+        // Collect results
+        for (const result of results) {
+          if (result.status === 'fulfilled' && result.value.success) {
+            sentIds.push(result.value.id);
+            totalSent++;
+          } else {
+            const id = result.status === 'fulfilled' ? result.value.id : '';
+            const error = result.status === 'rejected' 
+              ? (result.reason instanceof Error ? result.reason.message : 'Unknown error')
+              : 'Failed to send email';
+            if (id) failedRecipients.push({ id, error });
+            totalFailed++;
+          }
+        }
+        
+        // Batch update sent recipients
+        if (sentIds.length > 0) {
+          await supabase
+            .from('email_campaign_recipients')
+            .update({
+              status: 'sent',
+              sent_at: new Date().toISOString(),
+            })
+            .in('id', sentIds);
+          sentIds.length = 0; // Clear for next batch
+        }
+        
+        // Batch update failed recipients
+        if (failedRecipients.length > 0) {
+          const failedIds = failedRecipients.map(r => r.id);
+          await supabase
+            .from('email_campaign_recipients')
+            .update({
+              status: 'failed',
+              error_message: 'Failed to send email',
+            })
+            .in('id', failedIds);
+          failedRecipients.length = 0; // Clear for next batch
         }
       }
-      
-      // Batch update sent recipients
-      if (sentIds.length > 0) {
-        await supabase
-          .from('email_campaign_recipients')
-          .update({
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-          })
-          .in('id', sentIds);
-        sentIds.length = 0; // Clear for next batch
-      }
-      
-      // Batch update failed recipients
-      if (failedRecipients.length > 0) {
-        // Group by error message for batch updates
-        const failedIds = failedRecipients.map(r => r.id);
-        await supabase
-          .from('email_campaign_recipients')
-          .update({
-            status: 'failed',
-            error_message: 'Failed to send email',
-          })
-          .in('id', failedIds);
-        failedRecipients.length = 0; // Clear for next batch
-      }
-    }
+    } // End of while loop
 
     // Update campaign with final stats
     await supabase
       .from('email_campaigns')
       .update({
         status: 'sent',
-        sent_count: sentCount,
-        failed_count: failedCount,
+        sent_count: totalSent,
+        failed_count: totalFailed,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

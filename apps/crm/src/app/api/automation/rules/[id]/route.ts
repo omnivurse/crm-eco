@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,7 +15,12 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabaseClient() as any;
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
     
     const { data, error } = await supabase
       .from('automation_rules')
@@ -47,16 +52,13 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabaseClient() as any;
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
     const body = await request.json();
-    
-    // Get user profile
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', user?.id)
-      .single();
     
     const updateData: Record<string, unknown> = { updated_by: profile?.id };
     
@@ -97,7 +99,12 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createServerSupabaseClient() as any;
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
     
     const { error } = await supabase
       .from('automation_rules')

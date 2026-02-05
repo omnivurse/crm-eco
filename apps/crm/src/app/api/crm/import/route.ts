@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 
 interface ColumnMapping {
@@ -19,41 +18,14 @@ interface ImportRequest {
 }
 
 export async function POST(request: NextRequest) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Read-only context
-          }
-        },
-      },
-    }
-  );
-
-  // Verify user is authenticated and has permission
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
+  const supabase = await createClient();
+  
+  const profile = await getAuthProfile();
+  if (!profile) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, crm_role, organization_id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!profile || !['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+  if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
     return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
   }
 

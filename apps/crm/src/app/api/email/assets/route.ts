@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -7,26 +7,16 @@ export const dynamic = 'force-dynamic';
 // GET - List email assets
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, crm_role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.organization_id) {
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
+
+    const supabase = await createClient() as any;
 
     // Parse query params
     const { searchParams } = new URL(request.url);
@@ -73,26 +63,16 @@ export async function GET(request: NextRequest) {
 // POST - Upload new asset
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org and check permissions
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, crm_role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.organization_id) {
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
+
+    const supabase = await createClient() as any;
 
     if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
@@ -168,7 +148,7 @@ export async function POST(request: NextRequest) {
         tags: tags ? tags.split(',').map((t) => t.trim()) : [],
         is_public: true,
         public_url: urlData.publicUrl,
-        created_by: user.id,
+        created_by: profile.user_id,
       })
       .select()
       .single();
@@ -190,26 +170,16 @@ export async function POST(request: NextRequest) {
 // DELETE - Delete multiple assets
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createServerSupabaseClient() as any;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's org and check permissions
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, crm_role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.organization_id) {
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
+
+    const supabase = await createClient() as any;
 
     if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });

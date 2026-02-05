@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient, getAuthUser } from '@/lib/supabase-server';
 import { logAuthEvent } from '@crm-eco/lib/audit';
 
 export const dynamic = 'force-dynamic';
@@ -21,8 +21,7 @@ export async function POST(request: NextRequest) {
 
     // For login_success, verify the user is actually authenticated
     if (action === 'login_success') {
-      const supabase = await createServerSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const { user } = await getAuthUser();
 
       if (!user || user.email !== email) {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });

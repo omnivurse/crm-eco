@@ -4,8 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,57 +18,20 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   staff: 1,
 };
 
-function getSupabaseClient() {
-  const cookieStore = cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: Record<string, unknown> }>) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2])
-            );
-          } catch {
-            // Ignore
-          }
-        },
-      },
-    }
-  );
-}
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: memberId } = await params;
-    const supabase = getSupabaseClient();
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const supabase = await createClient();
+    const currentProfile = await getAuthProfile();
+    if (!currentProfile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user's profile
-    const { data: currentProfile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!currentProfile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
     // Check permissions
-    if (!['owner', 'super_admin', 'admin'].includes(currentProfile.role)) {
+    if (!currentProfile.crm_role || !['owner', 'super_admin', 'admin'].includes(currentProfile.crm_role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -100,10 +62,10 @@ export async function POST(
     }
 
     // Cannot deactivate someone with higher or equal role (unless owner)
-    const currentRoleLevel = ROLE_HIERARCHY[currentProfile.role as UserRole];
+    const currentRoleLevel = ROLE_HIERARCHY[currentProfile.crm_role as UserRole];
     const targetRoleLevel = ROLE_HIERARCHY[targetMember.role as UserRole];
 
-    if (currentProfile.role !== 'owner' && targetRoleLevel >= currentRoleLevel) {
+    if (currentProfile.crm_role !== 'owner' && targetRoleLevel >= currentRoleLevel) {
       return NextResponse.json({ error: 'Cannot deactivate user with equal or higher role' }, { status: 403 });
     }
 

@@ -1,5 +1,8 @@
 /**
  * CRM Supabase Mutation Functions
+ * 
+ * Uses request-scoped cached auth to prevent redundant supabase.auth.getUser() calls.
+ * All mutations share a single auth lookup per request via React's cache().
  */
 
 import type {
@@ -19,6 +22,54 @@ import type {
   MeetingType,
 } from './types';
 import { createCrmClient } from './queries';
+import { cache } from 'react';
+
+// ============================================================================
+// Cached Auth Helper - prevents 8+ auth calls per request
+// ============================================================================
+
+interface CachedProfileResult {
+  profileId: string | null;
+  error: Error | null;
+}
+
+/**
+ * Request-scoped cached profile lookup.
+ * Uses React's cache() to deduplicate auth calls across all mutations in a request.
+ */
+const getCachedProfile = cache(async (): Promise<CachedProfileResult> => {
+  try {
+    const supabase = await createCrmClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return { profileId: null, error: authError || new Error('Not authenticated') };
+    }
+    
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (profileError || !profile) {
+      return { profileId: null, error: profileError || new Error('Profile not found') };
+    }
+    
+    return { profileId: profile.id, error: null };
+  } catch (error) {
+    return { profileId: null, error: error as Error };
+  }
+});
+
+/**
+ * Get the current user's profile ID for mutations.
+ * Cached per-request to prevent redundant auth calls.
+ */
+async function getProfileId(): Promise<string | null> {
+  const { profileId } = await getCachedProfile();
+  return profileId;
+}
 
 // ============================================================================
 // Record Mutations
@@ -35,24 +86,18 @@ export interface CreateRecordInput {
 
 export async function createRecord(input: CreateRecordInput): Promise<CrmRecord> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_records')
     .insert({
       org_id: input.org_id,
       module_id: input.module_id,
-      owner_id: input.owner_id || profile?.id,
+      owner_id: input.owner_id || profileId,
       data: input.data,
       status: input.status,
       stage: input.stage,
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -140,13 +185,7 @@ export interface CreateNoteInput {
 
 export async function createNote(input: CreateNoteInput): Promise<CrmNote> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_notes')
@@ -155,7 +194,7 @@ export async function createNote(input: CreateNoteInput): Promise<CrmNote> {
       record_id: input.record_id,
       body: input.body,
       is_pinned: input.is_pinned || false,
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -216,13 +255,7 @@ export interface CreateTaskInput {
 
 export async function createTask(input: CreateTaskInput): Promise<CrmTask> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_tasks')
@@ -233,8 +266,8 @@ export async function createTask(input: CreateTaskInput): Promise<CrmTask> {
       description: input.description,
       due_at: input.due_at,
       priority: input.priority || 'normal',
-      assigned_to: input.assigned_to || profile?.id,
-      created_by: profile?.id,
+      assigned_to: input.assigned_to || profileId,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -456,13 +489,7 @@ export interface CreateViewInput {
 
 export async function createView(input: CreateViewInput): Promise<CrmView> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_views')
@@ -474,7 +501,7 @@ export async function createView(input: CreateViewInput): Promise<CrmView> {
       filters: input.filters || [],
       sort: input.sort || [],
       is_shared: input.is_shared ?? true,
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -526,13 +553,7 @@ export interface CreateImportJobInput {
 
 export async function createImportJob(input: CreateImportJobInput): Promise<CrmImportJob> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_import_jobs')
@@ -544,7 +565,7 @@ export async function createImportJob(input: CreateImportJobInput): Promise<CrmI
       mapping_id: input.mapping_id,
       total_rows: input.total_rows,
       status: 'pending',
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -739,13 +760,7 @@ export interface CreateActivityInput {
 
 export async function createActivity(input: CreateActivityInput): Promise<CrmTask> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_tasks')
@@ -757,7 +772,7 @@ export async function createActivity(input: CreateActivityInput): Promise<CrmTas
       activity_type: input.activity_type,
       due_at: input.due_at,
       priority: input.priority || 'normal',
-      assigned_to: input.assigned_to || profile?.id,
+      assigned_to: input.assigned_to || profileId,
       call_duration: input.call_duration,
       call_result: input.call_result,
       call_type: input.call_type,
@@ -766,7 +781,7 @@ export async function createActivity(input: CreateActivityInput): Promise<CrmTas
       attendees: input.attendees,
       reminder_at: input.reminder_at,
       outcome: input.outcome,
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -846,13 +861,7 @@ export interface CreateRecordLinkInput {
 
 export async function createRecordLink(input: CreateRecordLinkInput): Promise<CrmRecordLink> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_record_links')
@@ -863,7 +872,7 @@ export async function createRecordLink(input: CreateRecordLinkInput): Promise<Cr
       link_type: input.link_type,
       is_primary: input.is_primary || false,
       meta: input.meta || {},
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();
@@ -918,13 +927,7 @@ export interface CreateAttachmentInput {
 
 export async function createAttachment(input: CreateAttachmentInput): Promise<CrmAttachment> {
   const supabase = await createCrmClient();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const profileId = await getProfileId();
 
   const { data, error } = await supabase
     .from('crm_attachments')
@@ -938,7 +941,7 @@ export async function createAttachment(input: CreateAttachmentInput): Promise<Cr
       bucket_path: input.bucket_path,
       storage_bucket: input.storage_bucket || 'crm-attachments',
       description: input.description,
-      created_by: profile?.id,
+      created_by: profileId,
     })
     .select()
     .single();

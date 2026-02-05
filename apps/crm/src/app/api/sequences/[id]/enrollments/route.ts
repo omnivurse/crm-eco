@@ -1,27 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import type { EnrollRequest } from '@/lib/sequences/types';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-}
 
 // GET /api/sequences/[id]/enrollments - List enrollments
 export async function GET(
@@ -36,19 +15,9 @@ export async function GET(
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getAuthProfile();
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Verify sequence belongs to org
@@ -112,19 +81,9 @@ export async function POST(
       return NextResponse.json({ error: 'module_key is required' }, { status: 400 });
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, id')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getAuthProfile();
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Verify sequence belongs to org and is active
@@ -180,70 +139,106 @@ export async function POST(
       return now.toISOString();
     };
 
-    // Enroll records
-    const enrollments = [];
-    const errors = [];
+    // ============================================================================
+    // OPTIMIZED: Batch check existing enrollments instead of N+1 queries
+    // Previously: 1 query per record to check + 1 insert per record = O(2n)
+    // Now: 1 batch query + 1 batch insert = O(2)
+    // ============================================================================
 
-    for (const record of records) {
+    const errors: Array<{ record_id: string; error: string }> = [];
+
+    // Step 1: Filter records with valid emails
+    const recordsWithEmail = records.filter(record => {
       const email = record.email || record.data?.email;
-
       if (!email) {
         errors.push({ record_id: record.id, error: 'No email address' });
-        continue;
+        return false;
       }
+      return true;
+    });
 
-      // Check if already enrolled
-      const { data: existing } = await supabase
-        .from('email_sequence_enrollments')
-        .select('id')
-        .eq('sequence_id', id)
-        .eq('record_id', record.id)
-        .single();
-
-      if (existing) {
-        errors.push({ record_id: record.id, error: 'Already enrolled' });
-        continue;
-      }
-
-      const nextStepAt = calculateNextStepTime(
-        firstStep.delay_days,
-        firstStep.delay_hours,
-        firstStep.delay_minutes
-      );
-
-      const { data: enrollment, error } = await supabase
-        .from('email_sequence_enrollments')
-        .insert({
-          sequence_id: id,
-          record_id: record.id,
-          module_key: body.module_key,
-          email: email as string,
-          current_step_id: firstStep.id,
-          current_step_order: firstStep.step_order,
-          status: 'active',
-          enrolled_by: profile.id,
-          next_step_at: nextStepAt,
-        })
-        .select()
-        .single();
-
-      if (error) {
-        errors.push({ record_id: record.id, error: error.message });
-      } else {
-        enrollments.push(enrollment);
-      }
+    if (recordsWithEmail.length === 0) {
+      return NextResponse.json({
+        enrolled: 0,
+        errors: errors.length > 0 ? errors : undefined,
+      }, { status: 201 });
     }
 
-    // Update sequence stats
-    await supabase
-      .from('email_sequences')
-      .update({
-        total_enrolled: supabase.rpc('increment', { x: enrollments.length }) as unknown as number,
-      })
-      .eq('id', id);
+    // Step 2: Batch fetch all existing enrollments for these records in ONE query
+    const recordIdsToCheck = recordsWithEmail.map(r => r.id);
+    const { data: existingEnrollments } = await supabase
+      .from('email_sequence_enrollments')
+      .select('record_id')
+      .eq('sequence_id', id)
+      .in('record_id', recordIdsToCheck);
+
+    // Create a Set for O(1) lookup of already-enrolled record IDs
+    const alreadyEnrolledIds = new Set(
+      (existingEnrollments || []).map(e => e.record_id)
+    );
+
+    // Step 3: Separate records into already-enrolled and new
+    const recordsToEnroll = recordsWithEmail.filter(record => {
+      if (alreadyEnrolledIds.has(record.id)) {
+        errors.push({ record_id: record.id, error: 'Already enrolled' });
+        return false;
+      }
+      return true;
+    });
+
+    if (recordsToEnroll.length === 0) {
+      return NextResponse.json({
+        enrolled: 0,
+        errors: errors.length > 0 ? errors : undefined,
+      }, { status: 201 });
+    }
+
+    // Step 4: Calculate next step time once (same for all)
+    const nextStepAt = calculateNextStepTime(
+      firstStep.delay_days,
+      firstStep.delay_hours,
+      firstStep.delay_minutes
+    );
+
+    // Step 5: Batch insert all new enrollments in ONE query
+    const enrollmentInserts = recordsToEnroll.map(record => ({
+      sequence_id: id,
+      record_id: record.id,
+      module_key: body.module_key,
+      email: (record.email || record.data?.email) as string,
+      current_step_id: firstStep.id,
+      current_step_order: firstStep.step_order,
+      status: 'active',
+      enrolled_by: profile.id,
+      next_step_at: nextStepAt,
+    }));
+
+    const { data: enrollments, error: insertError } = await supabase
+      .from('email_sequence_enrollments')
+      .insert(enrollmentInserts)
+      .select();
+
+    if (insertError) {
+      // If batch insert fails, report error for all records
+      recordsToEnroll.forEach(record => {
+        errors.push({ record_id: record.id, error: insertError.message });
+      });
+    }
+
+    // Update sequence stats (use actual enrolled count from result)
+    const enrolledCount = enrollments?.length || 0;
+    
+    if (enrolledCount > 0) {
+      await supabase
+        .from('email_sequences')
+        .update({
+          total_enrolled: supabase.rpc('increment', { x: enrolledCount }) as unknown as number,
+        })
+        .eq('id', id);
+    }
 
     return NextResponse.json({
-      enrolled: enrollments.length,
+      enrolled: enrolledCount,
       errors: errors.length > 0 ? errors : undefined,
     }, { status: 201 });
   } catch (error) {
@@ -274,19 +269,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-
+    const profile = await getAuthProfile();
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const updateData: Record<string, unknown> = {};

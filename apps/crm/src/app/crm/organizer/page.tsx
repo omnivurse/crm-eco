@@ -37,7 +37,7 @@ interface Task {
     title: string;
     status: string;
     priority: string;
-    due_date: string | null;
+    due_at: string | null;
 }
 
 interface Note {
@@ -83,20 +83,20 @@ export default function OrganizerPage() {
                     // Get tasks due today
                     const today = new Date().toISOString().split('T')[0];
                     const { data: todayTasks, count: tasksDueCount } = await supabase
-                        .from('tasks')
+                        .from('crm_tasks')
                         .select('*', { count: 'exact' })
-                        .eq('organization_id', profile.organization_id)
-                        .gte('due_date', today)
-                        .lte('due_date', today + 'T23:59:59')
+                        .eq('org_id', profile.organization_id)
+                        .gte('due_at', today)
+                        .lte('due_at', today + 'T23:59:59')
                         .neq('status', 'completed')
                         .limit(5);
 
                     // Get overdue tasks
                     const { count: overdueCount } = await supabase
-                        .from('tasks')
+                        .from('crm_tasks')
                         .select('*', { count: 'exact', head: true })
-                        .eq('organization_id', profile.organization_id)
-                        .lt('due_date', today)
+                        .eq('org_id', profile.organization_id)
+                        .lt('due_at', today)
                         .neq('status', 'completed');
 
                     // Get new leads (last 7 days)

@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { applyApprovedAction, getApproval } from '@/lib/approvals';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
+import { createClient, getAuthProfile, getAuthUser } from '@/lib/supabase-server';
 
 const applyApprovalSchema = z.object({
   approvalId: z.string().uuid(),
@@ -36,11 +13,13 @@ const applyApprovalSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -48,17 +27,6 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
-    }
-
-    // Get user profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { approvalId } = parsed.data;
@@ -69,11 +37,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Approval not found' }, { status: 404 });
     }
 
+    // Get user for applyApprovedAction
+    const { user } = await getAuthUser();
+
     // Apply the approved action
     const result = await applyApprovedAction({
       approvalId,
       profileId: profile.id,
-      userId: user.id,
+      userId: user!.id,
     });
 
     if (!result.success) {

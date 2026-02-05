@@ -1,21 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { transformCsvRowToRecord, validateCsvRow } from '@/lib/imports/contacts-mapping';
-
-// Type for profile with organization
-interface ProfileWithOrg {
-  id: string;
-  organization_id: string;
-}
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 // Type for CRM module
 interface CrmModule {
   id: string;
-}
-
-async function getSupabaseAny() {
-  const supabase = await createServerSupabaseClient();
-  return supabase as any;
 }
 
 /**
@@ -26,26 +15,16 @@ async function getSupabaseAny() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await getSupabaseAny();
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    // Get user's organization
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    const profile = profileData as ProfileWithOrg | null;
-    
-    if (!profile?.organization_id) {
+
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
+
+    const supabase = await createClient();
     
     // Get Contacts module
     const { data: moduleData } = await supabase
@@ -202,24 +181,16 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await getSupabaseAny();
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    const profile = await getAuthProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    const profile = profileData as ProfileWithOrg | null;
-    
-    if (!profile?.organization_id) {
+
+    if (!profile.organization_id) {
       return NextResponse.json({ error: 'No organization found' }, { status: 400 });
     }
+
+    const supabase = await createClient();
     
     const { searchParams } = new URL(request.url);
     const jobId = searchParams.get('jobId');
