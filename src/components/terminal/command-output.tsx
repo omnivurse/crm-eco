@@ -73,9 +73,9 @@ function PanelRenderer() {
     case 'bridge':
       return <BridgePanel />;
     case 'deals':
-      return <DealsPanel data={panelData} />;
+      return <DealsPanel data={panelData as React.ComponentProps<typeof DealsPanel>['data']} />;
     case 'tasks':
-      return <TasksPanel data={panelData} />;
+      return <TasksPanel data={panelData as React.ComponentProps<typeof TasksPanel>['data']} />;
     case 'status':
       return <StatusPanel />;
     case 'help':

@@ -216,12 +216,13 @@ export default function UsersAdmin() {
     }
 
     const targetUser = users.find(u => u.id === userId);
-    const oldRole = targetUser?.role;
 
     if (!targetUser) {
       showToast('User not found', 'error');
       return;
     }
+
+    const oldRole = targetUser.role;
 
     if (oldRole === newRole) {
       return;

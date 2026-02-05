@@ -8,9 +8,9 @@ interface Ticket {
   subject: string;
   description: string;
   status: string;
-  requester_email?: string;
-  submitter_email?: string;
-  submitter_name?: string;
+  requester_email?: string | null;
+  submitter_email?: string | null;
+  submitter_name?: string | null;
   requester?: {
     full_name: string;
     email: string;
