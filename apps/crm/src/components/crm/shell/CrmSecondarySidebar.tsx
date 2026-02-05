@@ -106,21 +106,16 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
 
         <div className="flex-1" />
 
-        <Link href="/crm/settings">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
+        <Button asChild variant="ghost" size="icon" className={cn(
               'h-8 w-8 rounded-lg transition-all',
               'text-slate-500 hover:text-slate-900 dark:hover:text-white',
               'hover:bg-slate-100 dark:hover:bg-white/10',
               isActive('/crm/settings') && 'bg-slate-100 dark:bg-white/10'
-            )}
-            title="Settings"
-          >
+            )}>
+          <Link href="/crm/settings" title="Settings">
             <Settings className="w-4 h-4" />
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -145,48 +140,39 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
       <nav className="flex-1 overflow-y-auto py-3 px-2 scrollbar-thin">
         {/* Tools Section */}
         <div className="space-y-1">
-          <Link href="/crm/import">
-            <Button
-              variant="ghost"
-              className={cn(
+          <Button asChild variant="ghost" className={cn(
                 'w-full justify-start gap-2.5 h-9 px-2.5 rounded-lg text-sm font-medium',
                 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/import') && 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
-              )}
-            >
+              )}>
+            <Link href="/crm/import">
               <Upload className={cn('w-4 h-4', isActive('/crm/import') && 'text-emerald-600 dark:text-emerald-400')} />
               Import Data
-            </Button>
-          </Link>
-          <Link href="/crm/pipeline">
-            <Button
-              variant="ghost"
-              className={cn(
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className={cn(
                 'w-full justify-start gap-2.5 h-9 px-2.5 rounded-lg text-sm font-medium',
                 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/pipeline') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
-              )}
-            >
+              )}>
+            <Link href="/crm/pipeline">
               <TrendingUp className={cn('w-4 h-4', isActive('/crm/pipeline') && 'text-teal-600 dark:text-teal-400')} />
               Pipeline
-            </Button>
-          </Link>
-          <Link href="/crm/reports">
-            <Button
-              variant="ghost"
-              className={cn(
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" className={cn(
                 'w-full justify-start gap-2.5 h-9 px-2.5 rounded-lg text-sm font-medium',
                 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/reports') && 'bg-violet-50 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30'
-              )}
-            >
+              )}>
+            <Link href="/crm/reports">
               <BarChart3 className={cn('w-4 h-4', isActive('/crm/reports') && 'text-violet-600 dark:text-violet-400')} />
               Reports
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
 
         {/* Health Sharing Section */}
@@ -195,54 +181,45 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
             Health Sharing
           </p>
           <div className="space-y-1">
-            <Link href="/crm/enrollment">
-              <Button
-                variant="ghost"
-                className={cn(
+            <Button asChild variant="ghost" className={cn(
                   'w-full justify-start gap-2.5 h-9 px-2.5 rounded-lg text-sm font-medium',
                   'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
                   'hover:bg-slate-100 dark:hover:bg-white/10',
                   isActive('/crm/enrollment') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
-                )}
-              >
+                )}>
+              <Link href="/crm/enrollment">
                 <ClipboardList className={cn('w-4 h-4', isActive('/crm/enrollment') && 'text-teal-600 dark:text-teal-400')} />
                 Enrollment
-              </Button>
-            </Link>
-            <Link href="/crm/needs">
-              <Button
-                variant="ghost"
-                className={cn(
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" className={cn(
                   'w-full justify-start gap-2.5 h-9 px-2.5 rounded-lg text-sm font-medium',
                   'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
                   'hover:bg-slate-100 dark:hover:bg-white/10',
                   isActive('/crm/needs') && 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30'
-                )}
-              >
+                )}>
+              <Link href="/crm/needs">
                 <Heart className={cn('w-4 h-4', isActive('/crm/needs') && 'text-rose-600 dark:text-rose-400')} />
                 Needs
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </div>
         </div>
       </nav>
 
       {/* Footer */}
       <div className="border-t border-slate-200 dark:border-white/5 p-2">
-        <Link href="/crm/settings">
-          <Button
-            variant="ghost"
-            className={cn(
+        <Button asChild variant="ghost" className={cn(
               'w-full justify-start gap-2.5 h-9 px-2.5 rounded-lg text-sm font-medium',
               'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
               'hover:bg-slate-100 dark:hover:bg-white/10',
               isActive('/crm/settings') && 'bg-slate-100 dark:bg-white/10'
-            )}
-          >
+            )}>
+          <Link href="/crm/settings">
             <Settings className="w-4 h-4" />
             Settings
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
     </aside>
   );

@@ -66,6 +66,16 @@ export default function RootLayout({
       <head>
         {/* Theme script MUST be first to prevent any flash */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        
+        {/* Preconnect to external resources for faster loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+        {/* DNS prefetch for Supabase */}
+        <link rel="dns-prefetch" href="https://supabase.co" />
+        
+        {/* Optimize mobile viewport */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
         <ThemeProvider defaultTheme="light">
