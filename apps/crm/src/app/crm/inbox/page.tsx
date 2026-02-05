@@ -747,7 +747,7 @@ export default function InboxPage() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 p-4 overflow-y-auto space-y-4">
+              <div className="flex-1 p-3 lg:p-4 overflow-y-auto space-y-3 lg:space-y-4">
                 {loadingMessages ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
@@ -762,7 +762,7 @@ export default function InboxPage() {
                     <div
                       key={msg.id}
                       className={cn(
-                        'max-w-[80%] p-4 rounded-xl',
+                        'max-w-[90%] lg:max-w-[80%] p-3 lg:p-4 rounded-xl text-sm lg:text-base',
                         msg.direction === 'outbound'
                           ? 'ml-auto bg-teal-500 text-white'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
@@ -776,7 +776,7 @@ export default function InboxPage() {
                           {formatTime(msg.sent_at)}
                         </span>
                       </div>
-                      <p className="whitespace-pre-wrap">{msg.body_text || msg.body_html}</p>
+                      <p className="whitespace-pre-wrap break-words">{msg.body_text || msg.body_html}</p>
                       {msg.direction === 'outbound' && (
                         <div className="flex items-center justify-end mt-1">
                           {msg.status === 'read' ? (
@@ -794,19 +794,19 @@ export default function InboxPage() {
               </div>
 
               {/* Reply Input */}
-              <div className="p-4 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex gap-3">
+              <div className="p-3 lg:p-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex gap-2 lg:gap-3">
                   <textarea
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Type your reply..."
                     rows={2}
-                    className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                    className="flex-1 px-3 lg:px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm lg:text-base text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
                   />
                   <button
                     onClick={handleSendReply}
                     disabled={!replyText.trim() || sending}
-                    className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                    className="px-3 lg:px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition-colors self-end"
                   >
                     {sending ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
@@ -818,26 +818,26 @@ export default function InboxPage() {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
-              <Mail className="w-16 h-16 mb-4 opacity-30" />
-              <p className="text-lg font-medium">No conversation selected</p>
-              <p className="text-sm">Select a conversation to view messages</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-500 p-4">
+              <Mail className="w-12 lg:w-16 h-12 lg:h-16 mb-4 opacity-30" />
+              <p className="text-base lg:text-lg font-medium text-center">No conversation selected</p>
+              <p className="text-sm text-center">Select a conversation to view messages</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Compose Modal */}
+      {/* Compose Modal - Responsive */}
       <Dialog open={showComposeModal} onOpenChange={setShowComposeModal}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[95vw] max-w-xl mx-auto">
           <DialogHeader>
-            <DialogTitle>New Conversation</DialogTitle>
+            <DialogTitle className="text-lg">New Conversation</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-3 lg:space-y-4 pt-3 lg:pt-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Channel</label>
               <Select defaultValue="email">
-                <SelectTrigger>
+                <SelectTrigger className="text-sm lg:text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -853,7 +853,7 @@ export default function InboxPage() {
               <input
                 type="text"
                 placeholder="Search contacts or enter email/phone"
-                className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 lg:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm lg:text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
             </div>
 
@@ -862,27 +862,27 @@ export default function InboxPage() {
               <input
                 type="text"
                 placeholder="Enter subject"
-                className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 lg:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm lg:text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
               <textarea
-                rows={6}
+                rows={4}
                 placeholder="Type your message..."
-                className="w-full px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                className="w-full px-3 lg:px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm lg:text-base text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
               />
             </div>
 
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between pt-3 lg:pt-4 border-t border-slate-200 dark:border-slate-700">
               <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
                 <Paperclip className="w-5 h-5 text-slate-400" />
               </button>
-              <div className="flex gap-3">
+              <div className="flex gap-2 lg:gap-3">
                 <button
                   onClick={() => setShowComposeModal(false)}
-                  className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  className="px-3 lg:px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -891,10 +891,10 @@ export default function InboxPage() {
                     toast.success('Message sent');
                     setShowComposeModal(false);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 px-3 lg:px-4 py-2 text-sm bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white rounded-lg transition-colors"
                 >
                   <Send className="w-4 h-4" />
-                  Send
+                  <span className="hidden sm:inline">Send</span>
                 </button>
               </div>
             </div>
