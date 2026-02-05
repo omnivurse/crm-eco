@@ -37,8 +37,15 @@ async function getAuditData() {
     .eq('is_active', true)
     .order('full_name') as { data: { id: string; full_name: string; email: string }[] | null };
 
+  // Extend profile with email from auth user for client component
+  const extendedProfile = {
+    ...profile,
+    full_name: profile.full_name || '',
+    email: user.email || '',
+  };
+
   return {
-    profile,
+    profile: extendedProfile,
     initialLogs: (initialLogs || []) as any[],
     users: users || [],
   };
