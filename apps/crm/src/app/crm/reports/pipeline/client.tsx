@@ -343,22 +343,22 @@ export function PipelineReportClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           <Link href="/crm/reports">
             <Button variant="ghost" size="sm">
               <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
+              <span className="hidden sm:inline">Back</span>
             </Button>
           </Link>
           <div>
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg">
-                <Target className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              <div className="p-1.5 sm:p-2 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-lg">
+                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400" />
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pipeline Health</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Pipeline Health</h1>
             </div>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">
               Deal velocity and stage analysis
             </p>
           </div>
