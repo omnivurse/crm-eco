@@ -13,8 +13,11 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 
+// Type for the Supabase client
+type SupabaseClient = ReturnType<typeof createBrowserClient>;
+
 // Singleton instance - created once, reused everywhere
-let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
+let supabaseInstance: SupabaseClient | null = null;
 
 /**
  * Get the singleton Supabase browser client
@@ -22,13 +25,12 @@ let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null;
  * 
  * NOTE: This function is safe to call during SSR/build as it will
  * only create the client when running in a browser environment.
+ * Returns null during SSR - callers should check for browser environment.
  */
-export function getSupabaseBrowserClient() {
+export function getSupabaseBrowserClient(): SupabaseClient | null {
   // Guard against SSR/build time - only create client in browser
   if (typeof window === 'undefined') {
-    // Return a placeholder that will throw if methods are called during SSR
-    // This should never happen if code is properly guarded with 'use client'
-    return null as unknown as ReturnType<typeof createBrowserClient>;
+    return null;
   }
   
   if (!supabaseInstance) {
@@ -50,12 +52,35 @@ export function getSupabaseBrowserClient() {
 /**
  * Lazy-loaded singleton Supabase client
  * 
- * Uses a getter to ensure the client is only created when actually accessed,
- * preventing build-time errors when environment variables aren't available.
+ * Uses a Proxy to ensure the client is only created when actually accessed
+ * in a browser environment, preventing build-time errors when environment
+ * variables aren't available.
+ * 
+ * During SSR/build, accessing methods will throw a clear error message.
  */
-export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
+    // During SSR/build time, return a function that throws for method calls
+    // or undefined for property access to prevent build failures
+    if (typeof window === 'undefined') {
+      // For 'then' property, return undefined to prevent Promise detection issues
+      if (prop === 'then') {
+        return undefined;
+      }
+      // Return a function that throws a clear error for method calls
+      return () => {
+        throw new Error(
+          `Supabase client method "${String(prop)}" was called during SSR/build. ` +
+          'Supabase browser client is only available in the browser. ' +
+          'Ensure this code runs in a client component with "use client".'
+        );
+      };
+    }
+    
     const client = getSupabaseBrowserClient();
-    return (client as Record<string, unknown>)[prop as string];
+    if (!client) {
+      throw new Error('Failed to initialize Supabase client');
+    }
+    return (client as unknown as Record<string, unknown>)[prop as string];
   },
 });
