@@ -648,7 +648,7 @@ export function BulkPricingImportModal({
                 <Check className="h-8 w-8 text-green-600" />
               </div>
               <p className="text-lg font-medium mb-4">Import Complete!</p>
-              <div className="grid grid-cols-3 gap-6 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
                 <div>
                   <p className="text-3xl font-bold text-green-600">{importResults.created}</p>
                   <p className="text-sm text-slate-500">Created</p>

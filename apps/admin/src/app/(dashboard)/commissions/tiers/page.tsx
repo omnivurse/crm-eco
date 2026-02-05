@@ -125,7 +125,7 @@ export default async function CommissionTiersPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Rates */}
-                  <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                     <div className="p-2 bg-slate-50 rounded-lg">
                       <p className="text-lg font-bold text-green-600">{tier.base_rate_pct}%</p>
                       <p className="text-xs text-slate-500">Base</p>

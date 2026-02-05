@@ -228,7 +228,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="product_line">Product Line</Label>
             <Input
@@ -319,7 +319,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="iua_amount">IUA Amount ($)</Label>
             <Input

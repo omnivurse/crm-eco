@@ -615,7 +615,7 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
                 <CardDescription>Track the source of your leads</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="utm_source">UTM Source</Label>
                     <Input

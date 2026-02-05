@@ -308,7 +308,7 @@ export function AssignmentPreview({ rule, agents, organizationId }: AssignmentPr
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-2">
             Rotation Stats
           </p>
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
             <div>
               <p className="text-2xl font-bold text-slate-900">
                 {rule.config.users?.length || 0}

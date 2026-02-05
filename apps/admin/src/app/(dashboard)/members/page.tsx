@@ -48,20 +48,20 @@ export default async function MembersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Members</h1>
-          <p className="text-slate-500">Manage member accounts and information</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Members</h1>
+          <p className="text-sm sm:text-base text-slate-500">Manage member accounts and information</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/members/import">
-            <Button variant="outline">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/members/import" className="flex-1 sm:flex-none">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Upload className="h-4 w-4 mr-2" />
               Import
             </Button>
           </Link>
-          <Link href="/members/new">
-            <Button>
+          <Link href="/members/new" className="flex-1 sm:flex-none">
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Member
             </Button>
