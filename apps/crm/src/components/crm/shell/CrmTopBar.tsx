@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -18,47 +18,22 @@ import {
 } from '@crm-eco/ui/components/dropdown-menu';
 import {
   Search,
-  Bell,
   LogOut,
   User,
   Settings,
   HelpCircle,
   Sparkles,
-  Plus,
   ChevronDown,
-  Heart,
-  Command,
-  UserPlus,
-  Users,
-  Building,
-  DollarSign,
-  CheckSquare,
-  StickyNote,
-  PhoneCall,
-  Calendar,
-  Mail,
-  FileCheck,
-  Receipt,
-  Terminal,
-  Activity,
   Menu,
   X,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useTerminalOptional } from '@/components/terminal';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
-// Lazy load the change ticker wrapper to defer subscription setup (2s after initial render)
-const DeferredChangeTicker = dynamic(
-  () => import('./DeferredChangeTicker').then((mod) => mod.DeferredChangeTicker),
-  { ssr: false }
-);
-
 // Lazy load heavy components - only loaded when user interacts
-// These reduce initial bundle by ~50KB+ combined
 const NotificationsPanel = dynamic(
   () => import('../NotificationsPanel').then((mod) => mod.NotificationsPanel),
   { ssr: false }
@@ -91,20 +66,9 @@ export function CrmTopBar({
 }: CrmTopBarProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
-  const [showChangeTicker, setShowChangeTicker] = useState(false);
   const router = useRouter();
-  
-  // Use optional terminal hook - works even if provider isn't loaded yet
-  const { toggle: toggleTerminal } = useTerminalOptional();
-
-  // Defer change ticker until after initial render for faster page load
-  useEffect(() => {
-    const timer = setTimeout(() => setShowChangeTicker(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleSignOut = async () => {
-    // Log logout event before signing out
     try {
       await fetch('/api/auth/log', {
         method: 'POST',
@@ -164,7 +128,7 @@ export function CrmTopBar({
         {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
       </Button>
 
-      {/* Left Section: Logo - optimized with Next.js Image */}
+      {/* Left Section: Logo */}
       <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
         <Image
           src="/logo.png"
@@ -188,11 +152,11 @@ export function CrmTopBar({
 
       {/* Right Section: Search + Actions */}
       <div className="flex items-center gap-1 lg:gap-2">
-        {/* Visible Search Button - Opens GlobalSearchOverlay */}
+        {/* Search Button */}
         <button
           onClick={() => setSearchOpen(true)}
           className={cn(
-            'hidden md:flex items-center gap-2 px-3 h-9 rounded-lg border text-sm transition-all cursor-pointer',
+            'hidden md:flex items-center gap-2 px-3 h-9 rounded-lg border text-sm cursor-pointer',
             'bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400',
             'border-slate-200 dark:border-white/10',
             'hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400'
@@ -215,7 +179,7 @@ export function CrmTopBar({
           <Search className="w-4 h-4" />
         </Button>
 
-        {/* Split Create Button with Dropdown - hidden on mobile (available in sidebar) */}
+        {/* Split Create Button - hidden on mobile */}
         <div className="hidden sm:block">
           <SplitCreateButton />
         </div>
@@ -225,26 +189,8 @@ export function CrmTopBar({
           <ThemeToggle variant="icon" />
         </div>
 
-        {/* Command Center - hidden on mobile */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden sm:flex h-9 w-9 rounded-lg text-cyan-500 hover:text-cyan-600 dark:text-cyan-400 dark:hover:text-cyan-300 hover:bg-cyan-50 dark:hover:bg-cyan-900/20"
-          onClick={toggleTerminal}
-          title="Command Center (Ctrl+K)"
-        >
-          <Terminal className="w-4 h-4" />
-        </Button>
-
         {/* Notifications */}
         <NotificationsPanel />
-
-        {/* Change Feed Ticker - deferred load, hidden on mobile */}
-        <div className="hidden md:block">
-          {showChangeTicker && (
-            <DeferredChangeTicker orgId={profile.organization_id} />
-          )}
-        </div>
 
         {/* Settings Gear - hidden on mobile */}
         <Button

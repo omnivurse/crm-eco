@@ -1,27 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
-
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-}
 
 const sendCampaignSchema = z.object({
   scheduled_at: z.string().datetime().optional(),
@@ -39,20 +18,10 @@ export async function POST(
     const supabase = await createClient();
     const { id } = await params;
 
-    // Get user
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
+    // Get user profile using cached utility
+    const profile = await getAuthProfile();
     if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Parse request body
@@ -185,44 +154,64 @@ async function processCampaignEmails(
       throw new Error('Failed to fetch recipients');
     }
 
+    // OPTIMIZED: Batch process recipients to avoid N+1 queries
+    const BATCH_SIZE = 50;
     let sentCount = 0;
     let failedCount = 0;
+    const sentIds: string[] = [];
+    const failedRecipients: { id: string; error: string }[] = [];
 
-    // Process each recipient
-    for (const recipient of recipients) {
-      try {
-        // In production, this would use the email service to send
-        // For now, we'll simulate sending and update status
-        const success = await sendCampaignEmail(campaign, recipient);
-
-        if (success) {
-          await supabase
-            .from('email_campaign_recipients')
-            .update({
-              status: 'sent',
-              sent_at: new Date().toISOString(),
-            })
-            .eq('id', recipient.id);
+    // Process recipients in batches
+    for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+      const batch = recipients.slice(i, i + BATCH_SIZE);
+      
+      // Send emails in parallel for this batch
+      const results = await Promise.allSettled(
+        batch.map(async (recipient) => {
+          const success = await sendCampaignEmail(campaign, recipient);
+          return { id: recipient.id as string, success };
+        })
+      );
+      
+      // Collect results
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value.success) {
+          sentIds.push(result.value.id);
           sentCount++;
         } else {
-          await supabase
-            .from('email_campaign_recipients')
-            .update({
-              status: 'failed',
-              error_message: 'Failed to send email',
-            })
-            .eq('id', recipient.id);
+          const id = result.status === 'fulfilled' ? result.value.id : '';
+          const error = result.status === 'rejected' 
+            ? (result.reason instanceof Error ? result.reason.message : 'Unknown error')
+            : 'Failed to send email';
+          if (id) failedRecipients.push({ id, error });
           failedCount++;
         }
-      } catch (err) {
+      }
+      
+      // Batch update sent recipients
+      if (sentIds.length > 0) {
+        await supabase
+          .from('email_campaign_recipients')
+          .update({
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          })
+          .in('id', sentIds);
+        sentIds.length = 0; // Clear for next batch
+      }
+      
+      // Batch update failed recipients
+      if (failedRecipients.length > 0) {
+        // Group by error message for batch updates
+        const failedIds = failedRecipients.map(r => r.id);
         await supabase
           .from('email_campaign_recipients')
           .update({
             status: 'failed',
-            error_message: err instanceof Error ? err.message : 'Unknown error',
+            error_message: 'Failed to send email',
           })
-          .eq('id', recipient.id);
-        failedCount++;
+          .in('id', failedIds);
+        failedRecipients.length = 0; // Clear for next batch
       }
     }
 

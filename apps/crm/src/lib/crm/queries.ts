@@ -6,6 +6,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
+import { getAuthUser as getCachedAuthUser } from '../supabase-server';
 import type {
   CrmModule,
   CrmField,
@@ -193,9 +194,8 @@ export async function createCrmClient() {
 
 export async function getCurrentProfile(): Promise<CrmProfile | null> {
   try {
-    const supabase = await createCrmClient();
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Use cached auth to prevent concurrent token refresh conflicts (409 errors)
+    const { user, error: authError } = await getCachedAuthUser();
     
     if (authError) {
       console.error('[CRM] Auth error getting user:', authError.message);
@@ -203,6 +203,8 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
     }
     
     if (!user) return null;
+
+    const supabase = await createCrmClient();
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')

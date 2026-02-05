@@ -31,8 +31,8 @@ export function ThemeProvider({
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-
-  // Create Supabase client for DB persistence
+  // Cache user ID to avoid repeated auth calls
+  const [cachedUserId, setCachedUserId] = useState<string | null>(null);
 
   // Resolve system theme
   const getSystemTheme = useCallback((): 'light' | 'dark' => {
@@ -74,6 +74,9 @@ export function ThemeProvider({
         try {
           const { data: { user } } = await supabase.auth.getUser();
           if (user) {
+            // Cache user ID for later use (avoids repeated getUser calls)
+            setCachedUserId(user.id);
+            
             const { data: profile } = await supabase
               .from('profiles')
               .select('ui_theme')
@@ -95,7 +98,7 @@ export function ThemeProvider({
 
       loadFromDB();
     }
-  }, [supabase, storageKey, defaultTheme, applyTheme]);
+  }, [storageKey, defaultTheme, applyTheme]);
 
   // Listen for system theme changes
   useEffect(() => {
@@ -119,19 +122,20 @@ export function ThemeProvider({
     applyTheme(newTheme);
     localStorage.setItem(storageKey, newTheme);
 
-    // Persist to DB
+    // Persist to DB using cached user ID if available (avoids extra auth call)
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      const userId = cachedUserId || (await supabase.auth.getUser()).data.user?.id;
+      if (userId) {
+        if (!cachedUserId) setCachedUserId(userId);
         await supabase
           .from('profiles')
           .update({ ui_theme: newTheme })
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
       }
     } catch (error) {
       console.warn('Failed to save theme to DB:', error);
     }
-  }, [supabase, storageKey, applyTheme]);
+  }, [storageKey, applyTheme, cachedUserId]);
 
   // Always render children - the script in layout.tsx handles initial theme class
   // This prevents blank page flash while still avoiding hydration mismatch

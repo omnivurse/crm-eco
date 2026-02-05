@@ -70,11 +70,15 @@ export function NotificationsPanel() {
     }
   }, []);
 
-  // Fetch unread count on mount and periodically
+  // Fetch unread count on mount and periodically (every 5 minutes to reduce auth load)
   useEffect(() => {
-    fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 60000); // Every minute
-    return () => clearInterval(interval);
+    // Delay initial fetch by 5 seconds to avoid concurrent auth calls on page load
+    const initialDelay = setTimeout(fetchUnreadCount, 5000);
+    const interval = setInterval(fetchUnreadCount, 300000); // Every 5 minutes
+    return () => {
+      clearTimeout(initialDelay);
+      clearInterval(interval);
+    };
   }, [fetchUnreadCount]);
 
   // Fetch full notifications when panel opens

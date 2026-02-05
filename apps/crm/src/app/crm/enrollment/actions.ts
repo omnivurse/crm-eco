@@ -10,6 +10,37 @@ async function getSupabase(): Promise<any> {
   return await createServerSupabaseClient();
 }
 
+/**
+ * Get authenticated user and profile in a single helper.
+ * Reduces auth calls from 2 to 1 per action by caching the result.
+ */
+interface AuthContext {
+  supabase: any;
+  user: { id: string };
+  profile: { id: string; organization_id: string; role?: string };
+}
+
+async function getAuthContext(): Promise<{ success: true; context: AuthContext } | { success: false; error: string }> {
+  const supabase = await getSupabase();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, organization_id, role')
+    .eq('user_id', user.id)
+    .single();
+  
+  if (!profile) {
+    return { success: false, error: 'Profile not found' };
+  }
+  
+  return { success: true, context: { supabase, user, profile } };
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -118,22 +149,9 @@ interface SaveSignatureData {
 
 export async function initializeEnrollment(advisorId?: string | null): Promise<ActionResult<{ enrollmentId: string }>> {
   try {
-    const supabase = await getSupabase();
-    
-    // Get current user's profile to verify authentication
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
 
     // We don't create the enrollment here because primary_member_id is required.
@@ -151,22 +169,11 @@ export async function initializeEnrollment(advisorId?: string | null): Promise<A
 
 export async function completeIntakeStep(data: IntakeStepData): Promise<ActionResult<{ enrollmentId: string; memberId: string; state: string | null; dateOfBirth: string | null }>> {
   try {
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     let memberId = data.memberId;
     let memberState: string | null = null;
@@ -375,22 +382,11 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
 
 export async function completeHouseholdStep(data: HouseholdStepData): Promise<ActionResult> {
   try {
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     const snapshotHousehold: WizardSnapshot['household'] = {
       householdSize: data.householdSize,
@@ -449,22 +445,11 @@ export async function completeHouseholdStep(data: HouseholdStepData): Promise<Ac
 
 export async function completePlanSelectionStep(data: PlanSelectionStepData): Promise<ActionResult<{ hasMandateWarning: boolean; hasAge65Warning: boolean }>> {
   try {
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     // Get enrollment with member data for warnings
     const { data: enrollment } = await supabase
@@ -549,22 +534,11 @@ export async function completePlanSelectionStep(data: PlanSelectionStepData): Pr
 
 export async function completeComplianceStep(data: ComplianceStepData): Promise<ActionResult> {
   try {
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     // Validate all required acknowledgements
     if (!data.healthshareAcknowledgement || !data.guidelinesAcknowledgement || !data.sharingLimitationsAcknowledgement) {
@@ -629,22 +603,11 @@ export async function completeComplianceStep(data: ComplianceStepData): Promise<
 
 export async function completePaymentStep(data: PaymentStepData): Promise<ActionResult> {
   try {
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     const snapshotPayment: WizardSnapshot['payment'] = {
       fundingType: data.fundingType,
@@ -704,22 +667,11 @@ export async function completePaymentStep(data: PaymentStepData): Promise<Action
 
 export async function createPaymentProfile(data: CreatePaymentProfileData): Promise<ActionResult<{ paymentProfileId: string; last4: string }>> {
   try {
-    const supabase = await getSupabase();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     // Get member email for Authorize.Net profile
     const { data: member } = await supabase
@@ -811,22 +763,11 @@ export async function createPaymentProfile(data: CreatePaymentProfileData): Prom
 
 export async function saveSignature(data: SaveSignatureData): Promise<ActionResult> {
   try {
-    const supabase = await getSupabase();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     // Get enrollment
     const { data: enrollment } = await supabase
@@ -897,22 +838,11 @@ export async function submitEnrollment(enrollmentId: string, finalAcceptance: bo
       return { success: false, error: 'Final acceptance is required' };
     }
 
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     // Verify all steps are completed
     const { data: steps } = await supabase
@@ -1029,22 +959,11 @@ export async function submitEnrollment(enrollmentId: string, finalAcceptance: bo
 
 export async function runRxPricing(data: RxPricingData): Promise<ActionResult<RxPricingResult>> {
   try {
-    const supabase = await getSupabase();
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
     }
-    
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!profile) {
-      return { success: false, error: 'Profile not found' };
-    }
+    const { supabase, profile } = auth.context;
 
     // Validate medications
     const validationError = validateMedications(data.medications);

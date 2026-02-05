@@ -90,16 +90,17 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
     <div ref={tabsRef} className="flex items-center gap-1">
       {/* Dashboard Tab */}
       <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'h-9 px-3 gap-2 rounded-lg font-medium transition-all',
-            'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
-            'hover:bg-slate-100 dark:hover:bg-white/10',
-            isActive('/crm') && pathname === '/crm' && 
-              'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
-          )}
-         asChild>
+        variant="ghost"
+        size="sm"
+        className={cn(
+          'h-9 px-3 gap-2 rounded-lg font-medium transition-all',
+          'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+          'hover:bg-slate-100 dark:hover:bg-white/10',
+          isActive('/crm') && pathname === '/crm' &&
+            'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
+        )}
+        asChild
+      >
         <Link href="/crm">
           <LayoutDashboard className="w-4 h-4" />
           <span className="hidden sm:inline">Dashboard</span>
@@ -115,17 +116,19 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
         const path = `/crm/modules/${module.key}`;
         return (
           <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'h-9 px-3 gap-2 rounded-lg font-medium transition-all',
-                'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
-                'hover:bg-slate-100 dark:hover:bg-white/10',
-                isActive(path) && 
-                  'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
-              )}
-             asChild>
-            <Link key={module.id} href={path}>
+            key={module.id}
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'h-9 px-3 gap-2 rounded-lg font-medium transition-all',
+              'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+              'hover:bg-slate-100 dark:hover:bg-white/10',
+              isActive(path) &&
+                'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
+            )}
+            asChild
+          >
+            <Link href={path}>
               <Icon className={cn(
                 'w-4 h-4',
                 isActive(path) && 'text-teal-600 dark:text-teal-400'

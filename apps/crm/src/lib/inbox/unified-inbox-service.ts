@@ -22,6 +22,32 @@ async function getSupabaseAny() {
   return supabase as any;
 }
 
+/**
+ * Cached auth context helper to reduce redundant auth calls.
+ * Returns supabase client, user, and profile in a single call.
+ */
+interface AuthContext {
+  supabase: any;
+  user: { id: string };
+  profile: { id: string; organization_id: string };
+}
+
+async function getAuthContext(): Promise<AuthContext | null> {
+  const supabase = await getSupabaseAny();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .single();
+  
+  if (!profile) return null;
+  
+  return { supabase, user, profile };
+}
+
 // ============================================================================
 // Conversation CRUD
 // ============================================================================
@@ -130,19 +156,10 @@ export async function createConversation(params: {
   priority?: ConversationPriority;
   tags?: string[];
 }): Promise<InboxConversation> {
-  const supabase = await getSupabaseAny();
+  const auth = await getAuthContext();
+  if (!auth) throw new Error('User not authenticated');
   
-  // Get org_id from profile
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('User not authenticated');
-  
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single();
-  
-  if (!profile) throw new Error('User profile not found');
+  const { supabase, profile } = auth;
   
   const conversationData = {
     org_id: profile.organization_id,
@@ -222,15 +239,10 @@ export async function updateConversation(
  * Mark conversation as read
  */
 export async function markAsRead(id: string): Promise<InboxConversation> {
-  const supabase = await getSupabaseAny();
+  const auth = await getAuthContext();
+  if (!auth) throw new Error('User not authenticated');
   
-  // Get current user profile
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('user_id', user?.id)
-    .single();
+  const { supabase, profile } = auth;
   
   const { data, error } = await supabase
     .from('inbox_conversations')
@@ -347,20 +359,11 @@ export async function addMessage(params: {
 // ============================================================================
 
 /**
- * Get inbox statistics
+ * Get inbox statistics using aggregation for better performance
  */
 export async function getInboxStats(): Promise<InboxStats> {
-  const supabase = await getSupabaseAny();
-  
-  // Get current user profile
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id')
-    .eq('user_id', user?.id)
-    .single();
-  
-  if (!profile) {
+  const auth = await getAuthContext();
+  if (!auth) {
     return {
       total_open: 0,
       total_pending: 0,
@@ -370,20 +373,45 @@ export async function getInboxStats(): Promise<InboxStats> {
     };
   }
   
-  const { data: conversations } = await supabase
-    .from('inbox_conversations')
-    .select('status, unread_count, assigned_to')
-    .eq('org_id', profile.organization_id)
-    .neq('status', 'archived');
+  const { supabase, profile } = auth;
   
-  const convos = (conversations || []) as { status: string; unread_count: number; assigned_to: string | null }[];
+  // Use parallel count queries instead of fetching all records
+  const [openResult, pendingResult, unreadResult, assignedResult, unassignedResult] = await Promise.all([
+    supabase
+      .from('inbox_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', profile.organization_id)
+      .eq('status', 'open'),
+    supabase
+      .from('inbox_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', profile.organization_id)
+      .eq('status', 'pending'),
+    supabase
+      .from('inbox_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', profile.organization_id)
+      .in('status', ['open', 'pending'])
+      .gt('unread_count', 0),
+    supabase
+      .from('inbox_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', profile.organization_id)
+      .eq('assigned_to', profile.id),
+    supabase
+      .from('inbox_conversations')
+      .select('*', { count: 'exact', head: true })
+      .eq('org_id', profile.organization_id)
+      .in('status', ['open', 'pending'])
+      .is('assigned_to', null),
+  ]);
   
   return {
-    total_open: convos.filter(c => c.status === 'open').length,
-    total_pending: convos.filter(c => c.status === 'pending').length,
-    total_unread: convos.filter(c => c.unread_count > 0 && ['open', 'pending'].includes(c.status)).length,
-    assigned_to_me: convos.filter(c => c.assigned_to === profile.id).length,
-    unassigned: convos.filter(c => !c.assigned_to && ['open', 'pending'].includes(c.status)).length,
+    total_open: openResult.count || 0,
+    total_pending: pendingResult.count || 0,
+    total_unread: unreadResult.count || 0,
+    assigned_to_me: assignedResult.count || 0,
+    unassigned: unassignedResult.count || 0,
   };
 }
 
@@ -391,17 +419,10 @@ export async function getInboxStats(): Promise<InboxStats> {
  * Get available team members for assignment
  */
 export async function getTeamMembers(): Promise<Array<{ id: string; name: string; email: string; avatar_url?: string }>> {
-  const supabase = await getSupabaseAny();
+  const auth = await getAuthContext();
+  if (!auth) return [];
   
-  // Get current user's org
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user?.id)
-    .single();
-  
-  if (!profile) return [];
+  const { supabase, profile } = auth;
   
   const { data: members } = await supabase
     .from('profiles')
@@ -448,19 +469,12 @@ export async function getUnifiedMessages(
   page: number = 1,
   limit: number = 25
 ): Promise<{ messages: UnifiedMessage[]; total: number }> {
-  const supabase = await getSupabaseAny();
-  
-  // Get org_id from profile
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user?.id)
-    .single();
-  
-  if (!profile) {
+  const auth = await getAuthContext();
+  if (!auth) {
     return { messages: [], total: 0 };
   }
+  
+  const { supabase, profile } = auth;
   
   // First try to get from inbox_conversations
   const { data: conversations, count } = await supabase

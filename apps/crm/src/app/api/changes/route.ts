@@ -1,29 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { broadcastChangeEvent } from '@crm-eco/lib/realtime';
+import { createClient, verifyCrmAccess } from '@/lib/supabase-server';
 
-async function createClient() {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    }
-  );
-}
+export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/changes
@@ -31,22 +10,15 @@ async function createClient() {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Use cached auth to prevent concurrent token refresh conflicts
+    const { profile, isAuthorized, error: authError } = await verifyCrmAccess();
+
+    if (!isAuthorized || !profile) {
+      const status = authError === 'Not authenticated' ? 401 : 403;
+      return NextResponse.json({ error: authError || 'Forbidden' }, { status });
+    }
+
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, crm_role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !profile.crm_role || !profile.organization_id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
@@ -86,16 +58,16 @@ export async function GET(request: NextRequest) {
       query = query.in('severity', allowedSeverities);
     }
 
-    const { data: events, error } = await query;
+    const { data: events, error: queryError } = await query;
 
-    if (error) {
-      console.error('Error fetching changes:', error);
+    if (queryError) {
+      console.error('Error fetching changes:', queryError);
       return NextResponse.json({ error: 'Failed to fetch changes' }, { status: 500 });
     }
 
     return NextResponse.json({ events: events || [] });
-  } catch (error) {
-    console.error('Get changes error:', error);
+  } catch (err) {
+    console.error('Get changes error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -106,22 +78,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Use cached auth to prevent concurrent token refresh conflicts
+    const { profile, isAuthorized, error: authError } = await verifyCrmAccess();
+
+    if (!isAuthorized || !profile) {
+      const status = authError === 'Not authenticated' ? 401 : 403;
+      return NextResponse.json({ error: authError || 'Forbidden' }, { status });
+    }
+
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, full_name, crm_role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !profile.organization_id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
 
     const body = await request.json();
     const {
@@ -146,7 +111,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data: event, error } = await supabase
+    const { data: event, error: insertError } = await supabase
       .from('change_events')
       .insert({
         org_id: profile.organization_id,
@@ -169,8 +134,8 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating change event:', error);
+    if (insertError) {
+      console.error('Error creating change event:', insertError);
       return NextResponse.json({ error: 'Failed to create change event' }, { status: 500 });
     }
 
@@ -195,8 +160,8 @@ export async function POST(request: NextRequest) {
     }).catch(() => {}); // Fire and forget
 
     return NextResponse.json({ event });
-  } catch (error) {
-    console.error('Create change error:', error);
+  } catch (err) {
+    console.error('Create change error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
