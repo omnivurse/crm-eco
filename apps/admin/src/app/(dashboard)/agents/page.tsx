@@ -48,40 +48,40 @@ export default async function AgentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Agents</h1>
-          <p className="text-slate-500">Manage agent accounts and commissions</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Agents</h1>
+          <p className="text-sm sm:text-base text-slate-500">Manage agent accounts and commissions</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <Link href="/agents/bill-groups">
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Bill Groups
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Bill Groups</span>
             </Button>
           </Link>
           <Link href="/agents/assignment">
-            <Button variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Assignment Rules
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Assignment</span>
             </Button>
           </Link>
           <Link href="/agents/tree">
-            <Button variant="outline">
-              <GitBranch className="h-4 w-4 mr-2" />
-              Tree View
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <GitBranch className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Tree View</span>
             </Button>
           </Link>
           <Link href="/agents/import">
-            <Button variant="outline">
-              <Upload className="h-4 w-4 mr-2" />
-              Import
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+              <Upload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Import</span>
             </Button>
           </Link>
           <Link href="/agents/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Agent
+            <Button size="sm" className="text-xs sm:text-sm">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Agent</span>
             </Button>
           </Link>
         </div>

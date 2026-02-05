@@ -320,32 +320,32 @@ export default function InvoicesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Invoices</h1>
-          <p className="text-muted-foreground">Manage and generate member invoices</p>
+          <h1 className="text-xl sm:text-2xl font-bold">Invoices</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage and generate member invoices</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <Link href="/invoices/groups">
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Invoice Groups
+            <Button variant="outline" size="sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Groups</span>
             </Button>
           </Link>
-          <Button variant="outline" onClick={exportInvoices}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
+          <Button variant="outline" size="sm" onClick={exportInvoices}>
+            <Download className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
           <Link href="/invoices/generate/group">
-            <Button variant="outline">
-              <Users className="h-4 w-4 mr-2" />
-              Generate Group
+            <Button variant="outline" size="sm">
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Gen Group</span>
             </Button>
           </Link>
           <Link href="/invoices/generate/individual">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Generate Invoice
+            <Button size="sm">
+              <Plus className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Generate</span>
             </Button>
           </Link>
         </div>
