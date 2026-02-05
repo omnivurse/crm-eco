@@ -58,41 +58,43 @@ export function ThemeProvider({
   useEffect(() => {
     setMounted(true);
     
-    // Step 1: Load from localStorage for instant theme (no flash)
+    // Load from localStorage (fast). Only fall back to DB when localStorage is empty.
+    // setTheme() writes to both localStorage and DB simultaneously, so they stay in sync.
     const storedTheme = localStorage.getItem(storageKey) as Theme | null;
     if (storedTheme && ['light', 'dark', 'system'].includes(storedTheme)) {
       setThemeState(storedTheme);
       applyTheme(storedTheme);
+      setIsLoading(false);
     } else {
-      // Default to light
+      // Default to light immediately
       applyTheme(defaultTheme);
-    }
 
-    // Step 2: Load from DB (authoritative source)
-    const loadFromDB = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('ui_theme')
-            .eq('user_id', user.id)
-            .single();
+      // No localStorage value — query DB as fallback (first visit / cleared cache)
+      const loadFromDB = async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('ui_theme')
+              .eq('user_id', user.id)
+              .single();
 
-          if (profile?.ui_theme && ['light', 'dark', 'system'].includes(profile.ui_theme)) {
-            setThemeState(profile.ui_theme as Theme);
-            applyTheme(profile.ui_theme as Theme);
-            localStorage.setItem(storageKey, profile.ui_theme);
+            if (profile?.ui_theme && ['light', 'dark', 'system'].includes(profile.ui_theme)) {
+              setThemeState(profile.ui_theme as Theme);
+              applyTheme(profile.ui_theme as Theme);
+              localStorage.setItem(storageKey, profile.ui_theme);
+            }
           }
+        } catch (error) {
+          console.warn('Failed to load theme from DB:', error);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.warn('Failed to load theme from DB:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    loadFromDB();
+      loadFromDB();
+    }
   }, [supabase, storageKey, defaultTheme, applyTheme]);
 
   // Listen for system theme changes
