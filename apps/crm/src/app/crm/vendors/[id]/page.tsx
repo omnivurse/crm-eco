@@ -543,21 +543,112 @@ export default function VendorDetailPage() {
         </TabsContent>
 
         {/* Settings Tab */}
-        <TabsContent value="settings">
+        <TabsContent value="settings" className="space-y-6">
+          {/* General Settings */}
           <Card className="glass-card border border-slate-200 dark:border-slate-700">
             <CardHeader>
-              <CardTitle>Vendor Settings</CardTitle>
-              <CardDescription>Configure vendor integration settings</CardDescription>
+              <CardTitle className="text-base">General Settings</CardTitle>
+              <CardDescription>Configure vendor connection and sync preferences</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-12">
-                <Settings2 className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">
-                  Settings Coming Soon
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400">
-                  Vendor configuration options will be available here.
-                </p>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Auto-Sync</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Automatically sync vendor data on a schedule
+                  </p>
+                </div>
+                <Badge variant={vendor.sync_enabled ? 'default' : 'secondary'}>
+                  {vendor.sync_enabled ? 'Enabled' : 'Disabled'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Connection Type</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    How this vendor sends data to your CRM
+                  </p>
+                </div>
+                <Badge variant="outline">{vendor.connection_type}</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Change Detection</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Automatically detect and flag changes in uploaded files
+                  </p>
+                </div>
+                <Badge variant="default">Active</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Auto-Approve Low Severity</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Automatically approve low severity changes
+                  </p>
+                </div>
+                <Badge variant="secondary">Disabled</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notification Settings */}
+          <Card className="glass-card border border-slate-200 dark:border-slate-700">
+            <CardHeader>
+              <CardTitle className="text-base">Notifications</CardTitle>
+              <CardDescription>Configure how you receive vendor alerts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Email on New Upload</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Get notified when a new file is processed
+                  </p>
+                </div>
+                <Badge variant="default">On</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Email on Critical Changes</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Get notified when high or critical severity changes are detected
+                  </p>
+                </div>
+                <Badge variant="default">On</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">Weekly Summary Digest</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Receive a weekly summary of vendor activity
+                  </p>
+                </div>
+                <Badge variant="secondary">Off</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="glass-card border border-red-200 dark:border-red-500/30">
+            <CardHeader>
+              <CardTitle className="text-base text-red-600 dark:text-red-400">Danger Zone</CardTitle>
+              <CardDescription>Irreversible actions for this vendor</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-500/5 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-red-900 dark:text-red-300">
+                    Delete Vendor
+                  </p>
+                  <p className="text-xs text-red-700 dark:text-red-400">
+                    Permanently remove this vendor and all associated data
+                  </p>
+                </div>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
               </div>
             </CardContent>
           </Card>

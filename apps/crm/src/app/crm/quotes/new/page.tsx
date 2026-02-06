@@ -1,40 +1,785 @@
 'use client';
 
-import { FileCheck, ArrowLeft } from 'lucide-react';
+/**
+ * Quote Builder Page
+ *
+ * Full-featured quote creation with:
+ * - Prospect/contact lookup
+ * - Products & services line items with pricing
+ * - Discount per-item and total
+ * - Validity period
+ * - Terms & conditions
+ * - Save as draft, send, or convert to invoice
+ */
+
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  FileCheck,
+  Send,
+  Save,
+  Eye,
+  EyeOff,
+  Calendar,
+  DollarSign,
+  Percent,
+  Copy,
+  FileText,
+  Building2,
+  User,
+  Mail,
+  Phone,
+  Search,
+  Loader2,
+  X,
+  ShieldCheck,
+  Clock,
+  Tag,
+} from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { Input } from '@crm-eco/ui/components/input';
+import { Badge } from '@crm-eco/ui/components/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@crm-eco/ui/components/select';
+import { toast } from 'sonner';
+import { createClient } from '@crm-eco/lib/supabase/client';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface QuoteLineItem {
+  id: string;
+  productName: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  discountType: 'percent' | 'fixed';
+  amount: number;
+}
+
+interface ProspectInfo {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+}
+
+type ValidityPeriod = '7' | '14' | '30' | '60' | '90' | 'custom';
+
+const VALIDITY_LABELS: Record<ValidityPeriod, string> = {
+  '7': '7 Days',
+  '14': '14 Days',
+  '30': '30 Days',
+  '60': '60 Days',
+  '90': '90 Days',
+  custom: 'Custom Date',
+};
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function generateQuoteNumber(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const rand = String(Math.floor(Math.random() * 9999)).padStart(4, '0');
+  return `QTE-${year}${month}-${rand}`;
+}
+
+function generateId(): string {
+  return `qi_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split('T')[0];
+}
+
+function calcItemAmount(item: QuoteLineItem): number {
+  const gross = item.quantity * item.unitPrice;
+  if (item.discountType === 'percent') {
+    return gross - gross * (item.discount / 100);
+  }
+  return gross - item.discount;
+}
+
+// ============================================================================
+// Line Item Row
+// ============================================================================
+
+function QuoteItemRow({
+  item,
+  index,
+  onUpdate,
+  onRemove,
+  onDuplicate,
+  canRemove,
+}: {
+  item: QuoteLineItem;
+  index: number;
+  onUpdate: (id: string, updates: Partial<QuoteLineItem>) => void;
+  onRemove: (id: string) => void;
+  onDuplicate: (id: string) => void;
+  canRemove: boolean;
+}) {
+  return (
+    <div className="group border border-slate-200 dark:border-slate-700 rounded-lg p-4 hover:border-teal-500/30 transition-colors">
+      <div className="flex items-start gap-4">
+        <span className="text-xs font-bold text-slate-400 mt-2 w-5 text-center">{index + 1}</span>
+
+        <div className="flex-1 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Product / Service</label>
+              <Input
+                value={item.productName}
+                onChange={(e) => onUpdate(item.id, { productName: e.target.value })}
+                placeholder="e.g. Website Redesign"
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Description</label>
+              <Input
+                value={item.description}
+                onChange={(e) => onUpdate(item.id, { description: e.target.value })}
+                placeholder="Brief description"
+                className="text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Quantity</label>
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={item.quantity || ''}
+                onChange={(e) => onUpdate(item.id, { quantity: parseFloat(e.target.value) || 0 })}
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Unit Price</label>
+              <div className="relative">
+                <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <Input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={item.unitPrice || ''}
+                  onChange={(e) => onUpdate(item.id, { unitPrice: parseFloat(e.target.value) || 0 })}
+                  className="text-sm pl-7"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Discount</label>
+              <div className="flex gap-1">
+                <Input
+                  type="number"
+                  min={0}
+                  value={item.discount || ''}
+                  onChange={(e) => onUpdate(item.id, { discount: parseFloat(e.target.value) || 0 })}
+                  className="text-sm flex-1"
+                />
+                <Select
+                  value={item.discountType}
+                  onValueChange={(v) => onUpdate(item.id, { discountType: v as 'percent' | 'fixed' })}
+                >
+                  <SelectTrigger className="w-14 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percent">%</SelectItem>
+                    <SelectItem value="fixed">$</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 mb-1 block">Line Total</label>
+              <div className="h-9 flex items-center justify-end px-3 bg-slate-50 dark:bg-slate-800/50 rounded-md text-sm font-semibold text-slate-900 dark:text-white">
+                {formatCurrency(calcItemAmount(item))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-1 pt-6 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => onDuplicate(item.id)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded" title="Duplicate">
+            <Copy className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+          {canRemove && (
+            <button onClick={() => onRemove(item.id)} className="p-1 hover:bg-red-50 dark:hover:bg-red-500/10 rounded" title="Remove">
+              <Trash2 className="w-3.5 h-3.5 text-red-400" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Quote Builder
+// ============================================================================
 
 export default function NewQuotePage() {
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/crm/quotes">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                </Button>
+  const router = useRouter();
+  const supabase = createClient();
+
+  // Metadata
+  const [quoteNumber, setQuoteNumber] = useState(generateQuoteNumber);
+  const [quoteDate, setQuoteDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [validityPeriod, setValidityPeriod] = useState<ValidityPeriod>('30');
+  const [expiryDate, setExpiryDate] = useState(() => addDays(new Date().toISOString().split('T')[0], 30));
+  const [quoteTitle, setQuoteTitle] = useState('');
+
+  // Prospect
+  const [prospect, setProspect] = useState<ProspectInfo | null>(null);
+  const [prospectSearch, setProspectSearch] = useState('');
+  const [prospectResults, setProspectResults] = useState<ProspectInfo[]>([]);
+  const [searchingProspects, setSearchingProspects] = useState(false);
+  const [showProspectSearch, setShowProspectSearch] = useState(false);
+
+  // Line items
+  const [lineItems, setLineItems] = useState<QuoteLineItem[]>([
+    { id: generateId(), productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, discountType: 'percent', amount: 0 },
+  ]);
+
+  // Notes
+  const [notes, setNotes] = useState('');
+  const [terms, setTerms] = useState(
+    'This quote is valid for the period specified above. Prices are subject to change after the expiry date. All work will be performed according to our standard terms of service.'
+  );
+
+  // UI
+  const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // ========================================================================
+  // Auto-calculate expiry
+  // ========================================================================
+
+  useEffect(() => {
+    if (validityPeriod !== 'custom') {
+      setExpiryDate(addDays(quoteDate, parseInt(validityPeriod)));
+    }
+  }, [validityPeriod, quoteDate]);
+
+  // ========================================================================
+  // Calculations
+  // ========================================================================
+
+  const calculations = useMemo(() => {
+    const subtotal = lineItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const totalDiscount = lineItems.reduce((sum, item) => {
+      const gross = item.quantity * item.unitPrice;
+      const net = calcItemAmount(item);
+      return sum + (gross - net);
+    }, 0);
+    const total = subtotal - totalDiscount;
+    return { subtotal, totalDiscount, total };
+  }, [lineItems]);
+
+  // ========================================================================
+  // Line item actions
+  // ========================================================================
+
+  function handleUpdateLineItem(id: string, updates: Partial<QuoteLineItem>) {
+    setLineItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        const updated = { ...item, ...updates };
+        updated.amount = calcItemAmount(updated);
+        return updated;
+      })
+    );
+  }
+
+  function handleAddLineItem() {
+    setLineItems((prev) => [
+      ...prev,
+      { id: generateId(), productName: '', description: '', quantity: 1, unitPrice: 0, discount: 0, discountType: 'percent', amount: 0 },
+    ]);
+  }
+
+  function handleRemoveLineItem(id: string) {
+    setLineItems((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  function handleDuplicateLineItem(id: string) {
+    setLineItems((prev) => {
+      const item = prev.find((i) => i.id === id);
+      if (!item) return prev;
+      const idx = prev.indexOf(item);
+      const dup = { ...item, id: generateId() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, dup);
+      return next;
+    });
+  }
+
+  // ========================================================================
+  // Prospect search
+  // ========================================================================
+
+  useEffect(() => {
+    if (!prospectSearch || prospectSearch.length < 2) {
+      setProspectResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchingProspects(true);
+      try {
+        const { data: records } = await supabase
+          .from('crm_records')
+          .select('id, title, email, phone, data')
+          .or(`title.ilike.%${prospectSearch}%,email.ilike.%${prospectSearch}%`)
+          .limit(8);
+
+        const results: ProspectInfo[] = (records || []).map((r: Record<string, unknown>) => ({
+          id: r.id as string,
+          name: (r.title as string) || 'Unknown',
+          email: (r.email as string) || '',
+          phone: (r.phone as string) || undefined,
+          company: ((r.data as Record<string, unknown>)?.company as string) || undefined,
+        }));
+
+        setProspectResults(results);
+      } catch {
+        // Silently handle search errors
+      } finally {
+        setSearchingProspects(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [prospectSearch, supabase]);
+
+  // ========================================================================
+  // Save
+  // ========================================================================
+
+  async function handleSave(sendAfterSave = false) {
+    if (!prospect) {
+      toast.error('Please select a prospect');
+      return;
+    }
+    if (lineItems.every((i) => !i.productName && i.unitPrice === 0)) {
+      toast.error('Please add at least one line item');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        quote_number: quoteNumber,
+        title: quoteTitle || `Quote for ${prospect.name}`,
+        prospect_id: prospect.id,
+        prospect_name: prospect.name,
+        prospect_email: prospect.email,
+        quote_date: quoteDate,
+        expiry_date: expiryDate,
+        validity_days: validityPeriod === 'custom' ? null : parseInt(validityPeriod),
+        line_items: lineItems.filter((i) => i.productName || i.unitPrice > 0),
+        subtotal: calculations.subtotal,
+        total_discount: calculations.totalDiscount,
+        total: calculations.total,
+        notes,
+        terms,
+        status: sendAfterSave ? 'sent' : 'draft',
+      };
+
+      const res = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to save quote');
+      }
+
+      toast.success(sendAfterSave ? 'Quote sent successfully' : 'Quote saved as draft');
+      router.push('/crm/quotes');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save quote');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // ========================================================================
+  // Render
+  // ========================================================================
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href="/crm/quotes">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New Quote</h1>
+            <p className="text-slate-500 dark:text-slate-400">
+              Create a professional quote for your prospect
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)}>
+            {showPreview ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+            {showPreview ? 'Edit' : 'Preview'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => handleSave(false)} disabled={saving}>
+            <Save className="w-4 h-4 mr-2" />
+            Save Draft
+          </Button>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleSave(true)} disabled={saving}>
+            {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+            Send Quote
+          </Button>
+        </div>
+      </div>
+
+      {showPreview ? (
+        /* ================================================================ */
+        /* Preview */
+        /* ================================================================ */
+        <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-8 bg-white dark:bg-slate-900">
+          <div className="flex items-start justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">QUOTE</h2>
+              <p className="text-slate-500 dark:text-slate-400 font-mono">{quoteNumber}</p>
+              {quoteTitle && <p className="text-lg text-slate-700 dark:text-slate-300 mt-2">{quoteTitle}</p>}
+            </div>
+            <Badge className="bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">Draft</Badge>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Prepared For</p>
+              {prospect ? (
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">New Quote</h1>
-                    <p className="text-slate-500 dark:text-slate-400">
-                        Create a new quote for your prospect
-                    </p>
+                  <p className="font-semibold text-slate-900 dark:text-white">{prospect.name}</p>
+                  {prospect.company && <p className="text-sm text-slate-600 dark:text-slate-400">{prospect.company}</p>}
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{prospect.email}</p>
                 </div>
+              ) : (
+                <p className="text-sm text-slate-400 italic">No prospect selected</p>
+              )}
+            </div>
+            <div className="text-right space-y-1 text-sm">
+              <p><span className="text-slate-500">Quote Date:</span> <span className="font-medium text-slate-900 dark:text-white">{quoteDate}</span></p>
+              <p><span className="text-slate-500">Valid Until:</span> <span className="font-medium text-slate-900 dark:text-white">{expiryDate}</span></p>
+            </div>
+          </div>
+
+          <table className="w-full mb-8">
+            <thead>
+              <tr className="border-b-2 border-slate-200 dark:border-slate-700">
+                <th className="text-left py-2 text-xs text-slate-500 uppercase">Product / Service</th>
+                <th className="text-left py-2 text-xs text-slate-500 uppercase">Description</th>
+                <th className="text-right py-2 text-xs text-slate-500 uppercase">Qty</th>
+                <th className="text-right py-2 text-xs text-slate-500 uppercase">Price</th>
+                <th className="text-right py-2 text-xs text-slate-500 uppercase">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lineItems.filter((i) => i.productName || i.unitPrice > 0).map((item) => (
+                <tr key={item.id} className="border-b border-slate-100 dark:border-slate-800">
+                  <td className="py-3 text-sm font-medium text-slate-900 dark:text-white">{item.productName || '—'}</td>
+                  <td className="py-3 text-sm text-slate-600 dark:text-slate-400">{item.description || '—'}</td>
+                  <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400">{item.quantity}</td>
+                  <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400">{formatCurrency(item.unitPrice)}</td>
+                  <td className="py-3 text-sm text-right font-medium text-slate-900 dark:text-white">{formatCurrency(calcItemAmount(item))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="flex justify-end mb-8">
+            <div className="w-72 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Subtotal</span>
+                <span className="text-slate-900 dark:text-white">{formatCurrency(calculations.subtotal)}</span>
+              </div>
+              {calculations.totalDiscount > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount</span>
+                  <span>-{formatCurrency(calculations.totalDiscount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold border-t-2 border-slate-200 dark:border-slate-700 pt-2">
+                <span className="text-slate-900 dark:text-white">Total</span>
+                <span className="text-blue-600 dark:text-blue-400">{formatCurrency(calculations.total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {notes && (
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Notes</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{notes}</p>
+            </div>
+          )}
+          {terms && (
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-4 mt-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Terms & Conditions</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{terms}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* ================================================================ */
+        /* Edit Mode */
+        /* ================================================================ */
+        <>
+          {/* Quote Details & Prospect */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Quote Details */}
+            <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-blue-500" />
+                Quote Details
+              </h2>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Quote Title</label>
+                <Input
+                  value={quoteTitle}
+                  onChange={(e) => setQuoteTitle(e.target.value)}
+                  placeholder="e.g. Website Redesign Proposal"
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Quote Number</label>
+                  <Input value={quoteNumber} onChange={(e) => setQuoteNumber(e.target.value)} className="font-mono text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Quote Date</label>
+                  <Input type="date" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} className="text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Valid For</label>
+                  <Select value={validityPeriod} onValueChange={(v) => setValidityPeriod(v as ValidityPeriod)}>
+                    <SelectTrigger className="text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(VALIDITY_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Expiry Date</label>
+                  <Input
+                    type="date"
+                    value={expiryDate}
+                    onChange={(e) => { setExpiryDate(e.target.value); setValidityPeriod('custom'); }}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="bg-white dark:bg-slate-800/50 rounded-xl p-8 border border-slate-200 dark:border-slate-700 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center mx-auto mb-6">
-                    <FileCheck className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            {/* Prospect Selection */}
+            <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-blue-500" />
+                Prepared For
+              </h2>
+
+              {prospect ? (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-900 dark:text-white">{prospect.name}</p>
+                      {prospect.company && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                          <Building2 className="w-3 h-3" /> {prospect.company}
+                        </p>
+                      )}
+                      <p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                        <Mail className="w-3 h-3" /> {prospect.email}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => { setProspect(null); setShowProspectSearch(true); }}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                    Quote Builder Coming Soon
-                </h3>
-                <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-                    The quote builder will allow you to create professional quotes with products, pricing, terms, and e-signature capabilities.
-                </p>
-                <Button variant="outline" asChild>
-                    <Link href="/crm/quotes">Back to Quotes</Link>
-                </Button>
+              ) : (
+                <div className="relative">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Input
+                      value={prospectSearch}
+                      onChange={(e) => { setProspectSearch(e.target.value); setShowProspectSearch(true); }}
+                      onFocus={() => setShowProspectSearch(true)}
+                      placeholder="Search contacts by name or email..."
+                      className="pl-9 text-sm"
+                    />
+                    {searchingProspects && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />}
+                  </div>
+
+                  {showProspectSearch && prospectResults.length > 0 && (
+                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {prospectResults.map((r) => (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => { setProspect(r); setProspectSearch(''); setShowProspectSearch(false); }}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-3"
+                        >
+                          <div className="w-8 h-8 bg-blue-100 dark:bg-blue-500/20 rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{r.name}</p>
+                            <p className="text-xs text-slate-500">{r.email}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {showProspectSearch && prospectSearch.length >= 2 && prospectResults.length === 0 && !searchingProspects && (
+                    <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-4 text-center">
+                      <p className="text-sm text-slate-500">No contacts found</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-        </div>
-    );
+          </div>
+
+          {/* Line Items */}
+          <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                <Tag className="w-4 h-4 text-blue-500" />
+                Products & Services
+              </h2>
+              <Button variant="outline" size="sm" onClick={handleAddLineItem}>
+                <Plus className="w-4 h-4 mr-1" />
+                Add Item
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              {lineItems.map((item, idx) => (
+                <QuoteItemRow
+                  key={item.id}
+                  item={item}
+                  index={idx}
+                  onUpdate={handleUpdateLineItem}
+                  onRemove={handleRemoveLineItem}
+                  onDuplicate={handleDuplicateLineItem}
+                  canRemove={lineItems.length > 1}
+                />
+              ))}
+            </div>
+
+            <Button variant="ghost" size="sm" onClick={handleAddLineItem} className="mt-3 text-blue-600 dark:text-blue-400 hover:text-blue-700">
+              <Plus className="w-4 h-4 mr-1" />
+              Add Line Item
+            </Button>
+          </div>
+
+          {/* Notes/Terms + Summary */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Notes</label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Additional notes for the client..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder:text-slate-400 resize-none"
+                />
+              </div>
+              <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Terms & Conditions</label>
+                <textarea
+                  value={terms}
+                  onChange={(e) => setTerms(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder:text-slate-400 resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white mb-4">Summary</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-500">Subtotal</span>
+                  <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(calculations.subtotal)}</span>
+                </div>
+                {calculations.totalDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span>Total Discount</span>
+                    <span>-{formatCurrency(calculations.totalDiscount)}</span>
+                  </div>
+                )}
+                <div className="border-t-2 border-slate-200 dark:border-slate-700 pt-3 flex justify-between">
+                  <span className="text-lg font-bold text-slate-900 dark:text-white">Total</span>
+                  <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{formatCurrency(calculations.total)}</span>
+                </div>
+              </div>
+
+              {/* Quick info */}
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  Valid for {validityPeriod === 'custom' ? 'custom period' : `${validityPeriod} days`}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {lineItems.filter((i) => i.productName || i.unitPrice > 0).length} line item(s)
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

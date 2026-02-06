@@ -388,16 +388,39 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
-              <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
-                <p className="text-sm text-slate-500">
-                  Condition configuration coming soon. Conditions allow branching based on:
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <Label>Condition Type</Label>
+                  <select
+                    value={formData.condition_type || 'email_opened'}
+                    onChange={(e) => setFormData({ ...formData, condition_type: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
+                  >
+                    <option value="email_opened">Email was opened</option>
+                    <option value="email_not_opened">Email was NOT opened</option>
+                    <option value="link_clicked">Link was clicked</option>
+                    <option value="link_not_clicked">Link was NOT clicked</option>
+                    <option value="reply_received">Reply received</option>
+                    <option value="no_reply">No reply received</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Evaluation Window</Label>
+                  <select
+                    value={formData.condition_window || '24'}
+                    onChange={(e) => setFormData({ ...formData, condition_window: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white"
+                  >
+                    <option value="12">Within 12 hours</option>
+                    <option value="24">Within 24 hours</option>
+                    <option value="48">Within 48 hours</option>
+                    <option value="72">Within 72 hours</option>
+                    <option value="168">Within 7 days</option>
+                  </select>
+                </div>
+                <p className="text-xs text-slate-500">
+                  The sequence will branch based on whether this condition is met within the evaluation window.
                 </p>
-                <ul className="text-sm text-slate-500 mt-2 space-y-1">
-                  <li>• Email opened/not opened</li>
-                  <li>• Link clicked/not clicked</li>
-                  <li>• Reply received</li>
-                  <li>• Custom field values</li>
-                </ul>
               </div>
             </div>
           )}

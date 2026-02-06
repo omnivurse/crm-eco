@@ -90,7 +90,7 @@ const CLOUD_PROVIDERS: CloudProvider[] = [
     ),
     color: 'blue',
     features: ['Advanced security', 'Compliance tools', 'Workflow automation'],
-    status: 'coming_soon',
+    status: 'disconnected',
   },
 ];
 
@@ -148,8 +148,8 @@ export default function CloudStoragePage() {
 
   const handleConnect = async (providerId: string) => {
     const provider = providers.find((p) => p.id === providerId);
-    if (!provider || provider.status === 'coming_soon') {
-      toast.info('This integration is coming soon!');
+    if (!provider) {
+      toast.error('Provider not found');
       return;
     }
 
@@ -167,8 +167,11 @@ export default function CloudStoragePage() {
       } else if (providerId === 'onedrive') {
         toast.info('Redirecting to Microsoft for authentication...');
         window.location.href = `/api/integrations/oauth/onedrive?connection_type=cloud_storage`;
+      } else if (providerId === 'box') {
+        toast.info('Redirecting to Box for authentication...');
+        window.location.href = `/api/integrations/oauth/box?connection_type=cloud_storage`;
       } else {
-        toast.info(`${provider.name} integration coming soon!`);
+        toast.error(`${provider.name} OAuth is not configured. Contact your administrator.`);
         setConnecting(null);
       }
     } catch (error) {
@@ -223,8 +226,8 @@ export default function CloudStoragePage() {
         );
       case 'coming_soon':
         return (
-          <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
-            Coming Soon
+          <span className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            Not Connected
           </span>
         );
     }
@@ -326,7 +329,9 @@ export default function CloudStoragePage() {
             <div className="flex items-center gap-2">
               {provider.status === 'connected' ? (
                 <>
-                  <Button variant="outline" size="sm" className="flex-1" onClick={() => toast.info('Storage settings coming soon')}>
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => {
+                    window.location.href = `/crm/settings/automations?tab=integrations&provider=${provider.id}`;
+                  }}>
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </Button>

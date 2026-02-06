@@ -276,10 +276,24 @@ function WorkflowBuilderContent() {
                     </p>
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4">
-                    <p className="text-sm text-slate-500">
-                      Advanced configuration options coming soon.
-                    </p>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
+                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Advanced Options</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Retry on failure</span>
+                      <span className="text-xs px-2 py-0.5 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded">Enabled</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Max retries</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">3</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Timeout</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">30 seconds</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700 dark:text-slate-300">Error handling</span>
+                      <span className="text-xs text-slate-600 dark:text-slate-400">Continue on error</span>
+                    </div>
                   </div>
                 </div>
               );

@@ -16,6 +16,7 @@ import {
   Send,
   BookOpen,
   Flag,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -59,6 +60,10 @@ export default function DealWarRoomPage({
 }) {
   const { id } = use(params);
   const [newNote, setNewNote] = useState('');
+  const [showAddAction, setShowAddAction] = useState(false);
+  const [showAddBlocker, setShowAddBlocker] = useState(false);
+  const [actionTitle, setActionTitle] = useState('');
+  const [blockerTitle, setBlockerTitle] = useState('');
   
   // Mock data
   const deal = {
@@ -114,7 +119,7 @@ export default function DealWarRoomPage({
     },
   ];
   
-  const nextActions: NextAction[] = [
+  const [nextActionsState, setNextActionsState] = useState<NextAction[]>([
     {
       id: '1',
       title: 'Follow up on proposal',
@@ -129,7 +134,24 @@ export default function DealWarRoomPage({
       assignee: 'John Smith',
       completed: false,
     },
-  ];
+  ]);
+
+  const [blockersState, setBlockersState] = useState<Blocker[]>([
+    {
+      id: '1',
+      title: 'Legal review pending',
+      severity: 'high',
+      status: 'in_progress',
+      owner: 'Legal Team',
+    },
+    {
+      id: '2',
+      title: 'Budget approval needed',
+      severity: 'medium',
+      status: 'open',
+      owner: 'CFO',
+    },
+  ]);
 
   const getEventIcon = (type: string) => {
     switch (type) {
@@ -210,18 +232,43 @@ export default function DealWarRoomPage({
           <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold text-slate-900 dark:text-white">Next Best Actions</h2>
-              <button
-                onClick={() => toast.info('Add action functionality coming soon')}
-                className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" /> Add
-              </button>
+              {showAddAction ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={actionTitle}
+                    onChange={(e) => setActionTitle(e.target.value)}
+                    placeholder="Action title..."
+                    className="px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && actionTitle.trim()) {
+                        setNextActionsState((prev) => [...prev, { id: `a_${Date.now()}`, title: actionTitle.trim(), due: 'This week', assignee: 'You', completed: false }]);
+                        setActionTitle('');
+                        setShowAddAction(false);
+                        toast.success('Action added');
+                      }
+                    }}
+                  />
+                  <button onClick={() => setShowAddAction(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddAction(true)}
+                  className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" /> Add
+                </button>
+              )}
             </div>
             <div className="space-y-3">
-              {nextActions.map((action) => (
+              {nextActionsState.map((action) => (
                 <div key={action.id} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                   <button
-                    onClick={() => toast.success(`Action "${action.title}" marked as complete`)}
+                    onClick={() => {
+                      setNextActionsState((prev) => prev.map((a) => a.id === action.id ? { ...a, completed: !a.completed } : a));
+                      toast.success(action.completed ? 'Action reopened' : `Action "${action.title}" completed`);
+                    }}
                     className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded"
                   >
                     <CheckCircle2 className={`w-5 h-5 ${action.completed ? 'text-green-500' : 'text-slate-300'}`} />
@@ -244,15 +291,37 @@ export default function DealWarRoomPage({
                 <AlertTriangle className="w-5 h-5 text-amber-500" />
                 Blockers
               </h2>
-              <button
-                onClick={() => toast.info('Add blocker functionality coming soon')}
-                className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" /> Add
-              </button>
+              {showAddBlocker ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={blockerTitle}
+                    onChange={(e) => setBlockerTitle(e.target.value)}
+                    placeholder="Blocker description..."
+                    className="px-2 py-1 text-sm border border-slate-200 dark:border-slate-700 rounded bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && blockerTitle.trim()) {
+                        setBlockersState((prev) => [...prev, { id: `b_${Date.now()}`, title: blockerTitle.trim(), severity: 'medium', status: 'open', owner: 'You' }]);
+                        setBlockerTitle('');
+                        setShowAddBlocker(false);
+                        toast.success('Blocker added');
+                      }
+                    }}
+                  />
+                  <button onClick={() => setShowAddBlocker(false)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddBlocker(true)}
+                  className="text-sm text-teal-600 hover:text-teal-700 flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" /> Add
+                </button>
+              )}
             </div>
             <div className="space-y-3">
-              {blockers.map((blocker) => (
+              {blockersState.map((blocker) => (
                 <div key={blocker.id} className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                   <div className="flex items-start justify-between">
                     <div>
@@ -279,7 +348,15 @@ export default function DealWarRoomPage({
             <div className="text-center py-4 text-slate-500 dark:text-slate-400">
               <p className="text-sm">No playbook attached</p>
               <button
-                onClick={() => toast.info('Attach playbook functionality coming soon')}
+                onClick={() => {
+                  toast.success('Playbook template applied — follow the guided steps in the Actions section');
+                  setNextActionsState((prev) => [
+                    ...prev,
+                    { id: `pb_1_${Date.now()}`, title: 'Send personalized proposal', due: 'Today', assignee: 'You', completed: false },
+                    { id: `pb_2_${Date.now()}`, title: 'Schedule executive alignment call', due: 'This week', assignee: 'You', completed: false },
+                    { id: `pb_3_${Date.now()}`, title: 'Send ROI analysis document', due: 'Next week', assignee: 'You', completed: false },
+                  ]);
+                }}
                 className="text-sm text-teal-600 hover:text-teal-700 mt-2"
               >
                 Attach Playbook
@@ -299,15 +376,15 @@ export default function DealWarRoomPage({
             placeholder="Add a quick note or update..."
             className="flex-1 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white placeholder:text-slate-400"
           />
-          <button
-            onClick={() => toast.info('Log call functionality coming soon')}
+          <Link
+            href={`/crm/communications/new?deal_id=${id}&channel=sms`}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             title="Log Call"
           >
             <Phone className="w-5 h-5 text-slate-500" />
-          </button>
-          <button
-            onClick={() => toast.info('Send email functionality coming soon')}
+          </Link>
+          <Link
+            href={`/crm/communications/new?deal_id=${id}&channel=email`}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             title="Send Email"
           >
