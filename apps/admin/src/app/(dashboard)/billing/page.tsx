@@ -12,6 +12,7 @@ import {
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { formatDistanceToNow, format } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 interface BillingStats {
   totalCollected: number;
@@ -213,10 +214,12 @@ export default async function BillingPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Billing</h1>
-        <p className="text-sm sm:text-base text-slate-500">Manage payments, transactions, and billing schedules</p>
-      </div>
+      <PageHeader
+        title="Billing"
+        description="Manage payments, transactions, and billing schedules"
+        icon={<CreditCard className="w-6 h-6" />}
+        gradient="from-amber-500 to-orange-400"
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

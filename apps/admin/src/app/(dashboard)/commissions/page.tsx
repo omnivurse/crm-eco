@@ -3,6 +3,7 @@ import { DollarSign, Users, TrendingUp, Clock, Layers, FileText, CreditCard } fr
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 // Commission transaction type (tables may not be in generated types yet)
 interface CommissionTransaction {
   id: string;
@@ -207,10 +208,12 @@ export default async function CommissionsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Commissions</h1>
-        <p className="text-slate-500">Manage commission tiers, transactions, and payouts</p>
-      </div>
+      <PageHeader
+        title="Commissions"
+        description="Manage commission tiers, transactions, and payouts"
+        icon={<Layers className="w-6 h-6" />}
+        gradient="from-emerald-500 to-teal-400"
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

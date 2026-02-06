@@ -1,3 +1,10 @@
 export { TodoListWidget } from './TodoListWidget';
 export { JobsWidget } from './JobsWidget';
 export { RecentPagesWidget } from './RecentPagesWidget';
+export { DashboardHeader } from './DashboardHeader';
+export { StatCard, CommissionCard } from './StatCard';
+export type { StatCardProps, CommissionCardProps } from './StatCard';
+export { FutureEnrollmentsCard } from './FutureEnrollmentsCard';
+export type { FutureEnrollmentsData } from './FutureEnrollmentsCard';
+export { MemberActivityAnalysis } from './MemberActivityAnalysis';
+export type { MemberActivityData } from './MemberActivityAnalysis';
