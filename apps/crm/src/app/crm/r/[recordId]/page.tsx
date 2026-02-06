@@ -19,11 +19,11 @@ import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 import { NotesPanel } from './NotesPanel';
 
 interface PageProps {
-  params: Promise<{ recordId: string }>;
+  params: { recordId: string };
 }
 
 async function RecordDetailContent({ params }: PageProps) {
-  const { recordId } = await params;
+  const { recordId } = params;
 
   const profile = await getCurrentProfile();
   if (!profile) return notFound();

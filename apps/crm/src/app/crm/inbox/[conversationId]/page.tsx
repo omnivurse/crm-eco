@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Input, Label, Textarea } from '@crm-eco/ui';
@@ -197,9 +197,9 @@ function QuickActionsPanel({
 export default function ConversationDetailPage({
   params,
 }: {
-  params: Promise<{ conversationId: string }>;
+  params: { conversationId: string };
 }) {
-  const { conversationId } = use(params);
+  const { conversationId } = params;
   const router = useRouter();
   const [conversation, setConversation] = useState<InboxConversation | null>(null);
   const [messages, setMessages] = useState<InboxMessage[]>([]);

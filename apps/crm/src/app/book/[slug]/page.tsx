@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Calendar,
   Clock,
@@ -36,8 +36,8 @@ interface SchedulingLink {
 
 const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-export default function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+export default function BookingPage({ params }: { params: { slug: string } }) {
+  const { slug } = params;
   const [link, setLink] = useState<SchedulingLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

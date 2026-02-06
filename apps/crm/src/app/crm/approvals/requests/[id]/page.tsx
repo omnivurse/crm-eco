@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -32,11 +32,11 @@ import {
 import type { ApprovalDetailData, CrmApprovalAction, ApprovalStatus, ApprovalStep } from '@/lib/approvals/types';
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function ApprovalDetailPage({ params }: PageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   
   const [approval, setApproval] = useState<ApprovalDetailData | null>(null);

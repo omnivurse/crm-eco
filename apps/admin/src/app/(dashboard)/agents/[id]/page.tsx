@@ -79,11 +79,11 @@ function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destr
 }
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default async function AgentDetailPage({ params }: PageProps) {
-  const { id } = await params;
+  const { id } = params;
   const result = await getAgent(id);
 
   if (!result || !result.agent) {
