@@ -279,14 +279,14 @@ export default function UsersPage() {
         .from('profiles')
         .select('*')
         .eq('user_id', authUser.id)
-        .single();
+        .single() as { data: UserProfile | null };
 
       if (!profile || profile.crm_role !== 'crm_admin') {
         router.push('/crm/settings?error=admin_only');
         return;
       }
 
-      setCurrentProfile(profile as UserProfile);
+      setCurrentProfile(profile);
 
       // Get all org users
       const { data: orgUsers } = await supabase
@@ -562,11 +562,7 @@ export default function UsersPage() {
               <UserRow
                 key={user.id}
                 user={user}
-<<<<<<< HEAD
-                currentUserId={authProfile?.id || ''}
-=======
                 currentUserId={currentProfile?.id || ''}
->>>>>>> 9c79666720867ec0a9476c62859d5fb0a73c1a32
                 onRoleChange={handleRoleChange}
                 onSendPasswordReset={handleSendPasswordReset}
                 onSetPassword={openSetPassword}
@@ -598,11 +594,7 @@ export default function UsersPage() {
               <UserRow
                 key={user.id}
                 user={user}
-<<<<<<< HEAD
-                currentUserId={authProfile?.id || ''}
-=======
                 currentUserId={currentProfile?.id || ''}
->>>>>>> 9c79666720867ec0a9476c62859d5fb0a73c1a32
                 onRoleChange={handleRoleChange}
                 onSendPasswordReset={handleSendPasswordReset}
                 onSetPassword={openSetPassword}
