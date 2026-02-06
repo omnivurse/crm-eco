@@ -25,6 +25,8 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  BookOpen,
+  HelpCircle,
 } from 'lucide-react';
 import { useTerminal } from '@/components/terminal';
 
@@ -203,6 +205,27 @@ const navSections: NavSection[] = [
         label: 'Audit Logs',
         href: '/settings/audit-logs',
         icon: <FileText className="h-5 w-5" />,
+      },
+    ],
+  },
+  {
+    title: 'Resources',
+    collapsible: true,
+    items: [
+      {
+        label: 'Features',
+        href: '/features',
+        icon: <Sparkles className="h-5 w-5" />,
+      },
+      {
+        label: 'Learn',
+        href: '/learn',
+        icon: <BookOpen className="h-5 w-5" />,
+      },
+      {
+        label: 'Help',
+        href: '/learn/getting-started',
+        icon: <HelpCircle className="h-5 w-5" />,
       },
     ],
   },

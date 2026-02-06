@@ -1,29 +1,25 @@
 'use client';
 
-// Bridge Panel - Starship Command Center
+// Bridge Panel - Pay It Forward Command Center
 import React from 'react';
 import { useTerminal } from '../terminal-provider';
 
 export function BridgePanel() {
   const { execute } = useTerminal();
 
-  const metrics = [
-    { label: 'Pipeline Value', value: '$1.2M', trend: '+12%', icon: '💰' },
-    { label: 'Active Deals', value: '42', trend: '+5', icon: '📊' },
-    { label: 'Won This Month', value: '8', trend: '+3', icon: '🏆' },
-    { label: 'Conversion Rate', value: '34%', trend: '+2%', icon: '📈' },
-  ];
-
-  const alerts = [
-    { type: 'warning' as const, message: '5 deals closing this week' },
-    { type: 'info' as const, message: '3 new leads assigned' },
-  ];
-
   const quickActions = [
-    { label: '[N]ew Deal', command: 'new deal' },
-    { label: '[S]earch', command: 'search ' },
-    { label: '[D]eals', command: 'deals' },
-    { label: '[R]eports', command: 'goto /crm/reports' },
+    { label: '🔍 Search', command: 'search' },
+    { label: '👥 Members', command: 'member' },
+    { label: '🤝 Agents', command: 'agent' },
+    { label: '📦 Products', command: 'product' },
+    { label: '📋 Enrollments', command: 'enrollment' },
+    { label: '🏢 Vendors', command: 'vendor' },
+    { label: '💰 Billing', command: 'billing' },
+    { label: '📧 Emails', command: 'email' },
+    { label: '📊 Reports', command: 'reports' },
+    { label: '⚙️ Settings', command: 'settings' },
+    { label: '📈 Counts', command: 'count' },
+    { label: '🕐 Activity', command: 'recent' },
   ];
 
   return (
@@ -35,29 +31,24 @@ export function BridgePanel() {
       </div>
 
       <div className="panel-content">
-        <div className="bridge-metrics">
-          {metrics.map((metric, index) => (
-            <div key={index} className="metric-card">
-              <div className="metric-icon">{metric.icon}</div>
-              <div className="metric-details">
-                <span className="metric-value">{metric.value}</span>
-                <span className="metric-label">{metric.label}</span>
-                {metric.trend && (
-                  <span className="metric-trend up">{metric.trend}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-
         <div className="bridge-alerts">
-          <div className="section-title">◈ SYSTEM ALERTS</div>
-          {alerts.map((alert, index) => (
-            <div key={index} className={`alert-item alert-${alert.type}`}>
-              <span className="alert-indicator" />
-              <span className="alert-message">{alert.message}</span>
-            </div>
-          ))}
+          <div className="section-title">◈ QUICK COMMANDS</div>
+          <div className="alert-item alert-info">
+            <span className="alert-indicator" />
+            <span className="alert-message">Type <code>search [query]</code> to search everything</span>
+          </div>
+          <div className="alert-item alert-info">
+            <span className="alert-indicator" />
+            <span className="alert-message">Type <code>member [name]</code> to find a member</span>
+          </div>
+          <div className="alert-item alert-info">
+            <span className="alert-indicator" />
+            <span className="alert-message">Type <code>count</code> to see record totals</span>
+          </div>
+          <div className="alert-item alert-info">
+            <span className="alert-indicator" />
+            <span className="alert-message">Type <code>whoami</code> to see your profile</span>
+          </div>
         </div>
 
         <div className="bridge-actions">
