@@ -15,17 +15,17 @@ import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord } from '@/lib/crm/types';
 
 interface PageProps {
-  params: Promise<{ moduleKey: string }>;
-  searchParams: Promise<{
+  params: { moduleKey: string };
+  searchParams: {
     view?: string;
     page?: string;
     search?: string;
-  }>;
+  };
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
-  const { moduleKey } = await params;
-  const { page: pageStr, search, view: viewId } = await searchParams;
+  const { moduleKey } = params;
+  const { page: pageStr, search, view: viewId } = searchParams;
   
   const profile = await getCurrentProfile();
   if (!profile) return notFound();

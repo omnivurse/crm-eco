@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -32,7 +32,7 @@ import {
 import type { ApprovalStep, ApprovalStepType } from '@/lib/approvals/types';
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 interface Module {
@@ -69,7 +69,7 @@ const defaultProcess: ProcessData = {
 };
 
 export default function ApprovalProcessEditorPage({ params }: PageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   const isNew = id === 'new';
 

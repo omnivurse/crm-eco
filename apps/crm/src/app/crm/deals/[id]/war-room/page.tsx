@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
@@ -56,9 +56,9 @@ interface NextAction {
 export default function DealWarRoomPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = use(params);
+  const { id } = params;
   const [newNote, setNewNote] = useState('');
   const [showAddAction, setShowAddAction] = useState(false);
   const [showAddBlocker, setShowAddBlocker] = useState(false);

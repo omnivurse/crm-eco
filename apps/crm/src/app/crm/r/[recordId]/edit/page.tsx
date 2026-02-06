@@ -8,7 +8,6 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
-import { use } from 'react';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
 import { getFieldOptions } from '@/lib/crm/utils';
 
@@ -22,8 +21,8 @@ interface Field {
   placeholder?: string;
 }
 
-export default function EditRecordPage({ params }: { params: Promise<{ recordId: string }> }) {
-  const { recordId } = use(params);
+export default function EditRecordPage({ params }: { params: { recordId: string } }) {
+  const { recordId } = params;
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Record<string, unknown>>({});

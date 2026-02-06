@@ -34,9 +34,9 @@ async function getVendor(id: string) {
 export default async function EditVendorPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
   const vendor = await getVendor(id);
 
   if (!vendor) {

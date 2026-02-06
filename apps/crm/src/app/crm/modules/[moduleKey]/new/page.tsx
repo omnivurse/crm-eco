@@ -12,11 +12,11 @@ import { createRecord, type CreateRecordInput } from '@/lib/crm/mutations';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 
 interface PageProps {
-  params: Promise<{ moduleKey: string }>;
+  params: { moduleKey: string };
 }
 
 async function NewRecordContent({ params }: PageProps) {
-  const { moduleKey } = await params;
+  const { moduleKey } = params;
 
   const profile = await getCurrentProfile();
   if (!profile) return notFound();

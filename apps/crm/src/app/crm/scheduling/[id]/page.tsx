@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -46,8 +46,8 @@ const DURATION_OPTIONS = [
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-export default function EditSchedulingLinkPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EditSchedulingLinkPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

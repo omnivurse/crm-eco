@@ -158,9 +158,9 @@ function FileStatusIcon({ status }: { status: string }) {
 export default async function VendorDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const { id } = await params;
+  const { id } = params;
   const data = await getVendorWithData(id);
 
   if (!data) {
