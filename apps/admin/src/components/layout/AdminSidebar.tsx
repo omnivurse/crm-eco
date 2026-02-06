@@ -217,17 +217,30 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
   const pathname = usePathname();
   const { toggle: toggleTerminal } = useTerminal();
   
-  // State for collapsed sections - persisted in localStorage
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
-    if (typeof window === 'undefined') return new Set();
-    const stored = localStorage.getItem('admin-sidebar-collapsed');
-    return stored ? new Set(JSON.parse(stored)) : new Set();
-  });
+  // State for collapsed sections - always start with empty set on server,
+  // then hydrate from localStorage on mount to avoid hydration mismatch
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [sidebarReady, setSidebarReady] = useState(false);
 
-  // Persist collapsed state to localStorage
+  // Hydrate from localStorage on mount
   useEffect(() => {
-    localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(Array.from(collapsedSections)));
-  }, [collapsedSections]);
+    const stored = localStorage.getItem('admin-sidebar-collapsed');
+    if (stored) {
+      try {
+        setCollapsedSections(new Set(JSON.parse(stored)));
+      } catch {
+        // Ignore parse errors
+      }
+    }
+    setSidebarReady(true);
+  }, []);
+
+  // Persist collapsed state to localStorage (only after initial hydration)
+  useEffect(() => {
+    if (sidebarReady) {
+      localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(Array.from(collapsedSections)));
+    }
+  }, [collapsedSections, sidebarReady]);
 
   // Auto-expand section when navigating to a page within it
   useEffect(() => {

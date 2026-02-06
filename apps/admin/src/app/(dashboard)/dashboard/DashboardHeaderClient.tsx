@@ -18,11 +18,18 @@ interface DashboardHeaderClientProps {
 export function DashboardHeaderClient({ greeting, stats }: DashboardHeaderClientProps) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(true);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
+    // Set client-side initial values after mount to avoid hydration mismatch
+    setHasMounted(true);
+    setCurrentTime(new Date());
+    setLastUpdated(new Date());
+    setIsOnline(navigator.onLine);
+
     // Update current time every second
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -34,7 +41,6 @@ export function DashboardHeaderClient({ greeting, stats }: DashboardHeaderClient
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    setIsOnline(navigator.onLine);
 
     return () => {
       clearInterval(timer);
@@ -125,17 +131,19 @@ export function DashboardHeaderClient({ greeting, stats }: DashboardHeaderClient
             </button>
             
             {/* Current time and last updated */}
-            <div className="hidden lg:flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-white/60" />
-                <span className="text-sm font-medium text-white">
-                  {format(currentTime, 'h:mm:ss a')}
+            {hasMounted && currentTime && lastUpdated && (
+              <div className="hidden lg:flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-white/60" />
+                  <span className="text-sm font-medium text-white">
+                    {format(currentTime, 'h:mm:ss a')}
+                  </span>
+                </div>
+                <span className="text-[10px] text-white/40">
+                  Updated {format(lastUpdated, 'MMM d, h:mm a')}
                 </span>
               </div>
-              <span className="text-[10px] text-white/40">
-                Updated {format(lastUpdated, 'MMM d, h:mm a')}
-              </span>
-            </div>
+            )}
           </div>
         </div>
 

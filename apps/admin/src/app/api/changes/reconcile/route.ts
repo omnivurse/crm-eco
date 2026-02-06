@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user has admin role
-    const adminRoles = ['super_admin', 'admin', 'manager'];
+    const adminRoles = ['super_admin', 'admin', 'manager', 'owner'];
     if (!profile.role || !adminRoles.includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden - Admin role required' }, { status: 403 });
     }
