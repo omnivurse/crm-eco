@@ -1,0 +1,101 @@
+/**
+ * Admin User Profile Update API Route
+ * PATCH /api/users/[id]/profile - Update a user's profile details
+ *
+ * Allows admins to edit user details like name, status, etc.
+ * Only crm_admin users can use this.
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
+
+export const dynamic = 'force-dynamic';
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: userId } = await params;
+    const supabase = await createClient();
+    const currentProfile = await getAuthProfile();
+
+    if (!currentProfile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Only crm_admin can edit user profiles
+    if (currentProfile.crm_role !== 'crm_admin') {
+      return NextResponse.json({ error: 'Only CRM admins can edit user profiles' }, { status: 403 });
+    }
+
+    // Get the target user profile
+    const { data: targetUser, error: fetchError } = await supabase
+      .from('profiles')
+      .select('id, organization_id, full_name, is_active')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError || !targetUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Must be in the same organization
+    if (targetUser.organization_id !== currentProfile.organization_id) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
+    // Parse update fields from request body
+    const body = await request.json();
+
+    // Whitelist allowed fields to prevent unintended updates
+    const allowedFields: Record<string, unknown> = {};
+
+    if (body.full_name !== undefined && typeof body.full_name === 'string') {
+      const trimmed = body.full_name.trim();
+      if (trimmed.length < 2) {
+        return NextResponse.json({ error: 'Name must be at least 2 characters' }, { status: 400 });
+      }
+      allowedFields.full_name = trimmed;
+    }
+
+    if (body.is_active !== undefined && typeof body.is_active === 'boolean') {
+      // Cannot deactivate yourself
+      if (targetUser.id === currentProfile.id && !body.is_active) {
+        return NextResponse.json({ error: 'Cannot deactivate yourself' }, { status: 400 });
+      }
+      allowedFields.is_active = body.is_active;
+    }
+
+    if (Object.keys(allowedFields).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Update the profile
+    const { data: updated, error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        ...allowedFields,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId)
+      .select('id, full_name, is_active, crm_role, email, avatar_url')
+      .single();
+
+    if (updateError) {
+      console.error('[Users] Failed to update profile:', updateError);
+      return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      user: updated,
+    });
+  } catch (error) {
+    console.error('[Users] Update profile error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update profile' },
+      { status: 500 }
+    );
+  }
+}
