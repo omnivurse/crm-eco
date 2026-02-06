@@ -1,7 +1,9 @@
 'use client';
 
 // Terminal Wrapper for Admin App
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@crm-eco/lib/supabase/client';
 import { TerminalProvider, TerminalWindow } from './index';
 
 interface TerminalWrapperProps {
@@ -10,11 +12,13 @@ interface TerminalWrapperProps {
     id?: string;
     role?: string;
     full_name?: string;
+    organization_id?: string;
   };
 }
 
 export function TerminalWrapper({ children, profile }: TerminalWrapperProps) {
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
 
   const handleNavigate = (path: string) => {
     router.push(path);
@@ -23,6 +27,7 @@ export function TerminalWrapper({ children, profile }: TerminalWrapperProps) {
   return (
     <TerminalProvider
       navigate={handleNavigate}
+      supabase={supabase}
       profile={profile}
     >
       {children}

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminTopNav } from './AdminTopNav';
+import { AdminFooter } from './AdminFooter';
 import { Breadcrumbs } from './Breadcrumbs';
 
 interface AdminShellProps {
@@ -71,6 +72,10 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
         <main className="flex-1 overflow-auto p-4 lg:p-6">
           <Breadcrumbs />
           {children}
+          {/* Footer - hidden on mobile */}
+          <div className="hidden lg:block">
+            <AdminFooter />
+          </div>
         </main>
       </div>
     </div>

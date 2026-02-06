@@ -1,15 +1,8 @@
-// Terminal Types - Starship Command Center
+// Terminal Types - Pay It Forward Command Center
 
 export type PanelType =
   | 'bridge'
-  | 'deals'
-  | 'leads'
-  | 'tasks'
-  | 'tickets'
-  | 'comms'
-  | 'analytics'
   | 'status'
-  | 'forecast'
   | 'help';
 
 export type OutputType = 'success' | 'error' | 'info' | 'warning' | 'panel' | 'table';

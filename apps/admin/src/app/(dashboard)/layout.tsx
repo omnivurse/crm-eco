@@ -27,6 +27,7 @@ export default async function DashboardLayout({
         id: profile.id,
         role: profile.role || undefined,
         full_name: profile.full_name || undefined,
+        organization_id: profile.organization_id || undefined,
       }}
     >
       <AdminShell
