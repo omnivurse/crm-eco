@@ -21,7 +21,16 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:generate-types": "supabase gen types typescript --project-id sffisarikcreyyjzdjvb > packages/lib/src/types/database.ts",
-    "migrate:zoho-contacts": "tsx scripts/migrate-zoho-contacts.ts"
+    "migrate:zoho-contacts": "tsx scripts/migrate-zoho-contacts.ts",
+    "typecheck:crm": "npm run typecheck --workspace=@crm-eco/crm",
+    "lint:crm": "npm run lint --workspace=@crm-eco/crm",
+    "precheck:crm": "npm run typecheck:crm && npm run lint:crm",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/crm/**/*.{ts,tsx}": [
+      "eslint --max-warnings=0 --no-warn-ignored"
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -49,8 +58,10 @@
     "autoprefixer": "^10.4.22",
     "dotenv": "^17.2.3",
     "eslint-plugin-react-refresh": "^0.4.26",
+    "husky": "^9.1.7",
     "i18next": "^25.8.0",
     "i18next-http-backend": "^3.0.2",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
     "prettier": "^3.2.4",
     "react-i18next": "^16.5.4",

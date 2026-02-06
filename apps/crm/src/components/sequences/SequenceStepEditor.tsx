@@ -79,6 +79,8 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
     from_email: '',
     send_time: '',
     send_days: [] as string[],
+    condition_type: 'email_opened',
+    condition_window: '24',
   });
 
   useEffect(() => {
@@ -96,6 +98,8 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
         from_email: step.from_email || '',
         send_time: step.send_time || '',
         send_days: step.send_days || [],
+        condition_type: (step as unknown as Record<string, unknown>).condition_type as string || 'email_opened',
+        condition_window: (step as unknown as Record<string, unknown>).condition_window as string || '24',
       });
     } else {
       // Reset form for new step
@@ -111,7 +115,9 @@ export function SequenceStepEditor({ open, onClose, onSave, step }: SequenceStep
         from_name: '',
         from_email: '',
         send_time: '',
-        send_days: [],
+        send_days: [] as string[],
+        condition_type: 'email_opened',
+        condition_window: '24',
       });
     }
   }, [step, open]);

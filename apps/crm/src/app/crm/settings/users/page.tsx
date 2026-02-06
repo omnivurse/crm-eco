@@ -59,6 +59,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 import type { CrmRole } from '@/lib/crm/types';
 
 // ============================================================================
@@ -239,11 +240,11 @@ function UserRow({
 export default function UsersPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
 
   // Data state
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
 
   // Dialog state
   const [passwordDialog, setPasswordDialog] = useState<{
@@ -267,32 +268,20 @@ export default function UsersPage() {
   // ========================================================================
 
   const loadUsers = useCallback(async () => {
+    if (!authProfile?.organization_id) return;
+
+    // Redirect non-admins
+    if (authProfile.crm_role !== 'crm_admin') {
+      router.push('/crm/settings?error=admin_only');
+      return;
+    }
+
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) {
-        router.push('/crm-login');
-        return;
-      }
-
-      // Get current user's profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single() as { data: UserProfile | null };
-
-      if (!profile || profile.crm_role !== 'crm_admin') {
-        router.push('/crm/settings?error=admin_only');
-        return;
-      }
-
-      setCurrentProfile(profile);
-
       // Get all org users
       const { data: orgUsers } = await supabase
         .from('profiles')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('organization_id', authProfile.organization_id)
         .order('full_name');
 
       setUsers((orgUsers || []) as UserProfile[]);
@@ -302,11 +291,16 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [supabase, router]);
+  }, [supabase, router, authProfile]);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!authUser) {
+      router.push('/crm-login');
+      return;
+    }
     loadUsers();
-  }, [loadUsers]);
+  }, [authLoading, authUser, loadUsers, router]);
 
   // ========================================================================
   // Actions
@@ -562,7 +556,7 @@ export default function UsersPage() {
               <UserRow
                 key={user.id}
                 user={user}
-                currentUserId={currentProfile?.id || ''}
+                currentUserId={authProfile?.id || ''}
                 onRoleChange={handleRoleChange}
                 onSendPasswordReset={handleSendPasswordReset}
                 onSetPassword={openSetPassword}
@@ -594,7 +588,7 @@ export default function UsersPage() {
               <UserRow
                 key={user.id}
                 user={user}
-                currentUserId={currentProfile?.id || ''}
+                currentUserId={authProfile?.id || ''}
                 onRoleChange={handleRoleChange}
                 onSendPasswordReset={handleSendPasswordReset}
                 onSetPassword={openSetPassword}

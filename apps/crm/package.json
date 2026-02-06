@@ -6,8 +6,9 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint --max-warnings 999",
-    "typecheck": "tsc --noEmit"
+    "lint": "next lint --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "precheck": "npm run typecheck && npm run lint"
   },
   "dependencies": {
     "@crm-eco/lib": "*",
