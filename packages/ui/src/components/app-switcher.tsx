@@ -182,6 +182,8 @@ export function AppSwitcher({ currentApp, className }: AppSwitcherProps) {
               <a
                 key={app.id}
                 href={app.url}
+                target="_blank"
+                rel="noopener noreferrer"
                 onClick={() => setIsOpen(false)}
                 className={cn(
                   'flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-150',
