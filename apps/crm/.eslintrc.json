@@ -5,15 +5,17 @@
     "react/no-unescaped-entities": "off",
     "react-hooks/exhaustive-deps": "off",
     "@next/next/no-img-element": "off",
+    "react/self-closing-comp": "warn",
+    "react/jsx-no-undef": "error",
     "no-restricted-syntax": [
-      "warn",
+      "error",
       {
         "selector": "MemberExpression[object.property.name='auth'][property.name='getUser']",
-        "message": "Direct supabase.auth.getUser() calls are prohibited. Use getAuthUser() or verifyCrmAccess() from @/lib/supabase-server instead to benefit from request-scoped caching."
+        "message": "Direct supabase.auth.getUser() calls are prohibited. Use useClientAuth() hook for client components or getAuthUser()/verifyCrmAccess() from @/lib/supabase-server for server components."
       },
       {
         "selector": "CallExpression[callee.property.name='getUser'][callee.object.property.name='auth']",
-        "message": "Direct supabase.auth.getUser() calls are prohibited. Use getAuthUser() or verifyCrmAccess() from @/lib/supabase-server instead to benefit from request-scoped caching."
+        "message": "Direct supabase.auth.getUser() calls are prohibited. Use useClientAuth() hook for client components or getAuthUser()/verifyCrmAccess() from @/lib/supabase-server for server components."
       }
     ]
   },

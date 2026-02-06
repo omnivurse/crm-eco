@@ -49,6 +49,7 @@ import {
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { useClientAuth } from '@/hooks/useClientAuth';
 
 // ============================================================================
 // Types
@@ -132,6 +133,7 @@ function calculateNextRun(cron: string): string {
 
 export default function ScheduledReportsPage() {
   const supabase = createClient();
+  const { profile, loading: authLoading } = useClientAuth();
   const [schedules, setSchedules] = useState<ScheduledReport[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -147,25 +149,26 @@ export default function ScheduledReportsPage() {
   const [formFormat, setFormFormat] = useState<ExportFormat>('csv');
   const [formRecipients, setFormRecipients] = useState('');
 
+  /**
+   * Typed helper for scheduled_reports table.
+   * This table exists in the DB but isn't in the generated Supabase types yet.
+   * TODO: Remove 'as any' casts after running `npm run db:generate-types`
+   */
+  /** TODO: Remove type bypass after running `npm run db:generate-types` */
+  const scheduledReports = useCallback(
+    () => (supabase as Record<string, any>).from('scheduled_reports'),
+    [supabase]
+  );
+
   // ========================================================================
   // Data Loading
   // ========================================================================
 
   const loadSchedules = useCallback(async () => {
+    if (!profile?.organization_id) return;
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single() as { data: { organization_id: string } | null };
-
-      if (!profile) return;
-
-      const { data } = await supabase
-        .from('scheduled_reports')
+      const { data } = await scheduledReports()
         .select('*')
         .eq('org_id', profile.organization_id)
         .order('created_at', { ascending: false });
@@ -178,11 +181,13 @@ export default function ScheduledReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase]);
+  }, [profile, scheduledReports]);
 
   useEffect(() => {
-    loadSchedules();
-  }, [loadSchedules]);
+    if (!authLoading) {
+      loadSchedules();
+    }
+  }, [authLoading, loadSchedules]);
 
   // ========================================================================
   // Actions
@@ -232,16 +237,7 @@ export default function ScheduledReportsPage() {
 
     setSaving(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('organization_id')
-        .eq('user_id', user.id)
-        .single() as { data: { organization_id: string } | null };
-
-      if (!profile) throw new Error('Profile not found');
+      if (!profile?.organization_id) throw new Error('Not authenticated');
 
       const cronExp = FREQUENCY_OPTIONS[formFrequency].cron;
       const payload = {
@@ -257,15 +253,13 @@ export default function ScheduledReportsPage() {
       };
 
       if (editingSchedule) {
-        const { error } = await supabase
-          .from('scheduled_reports')
+        const { error } = await scheduledReports()
           .update(payload)
           .eq('id', editingSchedule.id);
         if (error) throw error;
         toast.success('Schedule updated');
       } else {
-        const { error } = await supabase
-          .from('scheduled_reports')
+        const { error } = await scheduledReports()
           .insert(payload);
         if (error) throw error;
         toast.success('Schedule created');
@@ -284,8 +278,7 @@ export default function ScheduledReportsPage() {
 
   async function handleToggleActive(id: string, currentActive: boolean) {
     try {
-      const { error } = await supabase
-        .from('scheduled_reports')
+      const { error } = await scheduledReports()
         .update({ is_active: !currentActive })
         .eq('id', id);
 
@@ -304,8 +297,7 @@ export default function ScheduledReportsPage() {
     if (!confirm('Are you sure you want to delete this schedule?')) return;
 
     try {
-      const { error } = await supabase
-        .from('scheduled_reports')
+      const { error } = await scheduledReports()
         .delete()
         .eq('id', id);
 
