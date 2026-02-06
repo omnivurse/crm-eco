@@ -117,7 +117,7 @@ function UserRow({
 }: {
   user: UserProfile;
   currentUserId: string;
-  onRoleChange: (user: UserProfile, newRole: CrmRole | '') => void;
+  onRoleChange: (user: UserProfile, newRole: CrmRole | 'no_access' | '') => void;
   onSendPasswordReset: (user: UserProfile) => void;
   onSetPassword: (user: UserProfile) => void;
   onEditUser: (user: UserProfile) => void;
@@ -313,7 +313,7 @@ export default function UsersPage() {
   // ========================================================================
 
   /** Update a user's CRM role */
-  async function handleRoleChange(user: UserProfile, newRole: CrmRole | '') {
+  async function handleRoleChange(user: UserProfile, newRole: CrmRole | 'no_access' | '') {
     const roleValue = newRole === 'no_access' ? '' : newRole;
 
     try {
