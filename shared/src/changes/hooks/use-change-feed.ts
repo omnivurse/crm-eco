@@ -107,9 +107,16 @@ export function useChangeFeed(options: UseChangeFeedOptions): UseChangeFeedRetur
     return unsubscribe;
   }, [realtime, matchesFilters, payloadToEvent, maxEvents]);
 
+  // Track whether polling should be disabled (e.g. 403 = permanently forbidden)
+  const disablePollingRef = useRef(false);
+
   // Initial fetch and auto-refresh
   useEffect(() => {
+    disablePollingRef.current = false;
+
     const fetchEvents = async () => {
+      if (disablePollingRef.current) return;
+
       try {
         setIsLoading(true);
         // Build query params
@@ -129,6 +136,13 @@ export function useChangeFeed(options: UseChangeFeedOptions): UseChangeFeedRetur
         }
 
         const response = await fetch(`/api/changes?${params}`);
+        if (response.status === 403 || response.status === 401) {
+          // Permanently stop polling on auth errors to avoid flooding
+          disablePollingRef.current = true;
+          setEvents([]);
+          setIsLoading(false);
+          return;
+        }
         if (!response.ok) {
           throw new Error('Failed to fetch changes');
         }
@@ -148,7 +162,7 @@ export function useChangeFeed(options: UseChangeFeedOptions): UseChangeFeedRetur
     // Set up auto-refresh interval
     if (autoRefresh && refreshInterval > 0) {
       const intervalId = setInterval(() => {
-        if (!isPausedRef.current) {
+        if (!isPausedRef.current && !disablePollingRef.current) {
           fetchEvents();
         }
       }, refreshInterval);
