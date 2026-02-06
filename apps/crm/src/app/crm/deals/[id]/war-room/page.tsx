@@ -389,7 +389,7 @@ export default function DealWarRoomPage({
             title="Send Email"
           >
             <Mail className="w-5 h-5 text-slate-500" />
-          </button>
+          </Link>
           <button
             onClick={() => {
               if (newNote.trim()) {
