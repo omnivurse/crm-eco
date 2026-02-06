@@ -20,6 +20,7 @@ import {
   Mail,
   MoreVertical,
   KeyRound,
+  Lock,
   UserCog,
   RefreshCw,
   Eye,
@@ -30,9 +31,17 @@ import {
   X,
 } from 'lucide-react';
 import { Avatar } from '@/components/shared';
-import { supabase } from '@/lib/supabase-client';
-import { useClientAuth } from '@/hooks/useClientAuth';
-import { toast } from 'sonner';
+import { Button } from '@crm-eco/ui/components/button';
+import { Input } from '@crm-eco/ui/components/input';
+import { Badge } from '@crm-eco/ui/components/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@crm-eco/ui/components/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,21 +49,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  Button,
-  Input,
-  Badge,
+} from '@crm-eco/ui/components/dropdown-menu';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@crm-eco/ui';
+} from '@crm-eco/ui/components/select';
+import { toast } from 'sonner';
+import { createClient } from '@crm-eco/lib/supabase/client';
 import type { CrmRole } from '@/lib/crm/types';
 
 // ============================================================================
@@ -234,11 +238,12 @@ function UserRow({
 
 export default function UsersPage() {
   const router = useRouter();
-  const { profile: authProfile, loading: authLoading } = useClientAuth();
+  const supabase = createClient();
 
   // Data state
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [currentProfile, setCurrentProfile] = useState<UserProfile | null>(null);
 
   // Dialog state
   const [passwordDialog, setPasswordDialog] = useState<{
@@ -262,18 +267,34 @@ export default function UsersPage() {
   // ========================================================================
 
   const loadUsers = useCallback(async () => {
-    if (!authProfile?.organization_id) return;
-
-    setLoading(true);
     try {
-      // Get all org users
-      const { data: orgUsers, error } = await supabase
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        router.push('/crm-login');
+        return;
+      }
+
+      // Get current user's profile
+      const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('organization_id', authProfile.organization_id)
+        .eq('user_id', authUser.id)
+        .single();
+
+      if (!profile || profile.crm_role !== 'crm_admin') {
+        router.push('/crm/settings?error=admin_only');
+        return;
+      }
+
+      setCurrentProfile(profile as UserProfile);
+
+      // Get all org users
+      const { data: orgUsers } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('organization_id', profile.organization_id)
         .order('full_name');
 
-      if (error) throw error;
       setUsers((orgUsers || []) as UserProfile[]);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -281,23 +302,11 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [authProfile?.organization_id]);
+  }, [supabase, router]);
 
   useEffect(() => {
-    if (authLoading) return;
-
-    if (!authProfile) {
-      router.push('/crm-login');
-      return;
-    }
-
-    if (authProfile.crm_role !== 'crm_admin') {
-      router.push('/crm/settings?error=admin_only');
-      return;
-    }
-
     loadUsers();
-  }, [authProfile, authLoading, router, loadUsers]);
+  }, [loadUsers]);
 
   // ========================================================================
   // Actions
@@ -478,7 +487,7 @@ export default function UsersPage() {
   // Loading State
   // ========================================================================
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="flex items-center gap-4">
@@ -553,7 +562,11 @@ export default function UsersPage() {
               <UserRow
                 key={user.id}
                 user={user}
+<<<<<<< HEAD
                 currentUserId={authProfile?.id || ''}
+=======
+                currentUserId={currentProfile?.id || ''}
+>>>>>>> 9c79666720867ec0a9476c62859d5fb0a73c1a32
                 onRoleChange={handleRoleChange}
                 onSendPasswordReset={handleSendPasswordReset}
                 onSetPassword={openSetPassword}
@@ -585,7 +598,11 @@ export default function UsersPage() {
               <UserRow
                 key={user.id}
                 user={user}
+<<<<<<< HEAD
                 currentUserId={authProfile?.id || ''}
+=======
+                currentUserId={currentProfile?.id || ''}
+>>>>>>> 9c79666720867ec0a9476c62859d5fb0a73c1a32
                 onRoleChange={handleRoleChange}
                 onSendPasswordReset={handleSendPasswordReset}
                 onSetPassword={openSetPassword}
