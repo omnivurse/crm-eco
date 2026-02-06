@@ -30,6 +30,13 @@ interface Template {
   body_text?: string;
 }
 
+interface AttachedFile {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -62,6 +69,9 @@ export default function NewCommunicationPage() {
   // Templates
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+
+  // Attachments
+  const [attachments, setAttachments] = useState<AttachedFile[]>([]);
   
   // Fetch templates
   useEffect(() => {
@@ -90,36 +100,77 @@ export default function NewCommunicationPage() {
     }
   };
   
+  // Handle file attachment
+  const handleAttachFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB per file
+    const newAttachments: AttachedFile[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > maxSize) {
+        // Show error inline - skip oversized files
+        continue;
+      }
+      newAttachments.push({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        file,
+        name: file.name,
+        size: file.size,
+      });
+    }
+
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    // Reset the input
+    e.target.value = '';
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   // Send
   const handleSend = async () => {
     setError(null);
     setSending(true);
     
     try {
-      const payload: Record<string, unknown> = {
-        channel,
-        to: channel === 'email' ? to.split(',').map(e => e.trim()) : to,
-      };
-      
+      // Build form data to support file attachments
+      const formData = new FormData();
+      formData.append('channel', channel);
+      formData.append('to', channel === 'email' ? to.split(',').map(e => e.trim()).join(',') : to);
+
       if (channel === 'email') {
-        payload.subject = subject;
-        payload.body_html = bodyHtml || undefined;
-        payload.body_text = bodyText || (bodyHtml ? undefined : 'No content');
-        if (cc) payload.cc = cc.split(',').map(e => e.trim());
-        if (bcc) payload.bcc = bcc.split(',').map(e => e.trim());
+        formData.append('subject', subject);
+        if (bodyHtml) formData.append('body_html', bodyHtml);
+        formData.append('body_text', bodyText || (bodyHtml ? '' : 'No content'));
+        if (cc) formData.append('cc', cc.split(',').map(e => e.trim()).join(','));
+        if (bcc) formData.append('bcc', bcc.split(',').map(e => e.trim()).join(','));
+
+        // Attach files
+        for (const attachment of attachments) {
+          formData.append('attachments', attachment.file, attachment.name);
+        }
       } else {
-        payload.body = bodyText;
+        formData.append('body', bodyText);
       }
-      
+
       // Add CRM links
-      if (prefillContactId) payload.linked_contact_id = prefillContactId;
-      if (prefillLeadId) payload.linked_lead_id = prefillLeadId;
-      if (prefillDealId) payload.linked_deal_id = prefillDealId;
-      
+      if (prefillContactId) formData.append('linked_contact_id', prefillContactId);
+      if (prefillLeadId) formData.append('linked_lead_id', prefillLeadId);
+      if (prefillDealId) formData.append('linked_deal_id', prefillDealId);
+
       const response = await fetch('/api/communications/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formData,
       });
       
       const data = await response.json();
@@ -347,17 +398,53 @@ export default function NewCommunicationPage() {
           </div>
         )}
         
+        {/* Attachments Display */}
+        {attachments.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+              Attachments ({attachments.length})
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {attachments.map((att) => (
+                <div
+                  key={att.id}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm"
+                >
+                  <Paperclip className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-slate-700 dark:text-slate-300 truncate max-w-[160px]">{att.name}</span>
+                  <span className="text-xs text-slate-400">{formatFileSize(att.size)}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(att.id)}
+                    className="p-0.5 hover:bg-red-100 dark:hover:bg-red-500/10 rounded"
+                  >
+                    <X className="w-3.5 h-3.5 text-red-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              title="Attach file (coming soon)"
-              disabled
+            <label
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              title="Attach file"
             >
-              <Paperclip className="w-5 h-5 text-slate-400" />
-            </button>
+              <Paperclip className="w-5 h-5 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300" />
+              <input
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleAttachFile}
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.png,.jpg,.jpeg,.gif,.zip"
+              />
+            </label>
+            {channel === 'email' && (
+              <span className="text-xs text-slate-400">Max 10MB per file</span>
+            )}
           </div>
           
           <div className="flex items-center gap-3">

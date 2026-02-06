@@ -141,15 +141,15 @@ export default function VideosPage() {
         ))}
       </div>
 
-      {/* Coming Soon */}
-      <div className="p-6 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 text-center">
+      {/* Request a Tutorial */}
+      <div className="p-6 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-500/10 dark:to-emerald-500/10 border border-teal-200 dark:border-teal-500/20 text-center">
         <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
-          More Videos Coming Soon
+          Want to Learn Something Specific?
         </h3>
         <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-          We're constantly adding new tutorials. Have a topic you'd like us to cover?
+          We're constantly adding new tutorials. Let us know what topics you'd like covered.
         </p>
-        <a href="mailto:support@crmeco.com">
+        <a href="mailto:support@crmeco.com?subject=CRM%20Tutorial%20Request">
           <Button variant="outline">
             Request a Tutorial
           </Button>

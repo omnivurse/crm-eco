@@ -465,7 +465,16 @@ export default function SecuritySettingsPage() {
                     </div>
                     <Button
                         variant="outline"
-                        onClick={() => toast.info('Data export request functionality coming soon')}
+                        onClick={async () => {
+                            try {
+                                toast.info('Preparing your data export...');
+                                const res = await fetch('/api/settings/data-export', { method: 'POST' });
+                                if (!res.ok) throw new Error('Failed to request export');
+                                toast.success('Export requested! You will receive a download link via email within 24 hours.');
+                            } catch {
+                                toast.error('Failed to request data export. Please try again or contact support.');
+                            }
+                        }}
                     >
                         <Download className="w-4 h-4 mr-2" />
                         Request Export

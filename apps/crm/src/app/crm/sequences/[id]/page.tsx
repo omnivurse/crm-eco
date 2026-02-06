@@ -410,7 +410,10 @@ export default function SequenceDetailPage({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => toast.info('Sequence settings coming soon')}>
+              <DropdownMenuItem onClick={() => {
+                const settingsUrl = `/crm/settings/automations?tab=sequences&id=${id}`;
+                window.location.href = settingsUrl;
+              }}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </DropdownMenuItem>

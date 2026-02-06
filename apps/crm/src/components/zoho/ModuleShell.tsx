@@ -464,8 +464,12 @@ export const ModuleShell = memo(function ModuleShell({
   }, [selectedIds, selectedCount, records, visibleColumns, fields, module]);
 
   const handleCreateView = useCallback(() => {
-    toast.info('Create view feature - Coming soon!');
-  }, []);
+    const viewName = prompt('Enter a name for the new view:');
+    if (!viewName?.trim()) return;
+    // Navigate to create view with the name pre-filled
+    const params = new URLSearchParams({ name: viewName.trim() });
+    window.location.href = `/crm/modules/${module.key}/views/new?${params.toString()}`;
+  }, [module.key]);
 
   const handleSaveView = useCallback((name: string, viewFilters: ViewFilter[]) => {
     toast.success(`View "${name}" saved`, {

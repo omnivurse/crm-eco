@@ -176,7 +176,23 @@ export function ModuleListClient({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toast.info('Export functionality coming soon')}
+            onClick={async () => {
+              try {
+                toast.info('Preparing export...');
+                const res = await fetch(`/api/modules/${module.key}/export?view=${activeView?.id || ''}`);
+                if (!res.ok) throw new Error('Export failed');
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${module.key}-export-${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                toast.success('Export downloaded');
+              } catch {
+                toast.error('Export failed. Please try again.');
+              }
+            }}
           >
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -230,10 +246,21 @@ export function ModuleListClient({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => toast.info('Filter functionality coming soon')}
+          onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (params.has('filter')) {
+              params.delete('filter');
+              toast.info('Filters cleared');
+            } else {
+              params.set('filter', 'active');
+              toast.info('Showing active records');
+            }
+            params.set('page', '1');
+            router.push(`/crm/modules/${module.key}?${params.toString()}`);
+          }}
         >
           <Filter className="w-4 h-4 mr-2" />
-          Filters
+          {searchParams.has('filter') ? 'Clear Filters' : 'Filters'}
         </Button>
       </div>
 

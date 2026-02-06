@@ -386,7 +386,20 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   <DropdownMenuContent align="end" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
                     <DropdownMenuItem
                       className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
-                      onClick={() => toast.info('Clone functionality coming soon')}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch(`/api/records/${record.id}/clone`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error || 'Clone failed');
+                          toast.success('Record cloned successfully');
+                          router.push(`/crm/modules/${module.key}/${data.id}`);
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : 'Failed to clone record');
+                        }
+                      }}
                     >
                       Clone Record
                     </DropdownMenuItem>
@@ -399,7 +412,22 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                     <DropdownMenuItem
                       className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
-                      onClick={() => toast.info('Delete functionality coming soon')}
+                      onClick={async () => {
+                        if (!confirm(`Are you sure you want to delete this ${module.name.toLowerCase()}? This action cannot be undone.`)) return;
+                        try {
+                          const res = await fetch(`/api/records/${record.id}`, {
+                            method: 'DELETE',
+                          });
+                          if (!res.ok) {
+                            const data = await res.json();
+                            throw new Error(data.error || 'Delete failed');
+                          }
+                          toast.success(`${module.name} deleted`);
+                          router.push(backUrl);
+                        } catch (err) {
+                          toast.error(err instanceof Error ? err.message : 'Failed to delete record');
+                        }
+                      }}
                     >
                       Delete Record
                     </DropdownMenuItem>
