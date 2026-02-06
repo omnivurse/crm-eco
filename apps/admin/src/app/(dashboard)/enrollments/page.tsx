@@ -3,6 +3,7 @@ import { FileText, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 async function getEnrollments() {
   const supabase = await createServerSupabaseClient();
@@ -81,12 +82,12 @@ export default async function EnrollmentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Enrollments</h1>
-          <p className="text-slate-500">Manage enrollment applications</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Enrollments"
+        description="Manage enrollment applications"
+        icon={<FileText className="w-6 h-6" />}
+        gradient="from-purple-600 to-purple-400"
+      />
 
       {/* Enrollments Table */}
       <Card>

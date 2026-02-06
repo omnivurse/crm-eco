@@ -1,8 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { Plus, Upload, GitBranch, RefreshCw, Users } from 'lucide-react';
+import { Plus, Upload, GitBranch, RefreshCw, Users, UserCog } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AgentTable } from '@/components/agents/AgentTable';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 async function getAgents() {
   const supabase = await createServerSupabaseClient();
@@ -48,44 +49,40 @@ export default async function AgentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Agents</h1>
-          <p className="text-sm sm:text-base text-slate-500">Manage agent accounts and commissions</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-          <Link href="/agents/bill-groups">
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <Users className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Bill Groups</span>
-            </Button>
-          </Link>
-          <Link href="/agents/assignment">
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <RefreshCw className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Assignment</span>
-            </Button>
-          </Link>
-          <Link href="/agents/tree">
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <GitBranch className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Tree View</span>
-            </Button>
-          </Link>
-          <Link href="/agents/import">
-            <Button variant="outline" size="sm" className="text-xs sm:text-sm">
-              <Upload className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Import</span>
-            </Button>
-          </Link>
-          <Link href="/agents/new">
-            <Button size="sm" className="text-xs sm:text-sm">
-              <Plus className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add Agent</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Agents"
+        description="Manage agent accounts and commissions"
+        icon={<UserCog className="w-6 h-6" />}
+        gradient="from-[#027343] to-[#34d399]"
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link href="/agents/bill-groups">
+              <Button variant="outline" size="sm">
+                <Users className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Bill Groups</span>
+              </Button>
+            </Link>
+            <Link href="/agents/assignment">
+              <Button variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Assignment</span>
+              </Button>
+            </Link>
+            <Link href="/agents/tree">
+              <Button variant="outline" size="sm">
+                <GitBranch className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Tree View</span>
+              </Button>
+            </Link>
+            <Link href="/agents/new">
+              <Button size="sm">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Agent</span>
+              </Button>
+            </Link>
+          </div>
+        }
+      />
 
       {/* Agents Table */}
       <Card>

@@ -13,7 +13,7 @@ import {
   Badge,
   ScrollArea,
 } from '@crm-eco/ui';
-import { Bell, User, LogOut, Settings, ChevronDown, Shield, FileText, CheckCircle, AlertTriangle, Check, ExternalLink, Activity, Menu, X } from 'lucide-react';
+import { Bell, User, LogOut, Settings, ChevronDown, Shield, FileText, CheckCircle, AlertTriangle, Check, ExternalLink, Activity, Menu, X, Wifi, WifiOff } from 'lucide-react';
 import { ChangeTickerPopover } from '@crm-eco/ui/components/change-ticker';
 import { useChangeFeed, useChangeSubscription } from '@crm-eco/shared/changes';
 import { useRouter } from 'next/navigation';
@@ -73,6 +73,22 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Online/offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    setIsOnline(navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Create supabase client
   const supabase = createBrowserClient(
@@ -228,6 +244,26 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
           <Shield className="w-4 h-4 text-[#047474]" />
           <span className="text-sm font-semibold text-[#003560]">System Administration</span>
         </div>
+        
+        {/* Live Status Indicator */}
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200">
+          {isOnline ? (
+            <>
+              <div className="relative">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              </div>
+              <Wifi className="w-3.5 h-3.5 text-emerald-500" />
+              <span className="text-xs font-medium text-emerald-600">Live</span>
+            </>
+          ) : (
+            <>
+              <div className="w-2 h-2 rounded-full bg-red-500" />
+              <WifiOff className="w-3.5 h-3.5 text-red-500" />
+              <span className="text-xs font-medium text-red-600">Offline</span>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Right side - actions and user menu */}
@@ -351,20 +387,32 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-3 h-auto py-2 px-3 hover:bg-slate-50 rounded-xl">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-sm font-semibold text-white ring-2 ring-[#047474]/20">
-                {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={profile.fullName}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                ) : (
-                  initials
-                )}
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-sm font-semibold text-white ring-2 ring-[#047474]/20">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.fullName}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                {/* Online status indicator on avatar */}
+                <div className={cn(
+                  'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white',
+                  isOnline ? 'bg-emerald-500' : 'bg-slate-400'
+                )} />
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-sm font-semibold text-[#003560]">{profile.fullName}</p>
-                <p className="text-xs text-[#047474] capitalize font-medium">{profile.role}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-[#003560]">{profile.fullName}</p>
+                  <Badge className={`${roleColors[profile.role] || roleColors.user} text-[10px] px-1.5 py-0`} variant="secondary">
+                    {profile.role === 'super_admin' ? 'Super Admin' : profile.role}
+                  </Badge>
+                </div>
+                <p className="text-xs text-slate-500 truncate max-w-[150px]">{profile.email}</p>
               </div>
               <ChevronDown className="h-4 w-4 text-slate-400 hidden sm:block" />
             </Button>

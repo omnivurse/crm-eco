@@ -26,7 +26,17 @@ import {
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import { TodoListWidget, JobsWidget, RecentPagesWidget } from '@/components/dashboard';
+import { 
+  TodoListWidget, 
+  JobsWidget, 
+  RecentPagesWidget,
+  StatCard,
+  CommissionCard,
+  FutureEnrollmentsCard,
+  MemberActivityAnalysis,
+} from '@/components/dashboard';
+import type { FutureEnrollmentsData, MemberActivityData } from '@/components/dashboard';
+import { DashboardHeaderClient } from './DashboardHeaderClient';
 
 interface ActivityLogEntry {
   id: string;
@@ -60,31 +70,62 @@ async function getDashboardStats() {
 
   const orgId = profile.organization_id;
 
-  const [membersResult, agentsResult, enrollmentsResult, activeEnrollmentsResult, pendingEnrollmentsResult] =
-    await Promise.all([
-      supabase
-        .from('members')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId),
-      supabase
-        .from('advisors')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId),
-      supabase
-        .from('enrollments')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId),
-      supabase
-        .from('enrollments')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-        .eq('status', 'approved'),
-      supabase
-        .from('enrollments')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', orgId)
-        .eq('status', 'submitted'),
-    ]);
+  // Get current month dates
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  const [
+    membersResult, 
+    agentsResult, 
+    enrollmentsResult, 
+    activeEnrollmentsResult, 
+    pendingEnrollmentsResult,
+    // Previous month data for trends
+    prevMembersResult,
+    prevAgentsResult,
+    prevEnrollmentsResult,
+  ] = await Promise.all([
+    supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId),
+    supabase
+      .from('advisors')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId),
+    supabase
+      .from('enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId),
+    supabase
+      .from('enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'approved'),
+    supabase
+      .from('enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .eq('status', 'submitted'),
+    // Previous month counts for trend calculation
+    supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .lte('created_at', endOfPrevMonth.toISOString()),
+    supabase
+      .from('advisors')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .lte('created_at', endOfPrevMonth.toISOString()),
+    supabase
+      .from('enrollments')
+      .select('id', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .lte('created_at', endOfPrevMonth.toISOString()),
+  ]);
 
   const [pendingCommissionsResult, paidCommissionsResult] = await Promise.all([
     supabase
@@ -97,7 +138,7 @@ async function getDashboardStats() {
       .select('commission_amount')
       .eq('organization_id', orgId)
       .eq('status', 'paid')
-      .gte('paid_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()) as unknown as { data: { commission_amount: number }[] | null },
+      .gte('paid_at', startOfMonth.toISOString()) as unknown as { data: { commission_amount: number }[] | null },
   ]);
 
   const pendingCommissions = (pendingCommissionsResult.data || []).reduce(
@@ -116,16 +157,135 @@ async function getDashboardStats() {
     .eq('user_id', user.id)
     .single() as { data: { id: string } | null };
 
+  // Calculate trends
+  const currentMembers = membersResult.count ?? 0;
+  const prevMembers = prevMembersResult.count ?? 0;
+  const currentAgents = agentsResult.count ?? 0;
+  const prevAgents = prevAgentsResult.count ?? 0;
+  const currentEnrollments = enrollmentsResult.count ?? 0;
+  const prevEnrollments = prevEnrollmentsResult.count ?? 0;
+
   return {
-    totalMembers: membersResult.count ?? 0,
-    totalAgents: agentsResult.count ?? 0,
-    totalEnrollments: enrollmentsResult.count ?? 0,
+    totalMembers: currentMembers,
+    totalAgents: currentAgents,
+    totalEnrollments: currentEnrollments,
     activeEnrollments: activeEnrollmentsResult.count ?? 0,
     pendingEnrollments: pendingEnrollmentsResult.count ?? 0,
     pendingCommissions,
     paidThisMonth,
     profileId: profileData?.id ?? '',
     organizationId: orgId,
+    // Trend data
+    membersTrend: prevMembers > 0 ? Math.round(((currentMembers - prevMembers) / prevMembers) * 100) : 0,
+    agentsTrend: prevAgents > 0 ? Math.round(((currentAgents - prevAgents) / prevAgents) * 100) : 0,
+    enrollmentsTrend: prevEnrollments > 0 ? Math.round(((currentEnrollments - prevEnrollments) / prevEnrollments) * 100) : 0,
+  };
+}
+
+async function getFutureEnrollmentsData(orgId: string): Promise<FutureEnrollmentsData> {
+  const supabase = await createServerSupabaseClient();
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+  // Get future active enrollments
+  const { data: futureEnrollments, count: totalFutureActive } = await (supabase
+    .from('enrollments')
+    .select('id, start_date, members(first_name, last_name), products(name)', { count: 'exact' })
+    .eq('organization_id', orgId)
+    .gt('start_date', now.toISOString())
+    .eq('status', 'approved')
+    .order('start_date', { ascending: true })
+    .limit(10) as any);
+
+  // Count starting this month
+  const { count: startingThisMonth } = await (supabase
+    .from('enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .gte('start_date', startOfMonth.toISOString())
+    .lte('start_date', endOfMonth.toISOString())
+    .eq('status', 'approved') as any);
+
+  const upcomingEnrollments = (futureEnrollments || []).map((e: any) => ({
+    id: e.id,
+    memberName: e.members ? `${e.members.first_name} ${e.members.last_name}` : 'Unknown',
+    startDate: e.start_date,
+    planName: e.products?.name || 'Unknown Plan',
+  }));
+
+  return {
+    totalFutureActive: totalFutureActive ?? 0,
+    startingThisMonth: startingThisMonth ?? 0,
+    nextStartDate: upcomingEnrollments.length > 0 ? upcomingEnrollments[0].startDate : null,
+    upcomingEnrollments,
+  };
+}
+
+async function getMemberActivityData(orgId: string): Promise<MemberActivityData> {
+  const supabase = await createServerSupabaseClient();
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  // New enrollments this month
+  const { count: newEnrollmentsThisMonth } = await (supabase
+    .from('enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .eq('status', 'approved')
+    .gte('approved_at', startOfMonth.toISOString()) as any);
+
+  // Inactive members this month
+  const { count: inactiveMembersThisMonth } = await (supabase
+    .from('members')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .eq('status', 'inactive')
+    .gte('updated_at', startOfMonth.toISOString()) as any);
+
+  // Previous month data
+  const { count: prevMonthEnrollments } = await (supabase
+    .from('enrollments')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .eq('status', 'approved')
+    .gte('approved_at', startOfPrevMonth.toISOString())
+    .lt('approved_at', startOfMonth.toISOString()) as any);
+
+  const { count: prevMonthInactive } = await (supabase
+    .from('members')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .eq('status', 'inactive')
+    .gte('updated_at', startOfPrevMonth.toISOString())
+    .lt('updated_at', startOfMonth.toISOString()) as any);
+
+  // Total members for retention calculation
+  const { count: totalMembers } = await supabase
+    .from('members')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId);
+
+  const { count: activeMembers } = await supabase
+    .from('members')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', orgId)
+    .eq('status', 'active');
+
+  const newEnrollments = newEnrollmentsThisMonth ?? 0;
+  const inactive = inactiveMembersThisMonth ?? 0;
+  const total = totalMembers ?? 1;
+  const active = activeMembers ?? 0;
+
+  return {
+    newEnrollmentsThisMonth: newEnrollments,
+    inactiveMembersThisMonth: inactive,
+    netGrowth: newEnrollments - inactive,
+    retentionRate: Math.round((active / total) * 100),
+    previousMonthEnrollments: prevMonthEnrollments ?? 0,
+    previousMonthInactive: prevMonthInactive ?? 0,
   };
 }
 
@@ -237,119 +397,6 @@ function formatActivity(activity: ActivityLogEntry): string {
   return `${actorName} ${actionPastTense[action] || action} a ${entityType}`;
 }
 
-// Premium stat card component
-function PremiumStatCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  gradient,
-  href,
-  pulse = false,
-}: {
-  title: string;
-  value: number | string;
-  subtitle: string;
-  icon: React.ReactNode;
-  gradient: string;
-  href?: string;
-  pulse?: boolean;
-}) {
-  const content = (
-    <div className={`group relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1 ${pulse ? 'ring-2 ring-amber-400/50 animate-pulse' : ''}`}>
-      {/* Gradient accent */}
-      <div className={`absolute top-0 left-0 right-0 h-1 ${gradient}`} />
-
-      {/* Glow effect on hover */}
-      <div className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${gradient} blur-xl`} />
-
-      <div className="relative p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <p className="text-sm font-medium text-slate-500 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
-          </div>
-          <div className={`p-3 rounded-xl ${gradient.replace('bg-gradient-to-r', 'bg-gradient-to-br')} bg-opacity-10 backdrop-blur-sm`}>
-            <div className="text-white">{icon}</div>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-slate-400">{subtitle}</p>
-          {href && (
-            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  if (href) {
-    return <Link href={href}>{content}</Link>;
-  }
-
-  return content;
-}
-
-// Commission card component
-function CommissionCard({
-  title,
-  value,
-  subtitle,
-  icon,
-  gradient,
-  href,
-  iconBg,
-}: {
-  title: string;
-  value: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  gradient: string;
-  href: string;
-  iconBg: string;
-}) {
-  return (
-    <Link href={href}>
-      <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1">
-        {/* Gradient accent */}
-        <div className={`absolute top-0 left-0 right-0 h-1.5 ${gradient}`} />
-
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-[0.02]">
-          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <defs>
-              <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="currentColor" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#grid)" />
-          </svg>
-        </div>
-
-        <div className="relative p-6">
-          <div className="flex items-start justify-between mb-4">
-            <p className="text-sm font-semibold text-slate-600 tracking-wide">{title}</p>
-            <div className={`p-3 rounded-xl ${iconBg}`}>
-              {icon}
-            </div>
-          </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <p className={`text-4xl font-bold tracking-tight bg-clip-text text-transparent ${gradient}`}>
-                {value}
-              </p>
-              <p className="text-xs text-slate-400 mt-2">{subtitle}</p>
-            </div>
-            <div className="p-2 rounded-full bg-slate-100 group-hover:bg-slate-200 transition-colors">
-              <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 export default async function DashboardPage() {
   const [stats, recentActivity] = await Promise.all([
     getDashboardStats(),
@@ -359,133 +406,64 @@ export default async function DashboardPage() {
   const currentHour = new Date().getHours();
   const greeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
 
+  // Fetch additional data if we have org ID
+  const [futureEnrollmentsData, memberActivityData] = stats?.organizationId 
+    ? await Promise.all([
+        getFutureEnrollmentsData(stats.organizationId),
+        getMemberActivityData(stats.organizationId),
+      ])
+    : [null, null];
+
   return (
     <div className="space-y-8 pb-8">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-4 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
-        {/* Static background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#047474]/30 to-transparent rounded-full blur-3xl" />
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#E9B61F]/20 to-transparent rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full" />
-        </div>
+      {/* Hero Header with Live Indicator */}
+      <DashboardHeaderClient 
+        greeting={greeting}
+        stats={stats}
+      />
 
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <defs>
-              <pattern id="heroGrid" width="5" height="5" patternUnits="userSpaceOnUse">
-                <path d="M 5 0 L 0 0 0 5" fill="none" stroke="white" strokeWidth="0.3" />
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#heroGrid)" />
-          </svg>
-        </div>
-
-        <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-xs font-medium text-white/80">System Online</span>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E9B61F]/20 backdrop-blur-sm border border-[#E9B61F]/30">
-                  <Shield className="w-3.5 h-3.5 text-[#E9B61F]" />
-                  <span className="text-xs font-medium text-[#E9B61F]">Admin Access</span>
-                </div>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">{greeting}!</h1>
-              <p className="text-white/60 text-base sm:text-lg">Welcome to your Admin Dashboard</p>
-            </div>
-
-            {/* Desktop only header actions */}
-            <div className="hidden lg:flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white text-sm font-medium transition-all">
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                <Clock className="w-4 h-4 text-white/60" />
-                <span className="text-sm text-white/60">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick stats in header - horizontally scrollable on mobile */}
-          <div className="flex items-center gap-4 sm:gap-6 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="p-2 rounded-lg bg-emerald-500/20">
-                <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-400" />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.activeEnrollments ?? 0}</p>
-                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Active Enrollments</p>
-              </div>
-            </div>
-            <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="p-2 rounded-lg bg-amber-500/20">
-                <AlertCircle className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400" />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.pendingEnrollments ?? 0}</p>
-                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Pending Review</p>
-              </div>
-            </div>
-            <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="p-2 rounded-lg bg-[#047474]/30">
-                <Users className="w-4 sm:w-5 h-4 sm:h-5 text-[#069B9A]" />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.totalMembers ?? 0}</p>
-                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Total Members</p>
-              </div>
-            </div>
-            <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="p-2 rounded-lg bg-purple-500/20">
-                <UserCheck className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400" />
-              </div>
-              <div>
-                <p className="text-xl sm:text-2xl font-bold text-white">{stats?.totalAgents ?? 0}</p>
-                <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Active Agents</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Grid */}
+      {/* Stats Grid with Trends */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <PremiumStatCard
+        <StatCard
           title="Total Members"
           value={stats?.totalMembers ?? 0}
           subtitle="All registered members"
           icon={<Users className="w-5 h-5" />}
           gradient="bg-gradient-to-r from-[#047474] to-[#069B9A]"
           href="/members"
+          trend={stats?.membersTrend !== 0 ? {
+            value: stats?.membersTrend ?? 0,
+            label: 'vs last month',
+            direction: (stats?.membersTrend ?? 0) > 0 ? 'up' : (stats?.membersTrend ?? 0) < 0 ? 'down' : 'neutral',
+          } : undefined}
         />
-        <PremiumStatCard
+        <StatCard
           title="Active Agents"
           value={stats?.totalAgents ?? 0}
           subtitle="Licensed agents"
           icon={<UserCheck className="w-5 h-5" />}
           gradient="bg-gradient-to-r from-[#027343] to-[#34d399]"
           href="/agents"
+          trend={stats?.agentsTrend !== 0 ? {
+            value: stats?.agentsTrend ?? 0,
+            label: 'vs last month',
+            direction: (stats?.agentsTrend ?? 0) > 0 ? 'up' : (stats?.agentsTrend ?? 0) < 0 ? 'down' : 'neutral',
+          } : undefined}
         />
-        <PremiumStatCard
+        <StatCard
           title="Total Enrollments"
           value={stats?.totalEnrollments ?? 0}
           subtitle="All enrollment applications"
           icon={<FileText className="w-5 h-5" />}
           gradient="bg-gradient-to-r from-purple-600 to-purple-400"
           href="/enrollments"
+          trend={stats?.enrollmentsTrend !== 0 ? {
+            value: stats?.enrollmentsTrend ?? 0,
+            label: 'vs last month',
+            direction: (stats?.enrollmentsTrend ?? 0) > 0 ? 'up' : (stats?.enrollmentsTrend ?? 0) < 0 ? 'down' : 'neutral',
+          } : undefined}
         />
-        <PremiumStatCard
+        <StatCard
           title="Pending Review"
           value={stats?.pendingEnrollments ?? 0}
           subtitle="Awaiting admin review"
@@ -516,6 +494,16 @@ export default async function DashboardPage() {
           href="/commissions"
           iconBg="bg-emerald-100"
         />
+      </div>
+
+      {/* Future Enrollments and Member Activity Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {futureEnrollmentsData && (
+          <FutureEnrollmentsCard data={futureEnrollmentsData} />
+        )}
+        {memberActivityData && (
+          <MemberActivityAnalysis data={memberActivityData} />
+        )}
       </div>
 
       {/* Dashboard Widgets: ToDo, Jobs, Recently Visited */}
@@ -554,7 +542,7 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <Link
-                  href="/activity"
+                  href="/settings/audit-logs"
                   className="flex items-center gap-1 text-sm font-medium text-[#047474] hover:text-[#069B9A] transition-colors"
                 >
                   View all
@@ -679,15 +667,15 @@ export default async function DashboardPage() {
               </Link>
 
               <Link
-                href="/analytics"
+                href="/reports"
                 className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-indigo-200 hover:bg-gradient-to-r hover:from-indigo-500/5 hover:to-transparent transition-all"
               >
                 <div className="p-3 rounded-xl bg-indigo-100 group-hover:bg-indigo-600 transition-colors">
                   <BarChart3 className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-sm text-slate-700">View Analytics</p>
-                  <p className="text-xs text-slate-400">Reports & insights</p>
+                  <p className="font-semibold text-sm text-slate-700">View Reports</p>
+                  <p className="text-xs text-slate-400">Analytics & insights</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
               </Link>
