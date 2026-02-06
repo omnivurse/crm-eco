@@ -1,3 +1,4 @@
+export PATH="/opt/homebrew/bin:$PATH"
 echo "🔍 Running type check before push..."
 npm run typecheck:crm || exit 1
 echo "✅ Type check passed — safe to push"
