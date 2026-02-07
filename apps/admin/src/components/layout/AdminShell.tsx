@@ -25,7 +25,21 @@ interface AdminShellProps {
  */
 export function AdminShell({ children, profile, userId }: AdminShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
+
+  // Hydrate sidebar collapsed state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('admin-sidebar-main-collapsed');
+    if (stored === 'true') {
+      setSidebarCollapsed(true);
+    }
+  }, []);
+
+  // Persist sidebar collapsed state
+  useEffect(() => {
+    localStorage.setItem('admin-sidebar-main-collapsed', String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -59,6 +73,8 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
       <AdminSidebar
         mobileMenuOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* Main Content Area */}
