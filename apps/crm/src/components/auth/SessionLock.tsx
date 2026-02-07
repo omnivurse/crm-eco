@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { Lock, KeyRound, AlertTriangle } from 'lucide-react';
@@ -175,13 +175,16 @@ export function useSessionTimeout(timeoutMs: number = 30 * 60 * 1000) {
     const [isLocked, setIsLocked] = useState(false);
     const [lastActivity, setLastActivity] = useState(Date.now());
 
-    // Update activity on user interaction
+    // Use ref for isLocked to avoid re-registering event listeners
+    const isLockedRef = useRef(isLocked);
+    isLockedRef.current = isLocked;
+
+    // Stable activity handler that doesn't change between renders
     const updateActivity = useCallback(() => {
-        setLastActivity(Date.now());
-        if (isLocked) {
-            // Don't unlock automatically - require password
+        if (!isLockedRef.current) {
+            setLastActivity(Date.now());
         }
-    }, [isLocked]);
+    }, []); // No dependencies - uses ref
 
     // Check for timeout periodically
     useEffect(() => {
@@ -195,17 +198,26 @@ export function useSessionTimeout(timeoutMs: number = 30 * 60 * 1000) {
         return () => clearInterval(interval);
     }, [lastActivity, timeoutMs]);
 
-    // Track user activity
+    // Track user activity - stable event listeners that don't re-register
     useEffect(() => {
-        const events = ['mousedown', 'keydown', 'touchstart', 'scroll'];
+        const events = ['mousedown', 'keydown', 'touchstart', 'scroll'] as const;
+
+        // Throttle to max once per second to reduce overhead
+        let throttled = false;
+        const throttledUpdate = () => {
+            if (throttled) return;
+            throttled = true;
+            updateActivity();
+            setTimeout(() => { throttled = false; }, 1000);
+        };
 
         events.forEach(event => {
-            window.addEventListener(event, updateActivity);
+            window.addEventListener(event, throttledUpdate, { passive: true });
         });
 
         return () => {
             events.forEach(event => {
-                window.removeEventListener(event, updateActivity);
+                window.removeEventListener(event, throttledUpdate);
             });
         };
     }, [updateActivity]);

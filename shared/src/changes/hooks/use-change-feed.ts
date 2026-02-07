@@ -43,6 +43,10 @@ export function useChangeFeed(options: UseChangeFeedOptions): UseChangeFeedRetur
   const isPausedRef = useRef(isPaused);
   isPausedRef.current = isPaused;
 
+  // Stable references for array dependencies to prevent re-subscriptions
+  const entityTypesKey = entityTypes.join(',');
+  const sourceTypesKey = sourceTypes.join(',');
+
   // Filter function to check if event matches criteria
   const matchesFilters = useCallback(
     (event: ChangeEventPayload): boolean => {
@@ -169,7 +173,8 @@ export function useChangeFeed(options: UseChangeFeedOptions): UseChangeFeedRetur
 
       return () => clearInterval(intervalId);
     }
-  }, [orgId, entityTypes, sourceTypes, minSeverity, maxEvents, autoRefresh, refreshInterval]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orgId, entityTypesKey, sourceTypesKey, minSeverity, maxEvents, autoRefresh, refreshInterval]);
 
   // Control functions
   const pause = useCallback(() => {

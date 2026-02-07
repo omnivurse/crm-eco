@@ -58,6 +58,10 @@ export function useAuditFeed(
   const pendingEvents = useRef<AuditLogEntry[]>([]);
   const throttleTimer = useRef<NodeJS.Timeout | null>(null);
 
+  // Stable ref for callback to prevent re-subscription
+  const onHighRiskEventRef = useRef(onHighRiskEvent);
+  onHighRiskEventRef.current = onHighRiskEvent;
+
   // Flush pending events with throttling
   const flushEvents = useCallback(() => {
     if (pendingEvents.current.length === 0) return;
@@ -102,7 +106,7 @@ export function useAuditFeed(
 
           // Trigger high-risk callback (for toast notifications)
           if (event.risk_level === 'high' || event.risk_level === 'critical') {
-            onHighRiskEvent?.(event);
+            onHighRiskEventRef.current?.(event);
           }
 
           if (isPausedRef.current) {
@@ -129,6 +133,7 @@ export function useAuditFeed(
         clearTimeout(throttleTimer.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     supabase,
     orgId,
@@ -137,7 +142,7 @@ export function useAuditFeed(
     throttleMs,
     meetsRiskThreshold,
     flushEvents,
-    onHighRiskEvent,
+    // onHighRiskEvent removed - using ref to prevent re-subscription
   ]);
 
   // Fetch function

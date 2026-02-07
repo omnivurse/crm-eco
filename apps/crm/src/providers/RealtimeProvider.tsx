@@ -23,14 +23,15 @@ interface RealtimeContextValue {
 const RealtimeContext = createContext<RealtimeContextValue | null>(null);
 
 // Throttle updates to prevent render storms
-function throttle<T extends (...args: Parameters<T>) => void>(
+// Returns throttled function and cleanup function
+function createThrottle<T extends (...args: Parameters<T>) => void>(
     fn: T,
     delay: number
-): T {
+): { throttled: T; cleanup: () => void } {
     let lastCall = 0;
     let timeoutId: NodeJS.Timeout | null = null;
 
-    return ((...args: Parameters<T>) => {
+    const throttled = ((...args: Parameters<T>) => {
         const now = Date.now();
         const remaining = delay - (now - lastCall);
 
@@ -49,6 +50,15 @@ function throttle<T extends (...args: Parameters<T>) => void>(
             }, remaining);
         }
     }) as T;
+
+    const cleanup = () => {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
+    };
+
+    return { throttled, cleanup };
 }
 
 interface RealtimeProviderProps {
@@ -63,7 +73,7 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
     });
 
     const channelRef = useRef<RealtimeChannel | null>(null);
-    const subscriptionsRef = useRef<Map<string, RealtimeSubscription>>(new Map());
+    const subscriptionsRef = useRef<Map<string, { subscription: RealtimeSubscription; cleanup: () => void }>>(new Map());
     const idCounterRef = useRef(0);
 
     // Initialize channel
@@ -91,6 +101,9 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
         channelRef.current = channel;
 
         return () => {
+            // Clean up all throttle timeouts before unsubscribing
+            subscriptionsRef.current.forEach(entry => entry.cleanup());
+            subscriptionsRef.current.clear();
             channel.unsubscribe();
             channelRef.current = null;
         };
@@ -100,8 +113,8 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
         (subscription: RealtimeSubscription) => {
             const id = `sub-${++idCounterRef.current}`;
 
-            // Wrap callback with throttle
-            const throttledCallback = throttle(
+            // Wrap callback with throttle - now with proper cleanup
+            const { throttled: throttledCallback, cleanup } = createThrottle(
                 (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
                     subscription.callback(payload);
                     setState((prev) => ({ ...prev, lastUpdate: new Date() }));
@@ -114,7 +127,7 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
                 callback: throttledCallback,
             };
 
-            subscriptionsRef.current.set(id, wrappedSubscription);
+            subscriptionsRef.current.set(id, { subscription: wrappedSubscription, cleanup });
 
             // Add postgres_changes listener if channel exists
             if (channelRef.current) {
@@ -129,8 +142,12 @@ export function RealtimeProvider({ children, throttleMs = 500 }: RealtimeProvide
                 );
             }
 
-            // Return unsubscribe function
+            // Return unsubscribe function that cleans up throttle timeout
             return () => {
+                const entry = subscriptionsRef.current.get(id);
+                if (entry) {
+                    entry.cleanup(); // Clear any pending throttle timeout
+                }
                 subscriptionsRef.current.delete(id);
             };
         },
