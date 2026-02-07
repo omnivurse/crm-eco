@@ -139,27 +139,29 @@ export function Waveform({
   );
 }
 
-// Simplified version without audio analysis
+// Simplified version without audio analysis - uses CSS animation for performance
 export function SimpleWaveform({ isActive }: { isActive: boolean }) {
   const barCount = 5;
 
   return (
     <div className="simple-waveform">
       {Array.from({ length: barCount }).map((_, i) => (
-        <motion.div
+        <div
           key={i}
           className="simple-waveform-bar"
-          animate={{
-            scaleY: isActive ? [0.3, 1, 0.3] : 0.3,
-          }}
-          transition={{
-            duration: 0.6,
-            repeat: isActive ? Infinity : 0,
-            delay: i * 0.1,
-            ease: 'easeInOut',
+          style={{
+            transform: `scaleY(${isActive ? 1 : 0.3})`,
+            animation: isActive ? `waveform-pulse 0.6s ease-in-out infinite` : 'none',
+            animationDelay: `${i * 0.1}s`,
           }}
         />
       ))}
+      <style jsx>{`
+        @keyframes waveform-pulse {
+          0%, 100% { transform: scaleY(0.3); }
+          50% { transform: scaleY(1); }
+        }
+      `}</style>
     </div>
   );
 }

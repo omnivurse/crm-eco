@@ -14,8 +14,10 @@ export function TerminalWindow() {
   const windowRef = useRef<HTMLDivElement>(null);
   const [currentTime, setCurrentTime] = useState<string>('--:--:--');
 
-  // Update time on client only to avoid hydration mismatch
+  // Update time on client only when terminal is open (every 10 seconds to reduce CPU)
   useEffect(() => {
+    if (!isOpen) return;
+
     const updateTime = () => {
       setCurrentTime(
         new Date().toLocaleTimeString('en-US', {
@@ -27,9 +29,9 @@ export function TerminalWindow() {
       );
     };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    const interval = setInterval(updateTime, 10000); // Update every 10 seconds instead of 1
     return () => clearInterval(interval);
-  }, []);
+  }, [isOpen]);
 
   // Focus trap when terminal is open
   useEffect(() => {
