@@ -148,20 +148,10 @@ export function SimpleWaveform({ isActive }: { isActive: boolean }) {
       {Array.from({ length: barCount }).map((_, i) => (
         <div
           key={i}
-          className="simple-waveform-bar"
-          style={{
-            transform: `scaleY(${isActive ? 1 : 0.3})`,
-            animation: isActive ? `waveform-pulse 0.6s ease-in-out infinite` : 'none',
-            animationDelay: `${i * 0.1}s`,
-          }}
+          className={`simple-waveform-bar${isActive ? ' active' : ''}`}
+          style={{ animationDelay: `${i * 0.1}s` }}
         />
       ))}
-      <style jsx>{`
-        @keyframes waveform-pulse {
-          0%, 100% { transform: scaleY(0.3); }
-          50% { transform: scaleY(1); }
-        }
-      `}</style>
     </div>
   );
 }
