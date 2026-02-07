@@ -246,6 +246,17 @@
   height: 100%;
   background: var(--voice-primary);
   border-radius: 1.5px;
+  transform: scaleY(0.3);
+  transition: transform 0.2s ease;
+}
+
+.simple-waveform-bar.active {
+  animation: simple-waveform-pulse 0.6s ease-in-out infinite;
+}
+
+@keyframes simple-waveform-pulse {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
 }
 
 /* Status */
