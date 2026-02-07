@@ -73,83 +73,78 @@ export default function OrganizerPage() {
             try {
                 setUserName(authProfile.full_name?.split(' ')[0] || 'there');
 
-                // Get tasks due today
                 const today = new Date().toISOString().split('T')[0];
-                const { data: todayTasks, count: tasksDueCount } = await supabase
-                    .from('crm_tasks')
-                    .select('*', { count: 'exact' })
-                    .eq('org_id', authProfile.organization_id)
-                    .gte('due_at', today)
-                    .lte('due_at', today + 'T23:59:59')
-                    .neq('status', 'completed')
-                    .limit(5);
-
-                // Get overdue tasks
-                const { count: overdueCount } = await supabase
-                    .from('crm_tasks')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('org_id', authProfile.organization_id)
-                    .lt('due_at', today)
-                    .neq('status', 'completed');
-
-                // Get new leads (last 7 days)
                 const weekAgo = new Date();
                 weekAgo.setDate(weekAgo.getDate() - 7);
 
-                // First get leads module ID
-                const { data: leadsModule } = await supabase
-                    .from('crm_modules')
-                    .select('id')
-                    .eq('org_id', authProfile.organization_id)
-                    .eq('key', 'leads')
-                    .single();
-
-                let newLeadsCount = 0;
-                if (leadsModule) {
-                    const { count } = await supabase
-                        .from('crm_records')
+                // Run all independent queries in parallel for better performance
+                const [
+                    todayTasksResult,
+                    overdueResult,
+                    modulesResult,
+                    recentNotesResult,
+                ] = await Promise.all([
+                    // Get tasks due today
+                    supabase
+                        .from('crm_tasks')
+                        .select('*', { count: 'exact' })
+                        .eq('org_id', authProfile.organization_id)
+                        .gte('due_at', today)
+                        .lte('due_at', today + 'T23:59:59')
+                        .neq('status', 'completed')
+                        .limit(5),
+                    // Get overdue tasks count
+                    supabase
+                        .from('crm_tasks')
                         .select('*', { count: 'exact', head: true })
-                        .eq('module_id', leadsModule.id)
-                        .gte('created_at', weekAgo.toISOString());
-                    newLeadsCount = count || 0;
-                }
+                        .eq('org_id', authProfile.organization_id)
+                        .lt('due_at', today)
+                        .neq('status', 'completed'),
+                    // Get both modules in one query
+                    supabase
+                        .from('crm_modules')
+                        .select('id, key')
+                        .eq('org_id', authProfile.organization_id)
+                        .in('key', ['leads', 'deals']),
+                    // Get recent notes
+                    supabase
+                        .from('notes')
+                        .select('id, title, content, created_at')
+                        .eq('user_id', authUser.id)
+                        .order('created_at', { ascending: false })
+                        .limit(5),
+                ]);
 
-                // Get deals at risk (stale deals)
-                const { data: dealsModule } = await supabase
-                    .from('crm_modules')
-                    .select('id')
-                    .eq('org_id', authProfile.organization_id)
-                    .eq('key', 'deals')
-                    .single();
+                const leadsModule = modulesResult.data?.find(m => m.key === 'leads');
+                const dealsModule = modulesResult.data?.find(m => m.key === 'deals');
 
-                let dealsAtRiskCount = 0;
-                if (dealsModule) {
-                    const { count } = await supabase
-                        .from('crm_records')
-                        .select('*', { count: 'exact', head: true })
-                        .eq('module_id', dealsModule.id)
-                        .lt('updated_at', weekAgo.toISOString());
-                    dealsAtRiskCount = count || 0;
-                }
+                // Run secondary queries in parallel (depend on modules)
+                const [newLeadsResult, dealsAtRiskResult] = await Promise.all([
+                    leadsModule
+                        ? supabase
+                            .from('crm_records')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('module_id', leadsModule.id)
+                            .gte('created_at', weekAgo.toISOString())
+                        : Promise.resolve({ count: 0 }),
+                    dealsModule
+                        ? supabase
+                            .from('crm_records')
+                            .select('*', { count: 'exact', head: true })
+                            .eq('module_id', dealsModule.id)
+                            .lt('updated_at', weekAgo.toISOString())
+                        : Promise.resolve({ count: 0 }),
+                ]);
 
                 setStats({
-                    tasksDue: tasksDueCount || 0,
-                    overdue: overdueCount || 0,
-                    newLeads: newLeadsCount,
-                    dealsAtRisk: dealsAtRiskCount,
+                    tasksDue: todayTasksResult.count || 0,
+                    overdue: overdueResult.count || 0,
+                    newLeads: newLeadsResult.count || 0,
+                    dealsAtRisk: dealsAtRiskResult.count || 0,
                 });
 
-                setTasks(todayTasks || []);
-
-                // Get recent notes
-                const { data: recentNotes } = await supabase
-                    .from('notes')
-                    .select('id, title, content, created_at')
-                    .eq('user_id', authUser.id)
-                    .order('created_at', { ascending: false })
-                    .limit(5);
-
-                setNotes(recentNotes || []);
+                setTasks(todayTasksResult.data || []);
+                setNotes(recentNotesResult.data || []);
 
                 // Get scratchpad
                 const saved = localStorage.getItem('crm-scratchpad');
