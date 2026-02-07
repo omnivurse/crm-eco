@@ -25,8 +25,11 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   BookOpen,
   HelpCircle,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 import { useTerminal } from '@/components/terminal';
 
@@ -234,9 +237,16 @@ const navSections: NavSection[] = [
 interface AdminSidebarProps {
   mobileMenuOpen?: boolean;
   onMobileClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSidebarProps) {
+export function AdminSidebar({
+  mobileMenuOpen = false,
+  onMobileClose,
+  isCollapsed = false,
+  onToggleCollapse,
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const { toggle: toggleTerminal } = useTerminal();
   
@@ -302,11 +312,11 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
     }
   };
 
-  const sidebarContent = (
+  const sidebarContent = (forMobile: boolean = false) => (
     <>
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#003560] via-[#003560] to-[#002848] pointer-events-none" />
-      
+
       {/* Content wrapper */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Logo with gradient accent stripe */}
@@ -314,40 +324,64 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
           {/* Gradient top stripe */}
           <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
 
-          <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
+          <div className={cn(
+            "h-16 flex items-center border-b border-white/10 transition-all duration-300",
+            !forMobile && isCollapsed ? "justify-center px-2" : "justify-between px-4"
+          )}>
             <Link href="/dashboard" className="flex items-center group" onClick={handleLinkClick}>
-              <Image
-                src="/logo-pif-full.png"
-                alt="Pay It Forward HealthShare"
-                width={180}
-                height={48}
-                className="object-contain max-h-10 w-auto"
-                priority
-              />
+              {!forMobile && isCollapsed ? (
+                <Image
+                  src="/logo-icon.png"
+                  alt="PIF"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                  priority
+                />
+              ) : (
+                <Image
+                  src="/logo-pif-full.png"
+                  alt="Pay It Forward HealthShare"
+                  width={180}
+                  height={48}
+                  className="object-contain max-h-10 w-auto"
+                  priority
+                />
+              )}
             </Link>
             {/* Mobile close button */}
-            <button
-              onClick={onMobileClose}
-              className="lg:hidden p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              aria-label="Close menu"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {forMobile && (
+              <button
+                onClick={onMobileClose}
+                className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 overflow-y-auto scrollbar-thin">
+        <nav className={cn(
+          "flex-1 py-4 overflow-y-auto scrollbar-thin transition-all duration-300",
+          !forMobile && isCollapsed ? "px-2" : "px-3"
+        )}>
           {navSections.map((section) => {
-            const isCollapsed = section.collapsible && collapsedSections.has(section.title);
+            const isSectionCollapsed = section.collapsible && collapsedSections.has(section.title);
             const isActiveSection = section.items.some(
               (item) => pathname === item.href || pathname.startsWith(`${item.href}/`)
             );
 
             return (
               <div key={section.title} className="mb-4">
-                {/* Section Header */}
-                {section.collapsible ? (
+                {/* Section Header - hidden when sidebar is collapsed */}
+                {(!forMobile && isCollapsed) ? (
+                  // Show a divider line when collapsed
+                  section.title !== 'Main' && (
+                    <div className="h-px bg-white/10 my-3 mx-1" />
+                  )
+                ) : section.collapsible ? (
                   <button
                     onClick={() => toggleSection(section.title)}
                     className={cn(
@@ -358,7 +392,7 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
                     )}
                   >
                     <span>{section.title}</span>
-                    {isCollapsed ? (
+                    {isSectionCollapsed ? (
                       <ChevronRight className="w-4 h-4" />
                     ) : (
                       <ChevronDown className="w-4 h-4" />
@@ -376,7 +410,10 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
                 <div
                   className={cn(
                     'space-y-1 overflow-hidden transition-all duration-300',
-                    isCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100',
+                    // Only collapse sections when sidebar is expanded
+                    (!forMobile && isCollapsed) ? 'max-h-[500px] opacity-100' : (
+                      isSectionCollapsed ? 'max-h-0 opacity-0' : 'max-h-[500px] opacity-100'
+                    ),
                     section.title !== 'Main' && !section.collapsible && 'mt-1'
                   )}
                 >
@@ -388,22 +425,37 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
                         key={item.href}
                         href={item.href}
                         onClick={handleLinkClick}
+                        title={(!forMobile && isCollapsed) ? item.label : undefined}
                         className={cn(
-                          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
+                          'flex items-center rounded-lg text-sm font-medium transition-all duration-200 group relative',
+                          !forMobile && isCollapsed
+                            ? 'justify-center p-2.5'
+                            : 'gap-3 px-3 py-2.5',
                           isActive
                             ? 'bg-[#047474] text-white shadow-lg shadow-teal-900/20'
                             : 'text-white/70 hover:bg-[#002848] hover:text-white'
                         )}
                       >
                         <span className={cn(
-                          'transition-colors',
+                          'transition-colors flex-shrink-0',
                           isActive ? 'text-white' : 'text-white/50'
                         )}>
                           {item.icon}
                         </span>
-                        {item.label}
-                        {isActive && (
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#E9B61F]" />
+                        {/* Label - hidden when collapsed */}
+                        {(forMobile || !isCollapsed) && (
+                          <>
+                            <span className="truncate">{item.label}</span>
+                            {isActive && (
+                              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#E9B61F] flex-shrink-0" />
+                            )}
+                          </>
+                        )}
+                        {/* Tooltip on hover when collapsed */}
+                        {!forMobile && isCollapsed && (
+                          <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+                            {item.label}
+                          </div>
                         )}
                       </Link>
                     );
@@ -415,30 +467,75 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
         </nav>
 
         {/* Command Center Button */}
-        <div className="px-3 pb-2">
+        <div className={cn("pb-2 transition-all duration-300", !forMobile && isCollapsed ? "px-2" : "px-3")}>
           <button
             onClick={() => {
               toggleTerminal();
               handleLinkClick();
             }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-cyan-400 hover:bg-cyan-900/30 hover:text-cyan-300"
+            className={cn(
+              "w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 text-cyan-400 hover:bg-cyan-900/30 hover:text-cyan-300 group relative",
+              !forMobile && isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+            )}
             title="Command Center (Ctrl+K)"
           >
-            <Terminal className="w-5 h-5" />
-            <span>Command Center</span>
-            <kbd className="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded hidden sm:inline">^K</kbd>
+            <Terminal className="w-5 h-5 flex-shrink-0" />
+            {(forMobile || !isCollapsed) && (
+              <>
+                <span>Command Center</span>
+                <kbd className="ml-auto text-[10px] bg-white/10 px-1.5 py-0.5 rounded hidden sm:inline">^K</kbd>
+              </>
+            )}
+            {/* Tooltip when collapsed */}
+            {!forMobile && isCollapsed && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+                Command Center
+              </div>
+            )}
           </button>
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          <div className="px-3 py-3 bg-[#002848] rounded-xl border border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#E9B61F]" />
-              <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">System</p>
-            </div>
-            <p className="text-sm font-bold text-white">Admin <span className="text-[#069B9A]">· v1.0.0</span></p>
+        {/* Collapse Toggle Button - Desktop only */}
+        {!forMobile && onToggleCollapse && (
+          <div className={cn("pb-2 transition-all duration-300", isCollapsed ? "px-2" : "px-3")}>
+            <button
+              onClick={onToggleCollapse}
+              className={cn(
+                "w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 text-white/50 hover:bg-white/10 hover:text-white",
+                isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+              )}
+              title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isCollapsed ? (
+                <PanelLeft className="w-5 h-5" />
+              ) : (
+                <>
+                  <PanelLeftClose className="w-5 h-5" />
+                  <span>Collapse</span>
+                </>
+              )}
+            </button>
           </div>
+        )}
+
+        {/* Footer */}
+        <div className={cn(
+          "border-t border-white/10 transition-all duration-300",
+          !forMobile && isCollapsed ? "p-2" : "p-4"
+        )}>
+          {(!forMobile && isCollapsed) ? (
+            <div className="flex justify-center">
+              <Sparkles className="w-5 h-5 text-[#E9B61F]" />
+            </div>
+          ) : (
+            <div className="px-3 py-3 bg-[#002848] rounded-xl border border-white/5">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#E9B61F]" />
+                <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">System</p>
+              </div>
+              <p className="text-sm font-bold text-white">Admin <span className="text-[#069B9A]">· v1.0.0</span></p>
+            </div>
+          )}
         </div>
       </div>
     </>
@@ -447,8 +544,13 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
   return (
     <>
       {/* Desktop Sidebar - always visible */}
-      <aside className="hidden lg:flex w-64 bg-[#003560] text-white flex-col relative overflow-hidden">
-        {sidebarContent}
+      <aside
+        className={cn(
+          "hidden lg:flex bg-[#003560] text-white flex-col relative overflow-hidden transition-all duration-300",
+          isCollapsed ? "w-[72px]" : "w-64"
+        )}
+      >
+        {sidebarContent(false)}
       </aside>
 
       {/* Mobile Sidebar - slide-in drawer */}
@@ -460,7 +562,7 @@ export function AdminSidebar({ mobileMenuOpen = false, onMobileClose }: AdminSid
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
-        {sidebarContent}
+        {sidebarContent(true)}
       </aside>
     </>
   );
