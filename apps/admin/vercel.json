@@ -1,3 +1,6 @@
 {
+  "installCommand": "cd ../.. && rm -rf node_modules/.package-lock.json && npm install --legacy-peer-deps",
+  "buildCommand": "cd ../.. && npm run build:admin",
+  "outputDirectory": ".next",
   "framework": "nextjs"
 }
