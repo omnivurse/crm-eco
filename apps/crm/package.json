@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint --max-warnings 0",
     "typecheck": "tsc --noEmit",
-    "precheck": "npm run typecheck && npm run lint"
+    "precheck": "npm run typecheck && npm run lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@crm-eco/lib": "*",
@@ -68,6 +70,7 @@
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
     "@types/react-dom": "^18.2.18",
+    "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.17",
     "cross-env": "^10.1.0",
     "eslint": "^8.56.0",
@@ -75,6 +78,7 @@
     "postcss": "^8.4.33",
     "tailwindcss": "^3.4.1",
     "tailwindcss-animate": "^1.0.7",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^4.0.18"
   }
 }
