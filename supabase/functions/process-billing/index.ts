@@ -448,7 +448,7 @@ async function sendEmail(
       return acc;
     }, {});
 
-    const fromEmail = settingsMap['email_from_address'] || 'noreply@example.com';
+    const fromEmail = settingsMap['email_from_address'] || 'noreply@mail.payitforwardhealth.com';
     const fromName = settingsMap['email_from_name'] || 'CRM System';
 
     // Replace variables

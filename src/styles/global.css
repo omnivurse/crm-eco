@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Theme tokens - MPB Health Brand Colors */
+/* Theme tokens - Pay It Forward Health Brand Colors */
 @layer base {
   :root {
     --bg: 248 250 252;      /* neutral-50 */
@@ -98,7 +98,7 @@
   }
 }
 
-/* Professional Background Pattern - MPB Health Brand */
+/* Professional Background Pattern - Pay It Forward Health Brand */
 .app-background {
   background: rgb(248, 250, 252);
   min-height: 100vh;
@@ -109,7 +109,7 @@
   background: rgb(15, 23, 42);
 }
 
-/* Public Pages Background - MPB Health Brand */
+/* Public Pages Background - Pay It Forward Health Brand */
 .public-background {
   background: rgb(248, 250, 252);
   min-height: 100vh;

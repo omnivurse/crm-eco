@@ -369,9 +369,9 @@ All operations go through Supabase client:
 
 ## Credits
 
-Built by Claude Code for Championship IT / MPB Health
+Built by Claude Code for Championship IT / Pay It Forward Health
 Architecture: Vinnie Champion, CTO
 
 ## License
 
-Proprietary - Championship IT / MPB Health
+Proprietary - Championship IT / Pay It Forward Health

@@ -50,7 +50,7 @@ GOTRUE_SMTP_ADMIN_EMAIL=admin@yourdomain.com
 ## Current Implementation Status
 
 ✅ **Edge Function Updated**: The `admin-create-user` function now uses `email_confirm: true` to auto-confirm emails
-✅ **Super Admin Fixed**: Password has been reset and email confirmed for daniel@mympb.com
+✅ **Super Admin Fixed**: Password has been reset and email confirmed for daniel@payitforwardhealth.com
 ✅ **Migration Applied**: Database migration ensures proper password hashing and email confirmation
 
 ## Testing
@@ -70,7 +70,7 @@ After disabling email confirmation in the dashboard:
    - User should be able to login immediately without email verification
 
 3. **Test Super Admin Login**
-   - Email: daniel@mympb.com
+   - Email: daniel@payitforwardhealth.com
    - Password: fjh#@!125#59
    - Should login successfully
 

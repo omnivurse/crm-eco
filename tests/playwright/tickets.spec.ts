@@ -6,7 +6,7 @@ test.describe('Tickets @smoke', () => {
   });
 
   test('creates a ticket and adds note', async ({ page }) => {
-    await page.fill('[name="email"]', 'test@mpbhealth.com');
+    await page.fill('[name="email"]', 'test@payitforwardhealth.com');
     await page.fill('[name="password"]', 'password');
     await page.click('button[type="submit"]');
 
@@ -31,7 +31,7 @@ test.describe('Tickets @smoke', () => {
   });
 
   test('ticket status flow', async ({ page }) => {
-    await page.fill('[name="email"]', 'agent@mpbhealth.com');
+    await page.fill('[name="email"]', 'agent@payitforwardhealth.com');
     await page.fill('[name="password"]', 'password');
     await page.click('button[type="submit"]');
 
@@ -51,7 +51,7 @@ test.describe('Tickets @smoke', () => {
   });
 
   test('SLA badge updates', async ({ page }) => {
-    await page.fill('[name="email"]', 'agent@mpbhealth.com');
+    await page.fill('[name="email"]', 'agent@payitforwardhealth.com');
     await page.fill('[name="password"]', 'password');
     await page.click('button[type="submit"]');
 
@@ -69,7 +69,7 @@ test.describe('Tickets @smoke', () => {
   });
 
   test('merges duplicate tickets', async ({ page }) => {
-    await page.fill('[name="email"]', 'agent@mpbhealth.com');
+    await page.fill('[name="email"]', 'agent@payitforwardhealth.com');
     await page.fill('[name="password"]', 'password');
     await page.click('button[type="submit"]');
 

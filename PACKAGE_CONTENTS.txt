@@ -1,10 +1,10 @@
 ╔═══════════════════════════════════════════════════════════════╗
-║     MPB HEALTH - A2 VPS DEPLOYMENT PACKAGE (WITH .htaccess)  ║
+║     PAY IT FORWARD HEALTH - A2 VPS DEPLOYMENT PACKAGE (WITH .htaccess)  ║
 ╚═══════════════════════════════════════════════════════════════╝
 
 ✅ VERIFIED PACKAGE CONTENTS
 
-📦 Archive: mpb-health-dist.tar.gz (375KB)
+📦 Archive: pifh-dist.tar.gz (375KB)
 
 📁 Files Included (22 total):
   ✓ .htaccess              [Apache configuration - SPA routing]
@@ -21,7 +21,7 @@
     - utils-DZLTRNVM.js           (142.61 KB / 44.87 KB gzipped)
     - index-ezTHlq46.js           (660.42 KB / 104.49 KB gzipped)
     - form-vendor-C3ZRcXiY.js     (53.42 KB / 12.06 KB gzipped)
-    + Images (MPB logo, payment methods, secured badge)
+    + Images (PIFH logo, payment methods, secured badge)
   
   📂 locales/
     - en/translation.json    [English translations]
@@ -49,7 +49,7 @@
   - Production Mode: Enabled
 
 🚀 Ready to Deploy:
-  1. Upload mpb-health-dist.tar.gz to your A2 hosting
+  1. Upload pifh-dist.tar.gz to your A2 hosting
   2. Extract to public_html
   3. Enable SSL certificate
   4. Done!

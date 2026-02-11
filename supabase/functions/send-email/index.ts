@@ -98,8 +98,8 @@ serve(async (req) => {
       return acc;
     }, {} as Record<string, string>);
 
-    const defaultFromEmail = settingsMap['email_from_address'] || 'noreply@example.com';
-    const defaultFromName = settingsMap['email_from_name'] || 'CRM System';
+    const defaultFromEmail = settingsMap['email_from_address'] || 'noreply@mail.payitforwardhealth.com';
+    const defaultFromName = settingsMap['email_from_name'] || 'Pay It Forward Health';
 
     let subject = body.subject || '';
     let html = body.html || '';

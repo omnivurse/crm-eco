@@ -1,8 +1,8 @@
-# Email Service Setup Guide for MPB Health IT
+# Email Service Setup Guide for Pay It Forward Health IT
 
 ## Overview
 
-This guide explains how to configure email services for the MPB Health IT ticketing system. The system supports multiple email providers with automatic fallback to ensure reliable email delivery.
+This guide explains how to configure email services for the Pay It Forward Health IT ticketing system. The system supports multiple email providers with automatic fallback to ensure reliable email delivery.
 
 ## Current System Status
 
@@ -30,7 +30,7 @@ This guide explains how to configure email services for the MPB Health IT ticket
 2. **Generate API Key**
    - Navigate to **API Keys** in the dashboard
    - Click **Create API Key**
-   - Name it "MPB Health Production"
+   - Name it "Pay It Forward Health Production"
    - Copy the API key (starts with `re_`)
    - **Important**: Save this key securely - you can't view it again
 
@@ -45,7 +45,7 @@ This guide explains how to configure email services for the MPB Health IT ticket
 4. **Verify Domain (Production)**
    - In Resend dashboard, go to **Domains**
    - Click **Add Domain**
-   - Enter your domain (e.g., `mympb.com`)
+   - Enter your domain (e.g., `payitforwardhealth.com`)
    - Add the DNS records provided by Resend:
      ```
      TXT  @  v=spf1 include:resend.com ~all
@@ -58,7 +58,7 @@ This guide explains how to configure email services for the MPB Health IT ticket
    - Go to **Edge Functions** → **Secrets**
    - Add or update:
      - **Key**: `FROM_EMAIL`
-     - **Value**: `support@mympb.com` (or your verified email)
+     - **Value**: `support@payitforwardhealth.com` (or your verified email)
 
 #### Testing Resend Setup:
 
@@ -68,7 +68,7 @@ curl -X POST https://api.resend.com/emails \
   -H "Authorization: Bearer YOUR_RESEND_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "from": "support@mympb.com",
+    "from": "support@payitforwardhealth.com",
     "to": "your-email@example.com",
     "subject": "Test Email",
     "html": "<p>This is a test email</p>"
@@ -95,7 +95,7 @@ curl -X POST https://api.resend.com/emails \
    - In SES console, go to **Verified identities**
    - Click **Create identity**
    - Choose **Email address**
-   - Enter `support@mympb.com`
+   - Enter `support@payitforwardhealth.com`
    - Check email for verification link
 
 3. **Request Production Access** (Important!)
@@ -120,8 +120,8 @@ curl -X POST https://api.resend.com/emails \
      - **SMTP Port**: `587` (TLS)
      - **SMTP Username**: Your SES SMTP username
      - **SMTP Password**: Your SES SMTP password
-     - **Sender Email**: `support@mympb.com`
-     - **Sender Name**: `MPB Health Support`
+     - **Sender Email**: `support@payitforwardhealth.com`
+     - **Sender Name**: `Pay It Forward Health Support`
 
 6. **Add DNS Records for Domain**
    ```
@@ -166,7 +166,7 @@ curl -X POST https://api.resend.com/emails \
      - **SMTP Username**: `your-email@gmail.com`
      - **SMTP Password**: Your app password (no spaces)
      - **Sender Email**: `your-email@gmail.com`
-     - **Sender Name**: `MPB Health Support`
+     - **Sender Name**: `Pay It Forward Health Support`
 
 **Note**: Gmail has sending limits:
 - Free: 500 emails/day
@@ -197,7 +197,7 @@ FROM_EMAIL=noreply@mail.app.supabase.co
 # AWS SES (configured in Supabase dashboard via SMTP settings)
 # Or Resend with verified domain
 RESEND_API_KEY=re_your_production_key
-FROM_EMAIL=support@mympb.com
+FROM_EMAIL=support@payitforwardhealth.com
 ```
 
 ---
@@ -325,7 +325,7 @@ WHERE name = 'staff_reply_notification';
 
 3. **Add DMARC Record**
    ```
-   TXT  _dmarc  v=DMARC1; p=none; rua=mailto:dmarc@mympb.com
+   TXT  _dmarc  v=DMARC1; p=none; rua=mailto:dmarc@payitforwardhealth.com
    ```
 
 4. **Warm Up IP Address**
@@ -423,7 +423,7 @@ Before going live with email notifications:
 - [AWS SES Documentation](https://docs.aws.amazon.com/ses/)
 
 ### Contact
-- For system issues: Open ticket in MPB Health IT
+- For system issues: Open ticket in Pay It Forward Health IT
 - For Resend support: support@resend.com
 - For AWS SES support: AWS Support Console
 
@@ -431,7 +431,7 @@ Before going live with email notifications:
 
 ## Summary
 
-The MPB Health IT ticketing system is now configured with flexible email delivery options:
+The Pay It Forward Health IT ticketing system is now configured with flexible email delivery options:
 
 ✅ **Automatic Fallback**: If primary provider fails, system tries alternatives
 ✅ **Graceful Degradation**: System works without email (shows temp passwords in UI)

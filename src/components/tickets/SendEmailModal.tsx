@@ -61,7 +61,7 @@ ${ticket.status === 'resolved' || ticket.status === 'closed'
 Thank you for your patience.
 
 Best regards,
-MPB Health Support Team`;
+Pay It Forward Health Support Team`;
 
       setMessage(defaultMessage);
       setError(null);

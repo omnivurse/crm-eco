@@ -1,6 +1,6 @@
 -- ============================================================================
 -- CRM CONTACTS IMPORT SCRIPT
--- Imports contacts from Zoho CRM CSV export (Contacts_2025_10_16.csv)
+-- Imports contacts from a CRM CSV export
 -- 
 -- This script creates a staging table, maps CSV columns to CRM fields,
 -- and inserts records into crm_records with proper JSONB data structure.
@@ -102,7 +102,7 @@ CREATE TABLE _import_contacts_staging (
   marital_status text,
   work_phone text,
   middle_initial text,
-  mpb_referral_fee text,
+  referral_fee text,
   referral_requirement_satisfied text,
   tag text,
   days_visited text,
@@ -130,8 +130,8 @@ CREATE TABLE _import_contacts_staging (
   business_or_practice_name text,
   dpc_name text,
   cirrus_registration_date text,
-  mpb_portal_username text,
-  mpb_portal_password text,
+  portal_username text,
+  portal_password text,
   select_conversion_completed text,
   mec_decision_confirmed text,
   unsubscribed_mode text,
@@ -142,7 +142,7 @@ CREATE TABLE _import_contacts_staging (
   locked text,
   last_enriched_time text,
   enrich_status text,
-  mpb_app_downloaded text,
+  app_downloaded text,
   birth_month text,
   third_party_payor text,
   atap text,
@@ -179,7 +179,7 @@ CREATE TABLE _import_contacts_staging (
 -- ============================================================================
 
 -- For local import via psql:
--- \COPY _import_contacts_staging(record_id, affiliate, contact_status, contact_owner_id, contact_owner, lead_source, first_name, last_name, producer_name_id, producer_name, email, title, phone, fax, mobile, date_of_birth, created_by_id, created_by, modified_by_id, modified_by, created_time, modified_time, contact_name, mailing_street, mailing_city, mailing_state, mailing_zip, email_opt_out, salutation, secondary_email, currency, exchange_rate, last_activity_time, territories, spouse, spouse_dob, child_1, child_1_dob, child_2, child_2_dob, child_3, child_3_dob, primary_ss_number, notes_history, carrier, previous_product, monthly_premium, commission_percentage, product, coverage_option, start_date, referral_source, referring_member, add_on_product, declined, charge_waived, affiliate_referral, affiliate_rep_monthly, amount_received, team_leader_monthly, team_leader, primary_member_gender, mpower_life_code, welcome_call_performed_by, producer_commission, team_leader_referral, child_4, child_5_dob, child_5, child_4_dob, director, director_referral, director_monthly, life_code_4th, fulfillment_letter_mailed, fulfillment_email_sent, complete_date, life_code_3rd, life_code_2nd, date_referral_paid, welcome_call_status, child_4_ss_number, mec_submitted, child_3_ss_number, child_5_ss_number, child_1_ss_number, spouse_ss_number, child_2_ss_number, marital_status, work_phone, middle_initial, mpb_referral_fee, referral_requirement_satisfied, tag, days_visited, average_time_spent_minutes, number_of_chats, most_recent_visit, first_visit, first_page_visited, referrer, visitor_score, risk_assessment_paid, company_association, cancellation_date, data_processing_basis_id, data_processing_basis, data_source, preferred_method_of_communication, vision, dental, payment_method, account_type, routing_number, account_number, iua_amount, business_or_practice_name, dpc_name, cirrus_registration_date, mpb_portal_username, mpb_portal_password, select_conversion_completed, mec_decision_confirmed, unsubscribed_mode, unsubscribed_time, admin123, household_annual_adj_gross, change_log_time, locked, last_enriched_time, enrich_status, mpb_app_downloaded, birth_month, third_party_payor, atap, permission_to_discuss_plan, medical_release_form_on_file, life_code_5th, wc_outreach_date, e123_member_id, child_3_address, child_3_phone_number, child_1_phone_number, child_4_address, child_1_address, child_4_phone_number, child_2_phone_number, child_5_address, child_2_address, spouse_address, child_5_phone_number, spouse_phone_number, child_1_email, child_2_email, child_3_email, child_4_email, child_5_email, spouse_email, connected_to_module, connected_to_id) FROM '/path/to/Contacts_2025_10_16.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
+-- \COPY _import_contacts_staging(record_id, affiliate, contact_status, contact_owner_id, contact_owner, lead_source, first_name, last_name, producer_name_id, producer_name, email, title, phone, fax, mobile, date_of_birth, created_by_id, created_by, modified_by_id, modified_by, created_time, modified_time, contact_name, mailing_street, mailing_city, mailing_state, mailing_zip, email_opt_out, salutation, secondary_email, currency, exchange_rate, last_activity_time, territories, spouse, spouse_dob, child_1, child_1_dob, child_2, child_2_dob, child_3, child_3_dob, primary_ss_number, notes_history, carrier, previous_product, monthly_premium, commission_percentage, product, coverage_option, start_date, referral_source, referring_member, add_on_product, declined, charge_waived, affiliate_referral, affiliate_rep_monthly, amount_received, team_leader_monthly, team_leader, primary_member_gender, mpower_life_code, welcome_call_performed_by, producer_commission, team_leader_referral, child_4, child_5_dob, child_5, child_4_dob, director, director_referral, director_monthly, life_code_4th, fulfillment_letter_mailed, fulfillment_email_sent, complete_date, life_code_3rd, life_code_2nd, date_referral_paid, welcome_call_status, child_4_ss_number, mec_submitted, child_3_ss_number, child_5_ss_number, child_1_ss_number, spouse_ss_number, child_2_ss_number, marital_status, work_phone, middle_initial, referral_fee, referral_requirement_satisfied, tag, days_visited, average_time_spent_minutes, number_of_chats, most_recent_visit, first_visit, first_page_visited, referrer, visitor_score, risk_assessment_paid, company_association, cancellation_date, data_processing_basis_id, data_processing_basis, data_source, preferred_method_of_communication, vision, dental, payment_method, account_type, routing_number, account_number, iua_amount, business_or_practice_name, dpc_name, cirrus_registration_date, portal_username, portal_password, select_conversion_completed, mec_decision_confirmed, unsubscribed_mode, unsubscribed_time, admin123, household_annual_adj_gross, change_log_time, locked, last_enriched_time, enrich_status, app_downloaded, birth_month, third_party_payor, atap, permission_to_discuss_plan, medical_release_form_on_file, life_code_5th, wc_outreach_date, e123_member_id, child_3_address, child_3_phone_number, child_1_phone_number, child_4_address, child_1_address, child_4_phone_number, child_2_phone_number, child_5_address, child_2_address, spouse_address, child_5_phone_number, spouse_phone_number, child_1_email, child_2_email, child_3_email, child_4_email, child_5_email, spouse_email, connected_to_module, connected_to_id) FROM '/path/to/contacts_export.csv' WITH (FORMAT csv, HEADER true, ENCODING 'UTF8');
 
 -- ============================================================================
 -- Step 3: Helper function to parse dates safely
@@ -283,7 +283,7 @@ BEGIN
   
   -- Create import job for tracking
   INSERT INTO crm_import_jobs (org_id, module_id, source_type, file_name, status, started_at)
-  VALUES (v_org_id, v_module_id, 'csv', 'Contacts_2025_10_16.csv', 'processing', now())
+  VALUES (v_org_id, v_module_id, 'csv', 'contacts_import.csv', 'processing', now())
   RETURNING id INTO v_import_job_id;
   
   -- Process each row
@@ -413,7 +413,7 @@ BEGIN
         'director_referral', _parse_import_number(v_row.director_referral),
         'affiliate_referral', NULLIF(v_row.affiliate_referral, ''),
         'affiliate_rep_monthly', _parse_import_number(v_row.affiliate_rep_monthly),
-        'mpb_referral_fee', _parse_import_number(v_row.mpb_referral_fee),
+        'referral_fee', _parse_import_number(v_row.referral_fee),
         'date_referral_paid', _parse_import_date(v_row.date_referral_paid),
         'referral_requirement_satisfied', NULLIF(v_row.referral_requirement_satisfied, ''),
         'declined', _parse_import_boolean(v_row.declined),
@@ -428,10 +428,10 @@ BEGIN
         'e123_member_id', NULLIF(v_row.e123_member_id, ''),
         
         -- Portal
-        'mpb_portal_username', NULLIF(v_row.mpb_portal_username, ''),
-        'mpb_portal_password', NULLIF(v_row.mpb_portal_password, ''),
+        'portal_username', NULLIF(v_row.portal_username, ''),
+        'portal_password', NULLIF(v_row.portal_password, ''),
         'cirrus_registration_date', _parse_import_date(v_row.cirrus_registration_date),
-        'mpb_app_downloaded', _parse_import_boolean(v_row.mpb_app_downloaded),
+        'app_downloaded', _parse_import_boolean(v_row.app_downloaded),
         'select_conversion_completed', _parse_import_boolean(v_row.select_conversion_completed),
         
         -- Compliance

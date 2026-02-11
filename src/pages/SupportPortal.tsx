@@ -464,7 +464,7 @@ export default function SupportPortal() {
           >
             <h2 className="cta-title">Ready to Transform Your IT Support?</h2>
             <p className="cta-description">
-              Join hundreds of healthcare organizations delivering exceptional service with MPB Health IT
+              Join hundreds of healthcare organizations delivering exceptional service with Pay It Forward Health
             </p>
             <div className="cta-buttons">
               <Link to="/signup" className="btn-hero-primary">
@@ -490,9 +490,9 @@ export default function SupportPortal() {
             Enterprise IT Service Management for Healthcare Organizations
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-sm text-neutral-400">
-            <a href="mailto:support@mympb.com" className="hover:text-white transition-colors">
+            <a href="mailto:support@payitforwardhealth.com" className="hover:text-white transition-colors">
               <Mail className="inline mr-2" size={16} />
-              support@mympb.com
+              support@payitforwardhealth.com
             </a>
             <a href="tel:+15612036529,1012" className="hover:text-white transition-colors">
               <Phone className="inline mr-2" size={16} />
@@ -500,7 +500,7 @@ export default function SupportPortal() {
             </a>
           </div>
           <p className="text-neutral-500 text-sm mt-8">
-            &copy; {new Date().getFullYear()} MPB Health. All rights reserved.
+            &copy; {new Date().getFullYear()} Pay It Forward Health. All rights reserved.
           </p>
         </div>
       </footer>

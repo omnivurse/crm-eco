@@ -99,7 +99,7 @@ async function sendPasswordResetEmail(to: string, tempPassword: string): Promise
       <tr>
         <td style="padding:24px 24px 8px 24px;">
           <h1 style="margin:0;font-size:20px;">Your Password Has Been Reset</h1>
-          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has reset your MPB Health IT account password.</p>
+          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has reset your Pay It Forward Health account password.</p>
         </td>
       </tr>
       <tr>
@@ -119,7 +119,7 @@ async function sendPasswordResetEmail(to: string, tempPassword: string): Promise
 
   const text = `Your Password Has Been Reset
 
-An administrator has reset your MPB Health IT account password.
+An administrator has reset your Pay It Forward Health account password.
 
 Temporary Password: ${tempPassword}
 
@@ -137,9 +137,9 @@ If you did not request this, please contact your administrator immediately.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'IT Support <no-reply@support.mympb.com>',
+        from: 'Pay It Forward Health <noreply@mail.payitforwardhealth.com>',
         to: [to],
-        subject: 'Password Reset - MPB Health IT',
+        subject: 'Password Reset - Pay It Forward Health',
         html,
         text
       })

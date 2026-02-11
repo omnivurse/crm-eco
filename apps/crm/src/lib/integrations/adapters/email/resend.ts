@@ -102,8 +102,8 @@ export class ResendAdapter implements EmailAdapter {
 
       const payload: Record<string, unknown> = {
         from: params.fromName
-          ? `${params.fromName} <${params.from || process.env.RESEND_FROM_EMAIL || 'noreply@example.com'}>`
-          : params.from || process.env.RESEND_FROM_EMAIL || 'noreply@example.com',
+          ? `${params.fromName} <${params.from || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com'}>`
+          : params.from || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
         to: toAddresses,
         subject: params.subject,
       };

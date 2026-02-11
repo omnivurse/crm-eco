@@ -12,7 +12,7 @@
 ```
 1. Go to https://portal.azure.com/
 2. Azure Active Directory → App registrations → New registration
-3. Name: "MPB Health OneDrive"
+3. Name: "Pay It Forward Health OneDrive"
 4. Account types: "Any organizational directory and personal accounts"
 5. Redirect URI: https://YOUR-DOMAIN/onedrive/callback
 6. Click Register

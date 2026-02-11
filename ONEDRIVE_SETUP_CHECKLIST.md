@@ -18,7 +18,7 @@
 **Your App Details:**
 - Client ID: `116135df-cf51-4e4d-8a07-12ad387ba26c`
 - Tenant ID: `ad4e49c8-3dea-4d37-8be6-ee2fdc324f04`
-- Redirect URI: `https://support.mpb.health/onedrive/callback`
+- Redirect URI: `https://support.payitforwardhealth.com/onedrive/callback`
 
 #### Add Client Secret:
 1. Go to: https://portal.azure.com/
@@ -66,7 +66,7 @@ Value: <paste the secret you copied from Azure>
 
 ```bash
 ONEDRIVE_REDIRECT_URI
-Value: https://support.mpb.health/onedrive/callback
+Value: https://support.payitforwardhealth.com/onedrive/callback
 ```
 
 ```bash
@@ -129,8 +129,8 @@ supabase functions deploy onedrive-sync
 - Secrets: https://supabase.com/dashboard/project/YOUR_PROJECT/settings/functions
 
 ### Your App URLs
-- Settings page: https://support.mpb.health/admin/settings
-- OAuth callback: https://support.mpb.health/onedrive/callback
+- Settings page: https://support.payitforwardhealth.com/admin/settings
+- OAuth callback: https://support.payitforwardhealth.com/onedrive/callback
 
 ## 🔍 Verify Setup
 
@@ -156,7 +156,7 @@ Run through this checklist:
 → Verify `ONEDRIVE_CLIENT_SECRET` is correct (copy/paste issue?)
 
 ### "Redirect URI mismatch"
-→ Ensure Azure redirect URI exactly matches: `https://support.mpb.health/onedrive/callback`
+→ Ensure Azure redirect URI exactly matches: `https://support.payitforwardhealth.com/onedrive/callback`
 
 ### OAuth popup closes immediately
 → Check browser console for errors

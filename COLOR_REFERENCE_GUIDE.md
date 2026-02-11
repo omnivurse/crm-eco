@@ -1,6 +1,6 @@
-# MPB Health Color Reference Guide
+# Pay It Forward Health Color Reference Guide
 
-Quick reference for developers working with the MPB Health color palette in Tailwind CSS.
+Quick reference for developers working with the Pay It Forward Health color palette in Tailwind CSS.
 
 ## Primary Blue (Brand Color)
 
@@ -217,5 +217,5 @@ className="shadow-[var(--shadow-glow)]"
 
 ---
 
-**Last Updated**: After MPB Health color palette migration
+**Last Updated**: After Pay It Forward Health color palette migration
 **Maintainer**: Development Team
