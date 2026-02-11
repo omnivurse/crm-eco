@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the complete GoTo Connect integration for the MPB Health IT Help Desk system. The integration provides a full-featured call center solution with real-time call handling, automatic ticket creation, call recording, and comprehensive agent management.
+This document describes the complete GoTo Connect integration for the Pay It Forward Health IT Help Desk system. The integration provides a full-featured call center solution with real-time call handling, automatic ticket creation, call recording, and comprehensive agent management.
 
 ## Features
 
@@ -407,4 +407,4 @@ For issues or questions:
 
 ## License
 
-This integration is part of the MPB Health IT Help Desk system and follows the same license terms.
+This integration is part of the Pay It Forward Health IT Help Desk system and follows the same license terms.

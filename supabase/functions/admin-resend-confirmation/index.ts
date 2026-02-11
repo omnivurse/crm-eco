@@ -124,7 +124,7 @@ async function sendConfirmationEmail(to: string): Promise<boolean> {
           <div style="background:#f0fdf4;padding:16px;border-radius:10px;margin:16px 0;border:1px solid #86efac;">
             <p style="margin:0;font-size:14px;color:#166534;font-weight:600;">✓ Your account is now active</p>
           </div>
-          <p style="font-size:12px;color:#64748b;margin-top:16px;">You can now access all features of MPB Health IT.</p>
+          <p style="font-size:12px;color:#64748b;margin-top:16px;">You can now access all features of Pay It Forward Health.</p>
         </td>
       </tr>
     </table>
@@ -137,7 +137,7 @@ Your email address has been confirmed by an administrator.
 
 ✓ Your account is now active
 
-You can now access all features of MPB Health IT.`;
+You can now access all features of Pay It Forward Health.`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -147,9 +147,9 @@ You can now access all features of MPB Health IT.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'IT Support <no-reply@support.mympb.com>',
+        from: 'Pay It Forward Health <noreply@mail.payitforwardhealth.com>',
         to: [to],
-        subject: 'Email Confirmed - MPB Health IT',
+        subject: 'Email Confirmed - Pay It Forward Health',
         html,
         text
       })

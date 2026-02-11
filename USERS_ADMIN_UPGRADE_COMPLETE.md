@@ -262,4 +262,4 @@ The upgrade maintains all existing functionality while elevating the visual desi
 **Build Status:** ✅ **SUCCESS**  
 **Quality Level:** 🏆 **CHAMPIONSHIP**
 
-Built to MPB Health standards by Vinnie Champion's specifications.
+Built to Pay It Forward Health standards by Vinnie Champion's specifications.

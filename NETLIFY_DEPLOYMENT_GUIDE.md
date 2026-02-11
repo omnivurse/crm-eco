@@ -1,4 +1,4 @@
-# Netlify Deployment Guide - MPB Health IT Portal
+# Netlify Deployment Guide - Pay It Forward Health IT Portal
 
 ## Quick Fix Summary
 

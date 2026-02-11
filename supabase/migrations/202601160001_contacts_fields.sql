@@ -615,7 +615,7 @@ BEGIN
   v_display_order := v_display_order + 1;
   
   INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
-  VALUES (v_org_id, v_module_id, 'mpb_referral_fee', 'MPB Referral Fee', 'currency', 'commissions', v_display_order)
+  VALUES (v_org_id, v_module_id, 'referral_fee', 'Referral Fee', 'currency', 'commissions', v_display_order)
   ON CONFLICT (module_id, key) DO UPDATE SET label = EXCLUDED.label, section = EXCLUDED.section;
   v_display_order := v_display_order + 1;
   
@@ -680,12 +680,12 @@ BEGIN
   v_display_order := 900;
   
   INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
-  VALUES (v_org_id, v_module_id, 'mpb_portal_username', 'MPB Portal Username', 'text', 'portal', v_display_order)
+  VALUES (v_org_id, v_module_id, 'portal_username', 'Portal Username', 'text', 'portal', v_display_order)
   ON CONFLICT (module_id, key) DO UPDATE SET label = EXCLUDED.label, section = EXCLUDED.section;
   v_display_order := v_display_order + 1;
   
   INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
-  VALUES (v_org_id, v_module_id, 'mpb_portal_password', 'MPB Portal Password', 'text', 'portal', v_display_order)
+  VALUES (v_org_id, v_module_id, 'portal_password', 'Portal Password', 'text', 'portal', v_display_order)
   ON CONFLICT (module_id, key) DO UPDATE SET label = EXCLUDED.label, section = EXCLUDED.section;
   v_display_order := v_display_order + 1;
   
@@ -695,7 +695,7 @@ BEGIN
   v_display_order := v_display_order + 1;
   
   INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
-  VALUES (v_org_id, v_module_id, 'mpb_app_downloaded', 'MPB APP Downloaded', 'boolean', 'portal', v_display_order)
+  VALUES (v_org_id, v_module_id, 'app_downloaded', 'App Downloaded', 'boolean', 'portal', v_display_order)
   ON CONFLICT (module_id, key) DO UPDATE SET label = EXCLUDED.label, section = EXCLUDED.section;
   v_display_order := v_display_order + 1;
   

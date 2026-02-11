@@ -48,3 +48,6 @@ yarn-error.log*
 
 .env*.local
 pnpm-lock.yaml
+
+# Data exports (never commit raw contact/client data)
+*.csv

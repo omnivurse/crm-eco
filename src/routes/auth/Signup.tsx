@@ -168,7 +168,7 @@ export function Signup() {
             Create an Account
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400">
-            Join MPB Health IT Support Platform
+            Join Pay It Forward Health Support Platform
           </p>
         </div>
 

@@ -14,11 +14,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     flowType: 'pkce',
     storage: window.localStorage,
-    storageKey: 'mpb-health-auth-token',
+    storageKey: 'pifh-auth-token',
   },
   global: {
     headers: {
-      'X-Client-Info': 'mpb-health-web',
+      'X-Client-Info': 'pifh-web',
     },
   },
   db: {

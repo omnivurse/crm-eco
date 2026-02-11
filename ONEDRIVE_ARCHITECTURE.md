@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         MPB Health Platform                          │
+│                         Pay It Forward Health Platform                          │
 │                                                                       │
 │  ┌────────────────┐         ┌──────────────────┐                   │
 │  │  User Browser  │────────▶│  React Frontend  │                   │

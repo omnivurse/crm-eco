@@ -34,7 +34,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 });
 
 // CSV file path
-const CSV_PATH = path.join(__dirname, '..', 'Contacts_2025_10_16.csv');
+// Update this path to point to your contacts CSV export file
+const CSV_PATH = path.join(__dirname, '..', 'contacts_export.csv');
 
 // Field mapping: Zoho CSV column -> CRM field key
 const FIELD_MAP: Record<string, string> = {
@@ -119,7 +120,7 @@ const FIELD_MAP: Record<string, string> = {
   'Welcome Call Status': 'welcome_call_status',
   'MEC Submitted': 'mec_submitted',
   'Marital Status': 'marital_status',
-  'MPB Referral Fee': 'mpb_referral_fee',
+  'MPB Referral Fee': 'referral_fee',
   'Referral requirement satisfied': 'referral_requirement_satisfied',
   'Tag': 'tag',
   'Company/Association': 'company_association',
@@ -136,12 +137,12 @@ const FIELD_MAP: Record<string, string> = {
   'Business or Practice Name': 'business_name',
   'DPC Name': 'dpc_name',
   'Cirrus registration Date': 'cirrus_registration_date',
-  'MPB Portal Username': 'mpb_portal_username',
-  'MPB Portal Password': 'mpb_portal_password',
+  'MPB Portal Username': 'portal_username',
+  'MPB Portal Password': 'portal_password',
   'Select Conversion Completed': 'select_conversion_completed',
   'MEC Decision Confirmed': 'mec_decision_confirmed',
   'Household Annual Adj Gross': 'household_annual_gross',
-  'MPB APP Downloaded': 'mpb_app_downloaded',
+  'MPB APP Downloaded': 'app_downloaded',
   'Birth Month': 'birth_month',
   'Third Party Payor': 'third_party_payor',
   'ATAP': 'atap',

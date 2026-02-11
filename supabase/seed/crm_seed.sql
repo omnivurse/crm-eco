@@ -169,7 +169,7 @@ BEGIN
   INSERT INTO crm_fields (org_id, module_id, key, label, type, required, is_system, display_order, section, options)
   VALUES
     (v_org_id, v_contacts_module_id, 'product', 'Product', 'select', false, false, 60, 'product',
-     '["Health Sharing", "MPB Care", "To Be Determined", "OPD"]'::jsonb),
+     '["Health Sharing", "PIFH Care", "To Be Determined", "OPD"]'::jsonb),
     (v_org_id, v_contacts_module_id, 'coverage_option', 'Coverage Option', 'select', false, false, 61, 'product',
      '["Member Only", "Member and Spouse", "Member and Child", "Member and Family"]'::jsonb),
     (v_org_id, v_contacts_module_id, 'carrier', 'Carrier', 'text', false, false, 62, 'product', '[]'::jsonb),

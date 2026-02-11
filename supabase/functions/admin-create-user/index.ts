@@ -98,7 +98,7 @@ async function sendInviteEmail(to: string, fullName: string, role: string, invit
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;">
       <tr>
         <td style="padding:24px 24px 8px 24px;">
-          <h1 style="margin:0;font-size:20px;">Welcome to MPB Health IT</h1>
+          <h1 style="margin:0;font-size:20px;">Welcome to Pay It Forward Health</h1>
           <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">Hello ${fullName || 'there'}, you've been invited as <b>${role}</b>.</p>
         </td>
       </tr>
@@ -113,7 +113,7 @@ async function sendInviteEmail(to: string, fullName: string, role: string, invit
   </body>
 </html>`;
 
-  const text = `Welcome to MPB Health IT
+  const text = `Welcome to Pay It Forward Health
 
 Hello ${fullName || 'there'}, you've been invited as ${role}.
 
@@ -130,9 +130,9 @@ If you did not expect this email, you can ignore it.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'IT Support <no-reply@support.mympb.com>',
+        from: 'Pay It Forward Health <noreply@mail.payitforwardhealth.com>',
         to: [to],
-        subject: 'You have been invited to MPB Health IT',
+        subject: 'You have been invited to Pay It Forward Health',
         html,
         text
       })

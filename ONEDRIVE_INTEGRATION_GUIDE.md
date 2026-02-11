@@ -2,7 +2,7 @@
 
 ## Overview
 
-The MPB Health platform now includes comprehensive Microsoft OneDrive integration, allowing users to automatically sync their files between the application and their OneDrive accounts. This provides seamless cloud storage, backup, and accessibility across devices.
+The Pay It Forward Health platform now includes comprehensive Microsoft OneDrive integration, allowing users to automatically sync their files between the application and their OneDrive accounts. This provides seamless cloud storage, backup, and accessibility across devices.
 
 ## Features
 
@@ -133,7 +133,7 @@ Handles file operations with OneDrive.
 2. Navigate to **Azure Active Directory** > **App registrations**
 3. Click **New registration**
 4. Configure:
-   - **Name**: MPB Health OneDrive Integration
+   - **Name**: Pay It Forward Health OneDrive Integration
    - **Supported account types**: Accounts in any organizational directory and personal Microsoft accounts
    - **Redirect URI**: `https://your-domain.com/onedrive/callback` (Web)
 5. Save the **Application (client) ID**
@@ -296,4 +296,4 @@ For issues or questions:
 
 ## License
 
-This integration is part of the MPB Health platform and follows the same licensing terms.
+This integration is part of the Pay It Forward Health platform and follows the same licensing terms.

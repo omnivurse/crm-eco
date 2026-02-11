@@ -23,8 +23,8 @@ function getResendClient(): Resend {
   return resendClient;
 }
 
-const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@payitforward.app';
-const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward';
+const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // ============================================================================

@@ -31,7 +31,7 @@ persistSession: true
 detectSessionInUrl: true
 flowType: 'pkce'
 storage: window.localStorage
-storageKey: 'mpb-health-auth-token'
+storageKey: 'pifh-auth-token'
 ```
 
 **Verification:** ✅ Authentication tokens now refresh automatically, preventing 400 errors.

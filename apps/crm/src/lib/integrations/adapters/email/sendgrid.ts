@@ -107,7 +107,7 @@ export class SendGridAdapter implements EmailAdapter {
           },
         ],
         from: {
-          email: params.from || process.env.SENDGRID_FROM_EMAIL || 'noreply@example.com',
+          email: params.from || process.env.SENDGRID_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
           name: params.fromName,
         },
         subject: params.subject,

@@ -410,7 +410,7 @@ export async function dispatchMessage(
   
   // 9. Determine from address
   const fromAddress = channel === 'email'
-    ? provider.config.from_email || process.env.SENDGRID_FROM_EMAIL || 'noreply@example.com'
+    ? provider.config.from_email || process.env.SENDGRID_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com'
     : provider.config.from_phone || process.env.TWILIO_FROM_PHONE || '';
   
   // 10. Create message record

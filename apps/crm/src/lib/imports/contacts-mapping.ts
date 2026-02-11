@@ -167,7 +167,7 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Director Referral', crmKey: 'director_referral', type: 'currency', section: 'commissions', transform: parseNumber },
   { csvColumn: 'Affiliate Referral', crmKey: 'affiliate_referral', type: 'text', section: 'commissions' },
   { csvColumn: 'Affiliate Rep  Monthly', crmKey: 'affiliate_rep_monthly', type: 'currency', section: 'commissions', transform: parseNumber },
-  { csvColumn: 'MPB Referral Fee', crmKey: 'mpb_referral_fee', type: 'currency', section: 'commissions', transform: parseNumber },
+  { csvColumn: 'MPB Referral Fee', crmKey: 'referral_fee', type: 'currency', section: 'commissions', transform: parseNumber },
   { csvColumn: 'Date Referral Paid', crmKey: 'date_referral_paid', type: 'date', section: 'commissions', transform: parseDate },
   { csvColumn: 'Referral requirement satisfied', crmKey: 'referral_requirement_satisfied', type: 'text', section: 'commissions' },
   { csvColumn: 'Declined', crmKey: 'declined', type: 'boolean', section: 'commissions', transform: parseBoolean },
@@ -182,10 +182,10 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'E123 Member ID', crmKey: 'e123_member_id', type: 'text', section: 'identifiers' },
 
   // Portal
-  { csvColumn: 'MPB Portal Username', crmKey: 'mpb_portal_username', type: 'text', section: 'portal' },
-  { csvColumn: 'MPB Portal Password', crmKey: 'mpb_portal_password', type: 'text', section: 'portal' },
+  { csvColumn: 'MPB Portal Username', crmKey: 'portal_username', type: 'text', section: 'portal' },
+  { csvColumn: 'MPB Portal Password', crmKey: 'portal_password', type: 'text', section: 'portal' },
   { csvColumn: 'Cirrus registration Date', crmKey: 'cirrus_registration_date', type: 'date', section: 'portal', transform: parseDate },
-  { csvColumn: 'MPB APP Downloaded', crmKey: 'mpb_app_downloaded', type: 'boolean', section: 'portal', transform: parseBoolean },
+  { csvColumn: 'MPB APP Downloaded', crmKey: 'app_downloaded', type: 'boolean', section: 'portal', transform: parseBoolean },
   { csvColumn: 'Select Conversion Completed', crmKey: 'select_conversion_completed', type: 'boolean', section: 'portal', transform: parseBoolean },
 
   // Compliance
