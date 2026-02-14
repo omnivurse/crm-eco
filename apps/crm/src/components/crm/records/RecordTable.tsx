@@ -602,6 +602,37 @@ export const RecordTable = memo(function RecordTable({
     return columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col));
   }, [explicitColumns, view?.columns, fieldMap]);
 
+  // Column width mapping for enterprise-grade horizontal table layout
+  const getColumnWidth = (col: string): number => {
+    switch (col) {
+      case 'email': return 240;
+      case 'phone': return 160;
+      case 'first_name':
+      case 'last_name':
+      case 'contact_name':
+      case 'title': return 180;
+      case 'middle_name':
+      case 'middle_initial':
+      case 'salutation': return 120;
+      case 'status':
+      case 'lead_status':
+      case 'contact_status': return 140;
+      case 'owner_id': return 160;
+      case 'created_at':
+      case 'updated_at': return 160;
+      case 'record_id': return 120;
+      default: return 180; // custom fields
+    }
+  };
+
+  // Total min-width for the table to enable horizontal scrolling
+  const totalMinWidth = useMemo(() => {
+    const checkboxCol = 48;  // w-12
+    const actionsCol = 112;  // w-28
+    const dataColsWidth = visibleColumns.reduce((sum, col) => sum + getColumnWidth(col), 0);
+    return checkboxCol + dataColsWidth + actionsCol;
+  }, [visibleColumns]);
+
   const allSelected = records.length > 0 && selectedIds.size === records.length;
   const someSelected = selectedIds.size > 0 && selectedIds.size < records.length;
 
@@ -985,13 +1016,13 @@ export const RecordTable = memo(function RecordTable({
         ref={tableContainerRef}
         className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)]"
       >
-      <Table>
+      <Table style={{ minWidth: totalMinWidth }}>
         <TableHeader className={cn(
-          'sticky top-0 z-10 transition-shadow',
+          'sticky top-0 z-10 transition-shadow block',
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
         )}>
-          <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent">
-            <TableHead className="w-12 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm">
+          <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth }}>
+            <TableHead className="w-12 flex-shrink-0 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 48, minWidth: 48 }}>
               <Checkbox
                 checked={allSelected}
                 ref={(el) => {
@@ -1005,9 +1036,10 @@ export const RecordTable = memo(function RecordTable({
               <TableHead
                 key={col}
                 className={cn(
-                  'bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  'flex-shrink-0 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
                   onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none'
                 )}
+                style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}
                 onClick={() => handleSort(col)}
               >
                 <div className="flex items-center gap-1.5">
@@ -1016,7 +1048,7 @@ export const RecordTable = memo(function RecordTable({
                 </div>
               </TableHead>
             ))}
-            <TableHead className="w-28 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" />
+            <TableHead className="w-28 flex-shrink-0 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 112, minWidth: 112 }} />
           </TableRow>
         </TableHeader>
         <TableBody
@@ -1024,6 +1056,7 @@ export const RecordTable = memo(function RecordTable({
             height: records.length > 0 ? `${rowVirtualizer.getTotalSize()}px` : undefined,
             position: 'relative',
             display: 'block',
+            minWidth: totalMinWidth,
           }}
         >
           {records.length === 0 ? (
@@ -1073,7 +1106,7 @@ export const RecordTable = memo(function RecordTable({
                     position: 'absolute',
                     top: 0,
                     left: 0,
-                    width: '100%',
+                    minWidth: totalMinWidth,
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
@@ -1086,7 +1119,7 @@ export const RecordTable = memo(function RecordTable({
                   onMouseEnter={() => handleRowMouseEnter(record.id)}
                   onMouseLeave={handleRowMouseLeave}
                 >
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-12 flex-shrink-0">
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-12 flex-shrink-0" style={{ width: 48, minWidth: 48 }}>
                     <Checkbox
                       checked={selectedIds.has(record.id)}
                       onCheckedChange={() => handleSelectRow(record.id)}
@@ -1094,11 +1127,11 @@ export const RecordTable = memo(function RecordTable({
                     />
                   </TableCell>
                   {visibleColumns.map((col) => (
-                    <TableCell key={col} className="text-sm flex-1">
+                    <TableCell key={col} className="text-sm flex-shrink-0" style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}>
                       {renderCellValue(record, col)}
                     </TableCell>
                   ))}
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0">
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0" style={{ width: 112, minWidth: 112 }}>
                     {/* Row Quick Actions - visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {/* Call - only if phone exists */}

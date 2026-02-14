@@ -311,17 +311,24 @@ async function supabasePost(path: string, body: unknown) {
   return res;
 }
 
-async function supabaseRpc(fnName: string) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
-    method: 'POST',
-    headers: { ...headers, 'Prefer': 'return=representation' },
-    body: '{}',
-  });
-  const text = await res.text();
-  if (!res.ok) {
-    throw new Error(`RPC ${fnName} failed (${res.status}): ${text.slice(0, 500)}`);
+async function supabaseRpc(fnName: string, params: Record<string, unknown> = {}, timeoutMs: number = 180000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+      method: 'POST',
+      headers: { ...headers, 'Prefer': 'return=representation' },
+      body: JSON.stringify(params),
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`RPC ${fnName} failed (${res.status}): ${text.slice(0, 500)}`);
+    }
+    try { return JSON.parse(text); } catch { return text; }
+  } finally {
+    clearTimeout(timeout);
   }
-  try { return JSON.parse(text); } catch { return text; }
 }
 
 async function supabaseDelete(path: string) {
@@ -369,6 +376,10 @@ async function loadCSVToStaging() {
     console.warn(`  ${unmapped} unmapped columns will be skipped`);
   }
 
+  // Get the set of all valid column names (for uniform keys in batch inserts)
+  const validColumns = mappedHeaders.filter((h): h is string => h !== null);
+  const uniqueColumns = [...new Set(validColumns)];
+
   // Batch insert
   const BATCH_SIZE = 200;
   let totalInserted = 0;
@@ -377,7 +388,12 @@ async function loadCSVToStaging() {
   for (let batchStart = 0; batchStart < rows.length; batchStart += BATCH_SIZE) {
     const batchRows = rows.slice(batchStart, batchStart + BATCH_SIZE);
     const objects = batchRows.map(row => {
+      // Start with all columns set to empty string (ensures uniform keys)
       const obj: Record<string, string> = {};
+      for (const col of uniqueColumns) {
+        obj[col] = '';
+      }
+      // Fill in actual values
       for (let i = 0; i < mappedHeaders.length; i++) {
         const col = mappedHeaders[i];
         if (col && row[i] !== undefined && row[i] !== '') {
@@ -385,7 +401,7 @@ async function loadCSVToStaging() {
         }
       }
       return obj;
-    }).filter(obj => Object.keys(obj).length > 0);
+    });
 
     if (objects.length === 0) continue;
 
@@ -406,15 +422,41 @@ async function loadCSVToStaging() {
 }
 
 // ============================================================================
-// STEP 3: Upsert contacts from staging
+// STEP 3: Upsert contacts from staging (batched to avoid gateway timeout)
 // ============================================================================
-async function upsertContacts() {
-  console.log('\n[Step 3] Upserting contacts (update existing + insert new)...');
-  console.log('  This may take a few minutes for large datasets...');
+async function upsertContacts(totalRows: number) {
+  console.log('\n[Step 3] Upserting contacts (batched, update existing + insert new)...');
+  console.log('  This may take several minutes for large datasets...');
 
-  const result = await supabaseRpc('upsert_contacts_from_staging');
-  console.log('  Upsert result:', JSON.stringify(result, null, 2));
-  return result;
+  const BATCH_SIZE = 500;
+  let totalInserted = 0;
+  let totalUpdated = 0;
+  let totalSkipped = 0;
+  let totalErrors = 0;
+
+  for (let offset = 0; offset < totalRows; offset += BATCH_SIZE) {
+    try {
+      const result = await supabaseRpc('upsert_contacts_batch', {
+        p_offset: offset,
+        p_limit: BATCH_SIZE,
+      });
+      const r = Array.isArray(result) ? result[0] : result;
+      totalInserted += r.inserted || 0;
+      totalUpdated += r.updated || 0;
+      totalSkipped += r.skipped || 0;
+      totalErrors += r.errors || 0;
+
+      const pct = Math.min(100, Math.round(((offset + BATCH_SIZE) / totalRows) * 100));
+      process.stdout.write(`\r  Upserting: ${pct}% (${totalInserted} inserted, ${totalUpdated} updated, ${totalErrors} errors)`);
+    } catch (err) {
+      console.error(`\n  Batch upsert error at offset ${offset}: ${(err as Error).message.slice(0, 200)}`);
+      totalErrors += BATCH_SIZE;
+    }
+  }
+
+  const summary = { inserted: totalInserted, updated: totalUpdated, skipped: totalSkipped, errors: totalErrors };
+  console.log(`\n  Upsert complete:`, JSON.stringify(summary));
+  return summary;
 }
 
 // ============================================================================
@@ -422,8 +464,9 @@ async function upsertContacts() {
 // ============================================================================
 async function deduplicateContacts() {
   console.log('\n[Step 4] Deduplicating contacts...');
+  console.log('  This may take a minute...');
 
-  const result = await supabaseRpc('deduplicate_contacts');
+  const result = await supabaseRpc('deduplicate_contacts', {});
   console.log('  Dedup result:', JSON.stringify(result, null, 2));
   return result;
 }
@@ -461,6 +504,10 @@ async function loadNotesCSVToStaging() {
     console.warn(`  ${unmapped} unmapped columns will be skipped`);
   }
 
+  // Get the set of all valid column names (for uniform keys in batch inserts)
+  const validColumns = mappedHeaders.filter((h): h is string => h !== null);
+  const uniqueColumns = [...new Set(validColumns)];
+
   // Batch insert
   const BATCH_SIZE = 200;
   let totalInserted = 0;
@@ -469,7 +516,12 @@ async function loadNotesCSVToStaging() {
   for (let batchStart = 0; batchStart < rows.length; batchStart += BATCH_SIZE) {
     const batchRows = rows.slice(batchStart, batchStart + BATCH_SIZE);
     const objects = batchRows.map(row => {
+      // Start with all columns set to empty string (ensures uniform keys)
       const obj: Record<string, string> = {};
+      for (const col of uniqueColumns) {
+        obj[col] = '';
+      }
+      // Fill in actual values
       for (let i = 0; i < mappedHeaders.length; i++) {
         const col = mappedHeaders[i];
         if (col && row[i] !== undefined && row[i] !== '') {
@@ -477,7 +529,7 @@ async function loadNotesCSVToStaging() {
         }
       }
       return obj;
-    }).filter(obj => Object.keys(obj).length > 0);
+    });
 
     if (objects.length === 0) continue;
 
@@ -498,15 +550,39 @@ async function loadNotesCSVToStaging() {
 }
 
 // ============================================================================
-// STEP 7: Import notes from staging (link to contacts)
+// STEP 7: Import notes from staging (batched, link to contacts)
 // ============================================================================
-async function importNotes() {
-  console.log('\n[Step 7] Importing notes (linking to contact records)...');
-  console.log('  This may take a few minutes for large datasets...');
+async function importNotes(totalRows: number) {
+  console.log('\n[Step 7] Importing notes (batched, linking to contact records)...');
+  console.log('  This may take several minutes for large datasets...');
 
-  const result = await supabaseRpc('import_notes_from_staging');
-  console.log('  Notes import result:', JSON.stringify(result, null, 2));
-  return result;
+  const BATCH_SIZE = 1000;
+  let totalImported = 0;
+  let totalSkipped = 0;
+  let totalErrors = 0;
+
+  for (let offset = 0; offset < totalRows; offset += BATCH_SIZE) {
+    try {
+      const result = await supabaseRpc('import_notes_batch', {
+        p_offset: offset,
+        p_limit: BATCH_SIZE,
+      });
+      const r = Array.isArray(result) ? result[0] : result;
+      totalImported += r.imported || 0;
+      totalSkipped += r.skipped || 0;
+      totalErrors += r.errors || 0;
+
+      const pct = Math.min(100, Math.round(((offset + BATCH_SIZE) / totalRows) * 100));
+      process.stdout.write(`\r  Importing notes: ${pct}% (${totalImported} imported, ${totalSkipped} skipped, ${totalErrors} errors)`);
+    } catch (err) {
+      console.error(`\n  Batch notes error at offset ${offset}: ${(err as Error).message.slice(0, 200)}`);
+      totalErrors += BATCH_SIZE;
+    }
+  }
+
+  const summary = { imported: totalImported, skipped: totalSkipped, errors: totalErrors };
+  console.log(`\n  Notes import complete:`, JSON.stringify(summary));
+  return summary;
 }
 
 // ============================================================================
@@ -547,7 +623,7 @@ async function main() {
   console.log(`${'='.repeat(60)}`);
   await truncateStaging();
   const loadResult = await loadCSVToStaging();
-  const upsertResult = await upsertContacts();
+  const upsertResult = await upsertContacts(loadResult.inserted);
   const dedupResult = await deduplicateContacts();
 
   // ---- Notes pipeline ----
@@ -556,7 +632,7 @@ async function main() {
   console.log(`${'='.repeat(60)}`);
   await truncateNotesStaging();
   const notesLoadResult = await loadNotesCSVToStaging();
-  const notesImportResult = await importNotes();
+  const notesImportResult = await importNotes(notesLoadResult.inserted);
 
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
