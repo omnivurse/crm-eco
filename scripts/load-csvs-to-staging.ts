@@ -464,7 +464,7 @@ async function main() {
   console.log('  Staging tables confirmed accessible.\n');
 
   // File paths - adjust if needed
-  const CONTACTS_CSV = 'C:/Users/User/Desktop/Contacts_2026_02_10.csv';
+  const CONTACTS_CSV = 'C:/Users/User/Desktop/Contacts_2026_02_10_ALL/Contacts_2026_02_10.csv';
   const LEADS_CSV = 'C:/Users/User/Desktop/Leads_2026_02_10_WS_Only/Leads_2026_02_10.csv';
   const NOTES_CSV = 'C:/Users/User/Desktop/Notes_Contacts_2026_02_10_WS_Notes/Notes_Contacts_2026_02_10.csv';
 

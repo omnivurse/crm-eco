@@ -1,14 +1,18 @@
 /**
- * Load Contacts CSV → Staging → Upsert into crm_records → Deduplicate
+ * Load Contacts & Notes CSVs → Staging → Upsert/Import into CRM
  *
  * Full pipeline:
  *   1. Truncate import_contacts_staging
- *   2. Parse & load CSV into staging table
+ *   2. Parse & load Contacts CSV into staging table
  *   3. Call upsert_contacts_from_staging() to update/insert contacts
  *   4. Call deduplicate_contacts() to remove duplicates
+ *   5. Truncate import_notes_staging
+ *   6. Parse & load Notes CSV into staging table
+ *   7. Call import_notes_from_staging() to link notes to contacts
  *
  * Prerequisites:
- *   - Run the SQL in scripts/upsert-contacts-and-dedup.sql first (creates the functions)
+ *   - Run the SQL in scripts/upsert-contacts-and-dedup.sql first (creates contact functions)
+ *   - Run the SQL in scripts/import-zoho-full.sql (creates import_notes_from_staging + staging tables)
  *   - SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env.local
  *
  * Usage:  npx tsx scripts/load-and-update-contacts.ts
@@ -20,7 +24,8 @@ import { resolve } from 'path';
 // ============================================================================
 // Config
 // ============================================================================
-const CONTACTS_CSV = 'C:/Users/User/Desktop/Contacts_2026_02_10.csv';
+const CONTACTS_CSV = 'C:/Users/User/Desktop/Contacts_2026_02_10_ALL/Contacts_2026_02_10.csv';
+const NOTES_CSV = 'C:/Users/User/Desktop/Notes_Contacts_2026_02_10_WS_Notes/Notes_Contacts_2026_02_10.csv';
 
 // Load env from root .env.local
 function loadEnv(filePath: string): Record<string, string> {
@@ -265,6 +270,26 @@ const CONTACTS_COLUMN_MAP: Record<string, string> = {
 };
 
 // ============================================================================
+// Column mapping: Notes CSV Header → staging column name
+// ============================================================================
+const NOTES_COLUMN_MAP: Record<string, string> = {
+  'Record Id': 'record_id',
+  'Associated_Id': 'associated_id',
+  'Created By.id': 'created_by_id',
+  'Created By': 'created_by',
+  'Created Time': 'created_time',
+  'Modified By.id': 'modified_by_id',
+  'Modified By': 'modified_by',
+  'Modified Time': 'modified_time',
+  'Note Content': 'note_content',
+  'Note Owner.id': 'note_owner_id',
+  'Note Owner': 'note_owner',
+  'Note Title': 'note_title',
+  'Parent ID.id': 'parent_id',
+  'Parent ID': 'parent_name',
+};
+
+// ============================================================================
 // HTTP helpers
 // ============================================================================
 const headers = {
@@ -404,41 +429,148 @@ async function deduplicateContacts() {
 }
 
 // ============================================================================
+// STEP 5: Truncate notes staging table
+// ============================================================================
+async function truncateNotesStaging() {
+  console.log('\n[Step 5] Truncating import_notes_staging...');
+  await supabaseDelete('import_notes_staging?row_num=gt.0');
+  console.log('  Notes staging table cleared.');
+}
+
+// ============================================================================
+// STEP 6: Load Notes CSV into staging
+// ============================================================================
+async function loadNotesCSVToStaging() {
+  console.log('\n[Step 6] Loading Notes CSV into staging...');
+  console.log(`  File: ${NOTES_CSV}`);
+
+  const raw = readFileSync(NOTES_CSV, 'utf-8');
+  const { headers: csvHeaders, rows } = parseCSV(raw);
+
+  console.log(`  CSV headers: ${csvHeaders.length} columns`);
+  console.log(`  CSV rows: ${rows.length}`);
+
+  // Map CSV headers to staging column names
+  const mappedHeaders = csvHeaders.map(h => {
+    const trimmed = h.trim();
+    return NOTES_COLUMN_MAP[trimmed] || null;
+  });
+
+  const unmapped = mappedHeaders.filter(h => h === null).length;
+  if (unmapped > 0) {
+    console.warn(`  ${unmapped} unmapped columns will be skipped`);
+  }
+
+  // Batch insert
+  const BATCH_SIZE = 200;
+  let totalInserted = 0;
+  let totalErrors = 0;
+
+  for (let batchStart = 0; batchStart < rows.length; batchStart += BATCH_SIZE) {
+    const batchRows = rows.slice(batchStart, batchStart + BATCH_SIZE);
+    const objects = batchRows.map(row => {
+      const obj: Record<string, string> = {};
+      for (let i = 0; i < mappedHeaders.length; i++) {
+        const col = mappedHeaders[i];
+        if (col && row[i] !== undefined && row[i] !== '') {
+          obj[col] = row[i];
+        }
+      }
+      return obj;
+    }).filter(obj => Object.keys(obj).length > 0);
+
+    if (objects.length === 0) continue;
+
+    try {
+      await supabasePost('import_notes_staging', objects);
+      totalInserted += objects.length;
+    } catch (err) {
+      console.error(`\n  Batch error: ${(err as Error).message.slice(0, 200)}`);
+      totalErrors += objects.length;
+    }
+
+    const pct = Math.round(((batchStart + batchRows.length) / rows.length) * 100);
+    process.stdout.write(`\r  Loading: ${pct}% (${totalInserted} rows)`);
+  }
+
+  console.log(`\n  Notes staging loaded: ${totalInserted} inserted, ${totalErrors} errors`);
+  return { inserted: totalInserted, errors: totalErrors };
+}
+
+// ============================================================================
+// STEP 7: Import notes from staging (link to contacts)
+// ============================================================================
+async function importNotes() {
+  console.log('\n[Step 7] Importing notes (linking to contact records)...');
+  console.log('  This may take a few minutes for large datasets...');
+
+  const result = await supabaseRpc('import_notes_from_staging');
+  console.log('  Notes import result:', JSON.stringify(result, null, 2));
+  return result;
+}
+
+// ============================================================================
 // Main
 // ============================================================================
 async function main() {
   console.log('='.repeat(60));
-  console.log('CONTACTS UPSERT & DEDUPLICATION PIPELINE');
+  console.log('CONTACTS & NOTES IMPORT PIPELINE');
   console.log('='.repeat(60));
   console.log(`Supabase URL: ${SUPABASE_URL}`);
-  console.log(`CSV File: ${CONTACTS_CSV}`);
+  console.log(`Contacts CSV: ${CONTACTS_CSV}`);
+  console.log(`Notes CSV:    ${NOTES_CSV}`);
 
-  // Pre-check: verify staging table is accessible
-  const testRes = await fetch(`${SUPABASE_URL}/rest/v1/import_contacts_staging?select=row_num&limit=1`, {
+  // Pre-check: verify staging tables are accessible
+  const testContacts = await fetch(`${SUPABASE_URL}/rest/v1/import_contacts_staging?select=row_num&limit=1`, {
     headers: { 'apikey': SUPABASE_KEY!, 'Authorization': `Bearer ${SUPABASE_KEY}` },
   });
-  if (!testRes.ok) {
-    console.error(`Staging table not accessible (${testRes.status}). Run NOTIFY pgrst, 'reload schema'; first.`);
+  if (!testContacts.ok) {
+    console.error(`Contacts staging table not accessible (${testContacts.status}). Run NOTIFY pgrst, 'reload schema'; first.`);
     process.exit(1);
   }
 
+  const testNotes = await fetch(`${SUPABASE_URL}/rest/v1/import_notes_staging?select=row_num&limit=1`, {
+    headers: { 'apikey': SUPABASE_KEY!, 'Authorization': `Bearer ${SUPABASE_KEY}` },
+  });
+  if (!testNotes.ok) {
+    console.error(`Notes staging table not accessible (${testNotes.status}). Run NOTIFY pgrst, 'reload schema'; first.`);
+    process.exit(1);
+  }
+
+  console.log('  Staging tables confirmed accessible.\n');
+
   const t0 = Date.now();
 
-  // Execute pipeline
+  // ---- Contacts pipeline ----
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('PHASE 1: CONTACTS');
+  console.log(`${'='.repeat(60)}`);
   await truncateStaging();
   const loadResult = await loadCSVToStaging();
   const upsertResult = await upsertContacts();
   const dedupResult = await deduplicateContacts();
+
+  // ---- Notes pipeline ----
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('PHASE 2: NOTES');
+  console.log(`${'='.repeat(60)}`);
+  await truncateNotesStaging();
+  const notesLoadResult = await loadNotesCSVToStaging();
+  const notesImportResult = await importNotes();
 
   const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
 
   console.log(`\n${'='.repeat(60)}`);
   console.log('PIPELINE COMPLETE');
   console.log(`${'='.repeat(60)}`);
-  console.log(`Time: ${elapsed}s`);
-  console.log(`CSV rows loaded to staging: ${loadResult.inserted}`);
-  console.log(`Upsert result:`, JSON.stringify(upsertResult));
-  console.log(`Dedup result:`, JSON.stringify(dedupResult));
+  console.log(`Total time: ${elapsed}s`);
+  console.log(`\nContacts:`);
+  console.log(`  CSV rows loaded to staging: ${loadResult.inserted}`);
+  console.log(`  Upsert result:`, JSON.stringify(upsertResult));
+  console.log(`  Dedup result:`, JSON.stringify(dedupResult));
+  console.log(`\nNotes:`);
+  console.log(`  CSV rows loaded to staging: ${notesLoadResult.inserted}`);
+  console.log(`  Import result:`, JSON.stringify(notesImportResult));
   console.log(`\nDone!`);
 }
 
