@@ -1,14 +1,14 @@
 // Script to create a test user via Supabase Auth API
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ctujznwjyyqnhecixlon.supabase.co';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://sffisarikcreyyjzdjvb.supabase.co';
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!serviceRoleKey) {
   console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
   console.log('\nTo create a test user:');
   console.log('1. Go to Supabase Dashboard: https://supabase.com/dashboard');
-  console.log('2. Open your project: ctujznwjyyqnhecixlon');
+  console.log('2. Open your project: sffisarikcreyyjzdjvb');
   console.log('3. Go to Authentication > Users');
   console.log('4. Click "Add user" > "Create New User"');
   console.log('5. Email: admin@demo.com');
