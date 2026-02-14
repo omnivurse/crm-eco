@@ -12,3 +12,4 @@ export * from './commissions';
 export * from './email';
 export * from './tracking';
 export * from './realtime';
+export * from './activity-log';

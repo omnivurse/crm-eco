@@ -302,9 +302,9 @@ const RecordCard = memo(function RecordCard({
   const status = rawStatus ? String(rawStatus) : '';
   const statusStyle = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
 
-  // Get email and phone
-  const email = record.data?.email as string | undefined;
-  const phone = record.data?.phone as string | undefined;
+  // Get email and phone (check system columns first, then data JSONB)
+  const email = (record.email || record.data?.email) as string | undefined;
+  const phone = (record.phone || record.data?.phone) as string | undefined;
 
   return (
     <div
@@ -753,10 +753,14 @@ export const RecordTable = memo(function RecordTable({
       );
     }
 
-    // Handle text fields that come from record.data
+    // Handle text fields that come from record.data (with system column fallback for email/phone)
     if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone' ||
       col === 'middle_name' || col === 'middle_initial' || col === 'salutation' || col === 'contact_name') {
-      const value = record.data?.[col] as string | undefined;
+      const value = (col === 'email')
+        ? ((record.email || record.data?.email) as string | undefined)
+        : (col === 'phone')
+        ? ((record.phone || record.data?.phone) as string | undefined)
+        : (record.data?.[col] as string | undefined);
 
       const content = !value ? (
         <span className="text-slate-400 dark:text-slate-600">—</span>
