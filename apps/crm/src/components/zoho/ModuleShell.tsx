@@ -49,7 +49,7 @@ export const ModuleShell = memo(function ModuleShell({
   const [filters, setFilters] = useState<ViewFilter[]>([]);
   const [density, setDensity] = useState<Density>('default');
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
-    views.find(v => v.id === activeViewId)?.columns || ['title', 'status', 'email', 'created_at']
+    views.find(v => v.id === activeViewId)?.columns || fields.map(f => f.key)
   );
   const [sortField, setSortField] = useState<string | null>(searchParams.get('sortField'));
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(

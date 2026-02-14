@@ -45,10 +45,10 @@ function ModuleTableContent({
     openDrawer(recordId, moduleKey);
   }, [openDrawer, moduleKey]);
 
-  // Use visibleColumns from context if available, otherwise fall back to view/defaults
+  // Use visibleColumns from context if available, otherwise fall back to view/all fields
   const displayColumns = shellContext?.visibleColumns ||
     views.find(v => v.id === activeViewId)?.columns ||
-    ['title', 'status', 'email', 'created_at'];
+    fields.map(f => f.key);
 
   // Use selection state from context if available
   const selectedIds = shellContext?.selectedIds || new Set<string>();

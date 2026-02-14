@@ -597,7 +597,7 @@ export const RecordTable = memo(function RecordTable({
   // Allow any column that exists in the fieldMap (custom fields) or common system fields
   const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'middle_initial', 'lead_status', 'contact_status', 'salutation', 'record_id', 'contact_name'];
   const visibleColumns = useMemo(() => {
-    const columns = explicitColumns || view?.columns || ['title', 'status', 'email', 'created_at'];
+    const columns = explicitColumns || view?.columns || fields.map(f => f.key);
     // Allow columns that exist in fieldMap or are known system columns
     return columns.filter((col) => fieldMap[col] || SYSTEM_COLUMNS.includes(col));
   }, [explicitColumns, view?.columns, fieldMap]);
@@ -1014,7 +1014,7 @@ export const RecordTable = memo(function RecordTable({
       {/* Desktop Table View */}
       <div
         ref={tableContainerRef}
-        className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)]"
+        className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin"
       >
       <Table style={{ minWidth: totalMinWidth }}>
         <TableHeader className={cn(
@@ -1022,7 +1022,7 @@ export const RecordTable = memo(function RecordTable({
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
         )}>
           <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth }}>
-            <TableHead className="w-12 flex-shrink-0 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 48, minWidth: 48 }}>
+            <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 48, minWidth: 48 }}>
               <Checkbox
                 checked={allSelected}
                 ref={(el) => {
@@ -1036,7 +1036,7 @@ export const RecordTable = memo(function RecordTable({
               <TableHead
                 key={col}
                 className={cn(
-                  'flex-shrink-0 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  'flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
                   onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none'
                 )}
                 style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}
@@ -1048,7 +1048,7 @@ export const RecordTable = memo(function RecordTable({
                 </div>
               </TableHead>
             ))}
-            <TableHead className="w-28 flex-shrink-0 bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 112, minWidth: 112 }} />
+            <TableHead className="w-28 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 112, minWidth: 112 }} />
           </TableRow>
         </TableHeader>
         <TableBody
@@ -1119,7 +1119,7 @@ export const RecordTable = memo(function RecordTable({
                   onMouseEnter={() => handleRowMouseEnter(record.id)}
                   onMouseLeave={handleRowMouseLeave}
                 >
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-12 flex-shrink-0" style={{ width: 48, minWidth: 48 }}>
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-12 flex-shrink-0 flex items-center" style={{ width: 48, minWidth: 48 }}>
                     <Checkbox
                       checked={selectedIds.has(record.id)}
                       onCheckedChange={() => handleSelectRow(record.id)}
@@ -1127,11 +1127,11 @@ export const RecordTable = memo(function RecordTable({
                     />
                   </TableCell>
                   {visibleColumns.map((col) => (
-                    <TableCell key={col} className="text-sm flex-shrink-0" style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}>
+                    <TableCell key={col} className="text-sm flex-shrink-0 flex items-center" style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}>
                       {renderCellValue(record, col)}
                     </TableCell>
                   ))}
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0" style={{ width: 112, minWidth: 112 }}>
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center" style={{ width: 112, minWidth: 112 }}>
                     {/* Row Quick Actions - visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {/* Call - only if phone exists */}
