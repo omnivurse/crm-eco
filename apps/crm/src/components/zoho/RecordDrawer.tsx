@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,16 +19,59 @@ import {
   Mail,
   CheckSquare,
   MessageSquare,
-  Edit,
   User,
   Clock,
   Loader2,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
+import { cn } from '@crm-eco/ui/lib/utils';
 import { useRecordDrawer } from './RecordDrawerContext';
 import { InlineField } from './InlineField';
 import { RecordMiniTimeline } from './RecordMiniTimeline';
 import { useRecordDrawerData } from '@/hooks/useRecordDrawerData';
 import { queryKeys } from '@/lib/query-keys';
+import type { CrmField } from '@/lib/crm/types';
+
+// Readable labels for section keys
+const SECTION_LABELS: Record<string, string> = {
+  core: 'Contact Information',
+  management: 'Contact Management',
+  address: 'Address',
+  family_spouse: 'Spouse Information',
+  family_children: 'Children',
+  family: 'Family',
+  insurance: 'Insurance / Product',
+  commissions: 'Commissions & Referrals',
+  payment: 'Payment Information',
+  identifiers: 'Codes & Identifiers',
+  portal: 'Portal Access',
+  compliance: 'Compliance',
+  fulfillment: 'Welcome & Fulfillment',
+  business: 'Business Information',
+  preferences: 'Communication Preferences',
+  product: 'Product Interest',
+  conversion: 'Conversion',
+  system: 'System Information',
+};
+
+// Section display order
+const SECTION_ORDER = [
+  'core', 'management', 'address', 'insurance', 'business',
+  'family_spouse', 'family', 'family_children', 'product',
+  'commissions', 'payment', 'identifiers', 'portal',
+  'compliance', 'fulfillment', 'preferences', 'conversion', 'system',
+];
+
+function getSectionLabel(key: string): string {
+  return SECTION_LABELS[key] || key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+interface FieldSection {
+  key: string;
+  label: string;
+  fields: CrmField[];
+}
 
 export function RecordDrawer() {
   const { isOpen, recordId, closeDrawer } = useRecordDrawer();
@@ -39,6 +82,8 @@ export function RecordDrawer() {
 
   // Local state for optimistic updates
   const [localRecordData, setLocalRecordData] = useState<Record<string, unknown> | null>(null);
+  // Track which sections are collapsed
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   const handleFieldUpdate = async (fieldKey: string, value: unknown) => {
     if (!data?.record) return;
@@ -76,10 +121,63 @@ export function RecordDrawer() {
     return [firstName, lastName].filter(Boolean).join(' ') || data.record.title || 'Untitled';
   };
 
-  // Get key fields to display (first 6 non-system fields)
-  const keyFields = data?.fields
-    .filter(f => !f.is_system && f.key !== 'first_name' && f.key !== 'last_name')
-    .slice(0, 6) || [];
+  const toggleSection = (sectionKey: string) => {
+    setCollapsedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
+      } else {
+        next.add(sectionKey);
+      }
+      return next;
+    });
+  };
+
+  // Smart field selection: group by section, only show sections with data
+  const fieldSections = useMemo<FieldSection[]>(() => {
+    if (!data?.fields || !effectiveRecordData) return [];
+
+    // Exclude name fields (already shown in header) and system-flagged fields
+    const candidates = data.fields.filter(
+      f => !f.is_system && f.key !== 'first_name' && f.key !== 'last_name'
+    );
+
+    // Group fields by section
+    const grouped = new Map<string, CrmField[]>();
+    for (const field of candidates) {
+      const section = field.section || 'other';
+      if (!grouped.has(section)) grouped.set(section, []);
+      grouped.get(section)!.push(field);
+    }
+
+    // Build section list, only including sections with at least one populated field
+    const sections: FieldSection[] = [];
+    const orderedKeys = [
+      ...SECTION_ORDER,
+      ...Array.from(grouped.keys()).filter(k => !SECTION_ORDER.includes(k)),
+    ];
+
+    for (const sectionKey of orderedKeys) {
+      const fields = grouped.get(sectionKey);
+      if (!fields) continue;
+
+      // Prioritize populated fields, then show remaining empty fields
+      const withData = fields.filter(f => effectiveRecordData[f.key] != null);
+      const withoutData = fields.filter(f => effectiveRecordData[f.key] == null);
+      const sortedFields = [...withData, ...withoutData];
+
+      // Only show the section if it has at least one field with data
+      if (withData.length > 0) {
+        sections.push({
+          key: sectionKey,
+          label: getSectionLabel(sectionKey),
+          fields: sortedFields,
+        });
+      }
+    }
+
+    return sections;
+  }, [data?.fields, effectiveRecordData]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeDrawer()}>
@@ -185,24 +283,61 @@ export function RecordDrawer() {
               )}
             </div>
 
-            {/* Key Fields */}
+            {/* Sectioned Fields */}
             <div className="flex-1 overflow-y-auto">
-              <div className="p-4 space-y-4">
-                <h3 className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-2">
-                  <Edit className="w-4 h-4" />
-                  Key Information
-                </h3>
-                <div className="space-y-3">
-                  {keyFields.map((field) => (
-                    <InlineField
-                      key={field.id}
-                      field={field}
-                      value={effectiveRecordData?.[field.key]}
-                      onSave={(value) => handleFieldUpdate(field.key, value)}
-                    />
-                  ))}
+              {fieldSections.length > 0 ? (
+                <div className="divide-y divide-slate-200 dark:divide-white/10">
+                  {fieldSections.map((section) => {
+                    const isCollapsed = collapsedSections.has(section.key);
+                    const populatedCount = section.fields.filter(
+                      f => effectiveRecordData?.[f.key] != null
+                    ).length;
+
+                    return (
+                      <div key={section.key}>
+                        {/* Section Header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleSection(section.key)}
+                          className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left bg-slate-50/80 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {isCollapsed ? (
+                              <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            ) : (
+                              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            )}
+                            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider truncate">
+                              {section.label}
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                            {populatedCount}/{section.fields.length}
+                          </span>
+                        </button>
+
+                        {/* Section Fields */}
+                        {!isCollapsed && (
+                          <div className="px-4 py-3 space-y-2.5">
+                            {section.fields.map((field) => (
+                              <InlineField
+                                key={field.id}
+                                field={field}
+                                value={effectiveRecordData?.[field.key]}
+                                onSave={(value) => handleFieldUpdate(field.key, value)}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              ) : (
+                <div className="p-4 text-center text-sm text-slate-400">
+                  No field data available
+                </div>
+              )}
 
               {/* Mini Timeline */}
               <div className="p-4 border-t border-slate-200 dark:border-white/10">

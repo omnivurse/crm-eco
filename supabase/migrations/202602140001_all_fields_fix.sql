@@ -18,10 +18,8 @@ BEGIN
   v_display_order := 0;
 
   -- ---- Section: core ----
-  INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
-  VALUES (v_org_id, v_module_id, 'record_id', 'Record ID', 'text', 'core', v_display_order)
-  ON CONFLICT (module_id, key) DO UPDATE SET label = EXCLUDED.label, section = EXCLUDED.section, display_order = EXCLUDED.display_order;
-  v_display_order := v_display_order + 1;
+  -- NOTE: 'record_id' field removed — Zoho record IDs are stored as 'zoho_record_id'
+  -- in the JSONB data column. See system section for the zoho_record_id field.
 
   INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
   VALUES (v_org_id, v_module_id, 'first_name', 'First Name', 'text', 'core', v_display_order)
@@ -724,10 +722,8 @@ BEGIN
   v_display_order := 0;
 
   -- ---- Section: core ----
-  INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
-  VALUES (v_org_id, v_module_id, 'record_id', 'Record ID', 'text', 'core', v_display_order)
-  ON CONFLICT (module_id, key) DO UPDATE SET label = EXCLUDED.label, section = EXCLUDED.section, display_order = EXCLUDED.display_order;
-  v_display_order := v_display_order + 1;
+  -- NOTE: 'record_id' field removed — Zoho record IDs are stored as 'zoho_record_id'
+  -- in the JSONB data column. See system section for the zoho_record_id field.
 
   INSERT INTO crm_fields (org_id, module_id, key, label, type, section, display_order)
   VALUES (v_org_id, v_module_id, 'first_name', 'First Name', 'text', 'core', v_display_order)
