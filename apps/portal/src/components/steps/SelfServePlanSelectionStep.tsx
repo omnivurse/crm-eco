@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Input, Label, Button, Card, CardContent, Badge } from '@crm-eco/ui';
 import { Loader2, ArrowRight, Plus, Trash2, Pill, Sparkles, Check } from 'lucide-react';
-import type { WizardPlan } from '../SelfServeEnrollmentWizard';
+import type { WizardPlan } from '@crm-eco/enrollment';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 
 interface SelfServePlanSelectionStepProps {
