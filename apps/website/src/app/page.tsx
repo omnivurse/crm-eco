@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Star,
   Sparkles,
-  HandHeart,
+  HeartHandshake,
   Leaf,
   TrendingUp,
 } from 'lucide-react';
@@ -105,7 +105,7 @@ export default function HomePage() {
                 title: 'Join the Community',
                 description:
                   'Choose a plan that fits your needs and complete your enrollment in minutes. Membership starts on the first of the next month.',
-                icon: HandHeart,
+                icon: HeartHandshake,
                 color: 'teal',
               },
               {
