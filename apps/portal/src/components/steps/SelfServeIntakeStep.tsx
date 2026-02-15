@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Input, Label, Button } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { Loader2, ArrowRight } from 'lucide-react';
-import type { PrefillData } from '../SelfServeEnrollmentWizard';
+import type { PrefillData } from '@crm-eco/enrollment';
 
 const US_STATES = [
   { value: 'AL', label: 'Alabama' },

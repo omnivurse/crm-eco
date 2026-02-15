@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Input, Label, Button, Card, CardContent, Badge } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { Loader2, ArrowRight, Plus, Trash2, Users } from 'lucide-react';
-import type { HouseholdMember } from '../SelfServeEnrollmentWizard';
+import type { HouseholdMember } from '@crm-eco/enrollment';
 
 interface SelfServeHouseholdStepProps {
   members: HouseholdMember[];
