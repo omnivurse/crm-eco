@@ -14,7 +14,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
-import type { WizardSnapshot, WizardPlan } from '../SelfServeEnrollmentWizard';
+import type { WizardSnapshot, WizardPlan } from '@crm-eco/enrollment';
 import { format } from 'date-fns';
 
 interface SelfServeConfirmationStepProps {
