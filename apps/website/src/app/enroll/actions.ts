@@ -3,55 +3,8 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
+import type { ActionResult, IntakeData, HouseholdMember, PlanSelectionData, ComplianceData, PaymentData } from '@crm-eco/enrollment';
 import { revalidatePath } from 'next/cache';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface ActionResult<T = unknown> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
-
-interface IntakeData {
-  email: string;
-  phone?: string;
-  address_line1: string;
-  address_line2?: string;
-  city: string;
-  state: string;
-  zip_code: string;
-}
-
-interface HouseholdMember {
-  id: string;
-  first_name: string;
-  last_name: string;
-  date_of_birth: string;
-  relationship: 'spouse' | 'child' | 'dependent';
-  ssn_last4?: string;
-}
-
-interface PlanSelectionData {
-  selected_plan_id: string;
-  requested_effective_date: string;
-  rx_medications?: MedicationInput[];
-}
-
-interface ComplianceData {
-  acknowledged_not_insurance: boolean;
-  acknowledged_sharing_guidelines: boolean;
-  acknowledged_pre_existing_conditions: boolean;
-  electronic_signature: string;
-}
-
-interface PaymentData {
-  payment_method: 'bank_draft' | 'credit_card';
-  billing_day: number;
-  payment_token?: string; // From payment processor
-}
 
 // ============================================================================
 // Helper Functions
@@ -67,7 +20,6 @@ async function getOrCreateEnrollment(enrollmentId?: string) {
 
   const context = await getMemberForUser(supabase, user.id);
 
-  // If resuming an existing enrollment
   if (enrollmentId) {
     const { data: enrollment, error } = await (supabase as any)
       .from('enrollments')
@@ -79,7 +31,6 @@ async function getOrCreateEnrollment(enrollmentId?: string) {
       return { error: 'Enrollment not found' };
     }
 
-    // Verify ownership
     if (context?.member && enrollment.primary_member_id !== context.member.id) {
       return { error: 'Access denied' };
     }
@@ -94,10 +45,9 @@ async function getOrCreateEnrollment(enrollmentId?: string) {
 // Server Actions
 // ============================================================================
 
-/**
- * Create a new self-serve enrollment
- */
-export async function createSelfServeEnrollment(): Promise<ActionResult<{ enrollmentId: string }>> {
+export async function createSelfServeEnrollment(
+  options?: { advisorId?: string; landingPageId?: string; enrollmentSource?: string }
+): Promise<ActionResult<{ enrollmentId: string }>> {
   try {
     const result = await getOrCreateEnrollment();
     if ('error' in result) {
@@ -106,14 +56,13 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
 
     const { supabase, user, context } = result;
 
-    // Generate enrollment number
     const enrollmentNumber = `WS-SS-${Date.now().toString(36).toUpperCase()}`;
+    const source = options?.enrollmentSource || 'website';
 
-    // Prepare enrollment data
     const enrollmentData: Record<string, unknown> = {
       enrollment_number: enrollmentNumber,
       enrollment_mode: 'member_self_serve',
-      enrollment_source: 'portal',
+      enrollment_source: source,
       status: 'draft',
       snapshot: {
         intake: context?.member ? {
@@ -129,17 +78,29 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
         plan_selection: {},
         compliance: {},
         payment: {},
+        landing_page_id: options?.landingPageId || null,
       },
       rx_medications: [],
       rx_pricing_result: {},
     };
 
-    // Set member/org if we have context
+    // Set advisor_id if provided (e.g., from a landing page)
+    if (options?.advisorId) {
+      enrollmentData.advisor_id = options.advisorId;
+    }
+
     if (context?.member) {
       enrollmentData.primary_member_id = context.member.id;
       enrollmentData.organization_id = context.member.organization_id;
+
+      // Also set the advisor on the member record if not already set
+      if (options?.advisorId && !context.member.advisor_id) {
+        await (supabase as any)
+          .from('members')
+          .update({ advisor_id: options.advisorId })
+          .eq('id', context.member.id);
+      }
     } else {
-      // For new members, we need an org - use default or first available
       const { data: org } = await (supabase as any)
         .from('organizations')
         .select('id')
@@ -151,7 +112,6 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
       }
     }
 
-    // Create enrollment
     const { data: enrollment, error } = await (supabase as any)
       .from('enrollments')
       .insert(enrollmentData)
@@ -163,15 +123,20 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
       return { success: false, error: 'Failed to create enrollment' };
     }
 
-    // Log audit event
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
         enrollment_id: enrollment.id,
         event_type: 'status_change',
         user_id: user.id,
-        message: 'Self-serve enrollment started',
-        data_after: { status: 'draft', mode: 'member_self_serve' },
+        message: `Self-serve enrollment started from ${source}`,
+        data_after: {
+          status: 'draft',
+          mode: 'member_self_serve',
+          source,
+          advisor_id: options?.advisorId || null,
+          landing_page_id: options?.landingPageId || null,
+        },
       });
 
     revalidatePath('/enroll');
@@ -183,9 +148,6 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
   }
 }
 
-/**
- * Complete the Intake step
- */
 export async function completeSelfServeIntakeStep(
   enrollmentId: string,
   data: IntakeData
@@ -198,14 +160,9 @@ export async function completeSelfServeIntakeStep(
 
     const { supabase, user, enrollment } = result;
 
-    // Update enrollment snapshot
     const snapshot = enrollment.snapshot || {};
-    snapshot.intake = {
-      ...snapshot.intake,
-      ...data,
-    };
+    snapshot.intake = { ...snapshot.intake, ...data };
 
-    // Update enrollment
     const { error } = await (supabase as any)
       .from('enrollments')
       .update({
@@ -218,7 +175,6 @@ export async function completeSelfServeIntakeStep(
       return { success: false, error: 'Failed to save intake data' };
     }
 
-    // Record step completion
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
@@ -227,11 +183,8 @@ export async function completeSelfServeIntakeStep(
         status: 'completed',
         completed_at: new Date().toISOString(),
         data: data,
-      }, {
-        onConflict: 'enrollment_id,step_key',
-      });
+      }, { onConflict: 'enrollment_id,step_key' });
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
@@ -243,7 +196,6 @@ export async function completeSelfServeIntakeStep(
       });
 
     revalidatePath('/enroll');
-
     return { success: true };
   } catch (error) {
     console.error('completeSelfServeIntakeStep error:', error);
@@ -251,9 +203,6 @@ export async function completeSelfServeIntakeStep(
   }
 }
 
-/**
- * Complete the Household step
- */
 export async function completeSelfServeHouseholdStep(
   enrollmentId: string,
   members: HouseholdMember[]
@@ -266,7 +215,6 @@ export async function completeSelfServeHouseholdStep(
 
     const { supabase, user, enrollment } = result;
 
-    // Update snapshot
     const snapshot = enrollment.snapshot || {};
     snapshot.household = { members };
 
@@ -279,7 +227,6 @@ export async function completeSelfServeHouseholdStep(
       return { success: false, error: 'Failed to save household data' };
     }
 
-    // Record step completion
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
@@ -288,11 +235,8 @@ export async function completeSelfServeHouseholdStep(
         status: 'completed',
         completed_at: new Date().toISOString(),
         data: { members },
-      }, {
-        onConflict: 'enrollment_id,step_key',
-      });
+      }, { onConflict: 'enrollment_id,step_key' });
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
@@ -304,7 +248,6 @@ export async function completeSelfServeHouseholdStep(
       });
 
     revalidatePath('/enroll');
-
     return { success: true };
   } catch (error) {
     console.error('completeSelfServeHouseholdStep error:', error);
@@ -312,9 +255,6 @@ export async function completeSelfServeHouseholdStep(
   }
 }
 
-/**
- * Complete the Plan Selection step
- */
 export async function completeSelfServePlanSelectionStep(
   enrollmentId: string,
   data: PlanSelectionData
@@ -327,21 +267,18 @@ export async function completeSelfServePlanSelectionStep(
 
     const { supabase, user, enrollment } = result;
 
-    // Update snapshot
     const snapshot = enrollment.snapshot || {};
     snapshot.plan_selection = {
       selected_plan_id: data.selected_plan_id,
       requested_effective_date: data.requested_effective_date,
     };
 
-    // Prepare update
     const updateData: Record<string, unknown> = {
       snapshot,
       selected_plan_id: data.selected_plan_id,
       requested_effective_date: data.requested_effective_date,
     };
 
-    // Include medications if provided
     if (data.rx_medications && data.rx_medications.length > 0) {
       updateData.rx_medications = data.rx_medications;
     }
@@ -355,7 +292,6 @@ export async function completeSelfServePlanSelectionStep(
       return { success: false, error: 'Failed to save plan selection' };
     }
 
-    // Record step completion
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
@@ -363,15 +299,9 @@ export async function completeSelfServePlanSelectionStep(
         step_key: 'plan_selection',
         status: 'completed',
         completed_at: new Date().toISOString(),
-        data: {
-          plan_id: data.selected_plan_id,
-          effective_date: data.requested_effective_date,
-        },
-      }, {
-        onConflict: 'enrollment_id,step_key',
-      });
+        data: { plan_id: data.selected_plan_id, effective_date: data.requested_effective_date },
+      }, { onConflict: 'enrollment_id,step_key' });
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
@@ -383,7 +313,6 @@ export async function completeSelfServePlanSelectionStep(
       });
 
     revalidatePath('/enroll');
-
     return { success: true };
   } catch (error) {
     console.error('completeSelfServePlanSelectionStep error:', error);
@@ -391,9 +320,6 @@ export async function completeSelfServePlanSelectionStep(
   }
 }
 
-/**
- * Run Rx pricing for medications
- */
 export async function runSelfServeRxPricing(
   enrollmentId: string,
   medications: MedicationInput[]
@@ -406,24 +332,20 @@ export async function runSelfServeRxPricing(
 
     const { supabase, user, enrollment } = result;
 
-    // Validate medications
     const validationError = validateMedications(medications);
     if (validationError) {
       return { success: false, error: validationError };
     }
 
-    // Get member state from snapshot
     const memberState = enrollment.snapshot?.intake?.state;
     const planId = enrollment.selected_plan_id;
 
-    // Get Rx pricing
     const pricingResult = await getRxPricingEstimate({
       meds: medications,
       memberState,
       planId,
     });
 
-    // Update enrollment with medications and pricing
     const { error } = await (supabase as any)
       .from('enrollments')
       .update({
@@ -436,7 +358,6 @@ export async function runSelfServeRxPricing(
       return { success: false, error: 'Failed to save Rx pricing' };
     }
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
@@ -448,7 +369,6 @@ export async function runSelfServeRxPricing(
       });
 
     revalidatePath('/enroll');
-
     return { success: true, data: pricingResult };
   } catch (error) {
     console.error('runSelfServeRxPricing error:', error);
@@ -456,9 +376,6 @@ export async function runSelfServeRxPricing(
   }
 }
 
-/**
- * Complete the Compliance step
- */
 export async function completeSelfServeComplianceStep(
   enrollmentId: string,
   data: ComplianceData
@@ -471,7 +388,6 @@ export async function completeSelfServeComplianceStep(
 
     const { supabase, user, enrollment } = result;
 
-    // Validate all acknowledgments
     if (!data.acknowledged_not_insurance ||
         !data.acknowledged_sharing_guidelines ||
         !data.acknowledged_pre_existing_conditions ||
@@ -479,7 +395,6 @@ export async function completeSelfServeComplianceStep(
       return { success: false, error: 'All acknowledgments and signature are required' };
     }
 
-    // Update snapshot
     const snapshot = enrollment.snapshot || {};
     snapshot.compliance = {
       ...data,
@@ -495,7 +410,6 @@ export async function completeSelfServeComplianceStep(
       return { success: false, error: 'Failed to save compliance data' };
     }
 
-    // Record step completion
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
@@ -504,11 +418,8 @@ export async function completeSelfServeComplianceStep(
         status: 'completed',
         completed_at: new Date().toISOString(),
         data: { signed_at: new Date().toISOString() },
-      }, {
-        onConflict: 'enrollment_id,step_key',
-      });
+      }, { onConflict: 'enrollment_id,step_key' });
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
@@ -520,7 +431,6 @@ export async function completeSelfServeComplianceStep(
       });
 
     revalidatePath('/enroll');
-
     return { success: true };
   } catch (error) {
     console.error('completeSelfServeComplianceStep error:', error);
@@ -528,9 +438,6 @@ export async function completeSelfServeComplianceStep(
   }
 }
 
-/**
- * Complete the Payment step
- */
 export async function completeSelfServePaymentStep(
   enrollmentId: string,
   data: PaymentData
@@ -543,12 +450,10 @@ export async function completeSelfServePaymentStep(
 
     const { supabase, user, enrollment } = result;
 
-    // Update snapshot
     const snapshot = enrollment.snapshot || {};
     snapshot.payment = {
       payment_method: data.payment_method,
       billing_day: data.billing_day,
-      // Don't store actual payment details in snapshot
     };
 
     const { error } = await (supabase as any)
@@ -560,7 +465,6 @@ export async function completeSelfServePaymentStep(
       return { success: false, error: 'Failed to save payment data' };
     }
 
-    // Record step completion
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
@@ -569,11 +473,8 @@ export async function completeSelfServePaymentStep(
         status: 'completed',
         completed_at: new Date().toISOString(),
         data: { payment_method: data.payment_method },
-      }, {
-        onConflict: 'enrollment_id,step_key',
-      });
+      }, { onConflict: 'enrollment_id,step_key' });
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
@@ -585,7 +486,6 @@ export async function completeSelfServePaymentStep(
       });
 
     revalidatePath('/enroll');
-
     return { success: true };
   } catch (error) {
     console.error('completeSelfServePaymentStep error:', error);
@@ -593,9 +493,6 @@ export async function completeSelfServePaymentStep(
   }
 }
 
-/**
- * Submit the enrollment for review
- */
 export async function submitSelfServeEnrollment(
   enrollmentId: string
 ): Promise<ActionResult<{ membershipId?: string }>> {
@@ -607,7 +504,6 @@ export async function submitSelfServeEnrollment(
 
     const { supabase, user, enrollment } = result;
 
-    // Verify all steps are complete
     const { data: steps } = await (supabase as any)
       .from('enrollment_steps')
       .select('step_key, status')
@@ -622,13 +518,12 @@ export async function submitSelfServeEnrollment(
 
     const missingSteps = requiredSteps.filter(s => !completedSteps.has(s));
     if (missingSteps.length > 0) {
-      return { 
-        success: false, 
-        error: `Please complete all steps: ${missingSteps.join(', ')}` 
+      return {
+        success: false,
+        error: `Please complete all steps: ${missingSteps.join(', ')}`,
       };
     }
 
-    // Update enrollment status
     const { error: updateError } = await (supabase as any)
       .from('enrollments')
       .update({
@@ -641,7 +536,6 @@ export async function submitSelfServeEnrollment(
       return { success: false, error: 'Failed to submit enrollment' };
     }
 
-    // For self-serve, create membership with 'pending' status (requires approval)
     let membershipId: string | undefined;
 
     if (enrollment.primary_member_id && enrollment.selected_plan_id) {
@@ -653,7 +547,7 @@ export async function submitSelfServeEnrollment(
           organization_id: enrollment.organization_id,
           enrollment_id: enrollmentId,
           advisor_id: enrollment.advisor_id || null,
-          status: 'pending', // Self-serve requires approval
+          status: 'pending',
           effective_date: enrollment.requested_effective_date,
         })
         .select()
@@ -664,7 +558,6 @@ export async function submitSelfServeEnrollment(
       }
     }
 
-    // Record step completion
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
@@ -673,24 +566,20 @@ export async function submitSelfServeEnrollment(
         status: 'completed',
         completed_at: new Date().toISOString(),
         data: { submitted: true },
-      }, {
-        onConflict: 'enrollment_id,step_key',
-      });
+      }, { onConflict: 'enrollment_id,step_key' });
 
-    // Audit log
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'status_change',
         user_id: user.id,
-        message: 'Enrollment submitted for review',
+        message: 'Enrollment submitted for review (from website)',
         data_before: { status: enrollment.status },
         data_after: { status: 'submitted', membership_id: membershipId },
       });
 
     revalidatePath('/enroll');
-    revalidatePath('/');
 
     return { success: true, data: { membershipId } };
   } catch (error) {
@@ -698,48 +587,3 @@ export async function submitSelfServeEnrollment(
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
-
-/**
- * Get enrollment data for resuming
- */
-export async function getEnrollmentData(enrollmentId: string): Promise<ActionResult<{
-  enrollment: Record<string, unknown>;
-  steps: Array<{ step_key: string; status: string; data: unknown }>;
-  plans: Array<{ id: string; name: string; code: string; monthly_share: number }>;
-}>> {
-  try {
-    const result = await getOrCreateEnrollment(enrollmentId);
-    if ('error' in result) {
-      return { success: false, error: result.error };
-    }
-
-    const { supabase, enrollment } = result;
-
-    // Get step status
-    const { data: steps } = await (supabase as any)
-      .from('enrollment_steps')
-      .select('step_key, status, data')
-      .eq('enrollment_id', enrollmentId);
-
-    // Get available plans
-    const { data: plans } = await (supabase as any)
-      .from('plans')
-      .select('id, name, code, monthly_share, description')
-      .eq('organization_id', enrollment.organization_id)
-      .eq('is_active', true)
-      .order('monthly_share');
-
-    return {
-      success: true,
-      data: {
-        enrollment,
-        steps: steps || [],
-        plans: plans || [],
-      },
-    };
-  } catch (error) {
-    console.error('getEnrollmentData error:', error);
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-

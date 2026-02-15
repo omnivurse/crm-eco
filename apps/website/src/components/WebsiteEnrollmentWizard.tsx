@@ -1,6 +1,6 @@
 'use client';
 
-import { SelfServeEnrollmentWizard as SharedWizard } from '@crm-eco/enrollment';
+import { SelfServeEnrollmentWizard } from '@crm-eco/enrollment';
 import type { WizardPlan, WizardSnapshot, PrefillData, EnrollmentActions } from '@crm-eco/enrollment';
 import {
   createSelfServeEnrollment,
@@ -13,7 +13,9 @@ import {
   runSelfServeRxPricing,
 } from '@/app/enroll/actions';
 
-interface PortalEnrollmentWizardProps {
+const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.payitforwardhealth.com';
+
+interface WebsiteEnrollmentWizardProps {
   existingEnrollmentId?: string;
   existingSnapshot?: WizardSnapshot;
   completedSteps?: string[];
@@ -23,9 +25,10 @@ interface PortalEnrollmentWizardProps {
 }
 
 /**
- * Portal-specific wrapper that binds server actions to the shared enrollment wizard.
+ * Website-specific wrapper that binds server actions to the shared enrollment wizard.
+ * After submission, directs user to the member portal instead of a dashboard.
  */
-export function SelfServeEnrollmentWizard(props: PortalEnrollmentWizardProps) {
+export function WebsiteEnrollmentWizard(props: WebsiteEnrollmentWizardProps) {
   const actions: EnrollmentActions = {
     createEnrollment: createSelfServeEnrollment,
     completeIntakeStep: completeSelfServeIntakeStep,
@@ -38,11 +41,11 @@ export function SelfServeEnrollmentWizard(props: PortalEnrollmentWizardProps) {
   };
 
   return (
-    <SharedWizard
+    <SelfServeEnrollmentWizard
       {...props}
       actions={actions}
-      afterSubmitUrl="/"
-      afterSubmitLabel="Return to Dashboard"
+      afterSubmitUrl={`${PORTAL_URL}/signin`}
+      afterSubmitLabel="Sign In to Member Portal"
     />
   );
 }

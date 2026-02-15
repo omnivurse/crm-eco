@@ -1,0 +1,25 @@
+{
+  "name": "@crm-eco/enrollment",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./components": "./src/components/index.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./actions": "./src/actions/enrollment-actions.ts",
+    "./types": "./src/types.ts"
+  },
+  "dependencies": {
+    "@crm-eco/lib": "*",
+    "@crm-eco/ui": "*"
+  },
+  "peerDependencies": {
+    "date-fns": "^3.0.0",
+    "lucide-react": ">=0.300.0",
+    "next": ">=14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}
