@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Label, Button, Card, CardContent } from '@crm-eco/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { Loader2, ArrowRight, CreditCard, Building2, Calendar, Check } from 'lucide-react';
-import type { WizardPlan } from '../SelfServeEnrollmentWizard';
+import type { WizardPlan } from '@crm-eco/enrollment';
 
 interface PaymentData {
   payment_method?: 'bank_draft' | 'credit_card';
