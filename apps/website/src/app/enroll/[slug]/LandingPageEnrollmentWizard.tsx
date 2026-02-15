@@ -1,6 +1,6 @@
 'use client';
 
-import { SelfServeEnrollmentWizard as SharedWizard } from '@crm-eco/enrollment';
+import { SelfServeEnrollmentWizard } from '@crm-eco/enrollment';
 import type { WizardPlan, WizardSnapshot, PrefillData, EnrollmentActions } from '@crm-eco/enrollment';
 import {
   createSelfServeEnrollment,
@@ -13,21 +13,36 @@ import {
   runSelfServeRxPricing,
 } from '@/app/enroll/actions';
 
-interface PortalEnrollmentWizardProps {
+const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.payitforwardhealth.com';
+
+interface LandingPageEnrollmentWizardProps {
   existingEnrollmentId?: string;
   existingSnapshot?: WizardSnapshot;
   completedSteps?: string[];
   plans: WizardPlan[];
   prefillData?: PrefillData;
   isAuthenticated: boolean;
+  advisorId?: string;
+  landingPageId: string;
 }
 
 /**
- * Portal-specific wrapper that binds server actions to the shared enrollment wizard.
+ * Landing page wrapper that binds advisorId and landingPageId to the enrollment
+ * creation action via closure, so the shared wizard gets the correct advisor
+ * assignment without needing to know about landing pages.
  */
-export function SelfServeEnrollmentWizard(props: PortalEnrollmentWizardProps) {
+export function LandingPageEnrollmentWizard({
+  advisorId,
+  landingPageId,
+  ...props
+}: LandingPageEnrollmentWizardProps) {
   const actions: EnrollmentActions = {
-    createEnrollment: createSelfServeEnrollment,
+    createEnrollment: () =>
+      createSelfServeEnrollment({
+        advisorId,
+        landingPageId,
+        enrollmentSource: 'landing_page',
+      }),
     completeIntakeStep: completeSelfServeIntakeStep,
     completeHouseholdStep: completeSelfServeHouseholdStep,
     completePlanSelectionStep: completeSelfServePlanSelectionStep,
@@ -38,11 +53,11 @@ export function SelfServeEnrollmentWizard(props: PortalEnrollmentWizardProps) {
   };
 
   return (
-    <SharedWizard
+    <SelfServeEnrollmentWizard
       {...props}
       actions={actions}
-      afterSubmitUrl="/"
-      afterSubmitLabel="Return to Dashboard"
+      afterSubmitUrl={`${PORTAL_URL}/signin`}
+      afterSubmitLabel="Sign In to Member Portal"
     />
   );
 }
