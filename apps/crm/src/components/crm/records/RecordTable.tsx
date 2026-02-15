@@ -595,7 +595,7 @@ export const RecordTable = memo(function RecordTable({
 
   // Get visible columns from view or explicit columns
   // Allow any column that exists in the fieldMap (custom fields) or common system fields
-  const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'middle_initial', 'lead_status', 'contact_status', 'salutation', 'record_id', 'contact_name'];
+  const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'middle_initial', 'lead_status', 'contact_status', 'salutation', 'contact_name'];
   const visibleColumns = useMemo(() => {
     const columns = explicitColumns || view?.columns || fields.map(f => f.key);
     // Allow columns that exist in fieldMap or are known system columns
@@ -620,10 +620,12 @@ export const RecordTable = memo(function RecordTable({
       case 'owner_id': return 160;
       case 'created_at':
       case 'updated_at': return 160;
-      case 'record_id': return 120;
       default: return 180; // custom fields
     }
   };
+
+  // Sticky left offset for the first data column (checkbox col = 48px)
+  const stickyFirstColLeft = 48;
 
   // Total min-width for the table to enable horizontal scrolling
   const totalMinWidth = useMemo(() => {
@@ -1022,7 +1024,7 @@ export const RecordTable = memo(function RecordTable({
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
         )}>
           <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth }}>
-            <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 48, minWidth: 48 }}>
+            <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm sticky left-0 z-20" style={{ width: 48, minWidth: 48 }}>
               <Checkbox
                 checked={allSelected}
                 ref={(el) => {
@@ -1032,14 +1034,19 @@ export const RecordTable = memo(function RecordTable({
                 className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
               />
             </TableHead>
-            {visibleColumns.map((col) => (
+            {visibleColumns.map((col, colIndex) => (
               <TableHead
                 key={col}
                 className={cn(
                   'flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
-                  onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none'
+                  onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none',
+                  colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
-                style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}
+                style={{
+                  width: getColumnWidth(col),
+                  minWidth: getColumnWidth(col),
+                  ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
+                }}
                 onClick={() => handleSort(col)}
               >
                 <div className="flex items-center gap-1.5">
@@ -1119,15 +1126,40 @@ export const RecordTable = memo(function RecordTable({
                   onMouseEnter={() => handleRowMouseEnter(record.id)}
                   onMouseLeave={handleRowMouseLeave}
                 >
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-12 flex-shrink-0 flex items-center" style={{ width: 48, minWidth: 48 }}>
+                  <TableCell
+                    onClick={(e) => e.stopPropagation()}
+                    className={cn(
+                      'w-12 flex-shrink-0 flex items-center sticky left-0 z-10',
+                      selectedIds.has(record.id)
+                        ? 'bg-teal-50 dark:bg-teal-500/5'
+                        : 'bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-white/5'
+                    )}
+                    style={{ width: 48, minWidth: 48 }}
+                  >
                     <Checkbox
                       checked={selectedIds.has(record.id)}
                       onCheckedChange={() => handleSelectRow(record.id)}
                       className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
                     />
                   </TableCell>
-                  {visibleColumns.map((col) => (
-                    <TableCell key={col} className="text-sm flex-shrink-0 flex items-center" style={{ width: getColumnWidth(col), minWidth: getColumnWidth(col) }}>
+                  {visibleColumns.map((col, colIndex) => (
+                    <TableCell
+                      key={col}
+                      className={cn(
+                        'text-sm flex-shrink-0 flex items-center',
+                        colIndex === 0 && 'sticky z-10 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]',
+                        colIndex === 0 && (
+                          selectedIds.has(record.id)
+                            ? 'bg-teal-50 dark:bg-teal-500/5'
+                            : 'bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-white/5'
+                        )
+                      )}
+                      style={{
+                        width: getColumnWidth(col),
+                        minWidth: getColumnWidth(col),
+                        ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
+                      }}
+                    >
                       {renderCellValue(record, col)}
                     </TableCell>
                   ))}
