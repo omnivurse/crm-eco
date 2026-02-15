@@ -12,7 +12,7 @@ import {
   FileCheck,
   CreditCard,
   Send,
-  HandHeart,
+  HeartHandshake,
   Sparkles,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -51,7 +51,7 @@ const steps = [
     title: 'Community Shares',
     description:
       'Eligible needs are shared among members. You receive support from the community, and you support others with your contributions.',
-    icon: HandHeart,
+    icon: HeartHandshake,
   },
 ];
 
