@@ -26,7 +26,7 @@
     "typecheck:crm": "npm run typecheck --workspace=@crm-eco/crm",
     "lint:crm": "npm run lint --workspace=@crm-eco/crm",
     "precheck:crm": "npm run typecheck:crm && npm run lint:crm",
-    "prepare": "husky"
+    "prepare": "husky || true"
   },
   "lint-staged": {
     "apps/crm/**/*.{ts,tsx}": [
