@@ -1,42 +1,56 @@
 import Link from 'next/link';
 import {
+  CreditCard,
+  Cpu,
+  FileCheck,
+  DollarSign,
   Clock,
-  AlertTriangle,
   ChevronRight,
   Inbox,
 } from 'lucide-react';
-
-/** Personal work queue item for CRM sales agents */
-export interface PersonalWorkItem {
-  id: string;
-  type: 'overdue_task' | 'at_risk_deal';
-  title: string;
-  subtitle: string;
-  createdAt: string;
-}
+import type { AdminWorkQueueItem } from '@/lib/admin-console-queries';
 
 /** Map work queue item type to visual config */
 const typeConfig: Record<
-  PersonalWorkItem['type'],
-  { icon: typeof Clock; label: string; badgeClass: string; href: string }
+  AdminWorkQueueItem['type'],
+  { icon: typeof CreditCard; label: string; badgeClass: string; href: string }
 > = {
+  billing_failure: {
+    icon: CreditCard,
+    label: 'Billing',
+    badgeClass: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
+    href: '/billing',
+  },
+  failed_job: {
+    icon: Cpu,
+    label: 'System',
+    badgeClass: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+    href: '/settings/automation',
+  },
+  enrollment_review: {
+    icon: FileCheck,
+    label: 'Enrollment',
+    badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+    href: '/enrollments',
+  },
+  commission_payout: {
+    icon: DollarSign,
+    label: 'Commission',
+    badgeClass: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+    href: '/commissions',
+  },
   overdue_task: {
     icon: Clock,
     label: 'Task',
-    badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-    href: '/crm/activities',
-  },
-  at_risk_deal: {
-    icon: AlertTriangle,
-    label: 'Deal',
-    badgeClass: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
-    href: '/crm/pipeline',
+    badgeClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
+    href: '/tasks',
   },
 };
 
-const priorityDot: Record<PersonalWorkItem['type'], string> = {
-  overdue_task: 'bg-amber-400',
-  at_risk_deal: 'bg-red-400',
+const priorityDot: Record<number, string> = {
+  1: 'bg-red-400',
+  2: 'bg-amber-400',
+  3: 'bg-slate-400',
 };
 
 /** Format relative time from ISO timestamp */
@@ -51,21 +65,15 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
-interface WorkQueueProps {
-  items: PersonalWorkItem[];
+interface AdminWorkQueueProps {
+  items: AdminWorkQueueItem[];
 }
 
 /**
- * WorkQueue -- Personal action items panel for CRM sales agents.
- * Shows only the current user's overdue tasks and at-risk deals.
+ * AdminWorkQueue -- Org-wide prioritized action items panel for admin dashboard.
+ * Sorted by urgency: billing > system > enrollments > commissions > tasks.
  */
-export function WorkQueue({ items }: WorkQueueProps) {
-  // Sort: at-risk deals first, then overdue tasks
-  const sorted = [...items].sort((a, b) => {
-    const order: Record<PersonalWorkItem['type'], number> = { at_risk_deal: 1, overdue_task: 2 };
-    return (order[a.type] ?? 99) - (order[b.type] ?? 99);
-  });
-
+export function AdminWorkQueue({ items }: AdminWorkQueueProps) {
   return (
     <div className="rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50 overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]">
       {/* Header */}
@@ -76,26 +84,19 @@ export function WorkQueue({ items }: WorkQueueProps) {
           </div>
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              My Action Items
+              Action Items
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {sorted.length} item{sorted.length !== 1 ? 's' : ''} requiring attention
+              {items.length} item{items.length !== 1 ? 's' : ''} requiring attention
             </p>
           </div>
         </div>
-        <Link
-          href="/crm/activities"
-          className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-1 transition-colors"
-        >
-          View All
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
       </div>
 
       {/* Queue items */}
-      {sorted.length > 0 ? (
+      {items.length > 0 ? (
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {sorted.map((item) => {
+          {items.map((item) => {
             const config = typeConfig[item.type];
             const Icon = config.icon;
 
@@ -106,7 +107,7 @@ export function WorkQueue({ items }: WorkQueueProps) {
                 className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
               >
                 {/* Priority dot */}
-                <div className={`w-2 h-2 rounded-full shrink-0 ${priorityDot[item.type]}`} />
+                <div className={`w-2 h-2 rounded-full shrink-0 ${priorityDot[item.priority] || 'bg-slate-400'}`} />
 
                 {/* Type badge */}
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider border shrink-0 ${config.badgeClass}`}>

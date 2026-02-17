@@ -1,25 +1,22 @@
 import { Suspense } from 'react';
 import {
   getCurrentProfile,
-  getCachedModuleStats,
-  getCachedCommandConsoleStats,
+  getCachedDashboardHeroStats,
+  getCachedAtRiskDeals,
+  getMyTasks,
   getUpcomingTasks,
   getRecentActivity,
-  getCachedAtRiskDeals,
   getTodaysTasks,
   getCalendarEvents,
   getOrganization,
 } from '@/lib/crm/queries';
-import type { CommandConsoleStats } from '@/lib/crm/queries';
+import type { PersonalWorkItem } from '@/components/dashboard';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import {
   CommandBar,
-  AlertsStrip,
-  OperationalTiles,
   WorkQueue,
-  EnrollmentFunnel,
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
@@ -70,24 +67,37 @@ async function fetchWidgetData(
   return results;
 }
 
-/** Default empty stats when the command console RPC fails */
-const EMPTY_CONSOLE_STATS: CommandConsoleStats = {
-  enrollmentStats: {
-    startedToday: 0, submittedToday: 0, activatedToday: 0,
-    pendingUnderwriting: 0, docsRequired: 0, activationDelayed: 0,
-    rejectedCount: 0, expiringSoon: 0, totalDraft: 0,
-  },
-  billingStats: {
-    collectedToday: 0, mrr: 0, failedToday: 0,
-    pendingAch: 0, lastSuccessfulPaymentAt: null,
-  },
-  pipelineCounts: {
-    leads: 0, draft: 0, inProgress: 0, submitted: 0,
-    approved: 0, rejected: 0, cancelled: 0,
-  },
-  operationsStats: { overdueTasks: 0, atRiskDeals: 0 },
-  workQueue: [],
-};
+/**
+ * Build personal work queue items from overdue tasks and at-risk deals.
+ */
+function buildPersonalWorkItems(
+  overdueTasks: { id: string; title: string; due_at: string | null; created_at: string }[],
+  atRiskDeals: { id: string; name: string; stage: string; daysInStage: number }[],
+): PersonalWorkItem[] {
+  const items: PersonalWorkItem[] = [];
+
+  for (const deal of atRiskDeals.slice(0, 4)) {
+    items.push({
+      id: deal.id,
+      type: 'at_risk_deal',
+      title: deal.name,
+      subtitle: `${deal.stage} · ${deal.daysInStage}d without update`,
+      createdAt: new Date(Date.now() - deal.daysInStage * 86400000).toISOString(),
+    });
+  }
+
+  for (const task of overdueTasks.slice(0, 4)) {
+    items.push({
+      id: task.id,
+      type: 'overdue_task',
+      title: task.title || 'Untitled Task',
+      subtitle: task.due_at ? `Due ${new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No due date',
+      createdAt: task.due_at || task.created_at,
+    });
+  }
+
+  return items;
+}
 
 async function DashboardContent() {
   let profile;
@@ -110,52 +120,56 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: command console stats, org info, widget data
-  let consoleStats: CommandConsoleStats = EMPTY_CONSOLE_STATS;
-  let orgName = 'Operations';
-  let widgetData: Record<string, unknown> = {};
+  // Fetch all data in parallel: personal stats, org info, tasks, at-risk deals, widget data
+  const [heroStatsResult, orgResult, overdueTasksResult, atRiskDealsResult, widgetDataResult] =
+    await Promise.allSettled([
+      getCachedDashboardHeroStats(profile.organization_id, profile.id),
+      getOrganization(profile.organization_id),
+      getMyTasks(profile.id, false, 50),
+      getCachedAtRiskDeals(profile.organization_id, 5),
+      fetchWidgetData(profile, widgetTypes),
+    ]);
 
-  const [consoleResult, orgResult, widgetDataResult] = await Promise.allSettled([
-    getCachedCommandConsoleStats(profile.organization_id, profile.id),
-    getOrganization(profile.organization_id),
-    fetchWidgetData(profile, widgetTypes),
-  ]);
+  const heroStats = heroStatsResult.status === 'fulfilled'
+    ? heroStatsResult.value
+    : { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
 
-  if (consoleResult.status === 'fulfilled') consoleStats = consoleResult.value;
-  else console.error('[Dashboard] Console stats fetch failed:', consoleResult.reason);
+  const orgName = orgResult.status === 'fulfilled' && orgResult.value
+    ? orgResult.value.name
+    : 'Operations';
 
-  if (orgResult.status === 'fulfilled' && orgResult.value) orgName = orgResult.value.name;
-  else console.error('[Dashboard] Org fetch failed:', orgResult.status === 'rejected' ? orgResult.reason : 'null');
+  // Build personal work queue from overdue tasks and at-risk deals
+  const overdueTasks = overdueTasksResult.status === 'fulfilled'
+    ? (overdueTasksResult.value || []).filter((t) => t.due_at && new Date(t.due_at) < new Date())
+    : [];
 
-  if (widgetDataResult.status === 'fulfilled') widgetData = widgetDataResult.value;
-  else console.error('[Dashboard] Widget data fetch failed:', widgetDataResult.reason);
+  const atRiskDeals = atRiskDealsResult.status === 'fulfilled'
+    ? atRiskDealsResult.value || []
+    : [];
+
+  const personalItems = buildPersonalWorkItems(overdueTasks, atRiskDeals);
+
+  const widgetData = widgetDataResult.status === 'fulfilled'
+    ? widgetDataResult.value
+    : {};
 
   return (
     <DashboardLayoutProvider initialLayout={layout}>
       <div className="space-y-5 pb-8">
-        {/* ── Layer 1: Command Bar ── */}
+        {/* Personal Command Bar */}
         <CommandBar
           profile={profile}
           orgName={orgName}
-          stats={consoleStats}
+          stats={heroStats}
         />
 
-        {/* ── Layer 2: Critical Alerts Strip (hidden when clean) ── */}
-        <AlertsStrip stats={consoleStats} />
+        {/* Personal Work Queue */}
+        <WorkQueue items={personalItems} />
 
-        {/* ── Layer 3: Operational Tiles ── */}
-        <OperationalTiles stats={consoleStats} />
-
-        {/* ── Work Queue ── */}
-        <WorkQueue items={consoleStats.workQueue} />
-
-        {/* ── Enrollment Pipeline Funnel ── */}
-        <EnrollmentFunnel stats={consoleStats} />
-
-        {/* ── Dashboard Toolbar ── */}
+        {/* Dashboard Toolbar */}
         <DashboardToolbar />
 
-        {/* ── Customizable Widget Grid (preserved) ── */}
+        {/* Customizable Widget Grid (preserved) */}
         <DashboardGrid renderedWidgets={preRenderWidgets(layout.widgets, widgetData)} />
       </div>
     </DashboardLayoutProvider>
