@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Satellite, CircleCheck, CircleMinus, CircleX } from 'lucide-react';
+import { Satellite, CheckCircle2, MinusCircle, XCircle } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Badge } from '@crm-eco/ui/components/badge';
 
@@ -21,19 +21,19 @@ const services: ServiceInfo[] = [
 
 const statusConfig = {
   operational: {
-    icon: CircleCheck,
+    icon: CheckCircle2,
     label: 'Operational',
     badge: 'success' as const,
     dot: 'bg-emerald-500',
   },
   degraded: {
-    icon: CircleMinus,
+    icon: MinusCircle,
     label: 'Degraded',
     badge: 'warning' as const,
     dot: 'bg-amber-500',
   },
   down: {
-    icon: CircleX,
+    icon: XCircle,
     label: 'Down',
     badge: 'destructive' as const,
     dot: 'bg-destructive',
