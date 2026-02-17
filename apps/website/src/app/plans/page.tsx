@@ -54,7 +54,7 @@ function formatCurrency(amount: number | null): string {
 async function getPlansWithBenefits() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: plans } = await (supabase as any)
+  const { data: plans } = await supabase
     .from('plans')
     .select('id, name, code, monthly_share, iua_amount, description, tier')
     .eq('is_active', true)
@@ -65,7 +65,7 @@ async function getPlansWithBenefits() {
 
   const planIds = plans.map((p: DbPlan) => p.id);
 
-  const { data: benefits } = await (supabase as any)
+  const { data: benefits } = await supabase
     .from('product_benefits')
     .select('id, plan_id, benefit_name, description, sort_order')
     .in('plan_id', planIds)

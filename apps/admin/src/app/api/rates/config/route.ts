@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
 
     const planIdFilter = searchParams.get('planId');
 
-    let rateSetsQuery = supabase
+    let rateSetsQuery = (supabase as any)
       .from('plan_rate_sets')
       .select(`
         *,
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Upsert rate set
-    const { data: rateSet, error: rsError } = await supabase
+    const { data: rateSet, error: rsError } = await (supabase as any)
       .from('plan_rate_sets')
       .upsert(
         {
@@ -149,14 +149,14 @@ export async function POST(request: NextRequest) {
 
     // Replace rate entries
     if (rates && rateSet) {
-      await supabase
+      await (supabase as any)
         .from('plan_rate_entries')
         .delete()
         .eq('rate_set_id', rateSet.id);
 
       const entries = buildRateEntries(rateSet.id, ratingModel, rates);
       if (entries.length > 0) {
-        const { error: entryErr } = await supabase
+        const { error: entryErr } = await (supabase as any)
           .from('plan_rate_entries')
           .insert(entries);
         if (entryErr) {
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     // Replace fees
     if (fees && rateSet) {
-      await supabase
+      await (supabase as any)
         .from('plan_fees')
         .delete()
         .eq('rate_set_id', rateSet.id);
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
           sort_order: i,
         }));
 
-        const { error: feeErr } = await supabase
+        const { error: feeErr } = await (supabase as any)
           .from('plan_fees')
           .insert(feeRows);
         if (feeErr) {
@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
 
     // Update the plan's rating_model
     if (ratingModel) {
-      await supabase
+      await (supabase as any)
         .from('plans')
         .update({ rating_model: ratingModel })
         .eq('id', planId);

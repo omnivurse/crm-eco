@@ -154,10 +154,8 @@ const statCardVariants: Variants = {
 
 function StatCard({
   stat,
-  index,
 }: {
   stat: (typeof STATS)[number];
-  index: number;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const value = useCountUp(stat.end, 2200, true, cardRef);
@@ -428,7 +426,7 @@ export function HeroSection() {
           viewport={{ once: true, amount: 0.3 }}
         >
           {STATS.map((stat, i) => (
-            <StatCard key={stat.label} stat={stat} index={i} />
+            <StatCard key={stat.label} stat={stat} />
           ))}
         </motion.div>
       </div>

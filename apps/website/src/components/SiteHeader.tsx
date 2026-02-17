@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
-import { Menu, X, Heart, ChevronDown } from 'lucide-react';
+import { Menu, X, Heart } from 'lucide-react';
 
 const navigation = [
   { name: 'About', href: '/about' },
