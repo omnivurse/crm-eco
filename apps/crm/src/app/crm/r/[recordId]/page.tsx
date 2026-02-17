@@ -55,6 +55,10 @@ async function RecordDetailContent({ params }: PageProps) {
     ...(record.status && !record.data?.contact_status && { contact_status: record.status }),
   };
 
+  // #region agent log
+  console.log('[DEBUG:notes]', JSON.stringify({recordId,moduleKey:module.key,title:record.title,notesCount:notes.length,hasNotesHistory:!!record.data?.notes_history,zohoRecordId:record.data?.zoho_record_id||'MISSING',dataKeyCount:Object.keys(record.data||{}).length,noteKeys:Object.keys(record.data||{}).filter(k=>k.toLowerCase().includes('note'))}));
+  // #endregion
+
   return (
     <RecordDetailShell
       record={record}
@@ -65,13 +69,12 @@ async function RecordDetailContent({ params }: PageProps) {
       className="h-[calc(100vh-64px)]"
     >
       {{
-        overview: ({ switchTab }) => (
+        overview: (
           <div className="space-y-6">
             {/* Notes - Prime Real Estate */}
             <NotesOverviewCard
               notes={notes}
               recordId={recordId}
-              onViewAll={() => switchTab('notes')}
             />
 
             {/* Legacy Notes History (imported from Zoho) */}

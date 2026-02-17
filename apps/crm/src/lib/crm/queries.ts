@@ -4,7 +4,6 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { unstable_cache } from 'next/cache';
 import { cache } from 'react';
 import { getAuthUser as getCachedAuthUser } from '../supabase-server';
 import type {
@@ -261,15 +260,13 @@ export async function getOrganization(orgId: string): Promise<OrganizationInfo |
 }
 
 /**
- * Cached version of getOrganization - revalidates every 10 minutes
- * Organization info rarely changes
+ * Per-request memoized version of getOrganization.
+ * Uses React.cache() for deduplication within a single request.
+ * Safe with cookies()/auth — no unstable_cache proxy issues.
  */
-export const getCachedOrganization = (orgId: string) =>
-  unstable_cache(
-    async () => getOrganization(orgId),
-    [`organization-${orgId}`],
-    { revalidate: 600, tags: [`org-${orgId}`, 'organization'] }
-  )();
+export const getCachedOrganization = cache(
+  async (orgId: string) => getOrganization(orgId)
+);
 
 // ============================================================================
 // Module Queries
@@ -290,15 +287,12 @@ export async function getModules(orgId: string): Promise<CrmModule[]> {
 }
 
 /**
- * Cached version of getModules - revalidates every 5 minutes
- * Modules rarely change, so aggressive caching is appropriate
+ * Per-request memoized version of getModules.
+ * Uses React.cache() for deduplication within a single request.
  */
-export const getCachedModules = (orgId: string) =>
-  unstable_cache(
-    async () => getModules(orgId),
-    [`modules-${orgId}`],
-    { revalidate: 300, tags: [`org-${orgId}`, 'modules'] }
-  )();
+export const getCachedModules = cache(
+  async (orgId: string) => getModules(orgId)
+);
 
 export async function getModuleByKey(orgId: string, key: string): Promise<CrmModule | null> {
   const supabase = await createCrmClient();
@@ -869,8 +863,8 @@ export async function getImportJob(jobId: string): Promise<CrmImportJob | null> 
 // Dashboard Stats Queries
 // ============================================================================
 
-export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
-  const supabase = await createCrmClient();
+export async function getModuleStats(orgId: string, preloadedCookies?: Awaited<ReturnType<typeof cookies>>): Promise<ModuleStats[]> {
+  const supabase = await createCrmClient(preloadedCookies);
 
   const { data, error } = await supabase.rpc('get_module_stats', {
     p_org_id: orgId,
@@ -893,9 +887,10 @@ export interface DashboardHeroStats {
 
 export async function getDashboardHeroStats(
   orgId: string,
-  userId: string
+  userId: string,
+  preloadedCookies?: Awaited<ReturnType<typeof cookies>>
 ): Promise<DashboardHeroStats> {
-  const supabase = await createCrmClient();
+  const supabase = await createCrmClient(preloadedCookies);
 
   const { data, error } = await supabase.rpc('get_dashboard_hero_stats', {
     p_org_id: orgId,
@@ -1079,43 +1074,33 @@ export async function getMonthlyRecordCounts(orgId: string, monthsBack: number =
 // ============================================================================
 
 /**
- * Cached version of getModuleStats - revalidates every 60 seconds
- * Use this for dashboard to avoid repeated expensive queries
+ * Per-request memoized version of getModuleStats.
+ * Uses React.cache() — safe with cookies/auth, deduplicates within a request.
  */
-export const getCachedModuleStats = (orgId: string) =>
-  unstable_cache(
-    async () => getModuleStats(orgId),
-    [`module-stats-${orgId}`],
-    { revalidate: 60, tags: [`org-${orgId}`, 'module-stats'] }
-  )();
-
-export const getCachedDashboardHeroStats = (orgId: string, userId: string) =>
-  unstable_cache(
-    async () => getDashboardHeroStats(orgId, userId),
-    [`hero-stats-${orgId}-${userId}`],
-    { revalidate: 60, tags: [`org-${orgId}`, 'hero-stats'] }
-  )();
+export const getCachedModuleStats = cache(
+  async (orgId: string) => getModuleStats(orgId)
+);
 
 /**
- * Cached version of getMonthlyRecordCounts - revalidates every 5 minutes
- * Data changes slowly so longer cache is acceptable
+ * Per-request memoized version of getDashboardHeroStats.
  */
-export const getCachedMonthlyRecordCounts = (orgId: string, monthsBack: number = 6) =>
-  unstable_cache(
-    async () => getMonthlyRecordCounts(orgId, monthsBack),
-    [`monthly-counts-${orgId}-${monthsBack}`],
-    { revalidate: 300, tags: [`org-${orgId}`, 'monthly-counts'] }
-  )();
+export const getCachedDashboardHeroStats = cache(
+  async (orgId: string, userId: string) => getDashboardHeroStats(orgId, userId)
+);
 
 /**
- * Cached version of getAtRiskDeals - revalidates every 2 minutes
+ * Per-request memoized version of getMonthlyRecordCounts.
  */
-export const getCachedAtRiskDeals = (orgId: string, limit: number = 5) =>
-  unstable_cache(
-    async () => getAtRiskDeals(orgId, limit),
-    [`at-risk-deals-${orgId}-${limit}`],
-    { revalidate: 120, tags: [`org-${orgId}`, 'at-risk-deals'] }
-  )();
+export const getCachedMonthlyRecordCounts = cache(
+  async (orgId: string, monthsBack: number = 6) => getMonthlyRecordCounts(orgId, monthsBack)
+);
+
+/**
+ * Per-request memoized version of getAtRiskDeals.
+ */
+export const getCachedAtRiskDeals = cache(
+  async (orgId: string, limit: number = 5) => getAtRiskDeals(orgId, limit)
+);
 
 export interface ReportSummary {
   totalContacts: number;
