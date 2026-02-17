@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { RefreshCw, Clock, Shield, Wifi, WifiOff, TrendingUp, AlertCircle, Users, UserCheck } from 'lucide-react';
+import { RefreshCw, Clock, Shield, Wifi, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface DashboardHeaderClientProps {
@@ -144,49 +144,6 @@ export function DashboardHeaderClient({ greeting, stats }: DashboardHeaderClient
                 </span>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Quick stats in header - horizontally scrollable on mobile */}
-        <div className="flex items-center gap-4 sm:gap-6 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/10 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="p-2 rounded-lg bg-emerald-500/20">
-              <TrendingUp className="w-4 sm:w-5 h-4 sm:h-5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-bold text-white">{stats?.activeEnrollments ?? 0}</p>
-              <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Active Enrollments</p>
-            </div>
-          </div>
-          <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="p-2 rounded-lg bg-amber-500/20">
-              <AlertCircle className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-bold text-white">{stats?.pendingEnrollments ?? 0}</p>
-              <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Pending Review</p>
-            </div>
-          </div>
-          <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="p-2 rounded-lg bg-[#047474]/30">
-              <Users className="w-4 sm:w-5 h-4 sm:h-5 text-[#069B9A]" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-bold text-white">{stats?.totalMembers ?? 0}</p>
-              <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Total Members</p>
-            </div>
-          </div>
-          <div className="w-px h-10 sm:h-12 bg-white/10 flex-shrink-0" />
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="p-2 rounded-lg bg-purple-500/20">
-              <UserCheck className="w-4 sm:w-5 h-4 sm:h-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-xl sm:text-2xl font-bold text-white">{stats?.totalAgents ?? 0}</p>
-              <p className="text-[10px] sm:text-xs text-white/50 whitespace-nowrap">Active Agents</p>
-            </div>
           </div>
         </div>
       </div>
