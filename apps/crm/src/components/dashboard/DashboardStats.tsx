@@ -5,7 +5,6 @@ import {
   UserCheck,
   DollarSign,
   Building2,
-  HeartPulse,
   ArrowUpRight,
   TrendingUp,
 } from 'lucide-react';
@@ -107,11 +106,6 @@ const statConfigs: Record<
     gradient: 'bg-gradient-to-r from-violet-500 to-purple-400',
     icon: <UserPlus className="w-5 h-5" />,
   },
-  members: {
-    gradient: 'bg-gradient-to-r from-rose-500 to-pink-400',
-    icon: <HeartPulse className="w-5 h-5" />,
-    href: '/crm/members',
-  },
   advisors: {
     gradient: 'bg-gradient-to-r from-blue-500 to-indigo-400',
     icon: <UserCheck className="w-5 h-5" />,
@@ -160,9 +154,10 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   }
 
   // Deduplicate stats by moduleKey (prevents duplicate cards if DB has dupes)
+  // Exclude 'members' — it has its own dedicated page and is redundant here
   const uniqueStats = Array.from(
     new Map(stats.map((s) => [s.moduleKey, s])).values()
-  );
+  ).filter((s) => s.moduleKey !== 'members');
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">

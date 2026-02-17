@@ -8,10 +8,9 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { Input } from '@crm-eco/ui/components/input';
-import DOMPurify from 'dompurify';
+import DOMPurify from 'isomorphic-dompurify';
 
 function sanitize(dirty: string): string {
-  if (typeof window === 'undefined') return dirty;
   return DOMPurify.sanitize(dirty);
 }
 
