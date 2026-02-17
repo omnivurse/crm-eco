@@ -94,9 +94,9 @@ function BentoCell({
     <div
       className={`
         relative overflow-hidden rounded-2xl
-        bg-white/[0.07] backdrop-blur-xl
-        border border-white/10
-        hover:bg-white/[0.10] hover:border-white/20
+        bg-white/[0.04] backdrop-blur-xl
+        border border-white/[0.06]
+        hover:bg-white/[0.06] hover:border-white/[0.10]
         transition-all duration-300 ease-out
         group
         animate-fadeSlideUp
@@ -107,9 +107,7 @@ function BentoCell({
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Subtle glow on hover */}
-      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none" />
-      {/* Inner border glow effect */}
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-[inset_0_0_20px_rgba(4,116,116,0.1)] pointer-events-none" />
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10 h-full">{children}</div>
     </div>
   );
@@ -127,13 +125,13 @@ function QuickActionButton({
   href: string;
   icon: typeof UserPlus;
   label: string;
-  color: 'teal' | 'emerald' | 'amber' | 'violet';
+  color: 'blue' | 'emerald' | 'amber' | 'violet';
 }) {
   const colorClasses = {
-    teal: 'bg-[#047474]/20 hover:bg-[#047474] text-[#069B9A] hover:text-white',
-    emerald: 'bg-emerald-500/20 hover:bg-emerald-500 text-emerald-400 hover:text-white',
-    amber: 'bg-amber-500/20 hover:bg-amber-500 text-amber-400 hover:text-white',
-    violet: 'bg-violet-500/20 hover:bg-violet-500 text-violet-400 hover:text-white',
+    blue: 'bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white',
+    emerald: 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white',
+    amber: 'bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-white',
+    violet: 'bg-violet-500/10 hover:bg-violet-500 text-violet-400 hover:text-white',
   };
 
   return (
@@ -169,8 +167,8 @@ function MeetingItem({ event, mounted }: { event: HeroCalendarEvent; mounted: bo
 
   return (
     <div className="flex items-center gap-3 py-2">
-      <div className="p-1.5 rounded-lg bg-[#047474]/20">
-        <TypeIcon className="w-3.5 h-3.5 text-[#069B9A]" />
+      <div className="p-1.5 rounded-lg bg-blue-500/10">
+        <TypeIcon className="w-3.5 h-3.5 text-blue-400" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-white truncate">{event.title}</p>
@@ -244,7 +242,7 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
     <div className="p-4 h-full flex flex-col justify-center">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <Trophy className={`w-4 h-4 ${isComplete ? 'text-[#E9B61F]' : 'text-white/50'}`} />
+          <Trophy className={`w-4 h-4 ${isComplete ? 'text-amber-400' : 'text-white/50'}`} />
           <span className="text-xs font-medium text-white/80">{goal.label}</span>
         </div>
         <span className="text-xs text-white/50">
@@ -256,8 +254,8 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
           className={`
             absolute inset-y-0 left-0 rounded-full
             ${isComplete
-              ? 'bg-gradient-to-r from-[#E9B61F] to-amber-400'
-              : 'bg-gradient-to-r from-[#047474] to-[#069B9A]'
+              ? 'bg-gradient-to-r from-amber-500 to-amber-400'
+              : 'bg-gradient-to-r from-blue-500 to-blue-400'
             }
             transition-all duration-1000 ease-out
           `}
@@ -270,7 +268,7 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
         />
       </div>
       {isComplete && (
-        <p className="text-[10px] text-[#E9B61F] mt-1.5 flex items-center gap-1">
+        <p className="text-[10px] text-amber-400 mt-1.5 flex items-center gap-1">
           <Sparkles className="w-3 h-3" /> Goal achieved!
         </p>
       )}
@@ -403,11 +401,11 @@ export function DashboardHero({
   const todaysMeetings = upcomingMeetings.slice(0, 3);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-6 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-800 p-6 shadow-xl shadow-black/10 ring-1 ring-white/[0.05]">
       {/* Subtle background accents */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#047474]/15 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#E9B61F]/10 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-blue-500/[0.07] to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-indigo-500/[0.04] to-transparent rounded-full blur-3xl" />
       </div>
 
       {/* Main Content - Bento Grid */}
@@ -416,13 +414,13 @@ export function DashboardHero({
         <div className="flex items-start justify-between mb-4">
           <div className="animate-fadeSlideUp">
             <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/15 transition-colors cursor-default">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.06] hover:bg-white/[0.08] transition-colors cursor-default">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-medium text-white/80">CRM Online</span>
+                <span className="text-xs font-medium text-white/70">CRM Online</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#047474]/30 backdrop-blur-sm border border-[#047474]/40 hover:bg-[#047474]/40 transition-colors cursor-default">
-                <Target className="w-3.5 h-3.5 text-[#069B9A]" />
-                <span className="text-xs font-medium text-[#069B9A]">Sales Hub</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 backdrop-blur-sm border border-blue-500/20 hover:bg-blue-500/15 transition-colors cursor-default">
+                <Target className="w-3.5 h-3.5 text-blue-400" />
+                <span className="text-xs font-medium text-blue-400">Sales Hub</span>
               </div>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
@@ -440,22 +438,22 @@ export function DashboardHero({
         {insightHref ? (
           <Link
             href={insightHref}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 hover:border-[#E9B61F]/40 transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-4 hover:border-white/[0.12] transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '50ms' }}
           >
-            <div className="p-1.5 rounded-lg bg-[#E9B61F]/20 group-hover:bg-[#E9B61F]/30 transition-colors">
-              <Sparkles className="w-4 h-4 text-[#E9B61F] group-hover:animate-pulse" />
+            <div className="p-1.5 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/15 transition-colors">
+              <Sparkles className="w-4 h-4 text-blue-400 group-hover:animate-pulse" />
             </div>
             <p className="text-sm text-white/80 flex-1">{displayInsight}</p>
             <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
           </Link>
         ) : (
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 animate-fadeSlideUp opacity-0"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-4 animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '50ms' }}
           >
-            <div className="p-1.5 rounded-lg bg-[#E9B61F]/20">
-              <Sparkles className="w-4 h-4 text-[#E9B61F]" />
+            <div className="p-1.5 rounded-lg bg-blue-500/10">
+              <Sparkles className="w-4 h-4 text-blue-400" />
             </div>
             <p className="text-sm text-white/80 flex-1">{displayInsight}</p>
           </div>
@@ -493,11 +491,11 @@ export function DashboardHero({
           {/* Quick Actions */}
           <BentoCell className="p-3" span={atRiskCount > 0 || overdueCount > 0 ? 1 : 2} delay={250}>
             <div className="flex items-center gap-1.5 mb-2">
-              <Zap className="w-3.5 h-3.5 text-[#E9B61F]" />
+              <Zap className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-[10px] font-medium text-white/60 uppercase tracking-wide">Quick Actions</span>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" color="teal" />
+              <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" color="blue" />
               <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" color="emerald" />
               <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" color="amber" />
               <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" color="violet" />
@@ -512,7 +510,7 @@ export function DashboardHero({
           {/* Today's Meetings */}
           <BentoCell className="p-3" delay={350}>
             <div className="flex items-center gap-1.5 mb-1">
-              <Calendar className="w-3.5 h-3.5 text-[#069B9A]" />
+              <Calendar className="w-3.5 h-3.5 text-blue-400" />
               <span className="text-[10px] font-medium text-white/60 uppercase tracking-wide">Today</span>
             </div>
             {todaysMeetings.length > 0 ? (
