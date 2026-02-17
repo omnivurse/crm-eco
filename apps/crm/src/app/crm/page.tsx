@@ -3,6 +3,7 @@ import {
   getCurrentProfile,
   getCachedDashboardHeroStats,
   getCachedAtRiskDeals,
+  getCachedPipelineCounts,
   getMyTasks,
   getUpcomingTasks,
   getRecentActivity,
@@ -17,6 +18,7 @@ import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import {
   CommandBar,
   WorkQueue,
+  MemberLifecycle,
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
@@ -120,13 +122,14 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: personal stats, org info, tasks, at-risk deals, widget data
-  const [heroStatsResult, orgResult, overdueTasksResult, atRiskDealsResult, widgetDataResult] =
+  // Fetch all data in parallel: personal stats, org info, tasks, at-risk deals, pipeline, widget data
+  const [heroStatsResult, orgResult, overdueTasksResult, atRiskDealsResult, pipelineResult, widgetDataResult] =
     await Promise.allSettled([
       getCachedDashboardHeroStats(profile.organization_id, profile.id),
       getOrganization(profile.organization_id),
       getMyTasks(profile.id, false, 50),
       getCachedAtRiskDeals(profile.organization_id, 5),
+      getCachedPipelineCounts(profile.organization_id),
       fetchWidgetData(profile, widgetTypes),
     ]);
 
@@ -149,6 +152,10 @@ async function DashboardContent() {
 
   const personalItems = buildPersonalWorkItems(overdueTasks, atRiskDeals);
 
+  const pipelineCounts = pipelineResult.status === 'fulfilled'
+    ? pipelineResult.value
+    : { leads: 0, draft: 0, inProgress: 0, submitted: 0, active: 0 };
+
   const widgetData = widgetDataResult.status === 'fulfilled'
     ? widgetDataResult.value
     : {};
@@ -162,6 +169,9 @@ async function DashboardContent() {
           orgName={orgName}
           stats={heroStats}
         />
+
+        {/* Member Lifecycle Funnel */}
+        <MemberLifecycle counts={pipelineCounts} />
 
         {/* Personal Work Queue */}
         <WorkQueue items={personalItems} />

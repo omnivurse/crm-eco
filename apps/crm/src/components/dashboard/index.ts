@@ -10,7 +10,8 @@ export { WidgetRenderer } from './WidgetRenderer';
 export { SortableWidget } from './SortableWidget';
 export { ServerWidgetRenderer, preRenderWidgets } from './ServerWidgetRenderer';
 
-// Personal Command Bar + Work Queue
+// Personal Command Bar + Work Queue + Lifecycle Funnel
 export { CommandBar } from './CommandBar';
 export { WorkQueue } from './WorkQueue';
 export type { PersonalWorkItem } from './WorkQueue';
+export { MemberLifecycle } from './MemberLifecycle';
