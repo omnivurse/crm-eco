@@ -487,8 +487,84 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     }
   }
 
-  // Apply filters
-  for (const filter of filters) {
+  // ── Separate filters by category ──
+  const fieldFilters = filters.filter((f) => !f.category || f.category === 'field');
+  const systemFilters = filters.filter((f) => f.category === 'system' && f.systemPreset);
+  const relatedFilters = filters.filter((f) => f.category === 'related' && f.relatedModule);
+
+  // ── Apply system preset filters via RPC ──
+  if (systemFilters.length > 0) {
+    // Get user profile ID for user-scoped system presets
+    let userProfileId: string | null = null;
+    const needsUser = systemFilters.some((f) => f.systemPreset === 'my_records');
+    if (needsUser) {
+      const { user } = await getCachedAuthUser();
+      if (user) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: prof } = await (supabase as any)
+          .from('profiles').select('id').eq('user_id', user.id).single();
+        userProfileId = prof?.id ?? null;
+      }
+    }
+
+    for (const sf of systemFilters) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: matchedIds, error: rpcErr } = await (supabase as any).rpc(
+        'filter_records_by_system_preset',
+        {
+          p_module_id: moduleId,
+          p_preset: sf.systemPreset,
+          p_user_profile_id: userProfileId,
+        },
+      );
+      if (!rpcErr && matchedIds && matchedIds.length > 0) {
+        query = query.in('id', matchedIds);
+      } else if (!rpcErr && matchedIds && matchedIds.length === 0) {
+        // No records match -- short-circuit by requiring impossible ID
+        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+      }
+    }
+  }
+
+  // ── Apply related module filters via RPC ──
+  if (relatedFilters.length > 0) {
+    // Map related module keys to RPC arguments
+    const RELATED_MODULE_MAP: Record<string, { relatedType: string; activityType: string | null }> = {
+      activities: { relatedType: 'activities', activityType: null },
+      appointments: { relatedType: 'appointments', activityType: 'meeting' },
+      calls: { relatedType: 'calls', activityType: 'call' },
+      emails: { relatedType: 'emails', activityType: 'email' },
+      tasks: { relatedType: 'tasks', activityType: 'task' },
+      notes: { relatedType: 'notes', activityType: null },
+      leads: { relatedType: 'linked_records', activityType: 'leads' },
+      products: { relatedType: 'linked_records', activityType: 'products' },
+      prospects: { relatedType: 'linked_records', activityType: 'prospects' },
+    };
+
+    for (const rf of relatedFilters) {
+      const mapping = RELATED_MODULE_MAP[rf.relatedModule!];
+      if (!mapping) continue;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: matchedIds, error: rpcErr } = await (supabase as any).rpc(
+        'filter_records_by_related',
+        {
+          p_module_id: moduleId,
+          p_related_type: mapping.relatedType,
+          p_condition: rf.relatedCondition || 'has_any',
+          p_activity_type: mapping.activityType,
+        },
+      );
+      if (!rpcErr && matchedIds && matchedIds.length > 0) {
+        query = query.in('id', matchedIds);
+      } else if (!rpcErr && matchedIds && matchedIds.length === 0) {
+        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+      }
+    }
+  }
+
+  // ── Apply field-based filters ──
+  for (const filter of fieldFilters) {
     // Determine the field path - system fields vs custom fields in data jsonb
     const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id'].includes(filter.field);
     const fieldPath = isSystemField ? filter.field : `data->>${filter.field}`;

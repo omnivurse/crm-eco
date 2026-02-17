@@ -134,6 +134,28 @@ export type FilterOperator =
   | 'next_n_days'
   | 'between';
 
+/** Filter category discriminator for the unified ViewFilter type */
+export type FilterCategory = 'field' | 'system' | 'related';
+
+/** System-level preset filters backed by database queries */
+export type SystemFilterPreset =
+  | 'touched_records'
+  | 'untouched_records'
+  | 'my_records'
+  | 'created_today'
+  | 'created_this_week'
+  | 'modified_today'
+  | 'modified_this_week'
+  | 'unassigned'
+  | 'has_activities'
+  | 'no_activities'
+  | 'has_notes'
+  | 'has_open_tasks'
+  | 'has_overdue_tasks';
+
+/** Related module filter condition */
+export type RelatedFilterCondition = 'has_any' | 'has_none' | 'count_gt' | 'count_lt';
+
 export interface ViewFilter {
   field: string;
   operator: FilterOperator;
@@ -141,6 +163,14 @@ export interface ViewFilter {
   // For 'last_n_days', 'next_n_days' - number of days
   // For 'between' - use secondValue for end date
   secondValue?: string | number | null;
+  /** Filter category -- defaults to 'field' for backward compatibility */
+  category?: FilterCategory;
+  /** System preset identifier (only when category === 'system') */
+  systemPreset?: SystemFilterPreset;
+  /** Related module key (only when category === 'related') */
+  relatedModule?: string;
+  /** Related module filter condition (only when category === 'related') */
+  relatedCondition?: RelatedFilterCondition;
 }
 
 // Date preset definitions for UI
