@@ -399,7 +399,7 @@ export function PlanSelectionStep({ plans }: PlanSelectionStepProps) {
                     <TableHead className="w-[100px]">Dosage</TableHead>
                     <TableHead className="w-[140px]">Frequency</TableHead>
                     <TableHead className="w-[120px]">Current $/month</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-[50px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>

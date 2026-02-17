@@ -44,10 +44,6 @@ export default function CommunicationsPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -101,6 +97,10 @@ export default function CommunicationsPage() {
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, []);
 
   function getStatusIcon(status: string) {
     switch (status) {

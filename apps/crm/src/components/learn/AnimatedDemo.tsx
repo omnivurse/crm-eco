@@ -68,7 +68,8 @@ export function AnimatedDemo({
   useEffect(() => {
     if (step?.cursor) {
       // Animate cursor to new position
-      setCursorPosition(step.cursor);
+      const cursor = step.cursor;
+      queueMicrotask(() => setCursorPosition(cursor));
 
       // Simulate click action
       if (step.action === 'click') {

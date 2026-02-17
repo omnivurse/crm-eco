@@ -256,14 +256,16 @@ export function AdminSidebar({
   // Hydrate from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('admin-sidebar-collapsed');
-    if (stored) {
-      try {
-        setCollapsedSections(new Set(JSON.parse(stored)));
-      } catch {
-        // Ignore parse errors
+    queueMicrotask(() => {
+      if (stored) {
+        try {
+          setCollapsedSections(new Set(JSON.parse(stored)));
+        } catch {
+          // Ignore parse errors
+        }
       }
-    }
-    setSidebarReady(true);
+      setSidebarReady(true);
+    });
   }, []);
 
   // Persist collapsed state to localStorage (only after initial hydration)

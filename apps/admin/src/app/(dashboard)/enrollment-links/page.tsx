@@ -56,10 +56,6 @@ export default function EnrollmentLinksPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -97,6 +93,10 @@ export default function EnrollmentLinksPage() {
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, []);
 
   function getPublicUrl(slug: string) {
     const baseUrl = process.env.NEXT_PUBLIC_PORTAL_URL || window.location.origin.replace('admin.', '');

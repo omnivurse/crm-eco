@@ -51,24 +51,26 @@ export function ThemeProvider({
       root.classList.remove('light', 'dark');
       root.classList.add(resolved);
     }
-    setResolvedTheme(resolved);
+    queueMicrotask(() => setResolvedTheme(resolved));
   }, [getSystemTheme]);
 
   // Load theme from localStorage first (fast), then from authProfile (authoritative)
   useEffect(() => {
-    setMounted(true);
-    
-    // Load from localStorage (fast). Only fall back to authProfile when localStorage is empty.
-    // setTheme() writes to both localStorage and DB simultaneously, so they stay in sync.
     const storedTheme = localStorage.getItem(storageKey) as Theme | null;
     if (storedTheme && ['light', 'dark', 'system'].includes(storedTheme)) {
-      setThemeState(storedTheme);
       applyTheme(storedTheme);
-      setIsLoading(false);
+      queueMicrotask(() => {
+        setMounted(true);
+        setThemeState(storedTheme);
+        setIsLoading(false);
+      });
     } else {
       // Default to light immediately
       applyTheme(defaultTheme);
-      setIsLoading(false);
+      queueMicrotask(() => {
+        setMounted(true);
+        setIsLoading(false);
+      });
     }
   }, [storageKey, defaultTheme, applyTheme]);
 

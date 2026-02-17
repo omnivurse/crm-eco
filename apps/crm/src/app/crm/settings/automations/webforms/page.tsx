@@ -356,7 +356,7 @@ export default function WebformsPage() {
                 <TableHead>Slug</TableHead>
                 <TableHead>Submissions</TableHead>
                 <TableHead>Enabled</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>

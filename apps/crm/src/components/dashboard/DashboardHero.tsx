@@ -288,8 +288,10 @@ export function DashboardHero({
       month: 'short',
       day: 'numeric',
     });
-    setDateInfo({ greeting, formattedDate });
-    setMounted(true);
+    queueMicrotask(() => {
+      setDateInfo({ greeting, formattedDate });
+      setMounted(true);
+    });
   }, []);
 
   const firstName = profile.full_name?.split(' ')[0] || 'there';

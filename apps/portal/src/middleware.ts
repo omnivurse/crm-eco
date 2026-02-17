@@ -1,11 +1,9 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { type NextRequest, NextResponse } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   });
 
   const supabase = createServerClient(
@@ -13,32 +11,25 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({
+            request,
           });
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options });
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          });
-          response.cookies.set({ name, value: '', ...options });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
         },
       },
     }
   );
 
-  const { data: { session } } = await supabase.auth.getSession();
+  // IMPORTANT: Use getUser() instead of getSession() for proper JWT validation.
+  // getSession() only reads from cookies and does NOT validate the JWT server-side.
+  const { data: { user } } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
@@ -59,7 +50,7 @@ export async function middleware(request: NextRequest) {
 
   // API routes
   if (pathname.startsWith('/api/')) {
-    return response;
+    return supabaseResponse;
   }
 
   // Static files
@@ -68,29 +59,29 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/static') ||
     pathname.includes('.') // files with extensions
   ) {
-    return response;
+    return supabaseResponse;
   }
 
   // If not authenticated and trying to access protected route
-  if (!session && !isPublicRoute) {
+  if (!user && !isPublicRoute) {
     const redirectUrl = new URL('/signin', request.url);
     redirectUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
   // If authenticated and trying to access auth routes
-  if (session && (pathname === '/signin' || pathname === '/signup')) {
+  if (user && (pathname === '/signin' || pathname === '/signup')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
   // Agent portal protection
-  if (pathname.startsWith('/agent') && session) {
+  if (pathname.startsWith('/agent') && user) {
     // Verify user is an agent by checking their profile role
     // This is a lightweight check - full verification happens in the layout
     const { data: profile } = await supabase
       .from('profiles')
       .select('id, role')
-      .eq('user_id', session.user.id)
+      .eq('user_id', user.id)
       .single() as { data: { id: string; role: string } | null };
 
     if (!profile || profile.role !== 'advisor') {
@@ -113,7 +104,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return response;
+  return supabaseResponse;
 }
 
 export const config = {

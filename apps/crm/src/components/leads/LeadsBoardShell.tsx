@@ -163,19 +163,6 @@ export function LeadsBoardShell({
   const [setAsDefault, setSetAsDefault] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Apply default saved view on initial load
-  useEffect(() => {
-    if (hasAppliedDefaultRef.current) return;
-    if (!defaultSavedViewId) return;
-
-    const defaultView = savedViews.find((v) => v.id === defaultSavedViewId);
-    if (!defaultView) return;
-
-    applySavedFiltersToState(defaultView.filters);
-    setActiveSavedViewId(defaultView.id);
-    hasAppliedDefaultRef.current = true;
-  }, [defaultSavedViewId, savedViews]);
-
   /**
    * Apply a saved view's filters to local state
    */
@@ -185,6 +172,21 @@ export function LeadsBoardShell({
     setSelectedAdvisorId(filters.selectedAdvisorId ?? 'all');
     setSearch(filters.search ?? '');
   }
+
+  // Apply default saved view on initial load
+  useEffect(() => {
+    if (hasAppliedDefaultRef.current) return;
+    if (!defaultSavedViewId) return;
+
+    const defaultView = savedViews.find((v) => v.id === defaultSavedViewId);
+    if (!defaultView) return;
+
+    hasAppliedDefaultRef.current = true;
+    queueMicrotask(() => {
+      applySavedFiltersToState(defaultView.filters);
+      setActiveSavedViewId(defaultView.id);
+    });
+  }, [defaultSavedViewId, savedViews]);
 
   /**
    * Build current filters as a saveable object

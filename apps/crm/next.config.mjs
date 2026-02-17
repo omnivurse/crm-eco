@@ -51,7 +51,8 @@ const nextConfig = {
     ],
   },
 
-  // Compiler optimizations
+  // Compiler optimizations (webpack-only — build script uses --webpack to ensure these apply)
+  // When migrating to Turbopack, replace with a custom transform or Babel plugin.
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },

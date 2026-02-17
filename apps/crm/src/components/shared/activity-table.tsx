@@ -91,6 +91,7 @@ export function ActivityTable({
   // Use virtualization for large lists
   const shouldVirtualize = activities.length > VIRTUALIZATION_THRESHOLD;
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const rowVirtualizer = useVirtualizer({
     count: activities.length,
     getScrollElement: () => tableContainerRef.current,

@@ -56,21 +56,22 @@ interface Document {
 // Components
 // ============================================================================
 
-function getFileIcon(type: string) {
-  const mimeType = type.toLowerCase();
-  if (mimeType.includes('image')) return FileImage;
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv')) return FileSpreadsheet;
-  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return Presentation;
-  if (mimeType.includes('pdf')) return FileText;
-  return File;
-}
-
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function DocumentTypeIcon({ type, className }: { type: string; className?: string }) {
+  const mimeType = type.toLowerCase();
+  if (mimeType.includes('image')) return <FileImage className={className} />;
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType.includes('csv'))
+    return <FileSpreadsheet className={className} />;
+  if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return <Presentation className={className} />;
+  if (mimeType.includes('pdf')) return <FileText className={className} />;
+  return <File className={className} />;
 }
 
 function DocumentCard({
@@ -84,13 +85,11 @@ function DocumentCard({
   onDownload: () => void;
   onPreview: () => void;
 }) {
-  const FileIcon = getFileIcon(doc.type);
-
   return (
     <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-teal-500/50 transition-all group">
       <div className="flex items-start justify-between mb-3">
         <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
-          <FileIcon className="w-6 h-6 text-slate-600 dark:text-slate-400" />
+          <DocumentTypeIcon type={doc.type} className="w-6 h-6 text-slate-600 dark:text-slate-400" />
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -139,12 +138,10 @@ function DocumentRow({
   onDownload: () => void;
   onPreview: () => void;
 }) {
-  const FileIcon = getFileIcon(doc.type);
-
   return (
     <div className="flex items-center gap-4 p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-teal-500/50 transition-all group">
       <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
-        <FileIcon className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+        <DocumentTypeIcon type={doc.type} className="w-5 h-5 text-slate-600 dark:text-slate-400" />
       </div>
 
       <div className="flex-1 min-w-0">

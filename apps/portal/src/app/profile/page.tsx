@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   User, 
@@ -56,11 +56,7 @@ export default function ProfilePage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -88,7 +84,11 @@ export default function ProfilePage() {
       setProfile(member as MemberProfile);
     }
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchProfile());
+  }, [fetchProfile]);
 
   const handleSave = async () => {
     if (!profile) return;

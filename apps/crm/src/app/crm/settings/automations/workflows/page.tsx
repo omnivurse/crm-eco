@@ -212,7 +212,7 @@ export default function WorkflowsPage() {
                 <TableHead>Trigger</TableHead>
                 <TableHead>Actions</TableHead>
                 <TableHead>Enabled</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>

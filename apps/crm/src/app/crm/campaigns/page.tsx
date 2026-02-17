@@ -514,7 +514,7 @@ export default function CampaignsPage() {
                 <TableHead>Recipients</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead className="w-[100px]"></TableHead>
+                <TableHead className="w-[100px]" />
               </TableRow>
             </TableHeader>
             <TableBody>

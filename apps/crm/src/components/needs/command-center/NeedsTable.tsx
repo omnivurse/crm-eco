@@ -63,6 +63,7 @@ export function NeedsTable({ needs, assignableProfiles, currentProfileId }: Need
   const containerRef = useRef<HTMLDivElement>(null);
 
   const ROW_HEIGHT = 72; // Estimated row height
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const rowVirtualizer = useVirtualizer({
     count: needs.length,
     getScrollElement: () => containerRef.current,
@@ -104,7 +105,7 @@ export function NeedsTable({ needs, assignableProfiles, currentProfileId }: Need
                 <TableHead>Amounts</TableHead>
                 <TableHead>IUA Met</TableHead>
                 <TableHead>Updated</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody

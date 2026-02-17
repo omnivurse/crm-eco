@@ -20,15 +20,17 @@ export function InstallPrompt() {
     const wasDismissed = localStorage.getItem('pwa-install-dismissed');
     const dismissedAt = wasDismissed ? parseInt(wasDismissed, 10) : 0;
     const daysSinceDismiss = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
-    
-    // Show again after 7 days
-    if (daysSinceDismiss > 7) {
-      setDismissed(false);
-    }
 
     // Detect iOS
     const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-    setIsIOS(isIOSDevice);
+
+    queueMicrotask(() => {
+      // Show again after 7 days
+      if (daysSinceDismiss > 7) {
+        setDismissed(false);
+      }
+      setIsIOS(isIOSDevice);
+    });
   }, []);
 
   const handleDismiss = () => {

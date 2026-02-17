@@ -28,7 +28,7 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const stored = localStorage.getItem(STORAGE_KEY) as TopModule | null;
         if (stored && isValidModule(stored)) {
-            setActiveModuleState(stored);
+            queueMicrotask(() => setActiveModuleState(stored));
         }
     }, []);
 

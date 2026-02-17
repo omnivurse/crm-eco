@@ -330,7 +330,7 @@ export default function CadencesPage() {
                 <TableHead>Steps</TableHead>
                 <TableHead>Enrollments</TableHead>
                 <TableHead>Enabled</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>

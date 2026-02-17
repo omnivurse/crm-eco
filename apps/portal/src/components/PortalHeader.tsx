@@ -58,8 +58,8 @@ export function PortalHeader() {
       }
     };
     
-    fetchUser();
-  }, []);
+    queueMicrotask(() => fetchUser());
+  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

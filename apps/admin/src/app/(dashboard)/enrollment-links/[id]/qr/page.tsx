@@ -48,10 +48,6 @@ export default function QRCodePage() {
     level: 'M' as 'L' | 'M' | 'Q' | 'H',
   });
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
-
   async function loadData() {
     const { data: page } = await (supabase as any)
       .from('landing_pages')
@@ -67,6 +63,10 @@ export default function QRCodePage() {
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, [id]);
 
   function getEnrollmentUrl() {
     if (!landingPage) return '';

@@ -56,10 +56,12 @@ export default function WebhooksPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('crm_webhooks');
-    if (saved) {
-      setWebhooks(JSON.parse(saved));
-    }
-    setLoading(false);
+    queueMicrotask(() => {
+      if (saved) {
+        setWebhooks(JSON.parse(saved));
+      }
+      setLoading(false);
+    });
   }, []);
 
   const saveWebhooks = (newWebhooks: WebhookConfig[]) => {

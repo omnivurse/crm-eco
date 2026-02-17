@@ -48,26 +48,6 @@ export default function AgentLinksPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    loadAgents();
-  }, []);
-
-  useEffect(() => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      setFilteredAgents(
-        agents.filter(agent =>
-          agent.first_name?.toLowerCase().includes(query) ||
-          agent.last_name?.toLowerCase().includes(query) ||
-          agent.email.toLowerCase().includes(query) ||
-          agent.enrollment_code?.includes(query)
-        )
-      );
-    } else {
-      setFilteredAgents(agents);
-    }
-  }, [searchQuery, agents]);
-
   async function loadAgents() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -143,6 +123,25 @@ export default function AgentLinksPage() {
     setLoading(false);
   }
 
+  useEffect(() => {
+    queueMicrotask(() => loadAgents());
+  }, []);
+
+  useEffect(() => {
+    const filtered = searchQuery
+      ? agents.filter(agent => {
+          const query = searchQuery.toLowerCase();
+          return (
+            agent.first_name?.toLowerCase().includes(query) ||
+            agent.last_name?.toLowerCase().includes(query) ||
+            agent.email.toLowerCase().includes(query) ||
+            agent.enrollment_code?.includes(query)
+          );
+        })
+      : agents;
+    queueMicrotask(() => setFilteredAgents(filtered));
+  }, [searchQuery, agents]);
+
   function getAgentEnrollmentUrl(enrollmentCode: string) {
     const baseUrl = process.env.NEXT_PUBLIC_PORTAL_URL || window.location.origin.replace('admin.', '');
     return `${baseUrl}/enroll?agent=${enrollmentCode}`;
@@ -156,6 +155,7 @@ export default function AgentLinksPage() {
 
   async function regenerateCode(agentId: string) {
     // Generate a new 6-digit code
+    // eslint-disable-next-line react-hooks/purity -- Math.random() in event handler is correct
     const newCode = Math.floor(100000 + Math.random() * 900000).toString();
     
     const { error } = await (supabase as any)

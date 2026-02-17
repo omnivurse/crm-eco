@@ -32,7 +32,7 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
   useEffect(() => {
     const stored = localStorage.getItem('admin-sidebar-main-collapsed');
     if (stored === 'true') {
-      setSidebarCollapsed(true);
+      queueMicrotask(() => setSidebarCollapsed(true));
     }
   }, []);
 
@@ -43,7 +43,7 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
 
   // Close mobile menu on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
+    queueMicrotask(() => setMobileMenuOpen(false));
   }, [pathname]);
 
   // Prevent body scroll when mobile menu is open

@@ -128,21 +128,13 @@ export function AdvancedSearchModal({
     const saved = localStorage.getItem(key);
     if (saved) {
       try {
-        setSavedSearches(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        queueMicrotask(() => setSavedSearches(parsed));
       } catch (e) {
         console.error('Error loading saved searches:', e);
       }
     }
   }, [entityType]);
-
-  // Initialize with current filters or one empty filter
-  useEffect(() => {
-    if (currentFilters.length > 0) {
-      setFilters(currentFilters);
-    } else if (filters.length === 0) {
-      addFilter();
-    }
-  }, [currentFilters]);
 
   const addFilter = () => {
     const newFilter: SearchFilter = {
@@ -153,6 +145,17 @@ export function AdvancedSearchModal({
     };
     setFilters([...filters, newFilter]);
   };
+
+  // Initialize with current filters or one empty filter
+  useEffect(() => {
+    queueMicrotask(() => {
+      if (currentFilters.length > 0) {
+        setFilters(currentFilters);
+      } else if (filters.length === 0) {
+        addFilter();
+      }
+    });
+  }, [currentFilters]);
 
   const removeFilter = (id: string) => {
     setFilters(filters.filter(f => f.id !== id));

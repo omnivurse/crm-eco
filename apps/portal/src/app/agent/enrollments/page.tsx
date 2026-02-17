@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
@@ -56,15 +56,7 @@ export default function AgentEnrollmentsPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchEnrollments();
-  }, []);
-
-  useEffect(() => {
-    filterEnrollments();
-  }, [searchTerm, statusFilter, enrollments]);
-
-  const fetchEnrollments = async () => {
+  const fetchEnrollments = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -116,9 +108,9 @@ export default function AgentEnrollmentsPage() {
       setEnrollments(data as unknown as EnrollmentView[]);
     }
     setLoading(false);
-  };
+  }, [supabase]);
 
-  const filterEnrollments = () => {
+  const filterEnrollments = useCallback(() => {
     let filtered = enrollments;
 
     if (searchTerm) {
@@ -137,7 +129,15 @@ export default function AgentEnrollmentsPage() {
 
     setFilteredEnrollments(filtered);
     setPage(1);
-  };
+  }, [searchTerm, statusFilter, enrollments]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchEnrollments());
+  }, [fetchEnrollments]);
+
+  useEffect(() => {
+    queueMicrotask(() => filterEnrollments());
+  }, [filterEnrollments]);
 
   const paginatedEnrollments = filteredEnrollments.slice(
     (page - 1) * itemsPerPage,

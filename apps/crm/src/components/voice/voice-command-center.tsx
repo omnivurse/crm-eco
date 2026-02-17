@@ -89,7 +89,7 @@ export function VoiceCommandCenter() {
   const handleQuickAction = (action: string) => {
     if (action.startsWith('navigate:')) {
       const path = action.replace('navigate:', '');
-      window.location.href = path;
+      window.location.assign(path);
     } else if (action === 'retry') {
       startListening();
     } else if (action.startsWith('search:')) {

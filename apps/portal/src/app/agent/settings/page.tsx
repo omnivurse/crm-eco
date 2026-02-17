@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -63,12 +63,7 @@ export default function AgentSettingsPage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    checkMfaStatus();
-    setLoading(false);
-  }, []);
-
-  const checkMfaStatus = async () => {
+  const checkMfaStatus = useCallback(async () => {
     try {
       const { data, error } = await supabase.auth.mfa.listFactors();
       if (error) throw error;
@@ -78,7 +73,14 @@ export default function AgentSettingsPage() {
     } catch (error) {
       console.error('Error checking MFA status:', error);
     }
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      checkMfaStatus();
+      setLoading(false);
+    });
+  }, [checkMfaStatus]);
 
   const handleEnableMfa = async () => {
     setMfaLoading(true);
@@ -425,6 +427,7 @@ export default function AgentSettingsPage() {
             {mfaQrCode && (
               <div className="flex justify-center">
                 <div className="p-4 bg-white rounded-lg border">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- QR code is a data URL, next/image adds no value */}
                   <img src={mfaQrCode} alt="2FA QR Code" className="w-48 h-48" />
                 </div>
               </div>

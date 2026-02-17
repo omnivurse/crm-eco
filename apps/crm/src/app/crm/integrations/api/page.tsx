@@ -54,10 +54,12 @@ export default function ApiKeysPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('crm_api_keys');
-    if (saved) {
-      setApiKeys(JSON.parse(saved));
-    }
-    setLoading(false);
+    queueMicrotask(() => {
+      if (saved) {
+        setApiKeys(JSON.parse(saved));
+      }
+      setLoading(false);
+    });
   }, []);
 
   const saveKeys = (newKeys: ApiKey[]) => {

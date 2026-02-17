@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   Link as LinkIcon, 
@@ -37,11 +37,7 @@ export default function AgentLinksPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchAgentData();
-  }, []);
-
-  const fetchAgentData = async () => {
+  const fetchAgentData = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -89,7 +85,11 @@ export default function AgentLinksPage() {
       }
     }
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchAgentData());
+  }, [fetchAgentData]);
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(enrollmentLink);

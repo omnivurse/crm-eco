@@ -280,7 +280,7 @@ export default function SLAPoliciesPage() {
                 <TableHead>Response Time</TableHead>
                 <TableHead>Escalations</TableHead>
                 <TableHead>Enabled</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>

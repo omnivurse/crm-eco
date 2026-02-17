@@ -93,29 +93,25 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
         </span>
       );
 
-    case 'date':
+    case 'date': {
+      let dateFormatted: string;
       try {
-        const date = new Date(String(value));
-        return (
-          <span className={className}>
-            {format(date, 'MMM d, yyyy')}
-          </span>
-        );
+        dateFormatted = format(new Date(String(value)), 'MMM d, yyyy');
       } catch {
-        return <span className={className}>{String(value)}</span>;
+        dateFormatted = String(value);
       }
+      return <span className={className}>{dateFormatted}</span>;
+    }
 
-    case 'datetime':
+    case 'datetime': {
+      let datetimeFormatted: string;
       try {
-        const datetime = new Date(String(value));
-        return (
-          <span className={className}>
-            {format(datetime, 'MMM d, yyyy h:mm a')}
-          </span>
-        );
+        datetimeFormatted = format(new Date(String(value)), 'MMM d, yyyy h:mm a');
       } catch {
-        return <span className={className}>{String(value)}</span>;
+        datetimeFormatted = String(value);
       }
+      return <span className={className}>{datetimeFormatted}</span>;
+    }
 
     case 'boolean':
       return value ? (

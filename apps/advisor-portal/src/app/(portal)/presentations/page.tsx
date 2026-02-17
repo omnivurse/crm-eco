@@ -94,6 +94,7 @@ export default async function PresentationsPage() {
                             >
                                 <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg mb-3 flex items-center justify-center">
                                     {template.thumbnail_url ? (
+                                        // eslint-disable-next-line @next/next/no-img-element -- dynamic external thumbnail URL
                                         <img
                                             src={template.thumbnail_url}
                                             alt={template.name}
