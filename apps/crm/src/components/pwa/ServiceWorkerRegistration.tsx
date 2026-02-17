@@ -10,9 +10,12 @@ export function ServiceWorkerRegistration() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    // Gate behind env var — set NEXT_PUBLIC_ENABLE_SW=false in Vercel to disable
+    const swEnabled = process.env.NEXT_PUBLIC_ENABLE_SW !== 'false';
+
+    if (swEnabled && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       registerServiceWorker();
-      
+
       // Listen for update events
       window.addEventListener('sw-update-available', () => {
         setUpdateAvailable(true);
