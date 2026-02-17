@@ -429,7 +429,6 @@ export default async function DashboardPage() {
           value={stats?.totalMembers ?? 0}
           subtitle="All registered members"
           icon={<Users className="w-5 h-5" />}
-          gradient="bg-gradient-to-r from-[#047474] to-[#069B9A]"
           href="/members"
           trend={stats?.membersTrend !== 0 ? {
             value: stats?.membersTrend ?? 0,
@@ -442,7 +441,6 @@ export default async function DashboardPage() {
           value={stats?.totalAgents ?? 0}
           subtitle="Licensed agents"
           icon={<UserCheck className="w-5 h-5" />}
-          gradient="bg-gradient-to-r from-[#027343] to-[#34d399]"
           href="/agents"
           trend={stats?.agentsTrend !== 0 ? {
             value: stats?.agentsTrend ?? 0,
@@ -455,7 +453,6 @@ export default async function DashboardPage() {
           value={stats?.totalEnrollments ?? 0}
           subtitle="All enrollment applications"
           icon={<FileText className="w-5 h-5" />}
-          gradient="bg-gradient-to-r from-purple-600 to-purple-400"
           href="/enrollments"
           trend={stats?.enrollmentsTrend !== 0 ? {
             value: stats?.enrollmentsTrend ?? 0,
@@ -468,7 +465,6 @@ export default async function DashboardPage() {
           value={stats?.pendingEnrollments ?? 0}
           subtitle="Awaiting admin review"
           icon={<AlertCircle className="w-5 h-5" />}
-          gradient="bg-gradient-to-r from-amber-500 to-amber-400"
           href="/enrollments?status=submitted"
           pulse={(stats?.pendingEnrollments ?? 0) > 0}
         />
@@ -480,19 +476,15 @@ export default async function DashboardPage() {
           title="Pending Commissions"
           value={`$${(stats?.pendingCommissions ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Awaiting approval and processing"
-          icon={<Clock className="w-6 h-6 text-amber-600" />}
-          gradient="bg-gradient-to-r from-amber-500 to-orange-400"
+          icon={<Clock className="w-6 h-6 text-slate-600" />}
           href="/commissions/transactions?status=pending"
-          iconBg="bg-amber-100"
         />
         <CommissionCard
           title="Commissions Paid This Month"
           value={`$${(stats?.paidThisMonth ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
           subtitle="Successfully disbursed to agents"
-          icon={<DollarSign className="w-6 h-6 text-emerald-600" />}
-          gradient="bg-gradient-to-r from-emerald-500 to-teal-400"
+          icon={<DollarSign className="w-6 h-6 text-slate-600" />}
           href="/commissions"
-          iconBg="bg-emerald-100"
         />
       </div>
 
@@ -528,12 +520,12 @@ export default async function DashboardPage() {
         {/* Recent Activity - Takes 3 columns */}
         <div className="lg:col-span-3">
           <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200" />
 
             <div className="p-6 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A]">
+                  <div className="p-2.5 rounded-xl bg-slate-700">
                     <Activity className="w-5 h-5 text-white" />
                   </div>
                   <div>
@@ -543,7 +535,7 @@ export default async function DashboardPage() {
                 </div>
                 <Link
                   href="/settings/audit-logs"
-                  className="flex items-center gap-1 text-sm font-medium text-[#047474] hover:text-[#069B9A] transition-colors"
+                  className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
                 >
                   View all
                   <ChevronRight className="w-4 h-4" />
@@ -595,11 +587,11 @@ export default async function DashboardPage() {
         {/* Quick Actions - Takes 2 columns */}
         <div className="lg:col-span-2">
           <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] h-full">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#003560] via-[#047474] to-[#E9B61F]" />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200" />
 
             <div className="p-6 border-b border-slate-100">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#003560] to-[#047474]">
+                <div className="p-2.5 rounded-xl bg-slate-700">
                   <Zap className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -612,72 +604,72 @@ export default async function DashboardPage() {
             <div className="p-4 space-y-2">
               <Link
                 href="/members/new"
-                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-[#047474]/20 hover:bg-gradient-to-r hover:from-[#047474]/5 hover:to-transparent transition-all"
+                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
               >
-                <div className="p-3 rounded-xl bg-[#047474]/10 group-hover:bg-[#047474] transition-colors">
-                  <Users className="w-5 h-5 text-[#047474] group-hover:text-white transition-colors" />
+                <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-slate-700 transition-colors">
+                  <Users className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-slate-700">Add New Member</p>
                   <p className="text-xs text-slate-400">Register a new member</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#047474] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
               </Link>
 
               <Link
                 href="/agents/new"
-                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-[#027343]/20 hover:bg-gradient-to-r hover:from-[#027343]/5 hover:to-transparent transition-all"
+                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
               >
-                <div className="p-3 rounded-xl bg-[#027343]/10 group-hover:bg-[#027343] transition-colors">
-                  <UserCheck className="w-5 h-5 text-[#027343] group-hover:text-white transition-colors" />
+                <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-slate-700 transition-colors">
+                  <UserCheck className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-slate-700">Add New Agent</p>
                   <p className="text-xs text-slate-400">Register a new agent</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-[#027343] group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
               </Link>
 
               <Link
                 href="/enrollments"
-                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-purple-200 hover:bg-gradient-to-r hover:from-purple-500/5 hover:to-transparent transition-all"
+                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
               >
-                <div className="p-3 rounded-xl bg-purple-100 group-hover:bg-purple-600 transition-colors">
-                  <FileText className="w-5 h-5 text-purple-600 group-hover:text-white transition-colors" />
+                <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-slate-700 transition-colors">
+                  <FileText className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-slate-700">View Enrollments</p>
                   <p className="text-xs text-slate-400">Manage applications</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
               </Link>
 
               <Link
                 href="/commissions"
-                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-amber-200 hover:bg-gradient-to-r hover:from-amber-500/5 hover:to-transparent transition-all"
+                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
               >
-                <div className="p-3 rounded-xl bg-amber-100 group-hover:bg-amber-500 transition-colors">
-                  <CreditCard className="w-5 h-5 text-amber-600 group-hover:text-white transition-colors" />
+                <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-slate-700 transition-colors">
+                  <CreditCard className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-slate-700">Process Commissions</p>
                   <p className="text-xs text-slate-400">Review payouts</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
               </Link>
 
               <Link
                 href="/reports"
-                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-indigo-200 hover:bg-gradient-to-r hover:from-indigo-500/5 hover:to-transparent transition-all"
+                className="group flex items-center gap-4 p-4 rounded-xl border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-all"
               >
-                <div className="p-3 rounded-xl bg-indigo-100 group-hover:bg-indigo-600 transition-colors">
-                  <BarChart3 className="w-5 h-5 text-indigo-600 group-hover:text-white transition-colors" />
+                <div className="p-3 rounded-xl bg-slate-100 group-hover:bg-slate-700 transition-colors">
+                  <BarChart3 className="w-5 h-5 text-slate-600 group-hover:text-white transition-colors" />
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-sm text-slate-700">View Reports</p>
                   <p className="text-xs text-slate-400">Analytics & insights</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
               </Link>
 
               <Link

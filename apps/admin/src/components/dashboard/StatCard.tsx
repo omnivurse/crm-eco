@@ -9,7 +9,6 @@ export interface StatCardProps {
   value: number | string;
   subtitle?: string;
   icon: React.ReactNode;
-  gradient: string;
   href?: string;
   trend?: {
     value: number;
@@ -25,7 +24,6 @@ export function StatCard({
   value,
   subtitle,
   icon,
-  gradient,
   href,
   trend,
   pulse = false,
@@ -65,13 +63,8 @@ export function StatCard({
         pulse && 'ring-2 ring-amber-400/50 animate-pulse'
       )}
     >
-      {/* Gradient accent */}
-      <div className={`absolute top-0 left-0 right-0 h-1 ${gradient}`} />
-
-      {/* Glow effect on hover */}
-      <div
-        className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${gradient} blur-xl`}
-      />
+      {/* Accent bar */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200" />
 
       <div className={cn('relative', size === 'large' ? 'p-8' : 'p-6')}>
         <div className="flex items-start justify-between mb-4">
@@ -86,10 +79,8 @@ export function StatCard({
               {value}
             </p>
           </div>
-          <div
-            className={`p-3 rounded-xl ${gradient.replace('bg-gradient-to-r', 'bg-gradient-to-br')} bg-opacity-10 backdrop-blur-sm`}
-          >
-            <div className="text-white">{icon}</div>
+          <div className="p-3 rounded-xl bg-slate-100">
+            <div className="text-slate-600">{icon}</div>
           </div>
         </div>
 
@@ -132,9 +123,7 @@ export interface CommissionCardProps {
   value: string;
   subtitle: string;
   icon: React.ReactNode;
-  gradient: string;
   href: string;
-  iconBg: string;
 }
 
 export function CommissionCard({
@@ -142,54 +131,26 @@ export function CommissionCard({
   value,
   subtitle,
   icon,
-  gradient,
   href,
-  iconBg,
 }: CommissionCardProps) {
   return (
     <Link href={href}>
       <div className="group relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 hover:-translate-y-1">
-        {/* Gradient accent */}
-        <div className={`absolute top-0 left-0 right-0 h-1.5 ${gradient}`} />
-
-        {/* Background pattern */}
-        <div className="absolute inset-0 opacity-[0.02]">
-          <svg
-            className="w-full h-full"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <pattern
-                id="grid"
-                width="10"
-                height="10"
-                patternUnits="userSpaceOnUse"
-              >
-                <path
-                  d="M 10 0 L 0 0 0 10"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                />
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#grid)" />
-          </svg>
-        </div>
+        {/* Accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-slate-200" />
 
         <div className="relative p-6">
           <div className="flex items-start justify-between mb-4">
             <p className="text-sm font-semibold text-slate-600 tracking-wide">
               {title}
             </p>
-            <div className={`p-3 rounded-xl ${iconBg}`}>{icon}</div>
+            <div className="p-3 rounded-xl bg-slate-100">
+              <div className="text-slate-600">{icon}</div>
+            </div>
           </div>
           <div className="flex items-end justify-between">
             <div>
-              <p
-                className={`text-4xl font-bold tracking-tight bg-clip-text text-transparent ${gradient}`}
-              >
+              <p className="text-4xl font-bold tracking-tight text-slate-900">
                 {value}
               </p>
               <p className="text-xs text-slate-400 mt-2">{subtitle}</p>

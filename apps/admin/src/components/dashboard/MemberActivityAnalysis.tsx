@@ -37,13 +37,13 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
 
   return (
     <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]">
-      {/* Gradient accent */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+      {/* Accent bar */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200" />
 
       <div className="p-6 border-b border-slate-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600">
+            <div className="p-2.5 rounded-xl bg-slate-700">
               <Activity className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -53,7 +53,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
           </div>
           <Link
             href="/reports/members"
-            className="flex items-center gap-1 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
           >
             Full report
             <ArrowRight className="w-4 h-4" />
@@ -62,7 +62,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
       </div>
 
       <div className="p-6">
-        {/* Main metrics grid */}
+        {/* Main metrics grid -- semantic colors kept for data meaning */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           {/* New Enrollments */}
           <div className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100">
@@ -103,7 +103,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
                 <span className={cn(
                   'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold',
                   inactiveChange < 0 
-                    ? 'bg-emerald-100 text-emerald-700'  // Fewer inactive is good
+                    ? 'bg-emerald-100 text-emerald-700'
                     : 'bg-red-100 text-red-700'
                 )}>
                   {inactiveChange < 0 ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
@@ -115,14 +115,14 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
           </div>
         </div>
 
-        {/* Net Growth and Retention */}
+        {/* Net Growth and Retention -- semantic threshold colors kept */}
         <div className="grid grid-cols-2 gap-4">
           {/* Net Growth */}
           <div className={cn(
             'p-4 rounded-xl border',
             netGrowth >= 0 
-              ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200'
-              : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200'
+              ? 'bg-emerald-50/50 border-emerald-200'
+              : 'bg-red-50/50 border-red-200'
           )}>
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 className={cn('w-4 h-4', netGrowth >= 0 ? 'text-emerald-600' : 'text-red-600')} />
@@ -148,10 +148,10 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
           <div className={cn(
             'p-4 rounded-xl border',
             retentionRate >= 90 
-              ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-200'
+              ? 'bg-emerald-50/50 border-emerald-200'
               : retentionRate >= 75
-                ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200'
-                : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200'
+                ? 'bg-amber-50/50 border-amber-200'
+                : 'bg-red-50/50 border-red-200'
           )}>
             <div className="flex items-center gap-2 mb-2">
               <Activity className={cn(
