@@ -105,30 +105,15 @@ function QuickActionButton({
   href,
   icon: Icon,
   label,
-  color,
 }: {
   href: string;
   icon: typeof UserPlus;
   label: string;
-  color: 'blue' | 'emerald' | 'amber' | 'violet';
 }) {
-  const colorClasses = {
-    blue: 'bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white',
-    emerald: 'bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white',
-    amber: 'bg-amber-500/10 hover:bg-amber-500 text-amber-400 hover:text-white',
-    violet: 'bg-violet-500/10 hover:bg-violet-500 text-violet-400 hover:text-white',
-  };
-
   return (
     <Link
       href={href}
-      className={`
-        flex items-center gap-2 px-3 py-2 rounded-lg
-        ${colorClasses[color]}
-        transition-all duration-200
-        hover:shadow-lg
-        text-xs font-medium whitespace-nowrap
-      `}
+      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white transition-all duration-200 text-xs font-medium whitespace-nowrap"
     >
       <Icon className="w-3.5 h-3.5" />
       <span>{label}</span>
@@ -378,10 +363,10 @@ export function DashboardHero({
             className="grid grid-cols-2 gap-2 animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '50ms' }}
           >
-            <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" color="blue" />
-            <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" color="emerald" />
-            <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" color="amber" />
-            <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" color="violet" />
+            <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" />
+            <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" />
+            <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" />
+            <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" />
           </div>
         </div>
 
