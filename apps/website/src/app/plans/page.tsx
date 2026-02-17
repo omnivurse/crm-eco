@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Button, Card, CardContent, Badge } from '@crm-eco/ui';
+import { Button } from '@crm-eco/ui';
+import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import {
   CheckCircle2,
   Minus,
@@ -17,64 +18,79 @@ export const metadata: Metadata = {
     'Compare Pay It Forward Health sharing plans. Affordable monthly contributions for individuals and families. Find the right plan for your needs.',
 };
 
-const plans = [
-  {
-    name: 'Essential',
-    price: 149,
-    description: 'Core coverage for individuals',
-    iua: '$2,500',
-    features: [
-      'Primary care sharing',
-      'Emergency room visits',
-      'Hospitalization coverage',
-      'Preventive care benefits',
-    ],
-  },
-  {
-    name: 'Premium',
-    price: 249,
-    popular: true,
-    description: 'Comprehensive family coverage',
-    iua: '$1,500',
-    features: [
-      'Everything in Essential',
-      'Specialist visits',
-      'Mental health support',
-      'Prescription assistance',
-      'Lower per-incident share',
-    ],
-  },
-  {
-    name: 'Complete',
-    price: 349,
-    description: 'Maximum coverage and benefits',
-    iua: '$500',
-    features: [
-      'Everything in Premium',
-      'Dental & vision sharing',
-      'Maternity benefits',
-      'Lowest per-incident share',
-      'Wellness incentives',
-    ],
-  },
-];
+interface DbPlan {
+  id: string;
+  name: string;
+  code: string;
+  monthly_share: number | null;
+  iua_amount: number | null;
+  description: string | null;
+  tier: string | null;
+}
 
-const comparisonFeatures = [
-  { name: 'Monthly Share', essential: '$149', premium: '$249', complete: '$349' },
-  { name: 'Initial Unshareable Amount (IUA)', essential: '$2,500', premium: '$1,500', complete: '$500' },
-  { name: 'Preventive Care', essential: true, premium: true, complete: true },
-  { name: 'Primary Care', essential: true, premium: true, complete: true },
-  { name: 'Specialist Visits', essential: false, premium: true, complete: true },
-  { name: 'Emergency Room', essential: true, premium: true, complete: true },
-  { name: 'Hospitalization', essential: true, premium: true, complete: true },
-  { name: 'Mental Health', essential: false, premium: true, complete: true },
-  { name: 'Prescription Assistance', essential: false, premium: true, complete: true },
-  { name: 'Dental & Vision', essential: false, premium: false, complete: true },
-  { name: 'Maternity', essential: false, premium: false, complete: true },
-  { name: 'Wellness Incentives', essential: false, premium: false, complete: true },
-];
+interface DbBenefit {
+  id: string;
+  plan_id: string;
+  benefit_name: string;
+  description: string | null;
+  sort_order: number;
+}
 
-export default function PlansPage() {
+function formatCurrency(amount: number | null): string {
+  if (amount === null || amount === undefined) return '--';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+async function getPlansWithBenefits() {
+  const supabase = await createServerSupabaseClient();
+
+  const { data: plans } = await (supabase as any)
+    .from('plans')
+    .select('id, name, code, monthly_share, iua_amount, description, tier')
+    .eq('is_active', true)
+    .or('hide_from_public.is.null,hide_from_public.eq.false')
+    .order('monthly_share');
+
+  if (!plans || plans.length === 0) return { plans: [], benefits: [] };
+
+  const planIds = plans.map((p: DbPlan) => p.id);
+
+  const { data: benefits } = await (supabase as any)
+    .from('product_benefits')
+    .select('id, plan_id, benefit_name, description, sort_order')
+    .in('plan_id', planIds)
+    .order('sort_order');
+
+  return { plans: plans as DbPlan[], benefits: (benefits || []) as DbBenefit[] };
+}
+
+export default async function PlansPage() {
+  const { plans, benefits } = await getPlansWithBenefits();
+
+  const benefitsByPlan = new Map<string, DbBenefit[]>();
+  for (const b of benefits) {
+    if (!benefitsByPlan.has(b.plan_id)) benefitsByPlan.set(b.plan_id, []);
+    benefitsByPlan.get(b.plan_id)!.push(b);
+  }
+
+  // Mark the middle plan (or second) as popular if we have 3+ plans
+  const popularIndex = plans.length >= 3 ? 1 : -1;
+
+  // Collect all unique benefit names across all plans for comparison table
+  const allBenefitNames: string[] = [];
+  const seen = new Set<string>();
+  for (const b of benefits) {
+    if (!seen.has(b.benefit_name)) {
+      seen.add(b.benefit_name);
+      allBenefitNames.push(b.benefit_name);
+    }
+  }
+
   return (
     <>
       {/* Hero */}
@@ -93,175 +109,206 @@ export default function PlansPage() {
       {/* Plan Cards */}
       <section className="section-padding bg-white">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-6 md:p-8 ${
-                  plan.popular
-                    ? 'bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-xl shadow-teal-600/20 ring-4 ring-teal-600/20 md:scale-[1.03]'
-                    : 'bg-white border-2 border-slate-200 shadow-sm'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="inline-flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full mb-4">
-                    <Star className="w-3 h-3" />
-                    Most Popular
-                  </div>
-                )}
-                <h3
-                  className={`text-xl font-bold ${
-                    plan.popular ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
-                  {plan.name}
-                </h3>
-                <p
-                  className={`text-sm mt-1 ${
-                    plan.popular ? 'text-teal-100' : 'text-slate-500'
-                  }`}
-                >
-                  {plan.description}
-                </p>
-                <div className="mt-4 mb-2">
-                  <span
-                    className={`text-4xl font-bold ${
-                      plan.popular ? 'text-white' : 'text-slate-900'
+          {plans.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-500 text-lg">Plans are being configured. Check back soon!</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              {plans.map((plan, index) => {
+                const isPopular = index === popularIndex;
+                const planBenefits = benefitsByPlan.get(plan.id) || [];
+
+                return (
+                  <div
+                    key={plan.id}
+                    className={`rounded-2xl p-6 md:p-8 ${
+                      isPopular
+                        ? 'bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-xl shadow-teal-600/20 ring-4 ring-teal-600/20 md:scale-[1.03]'
+                        : 'bg-white border-2 border-slate-200 shadow-sm'
                     }`}
                   >
-                    ${plan.price}
-                  </span>
-                  <span
-                    className={`text-sm ${
-                      plan.popular ? 'text-teal-100' : 'text-slate-500'
-                    }`}
-                  >
-                    /month
-                  </span>
-                </div>
-                <p
-                  className={`text-xs mb-6 ${
-                    plan.popular ? 'text-teal-200' : 'text-slate-400'
-                  }`}
-                >
-                  IUA: {plan.iua} per incident
-                </p>
-                <ul className="space-y-2.5 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <CheckCircle2
-                        className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                          plan.popular ? 'text-teal-200' : 'text-teal-600'
-                        }`}
-                      />
+                    {isPopular && (
+                      <div className="inline-flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full mb-4">
+                        <Star className="w-3 h-3" />
+                        Most Popular
+                      </div>
+                    )}
+                    <h3
+                      className={`text-xl font-bold ${
+                        isPopular ? 'text-white' : 'text-slate-900'
+                      }`}
+                    >
+                      {plan.name}
+                    </h3>
+                    <p
+                      className={`text-sm mt-1 ${
+                        isPopular ? 'text-teal-100' : 'text-slate-500'
+                      }`}
+                    >
+                      {plan.description || 'Health sharing plan'}
+                    </p>
+                    <div className="mt-4 mb-2">
                       <span
-                        className={`text-sm ${
-                          plan.popular ? 'text-teal-50' : 'text-slate-600'
+                        className={`text-4xl font-bold ${
+                          isPopular ? 'text-white' : 'text-slate-900'
                         }`}
                       >
-                        {feature}
+                        {formatCurrency(plan.monthly_share)}
                       </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link href="/enroll">
-                  <Button
-                    className={`w-full ${
-                      plan.popular
-                        ? 'bg-white text-teal-700 hover:bg-teal-50'
-                        : 'bg-teal-600 hover:bg-teal-700 text-white'
-                    }`}
-                  >
-                    Enroll Now
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
+                      <span
+                        className={`text-sm ${
+                          isPopular ? 'text-teal-100' : 'text-slate-500'
+                        }`}
+                      >
+                        /month
+                      </span>
+                    </div>
+                    {plan.iua_amount !== null && (
+                      <p
+                        className={`text-xs mb-6 ${
+                          isPopular ? 'text-teal-200' : 'text-slate-400'
+                        }`}
+                      >
+                        IUA: {formatCurrency(plan.iua_amount)} per incident
+                      </p>
+                    )}
+                    {planBenefits.length > 0 && (
+                      <ul className="space-y-2.5 mb-8">
+                        {planBenefits.map((benefit) => (
+                          <li key={benefit.id} className="flex items-start gap-2">
+                            <CheckCircle2
+                              className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                                isPopular ? 'text-teal-200' : 'text-teal-600'
+                              }`}
+                            />
+                            <span
+                              className={`text-sm ${
+                                isPopular ? 'text-teal-50' : 'text-slate-600'
+                              }`}
+                            >
+                              {benefit.benefit_name}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <Link href={`/enroll?plan=${plan.id}`}>
+                      <Button
+                        className={`w-full ${
+                          isPopular
+                            ? 'bg-white text-teal-700 hover:bg-teal-50'
+                            : 'bg-teal-600 hover:bg-teal-700 text-white'
+                        }`}
+                      >
+                        Enroll Now
+                      </Button>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* Feature Comparison Table */}
-      <section className="section-padding bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">
-              Compare plan features
-            </h2>
-            <p className="text-slate-600">
-              See exactly what&apos;s included in each plan
-            </p>
-          </div>
+      {/* Feature Comparison Table -- only if we have plans and benefits */}
+      {plans.length >= 2 && allBenefitNames.length > 0 && (
+        <section className="section-padding bg-slate-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                Compare plan features
+              </h2>
+              <p className="text-slate-600">
+                See exactly what&apos;s included in each plan
+              </p>
+            </div>
 
-          <div className="max-w-4xl mx-auto bg-white rounded-xl border shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-slate-50">
-                    <th className="text-left p-4 text-sm font-semibold text-slate-700">
-                      Feature
-                    </th>
-                    <th className="text-center p-4 text-sm font-semibold text-slate-700">
-                      Essential
-                    </th>
-                    <th className="text-center p-4 text-sm font-semibold text-teal-700 bg-teal-50">
-                      Premium
-                    </th>
-                    <th className="text-center p-4 text-sm font-semibold text-slate-700">
-                      Complete
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comparisonFeatures.map((feature, index) => (
-                    <tr
-                      key={feature.name}
-                      className={index < comparisonFeatures.length - 1 ? 'border-b' : ''}
-                    >
-                      <td className="p-4 text-sm text-slate-700 font-medium">
-                        {feature.name}
-                      </td>
-                      <td className="text-center p-4">
-                        {typeof feature.essential === 'string' ? (
-                          <span className="text-sm font-medium text-slate-700">
-                            {feature.essential}
-                          </span>
-                        ) : feature.essential ? (
-                          <CheckCircle2 className="w-5 h-5 text-teal-600 mx-auto" />
-                        ) : (
-                          <Minus className="w-5 h-5 text-slate-300 mx-auto" />
-                        )}
-                      </td>
-                      <td className="text-center p-4 bg-teal-50/30">
-                        {typeof feature.premium === 'string' ? (
-                          <span className="text-sm font-semibold text-teal-700">
-                            {feature.premium}
-                          </span>
-                        ) : feature.premium ? (
-                          <CheckCircle2 className="w-5 h-5 text-teal-600 mx-auto" />
-                        ) : (
-                          <Minus className="w-5 h-5 text-slate-300 mx-auto" />
-                        )}
-                      </td>
-                      <td className="text-center p-4">
-                        {typeof feature.complete === 'string' ? (
-                          <span className="text-sm font-medium text-slate-700">
-                            {feature.complete}
-                          </span>
-                        ) : feature.complete ? (
-                          <CheckCircle2 className="w-5 h-5 text-teal-600 mx-auto" />
-                        ) : (
-                          <Minus className="w-5 h-5 text-slate-300 mx-auto" />
-                        )}
-                      </td>
+            <div className="max-w-4xl mx-auto bg-white rounded-xl border shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-slate-50">
+                      <th className="text-left p-4 text-sm font-semibold text-slate-700">
+                        Feature
+                      </th>
+                      {plans.map((plan, idx) => (
+                        <th
+                          key={plan.id}
+                          className={`text-center p-4 text-sm font-semibold ${
+                            idx === popularIndex
+                              ? 'text-teal-700 bg-teal-50'
+                              : 'text-slate-700'
+                          }`}
+                        >
+                          {plan.name}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {/* Monthly Share row */}
+                    <tr className="border-b">
+                      <td className="p-4 text-sm text-slate-700 font-medium">Monthly Share</td>
+                      {plans.map((plan, idx) => (
+                        <td
+                          key={plan.id}
+                          className={`text-center p-4 ${idx === popularIndex ? 'bg-teal-50/30' : ''}`}
+                        >
+                          <span className={`text-sm font-medium ${idx === popularIndex ? 'font-semibold text-teal-700' : 'text-slate-700'}`}>
+                            {formatCurrency(plan.monthly_share)}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                    {/* IUA row */}
+                    <tr className="border-b">
+                      <td className="p-4 text-sm text-slate-700 font-medium">Initial Unshareable Amount (IUA)</td>
+                      {plans.map((plan, idx) => (
+                        <td
+                          key={plan.id}
+                          className={`text-center p-4 ${idx === popularIndex ? 'bg-teal-50/30' : ''}`}
+                        >
+                          <span className={`text-sm font-medium ${idx === popularIndex ? 'font-semibold text-teal-700' : 'text-slate-700'}`}>
+                            {formatCurrency(plan.iua_amount)}
+                          </span>
+                        </td>
+                      ))}
+                    </tr>
+                    {/* Benefit rows */}
+                    {allBenefitNames.map((benefitName, rowIdx) => {
+                      const planHasBenefit = plans.map(
+                        (plan) => (benefitsByPlan.get(plan.id) || []).some((b) => b.benefit_name === benefitName)
+                      );
+                      return (
+                        <tr
+                          key={benefitName}
+                          className={rowIdx < allBenefitNames.length - 1 ? 'border-b' : ''}
+                        >
+                          <td className="p-4 text-sm text-slate-700 font-medium">{benefitName}</td>
+                          {plans.map((plan, idx) => (
+                            <td
+                              key={plan.id}
+                              className={`text-center p-4 ${idx === popularIndex ? 'bg-teal-50/30' : ''}`}
+                            >
+                              {planHasBenefit[idx] ? (
+                                <CheckCircle2 className="w-5 h-5 text-teal-600 mx-auto" />
+                              ) : (
+                                <Minus className="w-5 h-5 text-slate-300 mx-auto" />
+                              )}
+                            </td>
+                          ))}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* What's Included */}
       <section className="section-padding bg-white">

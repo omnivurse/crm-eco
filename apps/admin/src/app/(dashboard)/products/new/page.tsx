@@ -5,7 +5,7 @@ import { ProductForm } from '@/components/products/ProductForm';
 
 export default function NewProductPage() {
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/products">
