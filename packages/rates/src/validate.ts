@@ -59,7 +59,7 @@ export function validateRateConfig(config: RateConfig): ValidationResult {
     if (dupes.length > 0) {
       errors.push({
         code: 'DUPLICATE_PLAN_ID',
-        message: `Duplicate planId(s) in ${key}: ${[...new Set(dupes)].join(', ')}`,
+        message: `Duplicate planId(s) in ${key}: ${Array.from(new Set(dupes)).join(', ')}`,
         path: `rate_sets.${key}.plans`,
       });
     }
