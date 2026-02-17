@@ -15,7 +15,7 @@ const navigation = [
   { name: 'For Advisors', href: '/for-advisors' },
 ];
 
-const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.payitforwardhealth.com';
+const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://members.payitforwardhealth.com';
 
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

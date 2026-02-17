@@ -11,7 +11,7 @@ const footerLinks = {
   members: [
     { name: 'Plans & Pricing', href: '/plans' },
     { name: 'Enroll Now', href: '/enroll' },
-    { name: 'Member Portal', href: process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.payitforwardhealth.com' },
+    { name: 'Member Portal', href: process.env.NEXT_PUBLIC_PORTAL_URL || 'https://members.payitforwardhealth.com' },
     { name: 'FAQ', href: '/faq' },
   ],
   advisors: [

@@ -44,6 +44,15 @@ async function RecordDetailContent({ params }: PageProps) {
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
   ]);
 
+  // Build defaultValues by merging JSONB data with top-level indexed columns
+  // so email, phone, and status are visible even if not duplicated inside data
+  const defaultValues: Record<string, unknown> = {
+    ...record.data,
+    ...(record.email && !record.data?.email && { email: record.email }),
+    ...(record.phone && !record.data?.phone && { phone: record.phone }),
+    ...(record.status && !record.data?.contact_status && { contact_status: record.status }),
+  };
+
   return (
     <RecordDetailShell
       record={record}
@@ -62,6 +71,7 @@ async function RecordDetailContent({ params }: PageProps) {
                 record={record}
                 fields={fields}
                 layout={layout}
+                defaultValues={defaultValues}
                 readOnly
               />
             </div>

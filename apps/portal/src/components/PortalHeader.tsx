@@ -87,9 +87,9 @@ export function PortalHeader() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
                 <Heart className="w-5 h-5 text-white" />
               </div>
-              <div className="hidden sm:block">
-                <span className="font-bold text-[#003560]">WealthShare</span>
-                <span className="text-xs text-[#E9B61F] font-semibold ml-2 tracking-wide">Member Portal</span>
+              <div className="hidden sm:flex flex-col">
+                <span className="font-bold text-[#003560] leading-tight">Pay It Forward</span>
+                <span className="text-xs text-[#047474] font-semibold tracking-wide">HealthShare <span className="text-[#E9B61F]">Member Portal</span></span>
               </div>
             </Link>
           </div>

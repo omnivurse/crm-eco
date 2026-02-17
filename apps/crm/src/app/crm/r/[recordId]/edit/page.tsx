@@ -31,13 +31,19 @@ export default function EditRecordPage({ params }: { params: { recordId: string 
   // Use TanStack Query for cached data fetching
   const { data, isLoading, error } = useEditRecordData(recordId);
 
-  // Initialize form data when record loads
+  // Initialize form data when record loads, merging top-level indexed columns
   useEffect(() => {
-    if (data?.record?.data && !isInitialized) {
-      setFormData(data.record.data);
+    if (data?.record && !isInitialized) {
+      const r = data.record;
+      setFormData({
+        ...r.data,
+        ...(r.email && !r.data?.email && { email: r.email }),
+        ...(r.phone && !r.data?.phone && { phone: r.phone }),
+        ...(r.status && !r.data?.contact_status && { contact_status: r.status }),
+      });
       setIsInitialized(true);
     }
-  }, [data?.record?.data, isInitialized]);
+  }, [data?.record, isInitialized]);
 
   // Show error toast if loading fails
   useEffect(() => {

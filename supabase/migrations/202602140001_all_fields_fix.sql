@@ -1001,42 +1001,83 @@ BEGIN
   -- LAYOUTS
   -- ============================================================
 
-  -- Default Contact Layout
-  INSERT INTO crm_layouts (org_id, module_id, name, is_default, config)
-  VALUES (v_org_id, v_contacts_module_id, 'Default Contact Layout', true,
-    '{"sections":[
-      {"key":"core","label":"Contact Information","columns":2},
-      {"key":"management","label":"Contact Management","columns":2},
-      {"key":"address","label":"Address","columns":2},
-      {"key":"family_spouse","label":"Spouse Information","columns":2},
-      {"key":"family_children","label":"Children","columns":2,"collapsed":true},
-      {"key":"insurance","label":"Insurance / Product","columns":2},
-      {"key":"commissions","label":"Commissions & Referrals","columns":2,"collapsed":true},
-      {"key":"payment","label":"Payment Information","columns":2},
-      {"key":"identifiers","label":"Codes & Identifiers","columns":2,"collapsed":true},
-      {"key":"portal","label":"Portal Access","columns":2,"collapsed":true},
-      {"key":"compliance","label":"Compliance","columns":2,"collapsed":true},
-      {"key":"fulfillment","label":"Welcome & Fulfillment","columns":2,"collapsed":true},
-      {"key":"business","label":"Business Information","columns":2},
-      {"key":"preferences","label":"Communication Preferences","columns":2},
-      {"key":"system","label":"System Information","columns":2,"collapsed":true}
-    ]}'::jsonb
-  ) ON CONFLICT DO NOTHING;
+  -- Default Contact Layout (update existing or insert new)
+  UPDATE crm_layouts
+  SET name = 'Default Contact Layout',
+      config = '{"sections":[
+        {"key":"core","label":"Contact Information","columns":2},
+        {"key":"management","label":"Contact Management","columns":2},
+        {"key":"address","label":"Address","columns":2},
+        {"key":"family_spouse","label":"Spouse Information","columns":2},
+        {"key":"family_children","label":"Children","columns":2,"collapsed":true},
+        {"key":"insurance","label":"Insurance / Product","columns":2},
+        {"key":"commissions","label":"Commissions & Referrals","columns":2,"collapsed":true},
+        {"key":"payment","label":"Payment Information","columns":2},
+        {"key":"identifiers","label":"Codes & Identifiers","columns":2,"collapsed":true},
+        {"key":"portal","label":"Portal Access","columns":2,"collapsed":true},
+        {"key":"compliance","label":"Compliance","columns":2,"collapsed":true},
+        {"key":"fulfillment","label":"Welcome & Fulfillment","columns":2,"collapsed":true},
+        {"key":"business","label":"Business Information","columns":2},
+        {"key":"preferences","label":"Communication Preferences","columns":2},
+        {"key":"system","label":"System Information","columns":2,"collapsed":true}
+      ]}'::jsonb,
+      updated_at = now()
+  WHERE module_id = v_contacts_module_id AND is_default = true;
 
-  -- Default Lead Layout
-  INSERT INTO crm_layouts (org_id, module_id, name, is_default, config)
-  VALUES (v_org_id, v_leads_module_id, 'Default Lead Layout', true,
-    '{"sections":[
-      {"key":"core","label":"Lead Information","columns":2},
-      {"key":"address","label":"Address","columns":2},
-      {"key":"management","label":"Lead Management","columns":2},
-      {"key":"product","label":"Product Interest","columns":2},
-      {"key":"family","label":"Family","columns":2,"collapsed":true},
-      {"key":"conversion","label":"Conversion","columns":2,"collapsed":true},
-      {"key":"preferences","label":"Preferences","columns":2},
-      {"key":"system","label":"System Information","columns":2,"collapsed":true}
-    ]}'::jsonb
-  ) ON CONFLICT DO NOTHING;
+  IF NOT FOUND THEN
+    INSERT INTO crm_layouts (org_id, module_id, name, is_default, config)
+    VALUES (v_org_id, v_contacts_module_id, 'Default Contact Layout', true,
+      '{"sections":[
+        {"key":"core","label":"Contact Information","columns":2},
+        {"key":"management","label":"Contact Management","columns":2},
+        {"key":"address","label":"Address","columns":2},
+        {"key":"family_spouse","label":"Spouse Information","columns":2},
+        {"key":"family_children","label":"Children","columns":2,"collapsed":true},
+        {"key":"insurance","label":"Insurance / Product","columns":2},
+        {"key":"commissions","label":"Commissions & Referrals","columns":2,"collapsed":true},
+        {"key":"payment","label":"Payment Information","columns":2},
+        {"key":"identifiers","label":"Codes & Identifiers","columns":2,"collapsed":true},
+        {"key":"portal","label":"Portal Access","columns":2,"collapsed":true},
+        {"key":"compliance","label":"Compliance","columns":2,"collapsed":true},
+        {"key":"fulfillment","label":"Welcome & Fulfillment","columns":2,"collapsed":true},
+        {"key":"business","label":"Business Information","columns":2},
+        {"key":"preferences","label":"Communication Preferences","columns":2},
+        {"key":"system","label":"System Information","columns":2,"collapsed":true}
+      ]}'::jsonb
+    );
+  END IF;
+
+  -- Default Lead Layout (update existing or insert new)
+  UPDATE crm_layouts
+  SET name = 'Default Lead Layout',
+      config = '{"sections":[
+        {"key":"core","label":"Lead Information","columns":2},
+        {"key":"address","label":"Address","columns":2},
+        {"key":"management","label":"Lead Management","columns":2},
+        {"key":"product","label":"Product Interest","columns":2},
+        {"key":"family","label":"Family","columns":2,"collapsed":true},
+        {"key":"conversion","label":"Conversion","columns":2,"collapsed":true},
+        {"key":"preferences","label":"Preferences","columns":2},
+        {"key":"system","label":"System Information","columns":2,"collapsed":true}
+      ]}'::jsonb,
+      updated_at = now()
+  WHERE module_id = v_leads_module_id AND is_default = true;
+
+  IF NOT FOUND THEN
+    INSERT INTO crm_layouts (org_id, module_id, name, is_default, config)
+    VALUES (v_org_id, v_leads_module_id, 'Default Lead Layout', true,
+      '{"sections":[
+        {"key":"core","label":"Lead Information","columns":2},
+        {"key":"address","label":"Address","columns":2},
+        {"key":"management","label":"Lead Management","columns":2},
+        {"key":"product","label":"Product Interest","columns":2},
+        {"key":"family","label":"Family","columns":2,"collapsed":true},
+        {"key":"conversion","label":"Conversion","columns":2,"collapsed":true},
+        {"key":"preferences","label":"Preferences","columns":2},
+        {"key":"system","label":"System Information","columns":2,"collapsed":true}
+      ]}'::jsonb
+    );
+  END IF;
 
   RAISE NOTICE 'All contact and lead fields created/updated';
 END $$;

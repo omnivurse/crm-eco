@@ -10,13 +10,13 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swa
  * PWA Metadata Configuration
  */
 export const metadata: Metadata = {
-  title: 'Member Portal | WealthShare',
+  title: 'Member Portal | Pay It Forward HealthShare',
   description: 'Manage your healthshare membership, view benefits, and enroll in new plans.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'WealthShare',
+    title: 'Pay It Forward HealthShare',
   },
   formatDetection: {
     telephone: true,
@@ -63,7 +63,7 @@ export default function RootLayout({
           </main>
           <footer className="border-t bg-white py-6 mt-auto">
             <div className="container mx-auto px-4 text-center text-sm text-slate-500">
-              <p>&copy; {new Date().getFullYear()} WealthShare. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Pay It Forward HealthShare. All rights reserved.</p>
               <p className="mt-1">
                 This is not insurance. Healthshare programs facilitate member-to-member sharing of medical expenses.
               </p>

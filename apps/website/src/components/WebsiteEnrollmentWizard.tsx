@@ -13,7 +13,7 @@ import {
   runSelfServeRxPricing,
 } from '@/app/enroll/actions';
 
-const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://portal.payitforwardhealth.com';
+const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://members.payitforwardhealth.com';
 
 interface WebsiteEnrollmentWizardProps {
   existingEnrollmentId?: string;
