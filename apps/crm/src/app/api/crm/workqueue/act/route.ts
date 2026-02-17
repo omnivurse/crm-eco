@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     const profile = await getAuthProfile();
     if (!profile) {
-      return NextResponse.json({ error: 'Unauthorized' } satisfies WorkqueueActResponse & { error: string }, { status: 401 });
+      return NextResponse.json({ success: false, error: 'Unauthorized' } satisfies WorkqueueActResponse, { status: 401 });
     }
 
     if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
