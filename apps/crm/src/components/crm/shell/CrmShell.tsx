@@ -1,18 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
-import { Footer } from './Footer';
+import { BottomBar } from './bottom-bar';
 import { ModuleProvider } from '@/contexts/ModuleContext';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
-
-// Lazy load command palette - only loaded when user interacts
-const CommandPalette = dynamic(() => import('./CommandPalette').then((mod) => mod.CommandPalette), {
-  ssr: false,
-});
 
 interface CrmShellProps {
   children: React.ReactNode;
@@ -22,9 +16,7 @@ interface CrmShellProps {
 }
 
 export function CrmShell({ children, modules, profile, organizationName }: CrmShellProps) {
-  const router = useRouter();
   const pathname = usePathname();
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -55,7 +47,9 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
             modules={modules}
             profile={profile}
             organizationName={organizationName}
-            onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+            onOpenCommandPalette={() => {
+              // Smart Chat input in BottomBar handles Ctrl+K now
+            }}
             mobileMenuOpen={mobileMenuOpen}
             onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
           />
@@ -79,24 +73,15 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
             />
 
             <main className="flex-1 overflow-auto p-4 lg:p-6 scrollbar-thin">
-              <div className="max-w-7xl mx-auto pb-16">
+              <div className="max-w-7xl mx-auto pb-12">
                 {children}
               </div>
             </main>
           </div>
 
-          {/* Footer - hidden on mobile */}
-          <div className="hidden lg:block">
-            <Footer />
-          </div>
+          {/* Bottom Action Bar - Zoho-style */}
+          <BottomBar modules={modules} profile={profile} />
         </div>
-
-        {/* Command Palette - lazy loaded */}
-        <CommandPalette
-          open={commandPaletteOpen}
-          onOpenChange={setCommandPaletteOpen}
-          modules={modules}
-        />
       </div>
     </ModuleProvider>
   );
