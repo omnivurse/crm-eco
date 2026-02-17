@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -55,7 +55,7 @@ interface RecordDetailShellProps {
   stages?: CrmDealStage[];
   noteCount?: number;
   children: {
-    overview: React.ReactNode | ((helpers: { switchTab: (tab: string) => void }) => React.ReactNode);
+    overview: React.ReactNode;
     related: React.ReactNode;
     timeline: React.ReactNode;
     notes?: React.ReactNode;
@@ -142,6 +142,14 @@ export const RecordDetailShell = memo(function RecordDetailShell({
 }: RecordDetailShellProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Listen for tab switch events from child components (e.g., NotesOverviewCard "View All")
+  useEffect(() => {
+    const handler = (e: Event) => setActiveTab((e as CustomEvent).detail);
+    window.addEventListener('crm:switch-tab', handler);
+    return () => window.removeEventListener('crm:switch-tab', handler);
+  }, []);
+
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -533,9 +541,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
         <div className="max-w-6xl mx-auto px-6 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsContent value="overview" className="mt-0">
-              {typeof children.overview === 'function'
-                ? children.overview({ switchTab: setActiveTab })
-                : children.overview}
+              {children.overview}
             </TabsContent>
             <TabsContent value="related" className="mt-0">
               {children.related}

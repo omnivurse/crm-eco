@@ -241,7 +241,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       {/* View All Footer */}
       {(hasMore || (notes.length > 0 && !search)) && (
         <button
-          onClick={onViewAll}
+          onClick={onViewAll ?? (() => window.dispatchEvent(new CustomEvent('crm:switch-tab', { detail: 'notes' })))}
           className="mt-3 w-full flex items-center justify-center gap-1 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
         >
           View all {notes.length} notes
