@@ -21,7 +21,7 @@ interface FilterSidebarTriggerProps {
 
 /**
  * FilterSidebarTrigger -- Button that opens the full FilterSidebar in a Sheet.
- * Replaces the popover-based AdvancedFilterBuilder in ModuleShell.
+ * Opens the FilterSidebar sheet for composing advanced filters.
  */
 export function FilterSidebarTrigger({
   fields,

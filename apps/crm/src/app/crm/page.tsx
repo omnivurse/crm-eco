@@ -5,6 +5,7 @@ import {
   getCachedAtRiskDeals,
   getCachedPipelineCounts,
   getCachedModuleStats,
+  getCachedCommandConsoleStats,
   getMyTasks,
   getUpcomingTasks,
   getRecentActivity,
@@ -21,6 +22,9 @@ import {
   DashboardStats,
   WorkQueue,
   MemberLifecycle,
+  AlertsStrip,
+  OperationalTiles,
+  EnrollmentFunnel,
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
@@ -109,9 +113,25 @@ async function DashboardContent() {
     profile = await getCurrentProfile();
   } catch (err) {
     console.error('[Dashboard] Failed to get profile:', err);
-    return null;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">Unable to load dashboard</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Please sign in to access the CRM.</p>
+        </div>
+      </div>
+    );
   }
-  if (!profile) return null;
+  if (!profile) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-slate-700 dark:text-slate-200">Profile not found</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Please complete your profile setup.</p>
+        </div>
+      </div>
+    );
+  }
 
   // Load user's saved layout or use default
   let layout = DEFAULT_LAYOUT;
@@ -124,8 +144,8 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, pipeline, widget data
-  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, pipelineResult, widgetDataResult] =
+  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, pipeline, console stats, widget data
+  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, pipelineResult, consoleStatsResult, widgetDataResult] =
     await Promise.allSettled([
       getCachedDashboardHeroStats(profile.organization_id, profile.id),
       getOrganization(profile.organization_id),
@@ -133,6 +153,7 @@ async function DashboardContent() {
       getMyTasks(profile.id, false, 50),
       getCachedAtRiskDeals(profile.organization_id, 5),
       getCachedPipelineCounts(profile.organization_id),
+      getCachedCommandConsoleStats(profile.organization_id, profile.id),
       fetchWidgetData(profile, widgetTypes),
     ]);
 
@@ -163,6 +184,10 @@ async function DashboardContent() {
     ? pipelineResult.value
     : { leads: 0, draft: 0, inProgress: 0, submitted: 0, active: 0 };
 
+  const consoleStats = consoleStatsResult.status === 'fulfilled'
+    ? consoleStatsResult.value
+    : null;
+
   const widgetData = widgetDataResult.status === 'fulfilled'
     ? widgetDataResult.value
     : {};
@@ -177,11 +202,22 @@ async function DashboardContent() {
           stats={heroStats}
         />
 
+        {/* Enterprise Console: Alerts + Operational Tiles */}
+        {consoleStats && (
+          <>
+            <AlertsStrip stats={consoleStats} />
+            <OperationalTiles stats={consoleStats} />
+          </>
+        )}
+
         {/* CRM Stats Cards -- Contacts, Leads, Deals, Accounts */}
         <DashboardStats stats={moduleStats} />
 
         {/* Member Lifecycle Funnel */}
         <MemberLifecycle counts={pipelineCounts} />
+
+        {/* Enrollment Funnel (from console stats) */}
+        {consoleStats && <EnrollmentFunnel stats={consoleStats} />}
 
         {/* Personal Work Queue */}
         <WorkQueue items={personalItems} />

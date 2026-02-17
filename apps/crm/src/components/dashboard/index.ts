@@ -15,3 +15,8 @@ export { CommandBar } from './CommandBar';
 export { WorkQueue } from './WorkQueue';
 export type { PersonalWorkItem } from './WorkQueue';
 export { MemberLifecycle } from './MemberLifecycle';
+
+// Enterprise Command Console components
+export { AlertsStrip } from './AlertsStrip';
+export { OperationalTiles } from './OperationalTiles';
+export { EnrollmentFunnel } from './EnrollmentFunnel';

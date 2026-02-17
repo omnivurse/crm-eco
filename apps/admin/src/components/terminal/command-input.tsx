@@ -1,7 +1,8 @@
 'use client';
 
-// Command Input - Starship Command Center
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { cn } from '@crm-eco/ui/lib/utils';
 import { useTerminal } from './terminal-provider';
 
 export function CommandInput() {
@@ -19,12 +20,10 @@ export function CommandInput() {
   const [selectedSuggestion, setSelectedSuggestion] = useState(-1);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // Focus input when terminal opens
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Update suggestions as user types
   useEffect(() => {
     const newSuggestions = inputValue.trim() ? getSuggestions(inputValue) : [];
     queueMicrotask(() => {
@@ -101,12 +100,39 @@ export function CommandInput() {
   );
 
   return (
-    <div className="terminal-input-container">
-      <form onSubmit={handleSubmit} className="terminal-input-form">
-        <span className="terminal-prompt">
-          <span className="prompt-chevron">›</span>
-          <span className="prompt-cursor">_</span>
-        </span>
+    <div className="relative border-t bg-muted/30 px-3 py-2.5">
+      {/* Suggestions dropdown (above input) */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute bottom-full left-3 right-3 mb-1 rounded-lg border bg-popover shadow-lg overflow-hidden z-10">
+          {suggestions.map((suggestion, index) => (
+            <button
+              key={suggestion}
+              type="button"
+              className={cn(
+                'flex w-full items-center justify-between px-3 py-2 text-sm text-left transition-colors',
+                index === selectedSuggestion
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-popover-foreground hover:bg-muted/50'
+              )}
+              onClick={() => {
+                setInputValue(suggestion + ' ');
+                setShowSuggestions(false);
+                inputRef.current?.focus();
+              }}
+              onMouseEnter={() => setSelectedSuggestion(index)}
+            >
+              <span className="font-medium font-mono">{suggestion}</span>
+              <kbd className="ml-2 rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                Tab
+              </kbd>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input row */}
+      <form onSubmit={handleSubmit} className="flex items-center gap-2">
+        <ChevronRight className="w-4 h-4 text-primary shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -115,7 +141,12 @@ export function CommandInput() {
           onKeyDown={handleKeyDown}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-          className="terminal-input"
+          className={cn(
+            'flex-1 bg-transparent border-none outline-none text-sm font-mono',
+            'text-foreground placeholder:text-muted-foreground',
+            'caret-primary',
+            isExecuting && 'opacity-50'
+          )}
           placeholder="Enter command..."
           autoComplete="off"
           autoCorrect="off"
@@ -124,44 +155,27 @@ export function CommandInput() {
           disabled={isExecuting}
         />
         {isExecuting && (
-          <span className="terminal-executing">
-            <span className="executing-dot" />
-            <span className="executing-dot" />
-            <span className="executing-dot" />
-          </span>
+          <div className="flex gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse [animation-delay:150ms]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse [animation-delay:300ms]" />
+          </div>
         )}
       </form>
 
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="terminal-suggestions">
-          {suggestions.map((suggestion, index) => (
-            <button
-              key={suggestion}
-              type="button"
-              className={`terminal-suggestion ${index === selectedSuggestion ? 'selected' : ''}`}
-              onClick={() => {
-                setInputValue(suggestion + ' ');
-                setShowSuggestions(false);
-                inputRef.current?.focus();
-              }}
-              onMouseEnter={() => setSelectedSuggestion(index)}
-            >
-              <span className="suggestion-command">{suggestion}</span>
-              <span className="suggestion-hint">Tab</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="terminal-input-hints">
-        <span className="hint">
-          <kbd>↑</kbd><kbd>↓</kbd> History
+      {/* Hint bar */}
+      <div className="flex gap-4 mt-1.5 text-[11px] text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">↑↓</kbd>
+          History
         </span>
-        <span className="hint">
-          <kbd>Tab</kbd> Complete
+        <span className="flex items-center gap-1">
+          <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">Tab</kbd>
+          Complete
         </span>
-        <span className="hint">
-          <kbd>Esc</kbd> Close
+        <span className="hidden sm:flex items-center gap-1">
+          <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">Esc</kbd>
+          Close
         </span>
       </div>
     </div>

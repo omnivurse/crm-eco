@@ -10,6 +10,7 @@ import {
   getViewsForModule,
   getDefaultView,
   getRecords,
+  getCachedTerritories,
 } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter } from '@/lib/crm/types';
@@ -24,12 +25,14 @@ interface PageProps {
     sortField?: string;
     sortDirection?: 'asc' | 'desc';
     filters?: string;
+    territory?: string;
+    viewMode?: string;
   }>;
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = await params;
-  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam } = await searchParams;
+  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId } = await searchParams;
   
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
@@ -40,9 +43,10 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const page = parseInt(pageStr || '1', 10);
   const pageSize = 25;
 
-  const [fields, views] = await Promise.all([
+  const [fields, views, territories] = await Promise.all([
     getFieldsForModule(crmModule.id),
     getViewsForModule(crmModule.id),
+    getCachedTerritories(profile.organization_id),
   ]);
 
   // Get current view
@@ -73,7 +77,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     }
   }
 
-  // Fetch records with scope, sort, and filter
+  // Fetch records with scope, sort, filter, and territory
   const { records, total } = await getRecords({
     moduleId: crmModule.id,
     page,
@@ -82,6 +86,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     filters,
     sort,
     scope: scope || 'all',
+    territoryId: territoryId || undefined,
   });
 
   const totalPages = Math.ceil(total / pageSize);
@@ -95,6 +100,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     if (sortField) params.set('sortField', sortField);
     if (sortDirection) params.set('sortDirection', sortDirection);
     if (filtersParam) params.set('filters', filtersParam);
+    if (territoryId) params.set('territory', territoryId);
     return `/crm/modules/${crmModule.key}?${params.toString()}`;
   };
 
@@ -109,6 +115,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         activeViewId={currentView?.id}
         totalCount={total}
         userRole={(profile as any).role || null}
+        territories={territories}
       />
 
       {/* Pagination */}

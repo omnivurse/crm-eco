@@ -98,7 +98,7 @@ export function CommandBar({ profile, orgName, stats }: CommandBarProps) {
             icon={CheckSquare}
             label="Tasks Today"
             value={stats.todaysTaskCount}
-            severity={stats.todaysTaskCount > 0 ? 'healthy' : 'healthy'}
+            severity={stats.todaysTaskCount > 0 ? 'healthy' : 'neutral'}
           />
           <StatusPill
             icon={Clock}

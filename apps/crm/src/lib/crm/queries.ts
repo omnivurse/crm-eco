@@ -32,6 +32,7 @@ import type {
   CrmAttachmentWithAuthor,
   TimelineEvent,
   FilterOperator,
+  CrmTerritory,
 } from './types';
 
 // ============================================================================
@@ -294,6 +295,37 @@ export const getCachedModules = cache(
   async (orgId: string) => getModules(orgId)
 );
 
+// ============================================================================
+// Territories
+// ============================================================================
+
+/**
+ * Fetch all active territories for an organization.
+ */
+export async function getTerritories(orgId: string): Promise<CrmTerritory[]> {
+  const supabase = await createCrmClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('crm_territories')
+    .select('*')
+    .eq('org_id', orgId)
+    .eq('is_active', true)
+    .order('display_order');
+
+  if (error) throw error;
+  return (data || []) as CrmTerritory[];
+}
+
+/** Per-request memoized version of getTerritories */
+export const getCachedTerritories = cache(
+  async (orgId: string) => getTerritories(orgId)
+);
+
+// ============================================================================
+// Module queries
+// ============================================================================
+
 export async function getModuleByKey(orgId: string, key: string): Promise<CrmModule | null> {
   const supabase = await createCrmClient();
   
@@ -423,6 +455,8 @@ export interface RecordQueryOptions {
   sort?: ViewSort[];
   search?: string;
   scope?: 'all' | 'mine' | 'downline';
+  /** Optional territory ID to filter records by */
+  territoryId?: string;
 }
 
 export interface RecordQueryResult {
@@ -435,12 +469,17 @@ export interface RecordQueryResult {
 
 export async function getRecords(options: RecordQueryOptions): Promise<RecordQueryResult> {
   const supabase = await createCrmClient();
-  const { moduleId, page = 1, pageSize = 25, filters = [], sort = [], search, scope = 'all' } = options;
+  const { moduleId, page = 1, pageSize = 25, filters = [], sort = [], search, scope = 'all', territoryId } = options;
 
   let query = supabase
     .from('crm_records')
     .select('*', { count: 'exact' })
     .eq('module_id', moduleId);
+
+  // Apply territory filter
+  if (territoryId) {
+    query = query.eq('territory_id', territoryId);
+  }
 
   // Apply scope filtering (My Records / My Downline / All)
   if (scope === 'mine' || scope === 'downline') {
@@ -507,20 +546,22 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
       }
     }
 
-    for (const sf of systemFilters) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: matchedIds, error: rpcErr } = await (supabase as any).rpc(
-        'filter_records_by_system_preset',
-        {
+    // Parallelize system filter RPCs for performance
+    const systemRpcResults = await Promise.all(
+      systemFilters.map((sf) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc('filter_records_by_system_preset', {
           p_module_id: moduleId,
           p_preset: sf.systemPreset,
           p_user_profile_id: userProfileId,
-        },
-      );
+        })
+      )
+    );
+
+    for (const { data: matchedIds, error: rpcErr } of systemRpcResults) {
       if (!rpcErr && matchedIds && matchedIds.length > 0) {
         query = query.in('id', matchedIds);
       } else if (!rpcErr && matchedIds && matchedIds.length === 0) {
-        // No records match -- short-circuit by requiring impossible ID
         query = query.eq('id', '00000000-0000-0000-0000-000000000000');
       }
     }
@@ -541,26 +582,36 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
       prospects: { relatedType: 'linked_records', activityType: 'prospects' },
     };
 
-    for (const rf of relatedFilters) {
-      const mapping = RELATED_MODULE_MAP[rf.relatedModule!];
-      if (!mapping) continue;
+    // Build RPC calls for related filters, skipping unmapped modules
+    const relatedRpcCalls = relatedFilters
+      .map((rf) => ({ filter: rf, mapping: RELATED_MODULE_MAP[rf.relatedModule!] }))
+      .filter((entry) => entry.mapping != null);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: matchedIds, error: rpcErr } = await (supabase as any).rpc(
-        'filter_records_by_related',
-        {
+    // Parallelize related filter RPCs for performance
+    const relatedRpcResults = await Promise.all(
+      relatedRpcCalls.map(({ filter: rf, mapping }) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc('filter_records_by_related', {
           p_module_id: moduleId,
           p_related_type: mapping.relatedType,
           p_condition: rf.relatedCondition || 'has_any',
           p_activity_type: mapping.activityType,
-        },
-      );
+        })
+      )
+    );
+
+    for (const { data: matchedIds, error: rpcErr } of relatedRpcResults) {
       if (!rpcErr && matchedIds && matchedIds.length > 0) {
         query = query.in('id', matchedIds);
       } else if (!rpcErr && matchedIds && matchedIds.length === 0) {
         query = query.eq('id', '00000000-0000-0000-0000-000000000000');
       }
     }
+  }
+
+  /** Escape PostgreSQL LIKE/ILIKE wildcard characters in user input */
+  function escapeLikePattern(value: string): string {
+    return value.replace(/[%_\\]/g, '\\$&');
   }
 
   // ── Apply field-based filters ──
@@ -578,13 +629,13 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
         query = query.neq(fieldPath, filter.value);
         break;
       case 'contains':
-        query = query.ilike(fieldPath, `%${filter.value}%`);
+        query = query.ilike(fieldPath, `%${escapeLikePattern(String(filter.value ?? ''))}%`);
         break;
       case 'starts_with':
-        query = query.ilike(fieldPath, `${filter.value}%`);
+        query = query.ilike(fieldPath, `${escapeLikePattern(String(filter.value ?? ''))}%`);
         break;
       case 'ends_with':
-        query = query.ilike(fieldPath, `%${filter.value}`);
+        query = query.ilike(fieldPath, `%${escapeLikePattern(String(filter.value ?? ''))}`);
         break;
 
       // Numeric/date comparison operators
@@ -628,7 +679,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
       // Between operator (requires secondValue)
       case 'between':
-        if (filter.value && filter.secondValue) {
+        if (filter.value != null && filter.secondValue != null) {
           query = query.gte(fieldPath, filter.value).lte(fieldPath, filter.secondValue);
         }
         break;

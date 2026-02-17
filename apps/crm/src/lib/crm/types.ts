@@ -3,6 +3,14 @@
  */
 
 // ============================================================================
+// CRM View Modes
+// ============================================================================
+
+export type ViewMode = 'table' | 'list' | 'kanban' | 'chart' | 'timeline' | 'split';
+
+export const VIEW_MODES: ViewMode[] = ['table', 'list', 'kanban', 'chart', 'timeline', 'split'];
+
+// ============================================================================
 // CRM Modules
 // ============================================================================
 
@@ -20,6 +28,21 @@ export interface CrmModule {
   settings: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================================================
+// CRM Territories
+// ============================================================================
+
+export interface CrmTerritory {
+  id: string;
+  org_id: string;
+  name: string;
+  parent_id: string | null;
+  description: string | null;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
 }
 
 // ============================================================================
@@ -159,7 +182,7 @@ export type RelatedFilterCondition = 'has_any' | 'has_none' | 'count_gt' | 'coun
 export interface ViewFilter {
   field: string;
   operator: FilterOperator;
-  value: string | number | boolean | null;
+  value: string | number | boolean | string[] | null;
   // For 'last_n_days', 'next_n_days' - number of days
   // For 'between' - use secondValue for end date
   secondValue?: string | number | null;
@@ -611,17 +634,6 @@ export interface CrmUserContext {
     canImport: boolean;
     canManageSettings: boolean;
   };
-}
-
-// ============================================================================
-// Dashboard & Stats
-// ============================================================================
-
-export interface ModuleStats {
-  moduleKey: string;
-  moduleName: string;
-  totalRecords: number;
-  createdThisWeek: number;
 }
 
 // ============================================================================

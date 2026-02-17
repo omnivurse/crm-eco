@@ -185,9 +185,10 @@ export function FilterChipsBar({
           >
             <span className="font-medium">{getFieldLabel(filter.field)}</span>
             <span className="text-slate-500 dark:text-slate-400">{OPERATOR_LABELS[filter.operator] || filter.operator}</span>
-            {!['is_null', 'is_not_null'].includes(filter.operator) && (
+            {!['is_null', 'is_not_null', 'today', 'yesterday', 'this_week', 'last_week', 'this_month', 'last_month', 'this_quarter', 'last_quarter', 'this_year', 'last_year'].includes(filter.operator) && (
               <span className="font-medium text-teal-600 dark:text-teal-400">
                 {formatValue(filter.value)}
+                {['last_n_days', 'next_n_days'].includes(filter.operator) ? ' days' : ''}
               </span>
             )}
             <button
