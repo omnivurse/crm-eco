@@ -299,7 +299,7 @@ export function ImportWizardClient({
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-brand-navy-800">Import Data</h1>

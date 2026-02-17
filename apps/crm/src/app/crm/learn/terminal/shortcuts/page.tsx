@@ -94,7 +94,7 @@ function ShortcutRow({ keys, mac, action }: { keys: string[]; mac?: string[]; ac
 
 export default function TerminalShortcutsPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Breadcrumb */}
       <div className="mb-6">
         <Link

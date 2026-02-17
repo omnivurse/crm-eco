@@ -292,7 +292,7 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden">
           <div className="grid md:grid-cols-5">
             {/* Left Panel - Info */}

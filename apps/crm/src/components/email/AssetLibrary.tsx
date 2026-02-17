@@ -170,7 +170,7 @@ export function AssetLibrary({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="sm:max-w-7xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Asset Library</DialogTitle>
           <DialogDescription>

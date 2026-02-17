@@ -72,7 +72,7 @@ const UTILITY_COMMANDS = [
 
 export default function TerminalCommandsPage() {
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Breadcrumb */}
       <div className="mb-6">
         <Link
