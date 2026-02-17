@@ -83,16 +83,17 @@ function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destr
   }
 }
 
-export default async function MemberDetailPage({ params }: { params: { id: string } }) {
-  const member = await getMember(params.id);
+export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const member = await getMember(id);
 
   if (!member) {
     notFound();
   }
 
   const [dependents, enrollments] = await Promise.all([
-    getDependents(params.id),
-    getEnrollments(params.id),
+    getDependents(id),
+    getEnrollments(id),
   ]);
 
   return (

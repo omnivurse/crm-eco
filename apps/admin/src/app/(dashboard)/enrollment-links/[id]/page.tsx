@@ -3,11 +3,11 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { LandingPageForm } from '@/components/enrollment-links/LandingPageForm';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function EditLandingPagePage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createServerSupabaseClient();
 
   const { data: landingPage, error } = await (supabase as any)

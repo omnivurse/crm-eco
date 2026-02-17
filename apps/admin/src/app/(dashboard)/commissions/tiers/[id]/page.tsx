@@ -21,7 +21,7 @@ interface CommissionTier {
 }
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function getTier(id: string): Promise<{ tier: CommissionTier; organizationId: string } | null> {
@@ -51,7 +51,7 @@ async function getTier(id: string): Promise<{ tier: CommissionTier; organization
 }
 
 export default async function EditCommissionTierPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   const result = await getTier(id);
 
   if (!result) {

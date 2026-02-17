@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase-server';
 import { notFound } from 'next/navigation';
 
 interface PageProps {
-  searchParams: { q?: string; module?: string };
+  searchParams: Promise<{ q?: string; module?: string }>;
 }
 
 const MODULE_ICONS: Record<string, React.ReactNode> = {
@@ -178,9 +178,10 @@ function SearchSkeleton() {
   );
 }
 
-export default function SearchPage({ searchParams }: PageProps) {
-  const query = searchParams.q?.trim() || '';
-  const moduleFilter = searchParams.module;
+export default async function SearchPage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const query = resolvedSearchParams.q?.trim() || '';
+  const moduleFilter = resolvedSearchParams.module;
 
   return (
     <div className="max-w-7xl mx-auto">

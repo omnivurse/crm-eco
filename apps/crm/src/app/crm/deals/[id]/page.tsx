@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function DealDetailPage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   redirect(`/crm/r/${id}`);
 }

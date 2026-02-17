@@ -18,10 +18,11 @@ import {
 } from '@/components/enrollments';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function EnrollmentDetailPage({ params }: PageProps) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClient();
   
   // Get current user
@@ -47,7 +48,7 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
 
   const enrollment = await getEnrollmentForMember(
     supabase,
-    params.id,
+    id,
     member.id,
     member.organization_id
   );

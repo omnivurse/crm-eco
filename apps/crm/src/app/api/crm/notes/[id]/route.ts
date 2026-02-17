@@ -3,7 +3,7 @@ import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const profile = await getCurrentProfile();
@@ -16,7 +16,7 @@ export async function DELETE(
     }
 
     const supabase = await createCrmClient();
-    const { id } = params;
+    const { id } = await params;
 
     // Fetch the note to verify ownership/permissions
     const { data: note, error: fetchError } = await supabase
