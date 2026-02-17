@@ -34,7 +34,8 @@ async function getProducts() {
       is_active,
       effective_start_date,
       effective_end_date,
-      created_at
+      created_at,
+      rating_model
     `)
     .eq('organization_id', profile.organization_id)
     .order('name', { ascending: true }) as any);
@@ -58,6 +59,12 @@ export default async function ProductsPage() {
           <p className="text-sm sm:text-base text-slate-500">Manage health plans, pricing, and features</p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Link href="/products/rate-settings" className="flex-1 sm:flex-none">
+            <Button variant="outline" className="w-full sm:w-auto">
+              <DollarSign className="h-4 w-4 mr-2" />
+              <span className="hidden xs:inline">Rate Settings</span>
+            </Button>
+          </Link>
           <Link href="/products/features" className="flex-1 sm:flex-none">
             <Button variant="outline" className="w-full sm:w-auto">
               <Sparkles className="h-4 w-4 mr-2" />

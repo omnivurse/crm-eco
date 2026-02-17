@@ -38,6 +38,7 @@ interface ProductFormProps {
     require_dependent_info: boolean;
     require_dependent_address_match: boolean;
     hide_from_public: boolean;
+    rating_model?: string | null;
   };
 }
 
@@ -81,6 +82,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     require_dependent_info: initialData?.require_dependent_info ?? false,
     require_dependent_address_match: initialData?.require_dependent_address_match ?? false,
     hide_from_public: initialData?.hide_from_public ?? false,
+    rating_model: initialData?.rating_model ?? 'tiered_household',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -134,6 +136,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       require_dependent_info: formData.require_dependent_info,
       require_dependent_address_match: formData.require_dependent_address_match,
       hide_from_public: formData.hide_from_public,
+      rating_model: formData.rating_model || 'tiered_household',
       organization_id: profile.organization_id,
     };
 
@@ -288,6 +291,27 @@ export function ProductForm({ initialData }: ProductFormProps) {
             placeholder="Insurance/Healthshare provider"
           />
         </div>
+      </div>
+
+      {/* Rating Model */}
+      <div className="space-y-2">
+        <Label>Rating Model (E123)</Label>
+        <Select
+          value={formData.rating_model}
+          onValueChange={(value) => setFormData({ ...formData, rating_model: value })}
+          disabled={loading}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select rating model" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="tiered_household">Tiered Household</SelectItem>
+            <SelectItem value="additive_person">Additive Person</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-slate-500">
+          Tiered Household: one rate per coverage tier + age band. Additive Person: subscriber base + spouse/dependent adders.
+        </p>
       </div>
 
       {/* Pricing */}

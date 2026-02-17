@@ -11,6 +11,11 @@ import {
   Heart,
   HelpCircle,
 } from 'lucide-react';
+import { buildMatrixPreview, getPlanOptions } from '@crm-eco/rates';
+import type { RateConfig } from '@crm-eco/rates/types';
+import seedConfig from '@crm-eco/rates/config';
+
+const rateConfig = seedConfig as unknown as RateConfig;
 
 export const metadata: Metadata = {
   title: 'Plans & Pricing',
@@ -149,20 +154,47 @@ export default async function PlansPage() {
                       {plan.description || 'Health sharing plan'}
                     </p>
                     <div className="mt-4 mb-2">
-                      <span
-                        className={`text-4xl font-bold ${
-                          isPopular ? 'text-white' : 'text-slate-900'
-                        }`}
-                      >
-                        {formatCurrency(plan.monthly_share)}
-                      </span>
-                      <span
-                        className={`text-sm ${
-                          isPopular ? 'text-teal-100' : 'text-slate-500'
-                        }`}
-                      >
-                        /month
-                      </span>
+                      {(() => {
+                        const preview = buildMatrixPreview(rateConfig, plan.code, 'current');
+                        const startingAt = preview
+                          ? Math.min(...Object.values(preview.matrix.member || {}).filter(Boolean))
+                          : null;
+                        return startingAt ? (
+                          <>
+                            <span
+                              className={`text-4xl font-bold ${
+                                isPopular ? 'text-white' : 'text-slate-900'
+                              }`}
+                            >
+                              {formatCurrency(startingAt)}
+                            </span>
+                            <span
+                              className={`text-sm ${
+                                isPopular ? 'text-teal-100' : 'text-slate-500'
+                              }`}
+                            >
+                              /mo starting
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span
+                              className={`text-4xl font-bold ${
+                                isPopular ? 'text-white' : 'text-slate-900'
+                              }`}
+                            >
+                              {formatCurrency(plan.monthly_share)}
+                            </span>
+                            <span
+                              className={`text-sm ${
+                                isPopular ? 'text-teal-100' : 'text-slate-500'
+                              }`}
+                            >
+                              /month
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                     {plan.iua_amount !== null && (
                       <p

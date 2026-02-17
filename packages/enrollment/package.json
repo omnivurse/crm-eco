@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@crm-eco/lib": "*",
+    "@crm-eco/rates": "*",
     "@crm-eco/ui": "*"
   },
   "peerDependencies": {

@@ -2,6 +2,11 @@ import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { CheckCircle2, Star, ArrowRight } from 'lucide-react';
+import { buildMatrixPreview } from '@crm-eco/rates';
+import type { RateConfig } from '@crm-eco/rates/types';
+import seedConfig from '@crm-eco/rates/config';
+
+const rateConfig = seedConfig as unknown as RateConfig;
 
 interface DbPlan {
   id: string;
@@ -109,20 +114,47 @@ export async function HomePlanCards() {
                   {plan.description || 'Health sharing plan'}
                 </p>
                 <div className="mt-4 mb-6">
-                  <span
-                    className={`text-4xl font-bold ${
-                      isPopular ? 'text-white' : 'text-slate-900'
-                    }`}
-                  >
-                    {formatCurrency(plan.monthly_share)}
-                  </span>
-                  <span
-                    className={`text-sm ${
-                      isPopular ? 'text-teal-100' : 'text-slate-500'
-                    }`}
-                  >
-                    /month
-                  </span>
+                  {(() => {
+                    const preview = buildMatrixPreview(rateConfig, plan.code, 'current');
+                    const startingAt = preview
+                      ? Math.min(...Object.values(preview.matrix.member || {}).filter(Boolean))
+                      : null;
+                    return startingAt ? (
+                      <>
+                        <span
+                          className={`text-4xl font-bold ${
+                            isPopular ? 'text-white' : 'text-slate-900'
+                          }`}
+                        >
+                          {formatCurrency(startingAt)}
+                        </span>
+                        <span
+                          className={`text-sm ${
+                            isPopular ? 'text-teal-100' : 'text-slate-500'
+                          }`}
+                        >
+                          /mo starting
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span
+                          className={`text-4xl font-bold ${
+                            isPopular ? 'text-white' : 'text-slate-900'
+                          }`}
+                        >
+                          {formatCurrency(plan.monthly_share)}
+                        </span>
+                        <span
+                          className={`text-sm ${
+                            isPopular ? 'text-teal-100' : 'text-slate-500'
+                          }`}
+                        >
+                          /month
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
                 {planBenefits.length > 0 && (
                   <ul className="space-y-2.5 mb-8">

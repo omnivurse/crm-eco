@@ -7,3 +7,5 @@ export {
   SelfServePaymentStep,
   SelfServeConfirmationStep,
 } from './steps';
+export { PricingMatrix } from './PricingMatrix';
+export { PricingQuote } from './PricingQuote';
