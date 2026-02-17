@@ -451,7 +451,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   // Apply scope filtering (My Records / My Downline / All)
   if (scope === 'mine' || scope === 'downline') {
     // Get the current user's profile ID to filter by owner
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = await getCachedAuthUser();
     if (user) {
       if (scope === 'mine') {
         // Only records owned by the current user's profile
