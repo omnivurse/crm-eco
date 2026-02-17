@@ -4,6 +4,7 @@ import {
   getCachedDashboardHeroStats,
   getCachedAtRiskDeals,
   getCachedPipelineCounts,
+  getCachedModuleStats,
   getMyTasks,
   getUpcomingTasks,
   getRecentActivity,
@@ -17,6 +18,7 @@ import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import {
   CommandBar,
+  DashboardStats,
   WorkQueue,
   MemberLifecycle,
   DashboardToolbar,
@@ -122,11 +124,12 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: personal stats, org info, tasks, at-risk deals, pipeline, widget data
-  const [heroStatsResult, orgResult, overdueTasksResult, atRiskDealsResult, pipelineResult, widgetDataResult] =
+  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, pipeline, widget data
+  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, pipelineResult, widgetDataResult] =
     await Promise.allSettled([
       getCachedDashboardHeroStats(profile.organization_id, profile.id),
       getOrganization(profile.organization_id),
+      getCachedModuleStats(profile.organization_id),
       getMyTasks(profile.id, false, 50),
       getCachedAtRiskDeals(profile.organization_id, 5),
       getCachedPipelineCounts(profile.organization_id),
@@ -140,6 +143,10 @@ async function DashboardContent() {
   const orgName = orgResult.status === 'fulfilled' && orgResult.value
     ? orgResult.value.name
     : 'Operations';
+
+  const moduleStats = moduleStatsResult.status === 'fulfilled'
+    ? moduleStatsResult.value
+    : [];
 
   // Build personal work queue from overdue tasks and at-risk deals
   const overdueTasks = overdueTasksResult.status === 'fulfilled'
@@ -169,6 +176,9 @@ async function DashboardContent() {
           orgName={orgName}
           stats={heroStats}
         />
+
+        {/* CRM Stats Cards -- Contacts, Leads, Deals, Accounts */}
+        <DashboardStats stats={moduleStats} />
 
         {/* Member Lifecycle Funnel */}
         <MemberLifecycle counts={pipelineCounts} />
