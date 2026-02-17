@@ -9,3 +9,10 @@ export { WidgetControls } from './WidgetControls';
 export { WidgetRenderer } from './WidgetRenderer';
 export { SortableWidget } from './SortableWidget';
 export { ServerWidgetRenderer, preRenderWidgets } from './ServerWidgetRenderer';
+
+// Enterprise Command Console components
+export { CommandBar } from './CommandBar';
+export { AlertsStrip } from './AlertsStrip';
+export { OperationalTiles } from './OperationalTiles';
+export { WorkQueue } from './WorkQueue';
+export { EnrollmentFunnel } from './EnrollmentFunnel';
