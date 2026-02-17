@@ -47,6 +47,12 @@ function ModuleTableContent({
   const selectedIds = shellContext?.selectedIds || new Set<string>();
   const setSelectedIds = shellContext?.setSelectedIds || (() => {});
 
+  // Wire sort from context to RecordTable
+  const currentSort = shellContext?.sortField
+    ? { field: shellContext.sortField, direction: shellContext.sortDirection }
+    : undefined;
+  const handleSort = shellContext?.handleSortChange;
+
   return (
     <RecordTable
       records={records}
@@ -56,6 +62,8 @@ function ModuleTableContent({
       onRowClick={handleRowClick}
       selectedIds={selectedIds}
       onSelectionChange={setSelectedIds}
+      onSort={handleSort}
+      currentSort={currentSort}
     />
   );
 }

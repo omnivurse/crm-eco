@@ -12,7 +12,7 @@ import {
   getRecords,
 } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
-import type { CrmModule, CrmField, CrmView, CrmRecord } from '@/lib/crm/types';
+import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter } from '@/lib/crm/types';
 
 interface PageProps {
   params: { moduleKey: string };
@@ -21,12 +21,15 @@ interface PageProps {
     page?: string;
     search?: string;
     scope?: 'all' | 'mine' | 'downline';
+    sortField?: string;
+    sortDirection?: 'asc' | 'desc';
+    filters?: string;
   };
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = params;
-  const { page: pageStr, search, view: viewId, scope } = searchParams;
+  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam } = searchParams;
   
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
@@ -51,14 +54,33 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     currentView = await getDefaultView(crmModule.id);
   }
 
-  // Fetch records with scope filtering
+  // Build sort: URL params override view defaults
+  let sort: ViewSort[] = currentView?.sort || [];
+  if (sortField) {
+    sort = [{ field: sortField, direction: sortDirection || 'asc' }];
+  }
+
+  // Build filters: URL params override view defaults
+  let filters: ViewFilter[] = currentView?.filters || [];
+  if (filtersParam) {
+    try {
+      const parsed = JSON.parse(filtersParam);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        filters = parsed;
+      }
+    } catch {
+      // Invalid JSON, fall back to view filters
+    }
+  }
+
+  // Fetch records with scope, sort, and filter
   const { records, total } = await getRecords({
     moduleId: crmModule.id,
     page,
     pageSize,
     search,
-    filters: currentView?.filters || [],
-    sort: currentView?.sort || [],
+    filters,
+    sort,
     scope: scope || 'all',
   });
 
@@ -70,6 +92,9 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     if (viewId) params.set('view', viewId);
     if (search) params.set('search', search);
     if (scope) params.set('scope', scope);
+    if (sortField) params.set('sortField', sortField);
+    if (sortDirection) params.set('sortDirection', sortDirection);
+    if (filtersParam) params.set('filters', filtersParam);
     return `/crm/modules/${crmModule.key}?${params.toString()}`;
   };
 

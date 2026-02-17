@@ -11,6 +11,7 @@ interface ModuleShellContextValue {
   density: Density;
   sortField: string | null;
   sortDirection: 'asc' | 'desc';
+  handleSortChange: (field: string, direction: 'asc' | 'desc') => void;
   moduleKey: string;
 }
 
