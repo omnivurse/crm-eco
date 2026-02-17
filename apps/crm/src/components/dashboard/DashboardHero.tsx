@@ -349,18 +349,40 @@ export function DashboardHero({
 
   const firstName = profile.full_name?.split(' ')[0] || 'there';
 
-  // Generate AI insight if not provided
-  const displayInsight = useMemo(() => {
-    if (aiInsight) return aiInsight;
+  // Generate AI insight and a matching link destination
+  const { displayInsight, insightHref } = useMemo(() => {
+    if (aiInsight) return { displayInsight: aiInsight, insightHref: null };
     
     const insights: string[] = [];
-    if (atRiskCount > 0) insights.push(`${atRiskCount} deal${atRiskCount > 1 ? 's' : ''} need attention`);
-    if (overdueCount > 0) insights.push(`${overdueCount} overdue task${overdueCount > 1 ? 's' : ''}`);
-    if (todaysTaskCount > 0) insights.push(`${todaysTaskCount} task${todaysTaskCount > 1 ? 's' : ''} due today`);
-    if (newThisWeek > 0) insights.push(`${newThisWeek} new record${newThisWeek > 1 ? 's' : ''} this week`);
+    let href: string | null = null;
+
+    if (atRiskCount > 0) {
+      insights.push(`${atRiskCount} deal${atRiskCount > 1 ? 's' : ''} need attention`);
+      if (!href) href = '/crm/pipeline';
+    }
+    if (overdueCount > 0) {
+      insights.push(`${overdueCount} overdue task${overdueCount > 1 ? 's' : ''}`);
+      if (!href) href = '/crm/activities?filter=overdue';
+    }
+    if (todaysTaskCount > 0) {
+      insights.push(`${todaysTaskCount} task${todaysTaskCount > 1 ? 's' : ''} due today`);
+      if (!href) href = '/crm/activities';
+    }
+    if (newThisWeek > 0) {
+      insights.push(`${newThisWeek} new record${newThisWeek > 1 ? 's' : ''} this week`);
+      if (!href) href = '/crm/modules/contacts';
+    }
     
-    if (insights.length === 0) return "You're all caught up! Great job staying on top of things.";
-    return `Focus on: ${insights.slice(0, 2).join(', ')}`;
+    if (insights.length === 0) {
+      return {
+        displayInsight: "You're all caught up! Great job staying on top of things.",
+        insightHref: null,
+      };
+    }
+    return {
+      displayInsight: `Focus on: ${insights.slice(0, 2).join(', ')}`,
+      insightHref: href,
+    };
   }, [aiInsight, atRiskCount, overdueCount, todaysTaskCount, newThisWeek]);
 
   // Default pipeline health if not provided
@@ -382,23 +404,10 @@ export function DashboardHero({
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-6 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
-      {/* Animated background elements */}
+      {/* Subtle background accents */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#047474]/30 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#E9B61F]/20 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full" />
-      </div>
-
-      {/* Grid pattern overlay */}
-      <div className="absolute inset-0 opacity-[0.02]">
-        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <defs>
-            <pattern id="heroGrid" width="4" height="4" patternUnits="userSpaceOnUse">
-              <path d="M 4 0 L 0 0 0 4" fill="none" stroke="white" strokeWidth="0.2" />
-            </pattern>
-          </defs>
-          <rect width="100" height="100" fill="url(#heroGrid)" />
-        </svg>
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#047474]/15 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#E9B61F]/10 to-transparent rounded-full blur-3xl" />
       </div>
 
       {/* Main Content - Bento Grid */}
@@ -428,16 +437,29 @@ export function DashboardHero({
         </div>
 
         {/* AI Insight Banner */}
-        <div 
-          className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 hover:border-[#E9B61F]/40 transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
-          style={{ animationDelay: '50ms' }}
-        >
-          <div className="p-1.5 rounded-lg bg-[#E9B61F]/20 group-hover:bg-[#E9B61F]/30 transition-colors">
-            <Sparkles className="w-4 h-4 text-[#E9B61F] group-hover:animate-pulse" />
+        {insightHref ? (
+          <Link
+            href={insightHref}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 hover:border-[#E9B61F]/40 transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
+            style={{ animationDelay: '50ms' }}
+          >
+            <div className="p-1.5 rounded-lg bg-[#E9B61F]/20 group-hover:bg-[#E9B61F]/30 transition-colors">
+              <Sparkles className="w-4 h-4 text-[#E9B61F] group-hover:animate-pulse" />
+            </div>
+            <p className="text-sm text-white/80 flex-1">{displayInsight}</p>
+            <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
+          </Link>
+        ) : (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E9B61F]/10 to-[#047474]/10 border border-[#E9B61F]/20 mb-4 animate-fadeSlideUp opacity-0"
+            style={{ animationDelay: '50ms' }}
+          >
+            <div className="p-1.5 rounded-lg bg-[#E9B61F]/20">
+              <Sparkles className="w-4 h-4 text-[#E9B61F]" />
+            </div>
+            <p className="text-sm text-white/80 flex-1">{displayInsight}</p>
           </div>
-          <p className="text-sm text-white/80 flex-1">{displayInsight}</p>
-          <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
-        </div>
+        )}
 
         {/* Bento Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
