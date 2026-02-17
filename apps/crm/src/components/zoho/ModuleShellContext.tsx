@@ -2,6 +2,7 @@
 
 import { createContext, useContext } from 'react';
 import type { Density } from './ViewPreferencesContext';
+import type { ViewMode } from '@/lib/crm/types';
 
 interface ModuleShellContextValue {
   selectedIds: Set<string>;
@@ -13,6 +14,8 @@ interface ModuleShellContextValue {
   sortDirection: 'asc' | 'desc';
   handleSortChange: (field: string, direction: 'asc' | 'desc') => void;
   moduleKey: string;
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 }
 
 const ModuleShellContext = createContext<ModuleShellContextValue | null>(null);

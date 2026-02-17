@@ -8,12 +8,12 @@ import {
   Package,
   Settings,
   DollarSign,
-  AlertCircle,
   Zap,
   BarChart3,
   ChevronRight,
   CreditCard,
 } from 'lucide-react';
+import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
@@ -247,15 +247,24 @@ function formatActivity(activity: ActivityLogEntry): string {
 // Page Component
 // ============================================================================
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const adminCtx = await getAdminContext();
-  if (!adminCtx) return null;
+  if (!adminCtx) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-slate-700">Unable to load dashboard</p>
+          <p className="text-sm text-slate-500 mt-1">Please sign in to access the admin console.</p>
+        </div>
+      </div>
+    );
+  }
 
   const { profileId, fullName, orgId, orgName } = adminCtx;
 
-  // Fetch all data in parallel
-  const [consoleStats, commissions, futureEnrollments, memberActivity, recentActivity] =
-    await Promise.all([
+  // Fetch all data in parallel with individual error handling
+  const [consoleStatsResult, commissionsResult, futureEnrollmentsResult, memberActivityResult, recentActivityResult] =
+    await Promise.allSettled([
       getCachedAdminConsoleStats(orgId),
       getCommissionStats(orgId),
       getFutureEnrollmentsData(orgId),
@@ -263,22 +272,32 @@ export default async function DashboardPage() {
       getRecentActivity(orgId),
     ]);
 
+  const consoleStats = consoleStatsResult.status === 'fulfilled' ? consoleStatsResult.value : null;
+  const commissions = commissionsResult.status === 'fulfilled' ? commissionsResult.value : { pending: 0, paidThisMonth: 0 };
+  const futureEnrollments = futureEnrollmentsResult.status === 'fulfilled' ? futureEnrollmentsResult.value : { totalFutureActive: 0, startingThisMonth: 0, nextStartDate: null, upcomingEnrollments: [] };
+  const memberActivity = memberActivityResult.status === 'fulfilled' ? memberActivityResult.value : { newEnrollmentsThisMonth: 0, inactiveMembersThisMonth: 0, netGrowth: 0, retentionRate: 0, previousMonthEnrollments: 0, previousMonthInactive: 0 };
+  const recentActivity = recentActivityResult.status === 'fulfilled' ? recentActivityResult.value : [];
+
   return (
     <div className="space-y-6 pb-8">
       {/* ── Enterprise Command Console ── */}
-      <AdminCommandBar
-        adminName={fullName}
-        orgName={orgName}
-        stats={consoleStats}
-      />
+      {consoleStats && (
+        <>
+          <AdminCommandBar
+            adminName={fullName}
+            orgName={orgName}
+            stats={consoleStats}
+          />
 
-      <AdminAlertsStrip stats={consoleStats} />
+          <AdminAlertsStrip stats={consoleStats} />
 
-      <AdminOperationalTiles stats={consoleStats} />
+          <AdminOperationalTiles stats={consoleStats} />
 
-      <AdminWorkQueue items={consoleStats.workQueue} />
+          <AdminWorkQueue items={consoleStats.workQueue} />
 
-      <AdminMemberFunnel stats={consoleStats} />
+          <AdminMemberFunnel stats={consoleStats} />
+        </>
+      )}
 
       {/* ── Commission Stats (preserved) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -402,5 +421,28 @@ export default async function DashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 pb-8 animate-pulse">
+      <div className="h-24 bg-slate-200 rounded-2xl" />
+      <div className="h-16 bg-slate-100 rounded-xl" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-28 bg-slate-100 rounded-xl" />
+        ))}
+      </div>
+      <div className="h-48 bg-slate-100 rounded-xl" />
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

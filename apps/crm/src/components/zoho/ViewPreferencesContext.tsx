@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import type { ViewMode } from '@/lib/crm/types';
 
 export type Density = 'compact' | 'default' | 'comfortable';
 
@@ -10,6 +11,7 @@ export interface ViewPreferences {
   density: Density;
   sortField: string | null;
   sortDirection: 'asc' | 'desc';
+  viewMode: ViewMode;
 }
 
 interface ViewPreferencesContextValue {
@@ -19,6 +21,7 @@ interface ViewPreferencesContextValue {
   setColumns: (moduleKey: string, columns: string[]) => void;
   setDensity: (moduleKey: string, density: Density) => void;
   setSort: (moduleKey: string, field: string | null, direction: 'asc' | 'desc') => void;
+  setViewMode: (moduleKey: string, viewMode: ViewMode) => void;
   savePreferences: (moduleKey: string) => Promise<void>;
 }
 
@@ -28,6 +31,7 @@ const defaultPreferences: ViewPreferences = {
   density: 'default',
   sortField: null,
   sortDirection: 'asc',
+  viewMode: 'table',
 };
 
 const ViewPreferencesContext = createContext<ViewPreferencesContextValue | undefined>(undefined);
@@ -115,6 +119,10 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
     updatePreferences(moduleKey, { sortField: field, sortDirection: direction });
   }, [updatePreferences]);
 
+  const setViewMode = useCallback((moduleKey: string, viewMode: ViewMode) => {
+    updatePreferences(moduleKey, { viewMode });
+  }, [updatePreferences]);
+
   // Save preferences to API (DB) and localStorage
   const savePreferences = useCallback(async (moduleKey: string) => {
     const prefs = preferences[moduleKey];
@@ -147,6 +155,7 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
         setColumns,
         setDensity,
         setSort,
+        setViewMode,
         savePreferences,
       }}
     >

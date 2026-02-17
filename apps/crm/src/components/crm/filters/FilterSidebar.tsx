@@ -52,7 +52,7 @@ import type {
 import { getFieldOptions } from '@/lib/crm/utils';
 
 // ============================================================================
-// Operator config (shared with AdvancedFilterBuilder)
+// Operator config for field-based filters
 // ============================================================================
 
 interface OperatorConfig {
@@ -408,7 +408,10 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
   const addFieldFilter = useCallback(
     (fieldKey: string) => {
       const f = fields.find((x) => x.key === fieldKey);
-      const defaultOp: FilterOperator = f?.type === 'boolean' ? 'equals' : 'contains';
+      const defaultOp: FilterOperator =
+        f?.type === 'boolean' || ['number', 'currency', 'date', 'datetime', 'select', 'multiselect', 'lookup', 'user'].includes(f?.type ?? '')
+          ? 'equals'
+          : 'contains';
       onFiltersChange([
         ...filters,
         { field: fieldKey, operator: defaultOp, value: null, category: 'field' },

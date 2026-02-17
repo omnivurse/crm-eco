@@ -10,15 +10,24 @@ import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
 import { ViewsDropdown } from './ViewsDropdown';
 import { FilterSidebarTrigger } from '@/components/crm/filters/FilterSidebarTrigger';
+import { TerritoryFilter } from '@/components/crm/filters/TerritoryFilter';
 import { FilterChipsBar } from './FilterChipsBar';
 import { ColumnsButton } from './ColumnsButton';
 import { DensityToggle } from './DensityToggle';
 import { MassActionsBar } from './MassActionsBar';
 import { ModuleShellProvider } from './ModuleShellContext';
+import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import type { Density } from './ViewPreferencesContext';
-import type { CrmModule, CrmField, CrmView, CrmRecord, ViewFilter } from '@/lib/crm/types';
+import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 
 export type RecordScope = 'all' | 'mine' | 'downline';
+
+/** Validate parsed filter objects from URL to prevent malformed state */
+function isValidFilter(f: unknown): f is ViewFilter {
+  if (!f || typeof f !== 'object') return false;
+  const obj = f as Record<string, unknown>;
+  return typeof obj.field === 'string' && typeof obj.operator === 'string';
+}
 
 interface ModuleShellProps {
   module: CrmModule;
@@ -30,6 +39,8 @@ interface ModuleShellProps {
   children: React.ReactNode;
   className?: string;
   userRole?: string | null;
+  /** Available territories for territory filter dropdown */
+  territories?: CrmTerritory[];
 }
 
 export const ModuleShell = memo(function ModuleShell({
@@ -42,11 +53,15 @@ export const ModuleShell = memo(function ModuleShell({
   children,
   className,
   userRole,
+  territories = [],
 }: ModuleShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Local state
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    (searchParams.get('viewMode') as ViewMode) || 'table'
+  );
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   const [scope, setScope] = useState<RecordScope>(
     (searchParams.get('scope') as RecordScope) || 'all'
@@ -58,7 +73,7 @@ export const ModuleShell = memo(function ModuleShell({
     if (filtersParam) {
       try {
         const parsed = JSON.parse(filtersParam);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parsed.filter(isValidFilter);
       } catch { /* ignore */ }
     }
     return [];
@@ -97,6 +112,22 @@ export const ModuleShell = memo(function ModuleShell({
   // Keep searchParams ref updated without triggering effect
   useEffect(() => {
     searchParamsRef.current = searchParams;
+  }, [searchParams]);
+
+  // Sync filter state from URL on browser back/forward navigation
+  useEffect(() => {
+    const filtersParam = searchParams.get('filters');
+    if (filtersParam) {
+      try {
+        const parsed = JSON.parse(filtersParam);
+        if (Array.isArray(parsed)) {
+          setFilters(parsed.filter(isValidFilter));
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+    // No filters param in URL -- clear state if we had any
+    setFilters((prev) => (prev.length === 0 ? prev : []));
   }, [searchParams]);
 
   // Debounced live search - only triggered by searchQuery changes
@@ -171,13 +202,13 @@ export const ModuleShell = memo(function ModuleShell({
     setSortField(field);
     setSortDirection(direction);
 
-    // Apply sort to URL query params
-    const params = new URLSearchParams(searchParams.toString());
+    // Apply sort to URL query params (use ref to avoid stale closure)
+    const params = new URLSearchParams(searchParamsRef.current.toString());
     params.set('sortField', field);
     params.set('sortDirection', direction);
-    params.delete('page'); // Reset to first page when sorting changes
+    params.delete('page');
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
-  }, [searchParams, router, module.key]);
+  }, [router, module.key]);
 
   const handleSelectAll = useCallback(() => {
     setSelectedIds(new Set(records.map(r => r.id)));
@@ -525,6 +556,18 @@ export const ModuleShell = memo(function ModuleShell({
     });
   }, []);
 
+  // View mode change handler - also persists to URL
+  const handleViewModeChange = useCallback((mode: ViewMode) => {
+    setViewMode(mode);
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    if (mode === 'table') {
+      params.delete('viewMode');
+    } else {
+      params.set('viewMode', mode);
+    }
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [router, module.key]);
+
   // Context for child components
   const shellContext = useMemo(() => ({
     selectedIds,
@@ -536,7 +579,9 @@ export const ModuleShell = memo(function ModuleShell({
     sortDirection,
     handleSortChange,
     moduleKey: module.key,
-  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key]);
+    viewMode,
+    setViewMode: handleViewModeChange,
+  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, viewMode, handleViewModeChange]);
 
   return (
     <div className={cn('max-w-7xl mx-auto space-y-4', className)}>
@@ -581,8 +626,8 @@ export const ModuleShell = memo(function ModuleShell({
             </form>
           </div>
 
-          {/* Scope Filter */}
-          <div className="flex items-center gap-1">
+          {/* Scope + Territory Filters */}
+          <div className="flex items-center gap-2">
             <Select value={scope} onValueChange={(v) => handleScopeChange(v as RecordScope)}>
               <SelectTrigger className="h-9 w-[150px] text-sm rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
                 <Users className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
@@ -596,10 +641,21 @@ export const ModuleShell = memo(function ModuleShell({
                 <SelectItem value="downline">My Downline</SelectItem>
               </SelectContent>
             </Select>
+
+            {territories.length > 0 && (
+              <TerritoryFilter territories={territories} moduleKey={module.key} />
+            )}
           </div>
 
-          {/* Right: Filters + Columns + Density */}
+          {/* Right: View Mode + Filters + Columns + Density */}
           <div className="flex items-center gap-2">
+            <ViewModeSwitcher
+              value={viewMode}
+              onChange={handleViewModeChange}
+            />
+
+            <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
+
             <FilterSidebarTrigger
               fields={fields}
               filters={filters}
@@ -609,16 +665,20 @@ export const ModuleShell = memo(function ModuleShell({
               }}
             />
 
-            <ColumnsButton
-              fields={fields}
-              visibleColumns={visibleColumns}
-              onColumnsChange={setVisibleColumns}
-            />
+            {(viewMode === 'table' || viewMode === 'split') && (
+              <>
+                <ColumnsButton
+                  fields={fields}
+                  visibleColumns={visibleColumns}
+                  onColumnsChange={setVisibleColumns}
+                />
 
-            <DensityToggle
-              value={density}
-              onChange={setDensity}
-            />
+                <DensityToggle
+                  value={density}
+                  onChange={setDensity}
+                />
+              </>
+            )}
           </div>
         </div>
 

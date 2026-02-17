@@ -25,6 +25,7 @@ const DEFAULT_MODULES = [
   { key: 'leads', name: 'Lead', name_plural: 'Leads', icon: 'user-plus', description: 'Track and nurture potential customers', display_order: 2 },
   { key: 'deals', name: 'Member', name_plural: 'Members', icon: 'users', description: 'Manage member applications and lifecycle', display_order: 3 },
   { key: 'accounts', name: 'Account', name_plural: 'Accounts', icon: 'building', description: 'Manage organizations and companies', display_order: 4 },
+  { key: 'prospects', name: 'Prospect', name_plural: 'Prospects', icon: 'target', description: 'Manage potential customers and sales opportunities', display_order: 5 },
 ];
 
 // Default fields for each module
@@ -64,6 +65,16 @@ const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: s
     { key: 'employees', label: 'Employees', type: 'number', display_order: 5, section: 'main' },
     { key: 'billing_city', label: 'Billing City', type: 'text', display_order: 10, section: 'address' },
     { key: 'billing_state', label: 'Billing State', type: 'text', display_order: 11, section: 'address' },
+  ],
+  prospects: [
+    { key: 'first_name', label: 'First Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 1, section: 'main' },
+    { key: 'last_name', label: 'Last Name', type: 'text', required: true, is_system: true, is_title_field: true, display_order: 2, section: 'main' },
+    { key: 'email', label: 'Email', type: 'email', required: true, is_system: true, display_order: 3, section: 'main' },
+    { key: 'phone', label: 'Phone', type: 'phone', is_system: true, display_order: 4, section: 'main' },
+    { key: 'prospect_status', label: 'Prospect Status', type: 'select', is_system: true, display_order: 5, section: 'main', options: ['New', 'In Process', 'Qualified', 'Closed Won', 'Closed Lost'] },
+    { key: 'carrier', label: 'Carrier', type: 'text', display_order: 6, section: 'main' },
+    { key: 'mailing_city', label: 'City', type: 'text', display_order: 10, section: 'address' },
+    { key: 'mailing_state', label: 'State', type: 'text', display_order: 11, section: 'address' },
   ],
 };
 

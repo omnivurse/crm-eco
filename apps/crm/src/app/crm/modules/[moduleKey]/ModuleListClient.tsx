@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { ModuleShell } from '@/components/zoho/ModuleShell';
 import { useModuleShellOptional } from '@/components/zoho/ModuleShellContext';
 import { RecordTable } from '@/components/crm/records/RecordTable';
-import type { CrmModule, CrmField, CrmView, CrmRecord } from '@/lib/crm/types';
+import { ListView } from '@/components/crm/views/ListView';
+import { KanbanView } from '@/components/crm/views/KanbanView';
+import { ChartView } from '@/components/crm/views/ChartView';
+import { TimelineView } from '@/components/crm/views/TimelineView';
+import { SplitView } from '@/components/crm/views/SplitView';
+import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory } from '@/lib/crm/types';
 
 interface ModuleListClientProps {
   module: CrmModule;
@@ -15,10 +20,12 @@ interface ModuleListClientProps {
   activeViewId?: string;
   totalCount: number;
   userRole?: string | null;
+  /** Available territories for territory filter */
+  territories?: CrmTerritory[];
 }
 
-// Inner component that consumes the ModuleShell context
-function ModuleTableContent({
+// Inner component that consumes the ModuleShell context and renders the active view
+function ModuleViewContent({
   records,
   fields,
   moduleKey,
@@ -53,19 +60,80 @@ function ModuleTableContent({
     : undefined;
   const handleSort = shellContext?.handleSortChange;
 
-  return (
-    <RecordTable
-      records={records}
-      fields={fields}
-      displayColumns={displayColumns}
-      moduleKey={moduleKey}
-      onRowClick={handleRowClick}
-      selectedIds={selectedIds}
-      onSelectionChange={setSelectedIds}
-      onSort={handleSort}
-      currentSort={currentSort}
-    />
-  );
+  // Determine active view mode
+  const viewMode = shellContext?.viewMode || 'table';
+
+  switch (viewMode) {
+    case 'list':
+      return (
+        <ListView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          onRowClick={handleRowClick}
+        />
+      );
+
+    case 'kanban':
+      return (
+        <KanbanView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+          onRowClick={handleRowClick}
+        />
+      );
+
+    case 'chart':
+      return (
+        <ChartView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+        />
+      );
+
+    case 'timeline':
+      return (
+        <TimelineView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+          onRowClick={handleRowClick}
+        />
+      );
+
+    case 'split':
+      return (
+        <SplitView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+          displayColumns={displayColumns}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          onRowClick={handleRowClick}
+        />
+      );
+
+    case 'table':
+    default:
+      return (
+        <RecordTable
+          records={records}
+          fields={fields}
+          displayColumns={displayColumns}
+          moduleKey={moduleKey}
+          onRowClick={handleRowClick}
+          selectedIds={selectedIds}
+          onSelectionChange={setSelectedIds}
+          onSort={handleSort}
+          currentSort={currentSort}
+        />
+      );
+  }
 }
 
 function ModuleListContent({
@@ -76,6 +144,7 @@ function ModuleListContent({
   activeViewId,
   totalCount,
   userRole,
+  territories,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -86,8 +155,9 @@ function ModuleListContent({
       activeViewId={activeViewId}
       totalCount={totalCount}
       userRole={userRole}
+      territories={territories}
     >
-      <ModuleTableContent
+      <ModuleViewContent
         records={records}
         fields={fields}
         moduleKey={module.key}
