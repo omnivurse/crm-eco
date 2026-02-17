@@ -20,12 +20,13 @@ interface PageProps {
     view?: string;
     page?: string;
     search?: string;
+    scope?: 'all' | 'mine' | 'downline';
   };
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = params;
-  const { page: pageStr, search, view: viewId } = searchParams;
+  const { page: pageStr, search, view: viewId, scope } = searchParams;
   
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
@@ -50,7 +51,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     currentView = await getDefaultView(crmModule.id);
   }
 
-  // Fetch records
+  // Fetch records with scope filtering
   const { records, total } = await getRecords({
     moduleId: crmModule.id,
     page,
@@ -58,9 +59,19 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     search,
     filters: currentView?.filters || [],
     sort: currentView?.sort || [],
+    scope: scope || 'all',
   });
 
   const totalPages = Math.ceil(total / pageSize);
+
+  const buildPageUrl = (p: number) => {
+    const params = new URLSearchParams();
+    params.set('page', String(p));
+    if (viewId) params.set('view', viewId);
+    if (search) params.set('search', search);
+    if (scope) params.set('scope', scope);
+    return `/crm/modules/${crmModule.key}?${params.toString()}`;
+  };
 
   return (
     <>
@@ -72,6 +83,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         views={views}
         activeViewId={currentView?.id}
         totalCount={total}
+        userRole={(profile as any).role || null}
       />
 
       {/* Pagination */}
@@ -91,7 +103,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
               disabled={page <= 1}
               asChild
             >
-              <Link href={`/crm/modules/${crmModule.key}?page=${page - 1}`}>
+              <Link href={buildPageUrl(page - 1)}>
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
               </Link>
@@ -113,7 +125,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
                 return (
                   <Link
                     key={pageNum}
-                    href={`/crm/modules/${crmModule.key}?page=${pageNum}`}
+                    href={buildPageUrl(pageNum)}
                     className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
                       pageNum === page
                         ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30'
@@ -133,7 +145,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
               disabled={page >= totalPages}
               asChild
             >
-              <Link href={`/crm/modules/${crmModule.key}?page=${page + 1}`}>
+              <Link href={buildPageUrl(page + 1)}>
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Link>

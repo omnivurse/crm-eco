@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge, Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign, Link as LinkIcon, FileText } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, MapPin, Calendar, Users, Palette, DollarSign, Link as LinkIcon, FileText, Network } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { AgentCommissionTab } from '@/components/commissions/AgentCommissionTab';
 import { AgentEnrollmentTab } from '@/components/enrollment-links/AgentEnrollmentTab';
 import { AgentLicensingTab } from '@/components/agents/AgentLicensingTab';
+import { ProducerInfoCard } from '@/components/agents/ProducerInfoCard';
+import { DownlineSearch } from '@/components/agents/DownlineSearch';
 
 async function getAgent(id: string) {
   const supabase = await createServerSupabaseClient();
@@ -29,6 +31,8 @@ async function getAgent(id: string) {
     .select(`
       *,
       parent_advisor:advisors!advisors_parent_advisor_id_fkey(id, first_name, last_name, email),
+      producer_owner:advisors!advisors_producer_owner_id_fkey(id, first_name, last_name, agent_role),
+      referring_affiliate:advisors!advisors_referring_affiliate_id_fkey(id, first_name, last_name),
       commission_tier:commission_tiers(id, name, code, base_rate_pct, bonus_rate_pct, override_rate_pct)
     `)
     .eq('id', id)
@@ -54,9 +58,9 @@ async function getAgentMembers(agentId: string) {
 async function getDownlineAgents(agentId: string) {
   const supabase = await createServerSupabaseClient();
 
-  const { data: downline } = await supabase
+  const { data: downline } = await (supabase as any)
     .from('advisors')
-    .select('id, first_name, last_name, email, status')
+    .select('id, first_name, last_name, email, status, producer_code, producer_type, phone, advisor_code, created_at')
     .eq('parent_advisor_id', agentId)
     .order('created_at', { ascending: false });
 
@@ -128,11 +132,19 @@ export default async function AgentDetailPage({ params }: PageProps) {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="profile" className="space-y-6">
+      <Tabs defaultValue="producer" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="producer">
+            <FileText className="h-4 w-4 mr-2" />
+            Producer Info
+          </TabsTrigger>
           <TabsTrigger value="profile">
             <Users className="h-4 w-4 mr-2" />
             Profile
+          </TabsTrigger>
+          <TabsTrigger value="downline">
+            <Network className="h-4 w-4 mr-2" />
+            Downline
           </TabsTrigger>
           <TabsTrigger value="licensing">
             <FileText className="h-4 w-4 mr-2" />
@@ -147,6 +159,16 @@ export default async function AgentDetailPage({ params }: PageProps) {
             Commissions
           </TabsTrigger>
         </TabsList>
+
+        {/* Producer Info Tab */}
+        <TabsContent value="producer">
+          <ProducerInfoCard agent={agent} />
+        </TabsContent>
+
+        {/* Downline Tab */}
+        <TabsContent value="downline">
+          <DownlineSearch agents={downline} parentAgentId={agent.id} />
+        </TabsContent>
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">

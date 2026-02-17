@@ -46,10 +46,10 @@ interface AdminTopNavProps {
 }
 
 const roleColors: Record<string, string> = {
-  super_admin: 'bg-purple-100 text-purple-700',
-  admin: 'bg-[#e1f3f3] text-[#047474]',
-  manager: 'bg-[#e0f1ea] text-[#027343]',
-  user: 'bg-slate-100 text-slate-700',
+  super_admin: 'bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 border border-purple-200 dark:border-purple-500/30',
+  admin: 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30',
+  manager: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30',
+  user: 'bg-slate-100 dark:bg-slate-500/20 text-slate-700 dark:text-slate-400 border border-slate-200 dark:border-slate-500/30',
 };
 
 function getNotificationIcon(type?: string, icon?: string) {
@@ -224,14 +224,14 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
     .slice(0, 2);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-3 lg:px-6 shadow-sm">
+    <header className="h-14 flex items-center px-3 lg:px-6 glass border-b border-slate-200 dark:border-white/5">
       {/* Left side - Mobile Menu + App Switcher + Title */}
       <div className="flex items-center gap-2 lg:gap-4">
         {/* Mobile Menu Toggle */}
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden h-10 w-10 rounded-lg text-slate-600 hover:text-slate-900"
+          className="lg:hidden h-10 w-10 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
           onClick={onMobileMenuToggle}
           aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
         >
@@ -239,14 +239,14 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
         </Button>
 
         <AppSwitcher currentApp="admin" />
-        <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+        <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden sm:block" />
         <div className="hidden md:flex items-center gap-2">
-          <Shield className="w-4 h-4 text-[#047474]" />
-          <span className="text-sm font-semibold text-[#003560]">System Administration</span>
+          <Shield className="w-4 h-4 text-[#047474] dark:text-teal-400" />
+          <span className="text-sm font-semibold text-[#003560] dark:text-white">System Administration</span>
         </div>
         
         {/* Live Status Indicator */}
-        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200">
+        <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
           {isOnline ? (
             <>
               <div className="relative">
@@ -254,20 +254,23 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                 <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
               </div>
               <Wifi className="w-3.5 h-3.5 text-emerald-500" />
-              <span className="text-xs font-medium text-emerald-600">Live</span>
+              <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Live</span>
             </>
           ) : (
             <>
               <div className="w-2 h-2 rounded-full bg-red-500" />
               <WifiOff className="w-3.5 h-3.5 text-red-500" />
-              <span className="text-xs font-medium text-red-600">Offline</span>
+              <span className="text-xs font-medium text-red-600 dark:text-red-400">Offline</span>
             </>
           )}
         </div>
       </div>
 
+      {/* Spacer to push actions right */}
+      <div className="flex-1" />
+
       {/* Right side - actions and user menu */}
-      <div className="flex items-center gap-1 lg:gap-3">
+      <div className="flex items-center gap-1 lg:gap-2">
         {/* Change Feed Ticker - hidden on mobile */}
         <div className="hidden md:block">
         <ChangeTickerPopover
@@ -282,7 +285,6 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
           onClear={changeFeed.clear}
           onRefresh={changeFeed.refresh}
           onEventClick={(event) => {
-            // Navigate based on entity type
             if (event.entityType === 'enrollment') {
               router.push('/enrollments');
             } else if (event.entityType === 'member') {
@@ -299,23 +301,23 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
         {/* Notifications */}
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative hover:bg-slate-100 rounded-xl h-9 w-9 lg:h-10 lg:w-10">
-              <Bell className="h-5 w-5 text-slate-500" />
+            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10">
+              <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#047474] rounded-full ring-2 ring-white text-[10px] font-bold text-white px-1">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#047474] rounded-full ring-2 ring-white dark:ring-slate-900 text-[10px] font-bold text-white px-1">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-2rem)] rounded-xl shadow-lg border-slate-200">
+          <DropdownMenuContent align="end" className="w-80 max-w-[calc(100vw-2rem)] rounded-xl shadow-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
             <DropdownMenuLabel className="px-4 py-3 flex items-center justify-between">
-              <span className="font-semibold text-[#003560]">Notifications</span>
+              <span className="font-semibold text-slate-900 dark:text-white">Notifications</span>
               {unreadCount > 0 && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-auto py-1 px-2 text-xs text-[#047474] hover:text-[#047474] hover:bg-[#e1f3f3]"
+                  className="h-auto py-1 px-2 text-xs text-[#047474] hover:text-[#047474] hover:bg-[#e1f3f3] dark:hover:bg-teal-500/10"
                   onClick={handleMarkAllAsRead}
                 >
                   <Check className="w-3 h-3 mr-1" />
@@ -323,10 +325,10 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                 </Button>
               )}
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
             <ScrollArea className="h-[320px]">
               {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                <div className="flex flex-col items-center justify-center py-8 text-slate-400 dark:text-slate-500">
                   <Bell className="w-8 h-8 mb-2" />
                   <p className="text-sm">No notifications yet</p>
                 </div>
@@ -335,8 +337,8 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                   <DropdownMenuItem
                     key={notification.id}
                     className={cn(
-                      'flex items-start gap-3 px-4 py-3 cursor-pointer focus:bg-slate-50',
-                      !notification.is_read && 'bg-[#e1f3f3]/50'
+                      'flex items-start gap-3 px-4 py-3 cursor-pointer focus:bg-slate-50 dark:focus:bg-white/5',
+                      !notification.is_read && 'bg-teal-50/50 dark:bg-teal-500/5'
                     )}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -345,22 +347,22 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={cn(
-                        'text-sm text-[#003560] truncate',
+                        'text-sm text-slate-900 dark:text-white truncate',
                         !notification.is_read && 'font-semibold'
                       )}>
                         {notification.title}
                       </p>
                       {notification.body && (
-                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
                           {notification.body}
                         </p>
                       )}
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                         {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                       </p>
                     </div>
                     {notification.href && (
-                      <ExternalLink className="w-3 h-3 text-slate-400 flex-shrink-0 mt-1" />
+                      <ExternalLink className="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0 mt-1" />
                     )}
                   </DropdownMenuItem>
                 ))
@@ -368,9 +370,9 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
             </ScrollArea>
             {notifications.length > 0 && (
               <>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                 <DropdownMenuItem
-                  className="px-4 py-2.5 cursor-pointer text-center text-sm text-[#047474] font-medium hover:bg-[#e1f3f3] justify-center"
+                  className="px-4 py-2.5 cursor-pointer text-center text-sm text-[#047474] dark:text-teal-400 font-medium hover:bg-teal-50 dark:hover:bg-teal-500/10 justify-center"
                   onClick={() => {
                     router.push('/notifications');
                     setIsOpen(false);
@@ -383,12 +385,25 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* User Menu */}
+        {/* Settings Gear */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden sm:flex h-9 w-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+          onClick={() => router.push('/settings')}
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+
+        {/* User Menu - compact like CRM */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-3 h-auto py-2 px-3 hover:bg-slate-50 rounded-xl">
+            <Button
+              variant="ghost"
+              className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
+            >
               <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-sm font-semibold text-white ring-2 ring-[#047474]/20">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-xs font-semibold text-white border border-teal-500/50">
                   {profile.avatarUrl ? (
                     <img
                       src={profile.avatarUrl}
@@ -399,47 +414,61 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                     initials
                   )}
                 </div>
-                {/* Online status indicator on avatar */}
                 <div className={cn(
-                  'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white',
+                  'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900',
                   isOnline ? 'bg-emerald-500' : 'bg-slate-400'
                 )} />
               </div>
-              <div className="text-left hidden sm:block">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-[#003560]">{profile.fullName}</p>
-                  <Badge className={`${roleColors[profile.role] || roleColors.user} text-[10px] px-1.5 py-0`} variant="secondary">
-                    {profile.role === 'super_admin' ? 'Super Admin' : profile.role}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-500 truncate max-w-[150px]">{profile.email}</p>
-              </div>
-              <ChevronDown className="h-4 w-4 text-slate-400 hidden sm:block" />
+              <ChevronDown className="w-3 h-3 text-slate-400 hidden sm:block" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg border-slate-200">
-            <DropdownMenuLabel className="px-4 py-3">
-              <div className="flex items-center justify-between mb-1">
-                <p className="font-semibold text-[#003560]">{profile.fullName}</p>
-                <Badge className={`${roleColors[profile.role] || roleColors.user} font-semibold`} variant="secondary">
-                  {profile.role}
+          <DropdownMenuContent align="end" className="w-64 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+            <DropdownMenuLabel className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-sm font-semibold text-white border-2 border-teal-500/50 flex-shrink-0">
+                  {profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={profile.fullName}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    initials
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{profile.fullName}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{profile.email}</p>
+                </div>
+              </div>
+              <div className="mt-3">
+                <Badge className={cn('text-[10px] px-2.5 py-1 font-semibold uppercase tracking-wider', roleColors[profile.role] || roleColors.user)} variant="secondary">
+                  {profile.role === 'super_admin' ? 'Super Admin' : profile.role}
                 </Badge>
               </div>
-              <p className="text-xs text-slate-500">{profile.email}</p>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push('/settings')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-              <Settings className="h-4 w-4 mr-3 text-[#047474]" />
-              <span className="font-medium">Settings</span>
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+            <DropdownMenuItem
+              onClick={() => router.push('/settings')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
+              <Settings className="h-4 w-4 mr-3" />
+              Settings
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/profile')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-              <User className="h-4 w-4 mr-3 text-[#047474]" />
-              <span className="font-medium">Profile</span>
+            <DropdownMenuItem
+              onClick={() => router.push('/profile')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
+              <User className="h-4 w-4 mr-3" />
+              My Profile
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="px-4 py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer py-2"
+            >
               <LogOut className="h-4 w-4 mr-3" />
-              <span className="font-medium">Sign out</span>
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

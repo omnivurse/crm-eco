@@ -778,7 +778,7 @@ export const RecordTable = memo(function RecordTable({
       return (
         <Link
           href={`/crm/r/${record.id}`}
-          className="font-medium text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+          className="font-medium text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate block"
           onClick={(e) => e.stopPropagation()}
         >
           {displayName}
@@ -800,13 +800,13 @@ export const RecordTable = memo(function RecordTable({
       ) : col === 'email' ? (
         <a
           href={`mailto:${value}`}
-          className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+          className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate block"
           onClick={(e) => e.stopPropagation()}
         >
           {value}
         </a>
       ) : (
-        <span className="text-slate-700 dark:text-slate-300">{value}</span>
+        <span className="text-slate-700 dark:text-slate-300 truncate">{value}</span>
       );
 
       if (enableInlineEdit && onRecordUpdate) {
@@ -904,7 +904,7 @@ export const RecordTable = memo(function RecordTable({
     if (!field) {
       const value = record.data?.[col];
       if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
-      return <span className="text-slate-700 dark:text-slate-300">{String(value)}</span>;
+      return <span className="text-slate-700 dark:text-slate-300 truncate">{String(value)}</span>;
     }
 
     const value = record.data?.[col];
@@ -1024,7 +1024,7 @@ export const RecordTable = memo(function RecordTable({
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
         )}>
           <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth }}>
-            <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm sticky left-0 z-20" style={{ width: 48, minWidth: 48 }}>
+            <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm sticky left-0 z-20" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
               <Checkbox
                 checked={allSelected}
                 ref={(el) => {
@@ -1038,13 +1038,14 @@ export const RecordTable = memo(function RecordTable({
               <TableHead
                 key={col}
                 className={cn(
-                  'flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  'flex-shrink-0 flex items-center overflow-hidden bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
                   onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none',
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
                 style={{
                   width: getColumnWidth(col),
                   minWidth: getColumnWidth(col),
+                  maxWidth: getColumnWidth(col),
                   ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
                 }}
                 onClick={() => handleSort(col)}
@@ -1055,7 +1056,7 @@ export const RecordTable = memo(function RecordTable({
                 </div>
               </TableHead>
             ))}
-            <TableHead className="w-28 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 112, minWidth: 112 }} />
+            <TableHead className="w-28 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 112, minWidth: 112, maxWidth: 112 }} />
           </TableRow>
         </TableHeader>
         <TableBody
@@ -1134,7 +1135,7 @@ export const RecordTable = memo(function RecordTable({
                         ? 'bg-teal-50 dark:bg-teal-500/5'
                         : 'bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-white/5'
                     )}
-                    style={{ width: 48, minWidth: 48 }}
+                    style={{ width: 48, minWidth: 48, maxWidth: 48 }}
                   >
                     <Checkbox
                       checked={selectedIds.has(record.id)}
@@ -1146,7 +1147,7 @@ export const RecordTable = memo(function RecordTable({
                     <TableCell
                       key={col}
                       className={cn(
-                        'text-sm flex-shrink-0 flex items-center',
+                        'text-sm flex-shrink-0 flex items-center overflow-hidden',
                         colIndex === 0 && 'sticky z-10 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]',
                         colIndex === 0 && (
                           selectedIds.has(record.id)
@@ -1157,13 +1158,14 @@ export const RecordTable = memo(function RecordTable({
                       style={{
                         width: getColumnWidth(col),
                         minWidth: getColumnWidth(col),
+                        maxWidth: getColumnWidth(col),
                         ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
                       }}
                     >
                       {renderCellValue(record, col)}
                     </TableCell>
                   ))}
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center" style={{ width: 112, minWidth: 112 }}>
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
                     {/* Row Quick Actions - visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {/* Call - only if phone exists */}

@@ -5,6 +5,100 @@ import type { Database } from '../types';
 
 type AdvisorInsert = Database['public']['Tables']['advisors']['Insert'];
 
+/**
+ * Resolve an advisor reference (name, email, producer_code, or advisor_code)
+ * to an advisor ID. Tries multiple matching strategies in order.
+ */
+async function resolveAdvisorRef(
+  supabase: ImportContext['supabase'],
+  organizationId: string,
+  value: string
+): Promise<string | null> {
+  if (!value || !value.trim()) return null;
+  const trimmed = value.trim();
+
+  // Try producer_code (exact, case-insensitive)
+  const { data: byProdCode } = await (supabase as any)
+    .from('advisors')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .ilike('producer_code', trimmed)
+    .limit(1)
+    .single();
+  if (byProdCode) return byProdCode.id;
+
+  // Try advisor_code (exact)
+  const { data: byCode } = await supabase
+    .from('advisors')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .eq('advisor_code', trimmed)
+    .single();
+  if (byCode) return byCode.id;
+
+  // Try email (exact, case-insensitive)
+  const { data: byEmail } = await supabase
+    .from('advisors')
+    .select('id')
+    .eq('organization_id', organizationId)
+    .ilike('email', trimmed)
+    .single();
+  if (byEmail) return byEmail.id;
+
+  // Try full name match (first_name + ' ' + last_name)
+  // Split the value into parts for matching
+  const nameParts = trimmed.split(/\s+/);
+  if (nameParts.length >= 2) {
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
+    const { data: byName } = await supabase
+      .from('advisors')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .ilike('first_name', firstName)
+      .ilike('last_name', lastName)
+      .single();
+    if (byName) return byName.id;
+  }
+
+  return null;
+}
+
+/**
+ * Parse a string to a boolean value.
+ * Accepts: "true", "yes", "1", "y" as true; everything else as false.
+ */
+function parseBool(value: string | undefined | null): boolean {
+  if (!value) return false;
+  return ['true', 'yes', '1', 'y'].includes(value.trim().toLowerCase());
+}
+
+/**
+ * Parse a date string. Returns ISO date string or null.
+ */
+function parseDate(value: string | undefined | null): string | null {
+  if (!value || !value.trim()) return null;
+  const trimmed = value.trim();
+
+  // Try direct Date parse
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+
+  // Try MM/DD/YYYY or M/D/YYYY
+  const parts = trimmed.split(/[/\-]/);
+  if (parts.length === 3) {
+    const [m, d2, y] = parts;
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d2));
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  }
+
+  return null;
+}
+
 export async function importAdvisorsFromRows(
   context: ImportContext,
   rows: ImportRowData[]
@@ -52,6 +146,24 @@ export async function importAdvisorsFromRows(
           .filter(s => s.length === 2);
       }
 
+      // Resolve parent advisor lookup
+      let parentAdvisorId: string | null = null;
+      if (mappedData.parent_advisor_lookup) {
+        parentAdvisorId = await resolveAdvisorRef(supabase, organizationId, mappedData.parent_advisor_lookup);
+      }
+
+      // Resolve referring affiliate lookup
+      let referringAffiliateId: string | null = null;
+      if (mappedData.referring_affiliate_lookup) {
+        referringAffiliateId = await resolveAdvisorRef(supabase, organizationId, mappedData.referring_affiliate_lookup);
+      }
+
+      // Resolve producer owner lookup
+      let producerOwnerId: string | null = null;
+      if (mappedData.producer_owner_lookup) {
+        producerOwnerId = await resolveAdvisorRef(supabase, organizationId, mappedData.producer_owner_lookup);
+      }
+
       // Check for existing advisor (dedup logic)
       let existingAdvisor = null;
       
@@ -86,8 +198,19 @@ export async function importAdvisorsFromRows(
         existingAdvisor = byNpn;
       }
 
+      // If not found, try producer_code
+      if (!existingAdvisor && mappedData.producer_code) {
+        const { data: byProdCode } = await (supabase as any)
+          .from('advisors')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .ilike('producer_code', mappedData.producer_code)
+          .single();
+        existingAdvisor = byProdCode;
+      }
+
       // Prepare insert/update data
-      const advisorData: Partial<AdvisorInsert> = {
+      const advisorData: Record<string, any> = {
         organization_id: organizationId,
         first_name: mappedData.first_name,
         last_name: mappedData.last_name,
@@ -99,11 +222,34 @@ export async function importAdvisorsFromRows(
         npn: mappedData.npn || null,
         advisor_code: mappedData.advisor_code || null,
         status: (mappedData.status as AdvisorInsert['status']) || 'pending',
+        // New producer fields
+        producer_code: mappedData.producer_code || null,
+        admin123_agent_id: mappedData.admin123_agent_id || null,
+        producer_type: mappedData.producer_type || null,
+        mobile_phone: mappedData.mobile_phone || null,
+        website_url: mappedData.website_url || null,
+        master_click_funnel: mappedData.master_click_funnel || null,
+        mpb_certified: parseBool(mappedData.mpb_certified),
+        mpb_eo_current: parseBool(mappedData.mpb_eo_current),
+        crm_owner: parseBool(mappedData.crm_owner),
+        setup_fee_waived: parseBool(mappedData.setup_fee_waived),
+        compliance_training_completed: parseDate(mappedData.compliance_training_completed),
       };
+
+      // Only set FK references if they resolved successfully
+      if (parentAdvisorId) {
+        advisorData.parent_advisor_id = parentAdvisorId;
+      }
+      if (referringAffiliateId) {
+        advisorData.referring_affiliate_id = referringAffiliateId;
+      }
+      if (producerOwnerId) {
+        advisorData.producer_owner_id = producerOwnerId;
+      }
 
       if (existingAdvisor) {
         // Update existing advisor
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('advisors')
           .update(advisorData)
           .eq('id', existingAdvisor.id);
@@ -117,9 +263,9 @@ export async function importAdvisorsFromRows(
         }
       } else {
         // Insert new advisor
-        const { data: newAdvisor, error } = await supabase
+        const { data: newAdvisor, error } = await (supabase as any)
           .from('advisors')
-          .insert(advisorData as AdvisorInsert)
+          .insert(advisorData)
           .select('id')
           .single();
 
@@ -162,4 +308,3 @@ async function recordRowResult(
     processed_at: new Date().toISOString(),
   });
 }
-

@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
@@ -18,6 +18,8 @@ import { ModuleShellProvider } from './ModuleShellContext';
 import type { Density } from './ViewPreferencesContext';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewFilter } from '@/lib/crm/types';
 
+export type RecordScope = 'all' | 'mine' | 'downline';
+
 interface ModuleShellProps {
   module: CrmModule;
   records: CrmRecord[];
@@ -27,6 +29,7 @@ interface ModuleShellProps {
   totalCount: number;
   children: React.ReactNode;
   className?: string;
+  userRole?: string | null;
 }
 
 export const ModuleShell = memo(function ModuleShell({
@@ -38,12 +41,16 @@ export const ModuleShell = memo(function ModuleShell({
   totalCount,
   children,
   className,
+  userRole,
 }: ModuleShellProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   // Local state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [scope, setScope] = useState<RecordScope>(
+    (searchParams.get('scope') as RecordScope) || 'all'
+  );
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<ViewFilter[]>([]);
@@ -104,6 +111,21 @@ export const ModuleShell = memo(function ModuleShell({
 
     return () => clearTimeout(timer);
   }, [searchQuery, router, module.key]);
+
+  // Scope change handler
+  const handleScopeChange = useCallback((newScope: RecordScope) => {
+    setScope(newScope);
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    if (newScope === 'all') {
+      params.delete('scope');
+    } else {
+      params.set('scope', newScope);
+    }
+    params.delete('page');
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [router, module.key]);
+
+  const isAdminOrOwner = userRole === 'owner' || userRole === 'admin' || userRole === 'staff';
 
   // Handlers
   const handleSearch = useCallback((e: React.FormEvent) => {
@@ -530,6 +552,23 @@ export const ModuleShell = memo(function ModuleShell({
                 )}
               />
             </form>
+          </div>
+
+          {/* Scope Filter */}
+          <div className="flex items-center gap-1">
+            <Select value={scope} onValueChange={(v) => handleScopeChange(v as RecordScope)}>
+              <SelectTrigger className="h-9 w-[150px] text-sm rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
+                <Users className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {isAdminOrOwner && (
+                  <SelectItem value="all">All Records</SelectItem>
+                )}
+                <SelectItem value="mine">My Records</SelectItem>
+                <SelectItem value="downline">My Downline</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Right: Filters + Columns + Density */}

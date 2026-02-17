@@ -53,8 +53,9 @@ interface RecordDetailShellProps {
   module: CrmModule;
   fields: CrmField[];
   stages?: CrmDealStage[];
+  noteCount?: number;
   children: {
-    overview: React.ReactNode;
+    overview: React.ReactNode | ((helpers: { switchTab: (tab: string) => void }) => React.ReactNode);
     related: React.ReactNode;
     timeline: React.ReactNode;
     notes?: React.ReactNode;
@@ -130,6 +131,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   module,
   fields,
   stages = [],
+  noteCount,
   children,
   onEdit,
   onAddTask,
@@ -484,6 +486,11 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     >
                       <StickyNote className="w-4 h-4 mr-1.5" />
                       Notes
+                      {noteCount != null && noteCount > 0 && (
+                        <span className="ml-1.5 inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
+                          {noteCount}
+                        </span>
+                      )}
                     </TabsTrigger>
                   )}
                   {children.communications && (
@@ -526,7 +533,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
         <div className="max-w-6xl mx-auto px-6 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsContent value="overview" className="mt-0">
-              {children.overview}
+              {typeof children.overview === 'function'
+                ? children.overview({ switchTab: setActiveTab })
+                : children.overview}
             </TabsContent>
             <TabsContent value="related" className="mt-0">
               {children.related}

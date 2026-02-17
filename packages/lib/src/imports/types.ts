@@ -72,6 +72,53 @@ export const ADVISOR_COLUMN_MAP: Record<string, string> = {
   status: 'status',
   advisor_code: 'advisor_code',
   code: 'advisor_code',
+  // Parent producer / upline (resolved by name, email, or code)
+  parent_producer: 'parent_advisor_lookup',
+  parent_advisor: 'parent_advisor_lookup',
+  upline: 'parent_advisor_lookup',
+  parent: 'parent_advisor_lookup',
+  // Producer code (human-readable, e.g. "WENDY")
+  producer_code: 'producer_code',
+  prod_code: 'producer_code',
+  // Admin123 Agent ID
+  admin123_agent_id: 'admin123_agent_id',
+  admin123: 'admin123_agent_id',
+  agent_id_number: 'admin123_agent_id',
+  // Producer type
+  producer_type: 'producer_type',
+  'producer type': 'producer_type',
+  type: 'producer_type',
+  // Mobile phone
+  mobile: 'mobile_phone',
+  mobile_phone: 'mobile_phone',
+  cell: 'mobile_phone',
+  'cell phone': 'mobile_phone',
+  // Website
+  website: 'website_url',
+  website_url: 'website_url',
+  // Master Click Funnel
+  master_click_funnel: 'master_click_funnel',
+  click_funnel: 'master_click_funnel',
+  // MPB Certified
+  mpb_certified: 'mpb_certified',
+  certified: 'mpb_certified',
+  // MPB E&O Current
+  mpb_eo_current: 'mpb_eo_current',
+  eo_current: 'mpb_eo_current',
+  'e&o current': 'mpb_eo_current',
+  // CRM Owner
+  crm_owner: 'crm_owner',
+  // Referring affiliate (resolved by name, email, or code)
+  referring_affiliate: 'referring_affiliate_lookup',
+  referrer: 'referring_affiliate_lookup',
+  // Setup fee waived
+  setup_fee_waived: 'setup_fee_waived',
+  // Compliance training completed date
+  compliance_training_completed: 'compliance_training_completed',
+  compliance_date: 'compliance_training_completed',
+  // Producer owner (resolved by name, email, or code)
+  producer_owner: 'producer_owner_lookup',
+  owner: 'producer_owner_lookup',
 };
 
 // Lead column mappings

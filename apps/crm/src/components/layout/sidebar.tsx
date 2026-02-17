@@ -41,7 +41,7 @@ const navSections: NavSection[] = [
   {
     title: 'People',
     items: [
-      { name: 'Members', href: '/members', icon: Users },
+      { name: 'Members', href: '/crm/members', icon: Users },
       { name: 'Advisors', href: '/advisors', icon: UserCheck, roles: ['owner', 'admin', 'staff'] },
       { name: 'Leads', href: '/leads', icon: UserPlus },
     ],
