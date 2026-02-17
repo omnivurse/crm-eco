@@ -1,19 +1,11 @@
 'use client';
 
-import { useCallback, Suspense } from 'react';
-import dynamic from 'next/dynamic';
+import { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { ModuleShell } from '@/components/zoho/ModuleShell';
-import { RecordDrawerProvider, useRecordDrawer } from '@/components/zoho/RecordDrawerContext';
 import { useModuleShellOptional } from '@/components/zoho/ModuleShellContext';
 import { RecordTable } from '@/components/crm/records/RecordTable';
 import type { CrmModule, CrmField, CrmView, CrmRecord } from '@/lib/crm/types';
-
-// Lazy load RecordDrawer - only loaded when drawer is opened
-// Reduces initial bundle by ~30KB+
-const RecordDrawer = dynamic(
-  () => import('@/components/zoho/RecordDrawer').then((mod) => mod.RecordDrawer),
-  { ssr: false }
-);
 
 interface ModuleListClientProps {
   module: CrmModule;
@@ -22,6 +14,7 @@ interface ModuleListClientProps {
   views: CrmView[];
   activeViewId?: string;
   totalCount: number;
+  userRole?: string | null;
 }
 
 // Inner component that consumes the ModuleShell context
@@ -38,12 +31,12 @@ function ModuleTableContent({
   views: CrmView[];
   activeViewId?: string;
 }) {
-  const { openDrawer } = useRecordDrawer();
+  const router = useRouter();
   const shellContext = useModuleShellOptional();
 
   const handleRowClick = useCallback((recordId: string) => {
-    openDrawer(recordId, moduleKey);
-  }, [openDrawer, moduleKey]);
+    router.push(`/crm/r/${recordId}`);
+  }, [router]);
 
   // Use visibleColumns from context if available, otherwise fall back to view/all fields
   const displayColumns = shellContext?.visibleColumns ||
@@ -74,6 +67,7 @@ function ModuleListContent({
   views,
   activeViewId,
   totalCount,
+  userRole,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -83,6 +77,7 @@ function ModuleListContent({
       views={views}
       activeViewId={activeViewId}
       totalCount={totalCount}
+      userRole={userRole}
     >
       <ModuleTableContent
         records={records}
@@ -96,10 +91,5 @@ function ModuleListContent({
 }
 
 export function ModuleListClient(props: ModuleListClientProps) {
-  return (
-    <RecordDrawerProvider>
-      <ModuleListContent {...props} />
-      <RecordDrawer />
-    </RecordDrawerProvider>
-  );
+  return <ModuleListContent {...props} />;
 }

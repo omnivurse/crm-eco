@@ -17,6 +17,8 @@ import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
 import { RelatedRecordsPanel } from '@/components/crm/records/RelatedRecordsPanel';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 import { NotesPanel } from './NotesPanel';
+import { NotesOverviewCard } from './NotesOverviewCard';
+import { LegacyNotesCard } from './LegacyNotesCard';
 
 interface PageProps {
   params: { recordId: string };
@@ -59,11 +61,24 @@ async function RecordDetailContent({ params }: PageProps) {
       module={module}
       fields={fields}
       stages={stages}
+      noteCount={notes.length}
       className="h-[calc(100vh-64px)]"
     >
       {{
-        overview: (
+        overview: ({ switchTab }) => (
           <div className="space-y-6">
+            {/* Notes - Prime Real Estate */}
+            <NotesOverviewCard
+              notes={notes}
+              recordId={recordId}
+              onViewAll={() => switchTab('notes')}
+            />
+
+            {/* Legacy Notes History (imported from Zoho) */}
+            {typeof record.data?.notes_history === 'string' && record.data.notes_history.trim() !== '' && (
+              <LegacyNotesCard notesHtml={record.data.notes_history} />
+            )}
+
             {/* Record Details Form */}
             <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 p-6">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Record Details</h3>

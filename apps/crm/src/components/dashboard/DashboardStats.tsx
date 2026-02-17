@@ -2,8 +2,10 @@ import Link from 'next/link';
 import {
   Users,
   UserPlus,
+  UserCheck,
   DollarSign,
   Building2,
+  HeartPulse,
   ArrowUpRight,
   TrendingUp,
 } from 'lucide-react';
@@ -87,7 +89,7 @@ function PremiumStatCard({
 
 const statConfigs: Record<
   string,
-  { gradient: string; icon: React.ReactNode }
+  { gradient: string; icon: React.ReactNode; href?: string }
 > = {
   accounts: {
     gradient: 'bg-gradient-to-r from-amber-500 to-orange-400',
@@ -104,6 +106,16 @@ const statConfigs: Record<
   leads: {
     gradient: 'bg-gradient-to-r from-violet-500 to-purple-400',
     icon: <UserPlus className="w-5 h-5" />,
+  },
+  members: {
+    gradient: 'bg-gradient-to-r from-rose-500 to-pink-400',
+    icon: <HeartPulse className="w-5 h-5" />,
+    href: '/crm/members',
+  },
+  advisors: {
+    gradient: 'bg-gradient-to-r from-blue-500 to-indigo-400',
+    icon: <UserCheck className="w-5 h-5" />,
+    href: '/advisors',
   },
 };
 
@@ -147,9 +159,14 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
     );
   }
 
+  // Deduplicate stats by moduleKey (prevents duplicate cards if DB has dupes)
+  const uniqueStats = Array.from(
+    new Map(stats.map((s) => [s.moduleKey, s])).values()
+  );
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      {stats.map((stat) => {
+      {uniqueStats.map((stat) => {
         const config = statConfigs[stat.moduleKey] || statConfigs.contacts;
         return (
           <PremiumStatCard
@@ -159,7 +176,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
             subtitle={`Total ${stat.moduleName.toLowerCase()}`}
             icon={config.icon}
             gradient={config.gradient}
-            href={`/crm/modules/${stat.moduleKey}`}
+            href={config.href || `/crm/modules/${stat.moduleKey}`}
             change={stat.createdThisWeek}
           />
         );

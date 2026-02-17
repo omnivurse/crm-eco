@@ -103,6 +103,8 @@ interface LeadsBoardShellProps {
     qualified: number;
     converted: number;
   };
+  currentAdvisorId?: string | null;
+  downlineAdvisorIds?: string[];
 }
 
 // ============================================================================
@@ -139,6 +141,8 @@ export function LeadsBoardShell({
   defaultSavedViewId,
   advisors,
   stats,
+  currentAdvisorId,
+  downlineAdvisorIds = [],
 }: LeadsBoardShellProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -309,6 +313,12 @@ export function LeadsBoardShell({
     if (selectedAdvisorId !== 'all') {
       if (selectedAdvisorId === 'unassigned') {
         filtered = filtered.filter((l) => !l.advisor_id);
+      } else if (selectedAdvisorId === 'mine') {
+        filtered = filtered.filter((l) => l.advisor_id === currentAdvisorId);
+      } else if (selectedAdvisorId === 'downline') {
+        const downlineSet = new Set(downlineAdvisorIds);
+        if (currentAdvisorId) downlineSet.add(currentAdvisorId);
+        filtered = filtered.filter((l) => l.advisor_id && downlineSet.has(l.advisor_id));
       } else {
         filtered = filtered.filter((l) => l.advisor_id === selectedAdvisorId);
       }
@@ -331,7 +341,7 @@ export function LeadsBoardShell({
     }
 
     return filtered;
-  }, [leads, selectedStatuses, selectedSources, selectedAdvisorId, search]);
+  }, [leads, selectedStatuses, selectedSources, selectedAdvisorId, search, currentAdvisorId, downlineAdvisorIds]);
 
   // Find active personal view
   const activePersonalView = savedViews.find((v) => v.id === activeSavedViewId);
@@ -537,6 +547,12 @@ export function LeadsBoardShell({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Advisors</SelectItem>
+                  {currentAdvisorId && (
+                    <SelectItem value="mine">My Leads</SelectItem>
+                  )}
+                  {currentAdvisorId && downlineAdvisorIds.length > 0 && (
+                    <SelectItem value="downline">My Downline</SelectItem>
+                  )}
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {advisors.map((advisor) => (
                     <SelectItem key={advisor.id} value={advisor.id}>

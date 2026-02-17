@@ -6,6 +6,7 @@ import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField } from '@/lib/crm/types';
 import { Mail, Phone, ExternalLink, Check, X } from 'lucide-react';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface FieldRendererProps {
   field: CrmField;
@@ -21,8 +22,19 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
 
   switch (field.type) {
     case 'text':
-    case 'textarea':
-      return <span className={className}>{String(value)}</span>;
+    case 'textarea': {
+      const str = String(value);
+      if (field.key === 'notes_history' && str.includes('<')) {
+        const clean = DOMPurify.sanitize(str);
+        return (
+          <div
+            className={cn('whitespace-pre-wrap [&_b]:font-semibold', className)}
+            dangerouslySetInnerHTML={{ __html: clean }}
+          />
+        );
+      }
+      return <span className={className}>{str}</span>;
+    }
 
     case 'email':
       return (

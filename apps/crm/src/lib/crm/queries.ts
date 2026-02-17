@@ -428,6 +428,7 @@ export interface RecordQueryOptions {
   filters?: ViewFilter[];
   sort?: ViewSort[];
   search?: string;
+  scope?: 'all' | 'mine' | 'downline';
 }
 
 export interface RecordQueryResult {
@@ -440,12 +441,57 @@ export interface RecordQueryResult {
 
 export async function getRecords(options: RecordQueryOptions): Promise<RecordQueryResult> {
   const supabase = await createCrmClient();
-  const { moduleId, page = 1, pageSize = 25, filters = [], sort = [], search } = options;
+  const { moduleId, page = 1, pageSize = 25, filters = [], sort = [], search, scope = 'all' } = options;
 
   let query = supabase
     .from('crm_records')
     .select('*', { count: 'exact' })
     .eq('module_id', moduleId);
+
+  // Apply scope filtering (My Records / My Downline / All)
+  if (scope === 'mine' || scope === 'downline') {
+    // Get the current user's profile ID to filter by owner
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      if (scope === 'mine') {
+        // Only records owned by the current user's profile
+        const { data: myProfile } = await (supabase as any)
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        if (myProfile) {
+          query = query.eq('owner_id', myProfile.id);
+        }
+      } else if (scope === 'downline') {
+        // Records owned by the current user OR any of their downline advisors' profiles
+        const { data: myProfile } = await (supabase as any)
+          .from('profiles')
+          .select('id, advisor_id')
+          .eq('user_id', user.id)
+          .single();
+        if (myProfile?.advisor_id) {
+          // Get downline advisor IDs using the DB function
+          const { data: downlineIds } = await (supabase as any)
+            .rpc('get_advisor_downline_ids', { p_advisor_id: myProfile.advisor_id });
+          // Get profile IDs for all downline advisors
+          const advisorIds = [myProfile.advisor_id, ...(downlineIds?.map((r: any) => r) || [])];
+          const { data: downlineProfiles } = await (supabase as any)
+            .from('profiles')
+            .select('id')
+            .in('advisor_id', advisorIds);
+          const profileIds = [
+            myProfile.id,
+            ...(downlineProfiles?.map((p: any) => p.id) || []),
+          ];
+          query = query.in('owner_id', profileIds);
+        } else if (myProfile) {
+          // User is not an advisor, just show their own records
+          query = query.eq('owner_id', myProfile.id);
+        }
+      }
+    }
+  }
 
   // Apply filters
   for (const filter of filters) {
