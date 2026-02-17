@@ -185,7 +185,7 @@ export function FilterChipsBar({
           >
             <span className="font-medium">{getFieldLabel(filter.field)}</span>
             <span className="text-slate-500 dark:text-slate-400">{OPERATOR_LABELS[filter.operator] || filter.operator}</span>
-            {!['is_null', 'is_not_null'].includes(filter.operator) && !OPERATOR_LABELS[filter.operator]?.startsWith('is ') && (
+            {!['is_null', 'is_not_null'].includes(filter.operator) && (
               <span className="font-medium text-teal-600 dark:text-teal-400">
                 {formatValue(filter.value)}
               </span>
