@@ -7,9 +7,7 @@ import {
   AlertTriangle,
   TrendingUp,
   Flame,
-  Target,
-  Clock,
-
+  Activity,
   Sparkles,
   UserPlus,
   DollarSign,
@@ -18,7 +16,6 @@ import {
   Calendar,
   Video,
   ChevronRight,
-  Zap,
   Trophy,
 } from 'lucide-react';
 
@@ -62,7 +59,6 @@ interface DashboardHeroProps {
   weeklyGoal?: WeeklyGoalProgress;
   /** AI-generated insight summary */
   aiInsight?: string;
-
 }
 
 // ============================================================================
@@ -70,26 +66,17 @@ interface DashboardHeroProps {
 // ============================================================================
 
 /**
- * BentoCell - Glassmorphism cell for bento grid with entry animation
+ * GlassCard - Refined glass card wrapper with entry animation
  */
-function BentoCell({
+function GlassCard({
   children,
   className = '',
-  span = 1,
   delay = 0,
 }: {
   children: React.ReactNode;
   className?: string;
-  span?: 1 | 2 | 3;
-  /** Animation delay in ms for staggered entry */
   delay?: number;
 }) {
-  const spanClasses = {
-    1: 'col-span-1',
-    2: 'col-span-1 md:col-span-2',
-    3: 'col-span-1 md:col-span-3',
-  };
-
   return (
     <div
       className={`
@@ -101,12 +88,10 @@ function BentoCell({
         group
         animate-fadeSlideUp
         opacity-0
-        ${spanClasses[span]}
         ${className}
       `}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Subtle glow on hover */}
       <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
       <div className="relative z-10 h-full">{children}</div>
     </div>
@@ -114,7 +99,7 @@ function BentoCell({
 }
 
 /**
- * QuickActionButton - Compact action button for hero
+ * QuickActionButton - Horizontal pill-style action button
  */
 function QuickActionButton({
   href,
@@ -138,14 +123,15 @@ function QuickActionButton({
     <Link
       href={href}
       className={`
-        flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl
+        flex items-center gap-2 px-3 py-2 rounded-lg
         ${colorClasses[color]}
         transition-all duration-200
-        hover:scale-105 hover:shadow-lg
+        hover:shadow-lg
+        text-xs font-medium whitespace-nowrap
       `}
     >
-      <Icon className="w-5 h-5" />
-      <span className="text-[10px] font-medium whitespace-nowrap">{label}</span>
+      <Icon className="w-3.5 h-3.5" />
+      <span>{label}</span>
     </Link>
   );
 }
@@ -154,7 +140,6 @@ function QuickActionButton({
  * MeetingItem - Single meeting preview
  */
 function MeetingItem({ event, mounted }: { event: HeroCalendarEvent; mounted: boolean }) {
-  // Format time only on client to avoid hydration mismatch
   const time = mounted
     ? new Date(event.start_time).toLocaleTimeString('en-US', {
         hour: 'numeric',
@@ -179,54 +164,34 @@ function MeetingItem({ event, mounted }: { event: HeroCalendarEvent; mounted: bo
 }
 
 /**
- * PipelineGauge - Circular progress indicator
+ * PipelineBar - Horizontal progress bar for pipeline health
  */
-function PipelineGauge({ health }: { health: PipelineHealth }) {
+function PipelineBar({ health }: { health: PipelineHealth }) {
   const { percent, status } = health;
-  const circumference = 2 * Math.PI * 40; // radius = 40
-  const strokeDashoffset = circumference - (percent / 100) * circumference;
 
   const statusColors = {
-    healthy: { stroke: '#10b981', bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
-    warning: { stroke: '#f59e0b', bg: 'bg-amber-500/20', text: 'text-amber-400' },
-    critical: { stroke: '#ef4444', bg: 'bg-red-500/20', text: 'text-red-400' },
+    healthy: { bar: 'from-emerald-500 to-emerald-400', text: 'text-emerald-400' },
+    warning: { bar: 'from-amber-500 to-amber-400', text: 'text-amber-400' },
+    critical: { bar: 'from-red-500 to-red-400', text: 'text-red-400' },
   };
 
   const colors = statusColors[status];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full py-4">
-      <div className="relative w-24 h-24">
-        <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-          {/* Background circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="rgba(255,255,255,0.1)"
-            strokeWidth="8"
-          />
-          {/* Progress circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke={colors.stroke}
-            strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-1000 ease-out"
-          />
-        </svg>
-        {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={`text-2xl font-bold ${colors.text}`}>{percent}%</span>
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-white/50" />
+          <span className="text-xs font-medium text-white/80">Pipeline Health</span>
         </div>
+        <span className={`text-xs font-semibold ${colors.text}`}>{percent}%</span>
       </div>
-      <p className="text-xs text-white/50 mt-2">Pipeline Health</p>
+      <div className="relative h-2 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className={`absolute inset-y-0 left-0 rounded-full bg-gradient-to-r ${colors.bar} transition-all duration-1000 ease-out`}
+          style={{ width: `${percent}%` }}
+        />
+      </div>
     </div>
   );
 }
@@ -239,7 +204,7 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
   const isComplete = goal.current >= goal.target;
 
   return (
-    <div className="p-4 h-full flex flex-col justify-center">
+    <div>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <Trophy className={`w-4 h-4 ${isComplete ? 'text-amber-400' : 'text-white/50'}`} />
@@ -261,7 +226,6 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
           `}
           style={{ width: `${percent}%` }}
         />
-        {/* Animated shine effect */}
         <div
           className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-shimmer"
           style={{ animationDelay: '1s' }}
@@ -277,7 +241,7 @@ function GoalProgressBar({ goal }: { goal: WeeklyGoalProgress }) {
 }
 
 /**
- * StatItem - Compact stat display for bento grid
+ * StatItem - Vertical-centered stat with large number
  */
 function StatItem({
   icon: Icon,
@@ -290,21 +254,19 @@ function StatItem({
   label: string;
   color: 'amber' | 'emerald' | 'red' | 'rose';
 }) {
-  const colorClasses = {
-    amber: 'bg-amber-500/20 text-amber-400',
-    emerald: 'bg-emerald-500/20 text-emerald-400',
-    red: 'bg-red-500/20 text-red-400',
-    rose: 'bg-rose-500/20 text-rose-400',
+  const iconColorClasses = {
+    amber: 'text-amber-400',
+    emerald: 'text-emerald-400',
+    red: 'text-red-400',
+    rose: 'text-rose-400',
   };
 
   return (
-    <div className="flex items-center gap-3 p-3">
-      <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
-        <Icon className="w-4 h-4" />
-      </div>
-      <div>
-        <p className="text-xl font-bold text-white">{value}</p>
-        <p className="text-[10px] text-white/50">{label}</p>
+    <div className="flex flex-col items-center justify-center py-5 text-center">
+      <p className="text-3xl font-bold text-white">{value}</p>
+      <div className="flex items-center gap-1.5 mt-1.5">
+        <Icon className={`w-3.5 h-3.5 ${iconColorClasses[color]}`} />
+        <p className="text-xs text-white/50">{label}</p>
       </div>
     </div>
   );
@@ -347,10 +309,9 @@ export function DashboardHero({
 
   const firstName = profile.full_name?.split(' ')[0] || 'there';
 
-  // Generate AI insight and a matching link destination
   const { displayInsight, insightHref } = useMemo(() => {
     if (aiInsight) return { displayInsight: aiInsight, insightHref: null };
-    
+
     const insights: string[] = [];
     let href: string | null = null;
 
@@ -370,7 +331,7 @@ export function DashboardHero({
       insights.push(`${newThisWeek} new record${newThisWeek > 1 ? 's' : ''} this week`);
       if (!href) href = '/crm/modules/contacts';
     }
-    
+
     if (insights.length === 0) {
       return {
         displayInsight: "You're all caught up! Great job staying on top of things.",
@@ -383,63 +344,58 @@ export function DashboardHero({
     };
   }, [aiInsight, atRiskCount, overdueCount, todaysTaskCount, newThisWeek]);
 
-  // Default pipeline health if not provided
   const displayPipelineHealth: PipelineHealth = pipelineHealth || {
     percent: atRiskCount > 3 ? 65 : atRiskCount > 0 ? 80 : 92,
     status: atRiskCount > 3 ? 'warning' : atRiskCount > 0 ? 'warning' : 'healthy',
     trend: 'stable',
   };
 
-  // Default weekly goal if not provided
   const displayWeeklyGoal: WeeklyGoalProgress = weeklyGoal || {
     current: newThisWeek,
     target: 10,
     label: 'Weekly Goal',
   };
 
-  // Today's meetings (max 3)
   const todaysMeetings = upcomingMeetings.slice(0, 3);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-800 p-6 shadow-xl shadow-black/10 ring-1 ring-white/[0.05]">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-800 p-6 md:p-8 shadow-xl shadow-black/10 ring-1 ring-white/[0.05]">
       {/* Subtle background accents */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-blue-500/[0.07] to-transparent rounded-full blur-3xl" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-indigo-500/[0.04] to-transparent rounded-full blur-3xl" />
       </div>
 
-      {/* Main Content - Bento Grid */}
       <div className="relative z-10">
-        {/* Top Row: Header */}
-        <div className="flex items-start justify-between mb-4">
+        {/* ── Zone A: Header ── */}
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
           <div className="animate-fadeSlideUp">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] backdrop-blur-sm border border-white/[0.06] hover:bg-white/[0.08] transition-colors cursor-default">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-medium text-white/70">CRM Online</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 backdrop-blur-sm border border-blue-500/20 hover:bg-blue-500/15 transition-colors cursor-default">
-                <Target className="w-3.5 h-3.5 text-blue-400" />
-                <span className="text-xs font-medium text-blue-400">Sales Hub</span>
-              </div>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white tracking-tight">
               {dateInfo.greeting}, {firstName}!
             </h1>
+            <p className="text-sm text-white/40 mt-1.5">
+              {mounted ? dateInfo.formattedDate : ''}
+            </p>
           </div>
 
-          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-            <Clock className="w-4 h-4 text-white/60" />
-            <span className="text-sm text-white/60">{mounted ? dateInfo.formattedDate : ''}</span>
+          {/* Quick Actions - 2x2 pill grid */}
+          <div
+            className="grid grid-cols-2 gap-2 animate-fadeSlideUp opacity-0"
+            style={{ animationDelay: '50ms' }}
+          >
+            <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" color="blue" />
+            <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" color="emerald" />
+            <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" color="amber" />
+            <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" color="violet" />
           </div>
         </div>
 
-        {/* AI Insight Banner */}
+        {/* ── AI Insight Banner ── */}
         {insightHref ? (
           <Link
             href={insightHref}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-4 hover:border-white/[0.12] transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
-            style={{ animationDelay: '50ms' }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-5 hover:border-white/[0.12] transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
+            style={{ animationDelay: '100ms' }}
           >
             <div className="p-1.5 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/15 transition-colors">
               <Sparkles className="w-4 h-4 text-blue-400 group-hover:animate-pulse" />
@@ -449,8 +405,8 @@ export function DashboardHero({
           </Link>
         ) : (
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-4 animate-fadeSlideUp opacity-0"
-            style={{ animationDelay: '50ms' }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-5 animate-fadeSlideUp opacity-0"
+            style={{ animationDelay: '100ms' }}
           >
             <div className="p-1.5 rounded-lg bg-blue-500/10">
               <Sparkles className="w-4 h-4 text-blue-400" />
@@ -459,59 +415,36 @@ export function DashboardHero({
           </div>
         )}
 
-        {/* Bento Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {/* Stats Row */}
-          <BentoCell delay={100}>
+        {/* ── Zone B: Metrics Strip ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <GlassCard delay={150}>
             <StatItem icon={Sun} value={todaysTaskCount} label="Tasks Today" color="amber" />
-          </BentoCell>
+          </GlassCard>
+          <GlassCard delay={200}>
+            <StatItem icon={AlertTriangle} value={overdueCount} label="Overdue" color="red" />
+          </GlassCard>
+          <GlassCard delay={250}>
+            <StatItem icon={TrendingUp} value={newThisWeek} label="New This Week" color="emerald" />
+          </GlassCard>
+          <GlassCard delay={300}>
+            <StatItem icon={Flame} value={atRiskCount} label="At Risk" color="rose" />
+          </GlassCard>
+        </div>
 
-          {overdueCount > 0 ? (
-            <BentoCell delay={150}>
-              <StatItem icon={AlertTriangle} value={overdueCount} label="Overdue" color="red" />
-            </BentoCell>
-          ) : (
-            <BentoCell delay={150}>
-              <StatItem icon={TrendingUp} value={newThisWeek} label="New This Week" color="emerald" />
-            </BentoCell>
-          )}
+        {/* ── Zone C: Context Row ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left: Pipeline Health + Weekly Goal */}
+          <GlassCard className="p-5" delay={350}>
+            <PipelineBar health={displayPipelineHealth} />
+            <div className="border-t border-white/[0.06] my-4" />
+            <GoalProgressBar goal={displayWeeklyGoal} />
+          </GlassCard>
 
-          {atRiskCount > 0 && (
-            <BentoCell delay={200}>
-              <StatItem icon={Flame} value={atRiskCount} label="At Risk" color="rose" />
-            </BentoCell>
-          )}
-
-          {overdueCount > 0 && (
-            <BentoCell delay={200}>
-              <StatItem icon={TrendingUp} value={newThisWeek} label="New This Week" color="emerald" />
-            </BentoCell>
-          )}
-
-          {/* Quick Actions */}
-          <BentoCell className="p-3" span={atRiskCount > 0 || overdueCount > 0 ? 1 : 2} delay={250}>
-            <div className="flex items-center gap-1.5 mb-2">
-              <Zap className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-[10px] font-medium text-white/60 uppercase tracking-wide">Quick Actions</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" color="blue" />
-              <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" color="emerald" />
-              <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" color="amber" />
-              <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" color="violet" />
-            </div>
-          </BentoCell>
-
-          {/* Pipeline Health Gauge */}
-          <BentoCell delay={300}>
-            <PipelineGauge health={displayPipelineHealth} />
-          </BentoCell>
-
-          {/* Today's Meetings */}
-          <BentoCell className="p-3" delay={350}>
-            <div className="flex items-center gap-1.5 mb-1">
+          {/* Right: Today's Schedule */}
+          <GlassCard className="p-5" delay={400}>
+            <div className="flex items-center gap-1.5 mb-3">
               <Calendar className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-[10px] font-medium text-white/60 uppercase tracking-wide">Today</span>
+              <span className="text-xs font-medium text-white/60 uppercase tracking-wide">Today&apos;s Schedule</span>
             </div>
             {todaysMeetings.length > 0 ? (
               <div className="space-y-0.5">
@@ -520,17 +453,12 @@ export function DashboardHero({
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-4 text-white/40">
-                <Calendar className="w-6 h-6 mb-1 opacity-50" />
-                <p className="text-[10px]">No meetings today</p>
+              <div className="flex flex-col items-center justify-center py-6 text-white/40">
+                <Calendar className="w-6 h-6 mb-1.5 opacity-50" />
+                <p className="text-xs">No meetings today</p>
               </div>
             )}
-          </BentoCell>
-
-          {/* Weekly Goal Progress */}
-          <BentoCell span={2} delay={400}>
-            <GoalProgressBar goal={displayWeeklyGoal} />
-          </BentoCell>
+          </GlassCard>
         </div>
       </div>
     </div>
