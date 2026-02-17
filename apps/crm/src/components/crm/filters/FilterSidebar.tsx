@@ -1,0 +1,733 @@
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import {
+  Search,
+  Check,
+  ChevronDown,
+  X,
+  Plus,
+  Trash2,
+  Lock,
+  MousePointer,
+  MousePointerClick,
+  Calendar,
+  CalendarDays,
+  Pencil,
+  UserX,
+  Activity,
+  FileText,
+  CheckSquare,
+  AlertTriangle,
+  Phone,
+  Mail,
+  Users,
+  Package,
+  Target,
+  Link2,
+} from 'lucide-react';
+import { Input } from '@crm-eco/ui/components/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@crm-eco/ui/components/select';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@crm-eco/ui/components/accordion';
+import { Button } from '@crm-eco/ui/components/button';
+import { cn } from '@crm-eco/ui/lib/utils';
+import type {
+  CrmField,
+  ViewFilter,
+  FilterOperator,
+  SystemFilterPreset,
+  RelatedFilterCondition,
+} from '@/lib/crm/types';
+import { getFieldOptions } from '@/lib/crm/utils';
+
+// ============================================================================
+// Operator config (shared with AdvancedFilterBuilder)
+// ============================================================================
+
+interface OperatorConfig {
+  label: string;
+  types: string[];
+  needsValue: boolean;
+  isDatePreset?: boolean;
+  needsNValue?: boolean;
+}
+
+const OPERATORS: Record<string, OperatorConfig> = {
+  equals: { label: 'is', types: ['text', 'select', 'email', 'phone', 'number', 'date', 'boolean'], needsValue: true },
+  not_equals: { label: 'is not', types: ['text', 'select', 'email', 'phone', 'number', 'date', 'boolean'], needsValue: true },
+  contains: { label: 'contains', types: ['text', 'textarea', 'email', 'phone'], needsValue: true },
+  starts_with: { label: 'starts with', types: ['text', 'email', 'phone'], needsValue: true },
+  ends_with: { label: 'ends with', types: ['text', 'email', 'phone'], needsValue: true },
+  gt: { label: 'greater than', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
+  gte: { label: 'greater or equal', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
+  lt: { label: 'less than', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
+  lte: { label: 'less or equal', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
+  is_null: { label: 'is empty', types: ['text', 'textarea', 'select', 'email', 'phone', 'number', 'date', 'datetime', 'url'], needsValue: false },
+  is_not_null: { label: 'is not empty', types: ['text', 'textarea', 'select', 'email', 'phone', 'number', 'date', 'datetime', 'url'], needsValue: false },
+  in: { label: 'is any of', types: ['text', 'select', 'email'], needsValue: true },
+  not_in: { label: 'is none of', types: ['text', 'select', 'email'], needsValue: true },
+  between: { label: 'is between', types: ['number', 'currency', 'date', 'datetime'], needsValue: true },
+  today: { label: 'is today', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  yesterday: { label: 'is yesterday', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_week: { label: 'is this week', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_week: { label: 'was last week', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_month: { label: 'is this month', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_month: { label: 'was last month', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_quarter: { label: 'is this quarter', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_quarter: { label: 'was last quarter', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  this_year: { label: 'is this year', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_year: { label: 'was last year', types: ['date', 'datetime'], needsValue: false, isDatePreset: true },
+  last_n_days: { label: 'in last N days', types: ['date', 'datetime'], needsValue: true, isDatePreset: true, needsNValue: true },
+  next_n_days: { label: 'in next N days', types: ['date', 'datetime'], needsValue: true, isDatePreset: true, needsNValue: true },
+};
+
+function getOperatorsForType(type: string): FilterOperator[] {
+  return Object.entries(OPERATORS)
+    .filter(([, config]) => config.types.includes(type))
+    .map(([key]) => key as FilterOperator);
+}
+
+// ============================================================================
+// System Defined Filters config
+// ============================================================================
+
+interface SystemFilterDef {
+  preset: SystemFilterPreset;
+  label: string;
+  icon: typeof MousePointer;
+  enabled: boolean;
+}
+
+interface UnavailableFilterDef {
+  label: string;
+  icon: typeof Lock;
+}
+
+const SYSTEM_FILTERS: SystemFilterDef[] = [
+  { preset: 'touched_records', label: 'Touched Records', icon: MousePointerClick, enabled: true },
+  { preset: 'untouched_records', label: 'Untouched Records', icon: MousePointer, enabled: true },
+  { preset: 'my_records', label: 'My Records', icon: Users, enabled: true },
+  { preset: 'unassigned', label: 'Unassigned Records', icon: UserX, enabled: true },
+  { preset: 'created_today', label: 'Created Today', icon: Calendar, enabled: true },
+  { preset: 'created_this_week', label: 'Created This Week', icon: CalendarDays, enabled: true },
+  { preset: 'modified_today', label: 'Modified Today', icon: Pencil, enabled: true },
+  { preset: 'modified_this_week', label: 'Modified This Week', icon: Pencil, enabled: true },
+  { preset: 'has_activities', label: 'Has Activities', icon: Activity, enabled: true },
+  { preset: 'no_activities', label: 'No Activities', icon: Activity, enabled: true },
+  { preset: 'has_notes', label: 'Has Notes', icon: FileText, enabled: true },
+  { preset: 'has_open_tasks', label: 'Has Open Tasks', icon: CheckSquare, enabled: true },
+  { preset: 'has_overdue_tasks', label: 'Has Overdue Tasks', icon: AlertTriangle, enabled: true },
+];
+
+const UNAVAILABLE_FILTERS: UnavailableFilterDef[] = [
+  { label: 'Record Action', icon: Lock },
+  { label: 'Related Records Action', icon: Lock },
+  { label: 'Scoring Rules', icon: Lock },
+  { label: 'Locked', icon: Lock },
+  { label: 'Latest Email Status', icon: Lock },
+  { label: 'Campaigns', icon: Lock },
+  { label: 'Cadences', icon: Lock },
+  { label: 'Website Activity', icon: Lock },
+  { label: 'Chats', icon: Lock },
+  { label: 'Attended By', icon: Lock },
+  { label: 'Browser', icon: Lock },
+  { label: 'Operating System', icon: Lock },
+  { label: 'Portal Name', icon: Lock },
+  { label: 'Search Engine', icon: Lock },
+  { label: 'Time Spent (Minutes)', icon: Lock },
+  { label: 'Time Visited', icon: Lock },
+  { label: 'Average Time Spent (Minutes)', icon: Lock },
+  { label: 'Days Visited', icon: Lock },
+  { label: 'First Page Visited', icon: Lock },
+  { label: 'First Visit', icon: Lock },
+  { label: 'Most Recent Visit', icon: Lock },
+  { label: 'Number Of Chats', icon: Lock },
+  { label: 'Referrer', icon: Lock },
+  { label: 'Visitor Score', icon: Lock },
+];
+
+// ============================================================================
+// Related Module config
+// ============================================================================
+
+interface RelatedModuleDef {
+  key: string;
+  label: string;
+  icon: typeof Phone;
+  enabled: boolean;
+}
+
+const RELATED_MODULES: RelatedModuleDef[] = [
+  { key: 'activities', label: 'Activities (All)', icon: Activity, enabled: true },
+  { key: 'appointments', label: 'Appointments', icon: Calendar, enabled: true },
+  { key: 'calls', label: 'Calls', icon: Phone, enabled: true },
+  { key: 'emails', label: 'Emails', icon: Mail, enabled: true },
+  { key: 'tasks', label: 'Tasks', icon: CheckSquare, enabled: true },
+  { key: 'notes', label: 'Notes', icon: FileText, enabled: true },
+  { key: 'leads', label: 'Leads (Converted)', icon: Target, enabled: true },
+  { key: 'products', label: 'Contact Product Relation', icon: Package, enabled: true },
+  { key: 'prospects', label: 'Prospects', icon: Users, enabled: true },
+];
+
+const UNAVAILABLE_RELATED: { label: string }[] = [
+  { label: 'Invoices' },
+  { label: 'Data Subject Requests' },
+  { label: 'Prospect Contact Roles' },
+  { label: 'Providers' },
+  { label: 'Contacts (Reporting Contacts)' },
+  { label: 'Invitees (Invited Meetings)' },
+];
+
+// ============================================================================
+// Inline Field Filter Row
+// ============================================================================
+
+function FieldFilterRow({
+  filter,
+  field,
+  onUpdate,
+  onRemove,
+}: {
+  filter: ViewFilter;
+  field: CrmField | undefined;
+  onUpdate: (f: ViewFilter) => void;
+  onRemove: () => void;
+}) {
+  const fieldType = field?.type || 'text';
+  const operators = getOperatorsForType(fieldType);
+  const opConfig = OPERATORS[filter.operator];
+  const needsValue = opConfig?.needsValue !== false;
+  const needsNValue = opConfig?.needsNValue === true;
+  const isBetween = filter.operator === 'between';
+
+  return (
+    <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50">
+      <div className="flex items-center gap-1">
+        <Select
+          value={filter.operator}
+          onValueChange={(op) => onUpdate({ ...filter, operator: op as FilterOperator })}
+        >
+          <SelectTrigger className="h-7 text-xs flex-1 bg-white dark:bg-slate-900/50">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
+            {operators.map((op) => (
+              <SelectItem key={op} value={op} className="text-xs">
+                {OPERATORS[op]?.label || op}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-500"
+          onClick={onRemove}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+
+      {needsValue && (
+        <div className="flex items-center gap-1">
+          {needsNValue ? (
+            <Input
+              type="number"
+              min={1}
+              value={String(filter.value || 7)}
+              onChange={(e) => onUpdate({ ...filter, value: e.target.valueAsNumber || 7 })}
+              placeholder="Days"
+              className="h-7 text-xs bg-white dark:bg-slate-900/50"
+            />
+          ) : isBetween ? (
+            <>
+              <Input
+                type={['date', 'datetime'].includes(fieldType) ? 'date' : 'number'}
+                value={String(filter.value || '')}
+                onChange={(e) => onUpdate({
+                  ...filter,
+                  value: fieldType === 'number' ? e.target.valueAsNumber : e.target.value,
+                })}
+                placeholder="Min"
+                className="h-7 text-xs flex-1 bg-white dark:bg-slate-900/50"
+              />
+              <span className="text-[10px] text-slate-400">to</span>
+              <Input
+                type={['date', 'datetime'].includes(fieldType) ? 'date' : 'number'}
+                value={String(filter.secondValue || '')}
+                onChange={(e) => onUpdate({
+                  ...filter,
+                  secondValue: fieldType === 'number' ? e.target.valueAsNumber : e.target.value,
+                })}
+                placeholder="Max"
+                className="h-7 text-xs flex-1 bg-white dark:bg-slate-900/50"
+              />
+            </>
+          ) : fieldType === 'select' && field?.options?.length ? (
+            <Select
+              value={String(filter.value || '')}
+              onValueChange={(v) => onUpdate({ ...filter, value: v })}
+            >
+              <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-900/50">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
+                {getFieldOptions(field.options).map((opt) => (
+                  <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : fieldType === 'boolean' ? (
+            <Select
+              value={String(filter.value ?? '')}
+              onValueChange={(v) => onUpdate({ ...filter, value: v === 'true' })}
+            >
+              <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-900/50">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent className="bg-white dark:bg-slate-900">
+                <SelectItem value="true" className="text-xs">Yes</SelectItem>
+                <SelectItem value="false" className="text-xs">No</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              type={['number', 'currency'].includes(fieldType) ? 'number' : ['date', 'datetime'].includes(fieldType) ? 'date' : 'text'}
+              value={String(filter.value || '')}
+              onChange={(e) => onUpdate({
+                ...filter,
+                value: ['number', 'currency'].includes(fieldType) ? e.target.valueAsNumber : e.target.value,
+              })}
+              placeholder="Value..."
+              className="h-7 text-xs bg-white dark:bg-slate-900/50"
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// FilterSidebar
+// ============================================================================
+
+interface FilterSidebarProps {
+  fields: CrmField[];
+  filters: ViewFilter[];
+  onFiltersChange: (filters: ViewFilter[]) => void;
+}
+
+export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSidebarProps) {
+  const [fieldSearch, setFieldSearch] = useState('');
+  const [expandedField, setExpandedField] = useState<string | null>(null);
+
+  // Partition filters
+  const activeSystemPresets = useMemo(
+    () => new Set(filters.filter((f) => f.category === 'system').map((f) => f.systemPreset)),
+    [filters],
+  );
+
+  const activeRelatedModules = useMemo(
+    () => new Map(
+      filters
+        .filter((f) => f.category === 'related')
+        .map((f) => [f.relatedModule!, f.relatedCondition || 'has_any'] as const),
+    ),
+    [filters],
+  );
+
+  const fieldFilters = useMemo(
+    () => filters.filter((f) => !f.category || f.category === 'field'),
+    [filters],
+  );
+
+  // Field search
+  const filteredFields = useMemo(() => {
+    if (!fieldSearch) return fields;
+    const q = fieldSearch.toLowerCase();
+    return fields.filter((f) => f.label.toLowerCase().includes(q) || f.key.toLowerCase().includes(q));
+  }, [fields, fieldSearch]);
+
+  // ── System filter toggle ──
+  const toggleSystemFilter = useCallback((preset: SystemFilterPreset) => {
+    const isActive = activeSystemPresets.has(preset);
+    const otherFilters = filters.filter(
+      (f) => !(f.category === 'system' && f.systemPreset === preset),
+    );
+    if (isActive) {
+      onFiltersChange(otherFilters);
+    } else {
+      onFiltersChange([
+        ...otherFilters,
+        { field: '__system', operator: 'equals', value: preset, category: 'system', systemPreset: preset },
+      ]);
+    }
+  }, [filters, activeSystemPresets, onFiltersChange]);
+
+  // ── Related module toggle ──
+  const toggleRelatedModule = useCallback(
+    (moduleKey: string, condition: RelatedFilterCondition) => {
+      const currentCondition = activeRelatedModules.get(moduleKey);
+      const otherFilters = filters.filter(
+        (f) => !(f.category === 'related' && f.relatedModule === moduleKey),
+      );
+
+      if (currentCondition === condition) {
+        // Remove if same condition clicked again
+        onFiltersChange(otherFilters);
+      } else {
+        onFiltersChange([
+          ...otherFilters,
+          {
+            field: '__related',
+            operator: 'equals',
+            value: moduleKey,
+            category: 'related',
+            relatedModule: moduleKey,
+            relatedCondition: condition,
+          },
+        ]);
+      }
+    },
+    [filters, activeRelatedModules, onFiltersChange],
+  );
+
+  // ── Field filter helpers ──
+  const addFieldFilter = useCallback(
+    (fieldKey: string) => {
+      const f = fields.find((x) => x.key === fieldKey);
+      const defaultOp: FilterOperator = f?.type === 'boolean' ? 'equals' : 'contains';
+      onFiltersChange([
+        ...filters,
+        { field: fieldKey, operator: defaultOp, value: null, category: 'field' },
+      ]);
+      setExpandedField(fieldKey);
+    },
+    [fields, filters, onFiltersChange],
+  );
+
+  const updateFieldFilter = useCallback(
+    (index: number, updated: ViewFilter) => {
+      const copy = [...filters];
+      // Find the actual index in the full filters array (field filters only)
+      let fieldIdx = -1;
+      for (let i = 0; i < copy.length; i++) {
+        if (!copy[i].category || copy[i].category === 'field') {
+          fieldIdx++;
+          if (fieldIdx === index) {
+            copy[i] = updated;
+            break;
+          }
+        }
+      }
+      onFiltersChange(copy);
+    },
+    [filters, onFiltersChange],
+  );
+
+  const removeFieldFilter = useCallback(
+    (index: number) => {
+      let fieldIdx = -1;
+      const copy = filters.filter((f, i) => {
+        if (!f.category || f.category === 'field') {
+          fieldIdx++;
+          return fieldIdx !== index;
+        }
+        return true;
+      });
+      onFiltersChange(copy);
+    },
+    [filters, onFiltersChange],
+  );
+
+  // Group field filters by field key for display
+  const fieldFiltersByKey = useMemo(() => {
+    const map = new Map<string, { filter: ViewFilter; index: number }[]>();
+    let idx = 0;
+    for (const f of fieldFilters) {
+      const arr = map.get(f.field) || [];
+      arr.push({ filter: f, index: idx });
+      map.set(f.field, arr);
+      idx++;
+    }
+    return map;
+  }, [fieldFilters]);
+
+  const activeFilterCount = filters.length;
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+        <div>
+          <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Filters</h3>
+          {activeFilterCount > 0 && (
+            <p className="text-xs text-slate-500 dark:text-slate-400">{activeFilterCount} active</p>
+          )}
+        </div>
+        {activeFilterCount > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs text-red-500 hover:text-red-600 hover:bg-red-50"
+            onClick={() => onFiltersChange([])}
+          >
+            Clear All
+          </Button>
+        )}
+      </div>
+
+      {/* Accordion Sections */}
+      <div className="flex-1 overflow-y-auto">
+        <Accordion type="multiple" defaultValue={['system', 'fields', 'related']} className="w-full">
+          {/* ── Section 1: System Defined Filters ── */}
+          <AccordionItem value="system" className="border-b border-slate-200 dark:border-slate-700">
+            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
+              System Defined Filters
+            </AccordionTrigger>
+            <AccordionContent className="px-2 pb-3">
+              <div className="space-y-0.5">
+                {SYSTEM_FILTERS.map(({ preset, label, icon: Icon, enabled }) => {
+                  const isActive = activeSystemPresets.has(preset);
+                  return (
+                    <button
+                      key={preset}
+                      onClick={() => enabled && toggleSystemFilter(preset)}
+                      disabled={!enabled}
+                      className={cn(
+                        'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+                        !enabled && 'opacity-40 cursor-not-allowed',
+                      )}
+                    >
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span className="flex-1">{label}</span>
+                      {isActive && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                    </button>
+                  );
+                })}
+
+                {/* Coming Soon divider */}
+                <div className="px-3 pt-3 pb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Coming Soon
+                  </span>
+                </div>
+                {UNAVAILABLE_FILTERS.map(({ label, icon: Icon }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="flex-1">{label}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-medium">
+                      Soon
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* ── Section 2: Filter By Fields ── */}
+          <AccordionItem value="fields" className="border-b border-slate-200 dark:border-slate-700">
+            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
+              Filter By Fields
+              {fieldFilters.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-bold">
+                  {fieldFilters.length}
+                </span>
+              )}
+            </AccordionTrigger>
+            <AccordionContent className="px-2 pb-3">
+              {/* Search fields */}
+              <div className="relative mb-2 px-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                <Input
+                  value={fieldSearch}
+                  onChange={(e) => setFieldSearch(e.target.value)}
+                  placeholder="Search fields..."
+                  className="h-8 pl-8 text-xs bg-white dark:bg-slate-900/50"
+                />
+              </div>
+
+              {/* Field list */}
+              <div className="space-y-0.5 max-h-[400px] overflow-y-auto">
+                {filteredFields.map((field) => {
+                  const activeFiltersForField = fieldFiltersByKey.get(field.key) || [];
+                  const hasFilter = activeFiltersForField.length > 0;
+
+                  return (
+                    <div key={field.key}>
+                      <button
+                        onClick={() => {
+                          if (hasFilter) {
+                            setExpandedField(expandedField === field.key ? null : field.key);
+                          } else {
+                            addFieldFilter(field.key);
+                          }
+                        }}
+                        className={cn(
+                          'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
+                          hasFilter
+                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+                        )}
+                      >
+                        <span className="flex-1 truncate">{field.label}</span>
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                          {field.type}
+                        </span>
+                        {hasFilter ? (
+                          <ChevronDown className={cn(
+                            'w-3 h-3 transition-transform shrink-0',
+                            expandedField === field.key && 'rotate-180',
+                          )} />
+                        ) : (
+                          <Plus className="w-3 h-3 text-slate-400 shrink-0" />
+                        )}
+                      </button>
+
+                      {/* Inline filter rows */}
+                      {hasFilter && expandedField === field.key && (
+                        <div className="pl-3 pr-1 py-1 space-y-1">
+                          {activeFiltersForField.map(({ filter, index }) => (
+                            <FieldFilterRow
+                              key={index}
+                              filter={filter}
+                              field={field}
+                              onUpdate={(updated) => updateFieldFilter(index, updated)}
+                              onRemove={() => removeFieldFilter(index)}
+                            />
+                          ))}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 text-[10px] text-blue-600 hover:text-blue-700 pl-2"
+                            onClick={() => addFieldFilter(field.key)}
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add condition
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {filteredFields.length === 0 && (
+                  <p className="text-xs text-slate-400 text-center py-4">
+                    No fields match &quot;{fieldSearch}&quot;
+                  </p>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* ── Section 3: Filter By Related Modules ── */}
+          <AccordionItem value="related" className="border-b-0">
+            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
+              Filter By Related Modules
+              {activeRelatedModules.size > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-bold">
+                  {activeRelatedModules.size}
+                </span>
+              )}
+            </AccordionTrigger>
+            <AccordionContent className="px-2 pb-3">
+              <div className="space-y-0.5">
+                {RELATED_MODULES.map(({ key, label, icon: Icon, enabled }) => {
+                  const currentCondition = activeRelatedModules.get(key);
+                  const isActive = currentCondition !== undefined;
+
+                  return (
+                    <div key={key} className="flex items-center gap-1 px-1">
+                      <div className={cn(
+                        'flex items-center gap-2 flex-1 min-w-0 px-2 py-2 rounded-lg text-xs',
+                        isActive
+                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                          : 'text-slate-700 dark:text-slate-300',
+                      )}>
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="flex-1 truncate">{label}</span>
+                      </div>
+                      <div className="flex shrink-0 gap-0.5">
+                        <button
+                          onClick={() => enabled && toggleRelatedModule(key, 'has_any')}
+                          disabled={!enabled}
+                          className={cn(
+                            'px-2 py-1 rounded text-[10px] font-medium transition-colors',
+                            currentCondition === 'has_any'
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700',
+                            !enabled && 'opacity-40 cursor-not-allowed',
+                          )}
+                        >
+                          Has
+                        </button>
+                        <button
+                          onClick={() => enabled && toggleRelatedModule(key, 'has_none')}
+                          disabled={!enabled}
+                          className={cn(
+                            'px-2 py-1 rounded text-[10px] font-medium transition-colors',
+                            currentCondition === 'has_none'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700',
+                            !enabled && 'opacity-40 cursor-not-allowed',
+                          )}
+                        >
+                          None
+                        </button>
+                      </div>
+                      {isActive && (
+                        <button
+                          onClick={() => toggleRelatedModule(key, currentCondition!)}
+                          className="p-1 text-slate-400 hover:text-red-500"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Coming Soon */}
+                <div className="px-3 pt-3 pb-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    Coming Soon
+                  </span>
+                </div>
+                {UNAVAILABLE_RELATED.map(({ label }) => (
+                  <div
+                    key={label}
+                    className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                  >
+                    <Link2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="flex-1">{label}</span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-medium">
+                      Soon
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+    </div>
+  );
+}

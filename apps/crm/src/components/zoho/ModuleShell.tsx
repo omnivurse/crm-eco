@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
 import { ViewsDropdown } from './ViewsDropdown';
-import { AdvancedFilterBuilder } from './AdvancedFilterBuilder';
+import { FilterSidebarTrigger } from '@/components/crm/filters/FilterSidebarTrigger';
 import { FilterChipsBar } from './FilterChipsBar';
 import { ColumnsButton } from './ColumnsButton';
 import { DensityToggle } from './DensityToggle';
@@ -600,14 +600,13 @@ export const ModuleShell = memo(function ModuleShell({
 
           {/* Right: Filters + Columns + Density */}
           <div className="flex items-center gap-2">
-            <AdvancedFilterBuilder
+            <FilterSidebarTrigger
               fields={fields}
               filters={filters}
               onFiltersChange={(newFilters) => {
                 setFilters(newFilters);
                 pushFiltersToUrl(newFilters);
               }}
-              onSaveView={handleSaveView}
             />
 
             <ColumnsButton
