@@ -27,7 +27,7 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    setIsOnline(navigator.onLine);
+    queueMicrotask(() => setIsOnline(navigator.onLine));
 
     return () => {
       clearInterval(timer);

@@ -330,7 +330,7 @@ export default function ScoringRulesPage() {
                 <TableHead>Rules</TableHead>
                 <TableHead>Score Field</TableHead>
                 <TableHead>Enabled</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>

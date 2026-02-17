@@ -55,6 +55,7 @@ export function VirtualizedList<T>({
 
   const shouldVirtualize = items.length > virtualizationThreshold;
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => containerRef.current,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   Users, 
@@ -71,11 +71,7 @@ export default function DependentsPage() {
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchDependents();
-  }, []);
-
-  const fetchDependents = async () => {
+  const fetchDependents = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +102,11 @@ export default function DependentsPage() {
       setDependents(data);
     }
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchDependents());
+  }, [fetchDependents]);
 
   const handleOpenDialog = (dependent?: Dependent) => {
     if (dependent) {

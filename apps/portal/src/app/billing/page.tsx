@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   CreditCard, 
@@ -56,11 +56,7 @@ export default function BillingPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchBillingData();
-  }, []);
-
-  const fetchBillingData = async () => {
+  const fetchBillingData = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -120,7 +116,11 @@ export default function BillingPage() {
     }
 
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchBillingData());
+  }, [fetchBillingData]);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

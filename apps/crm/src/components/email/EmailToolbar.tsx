@@ -60,6 +60,39 @@ interface EmailToolbarProps {
   onImageUpload?: () => void;
 }
 
+const ToolbarButton = ({
+  onClick,
+  isActive,
+  disabled,
+  children,
+  title,
+}: {
+  onClick: () => void;
+  isActive?: boolean;
+  disabled?: boolean;
+  children: React.ReactNode;
+  title?: string;
+}) => (
+  <Button
+    type="button"
+    variant="ghost"
+    size="icon"
+    className={cn(
+      'h-8 w-8 rounded',
+      isActive && 'bg-slate-200 dark:bg-slate-700 text-teal-600 dark:text-teal-400'
+    )}
+    onClick={onClick}
+    disabled={disabled}
+    title={title}
+  >
+    {children}
+  </Button>
+);
+
+const ToolbarDivider = () => (
+  <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+);
+
 export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -83,39 +116,6 @@ export function EmailToolbar({ editor, onImageUpload }: EmailToolbarProps) {
   if (!editor) {
     return null;
   }
-
-  const ToolbarButton = ({
-    onClick,
-    isActive,
-    disabled,
-    children,
-    title,
-  }: {
-    onClick: () => void;
-    isActive?: boolean;
-    disabled?: boolean;
-    children: React.ReactNode;
-    title?: string;
-  }) => (
-    <Button
-      type="button"
-      variant="ghost"
-      size="icon"
-      className={cn(
-        'h-8 w-8 rounded',
-        isActive && 'bg-slate-200 dark:bg-slate-700 text-teal-600 dark:text-teal-400'
-      )}
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-    >
-      {children}
-    </Button>
-  );
-
-  const ToolbarDivider = () => (
-    <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
-  );
 
   const insertMergeField = (fieldKey: string, label: string) => {
     editor.chain().focus().insertMergeField(fieldKey, label).run();

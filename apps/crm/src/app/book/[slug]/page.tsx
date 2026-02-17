@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useParams } from 'next/navigation';
 import {
   Calendar,
   Clock,
@@ -36,8 +37,8 @@ interface SchedulingLink {
 
 const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
-export default function BookingPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default function BookingPage() {
+  const { slug } = useParams<{ slug: string }>();
   const [link, setLink] = useState<SchedulingLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

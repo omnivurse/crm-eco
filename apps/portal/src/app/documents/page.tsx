@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   FileText, 
@@ -44,11 +44,7 @@ export default function DocumentsPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const fetchDocuments = async () => {
+  const fetchDocuments = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -159,7 +155,11 @@ export default function DocumentsPage() {
 
     setDocuments(docs);
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchDocuments());
+  }, [fetchDocuments]);
 
   const handleDownload = (doc: Document) => {
     if (doc.url) {

@@ -233,6 +233,83 @@ export function VoiceProvider({
     }
   }, [state.settings.language]);
 
+  // Speech synthesis (declared before processCommand which calls it)
+  const speak = useCallback((text: string) => {
+    if (!synthRef.current || !state.settings.speakResponses) return;
+
+    // Cancel any ongoing speech
+    synthRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = state.settings.language;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    synthRef.current.speak(utterance);
+  }, [state.settings.language, state.settings.speakResponses]);
+
+  // Process voice command (declared before recognition useEffect which calls it via onresult)
+  const processCommand = useCallback(async (transcript: string) => {
+    dispatch({ type: 'SET_PROCESSING', payload: true });
+
+    try {
+      const intent = parseIntent(transcript, state.context);
+
+      // Check confidence threshold
+      if (intent.confidence < state.settings.confidenceThreshold) {
+        const response: VoiceResponse = {
+          type: 'error',
+          message: `I'm not sure I understood. Did you say "${transcript}"?`,
+          speak: true,
+          actions: [
+            { label: 'Try Again', action: 'retry' },
+            { label: 'Search Instead', action: `search:${transcript}` },
+          ],
+        };
+        dispatch({ type: 'SET_RESPONSE', payload: response });
+        dispatch({ type: 'ADD_TO_HISTORY', payload: { transcript, response } });
+
+        if (state.settings.speakResponses) {
+          speak(response.message);
+        }
+        return;
+      }
+
+      const actionContext = {
+        navigate: navigate || ((path: string) => {
+          if (typeof window !== 'undefined') {
+            window.location.href = path;
+          }
+        }),
+        openTerminal: openTerminal || (() => {}),
+        setTheme: setTheme || (() => {}),
+        supabase,
+        profile,
+      };
+
+      const response = await executeIntent(intent, actionContext, state.context);
+
+      dispatch({ type: 'SET_RESPONSE', payload: response });
+      dispatch({ type: 'ADD_TO_HISTORY', payload: { transcript, response } });
+
+      if (state.settings.speakResponses && response.speak) {
+        speak(response.message);
+      }
+    } catch (error) {
+      const response: VoiceResponse = {
+        type: 'error',
+        message: 'Something went wrong processing your command.',
+        speak: true,
+      };
+      dispatch({ type: 'SET_RESPONSE', payload: response });
+
+      if (state.settings.speakResponses) {
+        speak(response.message);
+      }
+    }
+  }, [state.context, state.settings, speak, navigate, openTerminal, setTheme, supabase, profile]);
+
   // Set up recognition handlers
   useEffect(() => {
     const recognition = recognitionRef.current;
@@ -305,91 +382,7 @@ export function VoiceProvider({
     };
   }, [state.settings.continuousListening, state.isOpen, state.error]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + Space to toggle voice
-      if ((e.metaKey || e.ctrlKey) && e.code === 'Space') {
-        e.preventDefault();
-        if (state.isOpen) {
-          toggleListening();
-        } else {
-          dispatch({ type: 'SET_OPEN', payload: true });
-        }
-      }
-      // Escape to close
-      if (e.key === 'Escape' && state.isOpen) {
-        dispatch({ type: 'SET_OPEN', payload: false });
-        stopListening();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.isOpen, state.isListening]);
-
-  // Process voice command
-  const processCommand = useCallback(async (transcript: string) => {
-    dispatch({ type: 'SET_PROCESSING', payload: true });
-
-    try {
-      const intent = parseIntent(transcript, state.context);
-
-      // Check confidence threshold
-      if (intent.confidence < state.settings.confidenceThreshold) {
-        const response: VoiceResponse = {
-          type: 'error',
-          message: `I'm not sure I understood. Did you say "${transcript}"?`,
-          speak: true,
-          actions: [
-            { label: 'Try Again', action: 'retry' },
-            { label: 'Search Instead', action: `search:${transcript}` },
-          ],
-        };
-        dispatch({ type: 'SET_RESPONSE', payload: response });
-        dispatch({ type: 'ADD_TO_HISTORY', payload: { transcript, response } });
-
-        if (state.settings.speakResponses) {
-          speak(response.message);
-        }
-        return;
-      }
-
-      const actionContext = {
-        navigate: navigate || ((path: string) => {
-          if (typeof window !== 'undefined') {
-            window.location.href = path;
-          }
-        }),
-        openTerminal: openTerminal || (() => {}),
-        setTheme: setTheme || (() => {}),
-        supabase,
-        profile,
-      };
-
-      const response = await executeIntent(intent, actionContext, state.context);
-
-      dispatch({ type: 'SET_RESPONSE', payload: response });
-      dispatch({ type: 'ADD_TO_HISTORY', payload: { transcript, response } });
-
-      if (state.settings.speakResponses && response.speak) {
-        speak(response.message);
-      }
-    } catch (error) {
-      const response: VoiceResponse = {
-        type: 'error',
-        message: 'Something went wrong processing your command.',
-        speak: true,
-      };
-      dispatch({ type: 'SET_RESPONSE', payload: response });
-
-      if (state.settings.speakResponses) {
-        speak(response.message);
-      }
-    }
-  }, [state.context, state.settings, navigate, openTerminal, setTheme, supabase, profile]);
-
-  // Control functions
+  // Control functions (declared before keyboard useEffect which calls toggleListening and stopListening)
   const startListening = useCallback(() => {
     if (!recognitionRef.current) {
       dispatch({ type: 'SET_ERROR', payload: 'not-supported' });
@@ -429,6 +422,35 @@ export function VoiceProvider({
     }
   }, [state.isListening, startListening, stopListening]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + Space to toggle voice
+      if ((e.metaKey || e.ctrlKey) && e.code === 'Space') {
+        e.preventDefault();
+        if (state.isOpen) {
+          toggleListening();
+        } else {
+          dispatch({ type: 'SET_OPEN', payload: true });
+        }
+      }
+      // Escape to close
+      if (e.key === 'Escape' && state.isOpen) {
+        dispatch({ type: 'SET_OPEN', payload: false });
+        stopListening();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.isOpen, state.isListening]);
+
+  const stopSpeaking = useCallback(() => {
+    if (synthRef.current) {
+      synthRef.current.cancel();
+    }
+  }, []);
+
   const cancelCommand = useCallback(() => {
     stopListening();
     dispatch({ type: 'SET_TRANSCRIPT', payload: '' });
@@ -465,28 +487,6 @@ export function VoiceProvider({
 
   const addRecentEntity = useCallback((entity: Entity) => {
     dispatch({ type: 'ADD_ENTITY', payload: entity });
-  }, []);
-
-  // Speech synthesis
-  const speak = useCallback((text: string) => {
-    if (!synthRef.current || !state.settings.speakResponses) return;
-
-    // Cancel any ongoing speech
-    synthRef.current.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = state.settings.language;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-
-    synthRef.current.speak(utterance);
-  }, [state.settings.language, state.settings.speakResponses]);
-
-  const stopSpeaking = useCallback(() => {
-    if (synthRef.current) {
-      synthRef.current.cancel();
-    }
   }, []);
 
   // isSupported is set in the initialization useEffect after mount to avoid hydration mismatch

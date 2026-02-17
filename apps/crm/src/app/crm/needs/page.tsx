@@ -63,14 +63,14 @@ interface RecentNeedStats {
   updated_at: string;
 }
 
-function NeedCard({ need }: { need: Need }) {
+function NeedCard({ need, now }: { need: Need; now: number }) {
   const status = NEED_STATUSES[need.status] || NEED_STATUSES.submitted;
   const urgency = URGENCY_LEVELS[need.urgency_light || 'medium'] || URGENCY_LEVELS.medium;
   const memberName = need.member?.title || 'Unknown Member';
   const memberId = need.member?.data?.membership_number as string || need.member?.id?.slice(0, 8) || 'N/A';
 
   const daysUntilSla = need.sla_target_date
-    ? Math.ceil((new Date(need.sla_target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((new Date(need.sla_target_date).getTime() - now) / (1000 * 60 * 60 * 24))
     : 7;
   const isOverdue = daysUntilSla < 0;
   const isDueSoon = daysUntilSla <= 2 && daysUntilSla >= 0;
@@ -171,6 +171,8 @@ async function NeedsContent() {
   }
 
   const needsList = (needs || []) as unknown as Need[];
+  // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() per-request is correct
+  const now = Date.now();
 
   // Calculate stats
   const { data: allNeedsData } = await supabase
@@ -212,7 +214,7 @@ async function NeedsContent() {
   // Count at-risk (close to SLA deadline)
   const atRiskCount = needsList.filter(n => {
     if (!n.sla_target_date || ['approved', 'paid', 'denied'].includes(n.status)) return false;
-    const daysLeft = Math.ceil((new Date(n.sla_target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const daysLeft = Math.ceil((new Date(n.sla_target_date).getTime() - now) / (1000 * 60 * 60 * 24));
     return daysLeft <= 2;
   }).length;
 
@@ -326,7 +328,7 @@ async function NeedsContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {needsList.length > 0 ? (
           needsList.map((need) => (
-            <NeedCard key={need.id} need={need} />
+            <NeedCard key={need.id} need={need} now={now} />
           ))
         ) : (
           <div className="col-span-2 glass-card rounded-xl p-12 border border-slate-200 dark:border-white/10 text-center">

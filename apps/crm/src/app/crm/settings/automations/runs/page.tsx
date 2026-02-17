@@ -228,7 +228,7 @@ export default function AutomationRunsPage() {
                 <TableHead>Actions</TableHead>
                 <TableHead>Started</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>

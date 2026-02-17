@@ -450,7 +450,7 @@ export default function IntegrationLogsPage() {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
                   Time
                 </th>
-                <th className="px-4 py-3 w-10"></th>
+                <th className="px-4 py-3 w-10" />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-700">

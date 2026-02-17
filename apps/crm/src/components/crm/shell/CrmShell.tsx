@@ -30,7 +30,7 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
 
   // Close mobile menu on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
+    queueMicrotask(() => setMobileMenuOpen(false));
   }, [pathname]);
 
   // Prevent body scroll when mobile menu is open

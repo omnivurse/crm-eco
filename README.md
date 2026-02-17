@@ -84,6 +84,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the application.
 
+> **Note — TypeScript on fresh clones:** After cloning, run `npm run dev` in each app at least once to generate `.next/types/routes.d.ts`. Until this file is generated, your editor may show TypeScript errors for route types. This is expected behavior with Next.js's typed routes feature.
+
 ## Database Schema
 
 The platform uses the following core tables:

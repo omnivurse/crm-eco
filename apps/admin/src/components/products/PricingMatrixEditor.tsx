@@ -641,17 +641,19 @@ function IuaLevelDialog({
   const [isDefault, setIsDefault] = useState(false);
 
   useEffect(() => {
-    if (level) {
-      setAmount(level.amount.toString());
-      setLabel(level.label || '');
-      setAdjustment(level.monthly_premium_adjustment?.toString() || '');
-      setIsDefault(level.is_default);
-    } else {
-      setAmount('');
-      setLabel('');
-      setAdjustment('');
-      setIsDefault(false);
-    }
+    queueMicrotask(() => {
+      if (level) {
+        setAmount(level.amount.toString());
+        setLabel(level.label || '');
+        setAdjustment(level.monthly_premium_adjustment?.toString() || '');
+        setIsDefault(level.is_default);
+      } else {
+        setAmount('');
+        setLabel('');
+        setAdjustment('');
+        setIsDefault(false);
+      }
+    });
   }, [level]);
 
   const handleSubmit = () => {
@@ -750,17 +752,19 @@ function AgeBracketDialog({
   const [multiplier, setMultiplier] = useState('');
 
   useEffect(() => {
-    if (bracket) {
-      setMinAge(bracket.min_age.toString());
-      setMaxAge(bracket.max_age.toString());
-      setLabel(bracket.label || '');
-      setMultiplier(bracket.rate_multiplier?.toString() || '');
-    } else {
-      setMinAge('');
-      setMaxAge('');
-      setLabel('');
-      setMultiplier('');
-    }
+    queueMicrotask(() => {
+      if (bracket) {
+        setMinAge(bracket.min_age.toString());
+        setMaxAge(bracket.max_age.toString());
+        setLabel(bracket.label || '');
+        setMultiplier(bracket.rate_multiplier?.toString() || '');
+      } else {
+        setMinAge('');
+        setMaxAge('');
+        setLabel('');
+        setMultiplier('');
+      }
+    });
   }, [bracket]);
 
   const handleSubmit = () => {
@@ -861,21 +865,23 @@ function BenefitTypeDialog({
   const [isIncluded, setIsIncluded] = useState(true);
 
   useEffect(() => {
-    if (benefit) {
-      setBenefitName(benefit.benefit_name);
-      setBenefitKey(benefit.benefit_key);
-      setDescription(benefit.description || '');
-      setCoverageLimit(benefit.coverage_limit?.toString() || '');
-      setCopayAmount(benefit.copay_amount?.toString() || '');
-      setIsIncluded(benefit.is_included);
-    } else {
-      setBenefitName('');
-      setBenefitKey('');
-      setDescription('');
-      setCoverageLimit('');
-      setCopayAmount('');
-      setIsIncluded(true);
-    }
+    queueMicrotask(() => {
+      if (benefit) {
+        setBenefitName(benefit.benefit_name);
+        setBenefitKey(benefit.benefit_key);
+        setDescription(benefit.description || '');
+        setCoverageLimit(benefit.coverage_limit?.toString() || '');
+        setCopayAmount(benefit.copay_amount?.toString() || '');
+        setIsIncluded(benefit.is_included);
+      } else {
+        setBenefitName('');
+        setBenefitKey('');
+        setDescription('');
+        setCoverageLimit('');
+        setCopayAmount('');
+        setIsIncluded(true);
+      }
+    });
   }, [benefit]);
 
   const handleSubmit = () => {

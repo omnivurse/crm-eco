@@ -434,7 +434,7 @@ export default function CommissionsPage() {
                     <TableHead>Override</TableHead>
                     <TableHead>Requirements</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -572,7 +572,7 @@ export default function CommissionsPage() {
                     <TableHead>Chargebacks</TableHead>
                     <TableHead>Net Payout</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="w-12"></TableHead>
+                    <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>

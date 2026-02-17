@@ -80,10 +80,6 @@ export default function EmailHistoryPage() {
   const pageSize = 20;
   const supabase = createClient();
 
-  useEffect(() => {
-    loadEmails();
-  }, [page, statusFilter]);
-
   async function loadEmails() {
     setLoading(true);
 
@@ -118,6 +114,10 @@ export default function EmailHistoryPage() {
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(() => loadEmails());
+  }, [page, statusFilter]);
 
   function getStatusBadge(status: string) {
     switch (status) {

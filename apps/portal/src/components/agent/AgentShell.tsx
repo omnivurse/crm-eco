@@ -29,7 +29,7 @@ export function AgentShell({ children, agent }: AgentShellProps) {
 
   // Close mobile menu on route change
   useEffect(() => {
-    setMobileMenuOpen(false);
+    queueMicrotask(() => setMobileMenuOpen(false));
   }, [pathname]);
 
   // Prevent body scroll when mobile menu is open

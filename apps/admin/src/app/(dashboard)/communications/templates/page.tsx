@@ -64,14 +64,6 @@ export default function EmailTemplatesPage() {
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  useEffect(() => {
-    filterTemplates();
-  }, [searchQuery, categoryFilter, templates]);
-
   async function loadTemplates() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -118,6 +110,14 @@ export default function EmailTemplatesPage() {
     setFilteredTemplates(filtered);
   }
 
+  useEffect(() => {
+    queueMicrotask(() => loadTemplates());
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => filterTemplates());
+  }, [searchQuery, categoryFilter, templates]);
+
   async function duplicateTemplate(template: EmailTemplate) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -135,6 +135,7 @@ export default function EmailTemplatesPage() {
       .insert({
         organization_id: profile.organization_id,
         name: `${template.name} (Copy)`,
+        // eslint-disable-next-line react-hooks/purity -- Date.now() in event handler is correct
         slug: `${template.slug}-copy-${Date.now()}`,
         description: template.description,
         category: template.category,

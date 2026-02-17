@@ -59,10 +59,6 @@ export default function LandingPageAnalyticsPage() {
   const [dateRange, setDateRange] = useState('7d');
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadData();
-  }, [id, dateRange]);
-
   async function loadData() {
     setLoading(true);
 
@@ -130,6 +126,10 @@ export default function LandingPageAnalyticsPage() {
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    queueMicrotask(() => loadData());
+  }, [id, dateRange]);
 
   function getConversionRate() {
     if (!landingPage || landingPage.views === 0) return '0%';

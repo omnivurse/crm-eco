@@ -414,7 +414,7 @@ export default function LandingPagesPage() {
                 <TableHead>Views</TableHead>
                 <TableHead>Submissions</TableHead>
                 <TableHead>Conversion</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
             <TableBody>

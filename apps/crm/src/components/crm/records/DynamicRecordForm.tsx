@@ -175,6 +175,7 @@ export function DynamicRecordForm({
 
   const renderField = (field: CrmField) => {
     const error = errors[field.key];
+    // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() returns mutable refs by design
     const value = watch(field.key);
 
     const commonProps = {

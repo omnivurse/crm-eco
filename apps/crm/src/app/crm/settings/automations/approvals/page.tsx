@@ -251,7 +251,7 @@ export default function ApprovalsSettingsPage() {
                   <TableHead>Trigger</TableHead>
                   <TableHead>Steps</TableHead>
                   <TableHead>Enabled</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -355,7 +355,7 @@ export default function ApprovalsSettingsPage() {
                   <TableHead>Trigger</TableHead>
                   <TableHead>Priority</TableHead>
                   <TableHead>Enabled</TableHead>
-                  <TableHead className="w-12"></TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>

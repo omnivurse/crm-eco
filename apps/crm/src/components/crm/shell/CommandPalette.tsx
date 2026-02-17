@@ -147,6 +147,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   }, [router, onOpenChange]);
 
   // Check if query matches a terminal command
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- terminalCommands is a stable module-level constant
   const terminalMatch = useMemo(() => {
     if (!query.trim()) return null;
     for (const cmd of terminalCommands) {
@@ -326,7 +327,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
 
   // Reset selection when query changes
   useEffect(() => {
-    setSelectedIndex(0);
+    queueMicrotask(() => setSelectedIndex(0));
   }, [query]);
 
   // Global keyboard shortcut

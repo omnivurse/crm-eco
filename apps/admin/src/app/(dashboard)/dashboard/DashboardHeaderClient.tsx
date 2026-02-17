@@ -25,10 +25,12 @@ export function DashboardHeaderClient({ greeting, stats }: DashboardHeaderClient
 
   useEffect(() => {
     // Set client-side initial values after mount to avoid hydration mismatch
-    setHasMounted(true);
-    setCurrentTime(new Date());
-    setLastUpdated(new Date());
-    setIsOnline(navigator.onLine);
+    queueMicrotask(() => {
+      setHasMounted(true);
+      setCurrentTime(new Date());
+      setLastUpdated(new Date());
+      setIsOnline(navigator.onLine);
+    });
 
     // Update current time every second
     const timer = setInterval(() => {

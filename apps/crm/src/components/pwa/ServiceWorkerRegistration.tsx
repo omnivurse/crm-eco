@@ -121,7 +121,7 @@ export function useIsPWA(): boolean {
     // Check if running in standalone mode (installed PWA)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
     const isIOSStandalone = (window.navigator as any).standalone === true;
-    setIsPWA(isStandalone || isIOSStandalone);
+    queueMicrotask(() => setIsPWA(isStandalone || isIOSStandalone));
   }, []);
 
   return isPWA;

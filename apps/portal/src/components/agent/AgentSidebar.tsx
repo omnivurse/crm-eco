@@ -77,6 +77,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
           <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
             <Link href="/agent" className="flex items-center gap-3 group" onClick={handleLinkClick}>
               {agent?.logo_url ? (
+                /* eslint-disable-next-line @next/next/no-img-element -- dynamic external logo, unoptimized is appropriate */
                 <img 
                   src={agent.logo_url} 
                   alt={agent.company_name || 'Agent'} 

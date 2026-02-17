@@ -231,6 +231,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
                 })}
               </p>
               <p className="text-sm text-slate-500 mt-1">
+                {/* eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() per-request is correct */}
                 {Math.floor((Date.now() - new Date(member.created_at).getTime()) / (1000 * 60 * 60 * 24))} days ago
               </p>
             </CardContent>

@@ -119,7 +119,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       }
     }
     fetchFieldsForPreselectedModule();
-  }, [selectedModule?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedModule?.id]);  
 
   // Fetch fields when module is selected
   const handleModuleSelect = useCallback(async (module: CrmModule) => {

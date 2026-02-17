@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
@@ -47,15 +47,7 @@ export default function AgentMembersPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  useEffect(() => {
-    filterMembers();
-  }, [searchTerm, statusFilter, members]);
-
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -90,9 +82,9 @@ export default function AgentMembersPage() {
       setMembers(data);
     }
     setLoading(false);
-  };
+  }, [supabase]);
 
-  const filterMembers = () => {
+  const filterMembers = useCallback(() => {
     let filtered = members;
 
     if (searchTerm) {
@@ -111,7 +103,15 @@ export default function AgentMembersPage() {
 
     setFilteredMembers(filtered);
     setPage(1);
-  };
+  }, [searchTerm, statusFilter, members]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchMembers());
+  }, [fetchMembers]);
+
+  useEffect(() => {
+    queueMicrotask(() => filterMembers());
+  }, [filterMembers]);
 
   const paginatedMembers = filteredMembers.slice(
     (page - 1) * itemsPerPage,

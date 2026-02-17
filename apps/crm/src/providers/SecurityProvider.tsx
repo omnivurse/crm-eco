@@ -49,12 +49,12 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
     // Mounted guard: ensures server and client initial render match to prevent hydration mismatch
     const [mounted, setMounted] = useState(false);
     const [isLocked, setIsLocked] = useState(false);
-    const [lastActivity, setLastActivity] = useState(Date.now());
+    const [lastActivity, setLastActivity] = useState(() => Date.now());
     const [timeUntilTimeout, setTimeUntilTimeout] = useState<number | null>(null);
     const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
+        queueMicrotask(() => setMounted(true));
     }, []);
 
     // Skip security for public pages
@@ -97,15 +97,19 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
 
         // If already past lock time, lock immediately
         if (lockDelay <= 0) {
-            setIsLocked(true);
-            setShowTimeoutWarning(false);
+            queueMicrotask(() => {
+                setIsLocked(true);
+                setShowTimeoutWarning(false);
+            });
             return;
         }
 
         // If already in warning window, show warning immediately
         if (warningDelay <= 0) {
-            setShowTimeoutWarning(true);
-            setTimeUntilTimeout(Math.max(0, lockDelay));
+            queueMicrotask(() => {
+                setShowTimeoutWarning(true);
+                setTimeUntilTimeout(Math.max(0, lockDelay));
+            });
         }
 
         const timers: ReturnType<typeof setTimeout>[] = [];

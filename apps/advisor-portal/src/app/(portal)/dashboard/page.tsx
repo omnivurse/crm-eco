@@ -14,23 +14,22 @@ async function getDashboardStats(organizationId: string, advisorId: string) {
     const supabase = await createServerSupabaseClient();
 
     // Get contact counts
-    const [leadsResult, membersResult, eventsResult] = await Promise.all([
-        supabase
-            .from('leads')
-            .select('id', { count: 'exact', head: true })
-            .eq('organization_id', organizationId)
-            .eq('owner_advisor_id', advisorId),
-        supabase
-            .from('members')
-            .select('id', { count: 'exact', head: true })
-            .eq('organization_id', organizationId)
-            .eq('advisor_id', advisorId),
-        supabase
-            .from('engagement_events')
-            .select('id', { count: 'exact', head: true })
-            .eq('advisor_id', advisorId)
-            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
-    ]);
+    // @ts-expect-error -- TS2589: Supabase generic depth exceeded with 300+ table schema; runtime-safe
+    const leadsResult = await supabase
+        .from('leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('owner_advisor_id', advisorId);
+    const membersResult = await supabase
+        .from('members')
+        .select('id', { count: 'exact', head: true })
+        .eq('organization_id', organizationId)
+        .eq('advisor_id', advisorId);
+    const eventsResult = await supabase
+        .from('engagement_events')
+        .select('id', { count: 'exact', head: true })
+        .eq('advisor_id', advisorId)
+        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     return {
         leads: leadsResult.count || 0,

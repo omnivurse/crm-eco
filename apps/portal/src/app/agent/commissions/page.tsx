@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   DollarSign, 
@@ -49,11 +49,7 @@ export default function AgentCommissionsPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchCommissions();
-  }, []);
-
-  const fetchCommissions = async () => {
+  const fetchCommissions = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -103,7 +99,11 @@ export default function AgentCommissionsPage() {
       // Commission tables may not exist
     }
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchCommissions());
+  }, [fetchCommissions]);
 
   // Calculate stats
   const stats = {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   BarChart3, 
@@ -39,11 +39,7 @@ export default function AgentReportsPage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchReportData();
-  }, [period]);
-
-  const fetchReportData = async () => {
+  const fetchReportData = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -127,7 +123,11 @@ export default function AgentReportsPage() {
     }
 
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchReportData());
+  }, [fetchReportData]);
 
   const formatMonth = (monthStr: string) => {
     const [year, month] = monthStr.split('-');

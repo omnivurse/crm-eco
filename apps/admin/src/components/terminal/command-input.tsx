@@ -26,15 +26,14 @@ export function CommandInput() {
 
   // Update suggestions as user types
   useEffect(() => {
-    if (inputValue.trim()) {
-      const newSuggestions = getSuggestions(inputValue);
+    const newSuggestions = inputValue.trim() ? getSuggestions(inputValue) : [];
+    queueMicrotask(() => {
       setSuggestions(newSuggestions);
       setShowSuggestions(newSuggestions.length > 0);
-      setSelectedSuggestion(-1);
-    } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
-    }
+      if (inputValue.trim()) {
+        setSelectedSuggestion(-1);
+      }
+    });
   }, [inputValue, getSuggestions]);
 
   const handleSubmit = useCallback(

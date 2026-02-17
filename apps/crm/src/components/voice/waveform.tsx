@@ -18,7 +18,7 @@ export function Waveform({
   activeColor = 'rgba(20, 184, 166, 0.8)',
 }: WaveformProps) {
   const [bars, setBars] = useState<number[]>(Array(barCount).fill(0.1));
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const analyzerRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -26,7 +26,7 @@ export function Waveform({
   useEffect(() => {
     if (!isActive) {
       // Reset bars when not active
-      setBars(Array(barCount).fill(0.1));
+      queueMicrotask(() => setBars(Array(barCount).fill(0.1)));
 
       // Clean up audio context and stream
       if (streamRef.current) {

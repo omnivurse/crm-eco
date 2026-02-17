@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
@@ -29,11 +29,7 @@ export default function AgentDownlinePage() {
   
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchDownline();
-  }, []);
-
-  const fetchDownline = async () => {
+  const fetchDownline = useCallback(async () => {
     setLoading(true);
     
     const { data: { user } } = await supabase.auth.getUser();
@@ -86,7 +82,11 @@ export default function AgentDownlinePage() {
       setDownlineAgents(agentsWithCounts);
     }
     setLoading(false);
-  };
+  }, [supabase]);
+
+  useEffect(() => {
+    queueMicrotask(() => fetchDownline());
+  }, [fetchDownline]);
 
   // Calculate stats
   const stats = {

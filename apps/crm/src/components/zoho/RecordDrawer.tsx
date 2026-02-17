@@ -136,6 +136,7 @@ export function RecordDrawer() {
   };
 
   // Smart field selection: group by section, only show sections with data
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- deps are correct; data?.fields is the intended granularity
   const fieldSections = useMemo<FieldSection[]>(() => {
     if (!data?.fields || !effectiveRecordData) return [];
 

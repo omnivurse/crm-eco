@@ -28,12 +28,16 @@ export function CommandInput() {
   useEffect(() => {
     if (inputValue.trim()) {
       const newSuggestions = getSuggestions(inputValue);
-      setSuggestions(newSuggestions);
-      setShowSuggestions(newSuggestions.length > 0);
-      setSelectedSuggestion(-1);
+      queueMicrotask(() => {
+        setSuggestions(newSuggestions);
+        setShowSuggestions(newSuggestions.length > 0);
+        setSelectedSuggestion(-1);
+      });
     } else {
-      setSuggestions([]);
-      setShowSuggestions(false);
+      queueMicrotask(() => {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      });
     }
   }, [inputValue, getSuggestions]);
 

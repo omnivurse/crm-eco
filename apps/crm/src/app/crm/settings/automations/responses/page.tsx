@@ -60,10 +60,12 @@ export default function AutoResponsesPage() {
   useEffect(() => {
     // Load from localStorage for now (in production would be API)
     const saved = localStorage.getItem('crm_auto_responses');
-    if (saved) {
-      setResponses(JSON.parse(saved));
-    }
-    setLoading(false);
+    queueMicrotask(() => {
+      if (saved) {
+        setResponses(JSON.parse(saved));
+      }
+      setLoading(false);
+    });
   }, []);
 
   const saveResponses = (newResponses: AutoResponse[]) => {

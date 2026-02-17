@@ -80,12 +80,12 @@ export function useDebouncedSearch<T>({
     const searchQuery = debouncedQuery.trim().toLowerCase();
 
     if (searchQuery.length < minChars) {
-      setApiResults([]);
+      queueMicrotask(() => setApiResults([]));
       return;
     }
 
     let cancelled = false;
-    setIsSearching(true);
+    queueMicrotask(() => setIsSearching(true));
 
     onSearch(searchQuery)
       .then((results) => {

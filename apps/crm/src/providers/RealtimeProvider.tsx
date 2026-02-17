@@ -180,6 +180,6 @@ export function useRealtimeSubscription(
     useEffect(() => {
         const unsubscribe = subscribe({ table, event, callback });
         return unsubscribe;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+         
     }, [table, event, subscribe, ...deps]);
 }

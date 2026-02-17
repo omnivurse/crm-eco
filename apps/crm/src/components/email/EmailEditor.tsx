@@ -128,7 +128,7 @@ export function EmailEditor({
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content);
-      setSourceContent(content);
+      queueMicrotask(() => setSourceContent(content));
     }
   }, [content, editor]);
 

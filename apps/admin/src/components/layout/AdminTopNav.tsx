@@ -82,7 +82,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
     
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-    setIsOnline(navigator.onLine);
+    queueMicrotask(() => setIsOnline(navigator.onLine));
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -144,7 +144,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
   useEffect(() => {
     if (!userId) return;
 
-    fetchNotifications();
+    queueMicrotask(() => fetchNotifications());
 
     const channel = supabase
       .channel(`admin-notifications-nav-${userId}`)
