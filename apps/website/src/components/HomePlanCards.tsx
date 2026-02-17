@@ -35,7 +35,7 @@ function formatCurrency(amount: number | null): string {
 export async function HomePlanCards() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: plans } = await (supabase as any)
+  const { data: plans } = await supabase
     .from('plans')
     .select('id, name, code, monthly_share, description')
     .eq('is_active', true)
@@ -49,7 +49,7 @@ export async function HomePlanCards() {
   let benefitsByPlan = new Map<string, DbBenefit[]>();
   if (dbPlans.length > 0) {
     const planIds = dbPlans.map((p) => p.id);
-    const { data: benefits } = await (supabase as any)
+    const { data: benefits } = await supabase
       .from('product_benefits')
       .select('id, plan_id, benefit_name')
       .in('plan_id', planIds)

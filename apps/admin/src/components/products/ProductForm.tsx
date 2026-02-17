@@ -141,7 +141,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     };
 
     if (isEditing) {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from('plans')
         .update(productData)
         .eq('id', initialData.id);
@@ -154,7 +154,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
       router.push(`/products/${initialData.id}`);
     } else {
-      const { data: newProduct, error: insertError } = await supabase
+      const { data: newProduct, error: insertError } = await (supabase as any)
         .from('plans')
         .insert(productData)
         .select('id')
