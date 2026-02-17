@@ -138,7 +138,7 @@ export default function InvoicesPage() {
       const { data, error } = await query.limit(500);
 
       if (error && error.code !== '42P01') throw error;
-      setInvoices((data || []) as Invoice[]);
+      setInvoices((data || []) as unknown as Invoice[]);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');

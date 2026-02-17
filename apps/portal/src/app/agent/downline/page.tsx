@@ -24,7 +24,7 @@ interface DownlineAgent {
   phone: string | null;
   status: string;
   enrollment_code: string | null;
-  created_at: string;
+  created_at: string | null;
   member_count?: number;
 }
 

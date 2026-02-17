@@ -191,7 +191,7 @@ export default function GenerateGroupInvoicePage() {
       // Get member details and their plans
       const { data: memberDetails, error: memberError } = await supabase
         .from('members')
-        .select('id, first_name, last_name, email, plan_id, monthly_share')
+        .select('id, first_name, last_name, email, monthly_share')
         .in('id', memberIds);
 
       if (memberError) throw memberError;

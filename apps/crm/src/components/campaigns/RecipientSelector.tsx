@@ -152,8 +152,8 @@ export function RecipientSelector({
         const moduleKey = selectedModule?.key || 'contacts';
 
         const recipients: Recipient[] = records
-          .filter(r => r.email)
-          .map(r => ({
+          .filter((r: any) => r.email)
+          .map((r: any) => ({
             record_id: r.id,
             module_key: moduleKey,
             email: r.email!,

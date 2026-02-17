@@ -81,7 +81,7 @@ export async function importMembersFromRows(
         phone: mappedData.phone || null,
         state: mappedData.state || null,
         date_of_birth: parseDate(mappedData.date_of_birth),
-        member_number: mappedData.member_number || null,
+        member_number: mappedData.member_number || undefined,
         status: (mappedData.status as MemberInsert['status']) || 'pending',
         address_line1: mappedData.address_line1 || null,
         address_line2: mappedData.address_line2 || null,

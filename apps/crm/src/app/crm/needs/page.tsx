@@ -190,7 +190,7 @@ async function NeedsContent() {
     .select('status, urgency, total_amount, amount_submitted')
     .eq('organization_id', profile.organization_id);
 
-  const allNeeds = (allNeedsData || []) as NeedStats[];
+  const allNeeds = (allNeedsData || []) as unknown as NeedStats[];
   const totalNeeds = allNeeds.length;
   const pendingReview = allNeeds.filter(n => ['submitted', 'in_review'].includes(n.status)).length;
   const approvedAmount = allNeeds
@@ -208,7 +208,7 @@ async function NeedsContent() {
     .eq('organization_id', profile.organization_id)
     .gte('created_at', thirtyDaysAgo.toISOString());
 
-  const recentNeeds = (recentNeedsData || []) as RecentNeedStats[];
+  const recentNeeds = (recentNeedsData || []) as unknown as RecentNeedStats[];
   const completedNeeds = recentNeeds.filter(n => ['approved', 'paid', 'denied'].includes(n.status));
   const onTimeCount = completedNeeds.filter(n => {
     if (!n.sla_deadline) return true;

@@ -18,8 +18,8 @@
     "./audit": "./src/audit/index.ts"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.5.2",
-    "@supabase/supabase-js": "^2.47.10",
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.81.1",
     "resend": "^4.8.0"
   },
   "devDependencies": {

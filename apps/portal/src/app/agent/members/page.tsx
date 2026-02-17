@@ -37,12 +37,12 @@ interface Member {
   first_name: string;
   last_name: string;
   email: string | null;
-  phone_number: string | null;
-  enrollment_status: string;
+  phone: string | null;
+  status: string;
   date_of_birth: string | null;
   city: string | null;
   state: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 export default function AgentMembersPage() {
@@ -115,7 +115,7 @@ export default function AgentMembersPage() {
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(m => m.enrollment_status === statusFilter);
+      filtered = filtered.filter(m => m.status === statusFilter);
     }
 
     setFilteredMembers(filtered);
@@ -252,10 +252,10 @@ export default function AgentMembersPage() {
                                 {member.email}
                               </div>
                             )}
-                            {member.phone_number && (
+                            {member.phone && (
                               <div className="flex items-center gap-1 text-sm text-slate-600">
                                 <Phone className="h-3 w-3" />
-                                {member.phone_number}
+                                {member.phone}
                               </div>
                             )}
                           </div>
@@ -269,10 +269,10 @@ export default function AgentMembersPage() {
                           {calculateAge(member.date_of_birth)}
                         </td>
                         <td className="py-4">
-                          {getStatusBadge(member.enrollment_status)}
+                          {getStatusBadge(member.status)}
                         </td>
                         <td className="py-4 text-sm text-slate-500">
-                          {new Date(member.created_at).toLocaleDateString()}
+                          {member.created_at ? new Date(member.created_at).toLocaleDateString() : '-'}
                         </td>
                         <td className="py-4">
                           <DropdownMenu>
@@ -294,8 +294,8 @@ export default function AgentMembersPage() {
                                   Send Email
                                 </DropdownMenuItem>
                               )}
-                              {member.phone_number && (
-                                <DropdownMenuItem onClick={() => window.location.href = `tel:${member.phone_number}`}>
+                              {member.phone && (
+                                <DropdownMenuItem onClick={() => window.location.href = `tel:${member.phone}`}>
                                   <Phone className="mr-2 h-4 w-4" />
                                   Call
                                 </DropdownMenuItem>

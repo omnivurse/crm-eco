@@ -130,7 +130,7 @@ export function useClientAuth(): UseClientAuthResult {
 
   // Listen for auth state changes
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any) => {
       if (event === 'SIGNED_OUT') {
         cachedUser = null;
         cachedProfile = null;

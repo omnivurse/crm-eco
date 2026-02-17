@@ -89,11 +89,11 @@ export function CreateTicketDialog() {
         status: 'open',
         member_id: formData.memberId || null,
         requester_id: authProfile.id,
-      };
+      } as any;
 
       const { data: insertedTicket, error: insertError } = await supabase
         .from('tickets')
-        .insert(insertData as any)
+        .insert(insertData)
         .select('id')
         .single();
 
