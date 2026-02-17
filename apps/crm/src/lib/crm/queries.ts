@@ -863,8 +863,8 @@ export async function getImportJob(jobId: string): Promise<CrmImportJob | null> 
 // Dashboard Stats Queries
 // ============================================================================
 
-export async function getModuleStats(orgId: string, preloadedCookies?: Awaited<ReturnType<typeof cookies>>): Promise<ModuleStats[]> {
-  const supabase = await createCrmClient(preloadedCookies);
+export async function getModuleStats(orgId: string): Promise<ModuleStats[]> {
+  const supabase = await createCrmClient();
 
   const { data, error } = await supabase.rpc('get_module_stats', {
     p_org_id: orgId,
