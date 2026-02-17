@@ -12,6 +12,7 @@ import {
   Leaf,
   TrendingUp,
 } from 'lucide-react';
+import { HomePlanCards } from '@/components/HomePlanCards';
 
 export default function HomePage() {
   return (
@@ -152,144 +153,8 @@ export default function HomePage() {
       </section>
 
       {/* Plan Preview */}
-      <section className="section-padding bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Plans for every family
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Affordable monthly contributions that fit your budget. Choose the plan
-              that works best for your household.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                name: 'Essential',
-                price: '149',
-                description: 'Core coverage for individuals',
-                features: [
-                  'Primary care sharing',
-                  'Emergency room visits',
-                  'Hospitalization coverage',
-                  'Preventive care benefits',
-                ],
-              },
-              {
-                name: 'Premium',
-                price: '249',
-                description: 'Comprehensive family coverage',
-                popular: true,
-                features: [
-                  'Everything in Essential',
-                  'Specialist visits',
-                  'Mental health support',
-                  'Prescription assistance',
-                  'Lower per-incident share',
-                ],
-              },
-              {
-                name: 'Complete',
-                price: '349',
-                description: 'Maximum coverage and benefits',
-                features: [
-                  'Everything in Premium',
-                  'Dental & vision sharing',
-                  'Maternity benefits',
-                  'Lowest per-incident share',
-                  'Wellness incentives',
-                ],
-              },
-            ].map((plan) => (
-              <div
-                key={plan.name}
-                className={`rounded-2xl p-6 md:p-8 ${
-                  plan.popular
-                    ? 'bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-xl shadow-teal-600/20 ring-4 ring-teal-600/20 scale-[1.02]'
-                    : 'bg-white border shadow-sm'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="inline-flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full mb-4">
-                    <Star className="w-3 h-3" />
-                    Most Popular
-                  </div>
-                )}
-                <h3
-                  className={`text-xl font-bold ${
-                    plan.popular ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
-                  {plan.name}
-                </h3>
-                <p
-                  className={`text-sm mt-1 ${
-                    plan.popular ? 'text-teal-100' : 'text-slate-500'
-                  }`}
-                >
-                  {plan.description}
-                </p>
-                <div className="mt-4 mb-6">
-                  <span
-                    className={`text-4xl font-bold ${
-                      plan.popular ? 'text-white' : 'text-slate-900'
-                    }`}
-                  >
-                    ${plan.price}
-                  </span>
-                  <span
-                    className={`text-sm ${
-                      plan.popular ? 'text-teal-100' : 'text-slate-500'
-                    }`}
-                  >
-                    /month
-                  </span>
-                </div>
-                <ul className="space-y-2.5 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <CheckCircle2
-                        className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                          plan.popular ? 'text-teal-200' : 'text-teal-600'
-                        }`}
-                      />
-                      <span
-                        className={`text-sm ${
-                          plan.popular ? 'text-teal-50' : 'text-slate-600'
-                        }`}
-                      >
-                        {feature}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link href={`/enroll`}>
-                  <Button
-                    className={`w-full ${
-                      plan.popular
-                        ? 'bg-white text-teal-700 hover:bg-teal-50'
-                        : 'bg-teal-600 hover:bg-teal-700 text-white'
-                    }`}
-                  >
-                    Get Started
-                  </Button>
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <Link href="/plans">
-              <Button variant="link" className="text-teal-600 gap-2">
-                View all plans and compare features
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* @ts-expect-error Async Server Component */}
+      <HomePlanCards />
 
       {/* Testimonials */}
       <section className="section-padding bg-white">

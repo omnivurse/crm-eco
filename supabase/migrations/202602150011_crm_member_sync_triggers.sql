@@ -368,11 +368,11 @@ DECLARE
   v_org_id uuid;
   v_data jsonb;
 BEGIN
-  -- Determine the org_id
+  -- Determine the org_id (advisors table uses organization_id)
   IF TG_OP = 'DELETE' THEN
-    v_org_id := COALESCE(OLD.organization_id, OLD.org_id);
+    v_org_id := OLD.organization_id;
   ELSE
-    v_org_id := COALESCE(NEW.organization_id, NEW.org_id);
+    v_org_id := NEW.organization_id;
   END IF;
 
   -- Find the "advisors" CRM module for this org

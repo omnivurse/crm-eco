@@ -328,8 +328,8 @@ export function AdminSidebar({
             "h-16 flex items-center border-b border-white/10 transition-all duration-300",
             !forMobile && isCollapsed ? "justify-center px-2" : "justify-between px-4"
           )}>
-            <Link href="/dashboard" className="flex items-center group" onClick={handleLinkClick}>
-              <div className="bg-white rounded-lg p-1.5 shadow-sm">
+            <Link href="/dashboard" className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
+              <div className="bg-white rounded-lg p-1.5 shadow-sm w-full">
                 {!forMobile && isCollapsed ? (
                   <Image
                     src="/logo-icon.png"
@@ -343,9 +343,9 @@ export function AdminSidebar({
                   <Image
                     src="/logo-pif-full.png"
                     alt="Pay It Forward HealthShare"
-                    width={160}
+                    width={200}
                     height={44}
-                    className="object-contain h-9 w-auto"
+                    className="object-contain h-9 w-full"
                     priority
                   />
                 )}
