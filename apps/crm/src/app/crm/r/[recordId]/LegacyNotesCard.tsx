@@ -8,7 +8,12 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { Input } from '@crm-eco/ui/components/input';
-import DOMPurify from 'isomorphic-dompurify';
+import DOMPurify from 'dompurify';
+
+function sanitize(dirty: string): string {
+  if (typeof window === 'undefined') return dirty;
+  return DOMPurify.sanitize(dirty);
+}
 
 interface LegacyNotesCardProps {
   notesHtml: string;
@@ -45,7 +50,7 @@ function parseNotesHtml(raw: string): ParsedEntry[] {
     return {
       id: idx,
       timestamp,
-      bodyHtml: DOMPurify.sanitize(html),
+      bodyHtml: sanitize(html),
       bodyText: stripHtml(html),
     };
   });
@@ -58,7 +63,7 @@ function LegacyNoteEntry({ entry }: { entry: ParsedEntry }) {
   const displayHtml = useMemo(() => {
     if (expanded || !isTruncated) return entry.bodyHtml;
     const truncatedText = entry.bodyText.slice(0, TRUNCATE_LENGTH);
-    return DOMPurify.sanitize(truncatedText) + '&hellip;';
+    return sanitize(truncatedText) + '&hellip;';
   }, [expanded, isTruncated, entry]);
 
   return (
