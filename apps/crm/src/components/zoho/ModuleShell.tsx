@@ -53,7 +53,16 @@ export const ModuleShell = memo(function ModuleShell({
   );
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [filters, setFilters] = useState<ViewFilter[]>([]);
+  const [filters, setFilters] = useState<ViewFilter[]>(() => {
+    const filtersParam = searchParams.get('filters');
+    if (filtersParam) {
+      try {
+        const parsed = JSON.parse(filtersParam);
+        if (Array.isArray(parsed)) return parsed;
+      } catch { /* ignore */ }
+    }
+    return [];
+  });
   const [density, setDensity] = useState<Density>('default');
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     views.find(v => v.id === activeViewId)?.columns || fields.map(f => f.key)
@@ -133,13 +142,30 @@ export const ModuleShell = memo(function ModuleShell({
     // Search is already handled by the debounced effect
   }, []);
 
+  // Persist filters to URL
+  const pushFiltersToUrl = useCallback((newFilters: ViewFilter[]) => {
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    if (newFilters.length > 0) {
+      params.set('filters', JSON.stringify(newFilters));
+    } else {
+      params.delete('filters');
+    }
+    params.delete('page');
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
+  }, [router, module.key]);
+
   const handleRemoveFilter = useCallback((index: number) => {
-    setFilters(prev => prev.filter((_, i) => i !== index));
-  }, []);
+    setFilters(prev => {
+      const next = prev.filter((_, i) => i !== index);
+      pushFiltersToUrl(next);
+      return next;
+    });
+  }, [pushFiltersToUrl]);
 
   const handleClearFilters = useCallback(() => {
     setFilters([]);
-  }, []);
+    pushFiltersToUrl([]);
+  }, [pushFiltersToUrl]);
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setSortField(field);
@@ -508,8 +534,9 @@ export const ModuleShell = memo(function ModuleShell({
     setVisibleColumns,
     sortField,
     sortDirection,
+    handleSortChange,
     moduleKey: module.key,
-  }), [selectedIds, density, visibleColumns, sortField, sortDirection, module.key]);
+  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key]);
 
   return (
     <div className={cn('max-w-7xl mx-auto space-y-4', className)}>
@@ -576,7 +603,10 @@ export const ModuleShell = memo(function ModuleShell({
             <AdvancedFilterBuilder
               fields={fields}
               filters={filters}
-              onFiltersChange={setFilters}
+              onFiltersChange={(newFilters) => {
+                setFilters(newFilters);
+                pushFiltersToUrl(newFilters);
+              }}
               onSaveView={handleSaveView}
             />
 
