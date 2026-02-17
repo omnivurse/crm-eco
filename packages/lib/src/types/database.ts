@@ -38,6 +38,786 @@ export type Database = {
         }
         Relationships: []
       }
+      _import_contacts_staging: {
+        Row: {
+          add_on_product: string | null
+          admin123: string | null
+          affiliate: string | null
+          affiliate_referral: string | null
+          affiliate_rep_monthly: string | null
+          amount_received: string | null
+          app_downloaded: string | null
+          atap: string | null
+          average_time_spent_minutes: string | null
+          birth_month: string | null
+          business_or_practice_name: string | null
+          cancellation_date: string | null
+          carrier: string | null
+          change_log_time: string | null
+          charge_waived: string | null
+          child_1: string | null
+          child_1_address: string | null
+          child_1_dob: string | null
+          child_1_email: string | null
+          child_1_phone_number: string | null
+          child_1_ss_number: string | null
+          child_2: string | null
+          child_2_address: string | null
+          child_2_dob: string | null
+          child_2_email: string | null
+          child_2_phone_number: string | null
+          child_2_ss_number: string | null
+          child_3: string | null
+          child_3_address: string | null
+          child_3_dob: string | null
+          child_3_email: string | null
+          child_3_phone_number: string | null
+          child_3_ss_number: string | null
+          child_4: string | null
+          child_4_address: string | null
+          child_4_dob: string | null
+          child_4_email: string | null
+          child_4_phone_number: string | null
+          child_4_ss_number: string | null
+          child_5: string | null
+          child_5_address: string | null
+          child_5_dob: string | null
+          child_5_email: string | null
+          child_5_phone_number: string | null
+          child_5_ss_number: string | null
+          cirrus_registration_date: string | null
+          commission_percentage: string | null
+          company_association: string | null
+          complete_date: string | null
+          connected_to_id: string | null
+          connected_to_module: string | null
+          contact_name: string | null
+          contact_owner: string | null
+          contact_owner_id: string | null
+          contact_status: string | null
+          coverage_option: string | null
+          created_by: string | null
+          created_by_id: string | null
+          created_time: string | null
+          currency: string | null
+          data_processing_basis: string | null
+          data_processing_basis_id: string | null
+          data_source: string | null
+          date_of_birth: string | null
+          date_referral_paid: string | null
+          days_visited: string | null
+          declined: string | null
+          dental: string | null
+          director: string | null
+          director_monthly: string | null
+          director_referral: string | null
+          dpc_name: string | null
+          e123_member_id: string | null
+          email: string | null
+          email_opt_out: string | null
+          enrich_status: string | null
+          exchange_rate: string | null
+          fax: string | null
+          first_name: string | null
+          first_page_visited: string | null
+          first_visit: string | null
+          fulfillment_email_sent: string | null
+          fulfillment_letter_mailed: string | null
+          household_annual_adj_gross: string | null
+          iua_amount: string | null
+          last_activity_time: string | null
+          last_enriched_time: string | null
+          last_name: string | null
+          lead_source: string | null
+          life_code_2nd: string | null
+          life_code_3rd: string | null
+          life_code_4th: string | null
+          life_code_5th: string | null
+          locked: string | null
+          mailing_city: string | null
+          mailing_state: string | null
+          mailing_street: string | null
+          mailing_zip: string | null
+          marital_status: string | null
+          mec_decision_confirmed: string | null
+          mec_submitted: string | null
+          medical_release_form_on_file: string | null
+          middle_initial: string | null
+          mobile: string | null
+          modified_by: string | null
+          modified_by_id: string | null
+          modified_time: string | null
+          monthly_premium: string | null
+          most_recent_visit: string | null
+          mpower_life_code: string | null
+          notes_history: string | null
+          number_of_chats: string | null
+          permission_to_discuss_plan: string | null
+          phone: string | null
+          portal_password: string | null
+          portal_username: string | null
+          preferred_method_of_communication: string | null
+          previous_product: string | null
+          primary_member_gender: string | null
+          primary_ss_number: string | null
+          producer_commission: string | null
+          producer_name: string | null
+          producer_name_id: string | null
+          product: string | null
+          record_id: string | null
+          referral_fee: string | null
+          referral_requirement_satisfied: string | null
+          referral_source: string | null
+          referrer: string | null
+          referring_member: string | null
+          risk_assessment_paid: string | null
+          row_num: number
+          salutation: string | null
+          secondary_email: string | null
+          select_conversion_completed: string | null
+          spouse: string | null
+          spouse_address: string | null
+          spouse_dob: string | null
+          spouse_email: string | null
+          spouse_phone_number: string | null
+          spouse_ss_number: string | null
+          start_date: string | null
+          tag: string | null
+          tax_id: string | null
+          team_leader: string | null
+          team_leader_monthly: string | null
+          team_leader_referral: string | null
+          territories: string | null
+          third_party_payor: string | null
+          title: string | null
+          unsubscribed_mode: string | null
+          unsubscribed_time: string | null
+          vision: string | null
+          visitor_score: string | null
+          wc_outreach_date: string | null
+          welcome_call_performed_by: string | null
+          welcome_call_status: string | null
+          work_phone: string | null
+        }
+        Insert: {
+          add_on_product?: string | null
+          admin123?: string | null
+          affiliate?: string | null
+          affiliate_referral?: string | null
+          affiliate_rep_monthly?: string | null
+          amount_received?: string | null
+          app_downloaded?: string | null
+          atap?: string | null
+          average_time_spent_minutes?: string | null
+          birth_month?: string | null
+          business_or_practice_name?: string | null
+          cancellation_date?: string | null
+          carrier?: string | null
+          change_log_time?: string | null
+          charge_waived?: string | null
+          child_1?: string | null
+          child_1_address?: string | null
+          child_1_dob?: string | null
+          child_1_email?: string | null
+          child_1_phone_number?: string | null
+          child_1_ss_number?: string | null
+          child_2?: string | null
+          child_2_address?: string | null
+          child_2_dob?: string | null
+          child_2_email?: string | null
+          child_2_phone_number?: string | null
+          child_2_ss_number?: string | null
+          child_3?: string | null
+          child_3_address?: string | null
+          child_3_dob?: string | null
+          child_3_email?: string | null
+          child_3_phone_number?: string | null
+          child_3_ss_number?: string | null
+          child_4?: string | null
+          child_4_address?: string | null
+          child_4_dob?: string | null
+          child_4_email?: string | null
+          child_4_phone_number?: string | null
+          child_4_ss_number?: string | null
+          child_5?: string | null
+          child_5_address?: string | null
+          child_5_dob?: string | null
+          child_5_email?: string | null
+          child_5_phone_number?: string | null
+          child_5_ss_number?: string | null
+          cirrus_registration_date?: string | null
+          commission_percentage?: string | null
+          company_association?: string | null
+          complete_date?: string | null
+          connected_to_id?: string | null
+          connected_to_module?: string | null
+          contact_name?: string | null
+          contact_owner?: string | null
+          contact_owner_id?: string | null
+          contact_status?: string | null
+          coverage_option?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          currency?: string | null
+          data_processing_basis?: string | null
+          data_processing_basis_id?: string | null
+          data_source?: string | null
+          date_of_birth?: string | null
+          date_referral_paid?: string | null
+          days_visited?: string | null
+          declined?: string | null
+          dental?: string | null
+          director?: string | null
+          director_monthly?: string | null
+          director_referral?: string | null
+          dpc_name?: string | null
+          e123_member_id?: string | null
+          email?: string | null
+          email_opt_out?: string | null
+          enrich_status?: string | null
+          exchange_rate?: string | null
+          fax?: string | null
+          first_name?: string | null
+          first_page_visited?: string | null
+          first_visit?: string | null
+          fulfillment_email_sent?: string | null
+          fulfillment_letter_mailed?: string | null
+          household_annual_adj_gross?: string | null
+          iua_amount?: string | null
+          last_activity_time?: string | null
+          last_enriched_time?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          life_code_2nd?: string | null
+          life_code_3rd?: string | null
+          life_code_4th?: string | null
+          life_code_5th?: string | null
+          locked?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          marital_status?: string | null
+          mec_decision_confirmed?: string | null
+          mec_submitted?: string | null
+          medical_release_form_on_file?: string | null
+          middle_initial?: string | null
+          mobile?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          monthly_premium?: string | null
+          most_recent_visit?: string | null
+          mpower_life_code?: string | null
+          notes_history?: string | null
+          number_of_chats?: string | null
+          permission_to_discuss_plan?: string | null
+          phone?: string | null
+          portal_password?: string | null
+          portal_username?: string | null
+          preferred_method_of_communication?: string | null
+          previous_product?: string | null
+          primary_member_gender?: string | null
+          primary_ss_number?: string | null
+          producer_commission?: string | null
+          producer_name?: string | null
+          producer_name_id?: string | null
+          product?: string | null
+          record_id?: string | null
+          referral_fee?: string | null
+          referral_requirement_satisfied?: string | null
+          referral_source?: string | null
+          referrer?: string | null
+          referring_member?: string | null
+          risk_assessment_paid?: string | null
+          row_num?: number
+          salutation?: string | null
+          secondary_email?: string | null
+          select_conversion_completed?: string | null
+          spouse?: string | null
+          spouse_address?: string | null
+          spouse_dob?: string | null
+          spouse_email?: string | null
+          spouse_phone_number?: string | null
+          spouse_ss_number?: string | null
+          start_date?: string | null
+          tag?: string | null
+          tax_id?: string | null
+          team_leader?: string | null
+          team_leader_monthly?: string | null
+          team_leader_referral?: string | null
+          territories?: string | null
+          third_party_payor?: string | null
+          title?: string | null
+          unsubscribed_mode?: string | null
+          unsubscribed_time?: string | null
+          vision?: string | null
+          visitor_score?: string | null
+          wc_outreach_date?: string | null
+          welcome_call_performed_by?: string | null
+          welcome_call_status?: string | null
+          work_phone?: string | null
+        }
+        Update: {
+          add_on_product?: string | null
+          admin123?: string | null
+          affiliate?: string | null
+          affiliate_referral?: string | null
+          affiliate_rep_monthly?: string | null
+          amount_received?: string | null
+          app_downloaded?: string | null
+          atap?: string | null
+          average_time_spent_minutes?: string | null
+          birth_month?: string | null
+          business_or_practice_name?: string | null
+          cancellation_date?: string | null
+          carrier?: string | null
+          change_log_time?: string | null
+          charge_waived?: string | null
+          child_1?: string | null
+          child_1_address?: string | null
+          child_1_dob?: string | null
+          child_1_email?: string | null
+          child_1_phone_number?: string | null
+          child_1_ss_number?: string | null
+          child_2?: string | null
+          child_2_address?: string | null
+          child_2_dob?: string | null
+          child_2_email?: string | null
+          child_2_phone_number?: string | null
+          child_2_ss_number?: string | null
+          child_3?: string | null
+          child_3_address?: string | null
+          child_3_dob?: string | null
+          child_3_email?: string | null
+          child_3_phone_number?: string | null
+          child_3_ss_number?: string | null
+          child_4?: string | null
+          child_4_address?: string | null
+          child_4_dob?: string | null
+          child_4_email?: string | null
+          child_4_phone_number?: string | null
+          child_4_ss_number?: string | null
+          child_5?: string | null
+          child_5_address?: string | null
+          child_5_dob?: string | null
+          child_5_email?: string | null
+          child_5_phone_number?: string | null
+          child_5_ss_number?: string | null
+          cirrus_registration_date?: string | null
+          commission_percentage?: string | null
+          company_association?: string | null
+          complete_date?: string | null
+          connected_to_id?: string | null
+          connected_to_module?: string | null
+          contact_name?: string | null
+          contact_owner?: string | null
+          contact_owner_id?: string | null
+          contact_status?: string | null
+          coverage_option?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          currency?: string | null
+          data_processing_basis?: string | null
+          data_processing_basis_id?: string | null
+          data_source?: string | null
+          date_of_birth?: string | null
+          date_referral_paid?: string | null
+          days_visited?: string | null
+          declined?: string | null
+          dental?: string | null
+          director?: string | null
+          director_monthly?: string | null
+          director_referral?: string | null
+          dpc_name?: string | null
+          e123_member_id?: string | null
+          email?: string | null
+          email_opt_out?: string | null
+          enrich_status?: string | null
+          exchange_rate?: string | null
+          fax?: string | null
+          first_name?: string | null
+          first_page_visited?: string | null
+          first_visit?: string | null
+          fulfillment_email_sent?: string | null
+          fulfillment_letter_mailed?: string | null
+          household_annual_adj_gross?: string | null
+          iua_amount?: string | null
+          last_activity_time?: string | null
+          last_enriched_time?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          life_code_2nd?: string | null
+          life_code_3rd?: string | null
+          life_code_4th?: string | null
+          life_code_5th?: string | null
+          locked?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          marital_status?: string | null
+          mec_decision_confirmed?: string | null
+          mec_submitted?: string | null
+          medical_release_form_on_file?: string | null
+          middle_initial?: string | null
+          mobile?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          monthly_premium?: string | null
+          most_recent_visit?: string | null
+          mpower_life_code?: string | null
+          notes_history?: string | null
+          number_of_chats?: string | null
+          permission_to_discuss_plan?: string | null
+          phone?: string | null
+          portal_password?: string | null
+          portal_username?: string | null
+          preferred_method_of_communication?: string | null
+          previous_product?: string | null
+          primary_member_gender?: string | null
+          primary_ss_number?: string | null
+          producer_commission?: string | null
+          producer_name?: string | null
+          producer_name_id?: string | null
+          product?: string | null
+          record_id?: string | null
+          referral_fee?: string | null
+          referral_requirement_satisfied?: string | null
+          referral_source?: string | null
+          referrer?: string | null
+          referring_member?: string | null
+          risk_assessment_paid?: string | null
+          row_num?: number
+          salutation?: string | null
+          secondary_email?: string | null
+          select_conversion_completed?: string | null
+          spouse?: string | null
+          spouse_address?: string | null
+          spouse_dob?: string | null
+          spouse_email?: string | null
+          spouse_phone_number?: string | null
+          spouse_ss_number?: string | null
+          start_date?: string | null
+          tag?: string | null
+          tax_id?: string | null
+          team_leader?: string | null
+          team_leader_monthly?: string | null
+          team_leader_referral?: string | null
+          territories?: string | null
+          third_party_payor?: string | null
+          title?: string | null
+          unsubscribed_mode?: string | null
+          unsubscribed_time?: string | null
+          vision?: string | null
+          visitor_score?: string | null
+          wc_outreach_date?: string | null
+          welcome_call_performed_by?: string | null
+          welcome_call_status?: string | null
+          work_phone?: string | null
+        }
+        Relationships: []
+      }
+      _import_leads_staging: {
+        Row: {
+          average_time_spent_minutes: string | null
+          business_or_practice_name: string | null
+          business_type: string | null
+          change_log_time: string | null
+          child_1: string | null
+          child_1_dob: string | null
+          child_2: string | null
+          child_2_dob: string | null
+          child_3: string | null
+          child_3_dob: string | null
+          child_4: string | null
+          child_4_dob: string | null
+          child_5: string | null
+          child_5_dob: string | null
+          city: string | null
+          company: string | null
+          connected_to_id: string | null
+          connected_to_module: string | null
+          converted_account: string | null
+          converted_account_id: string | null
+          converted_contact: string | null
+          converted_contact_id: string | null
+          converted_date_time: string | null
+          converted_deal: string | null
+          converted_deal_id: string | null
+          coverage_option: string | null
+          created_by: string | null
+          created_by_id: string | null
+          created_time: string | null
+          data_processing_basis: string | null
+          data_processing_basis_id: string | null
+          data_source: string | null
+          date_of_birth: string | null
+          days_visited: string | null
+          email: string | null
+          email_opt_out: string | null
+          enrich_status: string | null
+          first_name: string | null
+          first_page_visited: string | null
+          first_visit: string | null
+          is_converted: string | null
+          last_activity_time: string | null
+          last_enriched_time: string | null
+          last_name: string | null
+          lead_conversion_time: string | null
+          lead_name: string | null
+          lead_owner: string | null
+          lead_owner_id: string | null
+          lead_source: string | null
+          lead_status: string | null
+          locked: string | null
+          middle_name: string | null
+          mobile: string | null
+          mobile_2: string | null
+          modified_by: string | null
+          modified_by_id: string | null
+          modified_time: string | null
+          most_recent_visit: string | null
+          next_step: string | null
+          number_of_chats: string | null
+          phone: string | null
+          producer: string | null
+          producer_id: string | null
+          product_type: string | null
+          record_id: string | null
+          referrer: string | null
+          referring_member: string | null
+          row_num: number
+          salutation: string | null
+          spouse: string | null
+          spouse_dob: string | null
+          state: string | null
+          street: string | null
+          tag: string | null
+          unsubscribed_mode: string | null
+          unsubscribed_time: string | null
+          visitor_score: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          average_time_spent_minutes?: string | null
+          business_or_practice_name?: string | null
+          business_type?: string | null
+          change_log_time?: string | null
+          child_1?: string | null
+          child_1_dob?: string | null
+          child_2?: string | null
+          child_2_dob?: string | null
+          child_3?: string | null
+          child_3_dob?: string | null
+          child_4?: string | null
+          child_4_dob?: string | null
+          child_5?: string | null
+          child_5_dob?: string | null
+          city?: string | null
+          company?: string | null
+          connected_to_id?: string | null
+          connected_to_module?: string | null
+          converted_account?: string | null
+          converted_account_id?: string | null
+          converted_contact?: string | null
+          converted_contact_id?: string | null
+          converted_date_time?: string | null
+          converted_deal?: string | null
+          converted_deal_id?: string | null
+          coverage_option?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          data_processing_basis?: string | null
+          data_processing_basis_id?: string | null
+          data_source?: string | null
+          date_of_birth?: string | null
+          days_visited?: string | null
+          email?: string | null
+          email_opt_out?: string | null
+          enrich_status?: string | null
+          first_name?: string | null
+          first_page_visited?: string | null
+          first_visit?: string | null
+          is_converted?: string | null
+          last_activity_time?: string | null
+          last_enriched_time?: string | null
+          last_name?: string | null
+          lead_conversion_time?: string | null
+          lead_name?: string | null
+          lead_owner?: string | null
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          lead_status?: string | null
+          locked?: string | null
+          middle_name?: string | null
+          mobile?: string | null
+          mobile_2?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          most_recent_visit?: string | null
+          next_step?: string | null
+          number_of_chats?: string | null
+          phone?: string | null
+          producer?: string | null
+          producer_id?: string | null
+          product_type?: string | null
+          record_id?: string | null
+          referrer?: string | null
+          referring_member?: string | null
+          row_num?: number
+          salutation?: string | null
+          spouse?: string | null
+          spouse_dob?: string | null
+          state?: string | null
+          street?: string | null
+          tag?: string | null
+          unsubscribed_mode?: string | null
+          unsubscribed_time?: string | null
+          visitor_score?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          average_time_spent_minutes?: string | null
+          business_or_practice_name?: string | null
+          business_type?: string | null
+          change_log_time?: string | null
+          child_1?: string | null
+          child_1_dob?: string | null
+          child_2?: string | null
+          child_2_dob?: string | null
+          child_3?: string | null
+          child_3_dob?: string | null
+          child_4?: string | null
+          child_4_dob?: string | null
+          child_5?: string | null
+          child_5_dob?: string | null
+          city?: string | null
+          company?: string | null
+          connected_to_id?: string | null
+          connected_to_module?: string | null
+          converted_account?: string | null
+          converted_account_id?: string | null
+          converted_contact?: string | null
+          converted_contact_id?: string | null
+          converted_date_time?: string | null
+          converted_deal?: string | null
+          converted_deal_id?: string | null
+          coverage_option?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          data_processing_basis?: string | null
+          data_processing_basis_id?: string | null
+          data_source?: string | null
+          date_of_birth?: string | null
+          days_visited?: string | null
+          email?: string | null
+          email_opt_out?: string | null
+          enrich_status?: string | null
+          first_name?: string | null
+          first_page_visited?: string | null
+          first_visit?: string | null
+          is_converted?: string | null
+          last_activity_time?: string | null
+          last_enriched_time?: string | null
+          last_name?: string | null
+          lead_conversion_time?: string | null
+          lead_name?: string | null
+          lead_owner?: string | null
+          lead_owner_id?: string | null
+          lead_source?: string | null
+          lead_status?: string | null
+          locked?: string | null
+          middle_name?: string | null
+          mobile?: string | null
+          mobile_2?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          most_recent_visit?: string | null
+          next_step?: string | null
+          number_of_chats?: string | null
+          phone?: string | null
+          producer?: string | null
+          producer_id?: string | null
+          product_type?: string | null
+          record_id?: string | null
+          referrer?: string | null
+          referring_member?: string | null
+          row_num?: number
+          salutation?: string | null
+          spouse?: string | null
+          spouse_dob?: string | null
+          state?: string | null
+          street?: string | null
+          tag?: string | null
+          unsubscribed_mode?: string | null
+          unsubscribed_time?: string | null
+          visitor_score?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      _import_notes_staging: {
+        Row: {
+          associated_id: string | null
+          created_by: string | null
+          created_by_id: string | null
+          created_time: string | null
+          modified_by: string | null
+          modified_by_id: string | null
+          modified_time: string | null
+          note_content: string | null
+          note_owner: string | null
+          note_owner_id: string | null
+          note_title: string | null
+          parent_id: string | null
+          parent_name: string | null
+          record_id: string | null
+          row_num: number
+        }
+        Insert: {
+          associated_id?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          note_content?: string | null
+          note_owner?: string | null
+          note_owner_id?: string | null
+          note_title?: string | null
+          parent_id?: string | null
+          parent_name?: string | null
+          record_id?: string | null
+          row_num?: number
+        }
+        Update: {
+          associated_id?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          note_content?: string | null
+          note_owner?: string | null
+          note_owner_id?: string | null
+          note_title?: string | null
+          parent_id?: string | null
+          parent_name?: string | null
+          record_id?: string | null
+          row_num?: number
+        }
+        Relationships: []
+      }
       activities: {
         Row: {
           action: string
@@ -47,41 +827,37 @@ export type Database = {
           custom_fields: Json | null
           description: string | null
           direction: string | null
-          entity_id: string | null
+          entity_id: string
           entity_type: string
           id: string
           lead_id: string | null
           member_id: string | null
           metadata: Json | null
-          need_id: string | null
           occurred_at: string | null
-          organization_id: string | null
+          organization_id: string
           profile_id: string | null
           subject: string | null
-          ticket_id: string | null
           type: string | null
           via: string | null
         }
         Insert: {
-          action?: string
+          action: string
           advisor_id?: string | null
           created_at?: string | null
           created_by_profile_id?: string | null
           custom_fields?: Json | null
           description?: string | null
           direction?: string | null
-          entity_id?: string | null
-          entity_type?: string
+          entity_id: string
+          entity_type: string
           id?: string
           lead_id?: string | null
           member_id?: string | null
           metadata?: Json | null
-          need_id?: string | null
           occurred_at?: string | null
-          organization_id?: string | null
+          organization_id: string
           profile_id?: string | null
           subject?: string | null
-          ticket_id?: string | null
           type?: string | null
           via?: string | null
         }
@@ -93,18 +869,16 @@ export type Database = {
           custom_fields?: Json | null
           description?: string | null
           direction?: string | null
-          entity_id?: string | null
+          entity_id?: string
           entity_type?: string
           id?: string
           lead_id?: string | null
           member_id?: string | null
           metadata?: Json | null
-          need_id?: string | null
           occurred_at?: string | null
-          organization_id?: string | null
+          organization_id?: string
           profile_id?: string | null
           subject?: string | null
-          ticket_id?: string | null
           type?: string | null
           via?: string | null
         }
@@ -115,13 +889,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "activities_created_by_profile_id_fkey"
@@ -145,13 +912,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "activities_need_id_fkey"
-            columns: ["need_id"]
-            isOneToOne: false
-            referencedRelation: "needs"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "activities_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -162,38 +922,469 @@ export type Database = {
             foreignKeyName: "activities_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "activities_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "activities_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      activity_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_default: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m01: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m02: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m03: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m04: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m05: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m06: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      activity_log_y2026m07: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string | null
+          actor_role: string | null
+          category: string
+          created_at: string
+          description: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json
+          organization_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string | null
+          actor_role?: string | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json
+          organization_id?: string
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       admin_activity_log: {
         Row: {
@@ -240,18 +1431,52 @@ export type Database = {
             foreignKeyName: "admin_activity_log_actor_profile_id_fkey"
             columns: ["actor_profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "admin_activity_log_actor_profile_id_fkey"
-            columns: ["actor_profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "admin_activity_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          organization_id: string | null
+          title: string | null
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          organization_id?: string | null
+          title?: string | null
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          organization_id?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -527,13 +1752,6 @@ export type Database = {
             foreignKeyName: "advisor_playbooks_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "advisor_playbooks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -593,13 +1811,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "advisor_product_access_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "advisor_product_access_granted_by_fkey"
@@ -736,7 +1947,8 @@ export type Database = {
       }
       advisors: {
         Row: {
-          advisor_code: string | null
+          admin123_agent_id: string | null
+          advisor_code: string
           agency_name: string | null
           agent_level_id: string | null
           agent_role: string | null
@@ -749,9 +1961,11 @@ export type Database = {
           commission_tier_id: string | null
           comp_level: string | null
           company_name: string | null
+          compliance_training_completed: string | null
           contract_date: string | null
           country: string | null
           created_at: string | null
+          crm_owner: boolean | null
           current_month_commissions: number | null
           custom_fields: Json | null
           email: string
@@ -766,8 +1980,12 @@ export type Database = {
           lifetime_production: number | null
           logo_size: string | null
           logo_url: string | null
+          master_click_funnel: string | null
+          mobile_phone: string | null
+          mpb_certified: boolean | null
+          mpb_eo_current: boolean | null
           npn: string | null
-          organization_id: string | null
+          organization_id: string
           override_rate_pct: number | null
           parent_advisor_id: string | null
           pending_commissions: number | null
@@ -775,8 +1993,13 @@ export type Database = {
           phone: string | null
           primary_channel: string | null
           primary_color: string | null
+          producer_code: string | null
+          producer_owner_id: string | null
+          producer_type: string | null
           profile_id: string | null
+          referring_affiliate_id: string | null
           secondary_color: string | null
+          setup_fee_waived: boolean | null
           state: string | null
           status: string
           street_address: string | null
@@ -788,7 +2011,8 @@ export type Database = {
           zip_code: string | null
         }
         Insert: {
-          advisor_code?: string | null
+          admin123_agent_id?: string | null
+          advisor_code: string
           agency_name?: string | null
           agent_level_id?: string | null
           agent_role?: string | null
@@ -801,25 +2025,31 @@ export type Database = {
           commission_tier_id?: string | null
           comp_level?: string | null
           company_name?: string | null
+          compliance_training_completed?: string | null
           contract_date?: string | null
           country?: string | null
           created_at?: string | null
+          crm_owner?: boolean | null
           current_month_commissions?: number | null
           custom_fields?: Json | null
-          email?: string
+          email: string
           enrollment_code?: string | null
-          first_name?: string
+          first_name: string
           header_bg_color?: string | null
           header_text_color?: string | null
           id?: string
-          last_name?: string
+          last_name: string
           license_number?: string | null
           license_states?: string[] | null
           lifetime_production?: number | null
           logo_size?: string | null
           logo_url?: string | null
+          master_click_funnel?: string | null
+          mobile_phone?: string | null
+          mpb_certified?: boolean | null
+          mpb_eo_current?: boolean | null
           npn?: string | null
-          organization_id?: string | null
+          organization_id: string
           override_rate_pct?: number | null
           parent_advisor_id?: string | null
           pending_commissions?: number | null
@@ -827,8 +2057,13 @@ export type Database = {
           phone?: string | null
           primary_channel?: string | null
           primary_color?: string | null
+          producer_code?: string | null
+          producer_owner_id?: string | null
+          producer_type?: string | null
           profile_id?: string | null
+          referring_affiliate_id?: string | null
           secondary_color?: string | null
+          setup_fee_waived?: boolean | null
           state?: string | null
           status?: string
           street_address?: string | null
@@ -840,7 +2075,8 @@ export type Database = {
           zip_code?: string | null
         }
         Update: {
-          advisor_code?: string | null
+          admin123_agent_id?: string | null
+          advisor_code?: string
           agency_name?: string | null
           agent_level_id?: string | null
           agent_role?: string | null
@@ -853,9 +2089,11 @@ export type Database = {
           commission_tier_id?: string | null
           comp_level?: string | null
           company_name?: string | null
+          compliance_training_completed?: string | null
           contract_date?: string | null
           country?: string | null
           created_at?: string | null
+          crm_owner?: boolean | null
           current_month_commissions?: number | null
           custom_fields?: Json | null
           email?: string
@@ -870,8 +2108,12 @@ export type Database = {
           lifetime_production?: number | null
           logo_size?: string | null
           logo_url?: string | null
+          master_click_funnel?: string | null
+          mobile_phone?: string | null
+          mpb_certified?: boolean | null
+          mpb_eo_current?: boolean | null
           npn?: string | null
-          organization_id?: string | null
+          organization_id?: string
           override_rate_pct?: number | null
           parent_advisor_id?: string | null
           pending_commissions?: number | null
@@ -879,8 +2121,13 @@ export type Database = {
           phone?: string | null
           primary_channel?: string | null
           primary_color?: string | null
+          producer_code?: string | null
+          producer_owner_id?: string | null
+          producer_type?: string | null
           profile_id?: string | null
+          referring_affiliate_id?: string | null
           secondary_color?: string | null
+          setup_fee_waived?: boolean | null
           state?: string | null
           status?: string
           street_address?: string | null
@@ -921,17 +2168,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "advisors_profile_id_fkey"
-            columns: ["profile_id"]
+            foreignKeyName: "advisors_producer_owner_id_fkey"
+            columns: ["producer_owner_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "advisors_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisors_referring_affiliate_id_fkey"
+            columns: ["referring_affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
         ]
@@ -1013,13 +2267,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "age_up_out_results_action_by_fkey"
-            columns: ["action_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "age_up_out_results_action_by_fkey"
             columns: ["action_by"]
@@ -1182,13 +2429,6 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "agent_audit_log_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "agent_audit_log_actor_id_fkey"
             columns: ["actor_id"]
@@ -1359,20 +2599,6 @@ export type Database = {
             referencedRelation: "call_logs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "agent_call_status_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: true
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "agent_call_status_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       agent_chat_preferences: {
@@ -1409,22 +2635,7 @@ export type Database = {
           notification_sound?: boolean | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "agent_chat_preferences_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: true
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "agent_chat_preferences_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       agent_levels: {
         Row: {
@@ -1616,43 +2827,7 @@ export type Database = {
           tool_name?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "agent_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agent_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agent_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "agent_messages_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "agent_messages_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       analytics_snapshots: {
         Row: {
@@ -1823,34 +2998,6 @@ export type Database = {
             referencedRelation: "assets"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "asset_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "asset_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asset_assignments_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "asset_assignments_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       assets: {
@@ -1994,36 +3141,7 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignments_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "assignments_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       audit_logs: {
         Row: {
@@ -2056,36 +3174,7 @@ export type Database = {
           target_user_id?: string | null
           user_agent?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "audit_logs_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "audit_logs_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "audit_logs_target_user_id_fkey"
-            columns: ["target_user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "audit_logs_target_user_id_fkey"
-            columns: ["target_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       auth_events: {
         Row: {
@@ -2302,13 +3391,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_failures_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "billing_failures_resolved_by_fkey"
@@ -2619,6 +3701,54 @@ export type Database = {
           },
         ]
       }
+      blog_posts: {
+        Row: {
+          author: string | null
+          category: string
+          content: string | null
+          created_at: string
+          excerpt: string | null
+          featured_image_url: string | null
+          id: string
+          published_at: string | null
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string | null
+          category?: string
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string | null
+          category?: string
+          content?: string | null
+          created_at?: string
+          excerpt?: string | null
+          featured_image_url?: string | null
+          id?: string
+          published_at?: string | null
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       business_hours: {
         Row: {
           day_of_week: number
@@ -2784,13 +3914,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "calendar_events_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "calendar_events_owner_id_fkey"
@@ -2992,43 +4115,7 @@ export type Database = {
           ticket_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "call_logs_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "call_logs_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_logs_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_logs_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_logs_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       call_participants: {
         Row: {
@@ -3070,20 +4157,6 @@ export type Database = {
             columns: ["call_log_id"]
             isOneToOne: false
             referencedRelation: "call_logs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "call_participants_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "call_participants_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3227,22 +4300,7 @@ export type Database = {
           is_active?: boolean | null
           title?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "canned_responses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "canned_responses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       catalog_categories: {
         Row: {
@@ -3374,20 +4432,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "change_approvals_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "change_approvals_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "change_approvals_change_id_fkey"
             columns: ["change_id"]
             isOneToOne: false
@@ -3492,13 +4536,6 @@ export type Database = {
             foreignKeyName: "change_events_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "change_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3508,13 +4545,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "change_events_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "change_events_reviewed_by_fkey"
@@ -3586,13 +4616,6 @@ export type Database = {
             foreignKeyName: "change_subscriptions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "change_subscriptions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -3634,20 +4657,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "change_tasks_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "change_tasks_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "change_tasks_change_id_fkey"
             columns: ["change_id"]
             isOneToOne: false
@@ -3668,7 +4677,6 @@ export type Database = {
           implementation_plan_md: string | null
           implementer_id: string | null
           linked_ci_ids: string[] | null
-          priority: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id: string | null
           risk: Database["public"]["Enums"]["change_risk"] | null
           status: string | null
@@ -3690,7 +4698,6 @@ export type Database = {
           implementation_plan_md?: string | null
           implementer_id?: string | null
           linked_ci_ids?: string[] | null
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id?: string | null
           risk?: Database["public"]["Enums"]["change_risk"] | null
           status?: string | null
@@ -3712,7 +4719,6 @@ export type Database = {
           implementation_plan_md?: string | null
           implementer_id?: string | null
           linked_ci_ids?: string[] | null
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
           requester_id?: string | null
           risk?: Database["public"]["Enums"]["change_risk"] | null
           status?: string | null
@@ -3729,69 +4735,6 @@ export type Database = {
             columns: ["affected_service_id"]
             isOneToOne: false
             referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "changes_implementer_id_fkey"
-            columns: ["implementer_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "changes_implementer_id_fkey"
-            columns: ["implementer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "changes_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "changes_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      channel_members: {
-        Row: {
-          channel_id: string
-          id: string
-          joined_at: string | null
-          last_read_at: string | null
-          role: string
-          user_id: string
-        }
-        Insert: {
-          channel_id: string
-          id?: string
-          joined_at?: string | null
-          last_read_at?: string | null
-          role?: string
-          user_id: string
-        }
-        Update: {
-          channel_id?: string
-          id?: string
-          joined_at?: string | null
-          last_read_at?: string | null
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "channel_members_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "chat_channels"
             referencedColumns: ["id"]
           },
         ]
@@ -3863,41 +4806,6 @@ export type Database = {
             referencedRelation: "support_channels"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "channel_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "channel_messages_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "channel_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "channel_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "channel_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
         ]
       }
       channel_routing_rules: {
@@ -3945,77 +4853,6 @@ export type Database = {
           },
         ]
       }
-      chat_channels: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          id: string
-          name: string
-          type: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          name: string
-          type?: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          name?: string
-          type?: string
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      chat_messages: {
-        Row: {
-          author_id: string | null
-          channel_id: string
-          content: string
-          created_at: string | null
-          id: string
-          metadata: Json | null
-          type: string
-          updated_at: string | null
-        }
-        Insert: {
-          author_id?: string | null
-          channel_id: string
-          content: string
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          type?: string
-          updated_at?: string | null
-        }
-        Update: {
-          author_id?: string | null
-          channel_id?: string
-          content?: string
-          created_at?: string | null
-          id?: string
-          metadata?: Json | null
-          type?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_messages_channel_id_fkey"
-            columns: ["channel_id"]
-            isOneToOne: false
-            referencedRelation: "chat_channels"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       chat_quick_responses: {
         Row: {
           category: string | null
@@ -4053,29 +4890,7 @@ export type Database = {
           updated_at?: string | null
           usage_count?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "chat_quick_responses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "chat_quick_responses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_quick_responses_kb_article_id_fkey"
-            columns: ["kb_article_id"]
-            isOneToOne: false
-            referencedRelation: "kb_articles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       chat_session_notes: {
         Row: {
@@ -4100,27 +4915,6 @@ export type Database = {
           session_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "chat_session_notes_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "chat_session_notes_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_session_notes_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "active_chat_sessions"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "chat_session_notes_session_id_fkey"
             columns: ["session_id"]
@@ -4174,43 +4968,7 @@ export type Database = {
           ticket_id?: string | null
           visitor_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "chat_sessions_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ci_relationships: {
         Row: {
@@ -4374,13 +5132,6 @@ export type Database = {
             foreignKeyName: "commission_adjustments_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "commission_adjustments_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4390,13 +5141,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "commissions"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commission_adjustments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "commission_adjustments_created_by_fkey"
@@ -4513,13 +5257,6 @@ export type Database = {
             foreignKeyName: "commission_copy_history_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "commission_copy_history_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4598,13 +5335,6 @@ export type Database = {
             foreignKeyName: "commission_payment_batches_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "commission_payment_batches_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -4614,13 +5344,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commission_payment_batches_processed_by_fkey"
-            columns: ["processed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "commission_payment_batches_processed_by_fkey"
@@ -4705,13 +5428,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "commission_payouts_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "commission_payouts_approved_by_fkey"
@@ -5139,6 +5855,36 @@ export type Database = {
           },
         ]
       }
+      contact_submissions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          status?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
       crm_activities: {
         Row: {
           activity_type: string
@@ -5232,13 +5978,6 @@ export type Database = {
             foreignKeyName: "crm_activities_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_activities_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -5246,22 +5985,8 @@ export type Database = {
             foreignKeyName: "crm_activities_completed_by_fkey"
             columns: ["completed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_activities_completed_by_fkey"
-            columns: ["completed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_activities_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_activities_created_by_fkey"
@@ -5335,13 +6060,6 @@ export type Database = {
             foreignKeyName: "crm_approval_actions_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_approval_actions_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -5351,13 +6069,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_approvals"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_approval_actions_delegate_to_fkey"
-            columns: ["delegate_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_approval_actions_delegate_to_fkey"
@@ -5430,22 +6141,8 @@ export type Database = {
             foreignKeyName: "crm_approval_decisions_decided_by_fkey"
             columns: ["decided_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_approval_decisions_decided_by_fkey"
-            columns: ["decided_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_approval_decisions_delegated_to_fkey"
-            columns: ["delegated_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_approval_decisions_delegated_to_fkey"
@@ -5523,13 +6220,6 @@ export type Database = {
             foreignKeyName: "crm_approval_processes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_approval_processes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -5599,13 +6289,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_approval_rules_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_approval_rules_created_by_fkey"
             columns: ["created_by"]
@@ -5723,22 +6406,8 @@ export type Database = {
             foreignKeyName: "crm_approvals_requested_by_fkey"
             columns: ["requested_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_approvals_requested_by_fkey"
-            columns: ["requested_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_approvals_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_approvals_resolved_by_fkey"
@@ -5867,13 +6536,6 @@ export type Database = {
             foreignKeyName: "crm_attachments_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_attachments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -5928,13 +6590,6 @@ export type Database = {
           org_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_audit_log_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_audit_log_actor_id_fkey"
             columns: ["actor_id"]
@@ -6085,13 +6740,6 @@ export type Database = {
             foreignKeyName: "crm_blueprints_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_blueprints_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6158,13 +6806,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_cadences"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_cadence_enrollments_enrolled_by_fkey"
-            columns: ["enrolled_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_cadence_enrollments_enrolled_by_fkey"
@@ -6344,13 +6985,6 @@ export type Database = {
           to_stage_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_deal_stage_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_deal_stage_history_changed_by_fkey"
             columns: ["changed_by"]
@@ -6594,13 +7228,6 @@ export type Database = {
             foreignKeyName: "crm_import_jobs_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_import_jobs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6675,13 +7302,6 @@ export type Database = {
             foreignKeyName: "crm_import_mappings_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_import_mappings_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6716,7 +7336,7 @@ export type Database = {
           job_id: string
           match_type: string | null
           normalized: Json | null
-          raw: Json
+          raw: Json | null
           record_id: string | null
           row_index: number
           status: string | null
@@ -6729,7 +7349,7 @@ export type Database = {
           job_id: string
           match_type?: string | null
           normalized?: Json | null
-          raw: Json
+          raw?: Json | null
           record_id?: string | null
           row_index: number
           status?: string | null
@@ -6742,7 +7362,7 @@ export type Database = {
           job_id?: string
           match_type?: string | null
           normalized?: Json | null
-          raw?: Json
+          raw?: Json | null
           record_id?: string | null
           row_index?: number
           status?: string | null
@@ -6899,13 +7519,6 @@ export type Database = {
             foreignKeyName: "crm_macro_runs_executed_by_fkey"
             columns: ["executed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_macro_runs_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -6982,13 +7595,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_macros_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_macros_created_by_fkey"
             columns: ["created_by"]
@@ -7158,13 +7764,6 @@ export type Database = {
             foreignKeyName: "crm_message_templates_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_message_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7319,13 +7918,6 @@ export type Database = {
             foreignKeyName: "crm_messages_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_messages_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7451,13 +8043,6 @@ export type Database = {
             foreignKeyName: "crm_notes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_notes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7526,13 +8111,6 @@ export type Database = {
             foreignKeyName: "crm_notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7585,13 +8163,6 @@ export type Database = {
             foreignKeyName: "crm_recent_views_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_recent_views_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7632,13 +8203,6 @@ export type Database = {
           target_record_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_record_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_record_links_created_by_fkey"
             columns: ["created_by"]
@@ -7726,13 +8290,6 @@ export type Database = {
             foreignKeyName: "crm_records_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_records_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -7749,13 +8306,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_records_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_records_owner_id_fkey"
@@ -7798,13 +8348,6 @@ export type Database = {
           to_record_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_relations_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_relations_created_by_fkey"
             columns: ["created_by"]
@@ -7922,13 +8465,6 @@ export type Database = {
             foreignKeyName: "crm_reports_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_reports_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -8007,13 +8543,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_scheduled_reports_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_scheduled_reports_created_by_fkey"
             columns: ["created_by"]
@@ -8269,13 +8798,6 @@ export type Database = {
             foreignKeyName: "crm_stage_history_changed_by_fkey"
             columns: ["changed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_stage_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -8373,22 +8895,8 @@ export type Database = {
             foreignKeyName: "crm_tasks_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_tasks_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "crm_tasks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "crm_tasks_created_by_fkey"
@@ -8537,13 +9045,6 @@ export type Database = {
             foreignKeyName: "crm_validation_rules_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_validation_rules_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -8607,13 +9108,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "crm_views_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "crm_views_created_by_fkey"
             columns: ["created_by"]
@@ -8885,13 +9379,6 @@ export type Database = {
             foreignKeyName: "crm_workflows_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "crm_workflows_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -8927,7 +9414,7 @@ export type Database = {
           is_visible: boolean | null
           options: Json | null
           order_index: number | null
-          organization_id: string | null
+          organization_id: string
           updated_at: string | null
         }
         Insert: {
@@ -8945,7 +9432,7 @@ export type Database = {
           is_visible?: boolean | null
           options?: Json | null
           order_index?: number | null
-          organization_id?: string | null
+          organization_id: string
           updated_at?: string | null
         }
         Update: {
@@ -8963,7 +9450,7 @@ export type Database = {
           is_visible?: boolean | null
           options?: Json | null
           order_index?: number | null
-          organization_id?: string | null
+          organization_id?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -9054,13 +9541,6 @@ export type Database = {
             foreignKeyName: "custom_reports_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "custom_reports_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -9113,20 +9593,6 @@ export type Database = {
             columns: ["daily_log_id"]
             isOneToOne: false
             referencedRelation: "daily_logs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "daily_log_entries_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "daily_log_entries_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -9182,20 +9648,6 @@ export type Database = {
             referencedRelation: "daily_logs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "daily_log_reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "daily_log_reports_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       daily_logs: {
@@ -9235,22 +9687,7 @@ export type Database = {
           user_id?: string
           work_date?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "daily_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "daily_logs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       dependents: {
         Row: {
@@ -9471,13 +9908,6 @@ export type Database = {
             foreignKeyName: "email_assets_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_assets_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -9549,13 +9979,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_campaigns"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "email_attachments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "email_attachments_created_by_fkey"
@@ -9767,13 +10190,6 @@ export type Database = {
             foreignKeyName: "email_campaigns_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_campaigns_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -9908,13 +10324,6 @@ export type Database = {
             foreignKeyName: "email_domains_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_domains_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -10016,13 +10425,6 @@ export type Database = {
             foreignKeyName: "email_sender_addresses_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_sender_addresses_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -10111,13 +10513,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_sequence_steps"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "email_sequence_enrollments_enrolled_by_fkey"
-            columns: ["enrolled_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "email_sequence_enrollments_enrolled_by_fkey"
@@ -10349,13 +10744,6 @@ export type Database = {
             foreignKeyName: "email_sequences_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_sequences_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -10429,13 +10817,6 @@ export type Database = {
             foreignKeyName: "email_signatures_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_signatures_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -10501,20 +10882,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "email_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "email_templates_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
@@ -10573,13 +10940,6 @@ export type Database = {
             foreignKeyName: "email_unsubscribes_unsubscribed_by_fkey"
             columns: ["unsubscribed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "email_unsubscribes_unsubscribed_by_fkey"
-            columns: ["unsubscribed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -10632,13 +10992,6 @@ export type Database = {
           subject?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "engagement_events_actor_profile_id_fkey"
-            columns: ["actor_profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "engagement_events_actor_profile_id_fkey"
             columns: ["actor_profile_id"]
@@ -10703,13 +11056,6 @@ export type Database = {
           organization_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "enrollment_audit_log_actor_profile_id_fkey"
-            columns: ["actor_profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "enrollment_audit_log_actor_profile_id_fkey"
             columns: ["actor_profile_id"]
@@ -11441,13 +11787,6 @@ export type Database = {
             foreignKeyName: "enrollment_logs_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "enrollment_logs_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -11858,13 +12197,6 @@ export type Database = {
             foreignKeyName: "enrollments_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "enrollments_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -12041,20 +12373,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "files_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "files_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "files_parent_file_id_fkey"
             columns: ["parent_file_id"]
             isOneToOne: false
@@ -12121,13 +12439,6 @@ export type Database = {
             foreignKeyName: "financial_audit_log_performed_by_fkey"
             columns: ["performed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "financial_audit_log_performed_by_fkey"
-            columns: ["performed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -12173,22 +12484,7 @@ export type Database = {
           registration_data?: Json | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "goto_devices_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "goto_devices_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       goto_settings: {
         Row: {
@@ -12301,6 +12597,489 @@ export type Database = {
           is_recurring?: boolean | null
           name?: string
           year?: number | null
+        }
+        Relationships: []
+      }
+      import_contacts_staging: {
+        Row: {
+          add_on_product: string | null
+          admin123: string | null
+          affiliate: string | null
+          affiliate_referral: string | null
+          affiliate_rep_monthly: string | null
+          amount_received: string | null
+          app_downloaded: string | null
+          atap: string | null
+          average_time_spent_minutes: string | null
+          birth_month: string | null
+          business_or_practice_name: string | null
+          cancellation_date: string | null
+          carrier: string | null
+          change_log_time: string | null
+          charge_waived: string | null
+          child_1: string | null
+          child_1_address: string | null
+          child_1_dob: string | null
+          child_1_email: string | null
+          child_1_phone_number: string | null
+          child_1_ss_number: string | null
+          child_2: string | null
+          child_2_address: string | null
+          child_2_dob: string | null
+          child_2_email: string | null
+          child_2_phone_number: string | null
+          child_2_ss_number: string | null
+          child_3: string | null
+          child_3_address: string | null
+          child_3_dob: string | null
+          child_3_email: string | null
+          child_3_phone_number: string | null
+          child_3_ss_number: string | null
+          child_4: string | null
+          child_4_address: string | null
+          child_4_dob: string | null
+          child_4_email: string | null
+          child_4_phone_number: string | null
+          child_4_ss_number: string | null
+          child_5: string | null
+          child_5_address: string | null
+          child_5_dob: string | null
+          child_5_email: string | null
+          child_5_phone_number: string | null
+          child_5_ss_number: string | null
+          cirrus_registration_date: string | null
+          commission_percentage: string | null
+          company_association: string | null
+          complete_date: string | null
+          connected_to_id: string | null
+          connected_to_module: string | null
+          contact_name: string | null
+          contact_owner: string | null
+          contact_owner_id: string | null
+          contact_status: string | null
+          coverage_option: string | null
+          created_by: string | null
+          created_by_id: string | null
+          created_time: string | null
+          currency: string | null
+          data_processing_basis: string | null
+          data_processing_basis_id: string | null
+          data_source: string | null
+          date_of_birth: string | null
+          date_referral_paid: string | null
+          days_visited: string | null
+          declined: string | null
+          dental: string | null
+          director: string | null
+          director_monthly: string | null
+          director_referral: string | null
+          dpc_name: string | null
+          e123_member_id: string | null
+          email: string | null
+          email_opt_out: string | null
+          enrich_status: string | null
+          exchange_rate: string | null
+          fax: string | null
+          first_name: string | null
+          first_page_visited: string | null
+          first_visit: string | null
+          fulfillment_email_sent: string | null
+          fulfillment_letter_mailed: string | null
+          household_annual_adj_gross: string | null
+          iua_amount: string | null
+          last_activity_time: string | null
+          last_enriched_time: string | null
+          last_name: string | null
+          lead_source: string | null
+          life_code_2nd: string | null
+          life_code_3rd: string | null
+          life_code_4th: string | null
+          life_code_5th: string | null
+          locked: string | null
+          mailing_city: string | null
+          mailing_state: string | null
+          mailing_street: string | null
+          mailing_zip: string | null
+          marital_status: string | null
+          mec_decision_confirmed: string | null
+          mec_submitted: string | null
+          medical_release_form_on_file: string | null
+          middle_initial: string | null
+          mobile: string | null
+          modified_by: string | null
+          modified_by_id: string | null
+          modified_time: string | null
+          monthly_premium: string | null
+          most_recent_visit: string | null
+          mpower_life_code: string | null
+          notes_history: string | null
+          number_of_chats: string | null
+          permission_to_discuss_plan: string | null
+          phone: string | null
+          portal_password: string | null
+          portal_username: string | null
+          preferred_method_of_communication: string | null
+          previous_product: string | null
+          primary_member_gender: string | null
+          primary_ss_number: string | null
+          producer_commission: string | null
+          producer_name: string | null
+          producer_name_id: string | null
+          product: string | null
+          record_id: string | null
+          referral_fee: string | null
+          referral_requirement_satisfied: string | null
+          referral_source: string | null
+          referrer: string | null
+          referring_member: string | null
+          risk_assessment_paid: string | null
+          row_num: number
+          salutation: string | null
+          secondary_email: string | null
+          select_conversion_completed: string | null
+          spouse: string | null
+          spouse_address: string | null
+          spouse_dob: string | null
+          spouse_email: string | null
+          spouse_phone_number: string | null
+          spouse_ss_number: string | null
+          start_date: string | null
+          tag: string | null
+          tax_id: string | null
+          team_leader: string | null
+          team_leader_monthly: string | null
+          team_leader_referral: string | null
+          territories: string | null
+          third_party_payor: string | null
+          title: string | null
+          unsubscribed_mode: string | null
+          unsubscribed_time: string | null
+          vision: string | null
+          visitor_score: string | null
+          wc_outreach_date: string | null
+          welcome_call_performed_by: string | null
+          welcome_call_status: string | null
+          work_phone: string | null
+        }
+        Insert: {
+          add_on_product?: string | null
+          admin123?: string | null
+          affiliate?: string | null
+          affiliate_referral?: string | null
+          affiliate_rep_monthly?: string | null
+          amount_received?: string | null
+          app_downloaded?: string | null
+          atap?: string | null
+          average_time_spent_minutes?: string | null
+          birth_month?: string | null
+          business_or_practice_name?: string | null
+          cancellation_date?: string | null
+          carrier?: string | null
+          change_log_time?: string | null
+          charge_waived?: string | null
+          child_1?: string | null
+          child_1_address?: string | null
+          child_1_dob?: string | null
+          child_1_email?: string | null
+          child_1_phone_number?: string | null
+          child_1_ss_number?: string | null
+          child_2?: string | null
+          child_2_address?: string | null
+          child_2_dob?: string | null
+          child_2_email?: string | null
+          child_2_phone_number?: string | null
+          child_2_ss_number?: string | null
+          child_3?: string | null
+          child_3_address?: string | null
+          child_3_dob?: string | null
+          child_3_email?: string | null
+          child_3_phone_number?: string | null
+          child_3_ss_number?: string | null
+          child_4?: string | null
+          child_4_address?: string | null
+          child_4_dob?: string | null
+          child_4_email?: string | null
+          child_4_phone_number?: string | null
+          child_4_ss_number?: string | null
+          child_5?: string | null
+          child_5_address?: string | null
+          child_5_dob?: string | null
+          child_5_email?: string | null
+          child_5_phone_number?: string | null
+          child_5_ss_number?: string | null
+          cirrus_registration_date?: string | null
+          commission_percentage?: string | null
+          company_association?: string | null
+          complete_date?: string | null
+          connected_to_id?: string | null
+          connected_to_module?: string | null
+          contact_name?: string | null
+          contact_owner?: string | null
+          contact_owner_id?: string | null
+          contact_status?: string | null
+          coverage_option?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          currency?: string | null
+          data_processing_basis?: string | null
+          data_processing_basis_id?: string | null
+          data_source?: string | null
+          date_of_birth?: string | null
+          date_referral_paid?: string | null
+          days_visited?: string | null
+          declined?: string | null
+          dental?: string | null
+          director?: string | null
+          director_monthly?: string | null
+          director_referral?: string | null
+          dpc_name?: string | null
+          e123_member_id?: string | null
+          email?: string | null
+          email_opt_out?: string | null
+          enrich_status?: string | null
+          exchange_rate?: string | null
+          fax?: string | null
+          first_name?: string | null
+          first_page_visited?: string | null
+          first_visit?: string | null
+          fulfillment_email_sent?: string | null
+          fulfillment_letter_mailed?: string | null
+          household_annual_adj_gross?: string | null
+          iua_amount?: string | null
+          last_activity_time?: string | null
+          last_enriched_time?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          life_code_2nd?: string | null
+          life_code_3rd?: string | null
+          life_code_4th?: string | null
+          life_code_5th?: string | null
+          locked?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          marital_status?: string | null
+          mec_decision_confirmed?: string | null
+          mec_submitted?: string | null
+          medical_release_form_on_file?: string | null
+          middle_initial?: string | null
+          mobile?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          monthly_premium?: string | null
+          most_recent_visit?: string | null
+          mpower_life_code?: string | null
+          notes_history?: string | null
+          number_of_chats?: string | null
+          permission_to_discuss_plan?: string | null
+          phone?: string | null
+          portal_password?: string | null
+          portal_username?: string | null
+          preferred_method_of_communication?: string | null
+          previous_product?: string | null
+          primary_member_gender?: string | null
+          primary_ss_number?: string | null
+          producer_commission?: string | null
+          producer_name?: string | null
+          producer_name_id?: string | null
+          product?: string | null
+          record_id?: string | null
+          referral_fee?: string | null
+          referral_requirement_satisfied?: string | null
+          referral_source?: string | null
+          referrer?: string | null
+          referring_member?: string | null
+          risk_assessment_paid?: string | null
+          row_num?: number
+          salutation?: string | null
+          secondary_email?: string | null
+          select_conversion_completed?: string | null
+          spouse?: string | null
+          spouse_address?: string | null
+          spouse_dob?: string | null
+          spouse_email?: string | null
+          spouse_phone_number?: string | null
+          spouse_ss_number?: string | null
+          start_date?: string | null
+          tag?: string | null
+          tax_id?: string | null
+          team_leader?: string | null
+          team_leader_monthly?: string | null
+          team_leader_referral?: string | null
+          territories?: string | null
+          third_party_payor?: string | null
+          title?: string | null
+          unsubscribed_mode?: string | null
+          unsubscribed_time?: string | null
+          vision?: string | null
+          visitor_score?: string | null
+          wc_outreach_date?: string | null
+          welcome_call_performed_by?: string | null
+          welcome_call_status?: string | null
+          work_phone?: string | null
+        }
+        Update: {
+          add_on_product?: string | null
+          admin123?: string | null
+          affiliate?: string | null
+          affiliate_referral?: string | null
+          affiliate_rep_monthly?: string | null
+          amount_received?: string | null
+          app_downloaded?: string | null
+          atap?: string | null
+          average_time_spent_minutes?: string | null
+          birth_month?: string | null
+          business_or_practice_name?: string | null
+          cancellation_date?: string | null
+          carrier?: string | null
+          change_log_time?: string | null
+          charge_waived?: string | null
+          child_1?: string | null
+          child_1_address?: string | null
+          child_1_dob?: string | null
+          child_1_email?: string | null
+          child_1_phone_number?: string | null
+          child_1_ss_number?: string | null
+          child_2?: string | null
+          child_2_address?: string | null
+          child_2_dob?: string | null
+          child_2_email?: string | null
+          child_2_phone_number?: string | null
+          child_2_ss_number?: string | null
+          child_3?: string | null
+          child_3_address?: string | null
+          child_3_dob?: string | null
+          child_3_email?: string | null
+          child_3_phone_number?: string | null
+          child_3_ss_number?: string | null
+          child_4?: string | null
+          child_4_address?: string | null
+          child_4_dob?: string | null
+          child_4_email?: string | null
+          child_4_phone_number?: string | null
+          child_4_ss_number?: string | null
+          child_5?: string | null
+          child_5_address?: string | null
+          child_5_dob?: string | null
+          child_5_email?: string | null
+          child_5_phone_number?: string | null
+          child_5_ss_number?: string | null
+          cirrus_registration_date?: string | null
+          commission_percentage?: string | null
+          company_association?: string | null
+          complete_date?: string | null
+          connected_to_id?: string | null
+          connected_to_module?: string | null
+          contact_name?: string | null
+          contact_owner?: string | null
+          contact_owner_id?: string | null
+          contact_status?: string | null
+          coverage_option?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          currency?: string | null
+          data_processing_basis?: string | null
+          data_processing_basis_id?: string | null
+          data_source?: string | null
+          date_of_birth?: string | null
+          date_referral_paid?: string | null
+          days_visited?: string | null
+          declined?: string | null
+          dental?: string | null
+          director?: string | null
+          director_monthly?: string | null
+          director_referral?: string | null
+          dpc_name?: string | null
+          e123_member_id?: string | null
+          email?: string | null
+          email_opt_out?: string | null
+          enrich_status?: string | null
+          exchange_rate?: string | null
+          fax?: string | null
+          first_name?: string | null
+          first_page_visited?: string | null
+          first_visit?: string | null
+          fulfillment_email_sent?: string | null
+          fulfillment_letter_mailed?: string | null
+          household_annual_adj_gross?: string | null
+          iua_amount?: string | null
+          last_activity_time?: string | null
+          last_enriched_time?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          life_code_2nd?: string | null
+          life_code_3rd?: string | null
+          life_code_4th?: string | null
+          life_code_5th?: string | null
+          locked?: string | null
+          mailing_city?: string | null
+          mailing_state?: string | null
+          mailing_street?: string | null
+          mailing_zip?: string | null
+          marital_status?: string | null
+          mec_decision_confirmed?: string | null
+          mec_submitted?: string | null
+          medical_release_form_on_file?: string | null
+          middle_initial?: string | null
+          mobile?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          monthly_premium?: string | null
+          most_recent_visit?: string | null
+          mpower_life_code?: string | null
+          notes_history?: string | null
+          number_of_chats?: string | null
+          permission_to_discuss_plan?: string | null
+          phone?: string | null
+          portal_password?: string | null
+          portal_username?: string | null
+          preferred_method_of_communication?: string | null
+          previous_product?: string | null
+          primary_member_gender?: string | null
+          primary_ss_number?: string | null
+          producer_commission?: string | null
+          producer_name?: string | null
+          producer_name_id?: string | null
+          product?: string | null
+          record_id?: string | null
+          referral_fee?: string | null
+          referral_requirement_satisfied?: string | null
+          referral_source?: string | null
+          referrer?: string | null
+          referring_member?: string | null
+          risk_assessment_paid?: string | null
+          row_num?: number
+          salutation?: string | null
+          secondary_email?: string | null
+          select_conversion_completed?: string | null
+          spouse?: string | null
+          spouse_address?: string | null
+          spouse_dob?: string | null
+          spouse_email?: string | null
+          spouse_phone_number?: string | null
+          spouse_ss_number?: string | null
+          start_date?: string | null
+          tag?: string | null
+          tax_id?: string | null
+          team_leader?: string | null
+          team_leader_monthly?: string | null
+          team_leader_referral?: string | null
+          territories?: string | null
+          third_party_payor?: string | null
+          title?: string | null
+          unsubscribed_mode?: string | null
+          unsubscribed_time?: string | null
+          vision?: string | null
+          visitor_score?: string | null
+          wc_outreach_date?: string | null
+          welcome_call_performed_by?: string | null
+          welcome_call_status?: string | null
+          work_phone?: string | null
         }
         Relationships: []
       }
@@ -12489,13 +13268,6 @@ export type Database = {
             foreignKeyName: "import_jobs_created_by_profile_id_fkey"
             columns: ["created_by_profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "import_jobs_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -12554,13 +13326,6 @@ export type Database = {
             foreignKeyName: "import_mapping_templates_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "import_mapping_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -12572,6 +13337,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      import_notes_staging: {
+        Row: {
+          associated_id: string | null
+          created_by: string | null
+          created_by_id: string | null
+          created_time: string | null
+          modified_by: string | null
+          modified_by_id: string | null
+          modified_time: string | null
+          note_content: string | null
+          note_owner: string | null
+          note_owner_id: string | null
+          note_title: string | null
+          parent_id: string | null
+          parent_name: string | null
+          record_id: string | null
+          row_num: number
+        }
+        Insert: {
+          associated_id?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          note_content?: string | null
+          note_owner?: string | null
+          note_owner_id?: string | null
+          note_title?: string | null
+          parent_id?: string | null
+          parent_name?: string | null
+          record_id?: string | null
+          row_num?: number
+        }
+        Update: {
+          associated_id?: string | null
+          created_by?: string | null
+          created_by_id?: string | null
+          created_time?: string | null
+          modified_by?: string | null
+          modified_by_id?: string | null
+          modified_time?: string | null
+          note_content?: string | null
+          note_owner?: string | null
+          note_owner_id?: string | null
+          note_title?: string | null
+          parent_id?: string | null
+          parent_name?: string | null
+          record_id?: string | null
+          row_num?: number
+        }
+        Relationships: []
       }
       import_snapshots: {
         Row: {
@@ -12726,13 +13545,6 @@ export type Database = {
             foreignKeyName: "inbox_assignments_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "inbox_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -12740,22 +13552,8 @@ export type Database = {
             foreignKeyName: "inbox_assignments_assigned_from_fkey"
             columns: ["assigned_from"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "inbox_assignments_assigned_from_fkey"
-            columns: ["assigned_from"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "inbox_assignments_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "inbox_assignments_assigned_to_fkey"
@@ -12882,13 +13680,6 @@ export type Database = {
             foreignKeyName: "inbox_conversations_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "inbox_conversations_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -12898,13 +13689,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_records"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "inbox_conversations_last_read_by_fkey"
-            columns: ["last_read_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "inbox_conversations_last_read_by_fkey"
@@ -13086,13 +13870,6 @@ export type Database = {
             foreignKeyName: "inbox_quick_actions_performed_by_fkey"
             columns: ["performed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "inbox_quick_actions_performed_by_fkey"
-            columns: ["performed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -13142,13 +13919,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "inbox_views_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "inbox_views_created_by_fkey"
             columns: ["created_by"]
@@ -13226,13 +13996,6 @@ export type Database = {
             foreignKeyName: "integration_connections_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "integration_connections_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -13269,22 +14032,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "integrations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "integrations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       invoice_generation_jobs: {
         Row: {
@@ -13370,13 +14118,6 @@ export type Database = {
             foreignKeyName: "invoice_generation_jobs_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "invoice_generation_jobs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -13419,13 +14160,6 @@ export type Database = {
           member_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "invoice_group_members_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "invoice_group_members_added_by_fkey"
             columns: ["added_by"]
@@ -13518,22 +14252,8 @@ export type Database = {
             foreignKeyName: "invoice_groups_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "invoice_groups_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invoice_groups_last_generated_by_fkey"
-            columns: ["last_generated_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "invoice_groups_last_generated_by_fkey"
@@ -13767,13 +14487,6 @@ export type Database = {
             foreignKeyName: "invoices_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "invoices_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -13867,13 +14580,6 @@ export type Database = {
           vendor_code?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "job_definitions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "job_definitions_created_by_fkey"
             columns: ["created_by"]
@@ -13989,61 +14695,6 @@ export type Database = {
             foreignKeyName: "job_runs_triggered_by_fkey"
             columns: ["triggered_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "job_runs_triggered_by_fkey"
-            columns: ["triggered_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      kb_articles: {
-        Row: {
-          body: string
-          created_at: string | null
-          created_by: string | null
-          id: string
-          is_published: boolean | null
-          tags: string[] | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          body: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          is_published?: boolean | null
-          tags?: string[] | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          body?: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          is_published?: boolean | null
-          tags?: string[] | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kb_articles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "kb_articles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -14107,22 +14758,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "knowledge_articles_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "knowledge_articles_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       knowledge_versions: {
         Row: {
@@ -14158,20 +14794,6 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "knowledge_articles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "knowledge_versions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "knowledge_versions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -14370,13 +14992,6 @@ export type Database = {
             foreignKeyName: "landing_pages_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "landing_pages_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -14417,7 +15032,7 @@ export type Database = {
           id: string
           last_name: string
           notes: string | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
           source: string | null
           state: string | null
@@ -14431,13 +15046,13 @@ export type Database = {
           current_coverage?: string | null
           custom_fields?: Json | null
           desired_start_date?: string | null
-          email?: string
-          first_name?: string
+          email: string
+          first_name: string
           household_size?: number | null
           id?: string
-          last_name?: string
+          last_name: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
           source?: string | null
           state?: string | null
@@ -14457,7 +15072,7 @@ export type Database = {
           id?: string
           last_name?: string
           notes?: string | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
           source?: string | null
           state?: string | null
@@ -14544,9 +15159,9 @@ export type Database = {
           is_smoker: boolean | null
           last_name: string
           marital_status: string | null
-          member_number: string | null
+          member_number: string
           monthly_share: number | null
-          organization_id: string | null
+          organization_id: string
           payment_profile_id: string | null
           phone: string | null
           plan_name: string | null
@@ -14581,21 +15196,21 @@ export type Database = {
           date_of_birth?: string | null
           default_payment_profile_id?: string | null
           effective_date?: string | null
-          email?: string
+          email: string
           existing_condition?: boolean | null
           existing_condition_description?: string | null
-          first_name?: string
+          first_name: string
           gender?: string | null
           has_existing_condition?: boolean | null
           household_id?: string | null
           household_role?: string | null
           id?: string
           is_smoker?: boolean | null
-          last_name?: string
+          last_name: string
           marital_status?: string | null
-          member_number?: string | null
+          member_number: string
           monthly_share?: number | null
-          organization_id?: string | null
+          organization_id: string
           payment_profile_id?: string | null
           phone?: string | null
           plan_name?: string | null
@@ -14642,9 +15257,9 @@ export type Database = {
           is_smoker?: boolean | null
           last_name?: string
           marital_status?: string | null
-          member_number?: string | null
+          member_number?: string
           monthly_share?: number | null
-          organization_id?: string | null
+          organization_id?: string
           payment_profile_id?: string | null
           phone?: string | null
           plan_name?: string | null
@@ -14775,38 +15390,6 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      message_reactions: {
-        Row: {
-          created_at: string | null
-          emoji: string
-          id: string
-          message_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          emoji: string
-          id?: string
-          message_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          emoji?: string
-          id?: string
-          message_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "message_reactions_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -15012,13 +15595,6 @@ export type Database = {
             foreignKeyName: "nacha_files_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "nacha_files_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -15039,7 +15615,7 @@ export type Database = {
           event_type: string
           id: string
           metadata: Json | null
-          need_id: string | null
+          need_id: string
           new_status: string | null
           note: string | null
           occurred_at: string | null
@@ -15050,10 +15626,10 @@ export type Database = {
           created_at?: string | null
           created_by_profile_id?: string | null
           description?: string | null
-          event_type?: string
+          event_type: string
           id?: string
           metadata?: Json | null
-          need_id?: string | null
+          need_id: string
           new_status?: string | null
           note?: string | null
           occurred_at?: string | null
@@ -15067,7 +15643,7 @@ export type Database = {
           event_type?: string
           id?: string
           metadata?: Json | null
-          need_id?: string | null
+          need_id?: string
           new_status?: string | null
           note?: string | null
           occurred_at?: string | null
@@ -15075,13 +15651,6 @@ export type Database = {
           organization_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "need_events_created_by_profile_id_fkey"
-            columns: ["created_by_profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "need_events_created_by_profile_id_fkey"
             columns: ["created_by_profile_id"]
@@ -15177,13 +15746,6 @@ export type Database = {
             foreignKeyName: "need_pricing_estimates_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "need_pricing_estimates_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -15222,10 +15784,10 @@ export type Database = {
           iua_met: boolean | null
           iua_remaining: number | null
           last_status_change_at: string | null
-          member_id: string | null
+          member_id: string
           member_responsibility_amount: number | null
           need_type: string
-          organization_id: string | null
+          organization_id: string
           payment_date: string | null
           payment_method: string | null
           payment_status: string | null
@@ -15250,7 +15812,7 @@ export type Database = {
           billed_amount?: number | null
           created_at?: string | null
           custom_fields?: Json | null
-          description?: string
+          description: string
           eligible_amount?: number | null
           facility_name?: string | null
           has_member_consent?: boolean | null
@@ -15260,10 +15822,10 @@ export type Database = {
           iua_met?: boolean | null
           iua_remaining?: number | null
           last_status_change_at?: string | null
-          member_id?: string | null
+          member_id: string
           member_responsibility_amount?: number | null
-          need_type?: string
-          organization_id?: string | null
+          need_type: string
+          organization_id: string
           payment_date?: string | null
           payment_method?: string | null
           payment_status?: string | null
@@ -15298,10 +15860,10 @@ export type Database = {
           iua_met?: boolean | null
           iua_remaining?: number | null
           last_status_change_at?: string | null
-          member_id?: string | null
+          member_id?: string
           member_responsibility_amount?: number | null
           need_type?: string
-          organization_id?: string | null
+          organization_id?: string
           payment_date?: string | null
           payment_method?: string | null
           payment_status?: string | null
@@ -15325,13 +15887,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "needs_assigned_to_profile_id_fkey"
-            columns: ["assigned_to_profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "needs_assigned_to_profile_id_fkey"
@@ -15425,20 +15980,6 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "notes_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "notes_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       notification_preferences: {
@@ -15530,27 +16071,6 @@ export type Database = {
             foreignKeyName: "notification_preferences_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "notification_preferences_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "notification_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -15670,13 +16190,6 @@ export type Database = {
             foreignKeyName: "notification_queue_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "notification_queue_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -15738,13 +16251,6 @@ export type Database = {
             foreignKeyName: "oauth_states_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "oauth_states_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -15794,22 +16300,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "oauth_tokens_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "oauth_tokens_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ops_audit_log: {
         Row: {
@@ -15861,13 +16352,6 @@ export type Database = {
           vendor_code?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "ops_audit_log_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "ops_audit_log_actor_id_fkey"
             columns: ["actor_id"]
@@ -15945,22 +16429,7 @@ export type Database = {
           user_id?: string
           vault_url?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "password_refs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "password_refs_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       payable_categories: {
         Row: {
@@ -16086,13 +16555,6 @@ export type Database = {
             foreignKeyName: "payable_payments_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "payable_payments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -16201,13 +16663,6 @@ export type Database = {
             foreignKeyName: "payables_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "payables_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -16217,13 +16672,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "payable_categories"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payables_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "payables_created_by_fkey"
@@ -16324,13 +16772,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "payment_processors_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "payment_processors_created_by_fkey"
             columns: ["created_by"]
@@ -16701,6 +17142,141 @@ export type Database = {
           },
         ]
       }
+      plan_fees: {
+        Row: {
+          amount: number
+          applies_to: string
+          created_at: string | null
+          enabled: boolean
+          fee_type: string
+          id: string
+          label: string
+          rate_set_id: string
+          sort_order: number | null
+        }
+        Insert: {
+          amount?: number
+          applies_to?: string
+          created_at?: string | null
+          enabled?: boolean
+          fee_type: string
+          id?: string
+          label: string
+          rate_set_id: string
+          sort_order?: number | null
+        }
+        Update: {
+          amount?: number
+          applies_to?: string
+          created_at?: string | null
+          enabled?: boolean
+          fee_type?: string
+          id?: string
+          label?: string
+          rate_set_id?: string
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_fees_rate_set_id_fkey"
+            columns: ["rate_set_id"]
+            isOneToOne: false
+            referencedRelation: "plan_rate_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_rate_entries: {
+        Row: {
+          age_band_id: string
+          amount: number
+          coverage_tier: string
+          created_at: string | null
+          id: string
+          person_type: string
+          rate_set_id: string
+          rate_type: string
+        }
+        Insert: {
+          age_band_id?: string
+          amount?: number
+          coverage_tier: string
+          created_at?: string | null
+          id?: string
+          person_type?: string
+          rate_set_id: string
+          rate_type?: string
+        }
+        Update: {
+          age_band_id?: string
+          amount?: number
+          coverage_tier?: string
+          created_at?: string | null
+          id?: string
+          person_type?: string
+          rate_set_id?: string
+          rate_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_rate_entries_rate_set_id_fkey"
+            columns: ["rate_set_id"]
+            isOneToOne: false
+            referencedRelation: "plan_rate_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_rate_sets: {
+        Row: {
+          age_bands: Json
+          created_at: string | null
+          effective_date: string
+          id: string
+          label: string
+          max_dependents_priced: number | null
+          plan_id: string
+          rate_set_key: string
+          rating_model: string
+          tobacco_config: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          age_bands?: Json
+          created_at?: string | null
+          effective_date: string
+          id?: string
+          label?: string
+          max_dependents_priced?: number | null
+          plan_id: string
+          rate_set_key: string
+          rating_model?: string
+          tobacco_config?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          age_bands?: Json
+          created_at?: string | null
+          effective_date?: string
+          id?: string
+          label?: string
+          max_dependents_priced?: number | null
+          plan_id?: string
+          rate_set_key?: string
+          rating_model?: string
+          tobacco_config?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_rate_sets_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           category: string | null
@@ -16728,6 +17304,7 @@ export type Database = {
           product_line: string | null
           provider: string | null
           rating_area_state: string | null
+          rating_model: string | null
           require_dependent_address_match: boolean | null
           require_dependent_info: boolean | null
           tier: string | null
@@ -16759,6 +17336,7 @@ export type Database = {
           product_line?: string | null
           provider?: string | null
           rating_area_state?: string | null
+          rating_model?: string | null
           require_dependent_address_match?: boolean | null
           require_dependent_info?: boolean | null
           tier?: string | null
@@ -16790,6 +17368,7 @@ export type Database = {
           product_line?: string | null
           provider?: string | null
           rating_area_state?: string | null
+          rating_model?: string | null
           require_dependent_address_match?: boolean | null
           require_dependent_info?: boolean | null
           tier?: string | null
@@ -16843,13 +17422,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "presentation_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "presentation_templates_created_by_fkey"
             columns: ["created_by"]
@@ -16920,13 +17492,6 @@ export type Database = {
             foreignKeyName: "presentations_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "presentations_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -16976,27 +17541,6 @@ export type Database = {
             referencedRelation: "problems"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "problem_tickets_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "problem_tickets_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "problem_tickets_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
         ]
       }
       problems: {
@@ -17007,7 +17551,6 @@ export type Database = {
           description: string | null
           id: string
           owner_id: string | null
-          priority: Database["public"]["Enums"]["ticket_priority"] | null
           resolution_md: string | null
           resolved_at: string | null
           root_cause: string | null
@@ -17023,7 +17566,6 @@ export type Database = {
           description?: string | null
           id?: string
           owner_id?: string | null
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
           resolution_md?: string | null
           resolved_at?: string | null
           root_cause?: string | null
@@ -17039,7 +17581,6 @@ export type Database = {
           description?: string | null
           id?: string
           owner_id?: string | null
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
           resolution_md?: string | null
           resolved_at?: string | null
           root_cause?: string | null
@@ -17054,20 +17595,6 @@ export type Database = {
             columns: ["assigned_team_id"]
             isOneToOne: false
             referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "problems_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "problems_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -17949,62 +18476,62 @@ export type Database = {
         Row: {
           advisor_id: string | null
           advisor_role: string | null
+          avatar_url: string | null
           created_at: string | null
           crm_role: string | null
           display_name: string | null
           email: string
-          full_name: string | null
+          full_name: string
           id: string
           is_active: boolean | null
           is_super_admin: boolean | null
-          organization_id: string | null
+          organization_id: string
           phone: string | null
-          role: string | null
-          theme_preference: string | null
+          role: string
           time_zone: string | null
           ui_theme: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           advisor_id?: string | null
           advisor_role?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           crm_role?: string | null
           display_name?: string | null
           email: string
-          full_name?: string | null
+          full_name: string
           id?: string
           is_active?: boolean | null
           is_super_admin?: boolean | null
-          organization_id?: string | null
+          organization_id: string
           phone?: string | null
-          role?: string | null
-          theme_preference?: string | null
+          role?: string
           time_zone?: string | null
           ui_theme?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           advisor_id?: string | null
           advisor_role?: string | null
+          avatar_url?: string | null
           created_at?: string | null
           crm_role?: string | null
           display_name?: string | null
           email?: string
-          full_name?: string | null
+          full_name?: string
           id?: string
           is_active?: boolean | null
           is_super_admin?: boolean | null
-          organization_id?: string | null
+          organization_id?: string
           phone?: string | null
-          role?: string | null
-          theme_preference?: string | null
+          role?: string
           time_zone?: string | null
           ui_theme?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -18053,20 +18580,6 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "project_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "project_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       projects: {
@@ -18103,22 +18616,7 @@ export type Database = {
           target_date?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "projects_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "projects_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       promo_code_uses: {
         Row: {
@@ -18234,13 +18732,6 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "promo_codes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "promo_codes_created_by_fkey"
             columns: ["created_by"]
@@ -18411,13 +18902,6 @@ export type Database = {
             foreignKeyName: "quotes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "quotes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -18510,13 +18994,6 @@ export type Database = {
             foreignKeyName: "recent_page_visits_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "recent_page_visits_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -18550,43 +19027,7 @@ export type Database = {
           ticket_id?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "reminders_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "reminders_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       report_alerts: {
         Row: {
@@ -18632,13 +19073,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "report_alerts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "report_alerts_created_by_fkey"
             columns: ["created_by"]
@@ -18706,13 +19140,6 @@ export type Database = {
           status?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "report_run_history_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "report_run_history_executed_by_fkey"
             columns: ["executed_by"]
@@ -18790,13 +19217,6 @@ export type Database = {
             foreignKeyName: "report_schedules_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "report_schedules_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -18864,13 +19284,6 @@ export type Database = {
             foreignKeyName: "report_segments_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "report_segments_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -18923,20 +19336,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "request_approvals_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "request_approvals_approver_id_fkey"
-            columns: ["approver_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "request_approvals_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
@@ -18980,20 +19379,6 @@ export type Database = {
           title?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "request_tasks_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "request_tasks_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "request_tasks_request_id_fkey"
             columns: ["request_id"]
@@ -19045,38 +19430,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "requests_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "requests_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "requests_catalog_item_id_fkey"
             columns: ["catalog_item_id"]
             isOneToOne: false
             referencedRelation: "catalog_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "requests_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "requests_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -19183,22 +19540,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "saved_filters_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "saved_filters_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       saved_views: {
         Row: {
@@ -19241,13 +19583,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "saved_views_owner_profile_id_fkey"
-            columns: ["owner_profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "saved_views_owner_profile_id_fkey"
@@ -19430,13 +19765,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "scheduling_links_owner_id_fkey"
-            columns: ["owner_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "scheduling_links_owner_id_fkey"
@@ -19763,27 +20091,6 @@ export type Database = {
             referencedRelation: "sla_policies"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "sla_events_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_events_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_events_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
         ]
       }
       sla_metrics: {
@@ -19862,71 +20169,7 @@ export type Database = {
           ticket_priority?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "sla_metrics_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_first_response_by_fkey"
-            columns: ["first_response_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_first_response_by_fkey"
-            columns: ["first_response_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       sla_policies: {
         Row: {
@@ -20004,29 +20247,7 @@ export type Database = {
           ticket_id?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sla_timers_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_timers_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_timers_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       sso_group_roles: {
         Row: {
@@ -20076,38 +20297,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "staff_log_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "staff_log_assignments_log_id_fkey"
             columns: ["log_id"]
             isOneToOne: false
             referencedRelation: "staff_logs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "staff_log_assignments_staff_id_fkey"
-            columns: ["staff_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_assignments_staff_id_fkey"
-            columns: ["staff_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -20183,20 +20376,6 @@ export type Database = {
             referencedRelation: "staff_log_attachments"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "staff_log_attachments_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_attachments_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       staff_log_comments: {
@@ -20246,20 +20425,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "staff_log_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "staff_log_comments_log_id_fkey"
             columns: ["log_id"]
@@ -20324,20 +20489,6 @@ export type Database = {
             referencedRelation: "staff_logs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "staff_log_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       staff_log_related: {
@@ -20363,20 +20514,6 @@ export type Database = {
           relationship_type?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "staff_log_related_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_related_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "staff_log_related_log_id_fkey"
             columns: ["log_id"]
@@ -20478,22 +20615,7 @@ export type Database = {
           title_template?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "staff_log_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       staff_log_time_tracking: {
         Row: {
@@ -20540,20 +20662,6 @@ export type Database = {
             referencedRelation: "staff_logs"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "staff_log_time_tracking_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_time_tracking_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       staff_log_watchers: {
@@ -20577,38 +20685,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "staff_log_watchers_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_watchers_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "staff_log_watchers_log_id_fkey"
             columns: ["log_id"]
             isOneToOne: false
             referencedRelation: "staff_logs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "staff_log_watchers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_log_watchers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -20718,66 +20798,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "staff_logs_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_logs_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "staff_logs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_logs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "staff_logs_first_response_by_fkey"
-            columns: ["first_response_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_logs_first_response_by_fkey"
-            columns: ["first_response_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "staff_logs_parent_log_id_fkey"
             columns: ["parent_log_id"]
             isOneToOne: false
             referencedRelation: "staff_logs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "staff_logs_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "staff_logs_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -20811,13 +20835,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "super_admin_sessions_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: true
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "super_admin_sessions_profile_id_fkey"
@@ -20901,22 +20918,7 @@ export type Database = {
           updated_at?: string | null
           warning_threshold?: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "system_alerts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "system_alerts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       system_audit_log: {
         Row: {
@@ -21069,36 +21071,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "system_incidents_acknowledged_by_fkey"
-            columns: ["acknowledged_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "system_incidents_acknowledged_by_fkey"
-            columns: ["acknowledged_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "system_incidents_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "system_incidents_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       system_metrics: {
         Row: {
@@ -21202,13 +21175,6 @@ export type Database = {
             foreignKeyName: "system_settings_last_changed_by_fkey"
             columns: ["last_changed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "system_settings_last_changed_by_fkey"
-            columns: ["last_changed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -21252,22 +21218,7 @@ export type Database = {
           name?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tag_definitions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tag_definitions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       task_watchers: {
         Row: {
@@ -21294,20 +21245,6 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_watchers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "task_watchers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -21392,27 +21329,6 @@ export type Database = {
           {
             foreignKeyName: "tasks_assignee_id_fkey"
             columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tasks_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_created_by_id_fkey"
-            columns: ["created_by_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tasks_created_by_id_fkey"
-            columns: ["created_by_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -21557,22 +21473,8 @@ export type Database = {
             foreignKeyName: "team_invitations_accepted_by_fkey"
             columns: ["accepted_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "team_invitations_accepted_by_fkey"
-            columns: ["accepted_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "team_invitations_invited_by_fkey"
@@ -21684,22 +21586,7 @@ export type Database = {
           name?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "teams_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "teams_manager_id_fkey"
-            columns: ["manager_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_actions: {
         Row: {
@@ -21726,43 +21613,7 @@ export type Database = {
           payload?: Json | null
           ticket_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_actions_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_actions_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_actions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_actions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_actions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_activity_log: {
         Row: {
@@ -21795,135 +21646,37 @@ export type Database = {
           ticket_id?: string
           user_agent?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_activity_log_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_activity_log_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_activity_log_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_activity_log_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_activity_log_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ticket_attachments: {
-        Row: {
-          created_at: string | null
-          filename: string
-          id: string
-          size_bytes: number | null
-          ticket_id: string | null
-          url: string
-        }
-        Insert: {
-          created_at?: string | null
-          filename: string
-          id?: string
-          size_bytes?: number | null
-          ticket_id?: string | null
-          url: string
-        }
-        Update: {
-          created_at?: string | null
-          filename?: string
-          id?: string
-          size_bytes?: number | null
-          ticket_id?: string | null
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_attachments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_attachments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_attachments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_comments: {
         Row: {
-          author_id: string | null
           body: string
           created_at: string | null
+          created_by_profile_id: string
           id: string
-          is_important: boolean | null
           is_internal: boolean | null
-          reply_to_message_id: string | null
-          ticket_id: string | null
+          ticket_id: string
         }
         Insert: {
-          author_id?: string | null
           body: string
           created_at?: string | null
+          created_by_profile_id: string
           id?: string
-          is_important?: boolean | null
           is_internal?: boolean | null
-          reply_to_message_id?: string | null
-          ticket_id?: string | null
+          ticket_id: string
         }
         Update: {
-          author_id?: string | null
           body?: string
           created_at?: string | null
+          created_by_profile_id?: string
           id?: string
-          is_important?: boolean | null
           is_internal?: boolean | null
-          reply_to_message_id?: string | null
-          ticket_id?: string | null
+          ticket_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "ticket_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_comments_author_id_fkey"
-            columns: ["author_id"]
+            foreignKeyName: "ticket_comments_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -21932,21 +21685,7 @@ export type Database = {
             foreignKeyName: "ticket_comments_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_comments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
             referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_comments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
             referencedColumns: ["id"]
           },
         ]
@@ -21979,43 +21718,7 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_custom_fields_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_custom_fields_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_custom_fields_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_custom_fields_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_custom_fields_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_email_notifications: {
         Row: {
@@ -22069,29 +21772,7 @@ export type Database = {
           ticket_id?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_email_notifications_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_email_notifications_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_email_notifications_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_events: {
         Row: {
@@ -22118,43 +21799,7 @@ export type Database = {
           payload?: Json | null
           ticket_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_events_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_events_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_events_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_field_history: {
         Row: {
@@ -22187,43 +21832,7 @@ export type Database = {
           old_value?: string | null
           ticket_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_field_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_field_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_field_history_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_field_history_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_field_history_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_files: {
         Row: {
@@ -22256,43 +21865,7 @@ export type Database = {
           ticket_id?: string
           uploaded_by?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_files_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_files_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_files_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_files_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_files_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_links: {
         Row: {
@@ -22322,64 +21895,7 @@ export type Database = {
           source_ticket_id?: string
           target_ticket_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_links_source_ticket_id_fkey"
-            columns: ["source_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_links_source_ticket_id_fkey"
-            columns: ["source_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_links_source_ticket_id_fkey"
-            columns: ["source_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_links_target_ticket_id_fkey"
-            columns: ["target_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_links_target_ticket_id_fkey"
-            columns: ["target_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_links_target_ticket_id_fkey"
-            columns: ["target_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_mentions: {
         Row: {
@@ -22406,29 +21922,7 @@ export type Database = {
           mentioned_user_id?: string
           notified_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_mentions_comment_id_fkey"
-            columns: ["comment_id"]
-            isOneToOne: false
-            referencedRelation: "ticket_comments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_mentions_mentioned_user_id_fkey"
-            columns: ["mentioned_user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_mentions_mentioned_user_id_fkey"
-            columns: ["mentioned_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_notifications: {
         Row: {
@@ -22461,43 +21955,7 @@ export type Database = {
           title?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_notifications_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_notifications_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_notifications_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_read_status: {
         Row: {
@@ -22527,43 +21985,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_read_status_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_read_status_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_read_status_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_read_status_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_read_status_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_status_history: {
         Row: {
@@ -22571,8 +21993,6 @@ export type Database = {
           comment: string | null
           created_at: string | null
           id: string
-          new_status: Database["public"]["Enums"]["ticket_status"]
-          old_status: Database["public"]["Enums"]["ticket_status"] | null
           ticket_id: string
         }
         Insert: {
@@ -22580,8 +22000,6 @@ export type Database = {
           comment?: string | null
           created_at?: string | null
           id?: string
-          new_status: Database["public"]["Enums"]["ticket_status"]
-          old_status?: Database["public"]["Enums"]["ticket_status"] | null
           ticket_id: string
         }
         Update: {
@@ -22589,47 +22007,9 @@ export type Database = {
           comment?: string | null
           created_at?: string | null
           id?: string
-          new_status?: Database["public"]["Enums"]["ticket_status"]
-          old_status?: Database["public"]["Enums"]["ticket_status"] | null
           ticket_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_status_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_status_history_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_status_history_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_status_history_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_status_history_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_tags: {
         Row: {
@@ -22655,45 +22035,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ticket_tags_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_tags_added_by_fkey"
-            columns: ["added_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ticket_tags_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
             referencedRelation: "tag_definitions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_tags_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_tags_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_tags_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
             referencedColumns: ["id"]
           },
         ]
@@ -22744,22 +22089,7 @@ export type Database = {
           priority?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_time_entries: {
         Row: {
@@ -22798,43 +22128,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_time_entries_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_time_entries_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_time_entries_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_time_entries_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_time_entries_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       ticket_watchers: {
         Row: {
@@ -22858,228 +22152,94 @@ export type Database = {
           ticket_id?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ticket_watchers_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_watchers_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_watchers_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ticket_watchers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "ticket_watchers_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tickets: {
         Row: {
           advisor_id: string | null
-          advisor_id_optional: string | null
-          agent_id: string | null
-          agent_name: string | null
-          app_version: string | null
-          assigned_group: string | null
-          assignee_id: string | null
-          attachments: string[] | null
-          browser: string | null
-          category: string | null
+          agency_name: string | null
+          assigned_to_profile_id: string | null
+          category: string
           created_at: string | null
-          description: string | null
-          email_thread_id: string | null
+          created_by_profile_id: string
+          description: string
           id: string
-          impact: string | null
-          last_email_sent_at: string | null
-          last_message_at: string | null
           member_id: string | null
-          member_id_optional: string | null
-          metadata: Json | null
-          origin: string
-          platform: string | null
-          priority: Database["public"]["Enums"]["ticket_priority"] | null
-          queue: string | null
-          related_urls: string[] | null
-          requester_id: string | null
-          response_count: number | null
-          satisfaction_comment: string | null
-          satisfaction_rating: number | null
-          service_id: string | null
-          sla_due_at: string | null
-          sla_minutes: number | null
-          status: Database["public"]["Enums"]["ticket_status"] | null
-          subcategory: string | null
+          organization_id: string
+          priority: string
+          sla_target_at: string | null
+          status: string
           subject: string
-          submitted_by_concierge: string | null
-          submitter_email: string | null
-          submitter_name: string | null
-          submitter_phone: string | null
-          type: Database["public"]["Enums"]["ticket_type"] | null
           updated_at: string | null
-          urgency: string | null
-          urls: string[] | null
         }
         Insert: {
           advisor_id?: string | null
-          advisor_id_optional?: string | null
-          agent_id?: string | null
-          agent_name?: string | null
-          app_version?: string | null
-          assigned_group?: string | null
-          assignee_id?: string | null
-          attachments?: string[] | null
-          browser?: string | null
-          category?: string | null
+          agency_name?: string | null
+          assigned_to_profile_id?: string | null
+          category?: string
           created_at?: string | null
-          description?: string | null
-          email_thread_id?: string | null
+          created_by_profile_id: string
+          description: string
           id?: string
-          impact?: string | null
-          last_email_sent_at?: string | null
-          last_message_at?: string | null
           member_id?: string | null
-          member_id_optional?: string | null
-          metadata?: Json | null
-          origin?: string
-          platform?: string | null
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
-          queue?: string | null
-          related_urls?: string[] | null
-          requester_id?: string | null
-          response_count?: number | null
-          satisfaction_comment?: string | null
-          satisfaction_rating?: number | null
-          service_id?: string | null
-          sla_due_at?: string | null
-          sla_minutes?: number | null
-          status?: Database["public"]["Enums"]["ticket_status"] | null
-          subcategory?: string | null
+          organization_id: string
+          priority?: string
+          sla_target_at?: string | null
+          status?: string
           subject: string
-          submitted_by_concierge?: string | null
-          submitter_email?: string | null
-          submitter_name?: string | null
-          submitter_phone?: string | null
-          type?: Database["public"]["Enums"]["ticket_type"] | null
           updated_at?: string | null
-          urgency?: string | null
-          urls?: string[] | null
         }
         Update: {
           advisor_id?: string | null
-          advisor_id_optional?: string | null
-          agent_id?: string | null
-          agent_name?: string | null
-          app_version?: string | null
-          assigned_group?: string | null
-          assignee_id?: string | null
-          attachments?: string[] | null
-          browser?: string | null
-          category?: string | null
+          agency_name?: string | null
+          assigned_to_profile_id?: string | null
+          category?: string
           created_at?: string | null
-          description?: string | null
-          email_thread_id?: string | null
+          created_by_profile_id?: string
+          description?: string
           id?: string
-          impact?: string | null
-          last_email_sent_at?: string | null
-          last_message_at?: string | null
           member_id?: string | null
-          member_id_optional?: string | null
-          metadata?: Json | null
-          origin?: string
-          platform?: string | null
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
-          queue?: string | null
-          related_urls?: string[] | null
-          requester_id?: string | null
-          response_count?: number | null
-          satisfaction_comment?: string | null
-          satisfaction_rating?: number | null
-          service_id?: string | null
-          sla_due_at?: string | null
-          sla_minutes?: number | null
-          status?: Database["public"]["Enums"]["ticket_status"] | null
-          subcategory?: string | null
+          organization_id?: string
+          priority?: string
+          sla_target_at?: string | null
+          status?: string
           subject?: string
-          submitted_by_concierge?: string | null
-          submitter_email?: string | null
-          submitter_name?: string | null
-          submitter_phone?: string | null
-          type?: Database["public"]["Enums"]["ticket_type"] | null
           updated_at?: string | null
-          urgency?: string | null
-          urls?: string[] | null
         }
         Relationships: [
           {
-            foreignKeyName: "tickets_assignee_id_fkey"
-            columns: ["assignee_id"]
+            foreignKeyName: "tickets_advisor_id_fkey"
+            columns: ["advisor_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tickets_assignee_id_fkey"
-            columns: ["assignee_id"]
+            foreignKeyName: "tickets_assigned_to_profile_id_fkey"
+            columns: ["assigned_to_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tickets_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_requester_id_fkey"
-            columns: ["requester_id"]
+            foreignKeyName: "tickets_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tickets_service_id_fkey"
-            columns: ["service_id"]
+            foreignKeyName: "tickets_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "services"
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "tickets_submitted_by_concierge_fkey"
-            columns: ["submitted_by_concierge"]
+            foreignKeyName: "tickets_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_submitted_by_concierge_fkey"
-            columns: ["submitted_by_concierge"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -23165,13 +22325,6 @@ export type Database = {
             foreignKeyName: "unified_audit_logs_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "unified_audit_logs_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -23181,13 +22334,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "unified_audit_logs_target_user_id_fkey"
-            columns: ["target_user_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "unified_audit_logs_target_user_id_fkey"
@@ -23234,13 +22380,6 @@ export type Database = {
             foreignKeyName: "user_domain_assignments_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "user_domain_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -23257,13 +22396,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_domain_assignments_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "user_domain_assignments_profile_id_fkey"
@@ -23356,13 +22488,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_email_settings_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: true
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "user_email_settings_profile_id_fkey"
@@ -23538,13 +22663,6 @@ export type Database = {
             foreignKeyName: "vendor_changes_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "vendor_changes_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -23641,13 +22759,6 @@ export type Database = {
             foreignKeyName: "vendor_connectors_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "vendor_connectors_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -23657,13 +22768,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vendor_connectors_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "vendor_connectors_updated_by_fkey"
@@ -23795,13 +22899,6 @@ export type Database = {
             foreignKeyName: "vendor_credentials_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "vendor_credentials_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -23911,13 +23008,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vendor_eligibility_runs"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vendor_eligibility_runs_triggered_by_fkey"
-            columns: ["triggered_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "vendor_eligibility_runs_triggered_by_fkey"
@@ -24109,13 +23199,6 @@ export type Database = {
             foreignKeyName: "vendor_files_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "vendor_files_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -24208,13 +23291,6 @@ export type Database = {
           vendor_code?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "vendor_job_configs_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "vendor_job_configs_created_by_fkey"
             columns: ["created_by"]
@@ -24345,13 +23421,6 @@ export type Database = {
             foreignKeyName: "vendors_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "vendors_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -24361,13 +23430,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "vendors_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "vendors_updated_by_fkey"
@@ -24508,13 +23570,6 @@ export type Database = {
           url?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "webhooks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
           {
             foreignKeyName: "webhooks_created_by_fkey"
             columns: ["created_by"]
@@ -24697,80 +23752,10 @@ export type Database = {
           trigger_type?: Database["public"]["Enums"]["trigger_type"]
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "workflows_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "workflows_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
-      active_chat_sessions: {
-        Row: {
-          agent_email: string | null
-          agent_name: string | null
-          assigned_agent_id: string | null
-          customer_email: string | null
-          customer_name: string | null
-          ended_at: string | null
-          id: string | null
-          last_message_at: string | null
-          message_count: number | null
-          metadata: Json | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["chat_status"] | null
-          ticket_id: string | null
-          visitor_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "chat_sessions_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       change_feed_view: {
         Row: {
           actor_avatar_url: string | null
@@ -24810,13 +23795,6 @@ export type Database = {
             foreignKeyName: "change_events_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "change_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -24826,13 +23804,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "change_events_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
           },
           {
             foreignKeyName: "change_events_reviewed_by_fkey"
@@ -24855,21 +23826,6 @@ export type Database = {
         }
         Relationships: []
       }
-      chat_analytics_by_agent: {
-        Row: {
-          active_sessions: number | null
-          agent_email: string | null
-          agent_id: string | null
-          agent_name: string | null
-          avg_messages_per_session: number | null
-          avg_satisfaction_rating: number | null
-          avg_session_duration_minutes: number | null
-          completed_sessions: number | null
-          total_messages_sent: number | null
-          total_sessions: number | null
-        }
-        Relationships: []
-      }
       chat_response_time_analytics: {
         Row: {
           agent_messages: number | null
@@ -24880,22 +23836,7 @@ export type Database = {
           session_id: string | null
           started_at: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "chat_sessions_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "chat_sessions_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       enterprise_verification_summary: {
         Row: {
@@ -24904,117 +23845,6 @@ export type Database = {
           passed: number | null
           total: number | null
           warnings: number | null
-        }
-        Relationships: []
-      }
-      my_accessible_tickets: {
-        Row: {
-          advisor_id: string | null
-          advisor_id_optional: string | null
-          agent_id: string | null
-          agent_name: string | null
-          app_version: string | null
-          assigned_group: string | null
-          assignee_email: string | null
-          assignee_id: string | null
-          assignee_name: string | null
-          attachments: string[] | null
-          browser: string | null
-          category: string | null
-          created_at: string | null
-          description: string | null
-          id: string | null
-          impact: string | null
-          last_message_at: string | null
-          member_id: string | null
-          member_id_optional: string | null
-          metadata: Json | null
-          origin: string | null
-          platform: string | null
-          priority: Database["public"]["Enums"]["ticket_priority"] | null
-          queue: string | null
-          related_urls: string[] | null
-          requester_email: string | null
-          requester_id: string | null
-          requester_name: string | null
-          response_count: number | null
-          satisfaction_comment: string | null
-          satisfaction_rating: number | null
-          service_id: string | null
-          sla_due_at: string | null
-          sla_minutes: number | null
-          status: Database["public"]["Enums"]["ticket_status"] | null
-          subcategory: string | null
-          subject: string | null
-          submitted_by_concierge: string | null
-          submitter_email: string | null
-          submitter_name: string | null
-          submitter_phone: string | null
-          type: Database["public"]["Enums"]["ticket_type"] | null
-          unread_count: number | null
-          updated_at: string | null
-          urgency: string | null
-          urls: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tickets_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_submitted_by_concierge_fkey"
-            columns: ["submitted_by_concierge"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_submitted_by_concierge_fkey"
-            columns: ["submitted_by_concierge"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sla_compliance_dashboard: {
-        Row: {
-          breached_count: number | null
-          compliance_rate: number | null
-          met_count: number | null
-          policy_name: string | null
-          total_tickets: number | null
         }
         Relationships: []
       }
@@ -25094,169 +23924,7 @@ export type Database = {
           ticket_priority?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "sla_metrics_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_assigned_agent_id_fkey"
-            columns: ["assigned_agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_first_response_by_fkey"
-            columns: ["first_response_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_first_response_by_fkey"
-            columns: ["first_response_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "my_accessible_tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "sla_metrics_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets_with_unread"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tickets_with_unread: {
-        Row: {
-          advisor_id: string | null
-          advisor_id_optional: string | null
-          agent_id: string | null
-          agent_name: string | null
-          app_version: string | null
-          assigned_group: string | null
-          assignee_id: string | null
-          attachments: string[] | null
-          browser: string | null
-          category: string | null
-          created_at: string | null
-          description: string | null
-          id: string | null
-          impact: string | null
-          last_message_at: string | null
-          last_read_at: string | null
-          member_id: string | null
-          member_id_optional: string | null
-          metadata: Json | null
-          origin: string | null
-          platform: string | null
-          priority: Database["public"]["Enums"]["ticket_priority"] | null
-          queue: string | null
-          related_urls: string[] | null
-          requester_id: string | null
-          response_count: number | null
-          satisfaction_comment: string | null
-          satisfaction_rating: number | null
-          service_id: string | null
-          sla_due_at: string | null
-          sla_minutes: number | null
-          status: Database["public"]["Enums"]["ticket_status"] | null
-          subcategory: string | null
-          subject: string | null
-          submitted_by_concierge: string | null
-          submitter_email: string | null
-          submitter_name: string | null
-          submitter_phone: string | null
-          type: Database["public"]["Enums"]["ticket_type"] | null
-          unread_count: number | null
-          updated_at: string | null
-          urgency: string | null
-          urls: string[] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tickets_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_requester_id_fkey"
-            columns: ["requester_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_service_id_fkey"
-            columns: ["service_id"]
-            isOneToOne: false
-            referencedRelation: "services"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tickets_submitted_by_concierge_fkey"
-            columns: ["submitted_by_concierge"]
-            isOneToOne: false
-            referencedRelation: "chat_analytics_by_agent"
-            referencedColumns: ["agent_id"]
-          },
-          {
-            foreignKeyName: "tickets_submitted_by_concierge_fkey"
-            columns: ["submitted_by_concierge"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       workflow_execution_stats: {
         Row: {
@@ -25271,6 +23939,10 @@ export type Database = {
       }
     }
     Functions: {
+      _parse_import_boolean: { Args: { bool_str: string }; Returns: boolean }
+      _parse_import_date: { Args: { date_str: string }; Returns: string }
+      _parse_import_datetime: { Args: { dt_str: string }; Returns: string }
+      _parse_import_number: { Args: { num_str: string }; Returns: number }
       accept_team_invitation: {
         Args: { p_full_name: string; p_token: string }
         Returns: string
@@ -25283,7 +23955,6 @@ export type Database = {
         Args: { p_days_to_keep?: number }
         Returns: number
       }
-      autoconfirm_user_email: { Args: { user_email: string }; Returns: Json }
       calculate_enrollment_commission: {
         Args: { p_commission_type?: string; p_enrollment_id: string }
         Returns: number
@@ -25320,6 +23991,15 @@ export type Database = {
       }
       can_access_organization: { Args: { p_org_id: string }; Returns: boolean }
       can_user_send_email: { Args: { p_profile_id: string }; Returns: boolean }
+      cancel_long_running_queries: {
+        Args: never
+        Returns: {
+          cancelled: boolean
+          duration: unknown
+          pid: number
+          query_text: string
+        }[]
+      }
       check_approval_required: {
         Args: {
           p_module_id: string
@@ -25426,13 +24106,45 @@ export type Database = {
         Args: { encrypted_token: string; secret: string }
         Returns: string
       }
+      deduplicate_contacts: {
+        Args: never
+        Returns: {
+          duplicates_found: number
+          name_phone_deleted: number
+          name_phone_duplicates_found: number
+          records_deleted: number
+          records_merged: number
+        }[]
+      }
+      drop_old_activity_log_partitions: {
+        Args: { retention_months?: number }
+        Returns: number
+      }
       encrypt_token: {
         Args: { secret: string; token: string }
         Returns: string
       }
+      ensure_activity_log_partitions: {
+        Args: { months_ahead?: number }
+        Returns: undefined
+      }
       find_ticket_by_number: {
         Args: { ticket_number_prefix: string }
         Returns: string
+      }
+      fix_wrong_org_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          notes_moved: number
+          records_moved: number
+        }[]
+      }
+      fix_wrong_org_records: {
+        Args: never
+        Returns: {
+          notes_moved: number
+          records_moved: number
+        }[]
       }
       generate_invitation_token: { Args: never; Returns: string }
       generate_invoice_number: { Args: { org_id: string }; Returns: string }
@@ -25442,6 +24154,10 @@ export type Database = {
       get_advisor_downline_count: {
         Args: { p_advisor_id: string }
         Returns: number
+      }
+      get_advisor_downline_ids: {
+        Args: { p_advisor_id: string }
+        Returns: string[]
       }
       get_advisor_upline: {
         Args: { p_advisor_id: string; p_max_levels?: number }
@@ -25656,6 +24372,10 @@ export type Database = {
         }[]
       }
       get_daily_log_entry_count: { Args: { log_id: string }; Returns: number }
+      get_dashboard_hero_stats: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: Json
+      }
       get_deal_stages: {
         Args: { p_org_id: string }
         Returns: {
@@ -25752,6 +24472,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_module_stats: { Args: { p_org_id: string }; Returns: Json }
       get_my_advisor_id: { Args: never; Returns: string }
       get_next_round_robin_agent: {
         Args: { p_rule_id: string }
@@ -26018,6 +24739,22 @@ export type Database = {
             Returns: boolean
           }
       health_check: { Args: never; Returns: Json }
+      import_notes_batch: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          errors: number
+          imported: number
+          skipped: number
+        }[]
+      }
+      import_notes_from_staging: {
+        Args: never
+        Returns: {
+          errors: number
+          imported: number
+          skipped: number
+        }[]
+      }
       increment_report_run_count: {
         Args: { p_report_id: string }
         Returns: undefined
@@ -26049,13 +24786,23 @@ export type Database = {
         Args: { p_email: string; p_org_id: string }
         Returns: boolean
       }
-      is_in_my_downline: {
-        Args: { target_advisor_id: string }
-        Returns: boolean
-      }
+      is_in_my_downline: { Args: { p_advisor_id: string }; Returns: boolean }
       is_session_valid: { Args: { p_session_token: string }; Returns: boolean }
       is_staff_or_admin: { Args: never; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
+      log_activity: {
+        Args: {
+          p_action: string
+          p_category: string
+          p_description?: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_ip_address?: string
+          p_metadata?: Json
+          p_user_agent?: string
+        }
+        Returns: string
+      }
       log_admin_activity: {
         Args: {
           p_action: string
@@ -26239,10 +24986,6 @@ export type Database = {
         Returns: Json
       }
       reset_daily_email_counts: { Args: never; Returns: undefined }
-      reset_user_password: {
-        Args: { new_password: string; user_email: string }
-        Returns: Json
-      }
       revoke_team_invitation: {
         Args: { p_invitation_id: string }
         Returns: boolean
@@ -26321,6 +25064,24 @@ export type Database = {
       update_team_member_role: {
         Args: { p_new_role: string; p_profile_id: string }
         Returns: boolean
+      }
+      upsert_contacts_batch: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          errors: number
+          inserted: number
+          skipped: number
+          updated: number
+        }[]
+      }
+      upsert_contacts_from_staging: {
+        Args: never
+        Returns: {
+          errors: number
+          inserted: number
+          skipped: number
+          updated: number
+        }[]
       }
       upsert_recent_view: {
         Args: {
@@ -26457,8 +25218,6 @@ export type Database = {
         | "caused_by"
         | "causes"
       ticket_origin: "member" | "advisor" | "staff" | "concierge"
-      ticket_priority: "low" | "medium" | "high" | "urgent"
-      ticket_status: "new" | "open" | "pending" | "resolved" | "closed"
       ticket_type: "incident" | "request" | "problem" | "change"
       time_entry_type:
         | "work"
@@ -26723,8 +25482,6 @@ export const Constants = {
         "causes",
       ],
       ticket_origin: ["member", "advisor", "staff", "concierge"],
-      ticket_priority: ["low", "medium", "high", "urgent"],
-      ticket_status: ["new", "open", "pending", "resolved", "closed"],
       ticket_type: ["incident", "request", "problem", "change"],
       time_entry_type: [
         "work",

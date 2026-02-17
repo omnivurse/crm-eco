@@ -123,7 +123,7 @@ export default function CloudStoragePage() {
         setProviders((prev) =>
           prev.map((p) => {
             const conn = connections.find(
-              (c) =>
+              (c: any) =>
                 (c.provider === 'google' && p.id === 'google_drive') ||
                 c.provider === p.id
             );

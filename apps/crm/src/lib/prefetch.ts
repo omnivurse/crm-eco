@@ -69,14 +69,14 @@ export async function prefetchRecordForDrawer(recordId: string) {
             .limit(5),
         ]);
 
-        const notes = (notesResult.data || []).map((n) => ({
+        const notes = (notesResult.data || []).map((n: any) => ({
           id: n.id,
           type: 'note' as const,
           timestamp: n.created_at,
           data: n,
         }));
 
-        const tasks = (tasksResult.data || []).map((t) => ({
+        const tasks = (tasksResult.data || []).map((t: any) => ({
           id: t.id,
           type: 'task' as const,
           timestamp: t.created_at,

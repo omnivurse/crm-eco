@@ -59,14 +59,14 @@ async function fetchMiniTimeline(recordId: string): Promise<TimelineEvent[]> {
       .limit(5),
   ]);
 
-  const notes: TimelineEvent[] = (notesResult.data || []).map((n) => ({
+  const notes: TimelineEvent[] = (notesResult.data || []).map((n: any) => ({
     id: n.id,
     type: 'note' as const,
     timestamp: n.created_at,
     data: n,
   }));
 
-  const tasks: TimelineEvent[] = (tasksResult.data || []).map((t) => ({
+  const tasks: TimelineEvent[] = (tasksResult.data || []).map((t: any) => ({
     id: t.id,
     type: 'task' as const,
     timestamp: t.created_at,

@@ -27,7 +27,7 @@ async function getAgent(id: string) {
   if (!profile) return null;
 
   const { data: agent } = await (supabase
-    .from('advisors')
+    .from('advisors') as any)
     .select(`
       *,
       parent_advisor:advisors!advisors_parent_advisor_id_fkey(id, first_name, last_name, email),
@@ -37,7 +37,7 @@ async function getAgent(id: string) {
     `)
     .eq('id', id)
     .eq('organization_id', profile.organization_id)
-    .single() as any);
+    .single();
 
   return { agent, organizationId: profile.organization_id };
 }

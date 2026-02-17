@@ -199,7 +199,7 @@ export default function CalendarPage() {
                     .eq('status', 'connected');
 
                 if (connections) {
-                    const calendars: ConnectedCalendar[] = connections.map(conn => ({
+                    const calendars: ConnectedCalendar[] = connections.map((conn: any) => ({
                         id: conn.id,
                         provider: conn.provider === 'google_calendar' ? 'google' : 'outlook' as CalendarProvider,
                         email: conn.external_account_email || '',
@@ -217,7 +217,7 @@ export default function CalendarPage() {
                         .neq('status', 'cancelled');
 
                     if (syncedEvents) {
-                        const calEvents: CalendarEvent[] = syncedEvents.map(e => ({
+                        const calEvents: CalendarEvent[] = syncedEvents.map((e: any) => ({
                             id: e.id,
                             title: e.title,
                             description: e.description,

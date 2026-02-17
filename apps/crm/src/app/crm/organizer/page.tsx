@@ -115,8 +115,8 @@ export default function OrganizerPage() {
                         .limit(5),
                 ]);
 
-                const leadsModule = modulesResult.data?.find(m => m.key === 'leads');
-                const dealsModule = modulesResult.data?.find(m => m.key === 'deals');
+                const leadsModule = modulesResult.data?.find((m: any) => m.key === 'leads');
+                const dealsModule = modulesResult.data?.find((m: any) => m.key === 'deals');
 
                 // Run secondary queries in parallel (depend on modules)
                 const [newLeadsResult, dealsAtRiskResult] = await Promise.all([

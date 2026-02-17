@@ -275,7 +275,7 @@ export async function getRecentAuthEvents(
 
     // Filter by organization (users belonging to the org)
     return (data || []).filter(
-        (event: { profiles?: { organization_id?: string } }) =>
+        (event: any) =>
             event.profiles?.organization_id === organizationId
     );
 }

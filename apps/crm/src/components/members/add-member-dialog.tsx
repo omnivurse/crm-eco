@@ -81,7 +81,7 @@ export function AddMemberDialog() {
     try {
       const supabase = createClient();
 
-      const insertData: MemberInsert = {
+      const insertData: Partial<MemberInsert> = {
         organization_id: authProfile.organization_id,
         first_name: formData.firstName,
         last_name: formData.lastName,

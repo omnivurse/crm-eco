@@ -252,7 +252,7 @@ export default function DocumentsPage() {
         return;
       }
 
-      const docs: Document[] = (data || []).map(file => ({
+      const docs: Document[] = (data || []).map((file: any) => ({
         id: file.id,
         name: file.name,
         size: file.metadata?.size || 0,

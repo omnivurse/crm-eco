@@ -160,7 +160,7 @@ export default function NewCampaignPage() {
 
       if (addresses && addresses.length > 0) {
         setSenderAddresses(addresses);
-        const defaultAddress = addresses.find(a => a.is_default) || addresses[0];
+        const defaultAddress = addresses.find((a: any) => a.is_default) || addresses[0];
         setFromEmail(defaultAddress.email);
         if (defaultAddress.name) setFromName(defaultAddress.name);
       }
