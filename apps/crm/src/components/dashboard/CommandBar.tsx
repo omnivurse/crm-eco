@@ -13,7 +13,7 @@ interface CommandBarProps {
 }
 
 /** Status severity derived from threshold logic */
-type Severity = 'healthy' | 'warning' | 'critical';
+type Severity = 'healthy' | 'warning' | 'critical' | 'neutral';
 
 function getSeverity(value: number, warnAt: number, critAt: number): Severity {
   if (value >= critAt) return 'critical';
@@ -25,12 +25,14 @@ const severityDot: Record<Severity, string> = {
   healthy: 'bg-emerald-400',
   warning: 'bg-amber-400',
   critical: 'bg-red-400',
+  neutral: 'bg-slate-400',
 };
 
 const severityText: Record<Severity, string> = {
   healthy: 'text-emerald-300',
   warning: 'text-amber-300',
   critical: 'text-red-300',
+  neutral: 'text-slate-300',
 };
 
 function StatusPill({
