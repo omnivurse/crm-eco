@@ -207,7 +207,7 @@ export default function UserEmailSettingsPage() {
 
   if (loading) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="container max-w-7xl py-8">
         <div className="flex items-center justify-center py-16">
           <Loader2 className="w-8 h-8 text-teal-500 animate-spin" />
         </div>
@@ -216,7 +216,7 @@ export default function UserEmailSettingsPage() {
   }
 
   return (
-    <div className="container max-w-4xl py-8 space-y-6">
+    <div className="container max-w-7xl py-8 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

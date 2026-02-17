@@ -81,7 +81,7 @@ const ACTIONS = [
 
 export default function TriggersPage() {
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-7xl mx-auto space-y-8">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         <Link href="/crm/learn" className="text-slate-500 hover:text-teal-600 transition-colors">

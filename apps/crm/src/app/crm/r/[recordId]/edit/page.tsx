@@ -205,7 +205,7 @@ export default function EditRecordPage({ params }: { params: { recordId: string 
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
       <div className="mb-6">
         <Link

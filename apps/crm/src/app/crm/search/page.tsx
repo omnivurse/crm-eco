@@ -183,7 +183,7 @@ export default function SearchPage({ searchParams }: PageProps) {
   const moduleFilter = searchParams.module;
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <Link
