@@ -55,9 +55,6 @@ async function RecordDetailContent({ params }: PageProps) {
     ...(record.status && !record.data?.contact_status && { contact_status: record.status }),
   };
 
-  // #region agent log
-  console.log('[DEBUG:notes]', JSON.stringify({recordId,moduleKey:module.key,title:record.title,notesCount:notes.length,hasNotesHistory:!!record.data?.notes_history,zohoRecordId:record.data?.zoho_record_id||'MISSING',dataKeyCount:Object.keys(record.data||{}).length,noteKeys:Object.keys(record.data||{}).filter(k=>k.toLowerCase().includes('note'))}));
-  // #endregion
 
   return (
     <RecordDetailShell
