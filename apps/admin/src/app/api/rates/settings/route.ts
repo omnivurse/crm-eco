@@ -25,7 +25,7 @@ export async function GET() {
       return NextResponse.json({ error: 'No profile' }, { status: 403 });
     }
 
-    const { data: setting } = await supabase
+    const { data: setting } = await (supabase as any)
       .from('system_settings')
       .select('setting_value, last_changed_at, last_changed_by')
       .eq('organization_id', profile.organization_id)
@@ -79,7 +79,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get current value for audit
-    const { data: currentSetting } = await supabase
+    const { data: currentSetting } = await (supabase as any)
       .from('system_settings')
       .select('setting_value')
       .eq('organization_id', profile.organization_id)
@@ -89,7 +89,7 @@ export async function PUT(request: NextRequest) {
     const oldValue = currentSetting?.setting_value || null;
 
     // Update setting
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await (supabase as any)
       .from('system_settings')
       .update({
         setting_value: newValue,
@@ -105,7 +105,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Write audit log
-    await supabase.from('unified_audit_logs').insert({
+    await (supabase as any).from('unified_audit_logs').insert({
       organization_id: profile.organization_id,
       actor_id: user.id,
       actor_email: user.email,

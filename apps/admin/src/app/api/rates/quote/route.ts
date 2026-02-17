@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     let effectiveOptions = options || {};
 
     if (profile && !effectiveOptions.rateSetOverride) {
-      const { data: setting } = await supabase
+      const { data: setting } = await (supabase as any)
         .from('system_settings')
         .select('setting_value')
         .eq('organization_id', profile.organization_id)
