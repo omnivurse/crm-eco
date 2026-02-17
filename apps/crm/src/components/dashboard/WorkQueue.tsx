@@ -84,7 +84,7 @@ export function WorkQueue({ items }: WorkQueueProps) {
           </div>
         </div>
         <Link
-          href="/crm/activities"
+          href="/crm/workqueue"
           className="text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center gap-1 transition-colors"
         >
           View All

@@ -1228,63 +1228,6 @@ export const getCachedAtRiskDeals = cache(
   async (orgId: string, limit: number = 5) => getAtRiskDeals(orgId, limit)
 );
 
-// ============================================================================
-// Pipeline / Lifecycle Counts
-// ============================================================================
-
-export interface PipelineCounts {
-  leads: number;
-  draft: number;
-  inProgress: number;
-  submitted: number;
-  active: number;
-}
-
-/**
- * Lightweight query to get member lifecycle funnel counts.
- * Queries leads, enrollments by status, and active members.
- */
-export async function getPipelineCounts(orgId: string): Promise<PipelineCounts> {
-  const supabase = await createCrmClient();
-
-  const [leadsResult, enrollmentsResult, activeResult] = await Promise.all([
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('leads')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('enrollments')
-      .select('id, status')
-      .eq('organization_id', orgId)
-      .in('status', ['draft', 'in_progress', 'submitted', 'approved']),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from('members')
-      .select('id', { count: 'exact', head: true })
-      .eq('organization_id', orgId)
-      .eq('status', 'active'),
-  ]);
-
-  const enrollments = (enrollmentsResult.data || []) as { id: string; status: string }[];
-
-  return {
-    leads: leadsResult.count ?? 0,
-    draft: enrollments.filter((e) => e.status === 'draft').length,
-    inProgress: enrollments.filter((e) => e.status === 'in_progress').length,
-    submitted: enrollments.filter((e) => e.status === 'submitted').length,
-    active: activeResult.count ?? 0,
-  };
-}
-
-/**
- * Per-request memoized version of getPipelineCounts.
- */
-export const getCachedPipelineCounts = cache(
-  async (orgId: string) => getPipelineCounts(orgId)
-);
-
 export interface ReportSummary {
   totalContacts: number;
   totalLeads: number;

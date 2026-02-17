@@ -10,11 +10,10 @@ export { WidgetRenderer } from './WidgetRenderer';
 export { SortableWidget } from './SortableWidget';
 export { ServerWidgetRenderer, preRenderWidgets } from './ServerWidgetRenderer';
 
-// Personal Command Bar + Work Queue + Lifecycle Funnel
+// Personal Command Bar + Work Queue
 export { CommandBar } from './CommandBar';
 export { WorkQueue } from './WorkQueue';
 export type { PersonalWorkItem } from './WorkQueue';
-export { MemberLifecycle } from './MemberLifecycle';
 
 // Enterprise Command Console components
 export { AlertsStrip } from './AlertsStrip';

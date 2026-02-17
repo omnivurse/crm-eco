@@ -31,11 +31,13 @@ function OperationalTile({ tile }: { tile: TileConfig }) {
   const Icon = tile.icon;
 
   return (
-    <div className={`rounded-lg bg-slate-900 border border-slate-800 border-l-4 ${tile.accent} p-4`}>
+    <div className={`relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 border-l-4 ${tile.accent} p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]`}>
       {/* Tile header */}
       <div className="flex items-center gap-2 mb-4">
-        <Icon className="w-4 h-4 text-slate-400" />
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="p-1.5 rounded-lg bg-slate-100">
+          <Icon className="w-4 h-4 text-slate-600" />
+        </div>
+        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
           {tile.title}
         </h3>
       </div>
@@ -47,7 +49,7 @@ function OperationalTile({ tile }: { tile: TileConfig }) {
             <span className="text-xs text-slate-500">{metric.label}</span>
             <span
               className={`text-lg font-bold tabular-nums ${
-                metric.highlight ? 'text-white' : 'text-slate-200'
+                metric.highlight ? 'text-slate-900' : 'text-slate-700'
               }`}
             >
               {metric.value}
