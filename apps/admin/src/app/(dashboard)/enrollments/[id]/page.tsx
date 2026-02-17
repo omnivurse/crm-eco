@@ -110,16 +110,17 @@ function formatCurrency(amount: number | null): string {
   }).format(amount);
 }
 
-export default async function EnrollmentDetailPage({ params }: { params: { id: string } }) {
-  const enrollment = await getEnrollment(params.id);
+export default async function EnrollmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const enrollment = await getEnrollment(id);
 
   if (!enrollment) {
     notFound();
   }
 
   const [steps, auditLog] = await Promise.all([
-    getEnrollmentSteps(params.id),
-    getEnrollmentAuditLog(params.id),
+    getEnrollmentSteps(id),
+    getEnrollmentAuditLog(id),
   ]);
 
   return (

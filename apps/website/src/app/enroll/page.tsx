@@ -11,10 +11,11 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  searchParams: { resume?: string; plan?: string };
+  searchParams: Promise<{ resume?: string; plan?: string }>;
 }
 
 export default async function EnrollPage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
   const supabase = await createServerSupabaseClient();
 
   // Get current user (may not be authenticated on public website)
@@ -57,11 +58,11 @@ export default async function EnrollPage({ searchParams }: PageProps) {
   let existingEnrollment = null;
   let enrollmentSteps: Array<{ step_key: string; status: string; data: unknown }> = [];
 
-  if (searchParams.resume) {
+  if (resolvedSearchParams.resume) {
     const { data: enrollment } = await (supabase as any)
       .from('enrollments')
       .select('*')
-      .eq('id', searchParams.resume)
+      .eq('id', resolvedSearchParams.resume)
       .single();
 
     if (enrollment) {
@@ -71,7 +72,7 @@ export default async function EnrollPage({ searchParams }: PageProps) {
         const { data: steps } = await (supabase as any)
           .from('enrollment_steps')
           .select('step_key, status, data')
-          .eq('enrollment_id', searchParams.resume);
+          .eq('enrollment_id', resolvedSearchParams.resume);
 
         enrollmentSteps = steps || [];
       }

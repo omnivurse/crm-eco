@@ -21,11 +21,11 @@ import { NotesOverviewCard } from './NotesOverviewCard';
 import { LegacyNotesCard } from './LegacyNotesCard';
 
 interface PageProps {
-  params: { recordId: string };
+  params: Promise<{ recordId: string }>;
 }
 
 async function RecordDetailContent({ params }: PageProps) {
-  const { recordId } = params;
+  const { recordId } = await params;
 
   const profile = await getCurrentProfile();
   if (!profile) return notFound();

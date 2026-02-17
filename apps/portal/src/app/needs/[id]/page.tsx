@@ -10,7 +10,8 @@ import {
   NeedTimelineCard,
 } from '../../../components/needs';
 
-export default async function NeedDetailPage({ params }: { params: { id: string } }) {
+export default async function NeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -35,7 +36,7 @@ export default async function NeedDetailPage({ params }: { params: { id: string 
   }
 
   const { member } = context;
-  const needId = params.id;
+  const needId = id;
 
   if (!member.organization_id) {
     redirect('/');

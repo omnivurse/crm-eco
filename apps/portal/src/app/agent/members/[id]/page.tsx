@@ -18,7 +18,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 async function getMemberDetails(supabase: any, memberId: string, agentId: string) {
@@ -71,6 +71,7 @@ async function getAgentInfo(supabase: any, userId: string) {
 }
 
 export default async function AgentMemberDetailPage({ params }: PageProps) {
+  const { id } = await params;
   const supabase = await createServerSupabaseClient();
   
   const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +80,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
   const agent = await getAgentInfo(supabase, user.id);
   if (!agent) redirect('/access-denied');
 
-  const member = await getMemberDetails(supabase, params.id, agent.id);
+  const member = await getMemberDetails(supabase, id, agent.id);
   if (!member) notFound();
 
   const calculateAge = (dob: string | null) => {

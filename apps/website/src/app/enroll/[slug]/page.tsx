@@ -24,17 +24,18 @@ interface LandingPageData {
 }
 
 interface PageProps {
-  params: { slug: string };
-  searchParams: { resume?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ resume?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
   const supabase = await createServerSupabaseClient();
 
   const { data: landingPage } = await (supabase as any)
     .from('landing_pages')
     .select('name, headline, subheadline')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('is_published', true)
     .single();
 
@@ -51,13 +52,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function AdvisorLandingPage({ params, searchParams }: PageProps) {
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
   const supabase = await createServerSupabaseClient();
 
   // Fetch the landing page by slug
   const { data: landingPage, error: lpError } = await (supabase as any)
     .from('landing_pages')
     .select('*')
-    .eq('slug', params.slug)
+    .eq('slug', slug)
     .eq('is_published', true)
     .single() as { data: LandingPageData | null; error: unknown };
 
@@ -136,11 +139,11 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
   let existingEnrollment = null;
   let enrollmentSteps: Array<{ step_key: string; status: string; data: unknown }> = [];
 
-  if (searchParams.resume) {
+  if (resolvedSearchParams.resume) {
     const { data: enrollment } = await (supabase as any)
       .from('enrollments')
       .select('*')
-      .eq('id', searchParams.resume)
+      .eq('id', resolvedSearchParams.resume)
       .single();
 
     if (enrollment) {
@@ -150,7 +153,7 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
         const { data: steps } = await (supabase as any)
           .from('enrollment_steps')
           .select('step_key, status, data')
-          .eq('enrollment_id', searchParams.resume);
+          .eq('enrollment_id', resolvedSearchParams.resume);
 
         enrollmentSteps = steps || [];
       }

@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { PublicEnrollmentPage } from './client';
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 interface LandingPage {
@@ -37,7 +37,7 @@ interface Plan {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = params;
+  const { slug } = await params;
   const supabase = await createServerSupabaseClient();
 
   const { data: landingPage } = await supabase
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EnrollmentLandingPage({ params }: PageProps) {
-  const { slug } = params;
+  const { slug } = await params;
   const supabase = await createServerSupabaseClient();
 
   // Get the landing page configuration

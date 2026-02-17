@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -47,8 +47,8 @@ const ITEM_TYPES = [
   { value: 'milestone', label: 'Milestone', icon: Flag },
 ];
 
-export default function EditPlaybookPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function EditPlaybookPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

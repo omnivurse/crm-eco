@@ -60,8 +60,8 @@ export type AuthEventType =
 /**
  * Get client IP address from request headers
  */
-function getClientIP(): string | null {
-    const headersList = headers();
+async function getClientIP(): Promise<string | null> {
+    const headersList = await headers();
     // Check various headers for client IP
     return (
         headersList.get('x-forwarded-for')?.split(',')[0]?.trim() ||
@@ -74,8 +74,8 @@ function getClientIP(): string | null {
 /**
  * Get user agent from request headers
  */
-function getUserAgent(): string | null {
-    const headersList = headers();
+async function getUserAgent(): Promise<string | null> {
+    const headersList = await headers();
     return headersList.get('user-agent');
 }
 
@@ -86,8 +86,8 @@ function getUserAgent(): string | null {
 export async function logPHIAccess(entry: PHIAccessLogEntry): Promise<void> {
     try {
         const supabase = await createServerSupabaseClient();
-        const ipAddress = getClientIP();
-        const userAgent = getUserAgent();
+        const ipAddress = await getClientIP();
+        const userAgent = await getUserAgent();
 
         await (supabase.from('phi_access_log') as any).insert({
             user_id: entry.userId,
@@ -113,8 +113,8 @@ export async function logPHIAccess(entry: PHIAccessLogEntry): Promise<void> {
 export async function logAuthEvent(entry: AuthEventEntry): Promise<void> {
     try {
         const supabase = await createServerSupabaseClient();
-        const ipAddress = getClientIP();
-        const userAgent = getUserAgent();
+        const ipAddress = await getClientIP();
+        const userAgent = await getUserAgent();
 
         await (supabase.from('auth_events') as any).insert({
             user_id: entry.userId,
@@ -179,8 +179,8 @@ export async function withPHILogging<T>(
             resource_id: resourceId,
             success: false,
             failure_reason: error.message,
-            ip_address: getClientIP(),
-            user_agent: getUserAgent(),
+            ip_address: await getClientIP(),
+            user_agent: await getUserAgent(),
         });
 
         throw error;

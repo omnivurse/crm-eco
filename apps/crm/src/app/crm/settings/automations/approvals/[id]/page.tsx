@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Button,
@@ -30,10 +30,6 @@ import {
   GripVertical,
 } from 'lucide-react';
 import type { ApprovalStep, ApprovalStepType } from '@/lib/approvals/types';
-
-interface PageProps {
-  params: { id: string };
-}
 
 interface Module {
   id: string;
@@ -68,8 +64,8 @@ const defaultProcess: ProcessData = {
   auto_approve_after_hours: null,
 };
 
-export default function ApprovalProcessEditorPage({ params }: PageProps) {
-  const { id } = params;
+export default function ApprovalProcessEditorPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const isNew = id === 'new';
 
