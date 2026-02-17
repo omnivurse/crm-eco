@@ -4,26 +4,37 @@ import { Users, Phone, Mail, ChevronRight, Search } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
+interface ContactRecord {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    phone: string | null;
+    status: string | null;
+    created_at: string;
+}
+
 async function getContacts(organizationId: string, advisorId: string) {
     const supabase = await createServerSupabaseClient();
 
     // Fetch leads assigned to this advisor
-    const { data: leads } = await supabase
+    // Use `as any` on client to avoid TS2589 deep type instantiation from Supabase generics
+    const { data: leads } = await (supabase as any)
         .from('leads')
         .select('id, first_name, last_name, email, phone, status, created_at')
         .eq('organization_id', organizationId)
         .eq('owner_advisor_id', advisorId)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(50) as { data: ContactRecord[] | null };
 
     // Fetch members assigned to this advisor
-    const { data: members } = await supabase
+    const { data: members } = await (supabase as any)
         .from('members')
         .select('id, first_name, last_name, email, phone, status, created_at')
         .eq('organization_id', organizationId)
         .eq('advisor_id', advisorId)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(50) as { data: ContactRecord[] | null };
 
     return {
         leads: leads || [],

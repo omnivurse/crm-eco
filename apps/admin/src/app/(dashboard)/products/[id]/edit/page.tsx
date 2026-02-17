@@ -31,8 +31,9 @@ async function getProduct(id: string) {
   return product;
 }
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
-  const product = await getProduct(params.id);
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const product = await getProduct(id);
 
   if (!product) {
     notFound();
@@ -42,7 +43,7 @@ export default async function EditProductPage({ params }: { params: { id: string
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href={`/products/${params.id}`}>
+        <Link href={`/products/${id}`}>
           <button className="p-2 rounded-lg hover:bg-slate-100">
             <ArrowLeft className="h-5 w-5" />
           </button>

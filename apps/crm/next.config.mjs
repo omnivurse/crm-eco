@@ -1,11 +1,17 @@
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared'],
+
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
     },
-    // Enable optimized package imports for better tree-shaking
     optimizePackageImports: [
       'lucide-react',
       '@dnd-kit/core',
@@ -16,11 +22,11 @@ const nextConfig = {
       '@tanstack/react-virtual',
     ],
   },
+
   // Image optimization
   images: {
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24, // 24 hours
-    // Allow external images from common sources
     remotePatterns: [
       {
         protocol: 'https',
@@ -44,17 +50,18 @@ const nextConfig = {
       },
     ],
   },
+
   // Compiler optimizations
   compiler: {
-    // Remove console.log in production
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
-  // Temporarily skip type checking during build — Supabase SDK v2.81+ has stricter
-  // type inference that surfaces pre-existing column/type mismatches in queries.
+
+  // Temporarily skip type checking during build
   // TODO: Regenerate DB types and fix all type errors, then remove this flag.
   typescript: {
     ignoreBuildErrors: true,
   },
+
   // Headers for static asset caching
   async headers() {
     return [
@@ -71,8 +78,4 @@ const nextConfig = {
   },
 };
 
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-});
-
-module.exports = withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(nextConfig);

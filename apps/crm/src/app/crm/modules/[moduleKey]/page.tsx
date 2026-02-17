@@ -15,8 +15,8 @@ import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter } from '@/lib/crm/types';
 
 interface PageProps {
-  params: { moduleKey: string };
-  searchParams: {
+  params: Promise<{ moduleKey: string }>;
+  searchParams: Promise<{
     view?: string;
     page?: string;
     search?: string;
@@ -24,12 +24,12 @@ interface PageProps {
     sortField?: string;
     sortDirection?: 'asc' | 'desc';
     filters?: string;
-  };
+  }>;
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
-  const { moduleKey } = params;
-  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam } = searchParams;
+  const { moduleKey } = await params;
+  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam } = await searchParams;
   
   const profile = await getCurrentProfile();
   if (!profile) return notFound();

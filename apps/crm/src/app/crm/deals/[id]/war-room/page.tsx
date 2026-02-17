@@ -18,6 +18,7 @@ import {
   Flag,
   X,
 } from 'lucide-react';
+import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 // ============================================================================
@@ -53,12 +54,8 @@ interface NextAction {
 // Main Component
 // ============================================================================
 
-export default function DealWarRoomPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const { id } = params;
+export default function DealWarRoomPage() {
+  const { id } = useParams<{ id: string }>();
   const [newNote, setNewNote] = useState('');
   const [showAddAction, setShowAddAction] = useState(false);
   const [showAddBlocker, setShowAddBlocker] = useState(false);

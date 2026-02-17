@@ -3,11 +3,12 @@ import { ShieldX, ArrowLeft, Mail } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 
 interface PageProps {
-  searchParams: { reason?: string };
+  searchParams: Promise<{ reason?: string }>;
 }
 
-export default function AccessDeniedPage({ searchParams }: PageProps) {
-  const reason = searchParams.reason;
+export default async function AccessDeniedPage({ searchParams }: PageProps) {
+  const resolvedSearchParams = await searchParams;
+  const reason = resolvedSearchParams.reason;
 
   const getReasonMessage = () => {
     switch (reason) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Card,
@@ -31,12 +31,8 @@ import {
 } from 'lucide-react';
 import type { ApprovalDetailData, CrmApprovalAction, ApprovalStatus, ApprovalStep } from '@/lib/approvals/types';
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default function ApprovalDetailPage({ params }: PageProps) {
-  const { id } = params;
+export default function ApprovalDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   
   const [approval, setApproval] = useState<ApprovalDetailData | null>(null);

@@ -3,11 +3,11 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { EmailTemplateForm } from '@/components/communications/EmailTemplateForm';
 
 interface PageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function EditTemplatePage({ params }: PageProps) {
-  const { id } = params;
+  const { id } = await params;
   const supabase = await createServerSupabaseClient();
 
   const { data: template, error } = await (supabase as any)
