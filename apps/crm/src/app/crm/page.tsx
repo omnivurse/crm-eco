@@ -3,7 +3,6 @@ import {
   getCurrentProfile,
   getCachedDashboardHeroStats,
   getCachedAtRiskDeals,
-  getCachedPipelineCounts,
   getCachedModuleStats,
   getCachedCommandConsoleStats,
   getMyTasks,
@@ -21,7 +20,6 @@ import {
   CommandBar,
   DashboardStats,
   WorkQueue,
-  MemberLifecycle,
   AlertsStrip,
   OperationalTiles,
   EnrollmentFunnel,
@@ -144,15 +142,14 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, pipeline, console stats, widget data
-  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, pipelineResult, consoleStatsResult, widgetDataResult] =
+  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, console stats, widget data
+  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, consoleStatsResult, widgetDataResult] =
     await Promise.allSettled([
       getCachedDashboardHeroStats(profile.organization_id, profile.id),
       getOrganization(profile.organization_id),
       getCachedModuleStats(profile.organization_id),
       getMyTasks(profile.id, false, 50),
       getCachedAtRiskDeals(profile.organization_id, 5),
-      getCachedPipelineCounts(profile.organization_id),
       getCachedCommandConsoleStats(profile.organization_id, profile.id),
       fetchWidgetData(profile, widgetTypes),
     ]);
@@ -179,10 +176,6 @@ async function DashboardContent() {
     : [];
 
   const personalItems = buildPersonalWorkItems(overdueTasks, atRiskDeals);
-
-  const pipelineCounts = pipelineResult.status === 'fulfilled'
-    ? pipelineResult.value
-    : { leads: 0, draft: 0, inProgress: 0, submitted: 0, active: 0 };
 
   const consoleStats = consoleStatsResult.status === 'fulfilled'
     ? consoleStatsResult.value
@@ -214,9 +207,6 @@ async function DashboardContent() {
         <DashboardStats stats={moduleStats} />
 
         {/* Member Lifecycle Funnel */}
-        <MemberLifecycle counts={pipelineCounts} />
-
-        {/* Enrollment Funnel (from console stats) */}
         {consoleStats && <EnrollmentFunnel stats={consoleStats} />}
 
         {/* Personal Work Queue */}

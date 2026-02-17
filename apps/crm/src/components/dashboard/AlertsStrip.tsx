@@ -15,22 +15,22 @@ interface AlertItem {
 
 const severityStyles: Record<AlertSeverity, { bg: string; border: string; text: string; icon: string }> = {
   critical: {
-    bg: 'bg-red-950/50',
-    border: 'border-red-800/50',
-    text: 'text-red-300',
-    icon: 'text-red-400',
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    text: 'text-red-700',
+    icon: 'text-red-500',
   },
   warning: {
-    bg: 'bg-amber-950/50',
-    border: 'border-amber-800/50',
-    text: 'text-amber-300',
-    icon: 'text-amber-400',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    text: 'text-amber-700',
+    icon: 'text-amber-500',
   },
   info: {
-    bg: 'bg-blue-950/50',
-    border: 'border-blue-800/50',
-    text: 'text-blue-300',
-    icon: 'text-blue-400',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    text: 'text-blue-700',
+    icon: 'text-blue-500',
   },
 };
 
@@ -124,7 +124,7 @@ export function AlertsStrip({ stats }: AlertsStripProps) {
   if (alerts.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-700">
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-slate-300">
       {alerts.map((alert) => {
         const styles = severityStyles[alert.severity];
         const Icon = alert.icon;

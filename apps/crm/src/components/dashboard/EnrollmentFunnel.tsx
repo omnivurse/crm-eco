@@ -66,7 +66,7 @@ export function EnrollmentFunnel({ stats }: EnrollmentFunnelProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          Enrollment Pipeline
+          Member Lifecycle
         </h3>
         <span className="text-xs text-slate-500 dark:text-slate-400">
           {totalCount.toLocaleString()} total
