@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import type { CrmTask, Note as CanonicalNote } from '@crm-eco/lib/types';
 
 interface QuickStat {
     label: string;
@@ -33,20 +34,9 @@ interface QuickStat {
     href: string;
 }
 
-interface Task {
-    id: string;
-    title: string;
-    status: string;
-    priority: string;
-    due_at: string | null;
-}
+type Task = Pick<CrmTask, 'id' | 'title' | 'status' | 'priority' | 'due_at'>;
 
-interface Note {
-    id: string;
-    title: string;
-    content: string;
-    created_at: string;
-}
+type Note = Pick<CanonicalNote, 'id' | 'title' | 'content' | 'created_at'>;
 
 export default function OrganizerPage() {
     const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();

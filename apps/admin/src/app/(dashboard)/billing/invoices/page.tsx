@@ -37,30 +37,28 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Invoice {
+/** Invoice row with optional joined contact for the billing view */
+interface BillingInvoiceView {
   id: string;
   invoice_number: string;
-  member_id: string;
-  enrollment_id?: string;
-  period_start: string;
-  period_end: string;
-  due_date: string;
-  subtotal: number;
-  processing_fee: number;
-  adjustments: number;
-  total: number;
-  amount_paid: number;
-  status: string;
-  sent_at?: string;
-  paid_at?: string;
-  pdf_url?: string;
-  notes?: string;
-  created_at: string;
-  member?: {
-    first_name: string;
-    last_name: string;
-    email: string;
-  };
+  contact_id: string | null;
+  due_date: string | null;
+  subtotal: number | null;
+  discount_value: number | null;
+  tax_amount: number | null;
+  total: number | null;
+  amount_paid: number | null;
+  balance_due: number | null;
+  status: string | null;
+  sent_at: string | null;
+  paid_at: string | null;
+  notes: string | null;
+  created_at: string | null;
+  contact?: {
+    id: string;
+    title: string | null;
+    email: string | null;
+  } | null;
 }
 
 function getStatusBadgeColor(status: string) {
@@ -83,16 +81,11 @@ function getStatusBadgeColor(status: string) {
   }
 }
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
+import type { Member } from '@crm-eco/lib/types';
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [invoices, setInvoices] = useState<BillingInvoiceView[]>([]);
+  const [members, setMembers] = useState<Pick<Member, 'id' | 'first_name' | 'last_name' | 'email'>[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all');
@@ -130,7 +123,7 @@ export default function InvoicesPage() {
         .eq('organization_id', profile.organization_id)
         .order('last_name');
 
-      setMembers((data || []) as Member[]);
+      setMembers((data || []) as Pick<Member, 'id' | 'first_name' | 'last_name' | 'email'>[]);
     } catch (error) {
       console.error('Error loading members:', error);
     }
@@ -160,16 +153,15 @@ export default function InvoicesPage() {
 
       const { error } = await (supabase.from('invoices') as any).insert({
         organization_id: profile.organization_id,
-        member_id: newInvoice.memberId,
+        contact_id: newInvoice.memberId,
         invoice_number: invoiceNumber,
-        period_start: new Date().toISOString(),
-        period_end: new Date().toISOString(),
         due_date: newInvoice.dueDate,
         subtotal: parseFloat(newInvoice.amount),
-        processing_fee: 0,
-        adjustments: 0,
+        discount_value: 0,
+        tax_amount: 0,
         total: parseFloat(newInvoice.amount),
         amount_paid: 0,
+        balance_due: parseFloat(newInvoice.amount),
         status: 'draft',
         notes: newInvoice.notes || null,
       });
@@ -211,8 +203,10 @@ export default function InvoicesPage() {
 
       let query = (supabase.from('invoices') as any)
         .select(`
-          *,
-          member:members(first_name, last_name, email)
+          id, invoice_number, contact_id, due_date, subtotal, discount_value,
+          tax_amount, total, amount_paid, balance_due, status, sent_at, paid_at,
+          notes, created_at,
+          contact:crm_records!contact_id(id, title, email)
         `)
         .eq('organization_id', profile.organization_id)
         .order('created_at', { ascending: false });
@@ -227,7 +221,7 @@ export default function InvoicesPage() {
         console.error('Error loading invoices:', error);
         toast.error('Failed to load invoices');
       } else {
-        setInvoices((data || []) as unknown as Invoice[]);
+        setInvoices((data || []) as unknown as BillingInvoiceView[]);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -236,7 +230,7 @@ export default function InvoicesPage() {
     }
   }
 
-  async function sendInvoice(invoice: Invoice) {
+  async function sendInvoice(invoice: BillingInvoiceView) {
     setProcessingId(invoice.id);
     try {
       // Update invoice status to sent
@@ -250,7 +244,7 @@ export default function InvoicesPage() {
       if (error) {
         toast.error('Failed to send invoice');
       } else {
-        toast.success(`Invoice ${invoice.invoice_number} sent to ${invoice.member?.email}`);
+        toast.success(`Invoice ${invoice.invoice_number} sent to ${invoice.contact?.email || 'recipient'}`);
         await loadInvoices();
       }
     } catch (error) {
@@ -260,7 +254,7 @@ export default function InvoicesPage() {
     }
   }
 
-  async function markAsPaid(invoice: Invoice) {
+  async function markAsPaid(invoice: BillingInvoiceView) {
     setProcessingId(invoice.id);
     try {
       const { error } = await (supabase.from('invoices') as any)
@@ -476,36 +470,34 @@ export default function InvoicesPage() {
                         </div>
                       </td>
                       <td className="py-3 text-sm">
-                        {invoice.member ? (
-                          <Link
-                            href={`/members/${invoice.member_id}`}
-                            className="text-blue-600 hover:underline"
-                          >
-                            {invoice.member.first_name} {invoice.member.last_name}
-                          </Link>
+                        {invoice.contact ? (
+                          <span className="text-blue-600">
+                            {invoice.contact.title || 'Unknown'}
+                          </span>
                         ) : (
                           <span className="text-slate-400">Unknown</span>
                         )}
                       </td>
                       <td className="py-3 text-sm text-slate-600">
-                        {format(new Date(invoice.period_start), 'MMM d')} -{' '}
-                        {format(new Date(invoice.period_end), 'MMM d, yyyy')}
+                        {invoice.created_at
+                          ? format(new Date(invoice.created_at), 'MMM d, yyyy')
+                          : '—'}
                       </td>
                       <td className="py-3 text-sm">
                         <span className={invoice.status === 'overdue' ? 'text-red-600 font-medium' : ''}>
-                          {format(new Date(invoice.due_date), 'MMM d, yyyy')}
+                          {invoice.due_date ? format(new Date(invoice.due_date), 'MMM d, yyyy') : '—'}
                         </span>
                       </td>
                       <td className="py-3 text-sm">
-                        <p className="font-semibold">${invoice.total.toFixed(2)}</p>
-                        {invoice.amount_paid > 0 && invoice.amount_paid < invoice.total && (
+                        <p className="font-semibold">${(invoice.total ?? 0).toFixed(2)}</p>
+                        {(invoice.amount_paid ?? 0) > 0 && (invoice.amount_paid ?? 0) < (invoice.total ?? 0) && (
                           <p className="text-xs text-slate-500">
-                            Paid: ${invoice.amount_paid.toFixed(2)}
+                            Paid: ${(invoice.amount_paid ?? 0).toFixed(2)}
                           </p>
                         )}
                       </td>
                       <td className="py-3 text-sm">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(invoice.status)}`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeColor(invoice.status ?? '')}`}>
                           {invoice.status}
                         </span>
                       </td>

@@ -13,21 +13,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { MembersSummaryCards, type MemberStats } from './MembersSummaryCards';
+import type { Member as CanonicalMember, Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  status: string;
-  state: string | null;
-  plan_name: string | null;
-  effective_date: string | null;
-  termination_date: string | null;
-  created_at: string;
-  advisor: { id: string; first_name: string; last_name: string } | null;
-}
+type Member = Pick<CanonicalMember, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'state' | 'plan_name' | 'effective_date' | 'termination_date' | 'created_at'> & {
+  advisor: Pick<CanonicalAdvisor, 'id' | 'first_name' | 'last_name'> | null;
+};
 
 function getStatusBadgeVariant(
   status: string
@@ -102,7 +92,7 @@ function MemberCard({ member }: { member: Member }) {
 
       <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
         <span>{member.plan_name || 'No plan'}</span>
-        <span>{formatDate(member.created_at)}</span>
+        <span>{member.created_at ? formatDate(member.created_at) : '—'}</span>
       </div>
     </Link>
   );
@@ -150,7 +140,7 @@ function MemberTableRow({ member }: { member: Member }) {
         </Badge>
       </td>
       <td className="py-3 text-sm text-slate-500 dark:text-slate-400">
-        {formatDate(member.created_at)}
+        {member.created_at ? formatDate(member.created_at) : '—'}
       </td>
     </tr>
   );

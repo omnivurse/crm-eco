@@ -25,15 +25,16 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 
-interface Enrollment {
+/** Local view type for the enrollment list query (joins included) */
+interface EnrollmentView {
   id: string;
   status: string;
   plan_type: string | null;
-  monthly_cost: number | null;
-  start_date: string | null;
+  base_monthly_cost: number | null;
+  effective_date: string | null;
   enrollment_date: string | null;
-  created_at: string;
-  members: {
+  created_at: string | null;
+  primary_member: {
     id: string;
     first_name: string;
     last_name: string;
@@ -45,8 +46,8 @@ interface Enrollment {
 }
 
 export default function AgentEnrollmentsPage() {
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [filteredEnrollments, setFilteredEnrollments] = useState<Enrollment[]>([]);
+  const [enrollments, setEnrollments] = useState<EnrollmentView[]>([]);
+  const [filteredEnrollments, setFilteredEnrollments] = useState<EnrollmentView[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -93,17 +94,17 @@ export default function AgentEnrollmentsPage() {
         id,
         status,
         plan_type,
-        monthly_cost,
-        start_date,
+        base_monthly_cost,
+        effective_date,
         enrollment_date,
         created_at,
-        members (
+        primary_member:members!primary_member_id (
           id,
           first_name,
           last_name,
           email
         ),
-        plans (
+        plans:selected_plan_id (
           name
         )
       `)
@@ -112,7 +113,7 @@ export default function AgentEnrollmentsPage() {
       .order('created_at', { ascending: false });
 
     if (!error && data) {
-      setEnrollments(data as unknown as Enrollment[]);
+      setEnrollments(data as unknown as EnrollmentView[]);
     }
     setLoading(false);
   };
@@ -123,9 +124,9 @@ export default function AgentEnrollmentsPage() {
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(e =>
-        e.members?.first_name.toLowerCase().includes(search) ||
-        e.members?.last_name.toLowerCase().includes(search) ||
-        e.members?.email?.toLowerCase().includes(search) ||
+        e.primary_member?.first_name.toLowerCase().includes(search) ||
+        e.primary_member?.last_name.toLowerCase().includes(search) ||
+        e.primary_member?.email?.toLowerCase().includes(search) ||
         e.plans?.name.toLowerCase().includes(search)
       );
     }
@@ -171,7 +172,7 @@ export default function AgentEnrollmentsPage() {
     pending: enrollments.filter(e => e.status?.toLowerCase() === 'pending').length,
     monthlyRevenue: enrollments
       .filter(e => e.status?.toLowerCase() === 'active')
-      .reduce((sum, e) => sum + (e.monthly_cost || 0), 0),
+      .reduce((sum, e) => sum + (e.base_monthly_cost || 0), 0),
   };
 
   if (loading) {
@@ -302,17 +303,17 @@ export default function AgentEnrollmentsPage() {
                         <td className="py-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium">
-                              {enrollment.members?.first_name?.charAt(0) || '?'}
-                              {enrollment.members?.last_name?.charAt(0) || ''}
+                              {enrollment.primary_member?.first_name?.charAt(0) || '?'}
+                              {enrollment.primary_member?.last_name?.charAt(0) || ''}
                             </div>
                             <div>
                               <Link 
-                                href={`/agent/members/${enrollment.members?.id}`}
+                                href={`/agent/members/${enrollment.primary_member?.id}`}
                                 className="font-medium text-slate-900 hover:text-blue-600"
                               >
-                                {enrollment.members?.first_name} {enrollment.members?.last_name}
+                                {enrollment.primary_member?.first_name} {enrollment.primary_member?.last_name}
                               </Link>
-                              <p className="text-sm text-slate-500">{enrollment.members?.email || '-'}</p>
+                              <p className="text-sm text-slate-500">{enrollment.primary_member?.email || '-'}</p>
                             </div>
                           </div>
                         </td>
@@ -323,16 +324,16 @@ export default function AgentEnrollmentsPage() {
                           {enrollment.plan_type || '-'}
                         </td>
                         <td className="py-4 font-medium text-slate-900">
-                          {enrollment.monthly_cost 
-                            ? `$${enrollment.monthly_cost.toFixed(2)}`
+                          {enrollment.base_monthly_cost 
+                            ? `$${enrollment.base_monthly_cost.toFixed(2)}`
                             : '-'}
                         </td>
                         <td className="py-4">
                           {getStatusBadge(enrollment.status)}
                         </td>
                         <td className="py-4 text-sm text-slate-600">
-                          {enrollment.start_date
-                            ? new Date(enrollment.start_date).toLocaleDateString()
+                          {enrollment.effective_date
+                            ? new Date(enrollment.effective_date).toLocaleDateString()
                             : '-'}
                         </td>
                         <td className="py-4">

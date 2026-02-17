@@ -19,21 +19,15 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 
-interface Profile {
-    id: string;
-    full_name: string | null;
-    email: string | null;
-    avatar_url: string | null;
-    advisor_role: string | null;
-    advisors?: {
-        first_name: string;
-        last_name: string;
-        agency_name: string | null;
-    } | null;
-}
+import type { Profile as ProfileRow, Advisor } from '@crm-eco/lib/types';
+
+/** Profile with joined advisor relation */
+type ProfileWithAdvisor = Pick<ProfileRow, 'id' | 'full_name' | 'email' | 'avatar_url' | 'advisor_role'> & {
+    advisors?: Pick<Advisor, 'first_name' | 'last_name' | 'agency_name'> | null;
+};
 
 interface PortalShellProps {
-    profile: Profile;
+    profile: ProfileWithAdvisor;
     children: React.ReactNode;
 }
 

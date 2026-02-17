@@ -1,107 +1,134 @@
+/**
+ * Canonical Type Definitions — Single Source of Truth
+ *
+ * ALL row / insert / update types are derived from the Supabase-generated
+ * Database type in ./database.ts.  Never hand-write an interface that
+ * duplicates a table row.  If you need a subset, use  Pick<Member, 'id' | 'first_name'>
+ * If you need a join shape, intersect:  Member & { advisor: Pick<Advisor, 'id' | 'first_name'> }
+ */
+
 export type { Database, Json } from './database';
 import type { Database } from './database';
 
-// Helper type to extract Row types from Database tables
+// ─────────────────────────────────────────────────────────────
+// Generic helpers — use these in app code for any table
+// ─────────────────────────────────────────────────────────────
 type Tables = Database['public']['Tables'];
 
-// Core Table Row Types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Organization = any;
-export type Profile = Tables['profiles']['Row'];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Advisor = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Member = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Lead = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Activity = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Ticket = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type TicketComment = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Need = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type NeedEvent = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CustomFieldDefinition = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type FieldMapping = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ImportJob = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ImportJobRow = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ImportSnapshot = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Plan = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Membership = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Enrollment = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EnrollmentStep = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EnrollmentAuditLog = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CommissionTier = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CommissionTransaction = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CommissionPayout = any;
+/** Extract the Row (SELECT) type for a given table */
+export type TableRow<T extends keyof Tables> = Tables[T]['Row'];
 
-// Helper Types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ImportJobWithRows = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ImportJobRowWithValues = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type MembershipWithPlan = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type EnrollmentWithDetails = any;
+/** Extract the Insert type for a given table */
+export type TableInsert<T extends keyof Tables> = Tables[T]['Insert'];
 
-// Commission Types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CommissionTransactionWithAdvisor = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type CommissionPayoutWithAdvisor = any;
+/** Extract the Update type for a given table */
+export type TableUpdate<T extends keyof Tables> = Tables[T]['Update'];
 
+// ─────────────────────────────────────────────────────────────
+// Core Row Types
+// ─────────────────────────────────────────────────────────────
+export type Organization = TableRow<'organizations'>;
+export type Profile = TableRow<'profiles'>;
+export type Advisor = TableRow<'advisors'>;
+export type Member = TableRow<'members'>;
+export type Lead = TableRow<'leads'>;
+export type Activity = TableRow<'activities'>;
+export type Ticket = TableRow<'tickets'>;
+export type TicketComment = TableRow<'ticket_comments'>;
+export type Need = TableRow<'needs'>;
+export type NeedEvent = TableRow<'need_events'>;
+export type CustomFieldDefinition = TableRow<'custom_field_definitions'>;
+export type FieldMapping = TableRow<'field_mappings'>;
+export type ImportJob = TableRow<'import_jobs'>;
+export type ImportJobRow = TableRow<'import_job_rows'>;
+export type ImportSnapshot = TableRow<'import_snapshots'>;
+export type Plan = TableRow<'plans'>;
+export type Membership = TableRow<'memberships'>;
+export type Enrollment = TableRow<'enrollments'>;
+export type EnrollmentStep = TableRow<'enrollment_steps'>;
+export type EnrollmentAuditLog = TableRow<'enrollment_audit_log'>;
+export type CommissionTier = TableRow<'commission_tiers'>;
+export type CommissionTransaction = TableRow<'commission_transactions'>;
+export type CommissionPayout = TableRow<'commission_payouts'>;
+export type Note = TableRow<'notes'>;
+export type Invoice = TableRow<'invoices'>;
+export type EmailCampaign = TableRow<'email_campaigns'>;
+export type CrmRecord = TableRow<'crm_records'>;
+export type CrmModule = TableRow<'crm_modules'>;
+export type CrmField = TableRow<'crm_fields'>;
+export type CrmTask = TableRow<'crm_tasks'>;
+
+// ─────────────────────────────────────────────────────────────
+// Insert Types
+// ─────────────────────────────────────────────────────────────
+export type MemberInsert = TableInsert<'members'>;
+export type AdvisorInsert = TableInsert<'advisors'>;
+export type EnrollmentInsert = TableInsert<'enrollments'>;
+export type TicketInsert = TableInsert<'tickets'>;
+export type NeedInsert = TableInsert<'needs'>;
+export type NoteInsert = TableInsert<'notes'>;
+export type InvoiceInsert = TableInsert<'invoices'>;
+export type CrmRecordInsert = TableInsert<'crm_records'>;
+export type CrmTaskInsert = TableInsert<'crm_tasks'>;
+
+// ─────────────────────────────────────────────────────────────
+// Update Types
+// ─────────────────────────────────────────────────────────────
+export type MemberUpdate = TableUpdate<'members'>;
+export type AdvisorUpdate = TableUpdate<'advisors'>;
+export type EnrollmentUpdate = TableUpdate<'enrollments'>;
+export type TicketUpdate = TableUpdate<'tickets'>;
+export type NeedUpdate = TableUpdate<'needs'>;
+export type NoteUpdate = TableUpdate<'notes'>;
+export type InvoiceUpdate = TableUpdate<'invoices'>;
+
+// ─────────────────────────────────────────────────────────────
 // Vendor Types
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type Vendor = any;
+// ─────────────────────────────────────────────────────────────
+export type Vendor = TableRow<'vendors'>;
+export type VendorFile = TableRow<'vendor_files'>;
+export type VendorFileRow = TableRow<'vendor_file_rows'>;
+export type VendorChange = TableRow<'vendor_changes'>;
+export type VendorConnector = TableRow<'vendor_connectors'>;
+export type VendorFileRowInsert = TableInsert<'vendor_file_rows'>;
+export type VendorChangeInsert = TableInsert<'vendor_changes'>;
+export type VendorConnectorInsert = TableInsert<'vendor_connectors'>;
+
+// Vendor status/enum types — kept as string aliases for flexibility
+export type VendorFileStatus = string;
+export type VendorFileType = string;
+export type VendorFileRowStatus = string;
+export type VendorChangeStatus = string;
+export type VendorConnectorType = string;
+export type VendorConnectorStatus = string;
+
+// Legacy aliases — no matching DB table; kept as any for back-compat.
+// TODO: Remove these once all usages are migrated.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type VendorUser = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type VendorProduct = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorFile = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorFileStatus = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorFileType = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorFileRow = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorFileRowInsert = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorFileRowStatus = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorChange = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorChangeInsert = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorChangeStatus = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorConnector = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorConnectorInsert = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorConnectorType = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type VendorConnectorStatus = any;
 
-// Status types (from enums or string literals)
+// ─────────────────────────────────────────────────────────────
+// Composite / Join Types — for common query shapes
+// ─────────────────────────────────────────────────────────────
+export type ImportJobWithRows = ImportJob & { rows?: ImportJobRow[] };
+export type ImportJobRowWithValues = ImportJobRow;
+export type MembershipWithPlan = Membership & { plans?: Pick<Plan, 'id' | 'name'> | null };
+export type EnrollmentWithDetails = Enrollment & {
+  primary_member?: Pick<Member, 'id' | 'first_name' | 'last_name' | 'email'> | null;
+  plans?: Pick<Plan, 'id' | 'name'> | null;
+};
+export type CommissionTransactionWithAdvisor = CommissionTransaction & {
+  advisors?: Pick<Advisor, 'id' | 'first_name' | 'last_name'> | null;
+};
+export type CommissionPayoutWithAdvisor = CommissionPayout & {
+  advisors?: Pick<Advisor, 'id' | 'first_name' | 'last_name'> | null;
+};
+
+// ─────────────────────────────────────────────────────────────
+// Status / Enum Types (from string literals)
+// ─────────────────────────────────────────────────────────────
 export type ImportJobStatus = string;
 export type ImportRowStatus = string;
 export type MembershipStatus = string;
@@ -261,4 +288,3 @@ export type UrgencyLight = 'green' | 'orange' | 'red';
 
 // Import entity type
 export type ImportEntityType = 'member' | 'advisor' | 'lead';
-

@@ -47,24 +47,15 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import type { EmailCampaign } from '@crm-eco/lib/types';
 
 // ============================================================================
 // Type Definitions
 // ============================================================================
 
-interface Campaign {
-  id: string;
-  name: string;
-  subject: string;
+type Campaign = Pick<EmailCampaign, 'id' | 'name' | 'subject' | 'scheduled_at' | 'started_at' | 'completed_at' | 'total_recipients' | 'sent_count' | 'created_at' | 'created_by'> & {
   status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled';
-  scheduled_at: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  total_recipients: number;
-  sent_count: number;
-  created_at: string;
-  created_by: string | null;
-}
+};
 
 interface CampaignStats {
   total: number;
@@ -134,8 +125,10 @@ function StatusBadge({ status }: { status: Campaign['status'] }) {
 }
 
 const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign: Campaign; onAction: (action: string, id: string) => void }) {
-  const progress = campaign.total_recipients > 0
-    ? Math.round((campaign.sent_count / campaign.total_recipients) * 100)
+  const totalRecipients = campaign.total_recipients ?? 0;
+  const sentCount = campaign.sent_count ?? 0;
+  const progress = totalRecipients > 0
+    ? Math.round((sentCount / totalRecipients) * 100)
     : 0;
 
   return (
@@ -160,7 +153,7 @@ const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-slate-400" />
           <span className="text-sm text-slate-700 dark:text-slate-300">
-            {campaign.total_recipients.toLocaleString()}
+            {totalRecipients.toLocaleString()}
           </span>
         </div>
       </TableCell>
@@ -179,7 +172,7 @@ const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-4 h-4 text-green-500" />
             <span className="text-sm text-green-600 dark:text-green-400">
-              {campaign.sent_count.toLocaleString()} sent
+              {sentCount.toLocaleString()} sent
             </span>
           </div>
         ) : (
@@ -192,7 +185,9 @@ const CampaignRow = memo(function CampaignRow({ campaign, onAction }: { campaign
             ? formatDistanceToNow(new Date(campaign.scheduled_at), { addSuffix: true })
             : campaign.completed_at
               ? formatDistanceToNow(new Date(campaign.completed_at), { addSuffix: true })
-              : formatDistanceToNow(new Date(campaign.created_at), { addSuffix: true })
+              : campaign.created_at
+              ? formatDistanceToNow(new Date(campaign.created_at), { addSuffix: true })
+              : '—'
           }
         </div>
       </TableCell>
