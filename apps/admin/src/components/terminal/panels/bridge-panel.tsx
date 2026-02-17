@@ -4,7 +4,7 @@ import React from 'react';
 import {
   Search,
   Users,
-  Handshake,
+  HeartHandshake,
   Package,
   ClipboardList,
   Building,
@@ -24,7 +24,7 @@ import { useTerminal } from '../terminal-provider';
 const quickActions = [
   { label: 'Search', icon: Search, command: 'search' },
   { label: 'Members', icon: Users, command: 'member' },
-  { label: 'Agents', icon: Handshake, command: 'agent' },
+  { label: 'Agents', icon: HeartHandshake, command: 'agent' },
   { label: 'Products', icon: Package, command: 'product' },
   { label: 'Enrollments', icon: ClipboardList, command: 'enrollment' },
   { label: 'Vendors', icon: Building, command: 'vendor' },
