@@ -11,12 +11,29 @@ export default function SignInPage() {
 
 function SignInLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md text-center">
-        <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mx-auto animate-pulse">
-          <div className="w-6 h-6 bg-white/50 rounded" />
+    <div className="fixed inset-0 z-[100] flex">
+      {/* Left panel skeleton */}
+      <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] bg-gradient-to-br from-[#003560] via-[#04545c] to-[#047474]" />
+
+      {/* Right panel skeleton */}
+      <div className="flex-1 flex items-center justify-center bg-slate-50 p-6 sm:p-8">
+        <div className="w-full max-w-[420px] space-y-8">
+          <div className="space-y-3">
+            <div className="h-8 w-48 bg-slate-200 rounded-lg animate-pulse" />
+            <div className="h-4 w-64 bg-slate-100 rounded animate-pulse" />
+          </div>
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-8 space-y-5">
+            <div className="space-y-2">
+              <div className="h-4 w-24 bg-slate-100 rounded animate-pulse" />
+              <div className="h-11 bg-slate-100 rounded-xl animate-pulse" />
+            </div>
+            <div className="space-y-2">
+              <div className="h-4 w-20 bg-slate-100 rounded animate-pulse" />
+              <div className="h-11 bg-slate-100 rounded-xl animate-pulse" />
+            </div>
+            <div className="h-11 bg-slate-200 rounded-xl animate-pulse" />
+          </div>
         </div>
-        <div className="mt-4 h-8 bg-slate-200 rounded w-32 mx-auto animate-pulse" />
       </div>
     </div>
   );

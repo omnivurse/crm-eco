@@ -37,7 +37,7 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[100] bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center p-4 overflow-y-auto">
         <div className="w-full max-w-md text-center">
           <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <Check className="w-8 h-8 text-green-600" />
@@ -59,15 +59,15 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-gradient-to-br from-slate-50 via-white to-teal-50/30 flex items-center justify-center p-4 overflow-y-auto">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
               <Heart className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-slate-900">WealthShare</span>
+            <span className="text-2xl font-bold text-[#003560]">Pay It Forward HealthShare</span>
           </Link>
         </div>
 

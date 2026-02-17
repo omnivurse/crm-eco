@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { FieldRenderer } from './FieldRenderer';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 interface DynamicRecordFormProps {
@@ -278,7 +279,26 @@ export function DynamicRecordForm({
     }
   };
 
-  const sections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
+  // Build the effective section list: start with layout sections, then append any
+  // field-section keys that aren't covered (handles seed/migration section mismatch)
+  const sections = useMemo(() => {
+    const layoutSections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
+    const coveredKeys = new Set(layoutSections.map((s: LayoutSection) => s.key));
+
+    // Find sections present in field data but not in the layout
+    const extraSections: LayoutSection[] = [];
+    for (const sectionKey of Object.keys(fieldsBySection)) {
+      if (!coveredKeys.has(sectionKey)) {
+        extraSections.push({
+          key: sectionKey,
+          label: sectionKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          columns: 2,
+        });
+      }
+    }
+
+    return [...layoutSections, ...extraSections];
+  }, [layoutConfig.sections, fieldsBySection]);
 
   const handleFormSubmit = onSubmit ? handleSubmit(onSubmit) : undefined;
 
@@ -287,6 +307,14 @@ export function DynamicRecordForm({
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
         if (sectionFields.length === 0) return null;
+
+        // In readOnly mode, skip sections where every field is empty
+        if (readOnly) {
+          const hasAnyValue = sectionFields.some(
+            (f) => defaultValues[f.key] !== null && defaultValues[f.key] !== undefined && defaultValues[f.key] !== ''
+          );
+          if (!hasAnyValue) return null;
+        }
 
         const isCollapsed = collapsedSections.has(section.key);
 
@@ -321,15 +349,23 @@ export function DynamicRecordForm({
                       key={field.key}
                       className={cn(field.width === 'full' && 'md:col-span-2')}
                     >
-                      <Label htmlFor={field.key} className="mb-1.5 block">
+                      <Label htmlFor={field.key} className="mb-1.5 block text-muted-foreground text-xs uppercase tracking-wider">
                         {field.label}
-                        {field.required && <span className="text-destructive ml-1">*</span>}
+                        {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
                       </Label>
-                      {renderField(field)}
-                      {errors[field.key] && (
-                        <p className="text-sm text-destructive mt-1">
-                          {errors[field.key]?.message as string}
-                        </p>
+                      {readOnly ? (
+                        <div className="py-1 text-sm min-h-[28px]">
+                          <FieldRenderer field={field} value={defaultValues[field.key]} />
+                        </div>
+                      ) : (
+                        <>
+                          {renderField(field)}
+                          {errors[field.key] && (
+                            <p className="text-sm text-destructive mt-1">
+                              {errors[field.key]?.message as string}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   ))}
@@ -341,6 +377,15 @@ export function DynamicRecordForm({
       })}
     </>
   );
+
+  // Read-only mode: render as plain div without form or actions
+  if (readOnly) {
+    return (
+      <div className="space-y-6">
+        {renderSections()}
+      </div>
+    );
+  }
 
   // When embedded in a server action form, just render the fields without form wrapper
   if (embedded) {

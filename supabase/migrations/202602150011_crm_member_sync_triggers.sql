@@ -605,7 +605,7 @@ BEGIN
     IF v_advisors_module_id IS NOT NULL THEN
       FOR v_advisor IN
         SELECT a.* FROM advisors a
-        WHERE COALESCE(a.organization_id, a.org_id) = v_org.id
+        WHERE a.organization_id = v_org.id
           AND NOT EXISTS (
             SELECT 1 FROM crm_records cr
             WHERE cr.module_id = v_advisors_module_id

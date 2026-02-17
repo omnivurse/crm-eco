@@ -1,10 +1,10 @@
 /**
- * WealthShare Portal Service Worker
+ * Pay It Forward HealthShare Portal Service Worker
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_NAME = 'wealthshare-portal-v1';
-const STATIC_CACHE_NAME = 'wealthshare-static-v1';
+const CACHE_NAME = 'pif-healthshare-portal-v1';
+const STATIC_CACHE_NAME = 'pif-healthshare-static-v1';
 
 // Static assets to cache immediately on install
 const STATIC_ASSETS = [

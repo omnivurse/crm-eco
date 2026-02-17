@@ -1,6 +1,6 @@
 {
-  "name": "WealthShare Member Portal",
-  "short_name": "WealthShare",
+  "name": "Pay It Forward HealthShare Member Portal",
+  "short_name": "PIF HealthShare",
   "description": "Manage your healthshare membership, view benefits, and enroll in new plans.",
   "start_url": "/",
   "display": "standalone",

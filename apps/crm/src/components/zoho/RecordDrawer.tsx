@@ -84,6 +84,8 @@ export function RecordDrawer() {
   const [localRecordData, setLocalRecordData] = useState<Record<string, unknown> | null>(null);
   // Track which sections are collapsed
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  // Toggle to show all fields including empty sections
+  const [showAllFields, setShowAllFields] = useState(false);
 
   const handleFieldUpdate = async (fieldKey: string, value: unknown) => {
     if (!data?.record) return;
@@ -137,9 +139,18 @@ export function RecordDrawer() {
   const fieldSections = useMemo<FieldSection[]>(() => {
     if (!data?.fields || !effectiveRecordData) return [];
 
-    // Exclude name fields (already shown in header) and system-flagged fields
+    // Exclude fields already shown in header and internal audit/system fields.
+    // Keep business-relevant system fields (contact_status, date_of_birth, etc.)
+    const DRAWER_EXCLUDED_KEYS = new Set([
+      'first_name', 'last_name', 'contact_name',
+      'created_by_name', 'modified_by_name',
+      'zoho_created_time', 'zoho_modified_time',
+      'change_log_time', 'last_enriched_time', 'enrich_status',
+      'connected_to_module', 'connected_to_id',
+      'locked', 'admin123',
+    ]);
     const candidates = data.fields.filter(
-      f => !f.is_system && f.key !== 'first_name' && f.key !== 'last_name'
+      f => !DRAWER_EXCLUDED_KEYS.has(f.key)
     );
 
     // Group fields by section
@@ -166,8 +177,8 @@ export function RecordDrawer() {
       const withoutData = fields.filter(f => effectiveRecordData[f.key] == null);
       const sortedFields = [...withData, ...withoutData];
 
-      // Only show the section if it has at least one field with data
-      if (withData.length > 0) {
+      // Show the section if it has data, or if "show all fields" is enabled
+      if (withData.length > 0 || showAllFields) {
         sections.push({
           key: sectionKey,
           label: getSectionLabel(sectionKey),
@@ -177,7 +188,7 @@ export function RecordDrawer() {
     }
 
     return sections;
-  }, [data?.fields, effectiveRecordData]);
+  }, [data?.fields, effectiveRecordData, showAllFields]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeDrawer()}>
@@ -338,6 +349,17 @@ export function RecordDrawer() {
                   No field data available
                 </div>
               )}
+
+              {/* Show all fields toggle */}
+              <div className="px-4 py-2 border-t border-slate-200 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowAllFields(prev => !prev)}
+                  className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium transition-colors"
+                >
+                  {showAllFields ? 'Hide empty fields' : 'Show all fields'}
+                </button>
+              </div>
 
               {/* Mini Timeline */}
               <div className="p-4 border-t border-slate-200 dark:border-white/10">

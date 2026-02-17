@@ -329,25 +329,27 @@ export function AdminSidebar({
             !forMobile && isCollapsed ? "justify-center px-2" : "justify-between px-4"
           )}>
             <Link href="/dashboard" className="flex items-center group" onClick={handleLinkClick}>
-              {!forMobile && isCollapsed ? (
-                <Image
-                  src="/logo-icon.png"
-                  alt="PIF"
-                  width={32}
-                  height={32}
-                  className="object-contain"
-                  priority
-                />
-              ) : (
-                <Image
-                  src="/logo-pif-full.png"
-                  alt="Pay It Forward HealthShare"
-                  width={180}
-                  height={48}
-                  className="object-contain max-h-10 w-auto"
-                  priority
-                />
-              )}
+              <div className="bg-white rounded-lg p-1.5 shadow-sm">
+                {!forMobile && isCollapsed ? (
+                  <Image
+                    src="/logo-icon.png"
+                    alt="PIF"
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                    priority
+                  />
+                ) : (
+                  <Image
+                    src="/logo-pif-full.png"
+                    alt="Pay It Forward HealthShare"
+                    width={160}
+                    height={44}
+                    className="object-contain h-9 w-auto"
+                    priority
+                  />
+                )}
+              </div>
             </Link>
             {/* Mobile close button */}
             {forMobile && (

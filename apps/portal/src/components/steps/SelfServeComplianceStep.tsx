@@ -107,7 +107,7 @@ export function SelfServeComplianceStep({
                 This Is NOT Insurance
               </h4>
               <p className="text-sm text-slate-700 mb-2">
-                I understand that WealthShare is a <strong>health cost sharing ministry</strong>, 
+                I understand that Pay It Forward HealthShare is a <strong>health cost sharing ministry</strong>, 
                 not an insurance company or product. Members share each other&apos;s medical 
                 expenses voluntarily. This program:
               </p>
@@ -255,7 +255,7 @@ export function SelfServeComplianceStep({
           <strong>Summary:</strong> By completing this enrollment, you are joining a 
           community of members who voluntarily share medical expenses according to 
           established guidelines. Sharing is not guaranteed but is facilitated by the 
-          WealthShare community.
+          Pay It Forward HealthShare community.
         </p>
       </div>
 

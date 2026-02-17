@@ -111,16 +111,18 @@ export function Sidebar({ role }: SidebarProps) {
           {/* Gradient top stripe */}
           <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
 
-          <div className="h-14 flex items-center px-3 border-b border-white/10">
+          <div className="h-16 flex items-center px-3 border-b border-white/10">
             <Link href="/dashboard" className="flex items-center group">
-              <Image
-                src="/logo-pif-full.png"
-                alt="Pay It Forward HealthShare"
-                width={140}
-                height={40}
-                className="object-contain"
-                priority
-              />
+              <div className="bg-white rounded-lg p-1.5 shadow-sm">
+                <Image
+                  src="/logo-pif-full.png"
+                  alt="Pay It Forward HealthShare"
+                  width={160}
+                  height={44}
+                  className="object-contain h-9 w-auto"
+                  priority
+                />
+              </div>
             </Link>
           </div>
         </div>

@@ -945,15 +945,14 @@ BEGIN
   v_display_order := v_display_order + 1;
 
   -- ============================================================================
-  -- Create default layout for Contacts
+  -- Create/update default layout for Contacts
+  -- Update existing default layout config to match the new 16-section schema,
+  -- or insert a new one if none exists for this module.
   -- ============================================================================
-  INSERT INTO crm_layouts (org_id, module_id, name, is_default, config)
-  VALUES (
-    v_org_id, 
-    v_module_id, 
-    'Default Contact Layout', 
-    true,
-    '{
+  UPDATE crm_layouts
+  SET
+    name = 'Default Contact Layout',
+    config = '{
       "sections": [
         {"key": "core", "label": "Contact Information", "columns": 2},
         {"key": "management", "label": "Contact Management", "columns": 2},
@@ -972,9 +971,40 @@ BEGIN
         {"key": "business", "label": "Business Information", "columns": 2},
         {"key": "system", "label": "System Information", "columns": 2, "collapsed": true}
       ]
-    }'::jsonb
-  )
-  ON CONFLICT DO NOTHING;
+    }'::jsonb,
+    updated_at = now()
+  WHERE module_id = v_module_id AND is_default = true;
+
+  -- If no default layout existed, insert one
+  IF NOT FOUND THEN
+    INSERT INTO crm_layouts (org_id, module_id, name, is_default, config)
+    VALUES (
+      v_org_id,
+      v_module_id,
+      'Default Contact Layout',
+      true,
+      '{
+        "sections": [
+          {"key": "core", "label": "Contact Information", "columns": 2},
+          {"key": "management", "label": "Contact Management", "columns": 2},
+          {"key": "address", "label": "Address", "columns": 2},
+          {"key": "family_spouse", "label": "Spouse Information", "columns": 2},
+          {"key": "family_children", "label": "Children", "columns": 2},
+          {"key": "insurance", "label": "Insurance / Product", "columns": 2},
+          {"key": "payment", "label": "Payment Information", "columns": 2},
+          {"key": "commissions", "label": "Commissions & Referrals", "columns": 2},
+          {"key": "identifiers", "label": "Codes & Identifiers", "columns": 2},
+          {"key": "portal", "label": "Portal Access", "columns": 2},
+          {"key": "compliance", "label": "Compliance", "columns": 2},
+          {"key": "fulfillment", "label": "Welcome & Fulfillment", "columns": 2},
+          {"key": "activity", "label": "Activity Tracking", "columns": 2},
+          {"key": "preferences", "label": "Communication Preferences", "columns": 2},
+          {"key": "business", "label": "Business Information", "columns": 2},
+          {"key": "system", "label": "System Information", "columns": 2, "collapsed": true}
+        ]
+      }'::jsonb
+    );
+  END IF;
 
   RAISE NOTICE 'Created/updated all contact fields for organization %', v_org_id;
 END $$;
