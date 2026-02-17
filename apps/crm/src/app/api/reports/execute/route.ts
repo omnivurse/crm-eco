@@ -69,8 +69,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid data source' }, { status: 400 });
     }
 
-    // Build the select string
-    const selectString = columns.length > 0 ? columns.join(', ') : '*';
+    // Validate column names to prevent injection (only allow alphanumeric + underscore)
+    const COLUMN_NAME_RE = /^[a-z][a-z0-9_]*$/i;
+    const safeColumns = (columns as string[]).filter((c: string) => COLUMN_NAME_RE.test(c));
+    const selectString = safeColumns.length > 0 ? safeColumns.join(', ') : '*';
+
+    // Validate filter and sorting column names
+    for (const filter of filters as Filter[]) {
+      if (!COLUMN_NAME_RE.test(filter.column)) {
+        return NextResponse.json({ error: `Invalid filter column: ${filter.column}` }, { status: 400 });
+      }
+    }
+    for (const sort of sorting as Sorting[]) {
+      if (!COLUMN_NAME_RE.test(sort.column)) {
+        return NextResponse.json({ error: `Invalid sort column: ${sort.column}` }, { status: 400 });
+      }
+    }
 
     let query = supabase.from(table).select(selectString, { count: 'exact' }) as any;
 

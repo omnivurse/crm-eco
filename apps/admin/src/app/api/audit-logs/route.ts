@@ -69,8 +69,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (searchQuery) {
+      // Sanitize search input to prevent PostgREST filter injection
+      const safeQuery = searchQuery.replace(/[,().\\]/g, '\\$&');
       query = query.or(
-        `description.ilike.%${searchQuery}%,action.ilike.%${searchQuery}%,actor_email.ilike.%${searchQuery}%`
+        `description.ilike.%${safeQuery}%,action.ilike.%${safeQuery}%,actor_email.ilike.%${safeQuery}%`
       );
     }
 

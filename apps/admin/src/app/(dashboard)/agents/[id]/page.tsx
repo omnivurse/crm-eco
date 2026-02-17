@@ -96,10 +96,12 @@ export default async function AgentDetailPage({ params }: PageProps) {
 
   const { agent, organizationId } = result;
 
-  const [members, downline] = await Promise.all([
+  const [membersResult, downlineResult] = await Promise.allSettled([
     getAgentMembers(id),
     getDownlineAgents(id),
   ]);
+  const members = membersResult.status === 'fulfilled' ? membersResult.value : [];
+  const downline = downlineResult.status === 'fulfilled' ? downlineResult.value : [];
 
   return (
     <div className="space-y-6">

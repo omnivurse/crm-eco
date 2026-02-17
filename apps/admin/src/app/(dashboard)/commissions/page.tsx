@@ -48,7 +48,7 @@ async function getCommissionStats() {
 
   const orgId = profile.organization_id;
 
-  const [tiersResult, pendingResult, paidThisMonthResult, payoutsResult] = await Promise.all([
+  const [tiersSettled, pendingSettled, paidThisMonthSettled, payoutsSettled] = await Promise.allSettled([
     // Active commission tiers
     (supabase.from('commission_tiers') as any)
       .select('id', { count: 'exact', head: true })
@@ -71,6 +71,10 @@ async function getCommissionStats() {
       .eq('organization_id', orgId)
       .in('status', ['draft', 'pending', 'approved']),
   ]);
+  const tiersResult = tiersSettled.status === 'fulfilled' ? tiersSettled.value : { count: null };
+  const pendingResult = pendingSettled.status === 'fulfilled' ? pendingSettled.value : { data: null };
+  const paidThisMonthResult = paidThisMonthSettled.status === 'fulfilled' ? paidThisMonthSettled.value : { data: null };
+  const payoutsResult = payoutsSettled.status === 'fulfilled' ? payoutsSettled.value : { count: null };
 
   const pendingAmount = (pendingResult.data || []).reduce(
     (sum, t) => sum + (t.commission_amount || 0),

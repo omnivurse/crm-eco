@@ -55,11 +55,11 @@ async function getBillingStats(): Promise<BillingStats | null> {
   const db = supabase as any;
   
   const [
-    collectedResult,
-    pendingResult,
-    failedResult,
-    schedulesResult,
-  ] = await Promise.all([
+    collectedSettled,
+    pendingSettled,
+    failedSettled,
+    schedulesSettled,
+  ] = await Promise.allSettled([
     // Total collected this month
     db
       .from('billing_transactions')
@@ -87,6 +87,10 @@ async function getBillingStats(): Promise<BillingStats | null> {
       .eq('organization_id', orgId)
       .eq('status', 'active'),
   ]);
+  const collectedResult = collectedSettled.status === 'fulfilled' ? collectedSettled.value : { data: null };
+  const pendingResult = pendingSettled.status === 'fulfilled' ? pendingSettled.value : { count: null };
+  const failedResult = failedSettled.status === 'fulfilled' ? failedSettled.value : { count: null };
+  const schedulesResult = schedulesSettled.status === 'fulfilled' ? schedulesSettled.value : { count: null };
 
   const totalCollected = ((collectedResult.data || []) as { amount: number }[]).reduce(
     (sum: number, t: { amount: number }) => sum + (t.amount || 0),
@@ -170,10 +174,12 @@ function getStatusBadgeColor(status: string) {
 }
 
 export default async function BillingPage() {
-  const [stats, recentTransactions] = await Promise.all([
+  const [statsResult, recentTransactionsResult] = await Promise.allSettled([
     getBillingStats(),
     getRecentTransactions(),
   ]);
+  const stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
+  const recentTransactions = recentTransactionsResult.status === 'fulfilled' ? recentTransactionsResult.value : [];
 
   const statCards = [
     {

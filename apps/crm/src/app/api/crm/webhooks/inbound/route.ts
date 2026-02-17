@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
         .from('crm_records')
         .select('*')
         .eq('id', data.id)
+        .eq('org_id', workflow.org_id)
         .single();
 
       if (!recordError && existingRecord) {

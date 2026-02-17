@@ -32,12 +32,16 @@ export async function POST(request: NextRequest) {
     const supabase = getServiceClient();
     const normalizedFrom = normalizePhoneNumber(from);
 
+    // Sanitize phone inputs to prevent PostgREST filter injection
+    const safeFrom = from.replace(/[,().\\]/g, '\\$&');
+    const safeNormalizedFrom = normalizedFrom.replace(/[,().\\]/g, '\\$&');
+
     // Find matching record by phone number
     // First try exact match on phone field, then search in data
     const { data: records } = await supabase
       .from('crm_records')
       .select('id, org_id, phone')
-      .or(`phone.eq.${normalizedFrom},phone.eq.${from}`)
+      .or(`phone.eq.${safeNormalizedFrom},phone.eq.${safeFrom}`)
       .limit(1);
 
     let record = records?.[0];
@@ -47,7 +51,7 @@ export async function POST(request: NextRequest) {
       const { data: jsonbRecords } = await supabase
         .from('crm_records')
         .select('id, org_id, phone')
-        .or(`data->phone.eq."${from}",data->mobile.eq."${from}",data->phone.eq."${normalizedFrom}",data->mobile.eq."${normalizedFrom}"`)
+        .or(`data->phone.eq."${safeFrom}",data->mobile.eq."${safeFrom}",data->phone.eq."${safeNormalizedFrom}",data->mobile.eq."${safeNormalizedFrom}"`)
         .limit(1);
       
       record = jsonbRecords?.[0];

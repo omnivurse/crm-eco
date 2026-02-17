@@ -16,9 +16,10 @@ import {
   Check,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { toast } from 'sonner';
 import type { CrmProfile } from '@/lib/crm/types';
 
-interface StickyNote {
+interface StickyNoteData {
   id: string;
   title: string;
   content: string | null;
@@ -73,7 +74,7 @@ interface StickyNotesPanelProps {
 }
 
 export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
-  const [notes, setNotes] = useState<StickyNote[]>([]);
+  const [notes, setNotes] = useState<StickyNoteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -102,7 +103,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         setNotes(data.notes || []);
       }
     } catch {
-      // silently fail
+      toast.error('Failed to load notes');
     } finally {
       setLoading(false);
     }
@@ -126,7 +127,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         setSearchResults(data.results || []);
       }
     } catch {
-      // silently fail
+      toast.error('Failed to search records');
     } finally {
       setSearching(false);
     }
@@ -180,7 +181,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         fetchNotes();
       }
     } catch {
-      // silently fail
+      toast.error('Failed to create note');
     } finally {
       setSaving(false);
     }
@@ -206,13 +207,13 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         fetchNotes();
       }
     } catch {
-      // silently fail
+      toast.error('Failed to update note');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleTogglePin = async (note: StickyNote) => {
+  const handleTogglePin = async (note: StickyNoteData) => {
     try {
       await fetch(`/api/crm/sticky-notes/${note.id}`, {
         method: 'PATCH',
@@ -221,7 +222,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
       });
       fetchNotes();
     } catch {
-      // silently fail
+      toast.error('Failed to update note');
     }
   };
 
@@ -230,11 +231,11 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
       await fetch(`/api/crm/sticky-notes/${id}`, { method: 'DELETE' });
       fetchNotes();
     } catch {
-      // silently fail
+      toast.error('Failed to delete note');
     }
   };
 
-  const startEdit = (note: StickyNote) => {
+  const startEdit = (note: StickyNoteData) => {
     setEditingId(note.id);
     setFormTitle(note.title);
     setFormContent(note.content || '');

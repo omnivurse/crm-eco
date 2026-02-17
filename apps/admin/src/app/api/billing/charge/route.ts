@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService } from '@crm-eco/lib/billing';
+import { z } from 'zod';
+
+const chargeSchema = z.object({
+  memberId: z.string().uuid(),
+  paymentProfileId: z.string().uuid(),
+  amount: z.number().positive('Amount must be a positive number'),
+  description: z.string().optional(),
+  invoiceNumber: z.string().optional(),
+  billingScheduleId: z.string().uuid().optional().nullable(),
+  enrollmentId: z.string().uuid().optional().nullable(),
+  billingPeriodStart: z.string().optional().nullable(),
+  billingPeriodEnd: z.string().optional().nullable(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +37,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    const parsed = chargeSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
     const {
       memberId,
       paymentProfileId,
@@ -34,15 +56,7 @@ export async function POST(request: NextRequest) {
       enrollmentId,
       billingPeriodStart,
       billingPeriodEnd,
-    } = body;
-
-    // Validate required fields
-    if (!memberId || !paymentProfileId || !amount) {
-      return NextResponse.json(
-        { error: 'Missing required fields: memberId, paymentProfileId, amount' },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
 
     // Verify member belongs to organization
     const { data: member } = await supabase

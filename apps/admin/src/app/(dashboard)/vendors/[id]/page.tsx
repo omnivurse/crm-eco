@@ -57,7 +57,7 @@ async function getVendorWithData(id: string) {
 
   const sb = supabase as any;
 
-  const [vendorResult, filesResult, changesResult, connectorsResult] = await Promise.all([
+  const [vendorSettled, filesSettled, changesSettled, connectorsSettled] = await Promise.allSettled([
     sb
       .from('vendors')
       .select('*')
@@ -85,6 +85,10 @@ async function getVendorWithData(id: string) {
       .eq('org_id', profile.organization_id)
       .order('created_at', { ascending: false }),
   ]);
+  const vendorResult = vendorSettled.status === 'fulfilled' ? vendorSettled.value : { data: null, error: { message: 'Query failed' } };
+  const filesResult = filesSettled.status === 'fulfilled' ? filesSettled.value : { data: null };
+  const changesResult = changesSettled.status === 'fulfilled' ? changesSettled.value : { data: null };
+  const connectorsResult = connectorsSettled.status === 'fulfilled' ? connectorsSettled.value : { data: null };
 
   if (vendorResult.error || !vendorResult.data) return null;
 

@@ -32,6 +32,7 @@ export async function PATCH(
       .from('crm_records')
       .select('*')
       .eq('id', id)
+      .eq('org_id', profile.organization_id)
       .single();
 
     if (!previousRecord) {
@@ -83,6 +84,7 @@ export async function PATCH(
       .from('crm_records')
       .update(updates)
       .eq('id', id)
+      .eq('org_id', profile.organization_id)
       .select()
       .single();
 
@@ -166,6 +168,7 @@ export async function DELETE(
       .from('crm_records')
       .select('*')
       .eq('id', id)
+      .eq('org_id', profile.organization_id)
       .single();
 
     if (!record) {
@@ -220,7 +223,8 @@ export async function DELETE(
     const { error } = await supabase
       .from('crm_records')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', profile.organization_id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

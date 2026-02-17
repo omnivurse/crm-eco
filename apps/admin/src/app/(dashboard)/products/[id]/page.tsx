@@ -101,12 +101,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const { product, organizationId } = result;
 
-  const [iuaLevels, ageBrackets, benefits, extraCosts] = await Promise.all([
+  const [iuaLevelsResult, ageBracketsResult, benefitsResult, extraCostsResult] = await Promise.allSettled([
     getProductIuaLevels(id),
     getProductAgeBrackets(id),
     getProductBenefits(id),
     getProductExtraCosts(id),
   ]);
+  const iuaLevels = iuaLevelsResult.status === 'fulfilled' ? iuaLevelsResult.value : [];
+  const ageBrackets = ageBracketsResult.status === 'fulfilled' ? ageBracketsResult.value : [];
+  const benefits = benefitsResult.status === 'fulfilled' ? benefitsResult.value : [];
+  const extraCosts = extraCostsResult.status === 'fulfilled' ? extraCostsResult.value : [];
 
   return (
     <div className="space-y-6">

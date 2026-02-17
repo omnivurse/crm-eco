@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
 
     // -- Approvals -------------------------------------------------------
     const approvals = approvalsResult.status === 'fulfilled'
-      ? (approvalsResult.value as any).data || []
+      ? (approvalsResult.value as { data: any[] | null }).data || []
       : [];
 
     // Fetch process names for approvals
@@ -222,7 +222,7 @@ export async function GET(request: NextRequest) {
 
     // -- Overdue tasks ----------------------------------------------------
     const overdueTasks = overdueResult.status === 'fulfilled'
-      ? (overdueResult.value as any).data || []
+      ? (overdueResult.value as { data: any[] | null }).data || []
       : [];
 
     for (const t of overdueTasks) {
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
 
     // -- Today's tasks ----------------------------------------------------
     const todayTasks = todayResult.status === 'fulfilled'
-      ? (todayResult.value as any).data || []
+      ? (todayResult.value as { data: any[] | null }).data || []
       : [];
 
     for (const t of todayTasks) {
@@ -266,7 +266,7 @@ export async function GET(request: NextRequest) {
 
     // -- Follow-ups -------------------------------------------------------
     const followUps = followUpResult.status === 'fulfilled'
-      ? (followUpResult.value as any).data || []
+      ? (followUpResult.value as { data: any[] | null }).data || []
       : [];
 
     // Deduplicate: skip follow-ups already in overdue / today
@@ -311,7 +311,7 @@ export async function GET(request: NextRequest) {
 
     // -- Unread messages --------------------------------------------------
     const messages = messagesResult.status === 'fulfilled'
-      ? (messagesResult.value as any).data || []
+      ? (messagesResult.value as { data: any[] | null }).data || []
       : [];
 
     for (const m of messages) {

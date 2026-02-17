@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,file_name.ilike.%${search}%`);
+      // Sanitize search input to prevent PostgREST filter injection
+      const safeSearch = search.replace(/[,().\\]/g, '\\$&');
+      query = query.or(`name.ilike.%${safeSearch}%,file_name.ilike.%${safeSearch}%`);
     }
 
     const { data: assets, error, count } = await query;

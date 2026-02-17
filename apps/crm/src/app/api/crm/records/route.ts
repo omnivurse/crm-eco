@@ -48,7 +48,9 @@ export async function GET(request: NextRequest) {
 
     // Apply search if provided
     if (search) {
-      query = query.or(`title.ilike.%${search}%,email.ilike.%${search}%`);
+      // Sanitize search input to prevent PostgREST filter injection
+      const safeSearch = search.replace(/[,().\\]/g, '\\$&');
+      query = query.or(`title.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
     }
 
     // Apply sorting
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
     const { data: record, error } = await supabase
       .from('crm_records')
       .insert({
-        org_id: parsed.data.org_id,
+        org_id: profile.organization_id,
         module_id: parsed.data.module_id,
         owner_id: parsed.data.owner_id || profile.id,
         data: parsed.data.data,

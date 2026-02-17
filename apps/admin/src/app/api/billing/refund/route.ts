@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService } from '@crm-eco/lib/billing';
+import { z } from 'zod';
+
+const refundSchema = z.object({
+  transactionId: z.string().uuid(),
+  amount: z.number().positive('Amount must be a positive number'),
+  reason: z.string().optional(),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +34,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { transactionId, amount, reason } = body;
+    const parsed = refundSchema.safeParse(body);
 
-    // Validate required fields
-    if (!transactionId || !amount) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required fields: transactionId, amount' },
+        { error: 'Validation failed', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const { transactionId, amount, reason } = parsed.data;
 
     // Verify transaction belongs to organization
     const { data: transaction } = await (supabase as any)
