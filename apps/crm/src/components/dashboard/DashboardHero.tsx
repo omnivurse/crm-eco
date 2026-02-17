@@ -81,9 +81,9 @@ function GlassCard({
     <div
       className={`
         relative overflow-hidden rounded-2xl
-        bg-white/[0.04] backdrop-blur-xl
-        border border-white/[0.06]
-        hover:bg-white/[0.06] hover:border-white/[0.10]
+        bg-white/[0.07] backdrop-blur-xl
+        border border-white/[0.10]
+        hover:bg-white/[0.10] hover:border-white/[0.15]
         transition-all duration-300 ease-out
         group
         animate-fadeSlideUp
@@ -359,7 +359,7 @@ export function DashboardHero({
   const todaysMeetings = upcomingMeetings.slice(0, 3);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 md:p-8 shadow-xl shadow-black/10 ring-1 ring-white/[0.05]">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-6 md:p-8 shadow-lg shadow-[#003560]/20 ring-1 ring-white/10">
 
       <div className="relative z-10">
         {/* ── Zone A: Header ── */}
@@ -389,7 +389,7 @@ export function DashboardHero({
         {insightHref ? (
           <Link
             href={insightHref}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-5 hover:border-white/[0.12] transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.07] border border-white/[0.10] mb-5 hover:border-white/[0.18] transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '100ms' }}
           >
             <div className="p-1.5 rounded-lg bg-blue-500/10 group-hover:bg-blue-500/15 transition-colors">
@@ -400,7 +400,7 @@ export function DashboardHero({
           </Link>
         ) : (
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] mb-5 animate-fadeSlideUp opacity-0"
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.07] border border-white/[0.10] mb-5 animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '100ms' }}
           >
             <div className="p-1.5 rounded-lg bg-blue-500/10">
@@ -431,7 +431,7 @@ export function DashboardHero({
           {/* Left: Pipeline Health + Weekly Goal */}
           <GlassCard className="p-5" delay={350}>
             <PipelineBar health={displayPipelineHealth} />
-            <div className="border-t border-white/[0.06] my-4" />
+            <div className="border-t border-white/[0.10] my-4" />
             <GoalProgressBar goal={displayWeeklyGoal} />
           </GlassCard>
 
