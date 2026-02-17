@@ -2,24 +2,27 @@ import { Suspense } from 'react';
 import {
   getCurrentProfile,
   getCachedModuleStats,
-  getCachedDashboardHeroStats,
+  getCachedCommandConsoleStats,
   getUpcomingTasks,
   getRecentActivity,
   getCachedAtRiskDeals,
   getTodaysTasks,
   getCalendarEvents,
+  getOrganization,
 } from '@/lib/crm/queries';
-import type { CalendarEvent, DashboardHeroStats } from '@/lib/crm/queries';
+import type { CommandConsoleStats } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import {
-  DashboardHero,
-  DashboardStats,
+  CommandBar,
+  AlertsStrip,
+  OperationalTiles,
+  WorkQueue,
+  EnrollmentFunnel,
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
-import type { HeroCalendarEvent, PipelineHealth, WeeklyGoalProgress } from '@/components/dashboard/DashboardHero';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
 
@@ -38,7 +41,6 @@ async function fetchWidgetData(
     recentActivity: () => getRecentActivity(profile.organization_id, 10),
     atRiskDeals: () => getCachedAtRiskDeals(profile.organization_id, 5),
     quickActions: () => Promise.resolve(null),
-    // Placeholder fetchers for new widgets - will be implemented in Phase 6
     topDeals: () => Promise.resolve([]),
     pipelineSummary: () => Promise.resolve(null),
     performanceMetrics: () => Promise.resolve(null),
@@ -52,7 +54,6 @@ async function fetchWidgetData(
 
   const results: Record<string, unknown> = {};
 
-  // Fetch each widget's data independently so one failure doesn't crash the dashboard
   await Promise.all(
     Array.from(dataKeys).map(async (key) => {
       if (fetchers[key]) {
@@ -68,6 +69,25 @@ async function fetchWidgetData(
 
   return results;
 }
+
+/** Default empty stats when the command console RPC fails */
+const EMPTY_CONSOLE_STATS: CommandConsoleStats = {
+  enrollmentStats: {
+    startedToday: 0, submittedToday: 0, activatedToday: 0,
+    pendingUnderwriting: 0, docsRequired: 0, activationDelayed: 0,
+    rejectedCount: 0, expiringSoon: 0, totalDraft: 0,
+  },
+  billingStats: {
+    collectedToday: 0, mrr: 0, failedToday: 0,
+    pendingAch: 0, lastSuccessfulPaymentAt: null,
+  },
+  pipelineCounts: {
+    leads: 0, draft: 0, inProgress: 0, submitted: 0,
+    approved: 0, rejected: 0, cancelled: 0,
+  },
+  operationsStats: { overdueTasks: 0, atRiskDeals: 0 },
+  workQueue: [],
+};
 
 async function DashboardContent() {
   let profile;
@@ -88,87 +108,54 @@ async function DashboardContent() {
     console.error('[Dashboard] Failed to load layout, using default:', err);
   }
 
-  // Get widget types from layout to fetch only needed data
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all required data in parallel - using cached RPC for hero stats
-  // Each fetch is wrapped individually so one failure doesn't crash the page
-  let stats: Awaited<ReturnType<typeof getCachedModuleStats>> = [];
-  let heroStats: DashboardHeroStats = { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
+  // Fetch all data in parallel: command console stats, org info, widget data
+  let consoleStats: CommandConsoleStats = EMPTY_CONSOLE_STATS;
+  let orgName = 'Operations';
   let widgetData: Record<string, unknown> = {};
 
-  const [statsResult, heroResult, widgetDataResult] = await Promise.allSettled([
-    getCachedModuleStats(profile.organization_id),
-    getCachedDashboardHeroStats(profile.organization_id, profile.id),
+  const [consoleResult, orgResult, widgetDataResult] = await Promise.allSettled([
+    getCachedCommandConsoleStats(profile.organization_id, profile.id),
+    getOrganization(profile.organization_id),
     fetchWidgetData(profile, widgetTypes),
   ]);
 
-  if (statsResult.status === 'fulfilled') stats = statsResult.value;
-  else console.error('[Dashboard] Stats fetch failed:', statsResult.reason);
+  if (consoleResult.status === 'fulfilled') consoleStats = consoleResult.value;
+  else console.error('[Dashboard] Console stats fetch failed:', consoleResult.reason);
 
-  if (heroResult.status === 'fulfilled') heroStats = heroResult.value;
-  else console.error('[Dashboard] Hero stats fetch failed:', heroResult.reason);
+  if (orgResult.status === 'fulfilled' && orgResult.value) orgName = orgResult.value.name;
+  else console.error('[Dashboard] Org fetch failed:', orgResult.status === 'rejected' ? orgResult.reason : 'null');
 
   if (widgetDataResult.status === 'fulfilled') widgetData = widgetDataResult.value;
   else console.error('[Dashboard] Widget data fetch failed:', widgetDataResult.reason);
 
-  const totalDeals = stats.find((s) => s.moduleKey === 'deals')?.totalRecords || 0;
-
-  // Use calendar events from widget data (fetched once for 14-day range), filter to today for hero
-  const allCalendarEvents = (widgetData.calendarEvents as CalendarEvent[]) || [];
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
-  const todayCalendarEvents = allCalendarEvents.filter(
-    (e) => new Date(e.start_time) <= todayEnd
-  );
-
-  // Transform calendar events for hero display
-  const upcomingMeetings: HeroCalendarEvent[] = todayCalendarEvents.map((event: CalendarEvent) => ({
-    id: event.id,
-    title: event.title,
-    start_time: event.start_time,
-    type: event.type,
-    location: event.location,
-  }));
-
-  // Calculate pipeline health based on at-risk deals ratio
-  const pipelineHealth: PipelineHealth = {
-    percent: totalDeals > 0
-      ? Math.max(0, Math.min(100, Math.round(100 - (heroStats.atRiskCount / Math.max(totalDeals, 1)) * 100)))
-      : 100,
-    status: heroStats.atRiskCount > 3 ? 'critical' : heroStats.atRiskCount > 0 ? 'warning' : 'healthy',
-    trend: 'stable',
-  };
-
-  // Weekly goal based on new records this week (target: 10 new records)
-  const weeklyGoal: WeeklyGoalProgress = {
-    current: heroStats.newThisWeek,
-    target: 10,
-    label: 'Weekly Records Goal',
-  };
-
   return (
     <DashboardLayoutProvider initialLayout={layout}>
-      <div className="space-y-8 pb-8">
-        {/* Hero Header - Fixed, not customizable */}
-        <DashboardHero
+      <div className="space-y-5 pb-8">
+        {/* ── Layer 1: Command Bar ── */}
+        <CommandBar
           profile={profile}
-          todaysTaskCount={heroStats.todaysTaskCount}
-          overdueCount={heroStats.overdueCount}
-          newThisWeek={heroStats.newThisWeek}
-          atRiskCount={heroStats.atRiskCount}
-          upcomingMeetings={upcomingMeetings}
-          pipelineHealth={pipelineHealth}
-          weeklyGoal={weeklyGoal}
+          orgName={orgName}
+          stats={consoleStats}
         />
 
-        {/* Stats Grid - Fixed, not customizable */}
-        <DashboardStats stats={stats} />
+        {/* ── Layer 2: Critical Alerts Strip (hidden when clean) ── */}
+        <AlertsStrip stats={consoleStats} />
 
-        {/* Dashboard Toolbar - Edit mode toggle, Add Widget, Save/Reset */}
+        {/* ── Layer 3: Operational Tiles ── */}
+        <OperationalTiles stats={consoleStats} />
+
+        {/* ── Work Queue ── */}
+        <WorkQueue items={consoleStats.workQueue} />
+
+        {/* ── Enrollment Pipeline Funnel ── */}
+        <EnrollmentFunnel stats={consoleStats} />
+
+        {/* ── Dashboard Toolbar ── */}
         <DashboardToolbar />
 
-        {/* Customizable Widget Grid - widgets pre-rendered on server */}
+        {/* ── Customizable Widget Grid (preserved) ── */}
         <DashboardGrid renderedWidgets={preRenderWidgets(layout.widgets, widgetData)} />
       </div>
     </DashboardLayoutProvider>

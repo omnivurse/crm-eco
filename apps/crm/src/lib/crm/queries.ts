@@ -1534,3 +1534,135 @@ export async function getAllActivities(orgId: string, options?: {
   if (error) throw error;
   return (data || []) as CrmTaskWithAssignee[];
 }
+
+// ============================================================================
+// Command Console Stats (Enterprise Dashboard)
+// ============================================================================
+
+/** Work queue item returned from the command console RPC */
+export interface WorkQueueItem {
+  id: string;
+  type: 'billing_failure' | 'enrollment_review' | 'docs_pending' | 'overdue_task';
+  title: string;
+  subtitle: string;
+  priority: number;
+  createdAt: string;
+}
+
+/** Full command console stats returned from get_command_console_stats RPC */
+export interface CommandConsoleStats {
+  enrollmentStats: {
+    startedToday: number;
+    submittedToday: number;
+    activatedToday: number;
+    pendingUnderwriting: number;
+    docsRequired: number;
+    activationDelayed: number;
+    rejectedCount: number;
+    expiringSoon: number;
+    totalDraft: number;
+  };
+  billingStats: {
+    collectedToday: number;
+    mrr: number;
+    failedToday: number;
+    pendingAch: number;
+    lastSuccessfulPaymentAt: string | null;
+  };
+  pipelineCounts: {
+    leads: number;
+    draft: number;
+    inProgress: number;
+    submitted: number;
+    approved: number;
+    rejected: number;
+    cancelled: number;
+  };
+  operationsStats: {
+    overdueTasks: number;
+    atRiskDeals: number;
+  };
+  workQueue: WorkQueueItem[];
+}
+
+/** Default empty stats used when the RPC call fails */
+const EMPTY_CONSOLE_STATS: CommandConsoleStats = {
+  enrollmentStats: {
+    startedToday: 0, submittedToday: 0, activatedToday: 0,
+    pendingUnderwriting: 0, docsRequired: 0, activationDelayed: 0,
+    rejectedCount: 0, expiringSoon: 0, totalDraft: 0,
+  },
+  billingStats: {
+    collectedToday: 0, mrr: 0, failedToday: 0,
+    pendingAch: 0, lastSuccessfulPaymentAt: null,
+  },
+  pipelineCounts: {
+    leads: 0, draft: 0, inProgress: 0, submitted: 0,
+    approved: 0, rejected: 0, cancelled: 0,
+  },
+  operationsStats: { overdueTasks: 0, atRiskDeals: 0 },
+  workQueue: [],
+};
+
+/**
+ * Fetch all command console stats in a single RPC round-trip.
+ * Returns enrollment, billing, pipeline, operations, and work queue data.
+ */
+export async function getCommandConsoleStats(
+  orgId: string,
+  userId: string,
+): Promise<CommandConsoleStats> {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase.rpc('get_command_console_stats', {
+    p_org_id: orgId,
+    p_user_id: userId,
+  });
+
+  if (error) {
+    console.error('[getCommandConsoleStats] RPC error:', error);
+    return EMPTY_CONSOLE_STATS;
+  }
+
+  return {
+    enrollmentStats: {
+      startedToday: data?.enrollmentStats?.startedToday ?? 0,
+      submittedToday: data?.enrollmentStats?.submittedToday ?? 0,
+      activatedToday: data?.enrollmentStats?.activatedToday ?? 0,
+      pendingUnderwriting: data?.enrollmentStats?.pendingUnderwriting ?? 0,
+      docsRequired: data?.enrollmentStats?.docsRequired ?? 0,
+      activationDelayed: data?.enrollmentStats?.activationDelayed ?? 0,
+      rejectedCount: data?.enrollmentStats?.rejectedCount ?? 0,
+      expiringSoon: data?.enrollmentStats?.expiringSoon ?? 0,
+      totalDraft: data?.enrollmentStats?.totalDraft ?? 0,
+    },
+    billingStats: {
+      collectedToday: Number(data?.billingStats?.collectedToday ?? 0),
+      mrr: Number(data?.billingStats?.mrr ?? 0),
+      failedToday: data?.billingStats?.failedToday ?? 0,
+      pendingAch: data?.billingStats?.pendingAch ?? 0,
+      lastSuccessfulPaymentAt: data?.billingStats?.lastSuccessfulPaymentAt ?? null,
+    },
+    pipelineCounts: {
+      leads: data?.pipelineCounts?.leads ?? 0,
+      draft: data?.pipelineCounts?.draft ?? 0,
+      inProgress: data?.pipelineCounts?.inProgress ?? 0,
+      submitted: data?.pipelineCounts?.submitted ?? 0,
+      approved: data?.pipelineCounts?.approved ?? 0,
+      rejected: data?.pipelineCounts?.rejected ?? 0,
+      cancelled: data?.pipelineCounts?.cancelled ?? 0,
+    },
+    operationsStats: {
+      overdueTasks: data?.operationsStats?.overdueTasks ?? 0,
+      atRiskDeals: data?.operationsStats?.atRiskDeals ?? 0,
+    },
+    workQueue: (data?.workQueue ?? []) as WorkQueueItem[],
+  };
+}
+
+/**
+ * Per-request memoized version of getCommandConsoleStats.
+ */
+export const getCachedCommandConsoleStats = cache(
+  async (orgId: string, userId: string) => getCommandConsoleStats(orgId, userId)
+);
