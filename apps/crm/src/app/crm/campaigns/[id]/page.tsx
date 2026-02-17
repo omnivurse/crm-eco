@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -139,8 +139,8 @@ function StatusBadge({ status }: { status: Campaign['status'] }) {
 // Main Page
 // ============================================================================
 
-export default function CampaignDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function CampaignDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

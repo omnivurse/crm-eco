@@ -91,8 +91,9 @@ function formatCurrency(amount: number | null): string {
   }).format(amount);
 }
 
-export default async function ProductDetailPage({ params }: { params: { id: string } }) {
-  const result = await getProduct(params.id);
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const result = await getProduct(id);
 
   if (!result?.product) {
     notFound();
@@ -101,10 +102,10 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
   const { product, organizationId } = result;
 
   const [iuaLevels, ageBrackets, benefits, extraCosts] = await Promise.all([
-    getProductIuaLevels(params.id),
-    getProductAgeBrackets(params.id),
-    getProductBenefits(params.id),
-    getProductExtraCosts(params.id),
+    getProductIuaLevels(id),
+    getProductAgeBrackets(id),
+    getProductBenefits(id),
+    getProductExtraCosts(id),
   ]);
 
   return (

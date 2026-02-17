@@ -32,8 +32,9 @@ async function getProduct(id: string) {
   return { product, organizationId: profile.organization_id };
 }
 
-export default async function ProductPricingPage({ params }: { params: { id: string } }) {
-  const result = await getProduct(params.id);
+export default async function ProductPricingPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const result = await getProduct(id);
 
   if (!result?.product) {
     notFound();
@@ -67,7 +68,7 @@ export default async function ProductPricingPage({ params }: { params: { id: str
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2">
           <E123PricingMatrix
-            productId={params.id}
+            productId={id}
             productCode={product.code}
             organizationId={organizationId}
           />

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Input, Label, Textarea } from '@crm-eco/ui';
 import { toast } from 'sonner';
 import {
@@ -194,12 +194,8 @@ function QuickActionsPanel({
 // Main Component
 // ============================================================================
 
-export default function ConversationDetailPage({
-  params,
-}: {
-  params: { conversationId: string };
-}) {
-  const { conversationId } = params;
+export default function ConversationDetailPage() {
+  const { conversationId } = useParams<{ conversationId: string }>();
   const router = useRouter();
   const [conversation, setConversation] = useState<InboxConversation | null>(null);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
