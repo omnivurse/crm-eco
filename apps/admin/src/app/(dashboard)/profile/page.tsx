@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
   Card,
@@ -167,7 +167,7 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
@@ -263,7 +263,8 @@ export default function ProfilePage() {
           time_zone: timeZone || null,
           ui_theme: uiTheme || null,
           updated_at: new Date().toISOString(),
-        } as never)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
         .eq('id', profile.id);
 
       if (error) throw error;
@@ -308,6 +309,22 @@ export default function ProfilePage() {
 
     setIsChangingPassword(true);
     try {
+      // Verify current password before allowing change
+      if (!currentPassword) {
+        toast.error('Please enter your current password.');
+        setIsChangingPassword(false);
+        return;
+      }
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: profile?.email || '',
+        password: currentPassword,
+      });
+      if (verifyError) {
+        toast.error('Current password is incorrect.');
+        setIsChangingPassword(false);
+        return;
+      }
+
       const { error } = await supabase.auth.updateUser({
         password: newPassword,
       });

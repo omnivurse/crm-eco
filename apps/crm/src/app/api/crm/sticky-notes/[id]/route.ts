@@ -38,11 +38,12 @@ export async function PATCH(
 
     const supabase = await createClient();
 
-    // Verify ownership
+    // Verify ownership and organization
     const { data: existing, error: fetchError } = await supabase
       .from('notes')
       .select('id, owner_id')
       .eq('id', id)
+      .eq('organization_id', profile.organization_id)
       .single();
 
     if (fetchError || !existing) {
@@ -74,7 +75,7 @@ export async function PATCH(
 
     if (error) {
       console.error('Error updating sticky note:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to update note' }, { status: 500 });
     }
 
     return NextResponse.json(note);
@@ -101,11 +102,12 @@ export async function DELETE(
     const { id } = await params;
     const supabase = await createClient();
 
-    // Verify ownership
+    // Verify ownership and organization
     const { data: existing, error: fetchError } = await supabase
       .from('notes')
       .select('id, owner_id')
       .eq('id', id)
+      .eq('organization_id', profile.organization_id)
       .single();
 
     if (fetchError || !existing) {
@@ -123,7 +125,7 @@ export async function DELETE(
 
     if (deleteError) {
       console.error('Error deleting sticky note:', deleteError);
-      return NextResponse.json({ error: deleteError.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to delete note' }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });

@@ -56,13 +56,18 @@ async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
   const orgId = profile.organization_id;
 
   // Get enrollment counts by status
-  const [totalRes, pendingRes, approvedRes, rejectedRes, cancelledRes] = await Promise.all([
+  const [totalSettled, pendingSettled, approvedSettled, rejectedSettled, cancelledSettled] = await Promise.allSettled([
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'pending'),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'approved'),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'rejected'),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'cancelled'),
   ]);
+  const totalRes = totalSettled.status === 'fulfilled' ? totalSettled.value : { count: null };
+  const pendingRes = pendingSettled.status === 'fulfilled' ? pendingSettled.value : { count: null };
+  const approvedRes = approvedSettled.status === 'fulfilled' ? approvedSettled.value : { count: null };
+  const rejectedRes = rejectedSettled.status === 'fulfilled' ? rejectedSettled.value : { count: null };
+  const cancelledRes = cancelledSettled.status === 'fulfilled' ? cancelledSettled.value : { count: null };
 
   // Get enrollments by plan (using plans table)
   const { data: byPlanData } = await (supabase as any)
@@ -180,7 +185,7 @@ async function getRevenueStats(): Promise<RevenueStats | null> {
   const lastMonthStart = startOfMonth(subDays(thisMonthStart, 1));
   const lastMonthEnd = endOfMonth(subDays(thisMonthStart, 1));
 
-  const [totalRes, thisMonthRes, lastMonthRes, pendingRes] = await Promise.all([
+  const [totalSettled, thisMonthSettled, lastMonthSettled, pendingSettled] = await Promise.allSettled([
     (supabase as any)
       .from('billing_transactions')
       .select('amount')
@@ -208,6 +213,10 @@ async function getRevenueStats(): Promise<RevenueStats | null> {
       .eq('organization_id', orgId)
       .in('status', ['pending', 'processing']) as { data: { amount: number }[] | null },
   ]);
+  const totalRes = totalSettled.status === 'fulfilled' ? totalSettled.value : { data: null };
+  const thisMonthRes = thisMonthSettled.status === 'fulfilled' ? thisMonthSettled.value : { data: null };
+  const lastMonthRes = lastMonthSettled.status === 'fulfilled' ? lastMonthSettled.value : { data: null };
+  const pendingRes = pendingSettled.status === 'fulfilled' ? pendingSettled.value : { data: null };
 
   const totalCollected = (totalRes.data || []).reduce((sum, t) => sum + (t.amount || 0), 0);
   const thisMonth = (thisMonthRes.data || []).reduce((sum, t) => sum + (t.amount || 0), 0);
@@ -248,10 +257,12 @@ function getMonthTrend(current: number, previous: number): { trend: 'up' | 'down
 }
 
 export default async function AnalyticsPage() {
-  const [enrollmentStats, revenueStats] = await Promise.all([
+  const [enrollmentStatsResult, revenueStatsResult] = await Promise.allSettled([
     getEnrollmentStats(),
     getRevenueStats(),
   ]);
+  const enrollmentStats = enrollmentStatsResult.status === 'fulfilled' ? enrollmentStatsResult.value : null;
+  const revenueStats = revenueStatsResult.status === 'fulfilled' ? revenueStatsResult.value : null;
 
   const revenueTrend = revenueStats
     ? getMonthTrend(revenueStats.thisMonth, revenueStats.lastMonth)

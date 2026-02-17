@@ -86,7 +86,7 @@ export default function OpsPage() {
     async function fetchStats() {
       try {
         const sb = supabase as any;
-        const [totalJobsResult, runningJobsResult, failedJobsResult, recentJobsResult, vendorStatsResult] = await Promise.all([
+        const [totalJobsSettled, runningJobsSettled, failedJobsSettled, recentJobsSettled, vendorStatsSettled] = await Promise.allSettled([
           sb
             .from('job_runs')
             .select('id', { count: 'exact', head: true })
@@ -110,6 +110,11 @@ export default function OpsPage() {
             .limit(5),
           sb.rpc('get_vendor_eligibility_summary', { p_org_id: organizationId }),
         ]);
+        const totalJobsResult = totalJobsSettled.status === 'fulfilled' ? totalJobsSettled.value : { count: null };
+        const runningJobsResult = runningJobsSettled.status === 'fulfilled' ? runningJobsSettled.value : { count: null };
+        const failedJobsResult = failedJobsSettled.status === 'fulfilled' ? failedJobsSettled.value : { count: null };
+        const recentJobsResult = recentJobsSettled.status === 'fulfilled' ? recentJobsSettled.value : { data: null };
+        const vendorStatsResult = vendorStatsSettled.status === 'fulfilled' ? vendorStatsSettled.value : { data: null };
 
         setStats({
           totalJobs: totalJobsResult.count ?? 0,

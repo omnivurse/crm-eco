@@ -220,7 +220,7 @@ export default function VendorOpsPage() {
 
     setLoading(true);
     try {
-      const [runsResult, configsResult, credentialsResult] = await Promise.all([
+      const [runsSettled, configsSettled, credentialsSettled] = await Promise.allSettled([
         supabase
           .from('vendor_eligibility_runs')
           .select('*', { count: 'exact' })
@@ -241,6 +241,9 @@ export default function VendorOpsPage() {
           .eq('vendor_code', vendorCode)
           .order('name'),
       ]);
+      const runsResult = runsSettled.status === 'fulfilled' ? runsSettled.value : { data: null, count: null };
+      const configsResult = configsSettled.status === 'fulfilled' ? configsSettled.value : { data: null };
+      const credentialsResult = credentialsSettled.status === 'fulfilled' ? credentialsSettled.value : { data: null };
 
       setRuns(runsResult.data || []);
       setTotalCount(runsResult.count || 0);

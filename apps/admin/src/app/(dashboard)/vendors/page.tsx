@@ -30,7 +30,7 @@ async function getVendorsAndStats(): Promise<{ vendors: any[]; stats: VendorStat
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const [vendorsResult, activeResult, filesResult, changesResult] = await Promise.all([
+  const [vendorsSettled, activeSettled, filesSettled, changesSettled] = await Promise.allSettled([
     supabase
       .from('vendors')
       .select('*')
@@ -52,6 +52,10 @@ async function getVendorsAndStats(): Promise<{ vendors: any[]; stats: VendorStat
       .eq('org_id', profile.organization_id)
       .gte('detected_at', sevenDaysAgo.toISOString()),
   ]);
+  const vendorsResult = vendorsSettled.status === 'fulfilled' ? vendorsSettled.value : { data: null };
+  const activeResult = activeSettled.status === 'fulfilled' ? activeSettled.value : { count: null };
+  const filesResult = filesSettled.status === 'fulfilled' ? filesSettled.value : { count: null };
+  const changesResult = changesSettled.status === 'fulfilled' ? changesSettled.value : { count: null };
 
   const vendors = vendorsResult.data || [];
 

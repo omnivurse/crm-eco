@@ -91,10 +91,12 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  const [dependents, enrollments] = await Promise.all([
+  const [dependentsResult, enrollmentsResult] = await Promise.allSettled([
     getDependents(id),
     getEnrollments(id),
   ]);
+  const dependents = dependentsResult.status === 'fulfilled' ? dependentsResult.value : [];
+  const enrollments = enrollmentsResult.status === 'fulfilled' ? enrollmentsResult.value : [];
 
   return (
     <div className="space-y-6">

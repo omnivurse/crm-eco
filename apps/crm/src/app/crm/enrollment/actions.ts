@@ -1062,12 +1062,18 @@ export async function getEnrollmentWizardData(enrollmentId: string): Promise<Act
   stepStatuses: Record<string, { isCompleted: boolean; completedAt?: string }>;
 }>> {
   try {
-    const supabase = await getSupabase();
-    
+    const auth = await getAuthContext();
+    if (!auth.success) {
+      return { success: false, error: auth.error };
+    }
+
+    const { supabase, profile } = auth.context;
+
     const { data: enrollment, error: enrollmentError } = await supabase
       .from('enrollments')
       .select('*, members:primary_member_id (state, date_of_birth)')
       .eq('id', enrollmentId)
+      .eq('org_id', profile.organization_id)
       .single();
 
     if (enrollmentError || !enrollment) {

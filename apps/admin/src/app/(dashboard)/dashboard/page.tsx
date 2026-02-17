@@ -87,7 +87,7 @@ async function getCommissionStats(orgId: string) {
   const supabase = await createServerSupabaseClient();
   const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
-  const [pendingResult, paidResult] = await Promise.all([
+  const [pendingSettled, paidSettled] = await Promise.allSettled([
     supabase
       .from('commission_transactions')
       .select('commission_amount')
@@ -100,6 +100,8 @@ async function getCommissionStats(orgId: string) {
       .eq('status', 'paid')
       .gte('paid_at', startOfMonth.toISOString()) as unknown as { data: { commission_amount: number }[] | null },
   ]);
+  const pendingResult = pendingSettled.status === 'fulfilled' ? pendingSettled.value : { data: null };
+  const paidResult = paidSettled.status === 'fulfilled' ? paidSettled.value : { data: null };
 
   return {
     pending: (pendingResult.data || []).reduce((s, t) => s + (t.commission_amount || 0), 0),
@@ -151,8 +153,8 @@ async function getMemberActivityData(orgId: string): Promise<MemberActivityData>
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-  const [newEnrollmentsResult, inactiveResult, prevEnrollmentsResult, prevInactiveResult, totalResult, activeResult] =
-    await Promise.all([
+  const [newEnrollmentsSettled, inactiveSettled, prevEnrollmentsSettled, prevInactiveSettled, totalSettled, activeSettled] =
+    await Promise.allSettled([
       supabase.from('enrollments').select('id', { count: 'exact', head: true })
         .eq('organization_id', orgId).eq('status', 'approved').gte('approved_at', startOfMonth.toISOString()) as any,
       supabase.from('members').select('id', { count: 'exact', head: true })
@@ -166,6 +168,12 @@ async function getMemberActivityData(orgId: string): Promise<MemberActivityData>
       supabase.from('members').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('members').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
     ]);
+  const newEnrollmentsResult = newEnrollmentsSettled.status === 'fulfilled' ? newEnrollmentsSettled.value : { count: null };
+  const inactiveResult = inactiveSettled.status === 'fulfilled' ? inactiveSettled.value : { count: null };
+  const prevEnrollmentsResult = prevEnrollmentsSettled.status === 'fulfilled' ? prevEnrollmentsSettled.value : { count: null };
+  const prevInactiveResult = prevInactiveSettled.status === 'fulfilled' ? prevInactiveSettled.value : { count: null };
+  const totalResult = totalSettled.status === 'fulfilled' ? totalSettled.value : { count: null };
+  const activeResult = activeSettled.status === 'fulfilled' ? activeSettled.value : { count: null };
 
   const newEnrollments = newEnrollmentsResult.count ?? 0;
   const inactive = inactiveResult.count ?? 0;

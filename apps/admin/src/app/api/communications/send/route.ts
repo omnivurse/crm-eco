@@ -37,8 +37,9 @@ export async function POST(request: NextRequest) {
       variables = {},
     } = body;
 
-    if (!to) {
-      return NextResponse.json({ error: 'Recipient email is required' }, { status: 400 });
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!to || !EMAIL_RE.test(to)) {
+      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
     }
 
     // Create email service

@@ -34,7 +34,9 @@ export async function GET(request: NextRequest) {
       .order('name', { ascending: true });
 
     if (moduleKey) {
-      query = query.or(`module_key.eq.${moduleKey},module_key.is.null`);
+      // Sanitize input to prevent PostgREST filter injection
+      const safeModuleKey = moduleKey.replace(/[,().\\]/g, '\\$&');
+      query = query.or(`module_key.eq.${safeModuleKey},module_key.is.null`);
     }
 
     const { data, error } = await query;

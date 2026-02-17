@@ -118,10 +118,12 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
     notFound();
   }
 
-  const [steps, auditLog] = await Promise.all([
+  const [stepsResult, auditLogResult] = await Promise.allSettled([
     getEnrollmentSteps(id),
     getEnrollmentAuditLog(id),
   ]);
+  const steps = stepsResult.status === 'fulfilled' ? stepsResult.value : [];
+  const auditLog = auditLogResult.status === 'fulfilled' ? auditLogResult.value : [];
 
   return (
     <div className="space-y-6">

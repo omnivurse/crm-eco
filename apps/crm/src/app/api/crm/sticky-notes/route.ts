@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       .from('notes')
       .select('*', { count: 'exact' })
       .eq('owner_id', profile.id)
+      .eq('organization_id', profile.organization_id)
       .order('is_pinned', { ascending: false })
       .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -66,7 +67,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching sticky notes:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to fetch notes' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating sticky note:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to create note' }, { status: 500 });
     }
 
     return NextResponse.json(note, { status: 201 });
