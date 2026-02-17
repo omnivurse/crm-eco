@@ -58,14 +58,7 @@ export function DashboardHeaderClient({ greeting, stats }: DashboardHeaderClient
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] p-4 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,53,96,0.4)]">
-      {/* Static background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#047474]/30 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-[#E9B61F]/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-radial from-white/5 to-transparent rounded-full" />
-      </div>
-
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#003560] p-4 sm:p-8 shadow-lg">
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 opacity-[0.03]">
         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">

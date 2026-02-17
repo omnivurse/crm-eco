@@ -359,12 +359,7 @@ export function DashboardHero({
   const todaysMeetings = upcomingMeetings.slice(0, 3);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-900/95 to-slate-800 p-6 md:p-8 shadow-xl shadow-black/10 ring-1 ring-white/[0.05]">
-      {/* Subtle background accents */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-blue-500/[0.07] to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-gradient-to-tr from-indigo-500/[0.04] to-transparent rounded-full blur-3xl" />
-      </div>
+    <div className="relative overflow-hidden rounded-3xl bg-slate-900 p-6 md:p-8 shadow-xl shadow-black/10 ring-1 ring-white/[0.05]">
 
       <div className="relative z-10">
         {/* ── Zone A: Header ── */}
