@@ -888,9 +888,8 @@ export interface DashboardHeroStats {
 export async function getDashboardHeroStats(
   orgId: string,
   userId: string,
-  preloadedCookies?: Awaited<ReturnType<typeof cookies>>
 ): Promise<DashboardHeroStats> {
-  const supabase = await createCrmClient(preloadedCookies);
+  const supabase = await createCrmClient();
 
   const { data, error } = await supabase.rpc('get_dashboard_hero_stats', {
     p_org_id: orgId,
