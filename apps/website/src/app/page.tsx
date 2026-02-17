@@ -153,7 +153,6 @@ export default function HomePage() {
       </section>
 
       {/* Plan Preview */}
-      {/* @ts-expect-error Async Server Component */}
       <HomePlanCards />
 
       {/* Testimonials */}
