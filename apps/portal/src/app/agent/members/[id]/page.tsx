@@ -30,10 +30,10 @@ async function getMemberDetails(supabase: any, memberId: string, agentId: string
       enrollments (
         id,
         status,
-        start_date,
-        monthly_cost,
+        effective_date,
+        base_monthly_cost,
         created_at,
-        plans (
+        plans:selected_plan_id (
           id,
           name,
           description
@@ -119,8 +119,8 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
           </h1>
           <p className="text-slate-500">Member ID: {member.id}</p>
         </div>
-        <Badge className={getStatusColor(member.enrollment_status)}>
-          {member.enrollment_status}
+        <Badge className={getStatusColor(member.status)}>
+          {member.status}
         </Badge>
       </div>
 
@@ -171,7 +171,7 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
                 <Phone className="h-5 w-5 text-slate-400 mt-0.5" />
                 <div>
                   <label className="text-sm font-medium text-slate-500">Phone</label>
-                  <p className="text-slate-900">{member.phone_number || '-'}</p>
+                  <p className="text-slate-900">{member.phone || '-'}</p>
                 </div>
               </div>
             </div>
@@ -292,17 +292,17 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
                         {enrollment.plans?.name || 'Unknown Plan'}
                       </p>
                       <p className="text-sm text-slate-500">
-                        Started: {enrollment.start_date 
-                          ? new Date(enrollment.start_date).toLocaleDateString()
+                        Started: {enrollment.effective_date 
+                          ? new Date(enrollment.effective_date).toLocaleDateString()
                           : 'Not started'}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    {enrollment.monthly_cost && (
+                    {enrollment.base_monthly_cost && (
                       <div className="text-right">
                         <p className="font-medium text-slate-900">
-                          ${enrollment.monthly_cost}/mo
+                          ${enrollment.base_monthly_cost}/mo
                         </p>
                       </div>
                     )}
@@ -332,9 +332,9 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
             </a>
           </Button>
         )}
-        {member.phone_number && (
+        {member.phone && (
           <Button variant="outline" className="gap-2" asChild>
-            <a href={`tel:${member.phone_number}`}>
+            <a href={`tel:${member.phone}`}>
               <Phone className="h-4 w-4" />
               Call Member
             </a>

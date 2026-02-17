@@ -3,15 +3,9 @@ import { StickyNote, ArrowRight, Pin } from 'lucide-react';
 import { WidgetCard } from '../WidgetCard';
 import { EmptyState } from './shared';
 import type { WidgetSize } from '@/lib/dashboard/types';
+import type { Note as CanonicalNote } from '@crm-eco/lib/types';
 
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  is_pinned: boolean;
-  created_at: string;
-  updated_at: string;
-}
+type Note = Pick<CanonicalNote, 'id' | 'title' | 'content' | 'is_pinned' | 'created_at' | 'updated_at'>;
 
 interface NotesMemosWidgetProps {
   data: Note[] | null;

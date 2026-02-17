@@ -4,23 +4,15 @@ import { Badge, Button } from '@crm-eco/ui';
 import { Eye, Users, Mail, Phone, MapPin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import type { Member as MemberRow } from '@crm-eco/lib/types';
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  status: string;
-  state: string | null;
-  plan_name: string | null;
-  effective_date: string | null;
-  created_at: string;
+/** Member row with joined advisor relation, as returned by the list query */
+type MemberWithAdvisor = Pick<MemberRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'state' | 'plan_name' | 'effective_date' | 'created_at'> & {
   advisor: { id: string; first_name: string; last_name: string } | null;
-}
+};
 
 interface MemberTableProps {
-  members: Member[];
+  members: MemberWithAdvisor[];
 }
 
 function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
@@ -55,7 +47,7 @@ function getStatusLabel(status: string): string {
 /**
  * Mobile card component for displaying a member.
  */
-function MemberCard({ member }: { member: Member }) {
+function MemberCard({ member }: { member: MemberWithAdvisor }) {
   return (
     <Link
       href={`/members/${member.id}`}

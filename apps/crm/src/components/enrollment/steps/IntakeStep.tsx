@@ -6,15 +6,9 @@ import { User, UserPlus, Building2, Users, Globe, Briefcase, Check } from 'lucid
 import { useEnrollmentWizard, WizardNavigation, type EnrollmentMode } from '../wizard';
 import { completeIntakeStep } from '@/app/crm/enrollment/actions';
 import { cn } from '@crm-eco/ui';
+import type { Member as CanonicalMember, Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  state: string | null;
-  date_of_birth: string | null;
-}
+type Member = Pick<CanonicalMember, 'id' | 'first_name' | 'last_name' | 'email' | 'state' | 'date_of_birth'>;
 
 interface Lead {
   id: string;
@@ -23,11 +17,7 @@ interface Lead {
   email: string | null;
 }
 
-interface Advisor {
-  id: string;
-  first_name: string;
-  last_name: string;
-}
+type Advisor = Pick<CanonicalAdvisor, 'id' | 'first_name' | 'last_name'>;
 
 interface IntakeStepProps {
   members: Member[];

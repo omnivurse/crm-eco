@@ -20,6 +20,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import type { Need as CanonicalNeed } from '@crm-eco/lib/types';
 
 // Need status configuration
 const NEED_STATUSES: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -39,16 +40,9 @@ const URGENCY_LEVELS: Record<string, { label: string; color: string; bg: string 
   urgent: { label: 'Urgent', color: 'text-red-400', bg: 'bg-red-500/10' },
 };
 
-interface Need {
-  id: string;
-  need_type: string;
-  description: string | null;
-  total_amount: number;
-  amount_submitted: number;
-  status: string;
-  urgency?: string;
-  sla_deadline?: string | null;
-  created_at: string;
+type NeedRow = Pick<CanonicalNeed, 'id' | 'need_type' | 'description' | 'total_amount' | 'status' | 'urgency_light' | 'sla_target_date' | 'created_at'>;
+
+type Need = NeedRow & {
   member?: {
     id: string;
     title: string;
@@ -58,30 +52,25 @@ interface Need {
     id: string;
     full_name: string | null;
   } | null;
-}
+};
 
-interface NeedStats {
-  status: string;
-  urgency: string | null;
-  total_amount: number;
-  amount_submitted: number;
-}
+type NeedStats = Pick<CanonicalNeed, 'status' | 'urgency_light' | 'total_amount'>;
 
 interface RecentNeedStats {
   status: string;
-  sla_deadline: string | null;
+  sla_target_date: string | null;
   created_at: string;
   updated_at: string;
 }
 
 function NeedCard({ need }: { need: Need }) {
   const status = NEED_STATUSES[need.status] || NEED_STATUSES.submitted;
-  const urgency = URGENCY_LEVELS[need.urgency || 'medium'] || URGENCY_LEVELS.medium;
+  const urgency = URGENCY_LEVELS[need.urgency_light || 'medium'] || URGENCY_LEVELS.medium;
   const memberName = need.member?.title || 'Unknown Member';
   const memberId = need.member?.data?.membership_number as string || need.member?.id?.slice(0, 8) || 'N/A';
 
-  const daysUntilSla = need.sla_deadline
-    ? Math.ceil((new Date(need.sla_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+  const daysUntilSla = need.sla_target_date
+    ? Math.ceil((new Date(need.sla_target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : 7;
   const isOverdue = daysUntilSla < 0;
   const isDueSoon = daysUntilSla <= 2 && daysUntilSla >= 0;
@@ -115,7 +104,7 @@ function NeedCard({ need }: { need: Need }) {
             <div className="flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
               <span className="text-xl font-bold text-slate-900 dark:text-white">
-                ${(need.amount_submitted || need.total_amount || 0).toLocaleString()}
+                ${(need.total_amount || 0).toLocaleString()}
               </span>
             </div>
 
@@ -138,7 +127,7 @@ function NeedCard({ need }: { need: Need }) {
         <div className="px-5 py-3 bg-slate-100 dark:bg-slate-900/30 border-t border-slate-200 dark:border-white/5 flex items-center justify-between">
           <span className="text-xs text-slate-500 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
-            Submitted {new Date(need.created_at).toLocaleDateString()}
+            Submitted {need.created_at ? new Date(need.created_at).toLocaleDateString() : '—'}
           </span>
           <span className="h-7 text-xs text-teal-600 dark:text-teal-400 flex items-center gap-1">
             Review
@@ -166,10 +155,9 @@ async function NeedsContent() {
       need_type,
       description,
       total_amount,
-      amount_submitted,
       status,
-      urgency,
-      sla_deadline,
+      urgency_light,
+      sla_target_date,
       created_at,
       member:crm_records!needs_member_id_fkey(id, title, data),
       assigned_to_user:profiles!needs_assigned_to_fkey(id, full_name)
@@ -187,7 +175,7 @@ async function NeedsContent() {
   // Calculate stats
   const { data: allNeedsData } = await supabase
     .from('needs')
-    .select('status, urgency, total_amount, amount_submitted')
+    .select('status, urgency_light, total_amount')
     .eq('organization_id', profile.organization_id);
 
   const allNeeds = (allNeedsData || []) as unknown as NeedStats[];
@@ -195,8 +183,8 @@ async function NeedsContent() {
   const pendingReview = allNeeds.filter(n => ['submitted', 'in_review'].includes(n.status)).length;
   const approvedAmount = allNeeds
     .filter(n => n.status === 'approved' || n.status === 'paid')
-    .reduce((sum, n) => sum + (n.amount_submitted || n.total_amount || 0), 0);
-  const urgentNeeds = allNeeds.filter(n => n.urgency === 'urgent' || n.urgency === 'high').length;
+    .reduce((sum, n) => sum + (n.total_amount || 0), 0);
+  const urgentNeeds = allNeeds.filter(n => n.urgency_light === 'urgent' || n.urgency_light === 'high').length;
 
   // Calculate SLA stats (last 30 days)
   const thirtyDaysAgo = new Date();
@@ -204,15 +192,15 @@ async function NeedsContent() {
 
   const { data: recentNeedsData } = await supabase
     .from('needs')
-    .select('status, sla_deadline, created_at, updated_at')
+    .select('status, sla_target_date, created_at, updated_at')
     .eq('organization_id', profile.organization_id)
     .gte('created_at', thirtyDaysAgo.toISOString());
 
   const recentNeeds = (recentNeedsData || []) as unknown as RecentNeedStats[];
   const completedNeeds = recentNeeds.filter(n => ['approved', 'paid', 'denied'].includes(n.status));
   const onTimeCount = completedNeeds.filter(n => {
-    if (!n.sla_deadline) return true;
-    const deadline = new Date(n.sla_deadline);
+    if (!n.sla_target_date) return true;
+    const deadline = new Date(n.sla_target_date);
     const completed = new Date(n.updated_at);
     return completed <= deadline;
   }).length;
@@ -223,8 +211,8 @@ async function NeedsContent() {
 
   // Count at-risk (close to SLA deadline)
   const atRiskCount = needsList.filter(n => {
-    if (!n.sla_deadline || ['approved', 'paid', 'denied'].includes(n.status)) return false;
-    const daysLeft = Math.ceil((new Date(n.sla_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    if (!n.sla_target_date || ['approved', 'paid', 'denied'].includes(n.status)) return false;
+    const daysLeft = Math.ceil((new Date(n.sla_target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return daysLeft <= 2;
   }).length;
 

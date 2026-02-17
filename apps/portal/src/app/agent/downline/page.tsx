@@ -15,18 +15,12 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
+import type { Advisor } from '@crm-eco/lib/types';
 
-interface DownlineAgent {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string | null;
-  status: string;
-  enrollment_code: string | null;
-  created_at: string | null;
+/** Advisor row with computed member_count from the aggregation query */
+type DownlineAgent = Pick<Advisor, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'enrollment_code' | 'created_at'> & {
   member_count?: number;
-}
+};
 
 export default function AgentDownlinePage() {
   const [downlineAgents, setDownlineAgents] = useState<DownlineAgent[]>([]);

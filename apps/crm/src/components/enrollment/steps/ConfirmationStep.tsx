@@ -6,13 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, La
 import { CheckCircle, User, Users, FileText, Shield, CreditCard, AlertTriangle, UserPlus, PenTool } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation } from '../wizard';
 import { submitEnrollment, saveSignature } from '@/app/crm/enrollment/actions';
+import type { Member as CanonicalMember, Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
+type Member = Pick<CanonicalMember, 'id' | 'first_name' | 'last_name' | 'email'>;
 
 interface Plan {
   id: string;
@@ -22,11 +18,7 @@ interface Plan {
   enrollment_fee: number | null;
 }
 
-interface Advisor {
-  id: string;
-  first_name: string;
-  last_name: string;
-}
+type Advisor = Pick<CanonicalAdvisor, 'id' | 'first_name' | 'last_name'>;
 
 interface ConfirmationStepProps {
   members: Member[];

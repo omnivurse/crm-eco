@@ -28,14 +28,9 @@ import {
   SelectValue,
 } from '@crm-eco/ui';
 import { Plus, Loader2, AlertTriangle } from 'lucide-react';
+import type { Member as CanonicalMember, Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  state: string | null;
-  date_of_birth: string | null;
-}
+type Member = Pick<CanonicalMember, 'id' | 'first_name' | 'last_name' | 'state' | 'date_of_birth'>;
 
 interface Plan {
   id: string;
@@ -43,11 +38,7 @@ interface Plan {
   code: string;
 }
 
-interface Advisor {
-  id: string;
-  first_name: string;
-  last_name: string;
-}
+type Advisor = Pick<CanonicalAdvisor, 'id' | 'first_name' | 'last_name'>;
 
 interface CreateEnrollmentDialogProps {
   members: Member[];

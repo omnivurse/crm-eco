@@ -37,27 +37,15 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from 'sonner';
+import type { EmailCampaign } from '@crm-eco/lib/types';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface Campaign {
-  id: string;
-  name: string;
-  subject: string;
-  body_html: string;
-  from_name: string | null;
-  from_email: string;
-  reply_to: string | null;
+type Campaign = Pick<EmailCampaign, 'id' | 'name' | 'subject' | 'body_html' | 'from_name' | 'from_email' | 'reply_to' | 'scheduled_at' | 'started_at' | 'completed_at' | 'total_recipients' | 'sent_count' | 'created_at'> & {
   status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled';
-  scheduled_at: string | null;
-  started_at: string | null;
-  completed_at: string | null;
-  total_recipients: number;
-  sent_count: number;
-  created_at: string;
-}
+};
 
 interface CampaignStats {
   total_recipients: number;
@@ -278,8 +266,10 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
     );
   }
 
-  const progress = campaign.total_recipients > 0
-    ? Math.round((campaign.sent_count / campaign.total_recipients) * 100)
+  const totalRecipients = campaign.total_recipients ?? 0;
+  const sentCount = campaign.sent_count ?? 0;
+  const progress = totalRecipients > 0
+    ? Math.round((sentCount / totalRecipients) * 100)
     : 0;
 
   return (
@@ -361,7 +351,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
               Sending in progress...
             </span>
             <span className="text-sm text-slate-500">
-              {campaign.sent_count.toLocaleString()} / {campaign.total_recipients.toLocaleString()}
+              {sentCount.toLocaleString()} / {totalRecipients.toLocaleString()}
             </span>
           </div>
           <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -428,7 +418,7 @@ export default function CampaignDetailPage({ params }: { params: { id: string } 
             <div className="flex justify-between">
               <dt className="text-slate-500">Created</dt>
               <dd className="text-slate-900 dark:text-white">
-                {format(new Date(campaign.created_at), 'MMM d, yyyy h:mm a')}
+                {campaign.created_at ? format(new Date(campaign.created_at), 'MMM d, yyyy h:mm a') : '—'}
               </dd>
             </div>
             {campaign.scheduled_at && (

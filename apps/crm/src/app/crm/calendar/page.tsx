@@ -40,6 +40,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@crm-eco/ui/components/sheet';
+import type { CrmTask } from '@crm-eco/lib/types';
 
 // Calendar provider types
 type CalendarProvider = 'google' | 'outlook' | 'personal';
@@ -58,29 +59,14 @@ interface CalendarEvent {
     status?: 'confirmed' | 'tentative' | 'cancelled';
 }
 
-interface Task {
-    id: string;
-    title: string;
-    due_at: string;
-    priority: string;
-    status: string;
-}
+type Task = Pick<CrmTask, 'id' | 'title' | 'due_at' | 'priority' | 'status'>;
 
-interface CrmTask {
-    id: string;
-    title: string;
-    description: string | null;
-    due_at: string | null;
-    activity_type: string;
-    meeting_location: string | null;
-    meeting_type: string | null;
-    status: string;
-    assigned_to: string | null;
+type CrmTaskWithRecord = Pick<CrmTask, 'id' | 'title' | 'description' | 'due_at' | 'activity_type' | 'meeting_location' | 'meeting_type' | 'status' | 'assigned_to'> & {
     record?: {
         id: string;
         title: string;
     }[] | null;
-}
+};
 
 interface ConnectedCalendar {
     id: string;
@@ -171,7 +157,7 @@ export default function CalendarPage() {
                     .order('due_at', { ascending: true });
 
                 // Convert activities to calendar events
-                const calendarEvents: CalendarEvent[] = ((activitiesData || []) as unknown as CrmTask[]).map(activity => {
+                const calendarEvents: CalendarEvent[] = ((activitiesData || []) as unknown as CrmTaskWithRecord[]).map(activity => {
                     const startDate = new Date(activity.due_at!);
                     const endDate = new Date(startDate.getTime() + (activity.activity_type === 'call' ? 1800000 : 3600000));
 
@@ -773,7 +759,7 @@ export default function CalendarPage() {
                                                 {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'No due date'}
                                             </p>
                                         </div>
-                                        <span className={cn('w-2 h-2 rounded-full mt-1.5', getPriorityColor(task.priority))} />
+                                        <span className={cn('w-2 h-2 rounded-full mt-1.5', getPriorityColor(task.priority ?? 'med'))} />
                                     </div>
                                 ))
                             )}
@@ -913,7 +899,7 @@ export default function CalendarPage() {
                                                     {task.due_at ? new Date(task.due_at).toLocaleDateString() : 'No due date'}
                                                 </p>
                                             </div>
-                                            <span className={cn('w-2 h-2 rounded-full mt-1.5', getPriorityColor(task.priority))} />
+                                            <span className={cn('w-2 h-2 rounded-full mt-1.5', getPriorityColor(task.priority ?? 'med'))} />
                                         </div>
                                     ))
                                 )}

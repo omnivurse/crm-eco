@@ -41,34 +41,35 @@ import { createClient } from '@crm-eco/lib/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-interface Invoice {
+/** Invoice row with optional joined contact (crm_record) */
+interface InvoiceView {
   id: string;
   invoice_number: string;
-  member_id: string | null;
-  status: string;
-  subtotal: number;
-  discount_amount: number;
-  tax_amount: number;
-  total: number;
-  amount_paid: number;
-  balance_due: number;
+  contact_id: string | null;
+  status: string | null;
+  subtotal: number | null;
+  discount_value: number | null;
+  tax_amount: number | null;
+  total: number | null;
+  amount_paid: number | null;
+  balance_due: number | null;
   due_date: string | null;
   sent_at: string | null;
   paid_at: string | null;
-  is_retro: boolean;
+  is_retro: boolean | null;
   generation_job_id: string | null;
-  created_at: string;
-  member?: {
-    first_name: string;
-    last_name: string;
-    email: string;
+  created_at: string | null;
+  contact?: {
+    id: string;
+    title: string | null;
+    email: string | null;
   } | null;
 }
 
 type StatusFilter = 'all' | 'draft' | 'sent' | 'paid' | 'partial' | 'overdue';
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceView[]>([]);
   const [loading, setLoading] = useState(true);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
@@ -84,7 +85,7 @@ export default function InvoicesPage() {
 
   // Modals
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceView | null>(null);
 
   const supabase = createClient();
 
@@ -120,8 +121,10 @@ export default function InvoicesPage() {
         .from('invoices')
         .select(
           `
-          *,
-          member:members(first_name, last_name, email)
+          id, invoice_number, contact_id, status, subtotal, discount_value, tax_amount,
+          total, amount_paid, balance_due, due_date, sent_at, paid_at, is_retro,
+          generation_job_id, created_at,
+          contact:crm_records!contact_id(id, title, email)
         `
         )
         .eq('organization_id', organizationId)
@@ -138,7 +141,7 @@ export default function InvoicesPage() {
       const { data, error } = await query.limit(500);
 
       if (error && error.code !== '42P01') throw error;
-      setInvoices((data || []) as unknown as Invoice[]);
+      setInvoices((data || []) as unknown as InvoiceView[]);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast.error('Failed to load invoices');
@@ -159,9 +162,8 @@ export default function InvoicesPage() {
     const query = searchQuery.toLowerCase();
     return (
       inv.invoice_number?.toLowerCase().includes(query) ||
-      inv.member?.first_name?.toLowerCase().includes(query) ||
-      inv.member?.last_name?.toLowerCase().includes(query) ||
-      inv.member?.email?.toLowerCase().includes(query)
+      inv.contact?.title?.toLowerCase().includes(query) ||
+      inv.contact?.email?.toLowerCase().includes(query)
     );
   });
 
@@ -245,7 +247,7 @@ export default function InvoicesPage() {
         entity_type: 'invoice',
         entity_id: invoice.id,
         performed_by: profileId,
-        details: { invoice_number: invoice.invoice_number, member_id: invoice.member_id },
+        details: { invoice_number: invoice.invoice_number, contact_id: invoice.contact_id },
       });
 
       toast.success('Invoice sent');
@@ -295,8 +297,8 @@ export default function InvoicesPage() {
       ...filteredInvoices.map((inv) =>
         [
           inv.invoice_number,
-          `"${inv.member?.first_name || ''} ${inv.member?.last_name || ''}"`,
-          inv.member?.email || '',
+          `"${inv.contact?.title || ''}"`,
+          inv.contact?.email || '',
           inv.total,
           inv.amount_paid,
           inv.balance_due,
@@ -500,12 +502,12 @@ export default function InvoicesPage() {
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        {invoice.member ? (
+                        {invoice.contact ? (
                           <div>
                             <p className="font-medium">
-                              {invoice.member.first_name} {invoice.member.last_name}
+                              {invoice.contact.title || '—'}
                             </p>
-                            <p className="text-sm text-muted-foreground">{invoice.member.email}</p>
+                            <p className="text-sm text-muted-foreground">{invoice.contact.email || ''}</p>
                           </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>
@@ -613,14 +615,14 @@ export default function InvoicesPage() {
                 {getStatusBadge(selectedInvoice.status, selectedInvoice.due_date)}
               </div>
 
-              {selectedInvoice.member && (
+              {selectedInvoice.contact && (
                 <div className="flex items-center gap-3 p-3 border rounded-lg">
                   <User className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="font-medium">
-                      {selectedInvoice.member.first_name} {selectedInvoice.member.last_name}
+                      {selectedInvoice.contact.title || '—'}
                     </p>
-                    <p className="text-sm text-muted-foreground">{selectedInvoice.member.email}</p>
+                    <p className="text-sm text-muted-foreground">{selectedInvoice.contact.email || ''}</p>
                   </div>
                 </div>
               )}
@@ -630,10 +632,10 @@ export default function InvoicesPage() {
                   <p className="text-sm text-muted-foreground">Subtotal</p>
                   <p className="font-medium">{formatCurrency(selectedInvoice.subtotal)}</p>
                 </div>
-                {selectedInvoice.discount_amount > 0 && (
+                {(selectedInvoice.discount_value ?? 0) > 0 && (
                   <div>
                     <p className="text-sm text-muted-foreground">Discount</p>
-                    <p className="font-medium text-emerald-600">-{formatCurrency(selectedInvoice.discount_amount)}</p>
+                    <p className="font-medium text-emerald-600">-{formatCurrency(selectedInvoice.discount_value ?? 0)}</p>
                   </div>
                 )}
                 {selectedInvoice.tax_amount > 0 && (

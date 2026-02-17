@@ -31,23 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import type { Member as MemberRow } from '@crm-eco/lib/types';
 
-interface Member {
-  id: string;
-  first_name: string;
-  last_name: string;
-  email: string | null;
-  phone: string | null;
-  status: string;
-  date_of_birth: string | null;
-  city: string | null;
-  state: string | null;
-  created_at: string | null;
-}
+/** Subset of Member columns used in the list view */
+type MemberListItem = Pick<MemberRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'date_of_birth' | 'city' | 'state' | 'created_at'>;
 
 export default function AgentMembersPage() {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [filteredMembers, setFilteredMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<MemberListItem[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<MemberListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -90,7 +81,7 @@ export default function AgentMembersPage() {
 
     const { data, error } = await supabase
       .from('members')
-      .select('*')
+      .select('id, first_name, last_name, email, phone, status, date_of_birth, city, state, created_at')
       .eq('advisor_id', advisor.id)
       .eq('organization_id', advisor.organization_id)
       .order('created_at', { ascending: false });

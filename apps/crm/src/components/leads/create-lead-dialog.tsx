@@ -25,6 +25,7 @@ import {
 } from '@crm-eco/ui';
 import { Plus, User, MapPin, Target, FileText } from 'lucide-react';
 import { logActivityForLead, ActivityTypes } from '@crm-eco/lib';
+import type { Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
 interface LeadInsert {
   organization_id: string;
@@ -43,11 +44,7 @@ interface LeadInsert {
   notes?: string | null;
 }
 
-interface Advisor {
-  id: string;
-  first_name: string;
-  last_name: string;
-}
+type Advisor = Pick<CanonicalAdvisor, 'id' | 'first_name' | 'last_name'>;
 
 const US_STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
