@@ -1,7 +1,3 @@
-// #region agent log
-import * as _dbgFs from 'fs';
-const _dbgLog = (d: Record<string, unknown>) => { try { _dbgFs.appendFileSync('c:\\Users\\User\\Documents\\GitHub\\crm-eco\\.cursor\\debug.log', JSON.stringify({...d,timestamp:Date.now()})+'\n'); } catch {} };
-// #endregion
 import { Suspense } from 'react';
 import {
   getCurrentProfile,
@@ -74,19 +70,10 @@ async function fetchWidgetData(
 }
 
 async function DashboardContent() {
-  // #region agent log
-  _dbgLog({location:'page.tsx:DashboardContent',message:'DashboardContent started',hypothesisId:'H1'});
-  // #endregion
   let profile;
   try {
     profile = await getCurrentProfile();
-    // #region agent log
-    _dbgLog({location:'page.tsx:getCurrentProfile',message:'getCurrentProfile result',data:{hasProfile:!!profile,profileId:profile?.id},hypothesisId:'H1'});
-    // #endregion
   } catch (err) {
-    // #region agent log
-    _dbgLog({location:'page.tsx:getCurrentProfile:catch',message:'getCurrentProfile threw',data:{error:String(err)},hypothesisId:'H1'});
-    // #endregion
     console.error('[Dashboard] Failed to get profile:', err);
     return null;
   }
@@ -97,13 +84,7 @@ async function DashboardContent() {
   try {
     const savedLayout = await loadDashboardLayout();
     if (savedLayout) layout = savedLayout;
-    // #region agent log
-    _dbgLog({location:'page.tsx:loadDashboardLayout',message:'Layout loaded',data:{hasLayout:!!savedLayout,widgetCount:layout.widgets?.length},hypothesisId:'H3'});
-    // #endregion
   } catch (err) {
-    // #region agent log
-    _dbgLog({location:'page.tsx:loadDashboardLayout:catch',message:'loadDashboardLayout threw',data:{error:String(err)},hypothesisId:'H3'});
-    // #endregion
     console.error('[Dashboard] Failed to load layout, using default:', err);
   }
 
@@ -130,10 +111,6 @@ async function DashboardContent() {
 
   if (widgetDataResult.status === 'fulfilled') widgetData = widgetDataResult.value;
   else console.error('[Dashboard] Widget data fetch failed:', widgetDataResult.reason);
-
-  // #region agent log
-  _dbgLog({location:'page.tsx:allSettled',message:'Data fetch results',data:{statsOk:statsResult.status==='fulfilled',heroOk:heroResult.status==='fulfilled',widgetOk:widgetDataResult.status==='fulfilled',statsErr:statsResult.status==='rejected'?String(statsResult.reason):'',heroErr:heroResult.status==='rejected'?String(heroResult.reason):'',widgetErr:widgetDataResult.status==='rejected'?String(widgetDataResult.reason):''},hypothesisId:'H2'});
-  // #endregion
 
   const totalDeals = stats.find((s) => s.moduleKey === 'deals')?.totalRecords || 0;
 
@@ -170,17 +147,6 @@ async function DashboardContent() {
     label: 'Weekly Records Goal',
   };
 
-  // #region agent log
-  let renderedWidgets;
-  try {
-    renderedWidgets = preRenderWidgets(layout.widgets, widgetData);
-    _dbgLog({location:'page.tsx:preRenderWidgets',message:'preRenderWidgets ok',data:{count:Object.keys(renderedWidgets||{}).length},hypothesisId:'H4'});
-  } catch (err) {
-    _dbgLog({location:'page.tsx:preRenderWidgets:catch',message:'preRenderWidgets threw',data:{error:String(err),stack:(err as Error)?.stack?.slice(0,500)},hypothesisId:'H4'});
-    renderedWidgets = {};
-  }
-  // #endregion
-
   return (
     <DashboardLayoutProvider initialLayout={layout}>
       <div className="space-y-8 pb-8">
@@ -203,7 +169,7 @@ async function DashboardContent() {
         <DashboardToolbar />
 
         {/* Customizable Widget Grid - widgets pre-rendered on server */}
-        <DashboardGrid renderedWidgets={renderedWidgets} />
+        <DashboardGrid renderedWidgets={preRenderWidgets(layout.widgets, widgetData)} />
       </div>
     </DashboardLayoutProvider>
   );
