@@ -9,7 +9,7 @@ import {
   Flame,
   Target,
   Clock,
-  RefreshCw,
+
   Sparkles,
   UserPlus,
   DollarSign,
@@ -21,7 +21,7 @@ import {
   Zap,
   Trophy,
 } from 'lucide-react';
-import { Button } from '@crm-eco/ui/components/button';
+
 import type { CrmProfile } from '@/lib/crm/types';
 import type { CalendarEvent } from '@/lib/crm/queries';
 
@@ -62,7 +62,7 @@ interface DashboardHeroProps {
   weeklyGoal?: WeeklyGoalProgress;
   /** AI-generated insight summary */
   aiInsight?: string;
-  onRefresh?: () => void;
+
 }
 
 // ============================================================================
@@ -326,7 +326,6 @@ export function DashboardHero({
   pipelineHealth,
   weeklyGoal,
   aiInsight,
-  onRefresh,
 }: DashboardHeroProps) {
   const [mounted, setMounted] = useState(false);
   const [dateInfo, setDateInfo] = useState({ greeting: 'Hello', formattedDate: '' });
@@ -422,20 +421,9 @@ export function DashboardHero({
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRefresh}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/10 text-white text-sm font-medium transition-all"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-            <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-              <Clock className="w-4 h-4 text-white/60" />
-              <span className="text-sm text-white/60">{mounted ? dateInfo.formattedDate : ''}</span>
-            </div>
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+            <Clock className="w-4 h-4 text-white/60" />
+            <span className="text-sm text-white/60">{mounted ? dateInfo.formattedDate : ''}</span>
           </div>
         </div>
 
