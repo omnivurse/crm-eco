@@ -1,0 +1,31 @@
+// @crm-eco/rates — E123 Rate Engine
+export { quote, getPlanOptions, buildMatrixPreview, resolveRateSetKey, findAgeBand } from './rateEngine';
+export { validateRateConfig } from './validate';
+export type {
+  RateConfig,
+  RateConfigMeta,
+  RateSet,
+  Plan,
+  AgeBand,
+  Region,
+  TobaccoConfig,
+  FeeLine,
+  FeeType,
+  FeeAppliesTo,
+  RatingModel,
+  RateSetKey,
+  CoverageTier,
+  TieredHouseholdRates,
+  AdditivePersonRates,
+  QuoteInput,
+  QuoteOptions,
+  QuoteResult,
+  QuoteFee,
+  BreakdownLine,
+  QuoteMetadata,
+  QuoteError,
+  PlanOption,
+  MatrixPreview,
+  ValidationResult,
+  ValidationError,
+} from './types';

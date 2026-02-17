@@ -1,2 +1,5 @@
-export PATH="/opt/homebrew/bin:$PATH"
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) export PATH="/c/Program Files/Git/bin:$PATH" ;;
+  Darwin) export PATH="/opt/homebrew/bin:$PATH" ;;
+esac
 npx lint-staged

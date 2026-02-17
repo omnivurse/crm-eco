@@ -1,4 +1,7 @@
-export PATH="/opt/homebrew/bin:$PATH"
-echo "🔍 Running type check before push..."
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) export PATH="/c/Program Files/Git/bin:$PATH" ;;
+  Darwin) export PATH="/opt/homebrew/bin:$PATH" ;;
+esac
+echo "Running type check before push..."
 npm run typecheck:crm || exit 1
-echo "✅ Type check passed — safe to push"
+echo "Type check passed - safe to push"

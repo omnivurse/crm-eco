@@ -1,10 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { ArrowLeft, Edit, Calendar, DollarSign, List, Settings, Sparkles, Shield, Upload } from 'lucide-react';
+import { ArrowLeft, Edit, Calendar, DollarSign, List, Settings, Sparkles, Shield, Upload, BarChart3 } from 'lucide-react';
 import { ProductDetailActions } from '@/components/products/ProductDetailActions';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
+import { buildMatrixPreview } from '@crm-eco/rates';
+import type { RateConfig } from '@crm-eco/rates/types';
+import seedConfig from '@crm-eco/rates/config';
 
 async function getProduct(id: string) {
   const supabase = await createServerSupabaseClient();
@@ -24,7 +27,7 @@ async function getProduct(id: string) {
 
   const { data: product } = await (supabase
     .from('plans')
-    .select('*')
+    .select('*, rating_model')
     .eq('id', id)
     .eq('organization_id', profile.organization_id)
     .single() as any);
@@ -120,6 +123,9 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {product.rating_model === 'additive_person' ? 'Additive Person' : 'Tiered Household'}
+          </Badge>
           <Badge variant={product.is_active ? 'default' : 'secondary'}>
             {product.is_active ? 'Active' : 'Inactive'}
           </Badge>
@@ -395,6 +401,47 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
               )}
             </CardContent>
           </Card>
+
+          {/* E123 Pricing Preview */}
+          {(() => {
+            const rateConfig = seedConfig as unknown as RateConfig;
+            const preview = buildMatrixPreview(rateConfig, product.code, 'current');
+            if (!preview) return null;
+            const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Rate Preview
+                  </CardTitle>
+                  <CardDescription>
+                    Member-only rates from current rate set
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {preview.ageBands.map((band) => (
+                      <div key={band.id} className="flex items-center justify-between text-sm">
+                        <span className="text-slate-600">{band.label}</span>
+                        <span className="font-bold tabular-nums">
+                          {fmt(preview.matrix.member?.[band.id] ?? 0)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 pt-3 border-t">
+                    <Link href={`/products/${product.id}/pricing`}>
+                      <Button variant="outline" size="sm" className="w-full">
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Full Pricing Matrix
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
 
           {/* Metadata */}
           <Card>

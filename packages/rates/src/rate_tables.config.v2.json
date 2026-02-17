@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "currency": "USD",
+    "updated_at": "2026-02-16T00:00:00Z",
+    "notes": "PIF HealthShare E123 rate tables — seed data for development"
+  },
+  "rate_sets": {
+    "current": {
+      "label": "Current Rates",
+      "effective_date": "2025-01-01",
+      "plans": [
+        {
+          "planId": "pif-essential",
+          "displayName": "PIF Essential",
+          "rating_model": "tiered_household",
+          "age_bands": [
+            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
+            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
+            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
+            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
+            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+          ],
+          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
+          "tobacco": { "enabled": true, "factor": 1.15 },
+          "fees": [
+            {
+              "id": "admin-fee",
+              "label": "Administrative Fee",
+              "type": "flat_monthly",
+              "amount": 25,
+              "applies_to": "quote",
+              "enabled": true
+            },
+            {
+              "id": "enrollment-fee",
+              "label": "One-Time Enrollment Fee",
+              "type": "flat_one_time",
+              "amount": 150,
+              "applies_to": "enrollment",
+              "enabled": true
+            }
+          ],
+          "rates": {
+            "member":          { "18-29": 225, "30-39": 275, "40-49": 340, "50-59": 425, "60-64": 510 },
+            "member_spouse":   { "18-29": 450, "30-39": 525, "40-49": 650, "50-59": 825, "60-64": 990 },
+            "member_children": { "18-29": 350, "30-39": 400, "40-49": 475, "50-59": 575, "60-64": 675 },
+            "family":          { "18-29": 575, "30-39": 675, "40-49": 825, "50-59": 1025, "60-64": 1225 }
+          }
+        },
+        {
+          "planId": "pif-premier",
+          "displayName": "PIF Premier",
+          "rating_model": "additive_person",
+          "age_bands": [
+            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
+            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
+            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
+            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
+            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+          ],
+          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
+          "tobacco": { "enabled": true, "factor": 1.20 },
+          "fees": [
+            {
+              "id": "admin-fee",
+              "label": "Administrative Fee",
+              "type": "flat_monthly",
+              "amount": 35,
+              "applies_to": "quote",
+              "enabled": true
+            },
+            {
+              "id": "enrollment-fee",
+              "label": "One-Time Enrollment Fee",
+              "type": "flat_one_time",
+              "amount": 200,
+              "applies_to": "enrollment",
+              "enabled": true
+            }
+          ],
+          "rates": {
+            "subscriber":      { "18-29": 310, "30-39": 375, "40-49": 460, "50-59": 565, "60-64": 680 },
+            "spouse_adder":    { "18-29": 195, "30-39": 230, "40-49": 285, "50-59": 350, "60-64": 425 },
+            "dependent_adder": { "18-29": 125, "30-39": 125, "40-49": 125, "50-59": 125, "60-64": 125 },
+            "max_dependents_priced": 3
+          }
+        },
+        {
+          "planId": "pif-value",
+          "displayName": "PIF Value",
+          "rating_model": "additive_person",
+          "age_bands": [
+            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
+            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
+            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
+            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
+            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+          ],
+          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
+          "tobacco": { "enabled": false },
+          "fees": [
+            {
+              "id": "admin-fee",
+              "label": "Administrative Fee",
+              "type": "flat_monthly",
+              "amount": 20,
+              "applies_to": "quote",
+              "enabled": true
+            }
+          ],
+          "rates": {
+            "subscriber":      { "18-29": 185, "30-39": 220, "40-49": 270, "50-59": 335, "60-64": 405 },
+            "spouse_adder":    { "flat": 150 },
+            "dependent_adder": { "flat": 85 },
+            "max_dependents_priced": 4
+          }
+        }
+      ]
+    },
+    "rates_2026": {
+      "label": "2026 Rates",
+      "effective_date": "2026-01-01",
+      "plans": [
+        {
+          "planId": "pif-essential",
+          "displayName": "PIF Essential",
+          "rating_model": "tiered_household",
+          "age_bands": [
+            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
+            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
+            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
+            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
+            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+          ],
+          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
+          "tobacco": { "enabled": true, "factor": 1.15 },
+          "fees": [
+            {
+              "id": "admin-fee",
+              "label": "Administrative Fee",
+              "type": "flat_monthly",
+              "amount": 30,
+              "applies_to": "quote",
+              "enabled": true
+            },
+            {
+              "id": "enrollment-fee",
+              "label": "One-Time Enrollment Fee",
+              "type": "flat_one_time",
+              "amount": 150,
+              "applies_to": "enrollment",
+              "enabled": true
+            }
+          ],
+          "rates": {
+            "member":          { "18-29": 240, "30-39": 295, "40-49": 365, "50-59": 455, "60-64": 545 },
+            "member_spouse":   { "18-29": 480, "30-39": 560, "40-49": 695, "50-59": 880, "60-64": 1060 },
+            "member_children": { "18-29": 375, "30-39": 425, "40-49": 510, "50-59": 615, "60-64": 720 },
+            "family":          { "18-29": 615, "30-39": 720, "40-49": 880, "50-59": 1095, "60-64": 1310 }
+          }
+        },
+        {
+          "planId": "pif-premier",
+          "displayName": "PIF Premier",
+          "rating_model": "additive_person",
+          "age_bands": [
+            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
+            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
+            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
+            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
+            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+          ],
+          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
+          "tobacco": { "enabled": true, "factor": 1.20 },
+          "fees": [
+            {
+              "id": "admin-fee",
+              "label": "Administrative Fee",
+              "type": "flat_monthly",
+              "amount": 40,
+              "applies_to": "quote",
+              "enabled": true
+            },
+            {
+              "id": "enrollment-fee",
+              "label": "One-Time Enrollment Fee",
+              "type": "flat_one_time",
+              "amount": 200,
+              "applies_to": "enrollment",
+              "enabled": true
+            }
+          ],
+          "rates": {
+            "subscriber":      { "18-29": 330, "30-39": 400, "40-49": 490, "50-59": 605, "60-64": 725 },
+            "spouse_adder":    { "18-29": 210, "30-39": 245, "40-49": 305, "50-59": 375, "60-64": 455 },
+            "dependent_adder": { "18-29": 135, "30-39": 135, "40-49": 135, "50-59": 135, "60-64": 135 },
+            "max_dependents_priced": 3
+          }
+        },
+        {
+          "planId": "pif-value",
+          "displayName": "PIF Value",
+          "rating_model": "additive_person",
+          "age_bands": [
+            { "id": "18-29", "min": 18, "max": 29, "label": "18–29" },
+            { "id": "30-39", "min": 30, "max": 39, "label": "30–39" },
+            { "id": "40-49", "min": 40, "max": 49, "label": "40–49" },
+            { "id": "50-59", "min": 50, "max": 59, "label": "50–59" },
+            { "id": "60-64", "min": 60, "max": 64, "label": "60–64" }
+          ],
+          "coverage_tiers": ["member", "member_spouse", "member_children", "family"],
+          "tobacco": { "enabled": false },
+          "fees": [
+            {
+              "id": "admin-fee",
+              "label": "Administrative Fee",
+              "type": "flat_monthly",
+              "amount": 25,
+              "applies_to": "quote",
+              "enabled": true
+            }
+          ],
+          "rates": {
+            "subscriber":      { "18-29": 200, "30-39": 235, "40-49": 290, "50-59": 360, "60-64": 435 },
+            "spouse_adder":    { "flat": 160 },
+            "dependent_adder": { "flat": 90 },
+            "max_dependents_priced": 4
+          }
+        }
+      ]
+    }
+  }
+}

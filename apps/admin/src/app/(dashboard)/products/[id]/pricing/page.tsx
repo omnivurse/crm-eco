@@ -1,9 +1,10 @@
-import { Card, CardContent, Button } from '@crm-eco/ui';
+import { Badge, Button } from '@crm-eco/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { PricingMatrixEditor } from '@/components/products/PricingMatrixEditor';
+import { E123PricingMatrix } from '@/components/products/E123PricingMatrix';
+import { RateQuoteCalculator } from '@/components/products/RateQuoteCalculator';
 
 async function getProduct(id: string) {
   const supabase = await createServerSupabaseClient();
@@ -23,7 +24,7 @@ async function getProduct(id: string) {
 
   const { data: product } = await (supabase
     .from('plans')
-    .select('id, name, code')
+    .select('id, name, code, rating_model')
     .eq('id', id)
     .eq('organization_id', profile.organization_id)
     .single() as any);
@@ -50,15 +51,31 @@ export default async function ProductPricingPage({ params }: { params: { id: str
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Pricing Matrix</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-slate-900">Pricing Matrix</h1>
+            <Badge variant="outline" className="text-xs">
+              {product.rating_model === 'additive_person' ? 'Additive Person' : 'Tiered Household'}
+            </Badge>
+          </div>
           <p className="text-slate-500">
             {product.name} <span className="font-mono">({product.code})</span>
           </p>
         </div>
       </div>
 
-      {/* Pricing Matrix Editor */}
-      <PricingMatrixEditor productId={params.id} organizationId={organizationId} />
+      {/* Two-column layout: Matrix + Calculator */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2">
+          <E123PricingMatrix
+            productId={params.id}
+            productCode={product.code}
+            organizationId={organizationId}
+          />
+        </div>
+        <div>
+          <RateQuoteCalculator defaultPlanId={product.code} />
+        </div>
+      </div>
     </div>
   );
 }

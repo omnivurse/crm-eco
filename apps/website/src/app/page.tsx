@@ -1,90 +1,22 @@
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
 import {
-  Heart,
-  Shield,
-  Users,
   ArrowRight,
   CheckCircle2,
   Star,
-  Sparkles,
   HeartHandshake,
   Leaf,
   TrendingUp,
+  Shield,
 } from 'lucide-react';
 import { HomePlanCards } from '@/components/HomePlanCards';
+import { HeroSection } from '@/components/HeroSection';
 
 export default function HomePage() {
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-medium text-teal-700">
-                Community-powered health sharing
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-              Healthcare the way{' '}
-              <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-                it should be
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Join a caring community where members share medical expenses together.
-              Affordable, transparent, and built on the principle of paying it forward.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/enroll">
-                <Button
-                  size="lg"
-                  className="bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-600/20 gap-2 w-full sm:w-auto"
-                >
-                  Start Your Enrollment
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-              <Link href="/how-it-works">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="gap-2 w-full sm:w-auto"
-                >
-                  Learn How It Works
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Strip */}
-      <section className="bg-white border-y">
-        <div className="container mx-auto px-4 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { label: 'Active Members', value: '10,000+', icon: Users },
-              { label: 'Needs Shared', value: '$5M+', icon: Heart },
-              { label: 'Families Covered', value: '3,500+', icon: Shield },
-              { label: 'Member Satisfaction', value: '98%', icon: Star },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="w-10 h-10 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-3">
-                  <stat.icon className="w-5 h-5 text-teal-600" />
-                </div>
-                <p className="text-2xl md:text-3xl font-bold text-slate-900">
-                  {stat.value}
-                </p>
-                <p className="text-sm text-slate-500 mt-1">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Hero Section (animated) */}
+      <HeroSection />
 
       {/* How It Works Overview */}
       <section className="section-padding bg-white">

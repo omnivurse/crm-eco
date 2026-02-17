@@ -30,6 +30,7 @@ interface Product {
   effective_start_date: string | null;
   effective_end_date: string | null;
   created_at: string;
+  rating_model?: string | null;
 }
 
 interface ProductsClientProps {
@@ -215,6 +216,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Product</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Category</th>
                   <th className="text-left py-3 px-4 font-medium text-slate-600">Tier</th>
+                  <th className="text-center py-3 px-4 font-medium text-slate-600">Model</th>
                   <th className="text-right py-3 px-4 font-medium text-slate-600">Monthly</th>
                   <th className="text-right py-3 px-4 font-medium text-slate-600">IUA</th>
                   <th className="text-center py-3 px-4 font-medium text-slate-600">Status</th>
@@ -252,6 +254,11 @@ export function ProductsClient({ products, organizationId, categories }: Product
                           {product.tier}
                         </Badge>
                       )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <Badge variant="outline" className="text-xs">
+                        {product.rating_model === 'additive_person' ? 'Additive' : 'Tiered'}
+                      </Badge>
                     </td>
                     <td className="py-3 px-4 text-right font-medium">
                       {formatCurrency(product.monthly_share)}
