@@ -67,7 +67,7 @@ export function AgentTopNav({ agent, mobileMenuOpen, onMobileMenuToggle }: Agent
   const primaryColor = agent?.primary_color || '#1e40af';
 
   return (
-    <header className="h-16 bg-white border-b flex items-center justify-between px-3 lg:px-6">
+    <header className="h-16 bg-white border-b flex items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10">
       {/* Left side - Mobile Menu + Search */}
       <div className="flex items-center gap-2 lg:gap-4 flex-1 max-w-md">
         {/* Mobile Menu Toggle */}
