@@ -4,7 +4,7 @@ import {
   getCachedDashboardHeroStats,
   getCachedAtRiskDeals,
   getCachedModuleStats,
-  getCachedCommandConsoleStats,
+  getReportSummary,
   getMyTasks,
   getUpcomingTasks,
   getRecentActivity,
@@ -20,9 +20,9 @@ import {
   CommandBar,
   DashboardStats,
   WorkQueue,
-  AlertsStrip,
-  OperationalTiles,
-  EnrollmentFunnel,
+  CrmAlerts,
+  SalesCommandTiles,
+  DealPipelineFunnel,
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
@@ -142,15 +142,15 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, console stats, widget data
-  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, consoleStatsResult, widgetDataResult] =
+  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, report summary, widget data
+  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, reportSummaryResult, widgetDataResult] =
     await Promise.allSettled([
       getCachedDashboardHeroStats(profile.organization_id, profile.id),
       getOrganization(profile.organization_id),
       getCachedModuleStats(profile.organization_id),
       getMyTasks(profile.id, false, 50),
       getCachedAtRiskDeals(profile.organization_id, 5),
-      getCachedCommandConsoleStats(profile.organization_id, profile.id),
+      getReportSummary(profile.organization_id),
       fetchWidgetData(profile, widgetTypes),
     ]);
 
@@ -177,8 +177,8 @@ async function DashboardContent() {
 
   const personalItems = buildPersonalWorkItems(overdueTasks, atRiskDeals);
 
-  const consoleStats = consoleStatsResult.status === 'fulfilled'
-    ? consoleStatsResult.value
+  const reportSummary = reportSummaryResult.status === 'fulfilled'
+    ? reportSummaryResult.value
     : null;
 
   const widgetData = widgetDataResult.status === 'fulfilled'
@@ -195,19 +195,24 @@ async function DashboardContent() {
           stats={heroStats}
         />
 
-        {/* Enterprise Console: Alerts + Operational Tiles */}
-        {consoleStats && (
-          <>
-            <AlertsStrip stats={consoleStats} />
-            <OperationalTiles stats={consoleStats} />
-          </>
-        )}
+        {/* CRM Alerts -- overdue tasks, at-risk deals, tasks today */}
+        <CrmAlerts heroStats={heroStats} />
+
+        {/* Sales Command Tiles -- pipeline, leads, activity, relationships */}
+        <SalesCommandTiles
+          moduleStats={moduleStats}
+          heroStats={heroStats}
+          reportSummary={reportSummary}
+        />
 
         {/* CRM Stats Cards -- Contacts, Leads, Deals, Accounts */}
         <DashboardStats stats={moduleStats} />
 
-        {/* Member Lifecycle Funnel */}
-        {consoleStats && <EnrollmentFunnel stats={consoleStats} />}
+        {/* Deal Pipeline Funnel */}
+        <DealPipelineFunnel
+          moduleStats={moduleStats}
+          reportSummary={reportSummary}
+        />
 
         {/* Personal Work Queue */}
         <WorkQueue items={personalItems} />
