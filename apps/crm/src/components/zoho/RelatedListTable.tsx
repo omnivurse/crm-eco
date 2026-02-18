@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -19,6 +20,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
+import { ResizeHandle } from '@/components/crm/records/ResizeHandle';
+import { useColumnResize } from '@/hooks/useColumnResize';
 
 interface Column {
   key: string;
@@ -38,6 +41,8 @@ interface RelatedListTableProps {
   className?: string;
 }
 
+const DEFAULT_RELATED_COL_WIDTH = 160;
+
 export function RelatedListTable({
   title,
   icon,
@@ -51,6 +56,21 @@ export function RelatedListTable({
 }: RelatedListTableProps) {
   const displayItems = items.slice(0, maxItems);
   const hasMore = items.length > maxItems;
+
+  const colKeys = useMemo(() => columns.map((c) => c.key), [columns]);
+  const getDefaultWidth = useCallback(() => DEFAULT_RELATED_COL_WIDTH, []);
+
+  const storageKey = `related_${title.toLowerCase().replace(/\s+/g, '_')}`;
+  const { columnWidths, isResizing, onResizeStart, resetColumnWidth } = useColumnResize({
+    columns: colKeys,
+    getDefaultWidth,
+    storageKey,
+  });
+
+  const getColWidth = useCallback(
+    (key: string) => columnWidths[key] ?? DEFAULT_RELATED_COL_WIDTH,
+    [columnWidths],
+  );
 
   return (
     <div className={cn('glass-card rounded-xl border border-slate-200 dark:border-white/10', className)}>
@@ -108,15 +128,21 @@ export function RelatedListTable({
         </div>
       ) : (
         <>
-          <Table>
+          <Table className={cn('table-fixed', isResizing && 'select-none')}>
             <TableHeader>
               <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent">
                 {columns.map((col) => (
                   <TableHead
                     key={col.key}
-                    className="text-xs font-medium text-slate-500 dark:text-slate-400 py-2 px-4"
+                    className="relative text-xs font-medium text-slate-500 dark:text-slate-400 py-2 px-4"
+                    style={{ width: getColWidth(col.key), minWidth: 80 }}
                   >
                     {col.label}
+                    <ResizeHandle
+                      columnKey={col.key}
+                      onResizeStart={onResizeStart}
+                      onResetWidth={resetColumnWidth}
+                    />
                   </TableHead>
                 ))}
                 <TableHead className="w-8" />
@@ -129,7 +155,11 @@ export function RelatedListTable({
                   className="border-b border-slate-100 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5"
                 >
                   {columns.map((col) => (
-                    <TableCell key={col.key} className="py-2 px-4 text-sm">
+                    <TableCell
+                      key={col.key}
+                      className="py-2 px-4 text-sm overflow-hidden"
+                      style={{ width: getColWidth(col.key), minWidth: 80 }}
+                    >
                       {col.render 
                         ? col.render(item[col.key], item)
                         : formatCellValue(item[col.key])
