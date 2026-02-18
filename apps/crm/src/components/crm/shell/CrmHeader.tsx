@@ -100,7 +100,7 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 glass border-b border-slate-200 dark:border-white/5">
+    <header className="h-16 flex items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 glass border-b border-slate-200 dark:border-white/5">
       {/* Left side - Search */}
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         <form onSubmit={handleSearch} className="relative flex-1">

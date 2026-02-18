@@ -58,11 +58,11 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <div className="min-h-screen bg-slate-50">
           <PortalHeader />
-          <main className="w-full px-4 lg:px-8 py-8">
+          <main className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 py-6 lg:py-8">
             {children}
           </main>
           <footer className="border-t bg-white py-6 mt-auto">
-            <div className="w-full px-4 lg:px-8 text-center text-sm text-slate-500">
+            <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 text-center text-sm text-slate-500">
               <p>&copy; {new Date().getFullYear()} Pay It Forward HealthShare. All rights reserved.</p>
               <p className="mt-1">
                 This is not insurance. Healthshare programs facilitate member-to-member sharing of medical expenses.

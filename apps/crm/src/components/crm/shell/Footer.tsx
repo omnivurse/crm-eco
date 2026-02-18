@@ -21,7 +21,7 @@ export function Footer() {
 
   return (
     <footer className="relative z-10 border-t border-slate-200/50 dark:border-white/5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm">
-      <div className="px-6 py-3">
+      <div className="px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 py-3">
         {/* Main Row - Logo, Links, Security Badge */}
         <div className="flex items-center justify-between">
           {/* Logo & Tagline - optimized with Next.js Image */}

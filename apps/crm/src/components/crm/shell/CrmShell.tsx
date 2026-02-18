@@ -72,7 +72,7 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
               onMobileClose={() => setMobileMenuOpen(false)}
             />
 
-            <main className="flex-1 overflow-auto p-4 lg:p-6 scrollbar-thin">
+            <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 scrollbar-thin">
               <div className="w-full pb-12">
                 {children}
               </div>

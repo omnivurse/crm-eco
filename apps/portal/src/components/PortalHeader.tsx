@@ -77,7 +77,7 @@ export function PortalHeader() {
 
   return (
     <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4">
+      <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10">
         <div className="flex items-center justify-between h-16">
           {/* Left side - App Switcher + Logo */}
           <div className="flex items-center gap-3">

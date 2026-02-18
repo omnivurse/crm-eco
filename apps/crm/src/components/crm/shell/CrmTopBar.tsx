@@ -116,7 +116,7 @@ export function CrmTopBar({
   };
 
   return (
-    <header className="h-14 flex items-center px-3 lg:px-6 glass border-b border-slate-200 dark:border-white/5">
+    <header className="h-14 flex items-center px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 glass border-b border-slate-200 dark:border-white/5">
       {/* Mobile Menu Toggle */}
       <Button
         variant="ghost"
