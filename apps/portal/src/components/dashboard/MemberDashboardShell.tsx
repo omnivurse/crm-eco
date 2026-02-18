@@ -76,7 +76,7 @@ export function MemberDashboardShell({
   const hasInProgressEnrollment = enrollment?.status === 'draft' || enrollment?.status === 'in_progress';
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-screen-xl mx-auto space-y-6">
       {/* Welcome Card - Full Width */}
       <WelcomeCard
         firstName={member.first_name}

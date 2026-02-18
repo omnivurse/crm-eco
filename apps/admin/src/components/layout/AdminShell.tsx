@@ -89,7 +89,7 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
           />
 
           <main className="flex-1 overflow-auto p-4 lg:p-6 scrollbar-thin">
-            <div className="max-w-7xl mx-auto pb-16">
+            <div className="w-full pb-16">
               <Breadcrumbs />
               {children}
             </div>

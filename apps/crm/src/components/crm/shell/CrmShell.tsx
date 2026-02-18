@@ -73,7 +73,7 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
             />
 
             <main className="flex-1 overflow-auto p-4 lg:p-6 scrollbar-thin">
-              <div className="max-w-7xl mx-auto pb-12">
+              <div className="w-full pb-12">
                 {children}
               </div>
             </main>
