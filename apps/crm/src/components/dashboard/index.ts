@@ -15,7 +15,12 @@ export { CommandBar } from './CommandBar';
 export { WorkQueue } from './WorkQueue';
 export type { PersonalWorkItem } from './WorkQueue';
 
-// Enterprise Command Console components
+// CRM Sales Command components
+export { SalesCommandTiles } from './SalesCommandTiles';
+export { CrmAlerts } from './CrmAlerts';
+export { DealPipelineFunnel } from './DealPipelineFunnel';
+
+// Enterprise Command Console components (used by Admin dashboard)
 export { AlertsStrip } from './AlertsStrip';
 export { OperationalTiles } from './OperationalTiles';
 export { EnrollmentFunnel } from './EnrollmentFunnel';
