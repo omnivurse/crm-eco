@@ -605,7 +605,7 @@ export const RecordTable = memo(function RecordTable({
   }, [explicitColumns, view?.columns, fieldMap]);
 
   // Column width mapping for enterprise-grade horizontal table layout
-  const getColumnWidth = (col: string): number => {
+  const getColumnWidth = useCallback((col: string): number => {
     switch (col) {
       case 'email': return 240;
       case 'phone': return 160;
@@ -622,9 +622,9 @@ export const RecordTable = memo(function RecordTable({
       case 'owner_id': return 160;
       case 'created_at':
       case 'updated_at': return 160;
-      default: return 180; // custom fields
+      default: return 180;
     }
-  };
+  }, []);
 
   // Resizable columns -- drag header edges to adjust, double-click to reset
   const { columnWidths, isResizing, onResizeStart, resetColumnWidth } = useColumnResize({
@@ -1056,7 +1056,7 @@ export const RecordTable = memo(function RecordTable({
               <TableHead
                 key={col}
                 className={cn(
-                  'relative flex-shrink-0 flex items-center overflow-hidden bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  'relative flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
                   onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none',
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
