@@ -41,6 +41,8 @@ import {
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FieldRenderer } from './FieldRenderer';
+import { ResizeHandle } from './ResizeHandle';
+import { useColumnResize } from '@/hooks/useColumnResize';
 import { prefetchRecordForDrawer } from '@/lib/prefetch';
 import type { CrmRecord, CrmField, CrmView } from '@/lib/crm/types';
 import {
@@ -624,6 +626,19 @@ export const RecordTable = memo(function RecordTable({
     }
   };
 
+  // Resizable columns -- drag header edges to adjust, double-click to reset
+  const { columnWidths, isResizing, onResizeStart, resetColumnWidth } = useColumnResize({
+    columns: visibleColumns,
+    getDefaultWidth: getColumnWidth,
+    storageKey: moduleKey,
+  });
+
+  /** Resolved width for a column: user-adjusted or default */
+  const getColWidth = useCallback(
+    (col: string) => columnWidths[col] ?? getColumnWidth(col),
+    [columnWidths, getColumnWidth],
+  );
+
   // Sticky left offset for the first data column (checkbox col = 48px)
   const stickyFirstColLeft = 48;
 
@@ -631,9 +646,9 @@ export const RecordTable = memo(function RecordTable({
   const totalMinWidth = useMemo(() => {
     const checkboxCol = 48;  // w-12
     const actionsCol = 112;  // w-28
-    const dataColsWidth = visibleColumns.reduce((sum, col) => sum + getColumnWidth(col), 0);
+    const dataColsWidth = visibleColumns.reduce((sum, col) => sum + getColWidth(col), 0);
     return checkboxCol + dataColsWidth + actionsCol;
-  }, [visibleColumns]);
+  }, [visibleColumns, getColWidth]);
 
   const allSelected = records.length > 0 && selectedIds.size === records.length;
   const someSelected = selectedIds.size > 0 && selectedIds.size < records.length;
@@ -1016,7 +1031,10 @@ export const RecordTable = memo(function RecordTable({
       {/* Desktop Table View */}
       <div
         ref={tableContainerRef}
-        className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin"
+        className={cn(
+          'hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin',
+          isResizing && 'select-none'
+        )}
       >
       <Table style={{ minWidth: totalMinWidth }}>
         <TableHeader className={cn(
@@ -1038,22 +1056,26 @@ export const RecordTable = memo(function RecordTable({
               <TableHead
                 key={col}
                 className={cn(
-                  'flex-shrink-0 flex items-center overflow-hidden bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
+                  'relative flex-shrink-0 flex items-center overflow-hidden bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
                   onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none',
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
                 style={{
-                  width: getColumnWidth(col),
-                  minWidth: getColumnWidth(col),
-                  maxWidth: getColumnWidth(col),
+                  width: getColWidth(col),
+                  minWidth: 80,
                   ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
                 }}
                 onClick={() => handleSort(col)}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 truncate">
                   {getColumnLabel(col)}
                   {onSort && getSortIcon(col)}
                 </div>
+                <ResizeHandle
+                  columnKey={col}
+                  onResizeStart={onResizeStart}
+                  onResetWidth={resetColumnWidth}
+                />
               </TableHead>
             ))}
             <TableHead className="w-28 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm" style={{ width: 112, minWidth: 112, maxWidth: 112 }} />
@@ -1156,9 +1178,8 @@ export const RecordTable = memo(function RecordTable({
                         )
                       )}
                       style={{
-                        width: getColumnWidth(col),
-                        minWidth: getColumnWidth(col),
-                        maxWidth: getColumnWidth(col),
+                        width: getColWidth(col),
+                        minWidth: 80,
                         ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
                       }}
                     >

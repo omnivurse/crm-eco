@@ -57,6 +57,11 @@ function isValidModule(value: string): value is TopModule {
     return ['crm', 'communications', 'revenue', 'operations', 'analytics', 'integrations', 'settings'].includes(value);
 }
 
+/** Navigation item: either a link or a visual separator between groups */
+export type NavItem =
+    | { key: string; label: string; icon: string; href: string; separator?: false }
+    | { key: string; separator: true; label?: undefined; icon?: undefined; href?: undefined };
+
 // Module configuration for navigation
 export const TOP_MODULES: {
     key: TopModule;
@@ -73,21 +78,26 @@ export const TOP_MODULES: {
         // Settings removed from module bar - accessed via gear icon in header
     ];
 
-// CRM sidebar navigation items - Main record types
-export const CRM_NAV_ITEMS = [
+// CRM sidebar navigation items - ordered by natural sales workflow
+export const CRM_NAV_ITEMS: NavItem[] = [
+    // Home Base
     { key: 'dashboard', label: 'Dashboard', icon: 'layout-dashboard', href: '/crm' },
     { key: 'workqueue', label: 'Workqueue', icon: 'inbox', href: '/crm/workqueue' },
-    { key: 'organizer', label: 'Organizer', icon: 'calendar-check', href: '/crm/organizer' },
-    { key: 'calendar', label: 'Calendar', icon: 'calendar', href: '/crm/calendar' },
-    { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
-    { key: 'members', label: 'Members', icon: 'heart', href: '/crm/members' },
+    { key: 'sep-1', separator: true },
+    // Sales Pipeline
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
     { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/accounts' },
     { key: 'deals', label: 'Deals', icon: 'dollar-sign', href: '/crm/modules/deals' },
     { key: 'pipeline', label: 'Pipeline', icon: 'trending-up', href: '/crm/pipeline' },
+    { key: 'sep-2', separator: true },
+    // Engagement
+    { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
     { key: 'activities', label: 'Activities', icon: 'activity', href: '/crm/activities' },
     { key: 'tasks', label: 'Tasks', icon: 'check-square', href: '/crm/tasks' },
+    { key: 'calendar', label: 'Calendar', icon: 'calendar', href: '/crm/calendar' },
+    { key: 'sep-3', separator: true },
+    // Insights
     { key: 'reports', label: 'Reports', icon: 'pie-chart', href: '/crm/reports' },
 ];
 
@@ -159,7 +169,7 @@ export const SETTINGS_NAV_ITEMS = [
 ];
 
 // Get nav items for a specific module
-export function getNavItemsForModule(module: TopModule) {
+export function getNavItemsForModule(module: TopModule): NavItem[] {
     switch (module) {
         case 'crm': return CRM_NAV_ITEMS;
         case 'communications': return COMMUNICATIONS_NAV_ITEMS;

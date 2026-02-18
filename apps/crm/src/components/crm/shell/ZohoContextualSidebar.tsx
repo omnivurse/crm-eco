@@ -53,7 +53,7 @@ import {
     X,
     type LucideIcon,
 } from 'lucide-react';
-import { useModule, getNavItemsForModule, TopModule } from '@/contexts/ModuleContext';
+import { useModule, getNavItemsForModule, TopModule, type NavItem } from '@/contexts/ModuleContext';
 
 // Icon mapping for all nav items
 const iconMap: Record<string, LucideIcon> = {
@@ -213,6 +213,15 @@ export function ZohoContextualSidebar({
                 {/* Navigation Items */}
                 <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto">
                     {navItems.map((item) => {
+                        if (item.separator) {
+                            return (
+                                <hr
+                                    key={item.key}
+                                    className="my-2 border-slate-200 dark:border-white/10"
+                                />
+                            );
+                        }
+
                         const Icon = getIcon(item.icon);
                         const active = isActive(item.href);
 
@@ -272,6 +281,15 @@ export function ZohoContextualSidebar({
                 {/* Mobile Navigation Items */}
                 <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
                     {navItems.map((item) => {
+                        if (item.separator) {
+                            return (
+                                <hr
+                                    key={item.key}
+                                    className="my-2 border-slate-200 dark:border-white/10"
+                                />
+                            );
+                        }
+
                         const Icon = getIcon(item.icon);
                         const active = isActive(item.href);
 
