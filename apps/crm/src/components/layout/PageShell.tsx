@@ -27,7 +27,7 @@ const maxWidthClasses = {
 export function PageShell({
   children,
   className,
-  maxWidth = '7xl',
+  maxWidth = 'full',
   padded = true,
 }: PageShellProps) {
   return (

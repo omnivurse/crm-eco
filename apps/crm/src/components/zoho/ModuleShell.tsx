@@ -584,7 +584,7 @@ export const ModuleShell = memo(function ModuleShell({
   }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, viewMode, handleViewModeChange]);
 
   return (
-    <div className={cn('max-w-7xl mx-auto space-y-4', className)}>
+    <div className={cn('w-full space-y-4', className)}>
       {/* Header */}
       <ModuleHeader
         module={module}
