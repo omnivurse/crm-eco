@@ -41,9 +41,10 @@ export function ResizeHandle({ columnKey, onResizeStart, onResetWidth }: ResizeH
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
       onClick={(e) => e.stopPropagation()}
-      className="absolute right-0 top-0 bottom-0 w-[5px] cursor-col-resize z-30 group/resize select-none"
+      className="absolute right-0 top-0 bottom-0 w-[7px] -mr-[3px] cursor-col-resize z-30 group/resize select-none"
     >
-      <div className="absolute right-[1px] top-1 bottom-1 w-[2px] rounded-full bg-transparent transition-colors group-hover/resize:bg-teal-400 dark:group-hover/resize:bg-teal-500" />
+      {/* Subtle divider visible at rest, teal on hover */}
+      <div className="absolute left-1/2 -translate-x-1/2 top-2 bottom-2 w-[2px] rounded-full bg-slate-200 dark:bg-white/10 transition-colors group-hover/resize:bg-teal-400 dark:group-hover/resize:bg-teal-500" />
     </div>
   );
 }
