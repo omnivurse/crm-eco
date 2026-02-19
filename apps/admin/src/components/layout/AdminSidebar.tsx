@@ -28,6 +28,8 @@ import {
   ChevronLeft,
   BookOpen,
   HelpCircle,
+  PieChart,
+  Activity,
 } from 'lucide-react';
 import { useTerminal } from '@/components/terminal';
 
@@ -181,6 +183,8 @@ const navSections: NavSection[] = [
     title: 'Analytics',
     items: [
       { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
+      { label: 'Demographics', href: '/analytics/demographics', icon: <PieChart className="h-5 w-5" /> },
+      { label: 'Actuarial Data', href: '/analytics/actuarial', icon: <Activity className="h-5 w-5" /> },
     ],
   },
   {
