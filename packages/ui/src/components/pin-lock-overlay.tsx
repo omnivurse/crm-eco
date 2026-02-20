@@ -253,7 +253,7 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
             textAlign: 'center',
           }}
         >
-          Pay It Forward Technologies EMS
+          Authorized Access Only
         </p>
       </div>
 
