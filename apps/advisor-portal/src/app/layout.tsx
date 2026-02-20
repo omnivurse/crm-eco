@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
+import { PinLockOverlay } from '@crm-eco/ui';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,6 +19,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
+                <PinLockOverlay pin="010807" appName="Advisor Portal" />
                 {children}
                 <Toaster position="top-right" richColors />
             </body>

@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { PortalHeader } from '@/components/PortalHeader';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { PinLockOverlay } from '@crm-eco/ui';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
 
@@ -55,6 +56,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
+        <PinLockOverlay pin="010807" appName="Member Portal" />
         <ServiceWorkerRegistration />
         <div className="min-h-screen bg-slate-50">
           <PortalHeader />

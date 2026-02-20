@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { ServiceWorkerRegistration } from '@/components/pwa';
+import { PinLockOverlay } from '@crm-eco/ui';
 import './globals.css';
 
 // Optimize font loading - reduce weights and preload critical subset
@@ -107,6 +108,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+        <PinLockOverlay pin="010807" appName="PIF CRM" />
         <ThemeProvider defaultTheme="light">
           <ServiceWorkerRegistration />
           {children}

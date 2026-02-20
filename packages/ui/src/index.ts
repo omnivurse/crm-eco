@@ -27,5 +27,6 @@ export * from './components/signature-pad';
 export * from './components/payment-form';
 export * from './components/visually-hidden';
 export * from './components/change-ticker';
+export * from './components/pin-lock-overlay';
 export * from './lib/utils';
 
