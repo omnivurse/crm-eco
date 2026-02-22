@@ -51,7 +51,7 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
         inputRefs.current[index + 1]?.focus();
       }
 
-      if (next.length === pin.length && !next.includes('')) {
+      if (next.length === pin.length) {
         const complete = next.substring(0, pin.length);
         if (complete === pin) {
           handleUnlock();

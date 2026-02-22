@@ -108,7 +108,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
-        <PinLockOverlay pin="010807" appName="Secure Access" />
+        <PinLockOverlay pin="070708" appName="Secure Access" />
         <ThemeProvider defaultTheme="light">
           <ServiceWorkerRegistration />
           {children}

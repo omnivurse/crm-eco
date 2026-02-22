@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
-        <PinLockOverlay pin="010807" appName="Secure Access" />
+        <PinLockOverlay pin="070708" appName="Secure Access" />
         {children}
       </body>
     </html>
