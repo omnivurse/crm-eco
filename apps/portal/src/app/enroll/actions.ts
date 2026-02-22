@@ -159,7 +159,6 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
       .single();
 
     if (error) {
-      console.error('Failed to create enrollment:', error);
       return { success: false, error: 'Failed to create enrollment' };
     }
 

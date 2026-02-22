@@ -100,7 +100,6 @@ export async function createMemberTicket(formData: {
       .single();
 
     if (ticketError || !ticket) {
-      console.error('Failed to create ticket:', ticketError);
       return { success: false, error: 'Failed to create support ticket' };
     }
 
@@ -117,7 +116,6 @@ export async function createMemberTicket(formData: {
       .insert(commentData);
 
     if (commentError) {
-      console.error('Failed to create ticket comment:', commentError);
       // Don't fail the whole operation - ticket was created
     }
 
@@ -170,7 +168,6 @@ export async function getMemberTicketsAction(): Promise<ActionResult<unknown[]>>
       .limit(20);
 
     if (error) {
-      console.error('Failed to get tickets:', error);
       return { success: false, error: 'Failed to load tickets' };
     }
 

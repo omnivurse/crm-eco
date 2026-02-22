@@ -29,7 +29,7 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
       if (expiry && Date.now() < parseInt(expiry, 10)) {
         setLocked(false);
       }
-    } catch {}
+    } catch { /* sessionStorage unavailable */ }
   }, []);
 
   const handleUnlock = React.useCallback(() => {
@@ -37,7 +37,7 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
     try {
       sessionStorage.setItem(PIN_STORAGE_KEY, 'true');
       sessionStorage.setItem(PIN_EXPIRY_KEY, String(expiryMs));
-    } catch {}
+    } catch { /* sessionStorage unavailable */ }
     setLocked(false);
   }, []);
 
@@ -108,45 +108,14 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99999,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-sans"
     >
       <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '2rem',
-          padding: '3rem 2.5rem',
-          borderRadius: '1.5rem',
-          background: 'rgba(255, 255, 255, 0.05)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-          maxWidth: '400px',
-          width: '90vw',
-        }}
+        className="flex flex-col items-center gap-8 py-12 px-10 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl max-w-[400px] w-[90vw]"
       >
         {/* Lock icon */}
         <div
-          style={{
-            width: '64px',
-            height: '64px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 30px rgba(59, 130, 246, 0.3)',
-          }}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)]"
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -154,36 +123,17 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
           </svg>
         </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <h1
-            style={{
-              color: '#f8fafc',
-              fontSize: '1.5rem',
-              fontWeight: 700,
-              margin: '0 0 0.5rem 0',
-              letterSpacing: '-0.025em',
-            }}
-          >
+        <div className="text-center">
+          <h1 className="text-slate-50 text-2xl font-bold mb-2 tracking-tight">
             {appName}
           </h1>
-          <p
-            style={{
-              color: '#94a3b8',
-              fontSize: '0.875rem',
-              margin: 0,
-            }}
-          >
+          <p className="text-slate-400 text-sm">
             Enter PIN to continue
           </p>
         </div>
 
         {/* PIN input boxes */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '0.75rem',
-          }}
-        >
+        <div className="flex gap-3">
           {Array.from({ length: pin.length }).map((_, i) => (
             <input
               key={i}
@@ -199,23 +149,13 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
               }}
               onKeyDown={(e) => handleKeyDown(e, i)}
               onPaste={i === 0 ? handlePaste : undefined}
+              className="w-12 h-14 text-center text-2xl font-bold rounded-xl bg-white/[0.08] text-slate-50 outline-none transition-all caret-blue-500"
               style={{
-                width: '48px',
-                height: '56px',
-                textAlign: 'center',
-                fontSize: '1.5rem',
-                fontWeight: 700,
-                borderRadius: '0.75rem',
                 border: error
                   ? '2px solid #ef4444'
                   : entered[i]
                     ? '2px solid #3b82f6'
                     : '2px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(255, 255, 255, 0.08)',
-                color: '#f8fafc',
-                outline: 'none',
-                transition: 'all 0.15s ease',
-                caretColor: '#3b82f6',
                 animation: error ? 'pin-shake 0.4s ease' : undefined,
               }}
               onFocus={(e) => {
@@ -233,26 +173,12 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
         </div>
 
         {error && (
-          <p
-            style={{
-              color: '#ef4444',
-              fontSize: '0.875rem',
-              margin: '-0.5rem 0 0 0',
-              fontWeight: 500,
-            }}
-          >
+          <p className="text-red-500 text-sm -mt-2 font-medium">
             Incorrect PIN
           </p>
         )}
 
-        <p
-          style={{
-            color: '#475569',
-            fontSize: '0.75rem',
-            margin: 0,
-            textAlign: 'center',
-          }}
-        >
+        <p className="text-slate-600 text-xs text-center">
           Authorized Access Only
         </p>
       </div>
