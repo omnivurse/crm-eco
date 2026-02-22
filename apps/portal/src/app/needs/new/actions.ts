@@ -104,7 +104,6 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
     .single();
 
   if (needError || !newNeed) {
-    console.error('Error creating need:', needError);
     return { success: false, message: 'Failed to create need. Please try again.' };
   }
 
@@ -120,7 +119,6 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
     });
 
   if (eventError) {
-    console.error('Error creating need event:', eventError);
     // Don't fail the whole operation, just log
   }
 
@@ -196,7 +194,6 @@ export async function updateNeedBillsAndCashPay(
     .eq('id', needId);
 
   if (updateError) {
-    console.error('Error updating need:', updateError);
     return { success: false, message: 'Failed to update need. Please try again.' };
   }
 
@@ -281,7 +278,6 @@ export async function updateNeedConsentAndDocs(
     .eq('id', needId);
 
   if (updateError) {
-    console.error('Error updating need consent:', updateError);
     return { success: false, message: 'Failed to save consent. Please try again.' };
   }
 
@@ -357,7 +353,6 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
     .eq('id', needId);
 
   if (updateError) {
-    console.error('Error submitting need:', updateError);
     return { success: false, message: 'Failed to submit need. Please try again.' };
   }
 

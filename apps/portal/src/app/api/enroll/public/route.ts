@@ -108,7 +108,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (memberError) {
-        console.error('Failed to create member:', memberError);
         return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
       }
 
@@ -134,7 +133,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (leadError) {
-      console.error('Failed to create lead:', leadError);
       // Don't fail the request, member was created
     }
 
@@ -163,7 +161,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (enrollmentError) {
-      console.error('Failed to create enrollment:', enrollmentError);
       return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
     }
 

@@ -30,17 +30,12 @@ async function registerServiceWorker() {
       scope: '/',
     });
 
-    console.log('[PWA] Service worker registered successfully:', registration.scope);
-
     // Handle updates
     registration.addEventListener('updatefound', () => {
       const newWorker = registration.installing;
       if (newWorker) {
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New content is available, show update prompt
-            console.log('[PWA] New content available, refresh to update');
-            
             // Optionally dispatch a custom event for UI notification
             window.dispatchEvent(new CustomEvent('sw-update-available'));
           }
