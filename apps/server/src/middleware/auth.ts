@@ -18,16 +18,6 @@ export async function authMiddleware(
     const authHeader = req.headers.authorization;
 
     if (!authHeader?.startsWith('Bearer ')) {
-      // For development/demo, allow requests without auth (must be explicitly enabled)
-      if (process.env.ALLOW_DEMO_AUTH === 'true') {
-        req.user = {
-          id: 'demo-user-id',
-          role: 'agent',
-          email: 'demo@example.com'
-        };
-        return next();
-      }
-
       return res.status(401).json({ error: 'Missing authorization header' });
     }
 

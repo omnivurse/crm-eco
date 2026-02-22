@@ -124,6 +124,9 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
     // Don't fail the whole operation, just log
   }
 
+  revalidatePath('/needs');
+  revalidatePath('/');
+
   return {
     success: true,
     message: 'Need created successfully.',
@@ -373,6 +376,7 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
 
   revalidatePath('/needs');
   revalidatePath(`/needs/${needId}`);
+  revalidatePath('/');
 
   return {
     success: true,

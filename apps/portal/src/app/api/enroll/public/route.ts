@@ -5,6 +5,7 @@ import {
   sendEnrollmentConfirmationEmail,
   sendAdvisorNotificationEmail,
 } from '@crm-eco/lib/email';
+import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 // Use service role for public enrollment
 function getServiceClient() {
@@ -29,6 +30,16 @@ const enrollmentSchema = z.object({
  * Handle public enrollment form submissions
  */
 export async function POST(request: NextRequest) {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
+  const rateLimitResult = rateLimit(`enroll:${ip}`, { limit: 5, windowMs: 60 * 60 * 1000 });
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429, headers: getRateLimitHeaders(rateLimitResult) }
+    );
+  }
+
   try {
     const body = await request.json();
     const parsed = enrollmentSchema.safeParse(body);

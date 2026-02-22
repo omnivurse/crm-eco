@@ -57,12 +57,6 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
-  // Temporarily skip type checking during build
-  // TODO: Regenerate DB types and fix all type errors, then remove this flag.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
   // Headers for static asset caching
   async headers() {
     return [

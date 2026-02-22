@@ -29,8 +29,11 @@
     "prepare": "husky || true"
   },
   "lint-staged": {
-    "apps/crm/**/*.{ts,tsx}": [
-      "eslint --max-warnings=0 --no-warn-ignored"
+    "apps/**/*.{ts,tsx}": [
+      "eslint --fix --no-warn-ignored"
+    ],
+    "packages/**/*.{ts,tsx}": [
+      "eslint --fix --no-warn-ignored"
     ]
   },
   "dependencies": {

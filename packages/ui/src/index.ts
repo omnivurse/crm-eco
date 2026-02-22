@@ -28,5 +28,9 @@ export * from './components/payment-form';
 export * from './components/visually-hidden';
 export * from './components/change-ticker';
 export * from './components/pin-lock-overlay';
+export * from './components/audit-log-filters';
+export * from './components/audit-log-table';
+export * from './components/risk-level-badge';
+export * from './components/sonner';
 export * from './lib/utils';
 

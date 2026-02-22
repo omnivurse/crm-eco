@@ -1,5 +1,6 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { Button } from '@crm-eco/ui/components/button';
@@ -265,7 +266,7 @@ export function SignatureBuilder({
   const generatePlainText = useCallback(() => {
     // Strip HTML tags for plain text version
     const div = document.createElement('div');
-    div.innerHTML = formData.content_html;
+    div.innerHTML = DOMPurify.sanitize(formData.content_html);
     return div.textContent || div.innerText || '';
   }, [formData.content_html]);
 
@@ -618,7 +619,7 @@ export function SignatureBuilder({
             <CardContent>
               <div className="p-4 bg-white border border-slate-200 rounded-lg min-h-[200px]">
                 {formData.content_html ? (
-                  <div dangerouslySetInnerHTML={{ __html: formData.content_html }} />
+                  <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content_html) }} />
                 ) : (
                   <p className="text-sm text-slate-400 italic">
                     Your signature preview will appear here...
@@ -633,7 +634,7 @@ export function SignatureBuilder({
                   {formData.content_html ? (
                     <div
                       className="[&_*]:!text-slate-200"
-                      dangerouslySetInnerHTML={{ __html: formData.content_html }}
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(formData.content_html) }}
                     />
                   ) : (
                     <p className="text-sm text-slate-500 italic">

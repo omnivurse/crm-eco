@@ -78,7 +78,7 @@ function LegacyNoteEntry({ entry }: { entry: ParsedEntry }) {
       )}
       <div
         className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed legacy-note-content [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100"
-        dangerouslySetInnerHTML={{ __html: displayHtml }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayHtml) }}
       />
       {isTruncated && (
         <button

@@ -25,12 +25,10 @@ interface App {
   isExternal?: boolean;
 }
 
-// URLs for each app - hardcoded to Vercel deployment URLs
-// Environment variables can override these if needed
 const APP_URLS = {
-  crm: 'https://crm-eco-crm.vercel.app/crm',
-  admin: 'https://crm-eco-admin.vercel.app',
-  portal: '', // Portal not yet available
+  crm: process.env.NEXT_PUBLIC_CRM_URL || '/crm',
+  admin: process.env.NEXT_PUBLIC_ADMIN_URL || '/admin',
+  portal: process.env.NEXT_PUBLIC_PORTAL_URL || '/portal',
 };
 
 const apps: App[] = [

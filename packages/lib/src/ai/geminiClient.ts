@@ -65,6 +65,7 @@ export async function callGeminiForRxPricing(
 
   // If no API key, return null to trigger fallback
   if (!apiKey) {
+    console.warn('[Gemini] Missing VITE_GEMINI_API_KEY or GEMINI_API_KEY environment variable');
     return null;
   }
 
@@ -101,8 +102,11 @@ export async function callGeminiForRxPricing(
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', response.status, errorText);
-      return null;
+      console.error(`[Gemini] HTTP ${response.status}: ${errorText}`);
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+      }
+      return null; // Retryable errors return null for caller to handle
     }
 
     const data: GeminiApiResponse = await response.json();

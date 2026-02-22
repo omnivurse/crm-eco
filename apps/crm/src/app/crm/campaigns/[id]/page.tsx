@@ -1,5 +1,6 @@
 'use client';
 
+import DOMPurify from 'dompurify';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
@@ -504,7 +505,7 @@ export default function CampaignDetailPage() {
         </h3>
         <div
           className="prose dark:prose-invert max-w-none p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg"
-          dangerouslySetInnerHTML={{ __html: campaign.body_html }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(campaign.body_html || '') }}
         />
       </div>
     </div>
