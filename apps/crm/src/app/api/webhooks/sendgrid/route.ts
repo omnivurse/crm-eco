@@ -17,9 +17,23 @@ function getServiceClient() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Verify SendGrid webhook signature
+    const signature = request.headers.get('x-twilio-email-event-webhook-signature');
+    const timestamp = request.headers.get('x-twilio-email-event-webhook-timestamp');
+    const webhookKey = process.env.SENDGRID_WEBHOOK_VERIFICATION_KEY;
+
+    if (webhookKey) {
+      if (!signature || !timestamp) {
+        console.warn('[SendGrid Webhook] Missing signature headers');
+        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+      }
+      // Note: Full ECDSA verification requires @sendgrid/eventwebhook library
+      // For now, require the headers exist when verification key is configured
+    }
+
     // Parse webhook payload
     const events: SendGridWebhookEvent[] = await request.json();
-    
+
     if (!Array.isArray(events)) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }

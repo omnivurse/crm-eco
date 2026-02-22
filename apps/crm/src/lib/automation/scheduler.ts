@@ -255,7 +255,7 @@ async function processJob(job: CrmSchedulerJob): Promise<ProcessJobResult> {
         .update({
           status: 'pending',
           last_error: errorMessage,
-          run_at: new Date(Date.now() + 60000 * Math.pow(2, job.attempts)).toISOString(), // Exponential backoff
+          run_at: new Date(Date.now() + 60000 * Math.pow(2, Math.min(job.attempts, 10))).toISOString(), // Exponential backoff, capped at ~17 hours
         })
         .eq('id', job.id);
 

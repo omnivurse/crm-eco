@@ -86,6 +86,9 @@ export function SiteHeader() {
           <button
             className="lg:hidden p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-expanded={mobileMenuOpen}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-controls="mobile-menu"
           >
             {mobileMenuOpen ? (
               <X className="w-6 h-6" />
@@ -98,7 +101,7 @@ export function SiteHeader() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t shadow-lg">
+        <div id="mobile-menu" className="lg:hidden bg-white border-t shadow-lg">
           <div className="container mx-auto px-4 py-4 space-y-1">
             {navigation.map((item) => (
               <Link

@@ -8,11 +8,6 @@ const nextConfig = {
     },
   },
 
-  // Temporarily skip type checking during build
-  // TODO: Fix underlying type errors and remove this flag.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
 };
 
 export default nextConfig;

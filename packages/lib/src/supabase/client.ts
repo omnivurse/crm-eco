@@ -4,16 +4,15 @@ import type { Database } from '../types/database';
 /**
  * Create a typed Supabase browser client.
  *
- * Uses placeholder values when env vars are missing (e.g. during
- * Next.js static page generation at build time). The client will
- * be non-functional but won't crash the build. At runtime in the
- * browser the real env vars are always present.
+ * Throws if the required environment variables are not set.
  */
 export function createClient() {
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const supabaseAnonKey =
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set');
+  }
 
   return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
 }

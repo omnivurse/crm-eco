@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 
 // Cache profile data in a cookie for 5 minutes to avoid DB query on every request
 const PROFILE_CACHE_COOKIE = 'crm_profile_cache';
-const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
+const PROFILE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes in ms
 
 interface CachedProfile {
   id: string;

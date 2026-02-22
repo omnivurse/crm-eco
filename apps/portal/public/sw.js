@@ -28,20 +28,13 @@ const CACHE_STRATEGIES = {
  * Install event - cache static assets
  */
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
-  
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
-        console.log('[SW] Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log('[SW] Static assets cached');
         return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('[SW] Failed to cache static assets:', error);
       })
   );
 });
@@ -50,8 +43,6 @@ self.addEventListener('install', (event) => {
  * Activate event - clean up old caches
  */
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
-  
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -59,13 +50,11 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE_NAME)
             .map((name) => {
-              console.log('[SW] Deleting old cache:', name);
               return caches.delete(name);
             })
         );
       })
       .then(() => {
-        console.log('[SW] Service worker activated');
         return self.clients.claim();
       })
   );
@@ -128,7 +117,6 @@ async function cacheFirst(request) {
     }
     return networkResponse;
   } catch (error) {
-    console.error('[SW] Cache first fetch failed:', error);
     return new Response('Offline', { status: 503 });
   }
 }
@@ -146,7 +134,6 @@ async function networkFirst(request) {
     }
     return networkResponse;
   } catch (error) {
-    console.log('[SW] Network first failed, trying cache:', error);
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;

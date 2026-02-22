@@ -167,10 +167,18 @@ export class AuthorizeNetService {
       body: JSON.stringify(requestBody),
     });
 
+    if (!response.ok) {
+      throw new Error(`Authorize.Net HTTP error: ${response.status} ${response.statusText}`);
+    }
+
     const text = await response.text();
     // Remove BOM if present
     const cleanText = text.replace(/^\uFEFF/, '');
-    return JSON.parse(cleanText) as T;
+    try {
+      return JSON.parse(cleanText) as T;
+    } catch {
+      throw new Error(`Authorize.Net response parse error: ${cleanText.substring(0, 200)}`);
+    }
   }
 
   /**
@@ -631,7 +639,6 @@ export function maskNumber(fullNumber: string): string {
  * Helper to detect card type from number
  */
 export function detectCardType(cardNumber: string): string {
-  const firstDigit = cardNumber.charAt(0);
   const firstTwo = cardNumber.substring(0, 2);
 
   if (cardNumber.startsWith('4')) return 'Visa';

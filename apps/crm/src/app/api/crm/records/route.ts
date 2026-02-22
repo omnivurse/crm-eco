@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
     // Apply search if provided
     if (search) {
       // Sanitize search input to prevent PostgREST filter injection
-      const safeSearch = search.replace(/[,().\\]/g, '\\$&');
+      const safeSearch = search.replace(/[%_,().\\]/g, '\\$&');
       query = query.or(`title.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
     }
 
@@ -154,6 +155,8 @@ export async function POST(request: NextRequest) {
     }).catch(err => {
       console.error('Scoring error:', err);
     });
+
+    revalidatePath('/crm');
 
     return NextResponse.json(record);
   } catch (error) {

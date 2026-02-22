@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { executeMatchingWorkflows } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
 import type { CrmWebform } from '@/lib/automation/types';
+import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 /**
  * Creates a service role client for public webform submissions
@@ -33,6 +34,30 @@ interface RouteParams {
  * Public endpoint for webform submissions
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  const origin = request.headers.get('origin') || '';
+  const allowedOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_WEBSITE_URL,
+    'https://payitforwardhealth.com',
+    'https://www.payitforwardhealth.com',
+  ].filter(Boolean);
+  const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0] || '';
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': corsOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded?.split(',')[0]?.trim() || 'unknown';
+  const rateLimitResult = rateLimit(`webform:${ip}`, { limit: 10, windowMs: 60 * 60 * 1000 });
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many submissions. Please try again later.' },
+      { status: 429, headers: { ...corsHeaders, ...getRateLimitHeaders(rateLimitResult) } }
+    );
+  }
+
   try {
     const { orgSlug, formSlug } = await params;
     const supabase = createServiceClient();
@@ -47,7 +72,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (orgError || !org) {
       return NextResponse.json(
         { success: false, error: 'Organization not found' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -63,7 +88,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     if (webformError || !webform) {
       return NextResponse.json(
         { success: false, error: 'Form not found or disabled' },
-        { status: 404 }
+        { status: 404, headers: corsHeaders }
       );
     }
 
@@ -81,7 +106,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     } else {
       return NextResponse.json(
         { success: false, error: 'Unsupported content type' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -158,7 +183,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           message: typedWebform.success_message,
           recordId: existingRecord.id,
           duplicate: true,
-        });
+        }, { headers: corsHeaders });
       }
 
       if (strategy === 'update') {
@@ -179,7 +204,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           console.error('Failed to update record:', updateError);
           return NextResponse.json(
             { success: false, error: 'Failed to process submission' },
-            { status: 500 }
+            { status: 500, headers: corsHeaders }
           );
         }
 
@@ -212,7 +237,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         console.error('Failed to create record:', createError);
         return NextResponse.json(
           { success: false, error: 'Failed to process submission' },
-          { status: 500 }
+          { status: 500, headers: corsHeaders }
         );
       }
 
@@ -246,15 +271,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       response.redirectUrl = typedWebform.redirect_url;
     }
 
-    return NextResponse.json(response);
+    return NextResponse.json(response, { headers: corsHeaders });
   } catch (error) {
     console.error('Webform submission error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Internal server error',
       },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -332,11 +357,20 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 /**
  * OPTIONS handler for CORS
  */
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin') || '';
+  const allowedOrigins = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_WEBSITE_URL,
+    'https://payitforwardhealth.com',
+    'https://www.payitforwardhealth.com',
+  ].filter(Boolean);
+  const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0] || '';
+
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },

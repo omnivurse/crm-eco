@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getConnections, 
-  createConnection, 
+import { createClient } from '@/lib/supabase-server';
+import {
+  getConnections,
+  createConnection,
   getHealthSummary,
   type CreateConnectionParams,
   type ConnectionFilters,
@@ -13,6 +14,12 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     
     const filters: ConnectionFilters = {};
@@ -68,6 +75,12 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     
     const params: CreateConnectionParams = {

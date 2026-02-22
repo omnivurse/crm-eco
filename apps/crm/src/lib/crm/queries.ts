@@ -547,7 +547,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     }
 
     // Parallelize system filter RPCs for performance
-    const systemRpcResults = await Promise.all(
+    const systemRpcResults = await Promise.allSettled(
       systemFilters.map((sf) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).rpc('filter_records_by_system_preset', {
@@ -558,11 +558,16 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
       )
     );
 
-    for (const { data: matchedIds, error: rpcErr } of systemRpcResults) {
-      if (!rpcErr && matchedIds && matchedIds.length > 0) {
-        query = query.in('id', matchedIds);
-      } else if (!rpcErr && matchedIds && matchedIds.length === 0) {
-        query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+    for (const result of systemRpcResults) {
+      if (result.status === 'fulfilled') {
+        const { data: matchedIds, error: rpcErr } = result.value;
+        if (!rpcErr && matchedIds && matchedIds.length > 0) {
+          query = query.in('id', matchedIds);
+        } else if (!rpcErr && matchedIds && matchedIds.length === 0) {
+          query = query.eq('id', '00000000-0000-0000-0000-000000000000');
+        }
+      } else {
+        console.error('[CRM] System filter RPC failed:', result.reason);
       }
     }
   }
