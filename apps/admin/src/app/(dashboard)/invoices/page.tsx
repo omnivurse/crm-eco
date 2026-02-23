@@ -229,7 +229,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleSendInvoice = async (invoice: Invoice) => {
+  const handleSendInvoice = async (invoice: InvoiceView) => {
     try {
       const { error } = await (supabase as any)
         .from('invoices')
@@ -258,7 +258,7 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleMarkPaid = async (invoice: Invoice) => {
+  const handleMarkPaid = async (invoice: InvoiceView) => {
     try {
       const { error } = await (supabase as any)
         .from('invoices')
@@ -305,7 +305,7 @@ export default function InvoicesPage() {
           inv.status,
           inv.due_date || '',
           inv.is_retro ? 'Yes' : 'No',
-          format(new Date(inv.created_at), 'yyyy-MM-dd'),
+          inv.created_at ? format(new Date(inv.created_at), 'yyyy-MM-dd') : '',
         ].join(',')
       ),
     ].join('\n');
@@ -513,13 +513,13 @@ export default function InvoicesPage() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right font-medium">{formatCurrency(invoice.total)}</td>
+                      <td className="py-3 px-4 text-right font-medium">{formatCurrency(invoice.total ?? 0)}</td>
                       <td className="py-3 px-4 text-right">
-                        <span className={invoice.balance_due > 0 ? 'text-amber-600 font-medium' : ''}>
-                          {formatCurrency(invoice.balance_due)}
+                        <span className={(invoice.balance_due ?? 0) > 0 ? 'text-amber-600 font-medium' : ''}>
+                          {formatCurrency(invoice.balance_due ?? 0)}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">{getStatusBadge(invoice.status, invoice.due_date)}</td>
+                      <td className="py-3 px-4 text-center">{getStatusBadge(invoice.status ?? '', invoice.due_date)}</td>
                       <td className="py-3 px-4">
                         {invoice.due_date ? (
                           <div className="flex items-center gap-1">
@@ -547,7 +547,7 @@ export default function InvoicesPage() {
                               <Send className="h-4 w-4 text-blue-500" />
                             </Button>
                           )}
-                          {invoice.status !== 'paid' && invoice.balance_due > 0 && (
+                          {invoice.status !== 'paid' && (invoice.balance_due ?? 0) > 0 && (
                             <Button variant="ghost" size="sm" onClick={() => handleMarkPaid(invoice)}>
                               <CheckCircle className="h-4 w-4 text-emerald-500" />
                             </Button>
@@ -612,7 +612,7 @@ export default function InvoicesPage() {
                     </Badge>
                   )}
                 </div>
-                {getStatusBadge(selectedInvoice.status, selectedInvoice.due_date)}
+                {getStatusBadge(selectedInvoice.status ?? '', selectedInvoice.due_date)}
               </div>
 
               {selectedInvoice.contact && (
@@ -630,7 +630,7 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Subtotal</p>
-                  <p className="font-medium">{formatCurrency(selectedInvoice.subtotal)}</p>
+                  <p className="font-medium">{formatCurrency(selectedInvoice.subtotal ?? 0)}</p>
                 </div>
                 {(selectedInvoice.discount_value ?? 0) > 0 && (
                   <div>
@@ -638,24 +638,24 @@ export default function InvoicesPage() {
                     <p className="font-medium text-emerald-600">-{formatCurrency(selectedInvoice.discount_value ?? 0)}</p>
                   </div>
                 )}
-                {selectedInvoice.tax_amount > 0 && (
+                {(selectedInvoice.tax_amount ?? 0) > 0 && (
                   <div>
                     <p className="text-sm text-muted-foreground">Tax</p>
-                    <p className="font-medium">{formatCurrency(selectedInvoice.tax_amount)}</p>
+                    <p className="font-medium">{formatCurrency(selectedInvoice.tax_amount ?? 0)}</p>
                   </div>
                 )}
                 <div>
                   <p className="text-sm text-muted-foreground">Total</p>
-                  <p className="text-xl font-bold">{formatCurrency(selectedInvoice.total)}</p>
+                  <p className="text-xl font-bold">{formatCurrency(selectedInvoice.total ?? 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Amount Paid</p>
-                  <p className="font-medium text-emerald-600">{formatCurrency(selectedInvoice.amount_paid)}</p>
+                  <p className="font-medium text-emerald-600">{formatCurrency(selectedInvoice.amount_paid ?? 0)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Balance Due</p>
-                  <p className={`font-bold ${selectedInvoice.balance_due > 0 ? 'text-amber-600' : ''}`}>
-                    {formatCurrency(selectedInvoice.balance_due)}
+                  <p className={`font-bold ${(selectedInvoice.balance_due ?? 0) > 0 ? 'text-amber-600' : ''}`}>
+                    {formatCurrency(selectedInvoice.balance_due ?? 0)}
                   </p>
                 </div>
               </div>
@@ -681,7 +681,7 @@ export default function InvoicesPage() {
                 )}
                 <div>
                   <p className="text-sm text-muted-foreground">Created</p>
-                  <p>{format(new Date(selectedInvoice.created_at), 'MMM d, yyyy')}</p>
+                  <p>{selectedInvoice.created_at ? format(new Date(selectedInvoice.created_at), 'MMM d, yyyy') : '—'}</p>
                 </div>
               </div>
             </div>

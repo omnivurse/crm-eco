@@ -129,8 +129,7 @@ export default function SecuritySettingsPage() {
 
       // Try to load CRM governance roles (if table exists)
       try {
-        const { data: rolesData } = await supabase
-          .from('crm_roles')
+        const { data: rolesData } = await (supabase as any).from('crm_roles')
           .select('*') as { data: Role[] | null };
 
         if (rolesData) {

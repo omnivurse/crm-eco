@@ -53,6 +53,7 @@ interface BillingInvoiceView {
   sent_at: string | null;
   paid_at: string | null;
   notes: string | null;
+  pdf_url: string | null;
   created_at: string | null;
   contact?: {
     id: string;
@@ -205,7 +206,7 @@ export default function InvoicesPage() {
         .select(`
           id, invoice_number, contact_id, due_date, subtotal, discount_value,
           tax_amount, total, amount_paid, balance_due, status, sent_at, paid_at,
-          notes, created_at,
+          notes, pdf_url, created_at,
           contact:crm_records!contact_id(id, title, email)
         `)
         .eq('organization_id', profile.organization_id)
@@ -289,7 +290,7 @@ export default function InvoicesPage() {
   const stats = {
     total: invoices.length,
     paid: invoices.filter(i => i.status === 'paid').length,
-    pending: invoices.filter(i => ['sent', 'partial'].includes(i.status)).length,
+    pending: invoices.filter(i => i.status !== null && ['sent', 'partial'].includes(i.status)).length,
     overdue: invoices.filter(i => i.status === 'overdue').length,
     draft: invoices.filter(i => i.status === 'draft').length,
   };
@@ -513,7 +514,7 @@ export default function InvoicesPage() {
                               <Send className="h-4 w-4" />
                             </Button>
                           )}
-                          {['sent', 'partial', 'overdue'].includes(invoice.status) && (
+                          {invoice.status !== null && ['sent', 'partial', 'overdue'].includes(invoice.status) && (
                             <Button
                               size="sm"
                               variant="ghost"

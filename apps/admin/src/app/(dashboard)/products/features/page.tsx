@@ -46,9 +46,9 @@ interface Feature {
   description: string | null;
   category: string;
   icon: string | null;
-  is_highlighted: boolean;
-  is_system: boolean;
-  sort_order: number;
+  is_highlighted: boolean | null;
+  is_system: boolean | null;
+  sort_order: number | null;
 }
 
 const FEATURE_CATEGORIES = [
@@ -499,7 +499,7 @@ export default function FeaturesLibraryPage() {
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="edit-highlighted"
-                  checked={editingFeature.is_highlighted}
+                  checked={editingFeature.is_highlighted ?? false}
                   onCheckedChange={(checked) => setEditingFeature({ ...editingFeature, is_highlighted: checked === true })}
                 />
                 <Label htmlFor="edit-highlighted" className="flex items-center gap-1">

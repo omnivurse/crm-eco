@@ -185,7 +185,7 @@ export default function AgeUpOutPage() {
       const { data, count, error } = await query;
       if (error) throw error;
 
-      setResults(data || []);
+      setResults((data || []) as unknown as AgeUpOutResult[]);
       setTotalCount(count || 0);
 
       // Fetch run history
@@ -197,7 +197,7 @@ export default function AgeUpOutPage() {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      setRunHistory(historyData || []);
+      setRunHistory((historyData || []) as unknown as RunHistory[]);
     } catch (error) {
       console.error('Error fetching data:', error);
       setResults([]);

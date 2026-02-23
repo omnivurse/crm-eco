@@ -42,17 +42,17 @@ interface Feature {
   description: string | null;
   category: string;
   icon: string | null;
-  is_highlighted: boolean;
-  sort_order: number;
+  is_highlighted: boolean | null;
+  sort_order: number | null;
 }
 
 interface FeatureMapping {
   id: string;
   feature_id: string;
-  is_included: boolean;
+  is_included: boolean | null;
   custom_value: string | null;
   custom_description: string | null;
-  sort_order: number;
+  sort_order: number | null;
   feature?: Feature;
 }
 
@@ -551,7 +551,7 @@ export function ProductFeaturesModal({
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="edit-highlighted"
-                    checked={editingFeature.is_highlighted}
+                    checked={editingFeature.is_highlighted ?? false}
                     onCheckedChange={(checked) => setEditingFeature({ ...editingFeature, is_highlighted: checked === true })}
                   />
                   <Label htmlFor="edit-highlighted" className="flex items-center gap-1">

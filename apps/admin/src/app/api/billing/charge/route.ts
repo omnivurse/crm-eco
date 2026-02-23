@@ -79,10 +79,10 @@ export async function POST(request: NextRequest) {
       amount,
       description,
       invoiceNumber,
-      billingScheduleId,
-      enrollmentId,
-      billingPeriodStart,
-      billingPeriodEnd,
+      billingScheduleId: billingScheduleId ?? undefined,
+      enrollmentId: enrollmentId ?? undefined,
+      billingPeriodStart: billingPeriodStart ?? undefined,
+      billingPeriodEnd: billingPeriodEnd ?? undefined,
     });
 
     if (result.success) {

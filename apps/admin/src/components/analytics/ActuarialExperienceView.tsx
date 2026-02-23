@@ -574,23 +574,23 @@ export function ActuarialExperienceView({ data }: { data: ActuarialData }) {
   const s = data.summary;
 
   const exportMonthly = useCallback(() => {
-    toCSV(data.monthlyExperience, `actuarial_monthly_experience_${new Date().toISOString().slice(0, 10)}.csv`);
+    toCSV(data.monthlyExperience as unknown as Record<string, unknown>[], `actuarial_monthly_experience_${new Date().toISOString().slice(0, 10)}.csv`);
   }, [data.monthlyExperience]);
 
   const exportTypes = useCallback(() => {
-    toCSV(data.needsByType, `actuarial_needs_by_type_${new Date().toISOString().slice(0, 10)}.csv`);
+    toCSV(data.needsByType as unknown as Record<string, unknown>[], `actuarial_needs_by_type_${new Date().toISOString().slice(0, 10)}.csv`);
   }, [data.needsByType]);
 
   const exportContributions = useCallback(() => {
-    toCSV(data.contributionAdequacy, `actuarial_contributions_${new Date().toISOString().slice(0, 10)}.csv`);
+    toCSV(data.contributionAdequacy as unknown as Record<string, unknown>[], `actuarial_contributions_${new Date().toISOString().slice(0, 10)}.csv`);
   }, [data.contributionAdequacy]);
 
   const exportAgeBands = useCallback(() => {
-    toCSV(data.ageBandExperience, `actuarial_age_bands_${new Date().toISOString().slice(0, 10)}.csv`);
+    toCSV(data.ageBandExperience as unknown as Record<string, unknown>[], `actuarial_age_bands_${new Date().toISOString().slice(0, 10)}.csv`);
   }, [data.ageBandExperience]);
 
   const exportExposure = useCallback(() => {
-    toCSV(data.exposureDevelopment, `actuarial_exposure_development_${new Date().toISOString().slice(0, 10)}.csv`);
+    toCSV(data.exposureDevelopment as unknown as Record<string, unknown>[], `actuarial_exposure_development_${new Date().toISOString().slice(0, 10)}.csv`);
   }, [data.exposureDevelopment]);
 
   const exportAll = useCallback(() => {

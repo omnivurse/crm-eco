@@ -88,8 +88,7 @@ export function MergeMembersModal({
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('members')
+      const { data, error } = await (supabase.from('members') as any)
         .select('id, first_name, last_name, email, phone, status, created_at, effective_date, plan_name, member_id')
         .eq('organization_id', organizationId)
         .or(`first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`)

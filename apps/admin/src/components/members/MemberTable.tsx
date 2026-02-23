@@ -7,7 +7,8 @@ import { format } from 'date-fns';
 import type { Member as MemberRow } from '@crm-eco/lib/types';
 
 /** Member row with joined advisor relation, as returned by the list query */
-type MemberWithAdvisor = Pick<MemberRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'state' | 'plan_name' | 'effective_date' | 'created_at'> & {
+type MemberWithAdvisor = Pick<MemberRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'state' | 'plan_name' | 'effective_date'> & {
+  created_at: string;
   advisor: { id: string; first_name: string; last_name: string } | null;
 };
 
