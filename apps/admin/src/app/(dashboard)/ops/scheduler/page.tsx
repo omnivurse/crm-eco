@@ -55,7 +55,7 @@ interface JobDefinition {
   job_type: string;
   vendor_code: string | null;
   schedule_cron: string | null;
-  schedule_timezone: string;
+  schedule_timezone: string | null;
   is_active: boolean;
   config: Record<string, any>;
   last_run_at: string | null;
@@ -225,7 +225,7 @@ export default function SchedulerPage() {
         throw error;
       }
 
-      setJobs(data || []);
+      setJobs((data || []) as unknown as JobDefinition[]);
     } catch (error) {
       console.error('Error fetching job definitions:', error);
       setJobs([]);
@@ -318,7 +318,7 @@ export default function SchedulerPage() {
       job_type: job.job_type,
       vendor_code: job.vendor_code || '',
       schedule_cron: job.schedule_cron || '',
-      schedule_timezone: job.schedule_timezone,
+      schedule_timezone: job.schedule_timezone || 'America/New_York',
       is_active: job.is_active,
     });
     setIsModalOpen(true);

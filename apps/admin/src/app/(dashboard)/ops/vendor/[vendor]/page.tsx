@@ -70,15 +70,15 @@ interface VendorRun {
   vendor_code: string;
   run_type: string;
   status: string;
-  members_checked: number;
-  members_eligible: number;
-  members_ineligible: number;
-  members_error: number;
+  members_checked: number | null;
+  members_eligible: number | null;
+  members_ineligible: number | null;
+  members_error: number | null;
   started_at: string | null;
   completed_at: string | null;
   duration_ms: number | null;
   error_message: string | null;
-  retry_count: number;
+  retry_count: number | null;
   trigger_type: string;
   created_at: string;
 }
@@ -92,13 +92,13 @@ interface VendorConfig {
   schedule_enabled: boolean;
   schedule_cron: string | null;
   retry_enabled: boolean;
-  retry_max_attempts: number;
+  retry_max_attempts: number | null;
   alert_on_failure: boolean;
   last_run_at: string | null;
   last_success_at: string | null;
-  total_runs: number;
-  total_successes: number;
-  total_failures: number;
+  total_runs: number | null;
+  total_successes: number | null;
+  total_failures: number | null;
 }
 
 interface VendorCredential {
@@ -245,9 +245,9 @@ export default function VendorOpsPage() {
       const configsResult = configsSettled.status === 'fulfilled' ? configsSettled.value : { data: null };
       const credentialsResult = credentialsSettled.status === 'fulfilled' ? credentialsSettled.value : { data: null };
 
-      setRuns(runsResult.data || []);
+      setRuns((runsResult.data || []) as unknown as VendorRun[]);
       setTotalCount(runsResult.count || 0);
-      setConfigs(configsResult.data || []);
+      setConfigs((configsResult.data || []) as unknown as VendorConfig[]);
       setCredentials(credentialsResult.data || []);
     } catch (error) {
       console.error('Error fetching vendor data:', error);
@@ -527,7 +527,7 @@ export default function VendorOpsPage() {
         schedule_enabled: config.schedule_enabled,
         schedule_cron: config.schedule_cron || '',
         retry_enabled: config.retry_enabled,
-        retry_max_attempts: config.retry_max_attempts,
+        retry_max_attempts: config.retry_max_attempts ?? 3,
         alert_on_failure: config.alert_on_failure,
       });
     } else {
@@ -745,7 +745,7 @@ export default function VendorOpsPage() {
                             </TableCell>
                             <TableCell>
                               <span className="capitalize">{run.run_type.replace('_', ' ')}</span>
-                              {run.retry_count > 0 && (
+                              {(run.retry_count ?? 0) > 0 && (
                                 <span className="ml-1 text-xs text-amber-500">(Retry #{run.retry_count})</span>
                               )}
                             </TableCell>
@@ -754,7 +754,7 @@ export default function VendorOpsPage() {
                                 <span className="text-emerald-600">{run.members_eligible}</span>
                                 <span className="text-slate-400"> / </span>
                                 <span>{run.members_checked}</span>
-                                {run.members_error > 0 && (
+                                {(run.members_error ?? 0) > 0 && (
                                   <span className="text-red-500 ml-1">({run.members_error} errors)</span>
                                 )}
                               </div>

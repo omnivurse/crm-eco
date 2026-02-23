@@ -105,8 +105,7 @@ export default function EligibilityPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await supabase
-        .from('vendors')
+      const { data, error } = await (supabase.from('vendors') as any)
         .select('id, name, vendor_type, status, last_sync_at, sync_status')
         .eq('organization_id', organizationId)
         .eq('status', 'active')

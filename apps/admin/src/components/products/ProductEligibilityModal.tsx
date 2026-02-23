@@ -38,11 +38,11 @@ interface EligibilityRule {
   rule_type: string;
   rule_name: string;
   description: string | null;
-  config: Record<string, unknown>;
-  is_blocking: boolean;
+  config: Record<string, unknown> | null;
+  is_blocking: boolean | null;
   error_message: string | null;
-  sort_order: number;
-  is_active: boolean;
+  sort_order: number | null;
+  is_active: boolean | null;
 }
 
 interface ProductEligibilityModalProps {
@@ -119,7 +119,7 @@ export function ProductEligibilityModal({
         .order('sort_order');
 
       if (error) throw error;
-      setRules(data || []);
+      setRules((data as EligibilityRule[]) || []);
     } catch (error) {
       console.error('Error loading rules:', error);
       toast.error('Failed to load eligibility rules');
@@ -197,7 +197,7 @@ export function ProductEligibilityModal({
     setRuleForm({
       rule_name: rule.rule_name,
       description: rule.description || '',
-      is_blocking: rule.is_blocking,
+      is_blocking: rule.is_blocking ?? true,
       error_message: rule.error_message || '',
       min_age: String(config.min_age ?? ''),
       max_age: String(config.max_age ?? ''),
@@ -419,7 +419,7 @@ export function ProductEligibilityModal({
                         </div>
                         <div className="flex items-center gap-2">
                           <Switch
-                            checked={rule.is_active}
+                            checked={rule.is_active ?? false}
                             onCheckedChange={() => handleToggleActive(rule)}
                           />
                           <Button

@@ -184,8 +184,7 @@ export default function AutomationsPage() {
 
       // Load automation rules
       try {
-        const { data: rulesData } = await supabase
-          .from('automation_rules')
+        const { data: rulesData } = await (supabase as any).from('automation_rules')
           .select('*')
           .eq('org_id', profile.organization_id)
           .order('created_at', { ascending: false }) as { data: AutomationRule[] | null };
@@ -199,8 +198,7 @@ export default function AutomationsPage() {
 
       // Load recent rule runs
       try {
-        const { data: runsData } = await supabase
-          .from('automation_rule_runs')
+        const { data: runsData } = await (supabase as any).from('automation_rule_runs')
           .select('*')
           .eq('org_id', profile.organization_id)
           .order('created_at', { ascending: false })
@@ -318,8 +316,7 @@ export default function AutomationsPage() {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
-        .from('automation_rules')
+      const { error } = await (supabase as any).from('automation_rules')
         .delete()
         .eq('id', selectedRule.id);
 

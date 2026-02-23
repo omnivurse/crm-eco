@@ -143,9 +143,8 @@ export default function SettingsPage() {
       };
 
       // Type assertion needed because admin_settings is a new table not yet in generated types
-      const { error } = await (supabase
-        .from('admin_settings') as ReturnType<typeof supabase.from>)
-        .upsert(settingsToSave as never, { onConflict: 'organization_id' });
+      const { error } = await (supabase.from('admin_settings') as any)
+        .upsert(settingsToSave, { onConflict: 'organization_id' });
 
       if (error) throw error;
 
