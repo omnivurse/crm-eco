@@ -172,14 +172,18 @@ export async function getLogs(
   query = query.range(offset, offset + limit - 1);
   
   const { data, count, error } = await query;
-  
+
   if (error) {
+    // Table may not exist yet - return empty instead of crashing
+    if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      return { logs: [], total: 0, hasMore: false };
+    }
     console.error('Error fetching logs:', error);
     throw new Error('Failed to fetch logs');
   }
-  
+
   const total = count || 0;
-  
+
   return {
     logs: (data || []) as IntegrationLog[],
     total,
@@ -220,11 +224,15 @@ export async function getLogStats(
   
   const fromDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000).toISOString();
   
-  const { data: logs } = await supabase
+  const { data: logs, error: logsError } = await supabase
     .from('integration_logs')
     .select('status, provider, event_type')
     .gte('created_at', fromDate);
-  
+
+  if (logsError?.code === '42P01' || logsError?.message?.includes('does not exist')) {
+    return { total: 0, success: 0, error: 0, warning: 0, by_provider: {}, by_event_type: {} };
+  }
+
   const logList = (logs || []) as { status: string; provider: string; event_type: string }[];
   
   const byProvider: Record<string, number> = {};

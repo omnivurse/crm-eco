@@ -107,12 +107,16 @@ export async function getConnections(filters?: ConnectionFilters): Promise<Conne
   }
   
   const { data, count, error } = await query;
-  
+
   if (error) {
+    // Table may not exist yet - return empty instead of crashing
+    if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      return { connections: [], total: 0 };
+    }
     console.error('Error fetching connections:', error);
     throw new Error('Failed to fetch connections');
   }
-  
+
   return {
     connections: (data || []) as IntegrationConnection[],
     total: count || 0,
@@ -393,17 +397,22 @@ export async function updateSyncStatus(
  */
 export async function getHealthSummary(): Promise<HealthSummary> {
   const supabase = await createClient() as any;
-  
-  const { data: connections } = await supabase
+
+  const { data: connections, error: connError } = await supabase
     .from('integration_connections')
     .select('status, last_sync_at');
-  
+
+  // Tables may not exist yet
+  if (connError?.code === '42P01' || connError?.message?.includes('does not exist')) {
+    return { total_connections: 0, connected_count: 0, error_count: 0, pending_count: 0, recent_errors: 0, last_sync_at: null };
+  }
+
   const { count: recentErrors } = await supabase
     .from('integration_logs')
     .select('*', { count: 'exact', head: true })
     .eq('status', 'error')
     .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-  
+
   const connectionList = (connections || []) as { status: string; last_sync_at: string | null }[];
   
   return {

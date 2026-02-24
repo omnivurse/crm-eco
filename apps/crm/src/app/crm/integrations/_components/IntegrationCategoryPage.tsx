@@ -388,11 +388,16 @@ export default function IntegrationCategoryPage({
     setLoading(true);
     try {
       const response = await fetch(`/api/integrations?connection_type=${connectionType}`);
+      if (!response.ok) {
+        setConnections([]);
+        return;
+      }
       const data = await response.json();
       setConnections(data.connections || []);
     } catch (error) {
       console.error('Failed to fetch connections:', error);
       toast.error('Failed to load integration connections');
+      setConnections([]);
     } finally {
       setLoading(false);
     }

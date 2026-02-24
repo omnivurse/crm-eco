@@ -294,16 +294,24 @@ export default function IntegrationLogsPage() {
       if (debouncedQuery) params.set('search', debouncedQuery);
       
       const response = await fetch(`/api/integrations/logs?${params}`);
+      if (!response.ok) {
+        toast.error('Failed to load integration logs');
+        setLogs([]);
+        setTotal(0);
+        setHasMore(false);
+        return;
+      }
       const data: LogsResponse = await response.json();
-      
-      setLogs(data.logs);
-      setTotal(data.total);
-      setHasMore(data.hasMore);
+
+      setLogs(data.logs || []);
+      setTotal(data.total || 0);
+      setHasMore(data.hasMore ?? false);
       setStats(data.stats);
       setPage(pageNum);
     } catch (error) {
       console.error('Failed to fetch logs:', error);
       toast.error('Failed to load integration logs');
+      setLogs([]);
     } finally {
       setLoading(false);
     }
