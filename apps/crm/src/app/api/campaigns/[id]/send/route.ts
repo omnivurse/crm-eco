@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
+import { Resend } from 'resend';
 
 const sendCampaignSchema = z.object({
   scheduled_at: z.string().datetime().optional(),
@@ -269,32 +270,40 @@ async function processCampaignEmails(
 }
 
 /**
- * Send a single campaign email
- * In production, this would use the configured email provider
+ * Send a single campaign email via Resend
  */
 async function sendCampaignEmail(
   campaign: Record<string, unknown>,
   recipient: Record<string, unknown>
 ): Promise<boolean> {
-  // TODO: Integrate with email service (Resend, SendGrid, etc.)
-  // For now, simulate a successful send
   const email = recipient.email as string;
+  if (!email) return false;
 
-  if (!email) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error('RESEND_API_KEY is not configured');
     return false;
   }
 
-  // Simulate network delay
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  const resend = new Resend(apiKey);
+  const fromEmail = (campaign.from_email as string) || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+  const fromName = (campaign.from_name as string) || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
 
-  // In production, call the email provider here
-  // const result = await emailService.send({
-  //   to: email,
-  //   from: campaign.from_email,
-  //   subject: campaign.subject,
-  //   html: campaign.body_html,
-  //   text: campaign.body_text,
-  // });
+  const { error } = await resend.emails.send({
+    from: `${fromName} <${fromEmail}>`,
+    to: [email],
+    subject: (campaign.subject as string) || 'No Subject',
+    html: (campaign.body_html as string) || '',
+    text: (campaign.body_text as string) || undefined,
+    tags: [
+      { name: 'campaign_id', value: campaign.id as string },
+    ],
+  });
+
+  if (error) {
+    console.error(`Failed to send campaign email to ${email}:`, error.message);
+    return false;
+  }
 
   return true;
 }

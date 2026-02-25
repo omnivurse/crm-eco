@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx next build:*)",
-      "Bash(SUPABASE_DB_PASSWORD='Wq8rh3wJjTywGmXo' npx supabase db push)"
+      "Bash(SUPABASE_DB_PASSWORD='Wq8rh3wJjTywGmXo' npx supabase db push)",
+      "Bash(npx eslint packages/lib/src/email/email-service.ts)"
     ]
   }
 }

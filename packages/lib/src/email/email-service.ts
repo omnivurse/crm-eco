@@ -51,6 +51,14 @@ export class EmailService {
   }
 
   /**
+   * Untyped Supabase client for tables not in generated Database types
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private get db(): SupabaseClient<any> {
+    return this.supabase;
+  }
+
+  /**
    * Send an email and track it in the database
    */
   async sendEmail(input: SendEmailInput): Promise<SendEmailResult & { sentEmailId?: string }> {
@@ -167,7 +175,7 @@ export class EmailService {
         text = template.body_text || undefined;
       }
 
-      const { data, error } = await (this.supabase as any)
+      const { data, error } = await this.db
         .from('email_queue')
         .insert({
           organization_id: this.organizationId,
@@ -206,7 +214,7 @@ export class EmailService {
    * Get a template by slug or ID
    */
   async getTemplate(slug?: string, id?: string): Promise<EmailTemplate | null> {
-    let query = (this.supabase as any)
+    let query = this.db
       .from('email_templates')
       .select('*')
       .eq('organization_id', this.organizationId)
@@ -233,7 +241,7 @@ export class EmailService {
    * Get all templates
    */
   async getTemplates(category?: string): Promise<EmailTemplate[]> {
-    let query = (this.supabase as any)
+    let query = this.db
       .from('email_templates')
       .select('*')
       .eq('organization_id', this.organizationId)
@@ -259,13 +267,13 @@ export class EmailService {
     recipientId?: string;
     status?: string;
     templateId?: string;
-  }): Promise<{ emails: any[]; total: number }> {
+  }): Promise<{ emails: Record<string, unknown>[]; total: number }> {
     const page = options.page || 1;
     const limit = options.limit || 20;
     const offset = (page - 1) * limit;
 
-    let query = (this.supabase as any)
-      .from('sent_emails')
+    let query = this.db
+      .from('sent_emails_log')
       .select('*, email_templates(name, slug)', { count: 'exact' })
       .eq('organization_id', this.organizationId)
       .order('created_at', { ascending: false })
@@ -299,8 +307,8 @@ export class EmailService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const { data } = await (this.supabase as any)
-      .from('sent_emails')
+    const { data } = await this.db
+      .from('sent_emails_log')
       .select('status')
       .eq('organization_id', this.organizationId)
       .gte('created_at', startDate.toISOString());
@@ -366,8 +374,8 @@ export class EmailService {
     context?: Record<string, unknown>;
   }): Promise<string | undefined> {
     try {
-      const { data: result, error } = await (this.supabase as any)
-        .from('sent_emails')
+      const { data: result, error } = await this.db
+        .from('sent_emails_log')
         .insert({
           organization_id: this.organizationId,
           recipient_email: data.to,
@@ -427,7 +435,7 @@ export class EmailService {
     notificationType: string,
     channel: 'email' | 'sms' | 'push' = 'email'
   ): Promise<boolean> {
-    const { data } = await (this.supabase as any)
+    const { data } = await this.db
       .from('notification_preferences')
       .select('*')
       .eq('member_id', memberId)
