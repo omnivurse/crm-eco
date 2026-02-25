@@ -2,5 +2,15 @@
   "installCommand": "cd ../.. && rm -rf node_modules/.package-lock.json && npm install --legacy-peer-deps",
   "buildCommand": "cd ../.. && npm run build:crm",
   "outputDirectory": ".next",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/email/process-queue",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/sequences/process",
+      "schedule": "* * * * *"
+    }
+  ]
 }
