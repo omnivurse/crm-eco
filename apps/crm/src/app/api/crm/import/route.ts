@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ImportRequest = await request.json();
-    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates } = body;
+    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates = true } = body;
 
     // Verify org matches
     if (organizationId !== profile.organization_id) {
@@ -118,20 +118,27 @@ export async function POST(request: NextRequest) {
     let duplicatePhones = new Set<string>();
 
     if (skipDuplicates) {
-      const emailsToCheck = transformedRows.map(r => r.email).filter((e): e is string => !!e);
+      // Normalize emails to lowercase for case-insensitive matching
+      const emailsToCheck = transformedRows
+        .map(r => r.email?.toLowerCase())
+        .filter((e): e is string => !!e);
       const phonesToCheck = transformedRows.map(r => r.phone).filter((p): p is string => !!p);
 
-      // Batch check emails
+      // Batch check emails (case-insensitive via lowercase comparison)
       if (emailsToCheck.length > 0) {
+        // Query all existing emails for this org+module, then compare lowercased
         const { data: existingByEmail } = await supabase
           .from('crm_records')
           .select('email')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId)
-          .in('email', emailsToCheck);
+          .not('email', 'is', null);
 
         if (existingByEmail) {
-          duplicateEmails = new Set(existingByEmail.map(r => r.email).filter((e): e is string => !!e));
+          const existingLower = new Set(
+            existingByEmail.map(r => r.email?.toLowerCase()).filter((e): e is string => !!e)
+          );
+          duplicateEmails = existingLower;
         }
       }
 
@@ -156,7 +163,7 @@ export async function POST(request: NextRequest) {
 
     for (const row of transformedRows) {
       if (skipDuplicates) {
-        const isDuplicateByEmail = row.email && duplicateEmails.has(row.email);
+        const isDuplicateByEmail = row.email && duplicateEmails.has(row.email.toLowerCase());
         const isDuplicateByPhone = !row.email && row.phone && duplicatePhones.has(row.phone);
 
         if (isDuplicateByEmail || isDuplicateByPhone) {
@@ -197,12 +204,48 @@ export async function POST(request: NextRequest) {
         .select('id');
 
       if (batchError) {
-        // If batch insert fails, mark all rows in batch as errors
-        batch.forEach(row => {
-          errors++;
-          errorDetails.push({ row: row.index + 1, error: batchError.message });
-          row.error = batchError.message;
-        });
+        // If batch fails due to unique constraint, fall back to row-by-row insert
+        if ((batchError as any).code === '23505') {
+          for (const row of batch) {
+            const { data: singleRecord, error: singleError } = await supabase
+              .from('crm_records')
+              .insert({
+                org_id: organizationId,
+                module_id: moduleId,
+                owner_id: profile.id,
+                title: row.title,
+                status: row.status,
+                data: row.recordData,
+                email: row.email,
+                phone: row.phone,
+                created_by: profile.id,
+              })
+              .select('id');
+
+            if (singleError) {
+              errors++;
+              const msg = (singleError as any).code === '23505'
+                ? 'Duplicate email already exists'
+                : singleError.message;
+              errorDetails.push({ row: row.index + 1, error: msg });
+              row.error = msg;
+            } else if (singleRecord?.[0]) {
+              success++;
+              insertedRecords.push({
+                rowIndex: row.index,
+                recordId: singleRecord[0].id,
+                row,
+              });
+            }
+          }
+        } else {
+          // Non-duplicate batch error: mark all rows as failed
+          batch.forEach(row => {
+            errors++;
+            errorDetails.push({ row: row.index + 1, error: batchError.message });
+            row.error = batchError.message;
+          });
+        }
       } else if (insertedBatch) {
         // Map inserted records back to their rows
         insertedBatch.forEach((record, idx) => {

@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If no existing record, create a new one
+    // If no existing record, try to find by email or create a new one
     if (!record) {
       // Extract system fields
       const systemFields = ['title', 'email', 'phone', 'status', 'stage'];
@@ -163,31 +163,88 @@ export async function POST(request: NextRequest) {
           : customData.name || customData.company || `Webhook Record ${new Date().toISOString()}`;
       }
 
-      const { data: newRecord, error: createError } = await supabase
-        .from('crm_records')
-        .insert({
-          org_id: workflow.org_id,
-          module_id: moduleId,
-          ...systemData,
-          data: customData,
-          system: {
-            source: 'webhook',
-            webhook_received_at: new Date().toISOString(),
-            ...metadata,
-          },
-        })
-        .select()
-        .single();
+      // Check for existing record by email to prevent duplicates
+      const incomingEmail = (systemData.email as string) || null;
+      if (incomingEmail) {
+        const { data: existingByEmail } = await supabase
+          .from('crm_records')
+          .select('*')
+          .eq('org_id', workflow.org_id)
+          .eq('module_id', moduleId)
+          .ilike('email', incomingEmail)
+          .limit(1)
+          .single();
 
-      if (createError) {
-        console.error('Failed to create record:', createError);
-        return NextResponse.json(
-          { error: 'Failed to create record', details: createError.message },
-          { status: 500 }
-        );
+        if (existingByEmail) {
+          // Update existing record with new data instead of creating duplicate
+          const mergedData = { ...(existingByEmail.data as Record<string, unknown> || {}), ...customData };
+          await supabase
+            .from('crm_records')
+            .update({
+              data: mergedData,
+              ...(systemData.phone ? { phone: systemData.phone } : {}),
+              ...(systemData.status ? { status: systemData.status } : {}),
+              system: {
+                ...((existingByEmail.system as Record<string, unknown>) || {}),
+                last_webhook_at: new Date().toISOString(),
+                ...metadata,
+              },
+            })
+            .eq('id', existingByEmail.id);
+
+          record = existingByEmail as CrmRecord;
+        }
       }
 
-      record = newRecord as CrmRecord;
+      // Create new record if no existing match
+      if (!record) {
+        const { data: newRecord, error: createError } = await supabase
+          .from('crm_records')
+          .insert({
+            org_id: workflow.org_id,
+            module_id: moduleId,
+            ...systemData,
+            data: customData,
+            system: {
+              source: 'webhook',
+              webhook_received_at: new Date().toISOString(),
+              ...metadata,
+            },
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          // Handle unique constraint violation
+          if ((createError as any).code === '23505') {
+            // Race condition: record was created between check and insert
+            const { data: raceRecord } = await supabase
+              .from('crm_records')
+              .select('*')
+              .eq('org_id', workflow.org_id)
+              .eq('module_id', moduleId)
+              .ilike('email', incomingEmail!)
+              .limit(1)
+              .single();
+            if (raceRecord) {
+              record = raceRecord as CrmRecord;
+            } else {
+              return NextResponse.json(
+                { error: 'Duplicate record detected', details: createError.message },
+                { status: 409 }
+              );
+            }
+          } else {
+            console.error('Failed to create record:', createError);
+            return NextResponse.json(
+              { error: 'Failed to create record', details: createError.message },
+              { status: 500 }
+            );
+          }
+        } else {
+          record = newRecord as CrmRecord;
+        }
+      }
     }
 
     // Execute matching workflows
