@@ -89,6 +89,7 @@ const createRecordSchema = z.object({
   data: z.record(z.unknown()),
   status: z.string().optional(),
   stage: z.string().optional(),
+  force: z.boolean().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -112,6 +113,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // Duplicate check before insert
+    const emailToCheck = (parsed.data.data?.email as string) || null;
+    const phoneToCheck = (parsed.data.data?.phone as string) || null;
+
+    if (!parsed.data.force && (emailToCheck || phoneToCheck)) {
+      const { data: duplicates } = await (supabase as any).rpc('check_crm_duplicate', {
+        p_org_id: profile.organization_id,
+        p_module_id: parsed.data.module_id,
+        p_email: emailToCheck,
+        p_phone: phoneToCheck,
+      });
+
+      if (duplicates && duplicates.length > 0) {
+        return NextResponse.json({
+          error: 'A record with this email already exists',
+          code: 'DUPLICATE_RECORD',
+          duplicates,
+        }, { status: 409 });
+      }
+    }
+
     const { data: record, error } = await supabase
       .from('crm_records')
       .insert({
@@ -127,6 +149,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      // Catch unique constraint violation as safety net
+      if ((error as any).code === '23505') {
+        return NextResponse.json({
+          error: 'A record with this email already exists',
+          code: 'DUPLICATE_RECORD',
+        }, { status: 409 });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

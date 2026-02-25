@@ -29,6 +29,8 @@ import {
   Building2,
   Loader2,
   Plus,
+  AlertTriangle,
+  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -105,11 +107,40 @@ export function QuickCreateDrawer({
   const [selectedModule, setSelectedModule] = useState<ModuleType>(defaultModule);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    id: string;
+    title: string;
+    email: string;
+  } | null>(null);
+  const [forceCreate, setForceCreate] = useState(false);
 
   const config = MODULE_CONFIG[selectedModule];
 
   const handleFieldChange = (key: string, value: string) => {
     setFormData(prev => ({ ...prev, [key]: value }));
+    if (key === 'email') {
+      setDuplicateWarning(null);
+      setForceCreate(false);
+    }
+  };
+
+  const checkDuplicate = async (email: string) => {
+    if (!email?.trim()) return;
+    try {
+      const res = await fetch(
+        `/api/crm/records/check-duplicate?module_key=${selectedModule}&email=${encodeURIComponent(email.trim())}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.hasDuplicates) {
+          setDuplicateWarning(data.duplicates[0]);
+        } else {
+          setDuplicateWarning(null);
+        }
+      }
+    } catch {
+      // Silently fail — the DB unique index is the safety net
+    }
   };
 
   const handleModuleChange = (module: ModuleType) => {
@@ -125,6 +156,12 @@ export function QuickCreateDrawer({
 
     if (missingFields.length > 0) {
       toast.error(`Please fill in: ${missingFields.join(', ')}`);
+      return;
+    }
+
+    // Check for duplicates before creating (unless force is set)
+    if (!forceCreate && duplicateWarning) {
+      toast.error('A record with this email already exists. Click "Create Anyway" to proceed.');
       return;
     }
 
@@ -162,14 +199,23 @@ export function QuickCreateDrawer({
         .select('id')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Catch unique constraint violation
+        if ((error as any).code === '23505') {
+          toast.error('A record with this email already exists');
+          return;
+        }
+        throw error;
+      }
 
       toast.success(`${config.name} created successfully`);
-      
+
       // Navigate to the new record
       router.push(`/crm/r/${record.id}`);
       onOpenChange(false);
       setFormData({});
+      setDuplicateWarning(null);
+      setForceCreate(false);
     } catch (error) {
       console.error('Error creating record:', error);
       toast.error('Failed to create record');
@@ -182,6 +228,8 @@ export function QuickCreateDrawer({
     if (!submitting) {
       onOpenChange(false);
       setFormData({});
+      setDuplicateWarning(null);
+      setForceCreate(false);
     }
   };
 
@@ -234,6 +282,7 @@ export function QuickCreateDrawer({
                   type={field.type}
                   value={formData[field.key] || ''}
                   onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                  onBlur={field.key === 'email' ? () => checkDuplicate(formData.email) : undefined}
                   placeholder={`Enter ${field.label.toLowerCase()}`}
                   className="h-10 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
                 />
@@ -241,6 +290,45 @@ export function QuickCreateDrawer({
             ))}
           </div>
         </div>
+
+        {duplicateWarning && (
+          <div className="mx-6 mb-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-lg">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Possible duplicate</p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 truncate">
+                  {duplicateWarning.title} ({duplicateWarning.email})
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-amber-300"
+                    onClick={() => {
+                      router.push(`/crm/r/${duplicateWarning.id}`);
+                      onOpenChange(false);
+                    }}
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    View Existing
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-amber-300"
+                    onClick={() => {
+                      setForceCreate(true);
+                      setDuplicateWarning(null);
+                    }}
+                  >
+                    Create Anyway
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <SheetFooter className="p-6 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/50">
           <Button

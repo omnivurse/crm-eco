@@ -23,7 +23,7 @@ import {
   Separator,
   Textarea,
 } from '@crm-eco/ui';
-import { Plus, User, MapPin, Target, FileText } from 'lucide-react';
+import { Plus, User, MapPin, Target, FileText, AlertTriangle, ExternalLink } from 'lucide-react';
 import { logActivityForLead, ActivityTypes } from '@crm-eco/lib';
 import type { Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
@@ -89,6 +89,13 @@ export function CreateLeadDialog() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [advisors, setAdvisors] = useState<Advisor[]>([]);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+  } | null>(null);
+  const [forceCreate, setForceCreate] = useState(false);
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -134,6 +141,22 @@ export function CreateLeadDialog() {
     try {
       const supabase = createClient();
 
+      // Check for duplicate email in leads table
+      if (!forceCreate && formData.email?.trim()) {
+        const { data: existing } = await supabase
+          .from('leads')
+          .select('id, first_name, last_name, email')
+          .eq('organization_id', authProfile.organization_id)
+          .ilike('email', formData.email.trim())
+          .limit(1);
+
+        if (existing && existing.length > 0) {
+          setDuplicateWarning(existing[0] as any);
+          setLoading(false);
+          return;
+        }
+      }
+
       const insertData: LeadInsert = {
         organization_id: authProfile.organization_id,
         first_name: formData.firstName,
@@ -157,7 +180,14 @@ export function CreateLeadDialog() {
         .select('id')
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        if ((insertError as any).code === '23505') {
+          setError('A lead with this email already exists in your organization');
+          setLoading(false);
+          return;
+        }
+        throw insertError;
+      }
 
       // Log activity
       if (insertedLead) {
@@ -174,6 +204,8 @@ export function CreateLeadDialog() {
       }
 
       setOpen(false);
+      setDuplicateWarning(null);
+      setForceCreate(false);
       setFormData({
         firstName: '',
         lastName: '',
@@ -217,6 +249,46 @@ export function CreateLeadDialog() {
           {error && (
             <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg">
               {error}
+            </div>
+          )}
+          {duplicateWarning && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-800">Possible duplicate found</p>
+                  <p className="text-sm text-amber-700">
+                    {duplicateWarning.first_name} {duplicateWarning.last_name} ({duplicateWarning.email})
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setOpen(false);
+                        router.push(`/crm/leads?search=${encodeURIComponent(duplicateWarning.email)}`);
+                      }}
+                    >
+                      <ExternalLink className="w-3 h-3 mr-1" />
+                      View Existing
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setForceCreate(true);
+                        setDuplicateWarning(null);
+                      }}
+                    >
+                      Create Anyway
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
           
