@@ -176,24 +176,29 @@ export class EmailService {
       }
 
       const { data, error } = await this.db
-        .from('email_queue')
+        .from('notification_queue')
         .insert({
           organization_id: this.organizationId,
-          to_email: input.to,
-          to_name: input.toName,
-          from_email: input.fromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
-          from_name: input.fromName,
-          reply_to: input.replyTo,
+          recipient_type: input.recipientType || 'other',
+          email_address: input.to,
+          notification_type: 'email',
+          channel: 'email',
           subject,
+          body: html,
           body_html: html,
-          body_text: text,
           template_id: input.templateId || null,
           template_data: input.variables || {},
-          recipient_type: input.recipientType,
-          recipient_id: input.recipientId,
-          triggered_by: input.triggeredBy || 'system',
-          triggered_by_profile_id: input.triggeredByProfileId,
           scheduled_for: scheduledFor?.toISOString() || new Date().toISOString(),
+          metadata: {
+            from_email: input.fromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
+            from_name: input.fromName,
+            reply_to: input.replyTo,
+            body_text: text,
+            to_name: input.toName,
+            recipient_id: input.recipientId,
+            triggered_by: input.triggeredBy || 'system',
+            triggered_by_profile_id: input.triggeredByProfileId,
+          },
         })
         .select('id')
         .single();
@@ -273,7 +278,7 @@ export class EmailService {
     const offset = (page - 1) * limit;
 
     let query = this.db
-      .from('sent_emails_log')
+      .from('sent_emails')
       .select('*, email_templates(name, slug)', { count: 'exact' })
       .eq('organization_id', this.organizationId)
       .order('created_at', { ascending: false })
@@ -308,7 +313,7 @@ export class EmailService {
     startDate.setDate(startDate.getDate() - days);
 
     const { data } = await this.db
-      .from('sent_emails_log')
+      .from('sent_emails')
       .select('status')
       .eq('organization_id', this.organizationId)
       .gte('created_at', startDate.toISOString());
@@ -375,13 +380,12 @@ export class EmailService {
   }): Promise<string | undefined> {
     try {
       const { data: result, error } = await this.db
-        .from('sent_emails_log')
+        .from('sent_emails')
         .insert({
           organization_id: this.organizationId,
+          email_type: data.recipientType || 'system',
           recipient_email: data.to,
           recipient_name: data.toName,
-          recipient_type: data.recipientType,
-          recipient_id: data.recipientId,
           template_id: data.templateId,
           subject: data.subject,
           body_html: data.html,
@@ -389,14 +393,17 @@ export class EmailService {
           from_email: data.fromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
           from_name: data.fromName,
           reply_to: data.replyTo,
+          provider: 'resend',
+          provider_message_id: data.resendId,
           status: data.status,
-          resend_id: data.resendId,
-          sent_at: data.status === 'sent' ? new Date().toISOString() : null,
-          failed_at: data.status === 'failed' ? new Date().toISOString() : null,
           error_message: data.error,
-          triggered_by: data.triggeredBy || 'manual',
-          triggered_by_profile_id: data.triggeredByProfileId,
-          context: data.context || {},
+          sent_at: data.status === 'sent' ? new Date().toISOString() : null,
+          metadata: {
+            triggered_by: data.triggeredBy || 'manual',
+            triggered_by_profile_id: data.triggeredByProfileId,
+            recipient_id: data.recipientId,
+            context: data.context || {},
+          },
         })
         .select('id')
         .single();

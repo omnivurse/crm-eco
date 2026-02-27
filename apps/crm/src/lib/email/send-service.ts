@@ -124,28 +124,34 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       result = await simulateSend(toEmails, params.subject);
     }
     
-    // Log to sent_emails_log
-    await supabase.from('sent_emails_log').insert({
-      org_id: profile.organization_id,
-      sent_by: profile.id,
-      from_email: fromEmail,
-      from_name: fromName,
-      to_emails: toEmails,
+    // Log to sent_emails
+    await supabase.from('sent_emails').insert({
+      organization_id: profile.organization_id,
+      email_type: 'crm_outbound',
+      recipient_email: toEmails[0],
+      recipient_name: null,
       cc_emails: params.cc || [],
       bcc_emails: params.bcc || [],
       subject: params.subject,
       body_html: params.body_html,
       body_text: params.body_text,
+      from_email: fromEmail,
+      from_name: fromName,
+      reply_to: params.reply_to,
       template_id: params.template_id,
-      template_variables: params.template_variables,
       provider: provider,
       provider_message_id: result.message_id,
       status: result.success ? 'sent' : 'failed',
       error_message: result.error,
-      linked_contact_id: params.linked_contact_id,
-      linked_lead_id: params.linked_lead_id,
-      linked_deal_id: params.linked_deal_id,
       sent_at: result.success ? new Date().toISOString() : null,
+      metadata: {
+        sent_by: profile.id,
+        to_emails: toEmails,
+        template_variables: params.template_variables,
+        linked_contact_id: params.linked_contact_id,
+        linked_lead_id: params.linked_lead_id,
+        linked_deal_id: params.linked_deal_id,
+      },
     });
     
     // Log to integration logs

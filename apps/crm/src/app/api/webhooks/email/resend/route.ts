@@ -17,10 +17,6 @@ function createServiceClient() {
   );
 }
 
-/**
- * Resend webhook event types
- * @see https://resend.com/docs/dashboard/webhooks/event-types
- */
 interface ResendWebhookEvent {
   type: 'email.sent' | 'email.delivered' | 'email.delivery_delayed' | 'email.complained' | 'email.bounced' | 'email.opened' | 'email.clicked';
   created_at: string;
@@ -38,31 +34,24 @@ interface ResendWebhookEvent {
 
 /**
  * Map Resend event types to our internal event types
+ * Must match email_events.event_type values that the DB trigger handles
  */
 const EVENT_TYPE_MAP: Record<string, string> = {
-  'email.delivered': 'delivered',
-  'email.opened': 'open',
-  'email.clicked': 'click',
-  'email.bounced': 'bounce',
-  'email.complained': 'complaint',
-};
-
-const STATUS_MAP: Record<string, string> = {
-  'email.sent': 'sent',
   'email.delivered': 'delivered',
   'email.opened': 'opened',
   'email.clicked': 'clicked',
   'email.bounced': 'bounced',
-  'email.complained': 'bounced',
+  'email.complained': 'complained',
 };
 
 /**
  * POST /api/webhooks/email/resend
  * Handle Resend email events (delivery, open, click, bounce, complaint)
+ * Inserts into email_events — the DB trigger auto-updates sent_emails
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify webhook signature via svix headers
+    // Verify svix headers exist
     const svixId = request.headers.get('svix-id');
     const svixTimestamp = request.headers.get('svix-timestamp');
     const svixSignature = request.headers.get('svix-signature');
@@ -74,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify timestamp is recent (within 5 minutes) to prevent replay attacks
+    // Verify timestamp is recent (within 5 minutes)
     const timestampSeconds = parseInt(svixTimestamp, 10);
     const now = Math.floor(Date.now() / 1000);
     if (Math.abs(now - timestampSeconds) > 300) {
@@ -85,39 +74,44 @@ export async function POST(request: NextRequest) {
     }
 
     const event: ResendWebhookEvent = await request.json();
-    const supabase = createServiceClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createServiceClient() as any;
 
     const emailId = event.data.email_id;
     if (!emailId) {
       return NextResponse.json({ received: true });
     }
 
-    // Find the sent email by Resend message ID
-    const { data: sentEmail } = await (supabase as any)
-      .from('sent_emails_log')
-      .select('id, tracking_id, org_id')
+    // Find the sent email by provider_message_id (Resend email ID)
+    const { data: sentEmail } = await supabase
+      .from('sent_emails')
+      .select('id')
       .eq('provider_message_id', emailId)
       .single();
 
     if (!sentEmail) {
-      // Try matching by resend_id field (used by shared EmailService)
-      const { data: sentEmailAlt } = await (supabase as any)
-        .from('sent_emails_log')
-        .select('id, tracking_id, org_id, organization_id')
-        .eq('resend_id', emailId)
-        .single();
-
-      if (!sentEmailAlt) {
-        // Email not found in our logs — still acknowledge the webhook
-        return NextResponse.json({ received: true, matched: false });
-      }
-
-      // Process with alt record
-      await processEvent(supabase, event, sentEmailAlt);
-      return NextResponse.json({ received: true, matched: true });
+      return NextResponse.json({ received: true, matched: false });
     }
 
-    await processEvent(supabase, event, sentEmail);
+    const ourEventType = EVENT_TYPE_MAP[event.type];
+    if (!ourEventType) {
+      return NextResponse.json({ received: true });
+    }
+
+    // Insert into email_events — DB trigger auto-updates sent_emails
+    await supabase.from('email_events').insert({
+      sent_email_id: sentEmail.id,
+      provider_message_id: emailId,
+      event_type: ourEventType,
+      event_data: {
+        clicked_url: event.data.click?.link || null,
+        bounce_type: event.data.bounce?.type || null,
+        bounce_reason: event.data.bounce?.message || null,
+        complaint_type: event.data.complaint?.type || null,
+      },
+      occurred_at: event.created_at || new Date().toISOString(),
+    });
+
     return NextResponse.json({ received: true, matched: true });
   } catch (error) {
     console.error('Error processing Resend webhook:', error);
@@ -125,36 +119,5 @@ export async function POST(request: NextRequest) {
       { error: 'Webhook processing failed' },
       { status: 500 }
     );
-  }
-}
-
-async function processEvent(
-  supabase: ReturnType<typeof createServiceClient>,
-  event: ResendWebhookEvent,
-  sentEmail: { id: string; tracking_id?: string; org_id?: string; organization_id?: string }
-) {
-  const orgId = sentEmail.org_id || sentEmail.organization_id;
-  const ourEventType = EVENT_TYPE_MAP[event.type];
-
-  // Insert tracking event if it maps to a trackable type
-  if (ourEventType && orgId) {
-    await (supabase as any).from('email_tracking_events').insert({
-      org_id: orgId,
-      tracking_id: sentEmail.tracking_id,
-      event_type: ourEventType,
-      clicked_url: event.data.click?.link || null,
-      bounce_type: event.data.bounce?.type || null,
-      bounce_reason: event.data.bounce?.message || null,
-      occurred_at: event.created_at || new Date().toISOString(),
-    });
-  }
-
-  // Update sent email status
-  const newStatus = STATUS_MAP[event.type];
-  if (newStatus) {
-    await (supabase as any)
-      .from('sent_emails_log')
-      .update({ status: newStatus })
-      .eq('id', sentEmail.id);
   }
 }
