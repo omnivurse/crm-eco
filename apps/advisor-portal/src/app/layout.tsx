@@ -19,7 +19,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
-                <PinLockOverlay pin="070708" appName="Secure Access" />
+                <PinLockOverlay pin="012049" appName="Secure Access" />
                 {children}
                 <Toaster position="top-right" richColors />
             </body>

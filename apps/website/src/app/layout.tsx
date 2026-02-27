@@ -69,7 +69,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}
       >
-        <PinLockOverlay pin="070708" appName="Secure Access" />
+        <PinLockOverlay pin="012049" appName="Secure Access" />
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
           <main className="flex-1">{children}</main>
