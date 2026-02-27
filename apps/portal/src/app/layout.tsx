@@ -56,7 +56,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <PinLockOverlay pin="070708" appName="Secure Access" />
+        <PinLockOverlay pin="012049" appName="Secure Access" />
         <ServiceWorkerRegistration />
         <div className="min-h-screen bg-slate-50">
           <PortalHeader />
