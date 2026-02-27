@@ -16,7 +16,7 @@ import { createServerClient } from '@supabase/ssr';
 const ADMIN_ROLES = ['owner', 'admin', 'staff'];
 
 // Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login', '/access-denied'];
+const PUBLIC_ROUTES = ['/login', '/access-denied', '/reset-password', '/update-password'];
 
 // Routes that require authentication but not admin role
 const AUTH_ONLY_ROUTES: string[] = [];

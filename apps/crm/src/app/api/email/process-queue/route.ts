@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { Resend } from 'resend';
 
-/**
- * Creates a service role client for queue processing
- */
 function createServiceClient() {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,12 +19,11 @@ const BATCH_SIZE = 50;
 
 /**
  * POST /api/email/process-queue
- * Process pending emails from the email_queue table.
+ * Process pending email notifications from the notification_queue table.
  * Should be called by a cron job (e.g., every minute).
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
@@ -43,20 +39,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = createServiceClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabase = createServiceClient() as any;
     const resend = new Resend(apiKey);
 
-    // Fetch pending emails that are due
-    const { data: queuedEmails, error: fetchError } = await (supabase as any)
-      .from('email_queue')
+    // Fetch pending email notifications that are due
+    const { data: queuedEmails, error: fetchError } = await supabase
+      .from('notification_queue')
       .select('*')
       .eq('status', 'pending')
+      .eq('channel', 'email')
       .lte('scheduled_for', new Date().toISOString())
       .order('scheduled_for', { ascending: true })
       .limit(BATCH_SIZE);
 
     if (fetchError) {
-      console.error('Error fetching email queue:', fetchError);
+      console.error('Error fetching notification queue:', fetchError);
       return NextResponse.json(
         { error: 'Failed to fetch queue' },
         { status: 500 }
@@ -76,54 +74,87 @@ export async function POST(request: NextRequest) {
     let sent = 0;
     let failed = 0;
 
-    for (const email of queuedEmails) {
-      // Mark as sending
-      await (supabase as any)
-        .from('email_queue')
-        .update({ status: 'sending' })
-        .eq('id', email.id);
+    for (const item of queuedEmails) {
+      // Update attempt count
+      const attempts = (item.attempts || 0) + 1;
+      await supabase
+        .from('notification_queue')
+        .update({ status: 'sending', attempts, last_attempt_at: new Date().toISOString() })
+        .eq('id', item.id);
 
       try {
-        const fromEmail = email.from_email || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
-        const fromName = email.from_name || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+        const meta = item.metadata || {};
+        const fromEmail = meta.from_email || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+        const fromName = meta.from_name || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+        const toEmail = item.email_address;
+
+        if (!toEmail) {
+          throw new Error('No recipient email address');
+        }
 
         const { data: sendResult, error: sendError } = await resend.emails.send({
           from: `${fromName} <${fromEmail}>`,
-          to: [email.to_email],
-          subject: email.subject || 'No Subject',
-          html: email.body_html || '',
-          text: email.body_text || undefined,
-          replyTo: email.reply_to || undefined,
+          to: [toEmail],
+          subject: item.subject || 'Notification',
+          html: item.body_html || item.body || '',
+          text: meta.body_text || undefined,
+          replyTo: meta.reply_to || undefined,
         });
 
         if (sendError) {
           throw new Error(sendError.message);
         }
 
-        // Mark as sent
-        await (supabase as any)
-          .from('email_queue')
+        // Log to sent_emails and mark queue item as sent
+        const { data: sentEmail } = await supabase
+          .from('sent_emails')
+          .insert({
+            organization_id: item.organization_id,
+            email_type: item.notification_type || 'system',
+            recipient_email: toEmail,
+            subject: item.subject || 'Notification',
+            body_html: item.body_html || item.body,
+            from_email: fromEmail,
+            from_name: fromName,
+            reply_to: meta.reply_to,
+            provider: 'resend',
+            provider_message_id: sendResult?.id,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+            template_id: item.template_id,
+            metadata: { queue_id: item.id, ...meta },
+          })
+          .select('id')
+          .single();
+
+        await supabase
+          .from('notification_queue')
           .update({
             status: 'sent',
             sent_at: new Date().toISOString(),
-            provider_message_id: sendResult?.id,
+            sent_email_id: sentEmail?.id || null,
           })
-          .eq('id', email.id);
+          .eq('id', item.id);
 
         sent++;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        console.error(`Failed to send queued email ${email.id}:`, errorMessage);
+        console.error(`Failed to send queued email ${item.id}:`, errorMessage);
 
-        // Mark as failed
-        await (supabase as any)
-          .from('email_queue')
+        const maxAttempts = item.max_attempts || 3;
+        const newStatus = attempts >= maxAttempts ? 'failed' : 'pending';
+        const nextAttemptAt = newStatus === 'pending'
+          ? new Date(Date.now() + attempts * 60000).toISOString()
+          : null;
+
+        await supabase
+          .from('notification_queue')
           .update({
-            status: 'failed',
+            status: newStatus,
             error_message: errorMessage,
-            failed_at: new Date().toISOString(),
+            next_attempt_at: nextAttemptAt,
           })
-          .eq('id', email.id);
+          .eq('id', item.id);
 
         failed++;
       }
@@ -145,10 +176,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/email/process-queue
- * Health check
- */
 export async function GET() {
   return NextResponse.json({
     status: 'ok',

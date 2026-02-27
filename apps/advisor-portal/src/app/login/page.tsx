@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, ShieldCheck } from 'lucide-react';
@@ -77,9 +78,17 @@ function LoginForm() {
                 </div>
 
                 <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Password
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            Password
+                        </label>
+                        <Link
+                            href="/reset-password"
+                            className="text-sm text-advisor-600 hover:text-advisor-700 dark:text-advisor-400 dark:hover:text-advisor-300 transition-colors"
+                        >
+                            Forgot password?
+                        </Link>
+                    </div>
                     <input
                         id="password"
                         type="password"

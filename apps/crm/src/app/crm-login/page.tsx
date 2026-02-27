@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -268,12 +269,12 @@ export default function CrmLoginPage() {
                   <Label htmlFor="password" className="text-brand-navy-700 text-sm font-medium">
                     Password
                   </Label>
-                  <button
-                    type="button"
+                  <Link
+                    href="/reset-password"
                     className="text-sm text-brand-teal-600 hover:text-brand-teal-700 transition-colors"
                   >
                     Forgot password?
-                  </button>
+                  </Link>
                 </div>
                 <div className="relative group">
                   <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />

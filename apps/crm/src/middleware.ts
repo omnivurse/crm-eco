@@ -89,7 +89,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes - no auth required
-  const publicRoutes = ['/crm-login', '/crm-access-denied', '/login'];
+  const publicRoutes = ['/crm-login', '/crm-access-denied', '/login', '/reset-password', '/update-password'];
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     // If user is already authenticated, redirect to dashboard
     if (user) {
