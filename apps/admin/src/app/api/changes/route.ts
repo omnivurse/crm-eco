@@ -1,6 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { requireAdminRole } from '@/lib/auth';
+import { z } from 'zod';
+
+const changeEventSchema = z.object({
+  source_type: z.enum(['user', 'system', 'migration', 'import']).default('user'),
+  source_name: z.string().max(255).optional(),
+  change_type: z.string().min(1).max(100),
+  entity_type: z.string().min(1).max(100),
+  entity_id: z.string().min(1).max(255),
+  entity_title: z.string().max(500).optional(),
+  severity: z.enum(['info', 'low', 'medium', 'high', 'critical']).default('info'),
+  requires_review: z.boolean().default(false),
+  title: z.string().min(1).max(500),
+  description: z.string().max(5000).optional(),
+  diff: z.unknown().optional(),
+  payload: z.unknown().optional(),
+});
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -31,27 +48,9 @@ async function createClient() {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !profile.organization_id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Check if user has admin role
-    const adminRoles = ['super_admin', 'admin', 'manager', 'owner'];
-    if (!profile.role || !adminRoles.includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
@@ -112,61 +111,37 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, full_name, role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !profile.organization_id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     const body = await request.json();
-    const {
-      source_type = 'user',
-      source_name,
-      change_type,
-      entity_type,
-      entity_id,
-      entity_title,
-      severity = 'info',
-      requires_review = false,
-      title,
-      description,
-      diff,
-      payload,
-    } = body;
-
-    if (!change_type || !entity_type || !entity_id || !title) {
+    const parsed = changeEventSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Missing required fields: change_type, entity_type, entity_id, title' },
+        { error: 'Invalid input', details: parsed.error.flatten().fieldErrors },
         { status: 400 }
       );
     }
+
+    const input = parsed.data;
 
     const { data: event, error } = await supabase
       .from('change_events')
       .insert({
         org_id: profile.organization_id,
-        source_type,
-        source_name,
-        change_type,
-        entity_type,
-        entity_id,
-        entity_title,
-        severity,
-        requires_review,
-        title,
-        description,
-        diff,
-        payload,
+        source_type: input.source_type,
+        source_name: input.source_name,
+        change_type: input.change_type,
+        entity_type: input.entity_type,
+        entity_id: input.entity_id,
+        entity_title: input.entity_title,
+        severity: input.severity,
+        requires_review: input.requires_review,
+        title: input.title,
+        description: input.description,
+        diff: input.diff,
+        payload: input.payload,
         actor_id: profile.id,
         actor_name: profile.full_name,
         actor_type: 'user',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,6 +22,108 @@ import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/ty
 import { getFieldOptions } from '@/lib/crm/utils';
 import { FieldRenderer } from './FieldRenderer';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+
+// Search dropdown for lookup/user fields
+function LookupSearchField({
+  field,
+  value,
+  onChange,
+  error,
+}: {
+  field: CrmField;
+  value: string | undefined;
+  onChange: (val: string) => void;
+  error?: boolean;
+}) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<{ id: string; title: string }[]>([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState<string>(value || '');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const search = useCallback(async (q: string) => {
+    if (!q || q.length < 2) {
+      setResults([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const endpoint = field.type === 'user'
+        ? `/api/crm/users?search=${encodeURIComponent(q)}`
+        : `/api/crm/records?search=${encodeURIComponent(q)}&page_size=10${field.options ? `&module_key=${field.options}` : ''}`;
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const items = field.type === 'user'
+        ? (data.users || data || []).map((u: any) => ({ id: u.id, title: u.full_name || u.email || u.id }))
+        : (data.records || []).map((r: any) => ({ id: r.id, title: r.title || r.data?.name || r.data?.email || r.id }));
+      setResults(items);
+    } catch {
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [field.type, field.options]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuery(val);
+    setOpen(true);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => search(val), 300);
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <Input
+        value={query || selectedLabel}
+        onChange={handleInputChange}
+        onFocus={() => { if (results.length > 0) setOpen(true); }}
+        placeholder={`Search ${field.label.toLowerCase()}...`}
+        className={cn(error && 'border-destructive')}
+      />
+      {open && (query.length >= 2) && (
+        <div className="absolute z-50 mt-1 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {loading ? (
+            <div className="p-3 text-sm text-slate-500 text-center">Searching...</div>
+          ) : results.length === 0 ? (
+            <div className="p-3 text-sm text-slate-500 text-center">No results found</div>
+          ) : (
+            results.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                onClick={() => {
+                  onChange(item.id);
+                  setSelectedLabel(item.title);
+                  setQuery('');
+                  setOpen(false);
+                }}
+              >
+                <span className="font-medium">{item.title}</span>
+                <span className="text-xs text-slate-400 ml-2">{item.id.slice(0, 8)}...</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface DynamicRecordFormProps {
   fields: CrmField[];
@@ -183,14 +285,19 @@ export function DynamicRecordForm({
       ...register(field.key),
       className: cn(error && 'border-destructive'),
       placeholder: field.tooltip || `Enter ${field.label.toLowerCase()}`,
+      ...(field.required && { required: true }),
     };
 
     switch (field.type) {
       case 'text':
-      case 'email':
       case 'phone':
+        return <Input {...commonProps} type="text" />;
+
+      case 'email':
+        return <Input {...commonProps} type="email" />;
+
       case 'url':
-        return <Input {...commonProps} type={field.type === 'email' ? 'email' : 'text'} />;
+        return <Input {...commonProps} type="url" />;
 
       case 'textarea':
         return <Textarea {...commonProps} rows={3} />;
@@ -227,21 +334,25 @@ export function DynamicRecordForm({
 
       case 'select':
         return (
-          <Select
-            value={value as string}
-            onValueChange={(val) => setValue(field.key, val)}
-          >
-            <SelectTrigger className={cn(error && 'border-destructive')}>
-              <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-            </SelectTrigger>
-            <SelectContent>
-              {getFieldOptions(field.options).map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <>
+            <Select
+              value={value as string}
+              onValueChange={(val) => setValue(field.key, val)}
+            >
+              <SelectTrigger className={cn(error && 'border-destructive')}>
+                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+              </SelectTrigger>
+              <SelectContent>
+                {getFieldOptions(field.options).map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {/* Hidden input for native required validation in embedded/server-action mode */}
+            <input type="hidden" name={field.key} value={(value as string) || ''} {...(field.required && { required: true })} />
+          </>
         );
 
       case 'multiselect':
@@ -270,9 +381,13 @@ export function DynamicRecordForm({
 
       case 'user':
       case 'lookup':
-        // Simplified - in real app would be a searchable dropdown
         return (
-          <Input {...commonProps} placeholder={`Enter ${field.label.toLowerCase()} ID`} />
+          <LookupSearchField
+            field={field}
+            value={value as string | undefined}
+            onChange={(val) => setValue(field.key, val)}
+            error={!!error}
+          />
         );
 
       default:

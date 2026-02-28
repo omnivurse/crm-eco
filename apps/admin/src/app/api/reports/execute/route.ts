@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { requireAdminRole } from '@/lib/auth';
 
 // Data source to table mapping
 const DATA_SOURCE_TABLES: Record<string, string> = {
@@ -47,20 +48,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const body = await request.json();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     const {
       dataSource,
@@ -166,7 +155,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error executing report:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to execute report' },
+      { error: 'Failed to execute report' },
       { status: 500 }
     );
   }

@@ -67,6 +67,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['medium', 'large', 'full'],
     category: 'deals',
     dataKey: 'pipelineSummary',
+    comingSoon: true,
   },
   'top-deals': {
     id: 'top-deals',
@@ -77,6 +78,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['small', 'medium', 'large'],
     category: 'deals',
     dataKey: 'topDeals',
+    comingSoon: true,
   },
   'performance-metrics': {
     id: 'performance-metrics',
@@ -87,6 +89,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['medium', 'large', 'full'],
     category: 'metrics',
     dataKey: 'performanceMetrics',
+    comingSoon: true,
   },
   'calendar-events': {
     id: 'calendar-events',
@@ -107,6 +110,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['small', 'medium'],
     category: 'other',
     dataKey: 'notesMemos',
+    comingSoon: true,
   },
   'email-stats': {
     id: 'email-stats',
@@ -117,6 +121,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['small', 'medium', 'large'],
     category: 'email',
     dataKey: 'emailStats',
+    comingSoon: true,
   },
   'lead-conversion': {
     id: 'lead-conversion',
@@ -127,6 +132,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['medium', 'large', 'full'],
     category: 'metrics',
     dataKey: 'leadConversion',
+    comingSoon: true,
   },
   'team-leaderboard': {
     id: 'team-leaderboard',
@@ -137,6 +143,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['small', 'medium', 'large'],
     category: 'metrics',
     dataKey: 'teamLeaderboard',
+    comingSoon: true,
   },
   'revenue-chart': {
     id: 'revenue-chart',
@@ -147,6 +154,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     allowedSizes: ['large', 'full'],
     category: 'metrics',
     dataKey: 'revenueChart',
+    comingSoon: true,
   },
 };
 

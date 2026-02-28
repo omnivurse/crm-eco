@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { requireAdminRole } from '@/lib/auth';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -33,20 +34,8 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     // Verify report exists and user has access
     const { data: report, error: reportError } = await supabase
@@ -96,20 +85,8 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     // Verify report exists
     const { data: report, error: reportError } = await supabase
@@ -140,14 +117,8 @@ export async function POST(
 
     if (insertError) throw insertError;
 
-    // Update report run count and last_run_at
-    await supabase
-      .from('crm_reports')
-      .update({
-        run_count: supabase.rpc('increment_report_run_count', { report_id: id }),
-        last_run_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+    // Increment run count and update last_run_at via RPC (handles both atomically)
+    await supabase.rpc('increment_report_run_count', { p_report_id: id });
 
     return NextResponse.json(historyEntry, { status: 201 });
   } catch (error) {

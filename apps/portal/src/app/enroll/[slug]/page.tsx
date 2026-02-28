@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { PublicEnrollmentPage } from './client';
 
 interface PageProps {
@@ -75,8 +75,9 @@ export default async function EnrollmentLandingPage({ params }: PageProps) {
 
   const typedLandingPage = landingPage as LandingPage;
 
-  // Track page view
-  await (supabase as any).from('landing_page_events').insert({
+  // Track page view (requires service role — landing_page_events is not writable by anon/authenticated)
+  const serviceClient = createServiceRoleClient();
+  await (serviceClient as any).from('landing_page_events').insert({
     landing_page_id: typedLandingPage.id,
     organization_id: typedLandingPage.organization_id,
     event_type: 'view',

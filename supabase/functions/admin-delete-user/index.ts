@@ -13,7 +13,13 @@ interface DeleteUserBody {
   user_id: string;
 }
 
-async function getProfileRole(accessToken: string): Promise<string | null> {
+interface AdminProfile {
+  id: string;
+  role: string;
+  organization_id: string | null;
+}
+
+async function getAdminProfile(accessToken: string): Promise<AdminProfile | null> {
   try {
     const tokenParts = accessToken.split('.');
     if (tokenParts.length !== 3) return null;
@@ -22,7 +28,7 @@ async function getProfileRole(accessToken: string): Promise<string | null> {
     const userId = payload?.sub;
     if (!userId) return null;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role&id=eq.${userId}`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,role,organization_id&id=eq.${userId}`, {
       headers: {
         Authorization: `Bearer ${SERVICE_ROLE}`,
         apikey: SERVICE_ROLE,
@@ -33,9 +39,11 @@ async function getProfileRole(accessToken: string): Promise<string | null> {
     if (!res.ok) return null;
 
     const rows = await res.json();
-    return rows?.[0]?.role ?? null;
+    const row = rows?.[0];
+    if (!row?.role) return null;
+    return { id: row.id ?? userId, role: row.role, organization_id: row.organization_id ?? null };
   } catch (error) {
-    console.error('Error fetching profile role:', error);
+    console.error('Error fetching admin profile:', error);
     return null;
   }
 }
@@ -93,16 +101,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const requesterRole = await getProfileRole(token);
-    if (!requesterRole) {
+    const adminProfile = await getAdminProfile(token);
+    if (!adminProfile) {
       return new Response('Unauthorized - invalid token', {
         status: 401,
         headers: corsHeaders
       });
     }
 
-    const isSuper = requesterRole === 'super_admin';
-    const isAdmin = requesterRole === 'admin';
+    const isSuper = adminProfile.role === 'super_admin';
+    const isAdmin = adminProfile.role === 'admin';
 
     if (!isSuper && !isAdmin) {
       return new Response('Forbidden - insufficient permissions', {
@@ -111,7 +119,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=email,role&id=eq.${body.user_id}`, {
+    const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=email,role,organization_id&id=eq.${body.user_id}`, {
       headers: {
         Authorization: `Bearer ${SERVICE_ROLE}`,
         apikey: SERVICE_ROLE,
@@ -132,6 +140,14 @@ Deno.serve(async (req) => {
     if (!targetProfile) {
       return new Response('User not found', {
         status: 404,
+        headers: corsHeaders
+      });
+    }
+
+    // Cross-org validation: admin can only delete users in their own org
+    if (!isSuper && targetProfile.organization_id !== adminProfile.organization_id) {
+      return new Response('Forbidden - cannot delete users from another organization', {
+        status: 403,
         headers: corsHeaders
       });
     }
@@ -163,21 +179,10 @@ Deno.serve(async (req) => {
 
     console.log(`Successfully deleted user ${body.user_id} (${targetProfile.email}) - CASCADE will remove profile`);
 
-    const tokenParts = token.split('.');
-    let actorId = 'system';
-    try {
-      if (tokenParts.length === 3) {
-        const payload = JSON.parse(atob(tokenParts[1]));
-        actorId = payload?.sub || 'system';
-      }
-    } catch (e) {
-      console.warn('Could not decode actor from token');
-    }
-
-    await writeAudit(actorId, body.user_id, 'delete_user', {
+    await writeAudit(adminProfile.id, body.user_id, 'delete_user', {
       email: targetProfile.email,
       role: targetProfile.role,
-      deleted_by: requesterRole,
+      deleted_by: adminProfile.role,
     });
 
     return new Response(

@@ -13,7 +13,7 @@ import { createServerClient } from '@supabase/ssr';
  * 3. RLS policies - Database-level enforcement
  */
 
-const ADMIN_ROLES = ['owner', 'admin', 'staff'];
+const ADMIN_ROLES = ['owner', 'super_admin', 'admin', 'staff'];
 
 // Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/access-denied', '/reset-password', '/update-password'];

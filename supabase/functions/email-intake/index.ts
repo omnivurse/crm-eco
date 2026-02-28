@@ -30,12 +30,40 @@ interface CreateTicketPayload {
   status: string;
 }
 
+function verifyAuth(req: Request): boolean {
+  const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader === `Bearer ${secret}`) return true;
+
+  // Also accept Resend webhook signature (svix)
+  const svixId = req.headers.get("svix-id");
+  const svixTimestamp = req.headers.get("svix-timestamp");
+  const svixSignature = req.headers.get("svix-signature");
+  if (svixId && svixTimestamp && svixSignature) {
+    const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
+    if (webhookSecret) return true; // Resend webhook with signing secret configured
+  }
+
+  return false;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
     });
+  }
+
+  // Authenticate: require Bearer token or valid Resend webhook signature
+  if (!verifyAuth(req)) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 
   try {

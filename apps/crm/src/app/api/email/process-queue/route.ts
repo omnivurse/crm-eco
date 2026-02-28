@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { Resend } from 'resend';
+import { timingSafeEqual } from 'crypto';
 
 function createServiceClient() {
   return createServerClient(
@@ -24,10 +25,16 @@ const BATCH_SIZE = 50;
  */
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const authHeader = request.headers.get('authorization') || '';
     const cronSecret = process.env.CRON_SECRET;
 
-    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const expected = Buffer.from(`Bearer ${cronSecret}`);
+    const actual = Buffer.from(authHeader);
+    if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -43,20 +50,15 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient() as any;
     const resend = new Resend(apiKey);
 
-    // Fetch pending email notifications that are due
+    // Atomically claim pending emails using FOR UPDATE SKIP LOCKED
+    // This prevents duplicate sends when multiple cron workers run concurrently
     const { data: queuedEmails, error: fetchError } = await supabase
-      .from('notification_queue')
-      .select('*')
-      .eq('status', 'pending')
-      .eq('channel', 'email')
-      .lte('scheduled_for', new Date().toISOString())
-      .order('scheduled_for', { ascending: true })
-      .limit(BATCH_SIZE);
+      .rpc('claim_pending_emails', { batch_size: BATCH_SIZE });
 
     if (fetchError) {
-      console.error('Error fetching notification queue:', fetchError);
+      console.error('Error claiming notification queue:', fetchError);
       return NextResponse.json(
-        { error: 'Failed to fetch queue' },
+        { error: 'Failed to claim queue items' },
         { status: 500 }
       );
     }
@@ -75,12 +77,8 @@ export async function POST(request: NextRequest) {
     let failed = 0;
 
     for (const item of queuedEmails) {
-      // Update attempt count
-      const attempts = (item.attempts || 0) + 1;
-      await supabase
-        .from('notification_queue')
-        .update({ status: 'sending', attempts, last_attempt_at: new Date().toISOString() })
-        .eq('id', item.id);
+      // attempts already incremented by claim_pending_emails RPC
+      const attempts = item.attempts || 1;
 
       try {
         const meta = item.metadata || {};

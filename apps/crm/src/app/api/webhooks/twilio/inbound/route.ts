@@ -85,30 +85,16 @@ export async function POST(request: NextRequest) {
     const supabase = getServiceClient();
     const normalizedFrom = normalizePhoneNumber(from);
 
-    // Sanitize phone inputs to prevent PostgREST filter injection
-    const safeFrom = from.replace(/[,().\\]/g, '\\$&');
-    const safeNormalizedFrom = normalizedFrom.replace(/[,().\\]/g, '\\$&');
-
-    // Find matching record by phone number
-    // First try exact match on phone field, then search in data
+    // Find matching record by phone number using parameterized queries
+    // (no string interpolation to prevent PostgREST filter injection)
+    // Also use RPC to scope by org for cross-tenant safety
     const { data: records } = await supabase
-      .from('crm_records')
-      .select('id, org_id, phone')
-      .or(`phone.eq.${safeNormalizedFrom},phone.eq.${safeFrom}`)
-      .limit(1);
+      .rpc('find_record_by_phone', {
+        phone_raw: from,
+        phone_normalized: normalizedFrom,
+      });
 
-    let record = records?.[0];
-
-    // If no direct match, try searching in data jsonb
-    if (!record) {
-      const { data: jsonbRecords } = await supabase
-        .from('crm_records')
-        .select('id, org_id, phone')
-        .or(`data->phone.eq."${safeFrom}",data->mobile.eq."${safeFrom}",data->phone.eq."${safeNormalizedFrom}",data->mobile.eq."${safeNormalizedFrom}"`)
-        .limit(1);
-      
-      record = jsonbRecords?.[0];
-    }
+    let record = records?.[0] as { id: string; org_id: string; phone: string } | undefined;
 
     if (!record) {
       // No matching record found - could create a new lead here

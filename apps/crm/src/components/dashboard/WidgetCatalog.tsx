@@ -29,6 +29,7 @@ export function WidgetCatalog() {
 
   const filteredWidgets = useMemo(() => {
     return Object.values(WIDGET_REGISTRY).filter((widget) => {
+      if (widget.comingSoon) return false;
       const matchesSearch =
         widget.name.toLowerCase().includes(search.toLowerCase()) ||
         widget.description.toLowerCase().includes(search.toLowerCase());

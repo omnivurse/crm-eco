@@ -4,12 +4,16 @@ import { logAuthEvent } from '@crm-eco/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
-// ── In-memory rate limiter (per-IP, 10 req/min) ──────────────────────
+// Actions that can be logged without authentication (pre-login events)
+const UNAUTHENTICATED_ACTIONS = ['login_failed', 'password_reset'];
+
+// ── In-memory rate limiter (per-IP) ──────────────────────────────────
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_MAX_AUTH = 10;       // authenticated: 10 req/min
+const RATE_LIMIT_MAX_UNAUTH = 5;     // unauthenticated: 5 req/min
 
-function isRateLimited(ip: string): boolean {
+function isRateLimited(ip: string, max: number): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(ip);
 
@@ -19,7 +23,7 @@ function isRateLimited(ip: string): boolean {
   }
 
   entry.count++;
-  return entry.count > RATE_LIMIT_MAX;
+  return entry.count > max;
 }
 
 // Periodic cleanup to prevent memory leaks (every 5 min)
@@ -37,13 +41,6 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       request.headers.get('x-real-ip') ||
       'unknown';
-
-    if (isRateLimited(ip)) {
-      return NextResponse.json(
-        { error: 'Too many requests' },
-        { status: 429 },
-      );
-    }
 
     const body = await request.json();
     const { action, email, details } = body;
@@ -65,22 +62,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
     }
 
-    // ── Require authentication for ALL actions ─────────────────────
-    const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const isUnauthAction = UNAUTHENTICATED_ACTIONS.includes(action);
 
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Apply rate limiting (stricter for unauthenticated calls)
+    const rateMax = isUnauthAction ? RATE_LIMIT_MAX_UNAUTH : RATE_LIMIT_MAX_AUTH;
+    if (isRateLimited(ip, rateMax)) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        { status: 429 },
+      );
     }
 
-    // Ensure the authenticated user matches the claimed email
-    if (user.email !== email) {
-      return NextResponse.json({ error: 'Email mismatch' }, { status: 403 });
+    // For unauthenticated actions (login_failed, password_reset), skip auth check
+    if (!isUnauthAction) {
+      const supabase = await createServerSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      }
+
+      // Ensure the authenticated user matches the claimed email
+      if (user.email !== email) {
+        return NextResponse.json({ error: 'Email mismatch' }, { status: 403 });
+      }
     }
 
     // Log the auth event
     const result = await logAuthEvent('admin', action, email, {
       ...details,
+      ip_address: ip,
       source: 'admin_login_page',
     });
 

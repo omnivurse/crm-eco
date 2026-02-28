@@ -42,6 +42,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
     }
 
+    // If a recipientId is provided, verify the recipient belongs to the admin's org
+    if (recipientId) {
+      const table = recipientType === 'advisor' ? 'advisors' : 'members';
+      const { data: recipient } = await supabase
+        .from(table)
+        .select('id')
+        .eq('id', recipientId)
+        .eq('organization_id', profile.organization_id)
+        .single();
+
+      if (!recipient) {
+        return NextResponse.json(
+          { error: 'Recipient not found in your organization' },
+          { status: 403 }
+        );
+      }
+    }
+
     // Create email service
     const emailService = createEmailService(supabase as any, profile.organization_id);
 
@@ -82,7 +100,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Email send API error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

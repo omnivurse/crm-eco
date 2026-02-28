@@ -17,9 +17,14 @@ interface CreateUserBody {
   role: 'member' | 'advisor' | 'staff' | 'agent' | 'admin' | 'super_admin' | 'concierge';
 }
 
-async function getProfileRole(accessToken: string): Promise<string | null> {
+interface AdminProfile {
+  id: string;
+  role: string;
+  organization_id: string | null;
+}
+
+async function getAdminProfile(accessToken: string): Promise<AdminProfile | null> {
   try {
-    // Decode the JWT to get the user ID
     const tokenParts = accessToken.split('.');
     if (tokenParts.length !== 3) return null;
 
@@ -27,7 +32,7 @@ async function getProfileRole(accessToken: string): Promise<string | null> {
     const userId = payload?.sub;
     if (!userId) return null;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role&id=eq.${userId}`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,role,organization_id&id=eq.${userId}`, {
       headers: {
         Authorization: `Bearer ${SERVICE_ROLE}`,
         apikey: SERVICE_ROLE,
@@ -38,9 +43,11 @@ async function getProfileRole(accessToken: string): Promise<string | null> {
     if (!res.ok) return null;
 
     const rows = await res.json();
-    return rows?.[0]?.role ?? null;
+    const row = rows?.[0];
+    if (!row?.role) return null;
+    return { id: row.id ?? userId, role: row.role, organization_id: row.organization_id ?? null };
   } catch (error) {
-    console.error('Error fetching profile role:', error);
+    console.error('Error fetching admin profile:', error);
     return null;
   }
 }
@@ -178,29 +185,29 @@ Deno.serve(async (req) => {
     }
 
     // Check requester permissions
-    const requesterRole = await getProfileRole(token);
-    if (!requesterRole) {
-      return new Response('Unauthorized - invalid token', { 
-        status: 401, 
-        headers: corsHeaders 
+    const adminProfile = await getAdminProfile(token);
+    if (!adminProfile) {
+      return new Response('Unauthorized - invalid token', {
+        status: 401,
+        headers: corsHeaders
       });
     }
 
-    const isSuper = requesterRole === 'super_admin';
-    const isAdmin = requesterRole === 'admin';
+    const isSuper = adminProfile.role === 'super_admin';
+    const isAdmin = adminProfile.role === 'admin';
 
     // Permission enforcement
     if (!isSuper && !isAdmin) {
-      return new Response('Forbidden - insufficient permissions', { 
-        status: 403, 
-        headers: corsHeaders 
+      return new Response('Forbidden - insufficient permissions', {
+        status: 403,
+        headers: corsHeaders
       });
     }
 
     if (body.role === 'super_admin' && !isSuper) {
-      return new Response('Only super_admin can create super_admin', { 
-        status: 403, 
-        headers: corsHeaders 
+      return new Response('Only super_admin can create super_admin', {
+        status: 403,
+        headers: corsHeaders
       });
     }
 
@@ -245,10 +252,11 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
         Prefer: 'return=representation',
       },
-      body: JSON.stringify({ 
-        role: body.role, 
-        full_name: body.full_name ?? '', 
-        email: body.email 
+      body: JSON.stringify({
+        role: body.role,
+        full_name: body.full_name ?? '',
+        email: body.email,
+        organization_id: adminProfile.organization_id,
       }),
     });
 
@@ -260,23 +268,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get actor ID from token
-    const tokenParts = token.split('.');
-    let actorId = 'system';
-    try {
-      if (tokenParts.length === 3) {
-        const payload = JSON.parse(atob(tokenParts[1]));
-        actorId = payload?.sub || 'system';
-      }
-    } catch (e) {
-      console.warn('Could not decode actor from token');
-    }
-
     // Write audit log
-    await writeAudit(actorId, user.id, 'create_user', {
+    await writeAudit(adminProfile.id, user.id, 'create_user', {
       email: body.email,
       role: body.role,
-      invited_by: requesterRole,
+      organization_id: adminProfile.organization_id,
+      invited_by: adminProfile.role,
     });
 
     // Generate invite link

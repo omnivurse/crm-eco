@@ -99,14 +99,8 @@ export async function POST(
 
     if (insertError) throw insertError;
 
-    // Update report run count and last_run_at
-    await supabase
-      .from('crm_reports')
-      .update({
-        run_count: supabase.rpc('increment_report_run_count', { report_id: id }),
-        last_run_at: new Date().toISOString(),
-      })
-      .eq('id', id);
+    // Increment run count and update last_run_at via RPC (handles both atomically)
+    await supabase.rpc('increment_report_run_count', { p_report_id: id });
 
     return NextResponse.json(historyEntry, { status: 201 });
   } catch (error) {

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser } from '@crm-eco/lib';
 import { notFound } from 'next/navigation';
 import { LandingPageEnrollmentWizard } from './LandingPageEnrollmentWizard';
@@ -68,8 +68,9 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
     notFound();
   }
 
-  // Track page view
-  await (supabase as any)
+  // Track page view (requires service role — landing_page_events is not writable by anon/authenticated)
+  const serviceClient = createServiceRoleClient();
+  await (serviceClient as any)
     .from('landing_page_events')
     .insert({
       landing_page_id: landingPage.id,

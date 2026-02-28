@@ -29,12 +29,29 @@ interface ExecutionContext {
   variables: Record<string, any>;
 }
 
+function verifyInternalAuth(req: Request): boolean {
+  const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const authHeader = req.headers.get("Authorization");
+  return authHeader === `Bearer ${secret}`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
     });
+  }
+
+  // Authenticate: flow-runner only accepts internal calls with valid Bearer token
+  if (!verifyInternalAuth(req)) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 
   try {

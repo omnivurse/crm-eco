@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-// Cache profile data in a cookie for 5 minutes to avoid DB query on every request
+// Cache profile data in a signed cookie to avoid DB query on every request
 const PROFILE_CACHE_COOKIE = 'crm_profile_cache';
 const PROFILE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes in ms
 
@@ -9,16 +9,65 @@ interface CachedProfile {
   id: string;
   crm_role: string | null;
   organization_id: string;
+  is_active: boolean;
   user_id: string;
   exp: number; // Expiration timestamp
 }
 
-function getCachedProfile(request: NextRequest, userId: string): CachedProfile | null {
-  try {
-    const cached = request.cookies.get(PROFILE_CACHE_COOKIE)?.value;
-    if (!cached) return null;
+// HMAC signing helpers using Web Crypto API (Edge Runtime compatible)
+async function getHmacKey(): Promise<CryptoKey> {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const encoder = new TextEncoder();
+  return crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+}
 
-    const profile: CachedProfile = JSON.parse(cached);
+function bufferToHex(buffer: ArrayBuffer): string {
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function signPayload(payload: string): Promise<string> {
+  const key = await getHmacKey();
+  const encoder = new TextEncoder();
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+  return bufferToHex(signature);
+}
+
+async function verifyPayload(payload: string, signature: string): Promise<boolean> {
+  const expectedSig = await signPayload(payload);
+  // Constant-time comparison
+  if (expectedSig.length !== signature.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expectedSig.length; i++) {
+    mismatch |= expectedSig.charCodeAt(i) ^ signature.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+async function getCachedProfile(request: NextRequest, userId: string): Promise<CachedProfile | null> {
+  try {
+    const raw = request.cookies.get(PROFILE_CACHE_COOKIE)?.value;
+    if (!raw) return null;
+
+    // Cookie format: <hex-signature>.<json-payload>
+    const dotIndex = raw.indexOf('.');
+    if (dotIndex === -1) return null;
+
+    const signature = raw.substring(0, dotIndex);
+    const payload = raw.substring(dotIndex + 1);
+
+    // Verify HMAC — reject tampered cookies
+    const valid = await verifyPayload(payload, signature);
+    if (!valid) return null;
+
+    const profile: CachedProfile = JSON.parse(payload);
 
     // Validate cache: check expiration and user match
     if (profile.exp < Date.now() || profile.user_id !== userId) {
@@ -31,18 +80,21 @@ function getCachedProfile(request: NextRequest, userId: string): CachedProfile |
   }
 }
 
-function setCachedProfile(
+async function setCachedProfile(
   response: NextResponse,
-  profile: { id: string; crm_role: string | null; organization_id: string },
+  profile: { id: string; crm_role: string | null; organization_id: string; is_active: boolean },
   userId: string
-): void {
+): Promise<void> {
   const cached: CachedProfile = {
     ...profile,
     user_id: userId,
     exp: Date.now() + PROFILE_CACHE_TTL,
   };
 
-  response.cookies.set(PROFILE_CACHE_COOKIE, JSON.stringify(cached), {
+  const payload = JSON.stringify(cached);
+  const signature = await signPayload(payload);
+
+  response.cookies.set(PROFILE_CACHE_COOKIE, `${signature}.${payload}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
@@ -112,13 +164,13 @@ export async function middleware(request: NextRequest) {
   // The database RLS policies will enforce actual access control
 
   // Try to get profile from cache first (avoids DB query on every request)
-  let profile = getCachedProfile(request, user.id);
+  let profile: CachedProfile | null = await getCachedProfile(request, user.id);
 
   if (!profile) {
     // Cache miss - fetch from database
     const { data: dbProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, crm_role, organization_id')
+      .select('id, crm_role, organization_id, is_active')
       .eq('user_id', user.id)
       .single();
 
@@ -131,7 +183,14 @@ export async function middleware(request: NextRequest) {
 
     // Cache the profile for subsequent requests
     profile = { ...dbProfile, user_id: user.id, exp: Date.now() + PROFILE_CACHE_TTL };
-    setCachedProfile(supabaseResponse, dbProfile, user.id);
+    await setCachedProfile(supabaseResponse, dbProfile, user.id);
+  }
+
+  // Check if user has been deactivated
+  if (profile.is_active === false) {
+    clearProfileCache(supabaseResponse);
+    await supabase.auth.signOut();
+    return NextResponse.redirect(new URL('/crm-access-denied?reason=inactive', request.url));
   }
 
   // Check if user has CRM access for /crm/* routes

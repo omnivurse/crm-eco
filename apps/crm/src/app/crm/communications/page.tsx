@@ -214,7 +214,10 @@ export default function CommunicationsPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!authProfile) return;
+      if (!authProfile) {
+        setLoading(false);
+        return;
+      }
 
       try {
 
@@ -373,7 +376,7 @@ export default function CommunicationsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast.info('Filters coming soon')}>
             <Filter className="w-4 h-4 mr-2" />
             Filters
           </Button>

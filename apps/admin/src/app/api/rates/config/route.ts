@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { requireAdminRole } from '@/lib/auth';
 import type {
   RateConfig,
   RateSet,
@@ -25,20 +26,8 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
     const { searchParams } = request.nextUrl;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string } | null };
-
-    if (!profile) {
-      return NextResponse.json({ error: 'No profile found' }, { status: 403 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     const planIdFilter = searchParams.get('planId');
 
@@ -59,14 +48,15 @@ export async function GET(request: NextRequest) {
     const { data: rateSets, error } = await rateSetsQuery;
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Error fetching rate config:', error);
+      return NextResponse.json({ error: 'Failed to fetch rate configuration' }, { status: 500 });
     }
 
     const config = buildRateConfigFromDb(rateSets ?? []);
     return NextResponse.json(config);
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -203,7 +193,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, rateSetId: rateSet?.id });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
