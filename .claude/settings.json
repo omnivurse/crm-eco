@@ -3,7 +3,16 @@
     "allow": [
       "Bash(npx next build:*)",
       "Bash(SUPABASE_DB_PASSWORD='Wq8rh3wJjTywGmXo' npx supabase db push)",
-      "Bash(npx eslint packages/lib/src/email/email-service.ts)"
+      "Bash(npx eslint packages/lib/src/email/email-service.ts)",
+      "Bash(grep -r \"sla_policies\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Bash(grep -A 5 \"CREATE OR REPLACE FUNCTION.*get_least_busy_agent\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Bash(grep -r \"ALTER TABLE members ADD COLUMN.*user_id\\\\|ALTER TABLE members ADD COLUMN.*auth_user_id\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Bash(grep -r \"get_least_busy_agent\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Bash(ls -la /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Read(//c/Users/User/Documents/GitHub/crm-eco/**)",
+      "Bash(grep -l \"get_least_busy_agent\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/2026010*.sql /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/2026011*.sql)",
+      "Bash(do grep -l \"get_least_busy_agent\" \"$file\")",
+      "Bash(echo \"Found in: $file\")"
     ]
   }
 }
