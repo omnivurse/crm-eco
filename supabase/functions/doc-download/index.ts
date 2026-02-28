@@ -1,0 +1,178 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  const adminClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
+
+  try {
+    // Public share link download (GET with ?token=)
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      const token = url.searchParams.get('token');
+
+      if (!token) {
+        return jsonResponse({ error: 'Token is required' }, 400);
+      }
+
+      const { data: link, error: linkErr } = await adminClient
+        .from('document_links')
+        .select('id, document_id, expires_at, max_downloads, download_count, org_id')
+        .eq('token', token)
+        .single();
+
+      if (linkErr || !link) {
+        return jsonResponse({ error: 'Invalid or expired link' }, 404);
+      }
+
+      if (link.expires_at && new Date(link.expires_at) < new Date()) {
+        return jsonResponse({ error: 'Link has expired' }, 410);
+      }
+
+      if (link.max_downloads && link.download_count >= link.max_downloads) {
+        return jsonResponse({ error: 'Download limit reached' }, 410);
+      }
+
+      const { data: doc, error: docErr } = await adminClient
+        .from('documents')
+        .select('name, storage_path, mime_type')
+        .eq('id', link.document_id)
+        .is('deleted_at', null)
+        .single();
+
+      if (docErr || !doc) {
+        return jsonResponse({ error: 'Document not found' }, 404);
+      }
+
+      const { data: signedData, error: signErr } = await adminClient.storage
+        .from('org-documents')
+        .createSignedUrl(doc.storage_path, 300);
+
+      if (signErr) {
+        return jsonResponse({ error: 'Failed to generate download URL' }, 500);
+      }
+
+      // Increment download count
+      await adminClient
+        .from('document_links')
+        .update({ download_count: link.download_count + 1 })
+        .eq('id', link.id);
+
+      return jsonResponse({
+        success: true,
+        download_url: signedData.signedUrl,
+        file_name: doc.name,
+        mime_type: doc.mime_type,
+      });
+    }
+
+    // Authenticated download (POST)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return jsonResponse({ error: 'Missing authorization header' }, 401);
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!profile?.organization_id) {
+      return jsonResponse({ error: 'No organization found' }, 403);
+    }
+
+    const body = await req.json();
+    const { document_id, version_number } = body;
+
+    if (!document_id) {
+      return jsonResponse({ error: 'document_id is required' }, 400);
+    }
+
+    // Get document
+    const { data: doc, error: docErr } = await adminClient
+      .from('documents')
+      .select('id, name, storage_path, mime_type, current_version, org_id')
+      .eq('id', document_id)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (docErr || !doc) {
+      return jsonResponse({ error: 'Document not found' }, 404);
+    }
+
+    let storagePath = doc.storage_path;
+    let fileName = doc.name;
+
+    // If specific version requested, get that version's path
+    if (version_number && version_number !== doc.current_version) {
+      const { data: version, error: verErr } = await adminClient
+        .from('document_versions')
+        .select('storage_path')
+        .eq('document_id', document_id)
+        .eq('version_number', version_number)
+        .single();
+
+      if (verErr || !version) {
+        return jsonResponse({ error: 'Version not found' }, 404);
+      }
+
+      storagePath = version.storage_path;
+    }
+
+    const { data: signedData, error: signErr } = await adminClient.storage
+      .from('org-documents')
+      .createSignedUrl(storagePath, 300);
+
+    if (signErr) {
+      return jsonResponse({ error: 'Failed to generate download URL' }, 500);
+    }
+
+    // Audit log
+    await adminClient.from('document_audit_log').insert({
+      org_id: profile.organization_id,
+      document_id,
+      user_id: user.id,
+      action: 'download',
+      meta: { version: version_number || doc.current_version },
+    });
+
+    return jsonResponse({
+      success: true,
+      download_url: signedData.signedUrl,
+      file_name: fileName,
+      mime_type: doc.mime_type,
+    });
+  } catch (error) {
+    return jsonResponse({ error: error.message || 'Internal server error' }, 500);
+  }
+});

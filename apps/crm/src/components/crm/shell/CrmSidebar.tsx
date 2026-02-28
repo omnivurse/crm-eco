@@ -242,6 +242,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
       defaultOpen: true,
       items: [
         { name: 'Import Data', href: '/crm/import', icon: Upload },
+        { name: 'Documents', href: '/crm/documents', icon: FileText },
         { name: 'Sales Pipeline', href: '/crm/pipeline', icon: KanbanSquare },
         { name: 'Deals', href: '/crm/deals', icon: Briefcase },
         { name: 'Reports', href: '/crm/reports', icon: BarChart3 },
