@@ -104,6 +104,7 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'sep-3', separator: true },
     // Insights
     { key: 'reports', label: 'Reports', icon: 'pie-chart', href: '/crm/reports' },
+    { key: 'documents', label: 'Documents', icon: 'file-text', href: '/crm/documents' },
 ];
 
 // Integrations sidebar navigation items

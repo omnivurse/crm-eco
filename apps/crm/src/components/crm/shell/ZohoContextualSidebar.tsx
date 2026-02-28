@@ -142,12 +142,14 @@ export function ZohoContextualSidebar({
             pathname.startsWith('/crm/approvals') ||
             pathname.startsWith('/crm/vendors')) return 'operations';
 
-        // Revenue: products, quotes, invoices, documents, forecasting, commissions, revenue overview
+        // Documents — now part of main CRM nav
+        if (pathname.startsWith('/crm/documents')) return 'crm';
+
+        // Revenue: products, quotes, invoices, forecasting, commissions, revenue overview
         if (pathname.startsWith('/crm/revenue') ||
             pathname.startsWith('/crm/products') ||
             pathname.startsWith('/crm/quotes') ||
             pathname.startsWith('/crm/invoices') ||
-            pathname.startsWith('/crm/documents') ||
             pathname.startsWith('/crm/forecasting') ||
             pathname.startsWith('/crm/commissions')) return 'revenue';
 
