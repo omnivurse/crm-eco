@@ -868,6 +868,46 @@ async function executePostWebhook(
     };
   }
 
+  // Validate webhook URL to prevent SSRF attacks
+  try {
+    const parsed = new URL(config.url);
+    // Only allow HTTPS (and HTTP in dev)
+    const allowedProtocols = process.env.NODE_ENV === 'development'
+      ? ['https:', 'http:']
+      : ['https:'];
+    if (!allowedProtocols.includes(parsed.protocol)) {
+      return {
+        actionId: 'post_webhook',
+        type: 'post_webhook',
+        status: 'failed',
+        error: 'Webhook URL must use HTTPS',
+      };
+    }
+    // Block internal/private hostnames
+    const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]', 'metadata.google.internal'];
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      blockedHosts.includes(hostname) ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal') ||
+      /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|169\.254\.)/.test(hostname)
+    ) {
+      return {
+        actionId: 'post_webhook',
+        type: 'post_webhook',
+        status: 'failed',
+        error: 'Webhook URL cannot target internal or private addresses',
+      };
+    }
+  } catch {
+    return {
+      actionId: 'post_webhook',
+      type: 'post_webhook',
+      status: 'failed',
+      error: 'Invalid webhook URL',
+    };
+  }
+
   // Build request body
   let body: Record<string, unknown> = {};
   

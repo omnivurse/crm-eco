@@ -37,25 +37,30 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
 
-  const crmModule = await getModuleByKey(profile.organization_id, moduleKey);
-  if (!crmModule) return notFound();
-
   const page = parseInt(pageStr || '1', 10);
   const pageSize = 25;
 
-  const [fields, views, territories] = await Promise.all([
-    getFieldsForModule(crmModule.id),
-    getViewsForModule(crmModule.id),
+  // Step 1: module + territories in parallel (both only need org_id)
+  const [crmModule, territories] = await Promise.all([
+    getModuleByKey(profile.organization_id, moduleKey),
     getCachedTerritories(profile.organization_id),
   ]);
+  if (!crmModule) return notFound();
 
-  // Get current view
+  // Step 2: fields, views, defaultView in parallel (need module_id)
+  const [fields, views, defaultView] = await Promise.all([
+    getFieldsForModule(crmModule.id),
+    getViewsForModule(crmModule.id),
+    getDefaultView(crmModule.id),
+  ]);
+
+  // Resolve current view (sync — no extra await)
   let currentView: CrmView | null = null;
   if (viewId) {
     currentView = views.find(v => v.id === viewId) || null;
   }
   if (!currentView) {
-    currentView = await getDefaultView(crmModule.id);
+    currentView = defaultView;
   }
 
   // Build sort: URL params override view defaults
@@ -77,7 +82,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     }
   }
 
-  // Fetch records with scope, sort, filter, and territory
+  // Step 3: fetch records (needs resolved sort/filters from views)
   const { records, total } = await getRecords({
     moduleId: crmModule.id,
     page,

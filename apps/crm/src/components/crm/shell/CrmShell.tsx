@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
@@ -37,6 +37,20 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
     };
   }, [mobileMenuOpen]);
 
+  // Stable callbacks for memoized children
+  const handleOpenCommandPalette = useCallback(() => {
+    // Smart Chat input in BottomBar handles Ctrl+K now
+  }, []);
+  const handleMobileMenuToggle = useCallback(() => {
+    setMobileMenuOpen((prev) => !prev);
+  }, []);
+  const handleMobileClose = useCallback(() => {
+    setMobileMenuOpen(false);
+  }, []);
+  const handleSidebarToggle = useCallback(() => {
+    setSidebarOpen((prev) => !prev);
+  }, []);
+
   return (
     <ModuleProvider>
       <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
@@ -47,18 +61,16 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
             modules={modules}
             profile={profile}
             organizationName={organizationName}
-            onOpenCommandPalette={() => {
-              // Smart Chat input in BottomBar handles Ctrl+K now
-            }}
+            onOpenCommandPalette={handleOpenCommandPalette}
             mobileMenuOpen={mobileMenuOpen}
-            onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onMobileMenuToggle={handleMobileMenuToggle}
           />
 
           {/* Mobile Menu Overlay */}
           {mobileMenuOpen && (
             <div
               className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={handleMobileClose}
               aria-hidden="true"
             />
           )}
@@ -67,9 +79,9 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
           <div className="flex-1 flex min-h-0">
             <ZohoContextualSidebar
               isOpen={sidebarOpen}
-              onToggle={() => setSidebarOpen(!sidebarOpen)}
+              onToggle={handleSidebarToggle}
               mobileMenuOpen={mobileMenuOpen}
-              onMobileClose={() => setMobileMenuOpen(false)}
+              onMobileClose={handleMobileClose}
             />
 
             <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 scrollbar-thin">

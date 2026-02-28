@@ -30,10 +30,19 @@ interface CreateTicketPayload {
   status: string;
 }
 
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 function verifyAuth(req: Request): boolean {
   const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader === `Bearer ${secret}`) return true;
+  const authHeader = req.headers.get("Authorization") || "";
+  if (constantTimeEqual(authHeader, `Bearer ${secret}`)) return true;
 
   // Also accept Resend webhook signature (svix)
   const svixId = req.headers.get("svix-id");

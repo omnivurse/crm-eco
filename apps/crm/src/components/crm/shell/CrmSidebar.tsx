@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -143,12 +143,66 @@ interface NavSection {
 // Alias for Handshake icon (not in lucide-react)
 const Handshake = Briefcase;
 
+// Memoized nav item — only re-renders when its own active state or collapsed state changes
+const MemoNavItem = memo(function MemoNavItem({
+  item,
+  active,
+  collapsed,
+}: {
+  item: NavItem;
+  active: boolean;
+  collapsed: boolean;
+}) {
+  const Icon = item.icon;
+  return (
+    <Button
+      key={item.href}
+      asChild
+      variant="ghost"
+      className={cn(
+        'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+        'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
+        active &&
+        'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
+        collapsed ? 'justify-center px-2' : 'justify-start px-3'
+      )}
+    >
+      <Link href={item.href} title={collapsed ? item.name : undefined}>
+        <Icon className={cn(
+          'w-5 h-5 flex-shrink-0 transition-colors',
+          active && 'text-teal-600 dark:text-teal-400'
+        )} />
+        {!collapsed && (
+          <span className="font-medium truncate flex-1 text-left">
+            {item.name}
+          </span>
+        )}
+        {!collapsed && item.badge && (
+          <Badge variant={item.badgeVariant || 'secondary'} className="ml-auto text-xs">
+            {item.badge}
+          </Badge>
+        )}
+        {!collapsed && item.isNew && (
+          <Badge className="ml-auto text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
+            NEW
+          </Badge>
+        )}
+        {!collapsed && item.isBeta && (
+          <Badge className="ml-auto text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
+            BETA
+          </Badge>
+        )}
+      </Link>
+    </Button>
+  );
+});
+
 interface CrmSidebarProps {
   modules: CrmModule[];
   organizationName?: string;
 }
 
-export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
+export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     'Tools': true,
@@ -289,52 +343,6 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   ];
 
 
-  const renderNavItem = (item: NavItem) => {
-    const Icon = item.icon;
-    const active = isActive(item.href);
-
-    return (
-      <Button
-        key={item.href}
-        asChild
-        variant="ghost"
-        className={cn(
-          'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
-          'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-10',
-          active &&
-          'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-transparent text-teal-700 dark:text-white border-l-2 border-teal-500 dark:border-teal-400',
-          collapsed ? 'justify-center px-2' : 'justify-start px-3'
-        )}
-      >
-        <Link href={item.href} title={collapsed ? item.name : undefined}>
-          <Icon className={cn(
-            'w-5 h-5 flex-shrink-0 transition-colors',
-            active && 'text-teal-600 dark:text-teal-400'
-          )} />
-          {!collapsed && (
-            <span className="font-medium truncate flex-1 text-left">
-              {item.name}
-            </span>
-          )}
-          {!collapsed && item.badge && (
-            <Badge variant={item.badgeVariant || 'secondary'} className="ml-auto text-xs">
-              {item.badge}
-            </Badge>
-          )}
-          {!collapsed && item.isNew && (
-            <Badge className="ml-auto text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">
-              NEW
-            </Badge>
-          )}
-          {!collapsed && item.isBeta && (
-            <Badge className="ml-auto text-[10px] bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400">
-              BETA
-            </Badge>
-          )}
-        </Link>
-      </Button>
-    );
-  };
 
   return (
     <aside
@@ -478,7 +486,14 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
 
                 {(isOpen || collapsed) && (
                   <div className="space-y-1">
-                    {section.items.map(renderNavItem)}
+                    {section.items.map((item) => (
+                      <MemoNavItem
+                        key={item.href}
+                        item={item}
+                        active={isActive(item.href)}
+                        collapsed={collapsed}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
@@ -557,4 +572,4 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       </div>
     </aside>
   );
-}
+});

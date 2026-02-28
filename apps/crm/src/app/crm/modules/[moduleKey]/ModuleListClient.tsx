@@ -1,16 +1,22 @@
 'use client';
 
 import { useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { ModuleShell } from '@/components/zoho/ModuleShell';
 import { useModuleShellOptional } from '@/components/zoho/ModuleShellContext';
 import { RecordTable } from '@/components/crm/records/RecordTable';
 import { ListView } from '@/components/crm/views/ListView';
 import { KanbanView } from '@/components/crm/views/KanbanView';
-import { ChartView } from '@/components/crm/views/ChartView';
 import { TimelineView } from '@/components/crm/views/TimelineView';
 import { SplitView } from '@/components/crm/views/SplitView';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory } from '@/lib/crm/types';
+
+// Lazy-load ChartView (~150KB recharts) only when user switches to chart mode
+const ChartView = dynamic(
+  () => import('@/components/crm/views/ChartView').then(m => m.ChartView),
+  { ssr: false }
+);
 
 interface ModuleListClientProps {
   module: CrmModule;

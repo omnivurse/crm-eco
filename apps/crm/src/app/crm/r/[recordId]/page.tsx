@@ -24,25 +24,53 @@ interface PageProps {
   params: Promise<{ recordId: string }>;
 }
 
+/** Lazy-loaded timeline tab — fetches data only when streamed */
+async function LazyTimeline({ recordId }: { recordId: string }) {
+  const timeline = await getTimelineForRecord(recordId);
+  return <RecordTimeline events={timeline} />;
+}
+
+/** Lazy-loaded related records tab */
+async function LazyRelatedRecords({ recordId }: { recordId: string }) {
+  const linkedRecords = await getRecordLinks(recordId);
+  return <RelatedRecordsPanel recordId={recordId} linkedRecords={linkedRecords} />;
+}
+
+/** Lazy-loaded attachments tab */
+async function LazyAttachments({ recordId }: { recordId: string }) {
+  const attachments = await getAttachmentsForRecord(recordId);
+  return <AttachmentsPanel recordId={recordId} attachments={attachments} />;
+}
+
+function TabSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded" />
+      <div className="h-32 bg-slate-100 dark:bg-slate-800/30 rounded-xl" />
+      <div className="h-32 bg-slate-100 dark:bg-slate-800/30 rounded-xl" />
+    </div>
+  );
+}
+
 async function RecordDetailContent({ params }: PageProps) {
   const { recordId } = await params;
 
-  const profile = await getCurrentProfile();
-  if (!profile) return notFound();
+  // Step 1: Parallelize profile and record+module (no dependency between them)
+  const [profile, result] = await Promise.all([
+    getCurrentProfile(),
+    getRecordWithModule(recordId),
+  ]);
 
-  const result = await getRecordWithModule(recordId);
+  if (!profile) return notFound();
   if (!result) return notFound();
 
   const { record, module } = result;
 
-  // Fetch all related data in parallel
-  const [fields, layout, notes, timeline, linkedRecords, attachments, stages] = await Promise.all([
+  // Step 2: Fetch overview-critical data in parallel (fields, layout, notes, stages)
+  const [fields, layout, notes, stages] = await Promise.all([
     getFieldsForModule(module.id),
     getDefaultLayout(module.id),
     getNotesForRecord(recordId),
-    getTimelineForRecord(recordId),
-    getRecordLinks(recordId),
-    getAttachmentsForRecord(recordId),
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
   ]);
 
@@ -94,16 +122,15 @@ async function RecordDetailContent({ params }: PageProps) {
         ),
 
         related: (
-          <RelatedRecordsPanel
-            recordId={recordId}
-            linkedRecords={linkedRecords}
-          />
+          <Suspense fallback={<TabSkeleton />}>
+            <LazyRelatedRecords recordId={recordId} />
+          </Suspense>
         ),
 
         timeline: (
-          <RecordTimeline
-            events={timeline}
-          />
+          <Suspense fallback={<TabSkeleton />}>
+            <LazyTimeline recordId={recordId} />
+          </Suspense>
         ),
 
         notes: (
@@ -115,10 +142,9 @@ async function RecordDetailContent({ params }: PageProps) {
         ),
 
         attachments: (
-          <AttachmentsPanel
-            recordId={recordId}
-            attachments={attachments}
-          />
+          <Suspense fallback={<TabSkeleton />}>
+            <LazyAttachments recordId={recordId} />
+          </Suspense>
         ),
       }}
     </RecordDetailShell>

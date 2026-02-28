@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { SessionLock } from '@/components/auth/SessionLock';
 
@@ -181,14 +181,14 @@ export function SecurityProvider({ children, userName = '', userEmail = '' }: Se
         };
     }, [isPublicPage, isLocked, updateActivity]);
 
-    const value: SecurityContextType = {
+    const value = useMemo<SecurityContextType>(() => ({
         isLocked,
         isMFARequired: false,
         timeUntilTimeout,
         showTimeoutWarning,
         extendSession,
         lockSession,
-    };
+    }), [isLocked, timeUntilTimeout, showTimeoutWarning, extendSession, lockSession]);
 
     // Show lock screen when session is locked (only after mount to prevent hydration mismatch)
     if (mounted && isLocked && !isPublicPage) {

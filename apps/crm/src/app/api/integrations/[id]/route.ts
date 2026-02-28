@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getConnection, 
-  updateConnection, 
+import { getAuthProfile } from '@/lib/supabase-server';
+import {
+  getConnection,
+  updateConnection,
   deleteConnection,
   connectIntegration,
   disconnectIntegration,
@@ -10,6 +11,28 @@ import {
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+/**
+ * Verify auth and that the connection belongs to the user's org.
+ * Returns the connection or a NextResponse error.
+ */
+async function verifyConnectionAccess(id: string) {
+  const profile = await getAuthProfile();
+  if (!profile) {
+    return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
+  }
+
+  const connection = await getConnection(id);
+  if (!connection) {
+    return { error: NextResponse.json({ error: 'Connection not found' }, { status: 404 }) };
+  }
+
+  if (connection.org_id !== profile.organization_id) {
+    return { error: NextResponse.json({ error: 'Connection not found' }, { status: 404 }) };
+  }
+
+  return { connection, profile };
 }
 
 /**
@@ -22,17 +45,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    
-    const connection = await getConnection(id);
-    
-    if (!connection) {
-      return NextResponse.json(
-        { error: 'Connection not found' },
-        { status: 404 }
-      );
-    }
-    
-    return NextResponse.json(connection);
+
+    const result = await verifyConnectionAccess(id);
+    if ('error' in result) return result.error;
+
+    return NextResponse.json(result.connection);
   } catch (error) {
     console.error('Error in GET /api/integrations/[id]:', error);
     return NextResponse.json(
@@ -52,11 +69,15 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+
+    const result = await verifyConnectionAccess(id);
+    if ('error' in result) return result.error;
+
     const body = await request.json();
-    
+
     // Check if this is a connect/disconnect action
     const action = body.action;
-    
+
     if (action === 'connect') {
       const connection = await connectIntegration(id, {
         api_key: body.api_key,
@@ -71,15 +92,15 @@ export async function PUT(
       });
       return NextResponse.json(connection);
     }
-    
+
     if (action === 'disconnect') {
       const connection = await disconnectIntegration(id);
       return NextResponse.json(connection);
     }
-    
+
     // Standard update
     const updateParams: UpdateConnectionParams = {};
-    
+
     if (body.name !== undefined) updateParams.name = body.name;
     if (body.description !== undefined) updateParams.description = body.description;
     if (body.status !== undefined) updateParams.status = body.status;
@@ -87,9 +108,9 @@ export async function PUT(
     if (body.api_key !== undefined) updateParams.api_key_enc = body.api_key;
     if (body.api_secret !== undefined) updateParams.api_secret_enc = body.api_secret;
     if (body.health_status !== undefined) updateParams.health_status = body.health_status;
-    
+
     const connection = await updateConnection(id, updateParams);
-    
+
     return NextResponse.json(connection);
   } catch (error) {
     console.error('Error in PUT /api/integrations/[id]:', error);
@@ -110,9 +131,12 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
+    const result = await verifyConnectionAccess(id);
+    if ('error' in result) return result.error;
+
     await deleteConnection(id);
-    
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error in DELETE /api/integrations/[id]:', error);

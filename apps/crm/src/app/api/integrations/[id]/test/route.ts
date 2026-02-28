@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthProfile } from '@/lib/supabase-server';
 import { testConnection, getConnection, createLog } from '@/lib/integrations';
 
 interface RouteParams {
@@ -16,11 +17,17 @@ export async function POST(
   try {
     const { id } = await params;
     const startTime = Date.now();
-    
-    // Get the connection first
+
+    // Verify authentication and org ownership
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Get the connection and verify org ownership
     const connection = await getConnection(id);
-    
-    if (!connection) {
+
+    if (!connection || connection.org_id !== profile.organization_id) {
       return NextResponse.json(
         { error: 'Connection not found' },
         { status: 404 }

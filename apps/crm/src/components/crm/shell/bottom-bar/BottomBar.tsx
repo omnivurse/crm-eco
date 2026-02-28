@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MessageCircle,
@@ -27,7 +27,7 @@ interface BottomBarProps {
   profile: CrmProfile;
 }
 
-export function BottomBar({ modules, profile }: BottomBarProps) {
+export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBarProps) {
   const [activePanel, setActivePanel] = useState<PanelId>(null);
   const router = useRouter();
 
@@ -183,4 +183,4 @@ export function BottomBar({ modules, profile }: BottomBarProps) {
       </div>
     </div>
   );
-}
+});

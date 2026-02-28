@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { processMessageQueue } from '@/lib/comms';
 
 /**
@@ -10,13 +11,18 @@ import { processMessageQueue } from '@/lib/comms';
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret for security
+    // Verify cron secret for security (timing-safe)
     const cronSecret = process.env.CRON_SECRET;
-    const authHeader = request.headers.get('authorization');
-    
+    const authHeader = request.headers.get('authorization') || '';
+
     // Allow if no secret configured (dev mode) or if secret matches
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (cronSecret) {
+      const expected = `Bearer ${cronSecret}`;
+      const a = Buffer.from(authHeader);
+      const b = Buffer.from(expected);
+      if (a.length !== b.length || !timingSafeEqual(a, b)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     // Get optional limit from query params

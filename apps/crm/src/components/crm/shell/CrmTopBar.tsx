@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -56,7 +56,7 @@ interface CrmTopBarProps {
   onMobileMenuToggle?: () => void;
 }
 
-export function CrmTopBar({
+export const CrmTopBar = memo(function CrmTopBar({
   modules,
   profile,
   organizationName,
@@ -276,4 +276,4 @@ export function CrmTopBar({
       <QuickCreateDrawer open={quickCreateOpen} onOpenChange={setQuickCreateOpen} />
     </header>
   );
-}
+});

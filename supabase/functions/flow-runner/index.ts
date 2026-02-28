@@ -29,10 +29,19 @@ interface ExecutionContext {
   variables: Record<string, any>;
 }
 
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 function verifyInternalAuth(req: Request): boolean {
   const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const authHeader = req.headers.get("Authorization");
-  return authHeader === `Bearer ${secret}`;
+  const authHeader = req.headers.get("Authorization") || "";
+  return constantTimeEqual(authHeader, `Bearer ${secret}`);
 }
 
 Deno.serve(async (req: Request) => {

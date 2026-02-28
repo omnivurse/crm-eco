@@ -1,6 +1,11 @@
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { ActuarialExperienceView } from '@/components/analytics/ActuarialExperienceView';
+
+const ActuarialExperienceView = dynamic(
+  () => import('@/components/analytics/ActuarialExperienceView').then((m) => m.ActuarialExperienceView),
+  { ssr: false }
+);
 
 async function ActuarialContent() {
   const supabase = await createServerSupabaseClient();

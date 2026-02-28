@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 
 // Top-level modules in the Zoho-style navigation
 export type TopModule =
@@ -32,14 +32,19 @@ export function ModuleProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
-    const setActiveModule = (module: TopModule) => {
+    const setActiveModule = useCallback((module: TopModule) => {
         setActiveModuleState(module);
         localStorage.setItem(STORAGE_KEY, module);
-    };
+    }, []);
+
+    const value = useMemo(
+        () => ({ activeModule, setActiveModule }),
+        [activeModule, setActiveModule]
+    );
 
     // Always render immediately with default/current value
     return (
-        <ModuleContext.Provider value={{ activeModule, setActiveModule }}>
+        <ModuleContext.Provider value={value}>
             {children}
         </ModuleContext.Provider>
     );

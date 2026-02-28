@@ -199,6 +199,9 @@ export default function ConversationDetailPage() {
   const router = useRouter();
   const [conversation, setConversation] = useState<InboxConversation | null>(null);
   const [messages, setMessages] = useState<InboxMessage[]>([]);
+  const [messagesHasMore, setMessagesHasMore] = useState(false);
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -216,12 +219,14 @@ export default function ConversationDetailPage() {
   const fetchConversation = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/inbox/${conversationId}?include_messages=true`);
+      const response = await fetch(`/api/inbox/${conversationId}?include_messages=true&message_limit=50`);
       const data = await response.json();
-      
+
       setConversation(data.conversation);
       setMessages(data.messages || []);
-      
+      setMessagesHasMore(data.messagesHasMore ?? false);
+      setMessagesPage(1);
+
       // Mark as read
       if (data.conversation?.unread_count > 0) {
         await fetch(`/api/inbox/${conversationId}`, {
@@ -237,6 +242,26 @@ export default function ConversationDetailPage() {
       setLoading(false);
     }
   }, [conversationId]);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (loadingMore || !messagesHasMore) return;
+    setLoadingMore(true);
+    try {
+      const nextPage = messagesPage + 1;
+      const response = await fetch(
+        `/api/inbox/${conversationId}?include_messages=true&message_page=${nextPage}&message_limit=50`
+      );
+      const data = await response.json();
+      setMessages((prev) => [...prev, ...(data.messages || [])]);
+      setMessagesHasMore(data.messagesHasMore ?? false);
+      setMessagesPage(nextPage);
+    } catch (error) {
+      console.error('Failed to load more messages:', error);
+      toast.error('Failed to load older messages');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [conversationId, messagesPage, messagesHasMore, loadingMore]);
 
   const fetchTeamMembers = useCallback(async () => {
     try {
@@ -553,6 +578,24 @@ export default function ConversationDetailPage() {
             ))}
           </div>
         ))}
+        {messagesHasMore && (
+          <div className="text-center py-4">
+            <button
+              onClick={loadMoreMessages}
+              disabled={loadingMore}
+              className="px-4 py-2 text-sm text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 rounded-lg transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                'Load older messages'
+              )}
+            </button>
+          </div>
+        )}
         {messages.length === 0 && (
           <div className="text-center py-12 text-slate-500 dark:text-slate-400">
             <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
