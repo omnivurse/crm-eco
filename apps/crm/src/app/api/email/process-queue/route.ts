@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
         const maxAttempts = item.max_attempts || 3;
         const newStatus = attempts >= maxAttempts ? 'failed' : 'pending';
         const nextAttemptAt = newStatus === 'pending'
-          ? new Date(Date.now() + attempts * 60000).toISOString()
+          ? new Date(Date.now() + Math.pow(2, attempts) * 60000).toISOString()
           : null;
 
         await supabase

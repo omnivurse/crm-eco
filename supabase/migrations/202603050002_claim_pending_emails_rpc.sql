@@ -3,8 +3,19 @@
 -- when multiple cron workers process the queue concurrently.
 CREATE OR REPLACE FUNCTION claim_pending_emails(batch_size int DEFAULT 50)
 RETURNS SETOF notification_queue
-LANGUAGE sql
+LANGUAGE plpgsql
 AS $$
+BEGIN
+  -- Recovery: reset items stuck in 'sending' for more than 5 minutes
+  -- (e.g. worker crashed after claiming but before completing)
+  UPDATE notification_queue
+  SET status = 'pending',
+      updated_at = now()
+  WHERE status = 'sending'
+    AND last_attempt_at < now() - interval '5 minutes';
+
+  -- Claim the next batch
+  RETURN QUERY
   UPDATE notification_queue
   SET status = 'sending',
       attempts = attempts + 1,
@@ -21,4 +32,5 @@ AS $$
     FOR UPDATE SKIP LOCKED
   )
   RETURNING *;
+END;
 $$;

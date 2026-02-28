@@ -29,7 +29,12 @@ function getDefaultFromEmail(): string {
   return email;
 }
 const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
+function getAppUrl(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+  if (!url) throw new Error('NEXT_PUBLIC_APP_URL is required for transactional emails');
+  return url;
+}
 
 // ============================================================================
 // Types
@@ -337,7 +342,7 @@ export async function sendAdvisorNotificationEmail(params: {
     fromName = DEFAULT_FROM_NAME,
   } = params;
 
-  const crmLink = `${APP_URL}/crm/enrollments/${enrollmentId}`;
+  const crmLink = `${getAppUrl()}/crm/enrollments/${enrollmentId}`;
 
   try {
     const resend = getResendClient();
