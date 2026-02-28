@@ -69,10 +69,12 @@ BEGIN
     DELETE FROM advisors WHERE id = v_advisor_id;
   END IF;
 
-  -- Remove demo plans
+  -- Remove demo plans (disable audit trigger to avoid FK violation)
   IF v_plan_ids IS NOT NULL THEN
+    ALTER TABLE plans DISABLE TRIGGER plans_audit_trigger;
     DELETE FROM plans
     WHERE id = ANY(v_plan_ids);
+    ALTER TABLE plans ENABLE TRIGGER plans_audit_trigger;
   END IF;
 
   RAISE NOTICE 'Demo data cleanup complete for org %', v_org_id;

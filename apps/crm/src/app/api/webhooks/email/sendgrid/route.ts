@@ -94,6 +94,19 @@ export async function POST(request: NextRequest) {
       const ourEventType = eventTypeMap[eventType];
       if (!ourEventType) continue;
 
+      // Deduplicate: skip if we already processed this exact event
+      const occurredAt = timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString();
+      const { data: existing } = await supabase
+        .from('email_events')
+        .select('id')
+        .eq('sent_email_id', sentEmail.id)
+        .eq('provider_message_id', sg_message_id)
+        .eq('event_type', ourEventType)
+        .eq('occurred_at', occurredAt)
+        .maybeSingle();
+
+      if (existing) continue;
+
       // Insert into email_events — the DB trigger auto-updates sent_emails status
       const { error: insertError } = await supabase.from('email_events').insert({
         sent_email_id: sentEmail.id,
@@ -106,7 +119,7 @@ export async function POST(request: NextRequest) {
           bounce_type: bounceType,
           bounce_reason: reason,
         },
-        occurred_at: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(),
+        occurred_at: occurredAt,
       });
 
       if (insertError) {

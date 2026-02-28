@@ -113,6 +113,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // Deduplicate: skip if we already processed this exact event
+    const occurredAt = event.created_at || new Date().toISOString();
+    const { data: existing } = await supabase
+      .from('email_events')
+      .select('id')
+      .eq('sent_email_id', sentEmail.id)
+      .eq('provider_message_id', emailId)
+      .eq('event_type', ourEventType)
+      .eq('occurred_at', occurredAt)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json({ received: true, matched: true, duplicate: true });
+    }
+
     // Insert into email_events — DB trigger auto-updates sent_emails
     await supabase.from('email_events').insert({
       sent_email_id: sentEmail.id,
@@ -124,7 +139,7 @@ export async function POST(request: NextRequest) {
         bounce_reason: event.data.bounce?.message || null,
         complaint_type: event.data.complaint?.type || null,
       },
-      occurred_at: event.created_at || new Date().toISOString(),
+      occurred_at: occurredAt,
     });
 
     return NextResponse.json({ received: true, matched: true });
