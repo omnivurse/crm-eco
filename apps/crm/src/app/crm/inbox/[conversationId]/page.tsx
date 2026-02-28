@@ -232,6 +232,7 @@ export default function ConversationDetailPage() {
       }
     } catch (error) {
       console.error('Failed to fetch conversation:', error);
+      toast.error('Failed to load conversation');
     } finally {
       setLoading(false);
     }
@@ -244,6 +245,7 @@ export default function ConversationDetailPage() {
       setTeamMembers(data.members || []);
     } catch (error) {
       console.error('Failed to fetch team members:', error);
+      toast.error('Failed to load team members');
     }
   }, []);
 
@@ -269,6 +271,7 @@ export default function ConversationDetailPage() {
       fetchConversation();
     } catch (error) {
       console.error('Failed to send reply:', error);
+      toast.error('Failed to send reply');
     } finally {
       setSending(false);
     }
@@ -285,6 +288,7 @@ export default function ConversationDetailPage() {
       fetchConversation();
     } catch (error) {
       console.error('Failed to assign:', error);
+      toast.error('Failed to assign conversation');
     }
   };
 
@@ -298,6 +302,7 @@ export default function ConversationDetailPage() {
       fetchConversation();
     } catch (error) {
       console.error('Failed to change status:', error);
+      toast.error('Failed to update status');
     }
   };
 
@@ -572,7 +577,11 @@ export default function ConversationDetailPage() {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <button className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+            <button
+              onClick={() => toast.info('File attachments coming soon')}
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              title="Attach file"
+            >
               <Paperclip className="w-5 h-5 text-slate-500" />
             </button>
             <button

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import { requireAdminRole } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,20 +11,9 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string } | null };
-
-    if (!profile) {
-      return NextResponse.json({ error: 'No profile' }, { status: 403 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     const { data: setting } = await (supabase as any)
       .from('system_settings')
@@ -39,7 +29,7 @@ export async function GET() {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -104,8 +94,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
-    // Write audit log
-    await (supabase as any).from('unified_audit_logs').insert({
+    // Write audit log (requires service role — audit table is not writable by authenticated users)
+    const serviceClient = createServiceRoleClient();
+    await (serviceClient as any).from('unified_audit_logs').insert({
       organization_id: profile.organization_id,
       actor_id: user.id,
       actor_email: user.email,
@@ -130,7 +121,7 @@ export async function PUT(request: NextRequest) {
     });
   } catch (err) {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import { EventWebhook, EventWebhookHeader } from '@sendgrid/eventwebhook';
 
 /**
@@ -47,8 +47,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const supabase = await createServerSupabaseClient() as any;
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
 
     for (const event of events) {
       const {
@@ -66,12 +68,16 @@ export async function POST(request: NextRequest) {
       if (!sg_message_id) continue;
 
       // Find the sent email by provider message ID
-      const { data: sentEmail } = await supabase
+      const { data: sentEmail, error: fetchError } = await supabase
         .from('sent_emails')
         .select('id, organization_id')
         .eq('provider_message_id', sg_message_id)
         .single();
 
+      if (fetchError) {
+        console.error('Failed to fetch sent_email for message:', sg_message_id, fetchError.message);
+        continue;
+      }
       if (!sentEmail) continue;
 
       // Map SendGrid event to our event type
@@ -89,7 +95,7 @@ export async function POST(request: NextRequest) {
       if (!ourEventType) continue;
 
       // Insert into email_events — the DB trigger auto-updates sent_emails status
-      await supabase.from('email_events').insert({
+      const { error: insertError } = await supabase.from('email_events').insert({
         sent_email_id: sentEmail.id,
         provider_message_id: sg_message_id,
         event_type: ourEventType,
@@ -102,6 +108,10 @@ export async function POST(request: NextRequest) {
         },
         occurred_at: timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString(),
       });
+
+      if (insertError) {
+        console.error('Failed to insert email_event for message:', sg_message_id, insertError.message);
+      }
     }
 
     return NextResponse.json({ received: true });

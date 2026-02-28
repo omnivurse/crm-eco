@@ -398,7 +398,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
                       onClick={async () => {
                         try {
-                          const res = await fetch(`/api/records/${record.id}/clone`, {
+                          const res = await fetch(`/api/crm/records/${record.id}/clone`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                           });
@@ -425,7 +425,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       onClick={async () => {
                         if (!confirm(`Are you sure you want to delete this ${module.name.toLowerCase()}? This action cannot be undone.`)) return;
                         try {
-                          const res = await fetch(`/api/records/${record.id}`, {
+                          const res = await fetch(`/api/crm/records/${record.id}`, {
                             method: 'DELETE',
                           });
                           if (!res.ok) {

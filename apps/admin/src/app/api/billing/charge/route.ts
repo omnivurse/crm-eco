@@ -6,7 +6,7 @@ import { z } from 'zod';
 const chargeSchema = z.object({
   memberId: z.string().uuid(),
   paymentProfileId: z.string().uuid(),
-  amount: z.number().positive('Amount must be a positive number'),
+  amount: z.number().positive('Amount must be a positive number').max(100000, 'Amount cannot exceed $100,000'),
   description: z.string().optional(),
   invoiceNumber: z.string().optional(),
   billingScheduleId: z.string().uuid().optional().nullable(),

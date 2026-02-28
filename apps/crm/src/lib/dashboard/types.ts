@@ -22,6 +22,8 @@ export interface WidgetDefinition {
   allowedSizes: WidgetSize[];
   category: WidgetCategory;
   dataKey: string;
+  /** When true, widget is not yet implemented and hidden from the catalog */
+  comingSoon?: boolean;
 }
 
 export interface WidgetInstance {

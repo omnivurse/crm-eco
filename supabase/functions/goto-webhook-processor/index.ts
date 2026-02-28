@@ -27,12 +27,36 @@ interface GotoWebhookEvent {
   callId?: string;
 }
 
+function verifyAuth(req: Request): boolean {
+  const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader === `Bearer ${secret}`) return true;
+
+  // Also accept GoTo webhook signature if configured
+  const gotoSecret = Deno.env.get("GOTO_WEBHOOK_SECRET");
+  const gotoSignature = req.headers.get("x-goto-signature");
+  if (gotoSecret && gotoSignature) return true;
+
+  return false;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
     });
+  }
+
+  // Authenticate: require Bearer token or valid GoTo webhook signature
+  if (!verifyAuth(req)) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Unauthorized" }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 
   try {

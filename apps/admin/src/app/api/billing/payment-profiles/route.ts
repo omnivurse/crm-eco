@@ -151,8 +151,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ profile: newProfile }, { status: 201 });
   } catch (error) {
     console.error('Create payment profile error:', error);
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

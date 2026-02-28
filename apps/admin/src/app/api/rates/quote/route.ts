@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { requireAdminRole } from '@/lib/auth';
 import { quote } from '@crm-eco/rates';
 import type { RateConfig, QuoteInput, QuoteOptions } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
@@ -14,11 +15,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { profile, error: authError } = await requireAdminRole(supabase);
+    if (authError) return authError;
 
     const body = await request.json();
     const { input, options } = body as {
@@ -34,15 +33,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check for admin rate set override from system_settings
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string } | null };
-
     let effectiveOptions = options || {};
 
-    if (profile && !effectiveOptions.rateSetOverride) {
+    if (!effectiveOptions.rateSetOverride) {
       const { data: setting } = await (supabase as any)
         .from('system_settings')
         .select('setting_value')
@@ -63,8 +56,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (err) {
+    console.error('Rate quote error:', err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

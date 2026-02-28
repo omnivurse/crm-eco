@@ -120,12 +120,15 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         reply_to: params.reply_to,
       });
     } else {
-      // Simulate sending if no provider configured
-      result = await simulateSend(toEmails, params.subject);
+      return {
+        success: false,
+        error: 'No email provider configured. Set up an email integration in Settings > Integrations.',
+        provider: 'none',
+      };
     }
     
     // Log to sent_emails
-    await supabase.from('sent_emails').insert({
+    const { error: sentEmailError } = await supabase.from('sent_emails').insert({
       organization_id: profile.organization_id,
       email_type: 'crm_outbound',
       recipient_email: toEmails[0],
@@ -153,7 +156,12 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         linked_deal_id: params.linked_deal_id,
       },
     });
-    
+
+    if (sentEmailError) {
+      console.error('Failed to log sent_email:', sentEmailError);
+      return { success: false, error: 'Email sent but failed to log to sent_emails', provider };
+    }
+
     // Log to integration logs
     if (emailConnection) {
       await createLog({
@@ -170,10 +178,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         entity_id: params.linked_contact_id || params.linked_lead_id,
       });
     }
-    
+
     // Create CRM activity
     if (result.success && (params.linked_contact_id || params.linked_lead_id || params.linked_deal_id)) {
-      await supabase.from('crm_activities').insert({
+      const { error: activityError } = await supabase.from('crm_activities').insert({
         organization_id: profile.organization_id,
         record_id: params.linked_contact_id || params.linked_lead_id || params.linked_deal_id,
         module_key: params.linked_contact_id ? 'Contacts' : params.linked_lead_id ? 'Leads' : 'Deals',
@@ -187,8 +195,12 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
           message_id: result.message_id,
         },
       });
+
+      if (activityError) {
+        console.error('Failed to log crm_activity:', activityError);
+      }
     }
-    
+
     return result;
   } catch (error) {
     console.error('Error sending email:', error);
@@ -240,11 +252,10 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
         params.body
       );
     } else {
-      // Simulate if not configured
-      result = {
-        success: true,
-        message_id: `sim_${Date.now()}`,
-        provider: 'simulated',
+      return {
+        success: false,
+        error: 'No SMS provider configured. Set up a Twilio integration in Settings > Integrations.',
+        provider: 'none',
       };
     }
     
@@ -252,10 +263,10 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
     await supabase.from('sent_sms_log').insert({
       org_id: profile.organization_id,
       sent_by: profile.id,
-      from_number: twilioConnection?.settings?.phone_number || '+1234567890',
+      from_number: twilioConnection?.settings?.phone_number,
       to_number: params.to,
       body: params.body,
-      provider: twilioConnection ? 'twilio' : 'simulated',
+      provider: 'twilio',
       provider_message_id: result.message_id,
       status: result.success ? 'sent' : 'failed',
       error_message: result.error,
@@ -408,15 +419,4 @@ async function sendViaTwilio(
   
   const data = await response.json();
   return { success: true, message_id: data.sid, provider: 'twilio' };
-}
-
-async function simulateSend(to: string[], subject: string): Promise<SendEmailResult> {
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 100));
-  
-  return {
-    success: true,
-    message_id: `sim_${Date.now()}`,
-    provider: 'simulated',
-  };
 }

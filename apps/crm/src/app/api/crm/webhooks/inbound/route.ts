@@ -194,8 +194,8 @@ export async function POST(request: NextRequest) {
               ...(systemData.status ? { status: systemData.status } : {}),
               system: {
                 ...((existingByEmail.system as Record<string, unknown>) || {}),
-                last_webhook_at: new Date().toISOString(),
                 ...metadata,
+                last_webhook_at: new Date().toISOString(),
               },
             })
             .eq('id', existingByEmail.id);
@@ -214,9 +214,9 @@ export async function POST(request: NextRequest) {
             ...systemData,
             data: customData,
             system: {
+              ...metadata,
               source: 'webhook',
               webhook_received_at: new Date().toISOString(),
-              ...metadata,
             },
           })
           .select()
