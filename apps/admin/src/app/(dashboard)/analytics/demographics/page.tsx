@@ -1,11 +1,6 @@
 import { Suspense } from 'react';
-import dynamic from 'next/dynamic';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-
-const GroupDemographicsView = dynamic(
-  () => import('@/components/analytics/GroupDemographicsView').then((m) => m.GroupDemographicsView),
-  { ssr: false }
-);
+import { GroupDemographicsViewLazy } from '@/components/analytics/GroupDemographicsViewLazy';
 
 async function DemographicsContent() {
   const supabase = await createServerSupabaseClient();
@@ -49,7 +44,7 @@ async function DemographicsContent() {
     );
   }
 
-  return <GroupDemographicsView data={data} />;
+  return <GroupDemographicsViewLazy data={data} />;
 }
 
 function DemographicsSkeleton() {
