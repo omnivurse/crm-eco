@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -111,7 +112,7 @@ export default function NewCommunicationPage() {
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.size > maxSize) {
-        // Show error inline - skip oversized files
+        toast.error(`File "${file.name}" exceeds 10MB limit`);
         continue;
       }
       newAttachments.push({
