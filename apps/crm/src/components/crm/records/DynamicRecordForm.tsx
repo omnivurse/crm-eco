@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
+import { useForm, useWatch, type Control, type UseFormRegister } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@crm-eco/ui/components/button';
@@ -124,6 +124,159 @@ function LookupSearchField({
     </div>
   );
 }
+
+// Isolated per-field component — only re-renders when its own value changes
+const FormFieldRenderer = memo(function FormFieldRenderer({
+  field,
+  control,
+  register,
+  setValue,
+  error,
+}: {
+  field: CrmField;
+  control: Control<Record<string, unknown>>;
+  register: UseFormRegister<Record<string, unknown>>;
+  setValue: (name: string, value: unknown) => void;
+  error?: string;
+}) {
+  const value = useWatch({ name: field.key, control });
+
+  const commonProps = {
+    id: field.key,
+    ...register(field.key),
+    className: cn(error && 'border-destructive'),
+    placeholder: field.tooltip || `Enter ${field.label.toLowerCase()}`,
+    ...(field.required && { required: true }),
+  };
+
+  let input: React.ReactNode;
+
+  switch (field.type) {
+    case 'text':
+    case 'phone':
+      input = <Input {...commonProps} type="text" />;
+      break;
+
+    case 'email':
+      input = <Input {...commonProps} type="email" />;
+      break;
+
+    case 'url':
+      input = <Input {...commonProps} type="url" />;
+      break;
+
+    case 'textarea':
+      input = <Textarea {...commonProps} rows={3} />;
+      break;
+
+    case 'number':
+    case 'currency':
+      input = (
+        <Input
+          {...commonProps}
+          type="number"
+          step={field.type === 'currency' ? '0.01' : '1'}
+        />
+      );
+      break;
+
+    case 'date':
+      input = <Input {...commonProps} type="date" />;
+      break;
+
+    case 'datetime':
+      input = <Input {...commonProps} type="datetime-local" />;
+      break;
+
+    case 'boolean':
+      input = (
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id={field.key}
+            checked={!!value}
+            onCheckedChange={(checked) => setValue(field.key, checked)}
+          />
+          <Label htmlFor={field.key} className="text-sm font-normal">
+            {field.tooltip || 'Yes'}
+          </Label>
+        </div>
+      );
+      break;
+
+    case 'select':
+      input = (
+        <>
+          <Select
+            value={value as string}
+            onValueChange={(val) => setValue(field.key, val)}
+          >
+            <SelectTrigger className={cn(error && 'border-destructive')}>
+              <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+            </SelectTrigger>
+            <SelectContent>
+              {getFieldOptions(field.options).map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <input type="hidden" name={field.key} value={(value as string) || ''} {...(field.required && { required: true })} />
+        </>
+      );
+      break;
+
+    case 'multiselect': {
+      const selectedValues = (value as string[]) || [];
+      input = (
+        <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
+          {getFieldOptions(field.options).map((option) => (
+            <div key={option} className="flex items-center space-x-2">
+              <Checkbox
+                id={`${field.key}-${option}`}
+                checked={selectedValues.includes(option)}
+                onCheckedChange={(checked) => {
+                  const newValues = checked
+                    ? [...selectedValues, option]
+                    : selectedValues.filter((v) => v !== option);
+                  setValue(field.key, newValues);
+                }}
+              />
+              <Label htmlFor={`${field.key}-${option}`} className="text-sm font-normal">
+                {option}
+              </Label>
+            </div>
+          ))}
+        </div>
+      );
+      break;
+    }
+
+    case 'user':
+    case 'lookup':
+      input = (
+        <LookupSearchField
+          field={field}
+          value={value as string | undefined}
+          onChange={(val) => setValue(field.key, val)}
+          error={!!error}
+        />
+      );
+      break;
+
+    default:
+      input = <Input {...commonProps} />;
+  }
+
+  return (
+    <>
+      {input}
+      {error && (
+        <p className="text-sm text-destructive mt-1">{error}</p>
+      )}
+    </>
+  );
+});
 
 interface DynamicRecordFormProps {
   fields: CrmField[];
@@ -259,7 +412,7 @@ export function DynamicRecordForm({
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    control,
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as Record<string, unknown>,
@@ -273,126 +426,6 @@ export function DynamicRecordForm({
       newCollapsed.add(key);
     }
     setCollapsedSections(newCollapsed);
-  };
-
-  const renderField = (field: CrmField) => {
-    const error = errors[field.key];
-    // eslint-disable-next-line react-hooks/incompatible-library -- react-hook-form watch() returns mutable refs by design
-    const value = watch(field.key);
-
-    const commonProps = {
-      id: field.key,
-      ...register(field.key),
-      className: cn(error && 'border-destructive'),
-      placeholder: field.tooltip || `Enter ${field.label.toLowerCase()}`,
-      ...(field.required && { required: true }),
-    };
-
-    switch (field.type) {
-      case 'text':
-      case 'phone':
-        return <Input {...commonProps} type="text" />;
-
-      case 'email':
-        return <Input {...commonProps} type="email" />;
-
-      case 'url':
-        return <Input {...commonProps} type="url" />;
-
-      case 'textarea':
-        return <Textarea {...commonProps} rows={3} />;
-
-      case 'number':
-      case 'currency':
-        return (
-          <Input
-            {...commonProps}
-            type="number"
-            step={field.type === 'currency' ? '0.01' : '1'}
-          />
-        );
-
-      case 'date':
-        return <Input {...commonProps} type="date" />;
-
-      case 'datetime':
-        return <Input {...commonProps} type="datetime-local" />;
-
-      case 'boolean':
-        return (
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id={field.key}
-              checked={!!value}
-              onCheckedChange={(checked) => setValue(field.key, checked)}
-            />
-            <Label htmlFor={field.key} className="text-sm font-normal">
-              {field.tooltip || 'Yes'}
-            </Label>
-          </div>
-        );
-
-      case 'select':
-        return (
-          <>
-            <Select
-              value={value as string}
-              onValueChange={(val) => setValue(field.key, val)}
-            >
-              <SelectTrigger className={cn(error && 'border-destructive')}>
-                <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {getFieldOptions(field.options).map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {/* Hidden input for native required validation in embedded/server-action mode */}
-            <input type="hidden" name={field.key} value={(value as string) || ''} {...(field.required && { required: true })} />
-          </>
-        );
-
-      case 'multiselect':
-        const selectedValues = (value as string[]) || [];
-        return (
-          <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-            {getFieldOptions(field.options).map((option) => (
-              <div key={option} className="flex items-center space-x-2">
-                <Checkbox
-                  id={`${field.key}-${option}`}
-                  checked={selectedValues.includes(option)}
-                  onCheckedChange={(checked) => {
-                    const newValues = checked
-                      ? [...selectedValues, option]
-                      : selectedValues.filter((v) => v !== option);
-                    setValue(field.key, newValues);
-                  }}
-                />
-                <Label htmlFor={`${field.key}-${option}`} className="text-sm font-normal">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        );
-
-      case 'user':
-      case 'lookup':
-        return (
-          <LookupSearchField
-            field={field}
-            value={value as string | undefined}
-            onChange={(val) => setValue(field.key, val)}
-            error={!!error}
-          />
-        );
-
-      default:
-        return <Input {...commonProps} />;
-    }
   };
 
   // Build the effective section list: start with layout sections, then append any
@@ -474,14 +507,13 @@ export function DynamicRecordForm({
                           <FieldRenderer field={field} value={defaultValues[field.key]} />
                         </div>
                       ) : (
-                        <>
-                          {renderField(field)}
-                          {errors[field.key] && (
-                            <p className="text-sm text-destructive mt-1">
-                              {errors[field.key]?.message as string}
-                            </p>
-                          )}
-                        </>
+                        <FormFieldRenderer
+                          field={field}
+                          control={control}
+                          register={register}
+                          setValue={setValue}
+                          error={errors[field.key]?.message as string | undefined}
+                        />
                       )}
                     </div>
                   ))}

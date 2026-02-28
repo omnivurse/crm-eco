@@ -1,17 +1,19 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
-import { Plus, Upload, GitBranch, RefreshCw, Users, UserCog } from 'lucide-react';
+import { Plus, GitBranch, RefreshCw, Users, UserCog, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AgentTable } from '@/components/agents/AgentTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-async function getAgents() {
+const PAGE_SIZE = 25;
+
+async function getAgents(page: number) {
   const supabase = await createServerSupabaseClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) return { agents: [], total: 0 };
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -19,9 +21,12 @@ async function getAgents() {
     .eq('user_id', user.id)
     .single() as { data: { organization_id: string } | null };
 
-  if (!profile) return [];
+  if (!profile) return { agents: [], total: 0 };
 
-  const { data: agents } = await (supabase
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  const { data: agents, count } = await (supabase
     .from('advisors')
     .select(`
       id,
@@ -35,16 +40,25 @@ async function getAgents() {
       commission_tier,
       created_at,
       parent_advisor:advisors!advisors_parent_advisor_id_fkey(id, first_name, last_name)
-    `)
+    `, { count: 'exact' })
     .eq('organization_id', profile.organization_id)
     .order('created_at', { ascending: false })
-    .limit(100) as any);
+    .range(from, to) as any);
 
-  return agents ?? [];
+  return { agents: agents ?? [], total: count ?? 0 };
 }
 
-export default async function AgentsPage() {
-  const agents = await getAgents();
+interface PageProps {
+  searchParams: Promise<{ page?: string }>;
+}
+
+export default async function AgentsPage({ searchParams }: PageProps) {
+  const { page: pageStr } = await searchParams;
+  const page = Math.max(1, parseInt(pageStr || '1', 10));
+  const { agents, total } = await getAgents(page);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const buildPageUrl = (p: number) => `/agents?page=${p}`;
 
   return (
     <div className="space-y-6">
@@ -88,12 +102,44 @@ export default async function AgentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>All Agents</CardTitle>
-          <CardDescription>{agents.length} agents found</CardDescription>
+          <CardDescription>{total.toLocaleString()} agents found</CardDescription>
         </CardHeader>
         <CardContent>
           <AgentTable agents={agents} />
         </CardContent>
       </Card>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Showing {((page - 1) * PAGE_SIZE) + 1} to {Math.min(page * PAGE_SIZE, total)} of {total.toLocaleString()}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
+              {page > 1 ? (
+                <Link href={buildPageUrl(page - 1)}>
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Previous
+                </Link>
+              ) : (
+                <span><ChevronLeft className="w-4 h-4 mr-1" /> Previous</span>
+              )}
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Page {page} of {totalPages}
+            </span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} asChild={page < totalPages}>
+              {page < totalPages ? (
+                <Link href={buildPageUrl(page + 1)}>
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Link>
+              ) : (
+                <span>Next <ChevronRight className="w-4 h-4 ml-1" /></span>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -86,13 +86,20 @@ export interface HealthSummary {
  */
 export async function getConnections(filters?: ConnectionFilters): Promise<ConnectionsResult> {
   const supabase = await createClient() as any;
-  
+
+  // Get the current user's profile to scope by org
+  const profile = await getAuthProfile();
+  if (!profile) {
+    return { connections: [], total: 0 };
+  }
+
   let query = supabase
     .from('integration_connections')
     .select('*', { count: 'exact' })
+    .eq('org_id', profile.organization_id)
     .order('connection_type', { ascending: true })
     .order('name', { ascending: true });
-  
+
   if (filters?.connection_type) {
     query = query.eq('connection_type', filters.connection_type);
   }
@@ -105,7 +112,7 @@ export async function getConnections(filters?: ConnectionFilters): Promise<Conne
   if (filters?.health_status) {
     query = query.eq('health_status', filters.health_status);
   }
-  
+
   const { data, count, error } = await query;
 
   if (error) {

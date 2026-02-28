@@ -49,10 +49,10 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
     }
 
-    // Check advisor role
+    // Check advisor role and active status
     const { data: profile } = await supabase
         .from('profiles')
-        .select('id, advisor_role, advisor_id, organization_id')
+        .select('id, advisor_role, advisor_id, organization_id, is_active')
         .eq('user_id', user.id)
         .single();
 
@@ -61,6 +61,14 @@ export async function middleware(request: NextRequest) {
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('error', 'no_advisor_access');
         return NextResponse.redirect(redirectUrl);
+    }
+
+    // Check if account is active
+    if (profile.is_active === false) {
+        await supabase.auth.signOut();
+        const accessDeniedUrl = new URL('/login', request.url);
+        accessDeniedUrl.searchParams.set('error', 'account_inactive');
+        return NextResponse.redirect(accessDeniedUrl);
     }
 
     return supabaseResponse;

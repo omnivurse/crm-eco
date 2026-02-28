@@ -1,5 +1,3 @@
-'use client';
-
 import Link from 'next/link';
 import { ArrowLeft, Settings, Volume2, VolumeX, Mic, Globe, ChevronRight, Sliders } from 'lucide-react';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 
@@ -137,10 +137,15 @@ export function ThemeProvider({
     }
   }, [storageKey, applyTheme, authProfile, authUser]);
 
+  const value = useMemo(
+    () => ({ theme, resolvedTheme, setTheme, isLoading: isLoading || !mounted }),
+    [theme, resolvedTheme, setTheme, isLoading, mounted]
+  );
+
   // Always render children - the script in layout.tsx handles initial theme class
   // This prevents blank page flash while still avoiding hydration mismatch
   return (
-    <ThemeProviderContext.Provider value={{ theme, resolvedTheme, setTheme, isLoading: isLoading || !mounted }}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   );

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthProfile } from '@/lib/supabase-server';
 import {
   getConversation,
   updateConversation,
@@ -19,13 +20,19 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
+    // Verify authentication
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const { searchParams } = new URL(request.url);
-    
-    // Get conversation
+
+    // Get conversation and verify org ownership
     const conversation = await getConversation(id);
-    
-    if (!conversation) {
+
+    if (!conversation || conversation.org_id !== profile.organization_id) {
       return NextResponse.json(
         { error: 'Conversation not found' },
         { status: 404 }
@@ -65,6 +72,12 @@ export async function PUT(
   { params }: RouteParams
 ) {
   try {
+    // Verify authentication
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     

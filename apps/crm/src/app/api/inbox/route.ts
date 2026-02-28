@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthProfile } from '@/lib/supabase-server';
 import {
   getConversations,
   createConversation,
@@ -13,6 +14,12 @@ import type { ConversationFilters } from '@/lib/inbox';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Verify authentication
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     
     // Check if requesting stats
@@ -104,6 +111,12 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Verify authentication
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     
     // Validate required fields

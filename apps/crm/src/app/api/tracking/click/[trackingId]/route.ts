@@ -4,6 +4,32 @@ import { createClient } from '@supabase/supabase-js';
 // Force dynamic rendering - this route uses env vars at runtime
 export const dynamic = 'force-dynamic';
 
+/**
+ * Validate redirect URL to prevent open redirect attacks.
+ * Only allows absolute HTTP(S) URLs with non-private hosts.
+ */
+function isValidRedirectUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+    const hostname = parsed.hostname.toLowerCase();
+    // Block internal/private hostnames
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '[::1]' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.internal')
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // Create Supabase client lazily to avoid build-time errors
 function getSupabaseClient() {
   return createClient(
@@ -24,8 +50,8 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const targetUrl = searchParams.get('url');
 
-    // If no target URL, redirect to home
-    if (!targetUrl) {
+    // If no target URL or invalid URL, redirect to home
+    if (!targetUrl || !isValidRedirectUrl(targetUrl)) {
       return NextResponse.redirect(new URL('/', request.url));
     }
 
@@ -73,7 +99,7 @@ export async function GET(
     // Try to redirect anyway
     const { searchParams } = new URL(request.url);
     const targetUrl = searchParams.get('url');
-    if (targetUrl) {
+    if (targetUrl && isValidRedirectUrl(targetUrl)) {
       return NextResponse.redirect(targetUrl);
     }
     return NextResponse.redirect(new URL('/', request.url));

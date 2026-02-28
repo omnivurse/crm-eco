@@ -208,7 +208,7 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, user_id, organization_id, email, full_name, avatar_url, role, crm_role, is_active, created_at, updated_at')
       .eq('user_id', user.id)
       .single();
 
@@ -328,10 +328,10 @@ export const getCachedTerritories = cache(
 
 export async function getModuleByKey(orgId: string, key: string): Promise<CrmModule | null> {
   const supabase = await createCrmClient();
-  
+
   const { data, error } = await supabase
     .from('crm_modules')
-    .select('*')
+    .select('id, org_id, key, name, name_plural, icon, description, is_system, is_enabled, display_order, settings, created_at, updated_at')
     .eq('org_id', orgId)
     .eq('key', key)
     .single();
@@ -473,7 +473,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   let query = supabase
     .from('crm_records')
-    .select('*', { count: 'exact' })
+    .select('id, org_id, module_id, owner_id, title, status, stage, email, phone, system, data, territory_id, created_by, created_at, updated_at', { count: 'exact' })
     .eq('module_id', moduleId);
 
   // Apply territory filter
@@ -772,26 +772,21 @@ export async function getRecordById(recordId: string): Promise<CrmRecord | null>
 
 export async function getRecordWithModule(recordId: string): Promise<{ record: CrmRecord; module: CrmModule } | null> {
   const supabase = await createCrmClient();
-  
-  const { data: record, error: recordError } = await supabase
+
+  const { data, error } = await supabase
     .from('crm_records')
-    .select('*')
+    .select('*, module:crm_modules!crm_records_module_id_fkey(*)')
     .eq('id', recordId)
     .single();
 
-  if (recordError || !record) return null;
+  if (error || !data) return null;
 
-  const { data: module, error: moduleError } = await supabase
-    .from('crm_modules')
-    .select('*')
-    .eq('id', record.module_id)
-    .single();
-
-  if (moduleError || !module) return null;
+  const { module: moduleData, ...recordData } = data;
+  if (!moduleData) return null;
 
   return {
-    record: record as CrmRecord,
-    module: module as CrmModule,
+    record: recordData as CrmRecord,
+    module: moduleData as CrmModule,
   };
 }
 
@@ -935,7 +930,7 @@ export async function getAuditLogForRecord(recordId: string, limit = 50): Promis
   
   const { data, error } = await supabase
     .from('crm_audit_log')
-    .select('*')
+    .select('id, org_id, actor_id, action, entity, entity_id, diff, meta, created_at')
     .eq('entity', 'crm_records')
     .eq('entity_id', recordId)
     .order('created_at', { ascending: false })

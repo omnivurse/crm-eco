@@ -1090,7 +1090,7 @@ export const RecordTable = memo(function RecordTable({
           }}
         >
           {records.length === 0 ? (
-            <TableRow>
+            <TableRow style={{ display: 'table', width: '100%', tableLayout: 'fixed' }}>
               <TableCell colSpan={visibleColumns.length + 2} className="h-64">
                 <div className="flex flex-col items-center justify-center text-center">
                   <div className="p-4 rounded-full bg-slate-100 dark:bg-slate-800/50 mb-4">

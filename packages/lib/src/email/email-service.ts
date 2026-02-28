@@ -421,14 +421,27 @@ export class EmailService {
   }
 
   /**
-   * Replace template variables in text
+   * HTML-escape a string to prevent XSS in email templates
+   */
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Replace template variables in text.
+   * Values are HTML-escaped to prevent injection in email HTML.
    */
   private replaceVariables(text: string, variables: Record<string, string>): string {
     let result = text;
 
     for (const [key, value] of Object.entries(variables)) {
       const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-      result = result.replace(regex, value || '');
+      result = result.replace(regex, this.escapeHtml(value || ''));
     }
 
     return result;

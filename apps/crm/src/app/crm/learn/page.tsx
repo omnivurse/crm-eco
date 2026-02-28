@@ -1,13 +1,6 @@
-'use client';
-
-import { useState, useMemo } from 'react';
-import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
-import { Input } from '@crm-eco/ui/components/input';
 import { Button } from '@crm-eco/ui/components/button';
-import { cn } from '@crm-eco/ui/lib/utils';
 import {
-  Search,
   BookOpen,
   Rocket,
   Users,
@@ -17,21 +10,17 @@ import {
   Zap,
   GitBranch,
   BarChart3,
-  Calendar,
-  Settings,
   HelpCircle,
   PlayCircle,
-  ChevronRight,
   Sparkles,
   Target,
   MessageCircle,
   Clock,
-  CheckCircle,
   ArrowRight,
   Mic,
   Terminal,
 } from 'lucide-react';
-import { FeatureCard } from '@/components/learn/AnimatedDemo';
+import { LearnCategoryGrid } from './_components/LearnSearch';
 
 // Feature categories with articles
 const CATEGORIES = [
@@ -174,32 +163,14 @@ const QUICK_LINKS = [
 ];
 
 export default function LearnPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  // Live search with debounce
-  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
-
-  // Filter categories based on debounced search
-  const filteredCategories = useMemo(() => {
-    const searchLower = debouncedQuery.toLowerCase();
-    if (!searchLower) return CATEGORIES;
-    return CATEGORIES.filter(cat => (
-      cat.title.toLowerCase().includes(searchLower) ||
-      cat.description.toLowerCase().includes(searchLower) ||
-      cat.articles.some(a => a.title.toLowerCase().includes(searchLower))
-    ));
-  }, [debouncedQuery]);
-
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Hero Section */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 via-emerald-500 to-cyan-500 p-8 md:p-12">
-        {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-white/10 rounded-full blur-2xl" style={{ animationDelay: '1s' }} />
         </div>
-
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-4">
             <BookOpen className="w-8 h-8 text-white" />
@@ -213,16 +184,8 @@ export default function LearnPage() {
             animated demos, and expert tips.
           </p>
 
-          {/* Search Bar */}
-          <div className="relative max-w-xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <Input
-              placeholder="Search tutorials, guides, and features..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 text-lg bg-white/95 dark:bg-slate-900/95 border-0 shadow-xl"
-            />
-          </div>
+          {/* Search + Category Grid (client island) */}
+          <LearnCategoryGrid categories={CATEGORIES} />
         </div>
       </div>
 
@@ -264,115 +227,6 @@ export default function LearnPage() {
           </Link>
         </Button>
       </div>
-
-      {/* Feature Categories */}
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">
-          Browse by Feature
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filteredCategories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(
-                selectedCategory === category.id ? null : category.id
-              )}
-              className={cn(
-                'text-left p-5 rounded-2xl border transition-all',
-                selectedCategory === category.id
-                  ? 'bg-teal-50 dark:bg-teal-500/10 border-teal-500'
-                  : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-              )}
-            >
-              <div className={cn(
-                'w-10 h-10 rounded-xl flex items-center justify-center mb-3',
-                category.color === 'teal' && 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
-                category.color === 'blue' && 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
-                category.color === 'violet' && 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-                category.color === 'emerald' && 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-                category.color === 'amber' && 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-                category.color === 'rose' && 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
-                category.color === 'slate' && 'bg-slate-200 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
-              )}>
-                {category.icon}
-              </div>
-              <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
-                {category.title}
-              </h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {category.articles.length} articles
-              </p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Selected Category Articles */}
-      {selectedCategory && (
-        <div className="">
-          {(() => {
-            const category = CATEGORIES.find(c => c.id === selectedCategory);
-            if (!category) return null;
-
-            return (
-              <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      'w-10 h-10 rounded-xl flex items-center justify-center',
-                      category.color === 'teal' && 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
-                      category.color === 'blue' && 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400',
-                      category.color === 'violet' && 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-                      category.color === 'emerald' && 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-                      category.color === 'amber' && 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-                      category.color === 'rose' && 'bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400',
-                      category.color === 'slate' && 'bg-slate-200 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400',
-                    )}>
-                      {category.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-slate-900 dark:text-white">
-                        {category.title}
-                      </h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {category.description}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/crm/learn/${category.id}`}>
-                      View All
-                      <ChevronRight className="w-4 h-4 ml-1" />
-                    </Link>
-                  </Button>
-                </div>
-
-                <div className="grid gap-3">
-                  {category.articles.map((article) => (
-                    <Link
-                      key={article.href}
-                      href={article.href}
-                      className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-slate-300 dark:text-slate-600 group-hover:text-teal-500 transition-colors" />
-                        <span className="font-medium text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                          {article.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-500">
-                        <Clock className="w-4 h-4" />
-                        {article.time}
-                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-      )}
 
       {/* Popular Articles */}
       <div>
@@ -434,7 +288,7 @@ export default function LearnPage() {
           Still have questions?
         </h2>
         <p className="text-slate-400 mb-6 max-w-lg mx-auto">
-          Our support team is here to help. Reach out and we'll get back to you within 24 hours.
+          Our support team is here to help. Reach out and we&apos;ll get back to you within 24 hours.
         </p>
         <div className="flex items-center justify-center gap-4">
           <a href="mailto:support@crmeco.com">

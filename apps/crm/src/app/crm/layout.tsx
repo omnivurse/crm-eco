@@ -9,8 +9,6 @@ import {
 import { ensureDefaultModules } from '@/lib/crm/seed';
 import { ClientProviders } from '@/components/providers/ClientProviders';
 
-export const dynamic = 'force-dynamic';
-
 export default async function CrmLayout({
   children,
 }: {

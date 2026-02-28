@@ -1,14 +1,8 @@
-'use client';
-
-import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
-import { cn } from '@crm-eco/ui/lib/utils';
 import {
   ArrowLeft,
   HelpCircle,
-  ChevronDown,
-  Search,
   Users,
   Target,
   Mail,
@@ -16,14 +10,9 @@ import {
   BarChart3,
   Settings,
 } from 'lucide-react';
+import { FAQContent } from '../_components/FAQContent';
 
-interface FAQ {
-  question: string;
-  answer: string;
-  category: string;
-}
-
-const FAQS: FAQ[] = [
+const FAQS = [
   // Getting Started
   {
     category: 'Getting Started',
@@ -134,57 +123,7 @@ const CATEGORIES = [
   { id: 'Reports', label: 'Reports', icon: <BarChart3 className="w-4 h-4" /> },
 ];
 
-function FAQItem({ faq, isOpen, onToggle }: { faq: FAQ; isOpen: boolean; onToggle: () => void }) {
-  return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center justify-between p-5 text-left bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-      >
-        <span className="font-medium text-slate-900 dark:text-white pr-4">
-          {faq.question}
-        </span>
-        <ChevronDown
-          className={cn(
-            'w-5 h-5 text-slate-400 transition-transform flex-shrink-0',
-            isOpen && 'rotate-180'
-          )}
-        />
-      </button>
-      {isOpen && (
-        <div className="px-5 pb-5 bg-white dark:bg-slate-900/50">
-          <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-            {faq.answer}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function FAQPage() {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [openItems, setOpenItems] = useState<Set<number>>(new Set());
-
-  const filteredFAQs = FAQS.filter((faq) => {
-    const matchesCategory = selectedCategory === 'all' || faq.category === selectedCategory;
-    const matchesSearch = !searchQuery ||
-      faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  const toggleItem = (index: number) => {
-    const newOpen = new Set(openItems);
-    if (newOpen.has(index)) {
-      newOpen.delete(index);
-    } else {
-      newOpen.add(index);
-    }
-    setOpenItems(newOpen);
-  };
-
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       {/* Breadcrumb */}
@@ -205,62 +144,13 @@ export default function FAQPage() {
           Frequently Asked Questions
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Find answers to common questions about CRM Eco. Can't find what you're looking for?
+          Find answers to common questions about CRM Eco. Can&apos;t find what you&apos;re looking for?
           Contact our support team.
         </p>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-xl mx-auto">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search questions..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-        />
-      </div>
-
-      {/* Category Filters */}
-      <div className="flex flex-wrap justify-center gap-2">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors',
-              selectedCategory === cat.id
-                ? 'bg-teal-500 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            )}
-          >
-            {cat.icon}
-            {cat.label}
-          </button>
-        ))}
-      </div>
-
-      {/* FAQ List */}
-      <div className="space-y-4">
-        {filteredFAQs.length === 0 ? (
-          <div className="text-center py-12">
-            <HelpCircle className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-500 dark:text-slate-400">
-              No questions found matching your search.
-            </p>
-          </div>
-        ) : (
-          filteredFAQs.map((faq, index) => (
-            <FAQItem
-              key={index}
-              faq={faq}
-              isOpen={openItems.has(index)}
-              onToggle={() => toggleItem(index)}
-            />
-          ))
-        )}
-      </div>
+      {/* Interactive search, filters, and accordion (client island) */}
+      <FAQContent faqs={FAQS} categories={CATEGORIES} />
 
       {/* Still Need Help */}
       <div className="bg-slate-900 dark:bg-slate-800 rounded-2xl p-8 text-center">
@@ -268,7 +158,7 @@ export default function FAQPage() {
           Still need help?
         </h2>
         <p className="text-slate-400 mb-6 max-w-lg mx-auto">
-          Our support team is here to help you succeed. Reach out and we'll get back
+          Our support team is here to help you succeed. Reach out and we&apos;ll get back
           to you within 24 hours.
         </p>
         <div className="flex items-center justify-center gap-4">
