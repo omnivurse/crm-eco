@@ -126,7 +126,7 @@ interface Summary {
   catastrophicNeedsCount: number;
 }
 
-interface ActuarialData {
+export interface ActuarialData {
   monthlyExperience: MonthlyExperience[];
   needsByType: NeedByType[];
   contributionAdequacy: ContributionMonth[];
