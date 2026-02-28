@@ -4,8 +4,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
@@ -244,6 +245,7 @@ Deno.serve(async (req) => {
     await writeAudit(actorId, body.user_id, 'email_confirmation_resent', {
       email: body.email,
       email_sent: emailSent,
+      confirmation_method: 'admin_override',
     });
 
     const hasResendKey = !!RESEND_API_KEY;

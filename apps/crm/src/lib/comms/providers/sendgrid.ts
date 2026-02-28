@@ -40,6 +40,7 @@ interface SendGridMailRequest {
   reply_to?: { email: string; name?: string };
   subject: string;
   content: SendGridContent[];
+  headers?: Record<string, string>;
   custom_args?: Record<string, string>;
   tracking_settings?: {
     click_tracking?: { enable: boolean };
@@ -92,6 +93,15 @@ export async function sendEmail(request: ProviderSendRequest): Promise<ProviderS
     // Add reply-to if provided
     if (request.replyTo) {
       mailRequest.reply_to = { email: request.replyTo };
+    }
+
+    // Add List-Unsubscribe headers for deliverability (RFC 8058)
+    const unsubscribeUrl = (request.meta as Record<string, unknown> | undefined)?.unsubscribe_url as string | undefined;
+    if (unsubscribeUrl) {
+      mailRequest.headers = {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      };
     }
     
     // Send request

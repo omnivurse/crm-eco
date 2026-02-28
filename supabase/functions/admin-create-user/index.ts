@@ -4,8 +4,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY'); // optional
 
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
@@ -228,7 +229,7 @@ Deno.serve(async (req) => {
         email_confirm: true, // Auto-confirm email for immediate access
         user_metadata: {
           full_name: body.full_name ?? '',
-          invited_by: requesterRole,
+          invited_by: adminProfile.role,
         },
       }),
     });

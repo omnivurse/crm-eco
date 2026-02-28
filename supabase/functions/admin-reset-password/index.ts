@@ -4,8 +4,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') || '*';
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
@@ -63,8 +64,15 @@ async function writeAudit(actorId: string, targetUserId: string, action: string,
   }
 }
 
+function generateSecurePassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const arr = new Uint8Array(20);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => chars[b % chars.length]).join('');
+}
+
 async function generatePasswordResetLink(userId: string, email: string): Promise<string> {
-  const newPassword = crypto.randomUUID();
+  const newPassword = generateSecurePassword();
 
   const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
     method: 'PUT',
@@ -108,6 +116,7 @@ async function sendPasswordResetEmail(to: string, tempPassword: string): Promise
             <p style="margin:0;font-size:12px;color:#64748b;font-weight:600;">Temporary Password:</p>
             <p style="margin:4px 0 0 0;font-size:16px;color:#0f172a;font-family:monospace;font-weight:bold;">${tempPassword}</p>
           </div>
+          <a href="${Deno.env.get('SITE_URL') || 'https://app.payitforwardhealth.com'}/login" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;margin-top:12px;font-size:14px;font-weight:600;">Log In Now</a>
           <p style="font-size:12px;color:#64748b;margin-top:16px;">Please log in and change your password immediately.</p>
           <p style="font-size:12px;color:#ef4444;margin-top:12px;">Keep this password secure and do not share it with anyone.</p>
         </td>
@@ -223,13 +232,30 @@ Deno.serve(async (req) => {
 
     const hasResendKey = !!RESEND_API_KEY;
 
+    if (!emailSent) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          email_sent: false,
+          resend_configured: hasResendKey,
+          message: 'Password was reset but email delivery failed. Please retry or configure RESEND_API_KEY.',
+        }),
+        {
+          status: 502,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        temp_password: emailSent ? null : tempPassword,
-        email_sent: emailSent,
+        email_sent: true,
         resend_configured: hasResendKey,
-        message: emailSent ? 'Password reset email sent successfully' : `Password reset. Temporary password: ${tempPassword}`,
+        message: 'Password reset email sent successfully',
       }),
       {
         status: 200,
