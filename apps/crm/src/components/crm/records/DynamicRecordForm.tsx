@@ -41,7 +41,7 @@ function LookupSearchField({
   const [loading, setLoading] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState<string>(value || '');
   const containerRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const search = useCallback(async (q: string) => {
     if (!q || q.length < 2) {
