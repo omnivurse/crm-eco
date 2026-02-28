@@ -156,7 +156,7 @@ export default function SavedReportsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categories.filter(Boolean).map((cat) => (
+            {categories.filter((cat): cat is string => !!cat).map((cat) => (
               <SelectItem key={cat} value={cat}>
                 {cat}
               </SelectItem>
