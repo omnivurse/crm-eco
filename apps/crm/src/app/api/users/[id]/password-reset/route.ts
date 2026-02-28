@@ -96,12 +96,12 @@ export async function POST(
     const email = authUser.user.email;
 
     // Parse optional redirect URL from request body with open-redirect protection
-    let redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin}/update-password`;
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+    let redirectTo = `${siteUrl}/update-password`;
     try {
       const body = await request.json();
       if (body.redirectTo && typeof body.redirectTo === 'string') {
         // Only allow relative paths or same-origin URLs to prevent open redirect
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
         if (body.redirectTo.startsWith('/') || body.redirectTo.startsWith(siteUrl)) {
           redirectTo = body.redirectTo;
         }

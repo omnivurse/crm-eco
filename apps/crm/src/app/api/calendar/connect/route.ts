@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     const codeChallenge = codeVerifier ? generateCodeChallenge(codeVerifier) : null;
 
     // Build redirect URI
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL is required for OAuth redirect');
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+    if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_SITE_URL is required for OAuth redirect');
     const origin = request.headers.get('origin') || appUrl;
     const redirectUri = `${origin}/api/integrations/oauth/callback`;
 

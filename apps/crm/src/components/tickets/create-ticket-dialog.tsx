@@ -234,14 +234,14 @@ export function CreateTicketDialog() {
               <div className="space-y-2">
                 <Label htmlFor="member">Related Member</Label>
                 <Select
-                  value={formData.memberId}
-                  onValueChange={(value) => setFormData({ ...formData, memberId: value })}
+                  value={formData.memberId || '__none__'}
+                  onValueChange={(value) => setFormData({ ...formData, memberId: value === '__none__' ? '' : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a member..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No member selected</SelectItem>
+                    <SelectItem value="__none__">No member selected</SelectItem>
                     {members.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.first_name} {member.last_name} ({member.email})

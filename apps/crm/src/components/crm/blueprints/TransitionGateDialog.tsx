@@ -277,7 +277,7 @@ export function TransitionGateDialog({
                             <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="">Select...</SelectItem>
+                            <SelectItem value="__placeholder__" disabled>Select...</SelectItem>
                           </SelectContent>
                         </Select>
                       ) : field.type === 'textarea' ? (

@@ -447,9 +447,9 @@ export default function UserEmailSettingsPage() {
           <div className="space-y-2">
             <Label>Default Signature</Label>
             <Select
-              value={settings.default_signature_id || ''}
+              value={settings.default_signature_id || '__none__'}
               onValueChange={(value) =>
-                setSettings((prev) => ({ ...prev, default_signature_id: value }))
+                setSettings((prev) => ({ ...prev, default_signature_id: value === '__none__' ? '' : value }))
               }
             >
               <SelectTrigger>
@@ -459,7 +459,7 @@ export default function UserEmailSettingsPage() {
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No signature</SelectItem>
+                <SelectItem value="__none__">No signature</SelectItem>
                 {signatures.map((sig) => (
                   <SelectItem key={sig.id} value={sig.id}>
                     <div className="flex items-center gap-2">

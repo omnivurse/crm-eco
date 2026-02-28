@@ -550,8 +550,8 @@ export const EmailComposer = memo(function EmailComposer({
             <div className="flex items-center gap-2">
               <FileSignature className="w-4 h-4 text-slate-400" />
               <Select
-                value={signatureId}
-                onValueChange={setSignatureId}
+                value={signatureId || '__none__'}
+                onValueChange={(v) => setSignatureId(v === '__none__' ? '' : v)}
                 disabled={disabled || loadingSignatures}
               >
                 <SelectTrigger className="w-[180px] h-8 text-xs">
@@ -572,7 +572,7 @@ export const EmailComposer = memo(function EmailComposer({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No signature</SelectItem>
+                  <SelectItem value="__none__">No signature</SelectItem>
                   {signatures.map((sig) => (
                     <SelectItem key={sig.id} value={sig.id}>
                       <span className="flex items-center gap-1">

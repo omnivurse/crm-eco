@@ -39,8 +39,8 @@ function getDefaultFromEmail(): string {
 }
 const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward';
 function getAppUrl(): string {
-  const url = process.env.NEXT_PUBLIC_APP_URL;
-  if (!url) throw new Error('NEXT_PUBLIC_APP_URL is required for transactional emails');
+  const url = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  if (!url) throw new Error('NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_SITE_URL is required for transactional emails');
   return url;
 }
 

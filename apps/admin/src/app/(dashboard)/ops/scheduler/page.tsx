@@ -744,14 +744,14 @@ export default function SchedulerPage() {
               <div>
                 <Label>Vendor (optional)</Label>
                 <Select
-                  value={formData.vendor_code}
-                  onValueChange={(v) => setFormData({ ...formData, vendor_code: v })}
+                  value={formData.vendor_code || '__none__'}
+                  onValueChange={(v) => setFormData({ ...formData, vendor_code: v === '__none__' ? '' : v })}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select vendor..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     <SelectItem value="arm">ARM</SelectItem>
                     <SelectItem value="sedera">Sedera</SelectItem>
                     <SelectItem value="zion">Zion</SelectItem>

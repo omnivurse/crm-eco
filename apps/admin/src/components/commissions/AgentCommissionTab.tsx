@@ -285,12 +285,12 @@ export function AgentCommissionTab({ agentId, organizationId }: AgentCommissionT
           <div className="flex items-end gap-4">
             <div className="flex-1 space-y-2">
               <label className="text-sm font-medium">Current Tier</label>
-              <Select value={selectedTierId} onValueChange={setSelectedTierId}>
+              <Select value={selectedTierId || '__none__'} onValueChange={(v) => setSelectedTierId(v === '__none__' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a tier" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Tier Assigned</SelectItem>
+                  <SelectItem value="__none__">No Tier Assigned</SelectItem>
                   {tiers.map(tier => (
                     <SelectItem key={tier.id} value={tier.id}>
                       {tier.name} ({tier.base_rate_pct}% base)

@@ -573,14 +573,14 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
                 <div>
                   <Label htmlFor="default_advisor_id">Default Agent</Label>
                   <Select
-                    value={form.watch('default_advisor_id') || ''}
-                    onValueChange={(value) => form.setValue('default_advisor_id', value || null)}
+                    value={form.watch('default_advisor_id') || '__none__'}
+                    onValueChange={(value) => form.setValue('default_advisor_id', value === '__none__' ? null : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select an agent (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No default agent</SelectItem>
+                      <SelectItem value="__none__">No default agent</SelectItem>
                       {advisors.map((advisor) => (
                         <SelectItem key={advisor.id} value={advisor.id}>
                           {advisor.first_name} {advisor.last_name} ({advisor.email})
