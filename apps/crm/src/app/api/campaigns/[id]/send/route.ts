@@ -186,10 +186,14 @@ async function processCampaignEmails(
       const sentIds: string[] = [];
       const failedRecipients: { id: string; error: string }[] = [];
 
-      // Process recipients in smaller parallel batches
+      // Process recipients in smaller parallel batches with throttle delay
       for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+        // Throttle between batches to avoid provider rate limits
+        if (i > 0) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
         const batch = recipients.slice(i, i + BATCH_SIZE);
-        
+
         // Send emails in parallel for this batch
         const results = await Promise.allSettled(
           batch.map(async (recipient) => {

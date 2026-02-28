@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       // Find the sent email by provider message ID
       const { data: sentEmail, error: fetchError } = await supabase
         .from('sent_emails')
-        .select('id, organization_id')
+        .select('id, organization_id, recipient_email')
         .eq('provider_message_id', sg_message_id)
         .single();
 
@@ -124,6 +124,20 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         console.error('Failed to insert email_event for message:', sg_message_id, insertError.message);
+      }
+
+      // Suppress future sends on hard bounce or complaint
+      if ((ourEventType === 'bounced' || ourEventType === 'complained') && sentEmail.recipient_email && sentEmail.organization_id) {
+        await supabase
+          .from('email_unsubscribes')
+          .upsert({
+            org_id: sentEmail.organization_id,
+            email: sentEmail.recipient_email,
+            reason: ourEventType === 'bounced'
+              ? `Hard bounce: ${reason || 'unknown'}`
+              : 'Spam complaint',
+            source: 'webhook',
+          }, { onConflict: 'org_id,email' });
       }
     }
 
