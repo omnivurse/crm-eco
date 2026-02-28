@@ -43,9 +43,9 @@ interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: 'todo' | 'in_progress' | 'review' | 'done';
-  priority: 'low' | 'med' | 'high' | 'urgent';
-  due_at: string | null;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  due_date: string | null;
   created_at: string;
   assignee_id: string | null;
   assignee?: {
@@ -60,16 +60,16 @@ interface TodoListWidgetProps {
 
 const priorityColors = {
   low: 'bg-slate-100 text-slate-600',
-  med: 'bg-blue-100 text-blue-600',
+  normal: 'bg-blue-100 text-blue-600',
   high: 'bg-amber-100 text-amber-600',
   urgent: 'bg-red-100 text-red-600',
 };
 
 const statusIcons = {
-  todo: Circle,
+  pending: Circle,
   in_progress: Clock,
-  review: AlertCircle,
-  done: CheckCircle2,
+  cancelled: AlertCircle,
+  completed: CheckCircle2,
 };
 
 export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProps) {
@@ -82,8 +82,8 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    priority: 'med' as Task['priority'],
-    due_at: '',
+    priority: 'normal' as Task['priority'],
+    due_date: '',
   });
 
   const supabase = createClient();
@@ -98,15 +98,15 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
           description,
           status,
           priority,
-          due_at,
+          due_date,
           created_at,
           assignee_id,
           assignee:profiles!tasks_assignee_id_fkey(full_name)
         `)
-        .or(`assignee_id.eq.${profileId},created_by_id.eq.${profileId}`)
-        .neq('status', 'done')
+        .or(`assignee_id.eq.${profileId},user_id.eq.${profileId}`)
+        .neq('status', 'completed')
         .order('priority', { ascending: false })
-        .order('due_at', { ascending: true, nullsFirst: false })
+        .order('due_date', { ascending: true, nullsFirst: false })
         .limit(8);
 
       if (error) throw error;
@@ -124,7 +124,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
 
   const openCreateModal = () => {
     setEditingTask(null);
-    setFormData({ title: '', description: '', priority: 'med', due_at: '' });
+    setFormData({ title: '', description: '', priority: 'normal', due_date: '' });
     setIsModalOpen(true);
   };
 
@@ -134,7 +134,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
       title: task.title,
       description: task.description || '',
       priority: task.priority,
-      due_at: task.due_at ? format(new Date(task.due_at), "yyyy-MM-dd'T'HH:mm") : '',
+      due_date: task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd'T'HH:mm") : '',
     });
     setIsModalOpen(true);
   };
@@ -151,7 +151,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         priority: formData.priority,
-        due_at: formData.due_at ? new Date(formData.due_at).toISOString() : null,
+        due_date: formData.due_date ? new Date(formData.due_date).toISOString() : null,
       };
 
       if (editingTask) {
@@ -167,8 +167,8 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
           .from('tasks')
           .insert({
             ...taskData,
-            status: 'todo',
-            created_by_id: profileId,
+            status: 'pending',
+            user_id: profileId,
             assignee_id: profileId,
             organization_id: organizationId,
           });
@@ -188,7 +188,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
   };
 
   const handleToggleComplete = async (task: Task) => {
-    const newStatus = task.status === 'done' ? 'todo' : 'done';
+    const newStatus = task.status === 'completed' ? 'pending' : 'completed';
 
     try {
       const { error } = await (supabase as any)
@@ -198,7 +198,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
 
       if (error) throw error;
 
-      toast.success(newStatus === 'done' ? 'Task completed' : 'Task reopened');
+      toast.success(newStatus === 'completed' ? 'Task completed' : 'Task reopened');
       fetchTasks();
     } catch (error: any) {
       console.error('Error updating task:', error);
@@ -224,9 +224,9 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
     }
   };
 
-  const isOverdue = (dueAt: string | null) => {
-    if (!dueAt) return false;
-    return new Date(dueAt) < new Date();
+  const isOverdue = (dueDate: string | null) => {
+    if (!dueDate) return false;
+    return new Date(dueDate) < new Date();
   };
 
   return (
@@ -279,7 +279,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
             <div className="space-y-2">
               {tasks.map((task) => {
                 const StatusIcon = statusIcons[task.status];
-                const overdue = isOverdue(task.due_at);
+                const overdue = isOverdue(task.due_date);
 
                 return (
                   <div
@@ -296,7 +296,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                     >
                       <StatusIcon
                         className={`w-5 h-5 ${
-                          task.status === 'done'
+                          task.status === 'completed'
                             ? 'text-emerald-500'
                             : task.status === 'in_progress'
                             ? 'text-blue-500'
@@ -307,17 +307,17 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
 
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium truncate ${
-                        task.status === 'done' ? 'line-through text-slate-400' : 'text-slate-700'
+                        task.status === 'completed' ? 'line-through text-slate-400' : 'text-slate-700'
                       }`}>
                         {task.title}
                       </p>
-                      {task.due_at && (
+                      {task.due_date && (
                         <p className={`text-xs flex items-center gap-1 ${
                           overdue ? 'text-red-500' : 'text-slate-400'
                         }`}>
                           <Calendar className="w-3 h-3" />
                           {overdue ? 'Overdue: ' : 'Due: '}
-                          {formatDistanceToNow(new Date(task.due_at), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
                         </p>
                       )}
                     </div>
@@ -378,7 +378,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="med">Medium</SelectItem>
+                    <SelectItem value="normal">Normal</SelectItem>
                     <SelectItem value="high">High</SelectItem>
                     <SelectItem value="urgent">Urgent</SelectItem>
                   </SelectContent>
@@ -389,8 +389,8 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                 <label className="text-sm font-medium text-slate-700">Due Date</label>
                 <Input
                   type="datetime-local"
-                  value={formData.due_at}
-                  onChange={(e) => setFormData({ ...formData, due_at: e.target.value })}
+                  value={formData.due_date}
+                  onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                   className="mt-1"
                 />
               </div>

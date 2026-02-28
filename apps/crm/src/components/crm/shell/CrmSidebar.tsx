@@ -242,7 +242,6 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
       defaultOpen: true,
       items: [
         { name: 'Import Data', href: '/crm/import', icon: Upload },
-        { name: 'Documents', href: '/crm/documents', icon: FileText },
         { name: 'Sales Pipeline', href: '/crm/pipeline', icon: KanbanSquare },
         { name: 'Deals', href: '/crm/deals', icon: Briefcase },
         { name: 'Reports', href: '/crm/reports', icon: BarChart3 },
@@ -458,6 +457,29 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
               </div>
             </>
           )}
+
+          {/* Documents - Main Nav Item */}
+          <div className="mb-4">
+            <Button
+              asChild
+              variant="ghost"
+              className={cn(
+                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
+                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-11',
+                isActive('/crm/documents') &&
+                'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-emerald-500/10 text-teal-700 dark:text-white border border-teal-200 dark:border-teal-500/30',
+                collapsed ? 'justify-center px-2' : 'justify-start px-3'
+              )}
+            >
+              <Link href="/crm/documents" title={collapsed ? 'Documents' : undefined}>
+                <FileText className={cn(
+                  'w-5 h-5 flex-shrink-0 transition-colors',
+                  isActive('/crm/documents') && 'text-teal-600 dark:text-teal-400'
+                )} />
+                {!collapsed && <span className="font-medium">Documents</span>}
+              </Link>
+            </Button>
+          </div>
 
           {/* Dynamic Nav Sections */}
           {navSections.map((section) => {

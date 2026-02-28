@@ -234,7 +234,7 @@ export function useAuditLog() {
 
     const { data } = await supabase
       .from('document_audit_log')
-      .select('*, profiles:user_id(full_name)')
+      .select('*, profiles:document_audit_log_user_id_profiles_fkey(full_name)')
       .order('created_at', { ascending: false })
       .limit(100);
 
