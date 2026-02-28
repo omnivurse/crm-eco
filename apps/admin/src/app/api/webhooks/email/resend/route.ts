@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { Webhook } from 'svix';
 
 function createServiceClient() {
   return createServerClient(
@@ -44,6 +45,15 @@ const EVENT_TYPE_MAP: Record<string, string> = {
  */
 export async function POST(request: NextRequest) {
   try {
+    const webhookSecret = process.env.RESEND_WEBHOOK_SECRET_ADMIN;
+    if (!webhookSecret) {
+      console.error('RESEND_WEBHOOK_SECRET_ADMIN is not configured');
+      return NextResponse.json(
+        { error: 'Webhook secret not configured' },
+        { status: 500 }
+      );
+    }
+
     const svixId = request.headers.get('svix-id');
     const svixTimestamp = request.headers.get('svix-timestamp');
     const svixSignature = request.headers.get('svix-signature');
@@ -55,16 +65,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const timestampSeconds = parseInt(svixTimestamp, 10);
-    const now = Math.floor(Date.now() / 1000);
-    if (Math.abs(now - timestampSeconds) > 300) {
+    const body = await request.text();
+
+    // Cryptographically verify the webhook signature using Svix
+    const wh = new Webhook(webhookSecret);
+    let event: ResendWebhookEvent;
+    try {
+      event = wh.verify(body, {
+        'svix-id': svixId,
+        'svix-timestamp': svixTimestamp,
+        'svix-signature': svixSignature,
+      }) as ResendWebhookEvent;
+    } catch {
       return NextResponse.json(
-        { error: 'Webhook timestamp too old' },
+        { error: 'Invalid webhook signature' },
         { status: 401 }
       );
     }
-
-    const event: ResendWebhookEvent = await request.json();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabase = createServiceClient() as any;
 

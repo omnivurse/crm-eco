@@ -264,11 +264,10 @@ export function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
       defaultOpen: false,
       items: [
         { name: 'All Integrations', href: '/crm/integrations', icon: Link2 },
-        { name: 'Webhooks', href: '/crm/integrations/webhooks', icon: Webhook },
-        { name: 'API Keys', href: '/crm/integrations/api', icon: Key },
-        { name: 'Zoho Sync', href: '/crm/integrations/zoho', icon: RefreshCcw },
         { name: 'Email Integration', href: '/crm/integrations/email', icon: Mail },
+        { name: 'SMS / Voice', href: '/crm/integrations/phone', icon: Phone },
         { name: 'Calendar Sync', href: '/crm/integrations/calendar', icon: Calendar },
+        { name: 'Webhooks', href: '/crm/integrations/webhooks', icon: Webhook },
       ],
     },
     {

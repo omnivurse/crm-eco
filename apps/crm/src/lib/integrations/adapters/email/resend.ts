@@ -100,10 +100,15 @@ export class ResendAdapter implements EmailAdapter {
     try {
       const toAddresses = Array.isArray(params.to) ? params.to : [params.to];
 
+      const fromEmail = params.from || process.env.RESEND_FROM_EMAIL;
+      if (!fromEmail) {
+        return { success: false, error: 'RESEND_FROM_EMAIL environment variable is required' };
+      }
+
       const payload: Record<string, unknown> = {
         from: params.fromName
-          ? `${params.fromName} <${params.from || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com'}>`
-          : params.from || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
+          ? `${params.fromName} <${fromEmail}>`
+          : fromEmail,
         to: toAddresses,
         subject: params.subject,
       };

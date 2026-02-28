@@ -130,7 +130,7 @@ If you did not expect this email, you can ignore it.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Pay It Forward Health <noreply@mail.payitforwardhealth.com>',
+        from: `Pay It Forward Health <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
         to: [to],
         subject: 'You have been invited to Pay It Forward Health',
         html,

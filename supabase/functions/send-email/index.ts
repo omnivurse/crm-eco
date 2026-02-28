@@ -98,7 +98,10 @@ serve(async (req) => {
       return acc;
     }, {} as Record<string, string>);
 
-    const defaultFromEmail = settingsMap['email_from_address'] || 'noreply@mail.payitforwardhealth.com';
+    const defaultFromEmail = settingsMap['email_from_address'] || Deno.env.get('FROM_EMAIL');
+    if (!defaultFromEmail) {
+      return new Response(JSON.stringify({ error: 'No email_from_address in settings and FROM_EMAIL env var not set' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
     const defaultFromName = settingsMap['email_from_name'] || 'Pay It Forward Health';
 
     let subject = body.subject || '';

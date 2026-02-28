@@ -1132,66 +1132,6 @@ export default function FeaturesPage() {
           href="/crm/integrations/video"
         />
         <FeatureCard
-          icon={<CreditCard className="w-6 h-6" />}
-          title="Payment Processing"
-          description="Integrate payment processors"
-          features={[
-            'Stripe integration',
-            'Authorize.net',
-            'Credit card processing',
-            'ACH payments',
-          ]}
-          href="/crm/integrations/payments"
-        />
-        <FeatureCard
-          icon={<Cloud className="w-6 h-6" />}
-          title="Cloud Storage"
-          description="Connect cloud storage providers"
-          features={[
-            'Google Drive',
-            'Dropbox',
-            'OneDrive',
-            'File synchronization',
-          ]}
-          href="/crm/integrations/cloud-storage"
-        />
-        <FeatureCard
-          icon={<PenTool className="w-6 h-6" />}
-          title="E-Signature"
-          description="Electronic signature integration"
-          features={[
-            'DocuSign',
-            'HelloSign',
-            'Document signing',
-            'Signature tracking',
-          ]}
-          href="/crm/integrations/esign"
-        />
-        <FeatureCard
-          icon={<ShoppingCart className="w-6 h-6" />}
-          title="Commerce"
-          description="E-commerce platform integration"
-          features={[
-            'Order synchronization',
-            'Customer sync',
-            'Product catalog',
-            'Revenue tracking',
-          ]}
-          href="/crm/integrations/commerce"
-        />
-        <FeatureCard
-          icon={<RefreshCcw className="w-6 h-6" />}
-          title="CRM Sync"
-          description="Two-way sync with other CRMs"
-          features={[
-            'Zoho CRM sync',
-            'Salesforce sync',
-            'Contact sync',
-            'Deal sync',
-          ]}
-          href="/crm/integrations/crm-sync"
-        />
-        <FeatureCard
           icon={<MessageSquare className="w-6 h-6" />}
           title="WhatsApp"
           description="WhatsApp business messaging"
@@ -1215,18 +1155,6 @@ export default function FeaturesPage() {
             'Webhook logs',
           ]}
           href="/crm/integrations/webhooks"
-        />
-        <FeatureCard
-          icon={<Key className="w-6 h-6" />}
-          title="API Access"
-          description="Full REST API for custom integrations"
-          features={[
-            'RESTful API',
-            'API key management',
-            'OAuth support',
-            'Rate limiting',
-          ]}
-          href="/crm/integrations/api"
         />
       </FeatureSection>
 

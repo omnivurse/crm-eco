@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -84,7 +84,10 @@ export async function POST(request: NextRequest) {
 
       try {
         const meta = item.metadata || {};
-        const fromEmail = meta.from_email || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+        const fromEmail = meta.from_email || process.env.RESEND_FROM_EMAIL;
+        if (!fromEmail) {
+          throw new Error('RESEND_FROM_EMAIL environment variable is required');
+        }
         const fromName = meta.from_name || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
         const toEmail = item.email_address;
 

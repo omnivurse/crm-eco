@@ -137,7 +137,7 @@ If you did not request this, please contact your administrator immediately.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Pay It Forward Health <noreply@mail.payitforwardhealth.com>',
+        from: `Pay It Forward Health <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
         to: [to],
         subject: 'Password Reset - Pay It Forward Health',
         html,

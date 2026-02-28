@@ -448,7 +448,11 @@ async function sendEmail(
       return acc;
     }, {});
 
-    const fromEmail = settingsMap['email_from_address'] || 'noreply@mail.payitforwardhealth.com';
+    const fromEmail = settingsMap['email_from_address'] || Deno.env.get('FROM_EMAIL');
+    if (!fromEmail) {
+      console.error('No email_from_address in settings and FROM_EMAIL env var not set');
+      return;
+    }
     const fromName = settingsMap['email_from_name'] || 'CRM System';
 
     // Replace variables

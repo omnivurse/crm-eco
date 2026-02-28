@@ -286,7 +286,11 @@ async function sendCampaignEmail(
   }
 
   const resend = new Resend(apiKey);
-  const fromEmail = (campaign.from_email as string) || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+  const fromEmail = (campaign.from_email as string) || process.env.RESEND_FROM_EMAIL;
+  if (!fromEmail) {
+    console.error('RESEND_FROM_EMAIL environment variable is required');
+    return false;
+  }
   const fromName = (campaign.from_name as string) || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
 
   const { error } = await resend.emails.send({
