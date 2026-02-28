@@ -24,7 +24,7 @@ export function AdminFooter() {
         <div className="flex items-center justify-between">
           {/* Logo & Tagline */}
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="flex items-center gap-2 flex-shrink-0">
+            <Link href="/dashboard" title="Go to Dashboard" className="flex items-center gap-2 flex-shrink-0">
               <Image
                 src="/logo-pif-full.png"
                 alt="Pay It Forward HealthShare"
@@ -45,6 +45,7 @@ export function AdminFooter() {
           <nav className="flex items-center gap-4 lg:gap-6">
             <Link
               href="/features"
+              title="Features — View platform capabilities and updates"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
               <Sparkles className="w-4 h-4" />
@@ -52,6 +53,7 @@ export function AdminFooter() {
             </Link>
             <Link
               href="/learn"
+              title="Learn — Guides, tutorials, and documentation"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
               <BookOpen className="w-4 h-4" />
@@ -59,6 +61,7 @@ export function AdminFooter() {
             </Link>
             <Link
               href="/learn/getting-started"
+              title="Help — Getting started and FAQ"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
               <HelpCircle className="w-4 h-4" />
@@ -66,6 +69,7 @@ export function AdminFooter() {
             </Link>
             <a
               href="mailto:support@payitforwardhealthshare.com"
+              title="Support — Contact the support team via email"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />

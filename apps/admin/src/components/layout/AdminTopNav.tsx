@@ -301,7 +301,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
         {/* Notifications */}
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10">
+            <Button variant="ghost" size="icon" title="Notifications" className="relative h-9 w-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#047474] rounded-full ring-2 ring-white dark:ring-slate-900 text-[10px] font-bold text-white px-1">
@@ -389,6 +389,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
         <Button
           variant="ghost"
           size="icon"
+          title="Settings — Configure portal preferences"
           className="hidden sm:flex h-9 w-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
           onClick={() => router.push('/settings')}
         >
