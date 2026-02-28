@@ -69,7 +69,10 @@ export class ResendEmailService {
     }
 
     this.resend = new Resend(key);
-    this.defaultFrom = defaultFrom || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+    this.defaultFrom = defaultFrom || process.env.RESEND_FROM_EMAIL || '';
+    if (!this.defaultFrom) {
+      throw new Error('RESEND_FROM_EMAIL environment variable is required');
+    }
     this.defaultFromName = defaultFromName || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
   }
 

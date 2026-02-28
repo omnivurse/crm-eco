@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { z } from 'zod';
+import crypto from 'crypto';
 import { executeMatchingWorkflows } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
-import type { CrmWorkflow } from '@/lib/automation/types';
+
+
+/** Generic 401 response — identical regardless of rejection reason */
+const UNAUTHORIZED_RESPONSE = { error: 'Unauthorized' } as const;
+
+/** Constant-time string comparison to prevent timing attacks */
+function safeCompare(a: string, b: string): boolean {
+  try {
+    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Creates a service role client for webhook operations
@@ -52,10 +65,7 @@ export async function POST(request: NextRequest) {
     const orgIdHeader = request.headers.get('x-org-id');
 
     if (!webhookSecret) {
-      return NextResponse.json(
-        { error: 'Missing x-webhook-secret header' },
-        { status: 401 }
-      );
+      return NextResponse.json(UNAUTHORIZED_RESPONSE, { status: 401 });
     }
 
     // Parse request body
@@ -71,12 +81,12 @@ export async function POST(request: NextRequest) {
 
     const { module: moduleKey, data, metadata } = parsed.data;
 
-    // Find workflow(s) with matching webhook secret
-    const { data: workflows, error: workflowError } = await supabase
+    // Fetch all enabled inbound_webhook workflows, then compare secrets
+    // in constant time to prevent timing-based enumeration
+    const { data: allWebhookWorkflows, error: workflowError } = await supabase
       .from('crm_workflows')
       .select('*, module:crm_modules!crm_workflows_module_id_fkey(id, key)')
       .eq('trigger_type', 'inbound_webhook')
-      .eq('webhook_secret', webhookSecret)
       .eq('is_enabled', true);
 
     if (workflowError) {
@@ -87,20 +97,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!workflows || workflows.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid webhook secret or no matching workflows' },
-        { status: 404 }
-      );
+    // Constant-time comparison against all workflow secrets
+    const workflows = (allWebhookWorkflows || []).filter(w =>
+      w.webhook_secret && safeCompare(webhookSecret, w.webhook_secret as string)
+    );
+
+    if (workflows.length === 0) {
+      // Identical response to "no secret" case — no information leakage
+      return NextResponse.json(UNAUTHORIZED_RESPONSE, { status: 401 });
     }
 
-    // Validate org_id if provided in header
+    // Validate org_id if provided in header (same generic 401)
     const workflow = workflows[0];
-    if (orgIdHeader && workflow.org_id !== orgIdHeader) {
-      return NextResponse.json(
-        { error: 'Organization mismatch' },
-        { status: 403 }
-      );
+    if (orgIdHeader && !safeCompare(workflow.org_id, orgIdHeader)) {
+      return NextResponse.json(UNAUTHORIZED_RESPONSE, { status: 401 });
     }
 
     // Filter workflows by module if specified
@@ -110,12 +120,10 @@ export async function POST(request: NextRequest) {
         const moduleData = w.module as { key?: string } | null;
         return moduleData?.key === moduleKey;
       });
-      
+
       if (targetWorkflows.length === 0) {
-        return NextResponse.json(
-          { error: `No workflows found for module: ${moduleKey}` },
-          { status: 404 }
-        );
+        // Same generic 401 — don't reveal module names
+        return NextResponse.json(UNAUTHORIZED_RESPONSE, { status: 401 });
       }
     }
 
@@ -285,10 +293,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Inbound webhook error:', error);
     return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

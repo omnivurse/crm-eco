@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { mapTwilioStatusToMessageStatus } from '@/lib/comms/providers/twilio';
+import crypto from 'crypto';
 
 // Use service role client for webhook processing
 function getServiceClient() {
@@ -11,14 +12,63 @@ function getServiceClient() {
 }
 
 /**
+ * Validate a Twilio webhook signature (HMAC-SHA1)
+ */
+function validateTwilioSignature(
+  authToken: string,
+  signature: string,
+  url: string,
+  params: Record<string, string>
+): boolean {
+  const data = Object.keys(params)
+    .sort()
+    .reduce((acc, key) => acc + key + params[key], url);
+
+  const expectedSignature = crypto
+    .createHmac('sha1', authToken)
+    .update(data)
+    .digest('base64');
+
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * POST /api/webhooks/twilio/status
  * Receive Twilio SMS status callbacks
  */
 export async function POST(request: NextRequest) {
   try {
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    if (!authToken) {
+      console.error('TWILIO_AUTH_TOKEN is not configured');
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
+    }
+
     // Parse form data (Twilio sends application/x-www-form-urlencoded)
     const formData = await request.formData();
-    
+    const params: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      params[key] = value.toString();
+    });
+
+    // Verify Twilio webhook signature
+    const twilioSignature = request.headers.get('x-twilio-signature');
+    if (!twilioSignature) {
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+    }
+
+    const webhookUrl = process.env.TWILIO_WEBHOOK_URL_STATUS || request.url;
+    if (!validateTwilioSignature(authToken, twilioSignature, webhookUrl, params)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+    }
+
     const messageSid = formData.get('MessageSid') as string;
     const messageStatus = formData.get('MessageStatus') as string;
     const errorCode = formData.get('ErrorCode') as string | null;

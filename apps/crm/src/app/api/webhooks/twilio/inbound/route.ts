@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizePhoneNumber } from '@/lib/comms/providers/twilio';
+import crypto from 'crypto';
 
 // Use service role client for webhook processing
 function getServiceClient() {
@@ -11,26 +12,65 @@ function getServiceClient() {
 }
 
 /**
+ * Validate a Twilio webhook signature (HMAC-SHA1)
+ * @see https://www.twilio.com/docs/usage/security#validating-requests
+ */
+function validateTwilioSignature(
+  authToken: string,
+  signature: string,
+  url: string,
+  params: Record<string, string>
+): boolean {
+  // Sort params alphabetically and append key+value to URL
+  const data = Object.keys(params)
+    .sort()
+    .reduce((acc, key) => acc + key + params[key], url);
+
+  const expectedSignature = crypto
+    .createHmac('sha1', authToken)
+    .update(data)
+    .digest('base64');
+
+  // Timing-safe comparison
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature),
+      Buffer.from(expectedSignature)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * POST /api/webhooks/twilio/inbound
  * Receive inbound SMS messages from Twilio
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify Twilio webhook signature
-    const twilioSignature = request.headers.get('x-twilio-signature');
     const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-    if (authToken) {
-      if (!twilioSignature) {
-        console.warn('[Twilio Webhook] Missing X-Twilio-Signature header');
-        return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
-      }
-      // Note: Full HMAC-SHA1 verification requires twilio library
-      // For now, require the header exists when auth token is configured
+    if (!authToken) {
+      console.error('TWILIO_AUTH_TOKEN is not configured');
+      return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
     }
 
-    // Parse form data
+    // Parse form data first so we can use params for signature validation
     const formData = await request.formData();
+    const params: Record<string, string> = {};
+    formData.forEach((value, key) => {
+      params[key] = value.toString();
+    });
+
+    // Verify Twilio webhook signature
+    const twilioSignature = request.headers.get('x-twilio-signature');
+    if (!twilioSignature) {
+      return NextResponse.json({ error: 'Missing signature' }, { status: 401 });
+    }
+
+    const webhookUrl = process.env.TWILIO_WEBHOOK_URL_INBOUND || request.url;
+    if (!validateTwilioSignature(authToken, twilioSignature, webhookUrl, params)) {
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 403 });
+    }
 
     const messageSid = formData.get('MessageSid') as string;
     const from = formData.get('From') as string;

@@ -370,7 +370,7 @@ export default function DocumentsPage() {
 
         <div className="flex items-center gap-3">
           <Button variant="outline" asChild>
-            <Link href="/crm/integrations/cloud-storage">
+            <Link href="/crm/integrations">
               <Cloud className="w-4 h-4 mr-2" />
               Connect Storage
             </Link>

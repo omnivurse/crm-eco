@@ -190,7 +190,7 @@ export class EmailService {
           template_data: input.variables || {},
           scheduled_for: scheduledFor?.toISOString() || new Date().toISOString(),
           metadata: {
-            from_email: input.fromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
+            from_email: input.fromEmail || process.env.RESEND_FROM_EMAIL || (() => { throw new Error('RESEND_FROM_EMAIL environment variable is required'); })(),
             from_name: input.fromName,
             reply_to: input.replyTo,
             body_text: text,
@@ -390,7 +390,7 @@ export class EmailService {
           subject: data.subject,
           body_html: data.html,
           body_text: data.text,
-          from_email: data.fromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com',
+          from_email: data.fromEmail || process.env.RESEND_FROM_EMAIL || (() => { throw new Error('RESEND_FROM_EMAIL environment variable is required'); })(),
           from_name: data.fromName,
           reply_to: data.replyTo,
           provider: 'resend',

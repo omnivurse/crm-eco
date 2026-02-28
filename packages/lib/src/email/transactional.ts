@@ -23,7 +23,11 @@ function getResendClient(): Resend {
   return resendClient;
 }
 
-const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+function getDefaultFromEmail(): string {
+  const email = process.env.RESEND_FROM_EMAIL;
+  if (!email) throw new Error('RESEND_FROM_EMAIL environment variable is required');
+  return email;
+}
 const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -269,7 +273,7 @@ export async function sendEnrollmentConfirmationEmail(params: {
     planName,
     enrollmentId,
     organizationName,
-    fromEmail = DEFAULT_FROM_EMAIL,
+    fromEmail = getDefaultFromEmail(),
     fromName,
   } = params;
 
@@ -329,7 +333,7 @@ export async function sendAdvisorNotificationEmail(params: {
     memberPhone,
     enrollmentId,
     organizationName,
-    fromEmail = DEFAULT_FROM_EMAIL,
+    fromEmail = getDefaultFromEmail(),
     fromName = DEFAULT_FROM_NAME,
   } = params;
 

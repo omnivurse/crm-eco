@@ -23,11 +23,6 @@ function getEncryptionKey(): Buffer {
   const keyHex = process.env.ENCRYPTION_KEY;
 
   if (!keyHex) {
-    // In development, use a fallback key (NOT for production!)
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('⚠️ ENCRYPTION_KEY not set, using development fallback. DO NOT use in production!');
-      return crypto.scryptSync('dev-fallback-key', 'salt', KEY_LENGTH);
-    }
     throw new Error('ENCRYPTION_KEY environment variable is required');
   }
 
