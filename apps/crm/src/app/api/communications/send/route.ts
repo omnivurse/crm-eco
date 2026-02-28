@@ -61,19 +61,19 @@ export async function POST(request: NextRequest) {
       }
       
       const result = await sendEmail({
-        to: params.to,
-        subject: params.subject,
-        body_html: params.body_html,
-        body_text: params.body_text,
-        cc: params.cc,
-        bcc: params.bcc,
-        from_name: params.from_name,
-        reply_to: params.reply_to,
-        template_id: params.template_id,
-        template_variables: params.template_variables,
-        linked_contact_id: params.linked_contact_id,
-        linked_lead_id: params.linked_lead_id,
-        linked_deal_id: params.linked_deal_id,
+        to: params.to as string | string[],
+        subject: params.subject as string,
+        body_html: params.body_html as string | undefined,
+        body_text: params.body_text as string | undefined,
+        cc: params.cc as string[] | undefined,
+        bcc: params.bcc as string[] | undefined,
+        from_name: params.from_name as string | undefined,
+        reply_to: params.reply_to as string | undefined,
+        template_id: params.template_id as string | undefined,
+        template_variables: params.template_variables as Record<string, unknown> | undefined,
+        linked_contact_id: params.linked_contact_id as string | undefined,
+        linked_lead_id: params.linked_lead_id as string | undefined,
+        linked_deal_id: params.linked_deal_id as string | undefined,
       });
       
       if (!result.success) {
@@ -101,11 +101,11 @@ export async function POST(request: NextRequest) {
       }
       
       const result = await sendSms({
-        to: params.to,
-        body: params.body,
-        linked_contact_id: params.linked_contact_id,
-        linked_lead_id: params.linked_lead_id,
-        linked_deal_id: params.linked_deal_id,
+        to: params.to as string,
+        body: params.body as string,
+        linked_contact_id: params.linked_contact_id as string | undefined,
+        linked_lead_id: params.linked_lead_id as string | undefined,
+        linked_deal_id: params.linked_deal_id as string | undefined,
       });
       
       if (!result.success) {
