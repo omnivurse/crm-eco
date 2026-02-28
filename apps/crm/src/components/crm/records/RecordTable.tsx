@@ -153,7 +153,7 @@ function InlineEditor({
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
-            {selectOptions.map((opt: string) => (
+            {selectOptions.filter(Boolean).map((opt: string) => (
               <SelectItem key={opt} value={opt}>
                 {opt}
               </SelectItem>
