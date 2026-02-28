@@ -196,6 +196,7 @@ $$;
 
 -- ===================== 3. user_can_access_ticket: remove origin column =======
 
+DROP FUNCTION IF EXISTS public.user_can_access_ticket(uuid, uuid) CASCADE;
 CREATE OR REPLACE FUNCTION public.user_can_access_ticket(p_ticket_id uuid, p_user_id uuid)
 RETURNS boolean
 LANGUAGE plpgsql
