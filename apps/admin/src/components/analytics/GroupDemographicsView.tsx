@@ -93,7 +93,7 @@ interface AgentDemographics {
   statusDistribution: LabelItem[];
 }
 
-interface DemographicsData {
+export interface DemographicsData {
   memberDemographics: MemberDemographics;
   enrollmentDemographics: EnrollmentDemographics;
   healthUtilization: HealthUtilization;
