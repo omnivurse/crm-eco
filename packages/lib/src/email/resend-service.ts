@@ -155,13 +155,22 @@ export class ResendEmailService {
 
     for (const [key, value] of Object.entries(variables)) {
       const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-      result = result.replace(regex, value || '');
+      result = result.replace(regex, this.escapeHtml(value || ''));
     }
 
     // Remove any remaining unreplaced variables
     result = result.replace(/\{\{\s*\w+\s*\}\}/g, '');
 
     return result;
+  }
+
+  private escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   /**
