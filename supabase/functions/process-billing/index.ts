@@ -434,7 +434,10 @@ async function sendEmail(
       .eq('is_active', true)
       .single();
 
-    if (!template) return;
+    if (!template) {
+      console.error(`CRITICAL: Missing email template '${params.templateSlug}' for org ${organizationId}. Billing email NOT sent to ${params.to}.`);
+      return;
+    }
 
     // Get email settings
     const { data: settings } = await supabase

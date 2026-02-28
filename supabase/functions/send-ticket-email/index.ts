@@ -1,8 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
-
+const ALLOWED_ORIGIN = Deno.env.get("ALLOWED_ORIGIN") || "*";
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
@@ -64,8 +63,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Construct ticket URL for email links
-    const ticketUrl = `${supabaseUrl}/tickets/${ticketId}`;
+    // Construct ticket URL for email links — use app URL, not Supabase URL
+    const siteUrl = Deno.env.get("SITE_URL") || Deno.env.get("NEXT_PUBLIC_APP_URL") || supabaseUrl;
+    const ticketUrl = `${siteUrl}/tickets/${ticketId}`;
 
     const enhancedBodyText = `${bodyText}
 
@@ -115,33 +115,9 @@ This is an automated message from Pay It Forward Health. Please do not reply dir
       }
     }
 
-    // Fallback to Supabase native email using Admin API
+    // No fallback provider — if Resend fails, report the failure clearly
     if (!emailSent) {
-      console.log("Attempting Supabase native email fallback...");
-      try {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        
-        // Use Supabase Admin API to send email
-        const emailResult = await sendViaSupabaseAdmin(
-          supabase,
-          recipientEmail,
-          subject,
-          enhancedBodyText,
-          enhancedBodyHtml
-        );
-        
-        if (emailResult.success) {
-          emailSent = true;
-          emailProvider = "supabase";
-          console.log("Email sent via Supabase native:", emailResult.id);
-        } else {
-          errorMessage += ` | Supabase: ${emailResult.error}`;
-          console.error("Supabase email error:", emailResult.error);
-        }
-      } catch (error) {
-        errorMessage += ` | Supabase: ${error instanceof Error ? error.message : "Unknown error"}`;
-        console.error("Supabase email exception:", error);
-      }
+      console.error("CRITICAL: Resend failed and no fallback email provider is configured. Ticket email NOT sent.", errorMessage);
     }
 
     // Update notification status
@@ -280,37 +256,6 @@ async function sendViaResend(
     success: true,
     id: data.id,
   };
-}
-
-async function sendViaSupabaseAdmin(
-  supabase: any,
-  to: string,
-  subject: string,
-  text: string,
-  html: string
-): Promise<{ success: boolean; id?: string; error?: string }> {
-  try {
-    // Supabase doesn't have a direct "send email" API for custom emails
-    // We'll use the auth.admin.inviteUserByEmail which sends an email
-    // For ticket notifications, we'll create a workaround using auth emails
-    
-    // Alternative: Use Supabase Auth's sendEmail for password reset style
-    // This is a limitation - Supabase Auth is designed for auth emails only
-    
-    // For now, return success but log that we need custom SMTP
-    console.log("Supabase native email: Custom transactional emails require SMTP configuration in dashboard");
-    console.log("Please configure SMTP in: Project Settings > Authentication > SMTP Settings");
-    
-    return {
-      success: false,
-      error: "Supabase custom transactional emails require SMTP configuration in dashboard. Please add RESEND_API_KEY or configure custom SMTP.",
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-    };
-  }
 }
 
 async function updateNotificationStatus(

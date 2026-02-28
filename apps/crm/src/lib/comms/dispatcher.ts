@@ -488,6 +488,9 @@ export async function sendMessageNow(
     body: message.body,
     replyTo: provider.config.reply_to,
     messageId: message.id,
+    meta: {
+      unsubscribe_url: provider.config.unsubscribe_url,
+    },
   });
   
   if (result.success) {

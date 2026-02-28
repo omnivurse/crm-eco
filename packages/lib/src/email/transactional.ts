@@ -253,6 +253,70 @@ function getAdvisorNotificationHtml(params: {
 }
 
 // ============================================================================
+// Plain Text Templates
+// ============================================================================
+
+function getEnrollmentConfirmationText(params: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  planName?: string;
+  enrollmentId: string;
+  organizationName: string;
+}): string {
+  const { firstName, lastName, email, phone, planName, enrollmentId, organizationName } = params;
+
+  return `Enrollment Received - ${organizationName}
+
+Hi ${firstName},
+
+Thank you for submitting your enrollment with ${organizationName}. We've received your information and our team will be in touch shortly.
+
+Enrollment Details:
+- Reference ID: ${enrollmentId.slice(0, 8).toUpperCase()}
+- Name: ${firstName} ${lastName}
+- Email: ${email}
+- Phone: ${phone}${planName ? `\n- Plan: ${planName}` : ''}
+
+What's next? An advisor will review your enrollment and contact you within 1-2 business days to discuss your options and answer any questions.
+
+Questions? Reply to this email or contact your advisor directly.
+
+(c) ${new Date().getFullYear()} ${organizationName}. All rights reserved.`;
+}
+
+function getAdvisorNotificationText(params: {
+  advisorName: string;
+  memberFirstName: string;
+  memberLastName: string;
+  memberEmail: string;
+  memberPhone: string;
+  enrollmentId: string;
+  organizationName: string;
+  crmLink: string;
+}): string {
+  const { advisorName, memberFirstName, memberLastName, memberEmail, memberPhone, enrollmentId, organizationName, crmLink } = params;
+
+  return `New Enrollment Assigned - ${organizationName}
+
+Hi ${advisorName},
+
+A new enrollment has been assigned to you and requires your attention.
+
+Member Information:
+- Name: ${memberFirstName} ${memberLastName}
+- Email: ${memberEmail}
+- Phone: ${memberPhone}
+
+View Enrollment: ${crmLink}
+
+Please review and contact this member within 1-2 business days.
+
+Reference ID: ${enrollmentId.slice(0, 8).toUpperCase()}`;
+}
+
+// ============================================================================
 // Email Sending Functions
 // ============================================================================
 
@@ -284,19 +348,21 @@ export async function sendEnrollmentConfirmationEmail(params: {
 
   try {
     const resend = getResendClient();
+    const templateParams = {
+      firstName,
+      lastName,
+      email: toEmail,
+      phone,
+      planName,
+      enrollmentId,
+      organizationName,
+    };
     const { data, error } = await resend.emails.send({
       from: `${fromName || organizationName} <${fromEmail}>`,
       to: [toEmail],
       subject: `Enrollment Received - ${organizationName}`,
-      html: getEnrollmentConfirmationHtml({
-        firstName,
-        lastName,
-        email: toEmail,
-        phone,
-        planName,
-        enrollmentId,
-        organizationName,
-      }),
+      html: getEnrollmentConfirmationHtml(templateParams),
+      text: getEnrollmentConfirmationText(templateParams),
     });
 
     if (error) {
@@ -346,20 +412,22 @@ export async function sendAdvisorNotificationEmail(params: {
 
   try {
     const resend = getResendClient();
+    const templateParams = {
+      advisorName,
+      memberFirstName,
+      memberLastName,
+      memberEmail,
+      memberPhone,
+      enrollmentId,
+      organizationName,
+      crmLink,
+    };
     const { data, error } = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
       to: [advisorEmail],
       subject: `New Enrollment Assigned: ${memberFirstName} ${memberLastName}`,
-      html: getAdvisorNotificationHtml({
-        advisorName,
-        memberFirstName,
-        memberLastName,
-        memberEmail,
-        memberPhone,
-        enrollmentId,
-        organizationName,
-        crmLink,
-      }),
+      html: getAdvisorNotificationHtml(templateParams),
+      text: getAdvisorNotificationText(templateParams),
     });
 
     if (error) {
