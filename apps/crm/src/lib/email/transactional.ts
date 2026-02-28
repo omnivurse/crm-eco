@@ -38,7 +38,11 @@ function getDefaultFromEmail(): string {
   return email;
 }
 const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+function getAppUrl(): string {
+  const url = process.env.NEXT_PUBLIC_APP_URL;
+  if (!url) throw new Error('NEXT_PUBLIC_APP_URL is required for transactional emails');
+  return url;
+}
 
 // ============================================================================
 // Types
@@ -211,7 +215,7 @@ export async function sendTeamInviteEmail(params: {
     fromName = DEFAULT_FROM_NAME,
   } = params;
 
-  const inviteLink = `${APP_URL}/accept-invite?token=${inviteToken}`;
+  const inviteLink = `${getAppUrl()}/accept-invite#token=${inviteToken}`;
 
   try {
     const resend = getResendClient();

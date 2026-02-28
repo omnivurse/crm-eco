@@ -97,20 +97,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
+    // Skip unmapped event types — these are non-retriable
+    const ourEventType = EVENT_TYPE_MAP[event.type];
+    if (!ourEventType) {
+      return NextResponse.json({ received: true });
+    }
+
     // Find the sent email by provider_message_id (Resend email ID)
-    const { data: sentEmail } = await supabase
+    const { data: sentEmail, error: fetchError } = await supabase
       .from('sent_emails')
       .select('id, organization_id, recipient_email')
       .eq('provider_message_id', emailId)
       .single();
 
-    if (!sentEmail) {
-      return NextResponse.json({ received: true, matched: false });
-    }
-
-    const ourEventType = EVENT_TYPE_MAP[event.type];
-    if (!ourEventType) {
-      return NextResponse.json({ received: true });
+    if (fetchError || !sentEmail) {
+      // Insert into dead-letter table for later reconciliation.
+      // Return 200 so Resend doesn't endlessly retry unresolvable events.
+      console.warn('Sent email not found for Resend message, dead-lettering:', emailId, fetchError?.message ?? 'not found');
+      await supabase.from('webhook_dead_letter').insert({
+        provider: 'resend',
+        provider_message_id: emailId,
+        event_type: ourEventType,
+        payload: event,
+        reason: fetchError?.message ?? 'sent_email not found',
+      });
+      return NextResponse.json({ received: true, matched: false, dead_lettered: true });
     }
 
     // Deduplicate: skip if we already processed this exact event
@@ -129,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert into email_events — DB trigger auto-updates sent_emails
-    await supabase.from('email_events').insert({
+    const { error: insertError } = await supabase.from('email_events').insert({
       sent_email_id: sentEmail.id,
       provider_message_id: emailId,
       event_type: ourEventType,
@@ -141,6 +152,14 @@ export async function POST(request: NextRequest) {
       },
       occurred_at: occurredAt,
     });
+
+    if (insertError) {
+      console.error('Failed to insert email_event for Resend message:', emailId, insertError.message);
+      return NextResponse.json(
+        { error: 'Failed to store email event' },
+        { status: 500 }
+      );
+    }
 
     // Suppress future sends on hard bounce or complaint
     if ((ourEventType === 'bounced' || ourEventType === 'complained') && sentEmail.recipient_email && sentEmail.organization_id) {

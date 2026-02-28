@@ -52,6 +52,20 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    // Map SendGrid event to our event type
+    const eventTypeMap: Record<string, string> = {
+      'delivered': 'delivered',
+      'open': 'opened',
+      'click': 'clicked',
+      'bounce': 'bounced',
+      'dropped': 'bounced',
+      'spamreport': 'complained',
+      'unsubscribe': 'unsubscribe',
+    };
+
+    let processed = 0;
+    let failed = 0;
+
     for (const event of events) {
       const {
         event: eventType,
@@ -64,8 +78,11 @@ export async function POST(request: NextRequest) {
         type: bounceType,
       } = event;
 
-      // Skip if no message ID
+      // Skip if no message ID or unmapped event type — these are non-retriable
       if (!sg_message_id) continue;
+
+      const ourEventType = eventTypeMap[eventType];
+      if (!ourEventType) continue;
 
       // Find the sent email by provider message ID
       const { data: sentEmail, error: fetchError } = await supabase
@@ -74,25 +91,11 @@ export async function POST(request: NextRequest) {
         .eq('provider_message_id', sg_message_id)
         .single();
 
-      if (fetchError) {
-        console.error('Failed to fetch sent_email for message:', sg_message_id, fetchError.message);
+      if (fetchError || !sentEmail) {
+        console.error('Failed to fetch sent_email for message:', sg_message_id, fetchError?.message ?? 'not found');
+        failed++;
         continue;
       }
-      if (!sentEmail) continue;
-
-      // Map SendGrid event to our event type
-      const eventTypeMap: Record<string, string> = {
-        'delivered': 'delivered',
-        'open': 'opened',
-        'click': 'clicked',
-        'bounce': 'bounced',
-        'dropped': 'bounced',
-        'spamreport': 'complained',
-        'unsubscribe': 'unsubscribe',
-      };
-
-      const ourEventType = eventTypeMap[eventType];
-      if (!ourEventType) continue;
 
       // Deduplicate: skip if we already processed this exact event
       const occurredAt = timestamp ? new Date(timestamp * 1000).toISOString() : new Date().toISOString();
@@ -105,7 +108,10 @@ export async function POST(request: NextRequest) {
         .eq('occurred_at', occurredAt)
         .maybeSingle();
 
-      if (existing) continue;
+      if (existing) {
+        processed++;
+        continue;
+      }
 
       // Insert into email_events — the DB trigger auto-updates sent_emails status
       const { error: insertError } = await supabase.from('email_events').insert({
@@ -124,7 +130,11 @@ export async function POST(request: NextRequest) {
 
       if (insertError) {
         console.error('Failed to insert email_event for message:', sg_message_id, insertError.message);
+        failed++;
+        continue;
       }
+
+      processed++;
 
       // Suppress future sends on hard bounce or complaint
       if ((ourEventType === 'bounced' || ourEventType === 'complained') && sentEmail.recipient_email && sentEmail.organization_id) {
@@ -141,7 +151,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ received: true });
+    // Return 500 on any failures so SendGrid retries the batch.
+    // Already-processed events will be skipped via the idempotency check above.
+    if (failed > 0) {
+      return NextResponse.json(
+        { error: 'Partial batch failure', processed, failed },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ received: true, processed });
   } catch (error) {
     console.error('Error processing SendGrid webhook:', error);
     return NextResponse.json(

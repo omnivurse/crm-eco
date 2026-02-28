@@ -90,14 +90,18 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     .single();
   
   const toEmails = Array.isArray(params.to) ? params.to : [params.to];
-  const fromEmail = profile.email;
   const fromName = params.from_name || profile.full_name || org?.name || 'CRM';
-  
+
+  // Use org's verified sending domain — never the user's personal email as FROM
+  const integrationFromEmail = emailConnection?.settings?.from_email as string | undefined;
+  const fromEmail = integrationFromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+  const replyTo = params.reply_to || profile.email;
+
   // Determine provider and send
   let result: SendEmailResult;
   const provider = emailConnection?.provider || 'resend';
   const startTime = Date.now();
-  
+
   try {
     if (provider === 'sendgrid' && emailConnection?.api_key_enc) {
       const apiKey = decrypt(emailConnection.api_key_enc);
@@ -109,7 +113,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         subject: params.subject,
         html: params.body_html,
         text: params.body_text,
-        replyTo: params.reply_to,
+        replyTo: replyTo,
       });
     } else if (provider === 'resend' && emailConnection?.api_key_enc) {
       const apiKey = decrypt(emailConnection.api_key_enc);
@@ -121,7 +125,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         subject: params.subject,
         html: params.body_html,
         text: params.body_text,
-        reply_to: params.reply_to,
+        reply_to: replyTo,
       });
     } else {
       return {
@@ -144,7 +148,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       body_text: params.body_text,
       from_email: fromEmail,
       from_name: fromName,
-      reply_to: params.reply_to,
+      reply_to: replyTo,
       template_id: params.template_id,
       provider: provider,
       provider_message_id: result.message_id,

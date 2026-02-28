@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUser } from '@/lib/supabase-server';
+import { getAuthUser, getAuthProfile, createClient } from '@/lib/supabase-server';
 import { sendEmail, sendSms } from '@/lib/email/send-service';
+
+const RATE_LIMIT_MAX = 50;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 /**
  * POST /api/communications/send
@@ -12,6 +15,25 @@ export async function POST(request: NextRequest) {
     const { user } = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    // Rate limit: max 50 sends per user per hour (keyed by profile.id stored in sent_emails.metadata.sent_by)
+    const profile = await getAuthProfile();
+    if (profile) {
+      const supabase = await createClient();
+      const oneHourAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+      const { count } = await supabase
+        .from('sent_emails')
+        .select('id', { count: 'exact', head: true })
+        .eq('metadata->>sent_by', profile.id)
+        .gte('sent_at', oneHourAgo);
+
+      if (count !== null && count >= RATE_LIMIT_MAX) {
+        return NextResponse.json(
+          { error: `Rate limit exceeded. Maximum ${RATE_LIMIT_MAX} emails per hour.` },
+          { status: 429 }
+        );
+      }
     }
 
     // Parse body — handle both JSON and FormData

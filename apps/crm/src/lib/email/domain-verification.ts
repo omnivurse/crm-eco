@@ -83,7 +83,7 @@ export function getDnsRecords(
     {
       type: 'TXT',
       name: `_dmarc.${domain}`,
-      value: 'v=DMARC1; p=none; rua=mailto:dmarc@' + domain,
+      value: 'v=DMARC1; p=quarantine; rua=mailto:dmarc@' + domain,
       purpose: 'DMARC policy for email authentication',
       verified: false,
     },
