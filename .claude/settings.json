@@ -13,7 +13,8 @@
       "Bash(grep -l \"get_least_busy_agent\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/2026010*.sql /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/2026011*.sql)",
       "Bash(do grep -l \"get_least_busy_agent\" \"$file\")",
       "Bash(echo \"Found in: $file\")",
-      "Bash(npx supabase migration repair 202603070006 --status reverted --linked)"
+      "Bash(npx supabase migration repair 202603070006 --status reverted --linked)",
+      "Bash(npx turbo build --filter=@crm-eco/crm)"
     ]
   }
 }
