@@ -135,9 +135,9 @@ export default function WebformsPage() {
       for (const mod of modulesRes.data || []) {
         const { data: moduleFields } = await supabase
           .from('crm_fields')
-          .select('id, key, label, type, is_required')
+          .select('id, key, label, type, is_required:required')
           .eq('module_id', mod.id)
-          .order('position');
+          .order('display_order');
         fieldsByModule[mod.id] = (moduleFields || []) as Field[];
       }
       setFields(fieldsByModule);

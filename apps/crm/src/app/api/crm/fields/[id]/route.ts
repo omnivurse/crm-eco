@@ -76,7 +76,7 @@ export async function PATCH(
       updates.display_order = body.display_order;
     }
     if (body.is_required !== undefined) {
-      updates.is_required = body.is_required;
+      updates.required = body.is_required;
     }
 
     if (Object.keys(updates).length === 0) {
