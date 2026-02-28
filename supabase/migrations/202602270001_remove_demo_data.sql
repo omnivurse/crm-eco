@@ -25,16 +25,32 @@ BEGIN
   WHERE organization_id = v_org_id
     AND code IN ('HLTH-ESS', 'HLTH-PRM', 'HLTH-CMP');
 
+  -- Nullify default_plan_id on landing pages referencing demo plans
+  IF v_plan_ids IS NOT NULL THEN
+    UPDATE landing_pages SET default_plan_id = NULL
+    WHERE default_plan_id = ANY(v_plan_ids);
+  END IF;
+
   -- Remove demo landing pages (by slug)
   DELETE FROM landing_pages
   WHERE organization_id = v_org_id
     AND slug IN ('pif-health', 'test-advisor');
 
-  -- Remove demo product benefits
+  -- Remove all FK-dependent rows for demo plans
   IF v_plan_ids IS NOT NULL THEN
+    DELETE FROM product_audit_log WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM product_feature_mappings WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM product_eligibility_rules WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM product_iua WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM product_age_brackets WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM product_pricing_matrix WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM product_extra_costs WHERE plan_id = ANY(v_plan_ids);
+    DELETE FROM plan_rate_sets WHERE plan_id = ANY(v_plan_ids);
     DELETE FROM product_benefits
     WHERE organization_id = v_org_id
       AND plan_id = ANY(v_plan_ids);
+    DELETE FROM enrollments WHERE selected_plan_id = ANY(v_plan_ids);
+    DELETE FROM memberships WHERE plan_id = ANY(v_plan_ids);
   END IF;
 
   -- Remove test advisor
