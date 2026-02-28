@@ -58,16 +58,20 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   
   // Get current user and org using cached auth helpers
   const { user, error: authError } = await getAuthUser();
-  if (!user || authError) throw new Error('User not authenticated');
-  
+  if (!user || authError) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
   // Get extended profile with email and full_name
   const { data: profile } = await supabase
     .from('profiles')
     .select('id, organization_id, email, full_name')
     .eq('user_id', user.id)
     .single();
-  
-  if (!profile) throw new Error('User profile not found');
+
+  if (!profile) {
+    return { success: false, error: 'User profile not found' };
+  }
   
   // Get organization settings for email
   const { data: org } = await supabase
@@ -223,10 +227,14 @@ export async function sendSms(params: SendSmsParams): Promise<SendSmsResult> {
   
   // Get current user and org using cached auth helpers
   const { user, error: authError } = await getAuthUser();
-  if (!user || authError) throw new Error('User not authenticated');
-  
+  if (!user || authError) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
   const profile = await getAuthProfile();
-  if (!profile) throw new Error('User profile not found');
+  if (!profile) {
+    return { success: false, error: 'User profile not found' };
+  }
   
   // Get Twilio connection
   const { data: twilioConnection } = await supabase

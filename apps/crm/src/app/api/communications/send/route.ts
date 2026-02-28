@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAuthUser } from '@/lib/supabase-server';
 import { sendEmail, sendSms } from '@/lib/email/send-service';
 
 /**
@@ -7,9 +8,35 @@ import { sendEmail, sendSms } from '@/lib/email/send-service';
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // Auth guard
+    const { user } = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    // Parse body — handle both JSON and FormData
+    let body: Record<string, unknown>;
+    const contentType = request.headers.get('content-type') || '';
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      body = {};
+      for (const [key, value] of formData.entries()) {
+        if (typeof value === 'string') {
+          if (key === 'cc' || key === 'bcc') {
+            body[key] = value.split(',').map((e: string) => e.trim()).filter(Boolean);
+          } else {
+            body[key] = value;
+          }
+        }
+        // File attachments not yet supported in send service — skip
+      }
+    } else {
+      body = await request.json();
+    }
+
     const { channel, ...params } = body;
-    
+
     if (!channel) {
       return NextResponse.json(
         { error: 'Missing required field: channel (email or sms)' },
