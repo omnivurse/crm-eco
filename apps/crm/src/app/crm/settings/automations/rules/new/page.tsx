@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -126,7 +127,7 @@ export default function NewAutomationRulePage() {
 
   const handleSave = async () => {
     if (!name || actions.length === 0) {
-      alert('Please provide a name and at least one action');
+      toast.warning('Please provide a name and at least one action');
       return;
     }
     
@@ -153,7 +154,7 @@ export default function NewAutomationRulePage() {
       router.push('/crm/settings/automations/rules');
     } catch (error) {
       console.error('Error creating rule:', error);
-      alert('Failed to create rule');
+      toast.error('Failed to create rule');
     } finally {
       setSaving(false);
     }

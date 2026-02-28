@@ -10,13 +10,16 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization') || '';
     const cronSecret = process.env.CRON_SECRET;
 
-    if (cronSecret) {
-      const expected = `Bearer ${cronSecret}`;
-      const a = Buffer.from(authHeader);
-      const b = Buffer.from(expected);
-      if (a.length !== b.length || !timingSafeEqual(a, b)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    if (!cronSecret) {
+      console.error('CRON_SECRET is not configured');
+      return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
+    }
+
+    const expected = `Bearer ${cronSecret}`;
+    const a = Buffer.from(authHeader);
+    const b = Buffer.from(expected);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const result = await processEnrollments();

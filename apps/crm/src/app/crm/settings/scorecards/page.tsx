@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
@@ -151,9 +152,8 @@ export default function ScorecardsPage() {
   const generateScorecards = async () => {
     setGenerating(true);
     try {
-      // In production, this would call an API to calculate scorecards
-      // For now, we show a message
-      alert('Scorecard generation would be triggered via a server-side job');
+      // Scorecard generation is not yet implemented
+      toast.info('Scorecard generation is coming soon');
     } finally {
       setGenerating(false);
     }

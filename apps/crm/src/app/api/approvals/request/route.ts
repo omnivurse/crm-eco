@@ -64,12 +64,17 @@ export async function POST(request: NextRequest) {
     let finalRuleId = ruleId;
 
     if (!finalProcessId) {
-      // Get record data for rule evaluation
+      // Get record data for rule evaluation (with org isolation)
       const { data: record } = await supabase
         .from('crm_records')
         .select('data, stage')
         .eq('id', recordId)
+        .eq('org_id', profile.organization_id)
         .single();
+
+      if (!record) {
+        return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+      }
 
       const recordData = {
         ...(record?.data || {}),

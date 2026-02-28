@@ -175,7 +175,6 @@ export class BillingService {
     }
 
     // Determine payment details to store
-    const isCard = input.paymentMethod.type === 'credit_card';
     let lastFour: string;
     let cardType: string | undefined;
     
@@ -300,17 +299,25 @@ export class BillingService {
    */
   async setDefaultPaymentProfile(memberId: string, profileId: string): Promise<void> {
     // Unset all other defaults
-    await this.supabase
+    const { error: unsetError } = await this.supabase
       .from('payment_profiles')
       .update({ is_default: false })
       .eq('member_id', memberId)
       .eq('is_active', true);
 
+    if (unsetError) {
+      throw new Error('Failed to unset existing default profiles: ' + unsetError.message);
+    }
+
     // Set new default
-    await this.supabase
+    const { error: setError } = await this.supabase
       .from('payment_profiles')
       .update({ is_default: true })
       .eq('id', profileId);
+
+    if (setError) {
+      throw new Error('Failed to set new default profile: ' + setError.message);
+    }
   }
 
   /**
@@ -374,7 +381,7 @@ export class BillingService {
 
     // Update transaction with result
     if (chargeResult.success) {
-      await this.supabase
+      const { error: successUpdateError } = await this.supabase
         .from('billing_transactions')
         .update({
           status: 'success',
@@ -387,6 +394,12 @@ export class BillingService {
         })
         .eq('id', transaction.id);
 
+      if (successUpdateError) {
+        console.error('[BILLING] CRITICAL: Payment processed but DB update failed:', {
+          transactionId: transaction.id, error: successUpdateError.message,
+        });
+      }
+
       // Update billing schedule if applicable
       if (input.billingScheduleId) {
         await this.updateBillingScheduleAfterSuccess(input.billingScheduleId);
@@ -398,7 +411,7 @@ export class BillingService {
         authorizeTransactionId: chargeResult.transactionId,
       };
     } else {
-      await this.supabase
+      const { error: failUpdateError } = await this.supabase
         .from('billing_transactions')
         .update({
           status: 'failed',
@@ -409,6 +422,12 @@ export class BillingService {
           processed_at: new Date().toISOString(),
         })
         .eq('id', transaction.id);
+
+      if (failUpdateError) {
+        console.error('[BILLING] Failed to update transaction status:', {
+          transactionId: transaction.id, error: failUpdateError.message,
+        });
+      }
 
       // Create billing failure record if schedule-based
       if (input.billingScheduleId) {

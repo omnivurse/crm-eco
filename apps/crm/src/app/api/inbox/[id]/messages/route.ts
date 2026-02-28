@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMessages, addMessage } from '@/lib/inbox';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -14,14 +15,33 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
     const { id } = await params;
+
+    // Verify conversation belongs to user's org
+    const { data: conversation } = await supabase
+      .from('inbox_conversations')
+      .select('id')
+      .eq('id', id)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    }
+
     const { searchParams } = new URL(request.url);
-    
+
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
-    
+
     const result = await getMessages(id, page, limit);
-    
+
     return NextResponse.json({
       messages: result.messages,
       total: result.total,
@@ -47,9 +67,28 @@ export async function POST(
   { params }: RouteParams
 ) {
   try {
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
     const { id } = await params;
+
+    // Verify conversation belongs to user's org
+    const { data: conversation } = await supabase
+      .from('inbox_conversations')
+      .select('id')
+      .eq('id', id)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (!conversation) {
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+    }
+
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.direction) {
       return NextResponse.json(
@@ -57,7 +96,7 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     const message = await addMessage({
       conversation_id: id,
       direction: body.direction,
@@ -71,7 +110,7 @@ export async function POST(
       external_id: body.external_id,
       external_provider: body.external_provider,
     });
-    
+
     return NextResponse.json(message, { status: 201 });
   } catch (error) {
     console.error('Error in POST /api/inbox/[id]/messages:', error);

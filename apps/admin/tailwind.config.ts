@@ -6,6 +6,8 @@ const config: Config = {
   content: [
     './src/**/*.{ts,tsx}',
     '../../packages/ui/src/**/*.{ts,tsx}',
+    '../../shared/src/**/*.{ts,tsx}',
+    '../../packages/rates/src/**/*.{ts,tsx}',
   ],
   plugins: [require('tailwindcss-animate')],
 };

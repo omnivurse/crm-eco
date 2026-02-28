@@ -290,9 +290,9 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
             } else if (event.entityType === 'member') {
               router.push('/members');
             } else if (event.entityType === 'organization') {
-              router.push('/organizations');
+              router.push('/settings');
             } else if (event.requiresReview) {
-              router.push('/changes/review');
+              router.push('/ops');
             }
           }}
         />
@@ -374,11 +374,11 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                 <DropdownMenuItem
                   className="px-4 py-2.5 cursor-pointer text-center text-sm text-[#047474] dark:text-teal-400 font-medium hover:bg-teal-50 dark:hover:bg-teal-500/10 justify-center"
                   onClick={() => {
-                    router.push('/notifications');
+                    handleMarkAllAsRead();
                     setIsOpen(false);
                   }}
                 >
-                  View all notifications
+                  Mark all as read
                 </DropdownMenuItem>
               </>
             )}

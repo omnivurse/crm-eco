@@ -150,7 +150,7 @@ export default function BookingPage() {
 
       setStep('confirmed');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to book meeting');
+      setError(err instanceof Error ? err.message : 'Failed to book meeting');
     } finally {
       setSubmitting(false);
     }

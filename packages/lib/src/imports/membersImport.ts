@@ -140,7 +140,7 @@ async function recordRowResult(
   errorMessage: string | null,
   entityId?: string
 ) {
-  await supabase.from('import_job_rows').insert({
+  const { error } = await supabase.from('import_job_rows').insert({
     import_job_id: jobId,
     row_index: rowIndex,
     raw_data: rawData,
@@ -150,5 +150,8 @@ async function recordRowResult(
     entity_id: entityId || null,
     processed_at: new Date().toISOString(),
   });
+  if (error) {
+    console.error('[IMPORT] Failed to record row result:', { rowIndex, error: error.message });
+  }
 }
 

@@ -409,13 +409,13 @@ export class EmailService {
         .single();
 
       if (error) {
-        console.error('Error recording sent email:', error);
+        console.error('[EMAIL] Failed to record sent email:', error);
         return undefined;
       }
 
       return result?.id;
-    } catch (error) {
-      console.error('Record sent email error:', error);
+    } catch (err) {
+      console.error('[EMAIL] Record sent email error:', err);
       return undefined;
     }
   }

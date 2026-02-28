@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       p_entity_id: result.sentEmailId || null,
       p_action: 'send',
       p_metadata: { to, subject: subject || templateSlug },
-    }).catch(() => {});
+    }).catch((err: unknown) => console.error('[AUDIT] Failed to log admin activity:', err));
 
     return NextResponse.json({
       success: true,

@@ -2,6 +2,7 @@
 
 import DOMPurify from 'dompurify';
 import { useState, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import Image from 'next/image';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -245,7 +246,7 @@ export function SignatureBuilder({
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.content_html.trim()) {
-      alert('Please provide a name and signature content.');
+      toast.warning('Please provide a name and signature content.');
       return;
     }
 
@@ -257,7 +258,7 @@ export function SignatureBuilder({
       });
     } catch (error) {
       console.error('Failed to save signature:', error);
-      alert('Failed to save signature. Please try again.');
+      toast.error('Failed to save signature. Please try again.');
     } finally {
       setSaving(false);
     }

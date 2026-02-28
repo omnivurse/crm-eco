@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import {
   Card,
@@ -72,7 +73,7 @@ export default function ApprovalDetailPage() {
     if (!approval) return;
     
     if (action !== 'approve' && !comment.trim()) {
-      alert('Please provide a comment');
+      toast.warning('Please provide a comment');
       return;
     }
     
@@ -96,10 +97,10 @@ export default function ApprovalDetailPage() {
         await loadApproval();
         setComment('');
       } else {
-        alert(result.error || 'Failed to process approval');
+        toast.error(result.error || 'Failed to process approval');
       }
     } catch (err) {
-      alert('Failed to process approval');
+      toast.error('Failed to process approval');
     } finally {
       setProcessing(false);
     }
@@ -108,7 +109,7 @@ export default function ApprovalDetailPage() {
   async function handleCancel() {
     if (!approval) return;
     
-    if (!confirm('Are you sure you want to cancel this approval request?')) return;
+    if (!window.confirm('Are you sure you want to cancel this approval request?')) return;
     
     setProcessing(true);
     
@@ -127,10 +128,10 @@ export default function ApprovalDetailPage() {
       if (result.success) {
         router.push('/crm/approvals');
       } else {
-        alert(result.error || 'Failed to cancel approval');
+        toast.error(result.error || 'Failed to cancel approval');
       }
     } catch (err) {
-      alert('Failed to cancel approval');
+      toast.error('Failed to cancel approval');
     } finally {
       setProcessing(false);
     }

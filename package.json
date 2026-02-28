@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "check:conflicts": "node scripts/check-merge-conflicts.js",
-    "build": "npm run check:conflicts && vite build",
+    "build": "npm run check:conflicts && turbo build",
     "build:shared": "npm run check:conflicts && npm run build --workspace=@crm-eco/shared",
     "build:crm": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/crm",
     "build:admin": "npm run check:conflicts && npm run build:shared && npm run build --workspace=@crm-eco/admin",

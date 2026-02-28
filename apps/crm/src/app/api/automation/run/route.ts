@@ -123,6 +123,32 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const supabase = await createClient();
+
+    // Verify workflow belongs to user's org
+    const { data: workflow } = await supabase
+      .from('crm_workflows')
+      .select('id')
+      .eq('id', workflowId)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (!workflow) {
+      return NextResponse.json({ error: 'Workflow not found' }, { status: 404 });
+    }
+
+    // Verify record belongs to user's org
+    const { data: record } = await supabase
+      .from('crm_records')
+      .select('id')
+      .eq('id', recordId)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (!record) {
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+    }
+
     // Test the workflow
     const result = await testWorkflow(workflowId, recordId);
 

@@ -113,7 +113,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
 
     if (chargeResult.success && chargeResult.transactionId) {
       // Payment succeeded - create transaction record
-      await (supabase
+      const { error: txnInsertErr } = await (supabase
         .from('billing_transactions') as any)
         .insert({
           organization_id: profile.organization_id,
@@ -130,8 +130,12 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           processed_at: new Date().toISOString(),
         });
 
+      if (txnInsertErr) {
+        console.error('[BILLING] Failed to insert retry transaction record:', txnInsertErr);
+      }
+
       // Mark failure as resolved
-      await (supabase
+      const { error: resolveErr } = await (supabase
         .from('billing_failures') as any)
         .update({
           resolved: true,
@@ -141,6 +145,10 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           retry_scheduled: false,
         })
         .eq('id', failureId);
+
+      if (resolveErr) {
+        console.error('[BILLING] Failed to mark billing failure as resolved:', resolveErr);
+      }
 
       return {
         success: true,
@@ -157,7 +165,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       const nextRetryDate = new Date();
       nextRetryDate.setDate(nextRetryDate.getDate() + nextRetryDays);
 
-      await (supabase
+      const { error: retryUpdateErr } = await (supabase
         .from('billing_failures') as any)
         .update({
           retry_attempt: newRetryAttempt,
@@ -169,8 +177,12 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
         })
         .eq('id', failureId);
 
+      if (retryUpdateErr) {
+        console.error('[BILLING] Failed to update retry attempt:', retryUpdateErr);
+      }
+
       // Create failed transaction record
-      await (supabase
+      const { error: failTxnErr } = await (supabase
         .from('billing_transactions') as any)
         .insert({
           organization_id: profile.organization_id,
@@ -186,6 +198,10 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           description: `Retry payment attempt ${newRetryAttempt} failed`,
           processed_at: new Date().toISOString(),
         });
+
+      if (failTxnErr) {
+        console.error('[BILLING] Failed to insert failed transaction record:', failTxnErr);
+      }
 
       return {
         success: false,

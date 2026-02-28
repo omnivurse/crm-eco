@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('automation_rules')
       .select('*')
+      .eq('org_id', profile.organization_id)
       .order('created_at', { ascending: false });
     
     if (activeOnly) {

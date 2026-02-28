@@ -351,7 +351,11 @@ export default function SequenceDetailPage() {
   }
 
   if (!sequence) {
-    return null;
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-muted-foreground">Sequence not found or has been deleted.</p>
+      </div>
+    );
   }
 
   return (

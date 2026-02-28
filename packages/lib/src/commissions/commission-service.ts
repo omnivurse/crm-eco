@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../types';
 
@@ -383,7 +384,7 @@ export class CommissionService {
     const newTeam = (current.team_production || 0) + update.addTeam;
     const newLifetime = (current.lifetime_production || 0) + update.addPersonal;
 
-    await (this.supabase as any)
+    const { error: updateError } = await (this.supabase as any)
       .from('advisors')
       .update({
         personal_production: newPersonal,
@@ -391,6 +392,12 @@ export class CommissionService {
         lifetime_production: newLifetime,
       })
       .eq('id', update.advisorId);
+
+    if (updateError) {
+      console.error('[COMMISSIONS] Failed to update advisor production:', {
+        advisorId: update.advisorId, error: updateError.message,
+      });
+    }
   }
 
   /**

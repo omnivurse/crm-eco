@@ -41,9 +41,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Verify the record belongs to the user's org before using admin client
+    const { data: recordCheck } = await supabase
+      .from('crm_records')
+      .select('id')
+      .eq('id', recordId)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (!recordCheck) {
+      return NextResponse.json({ success: false, error: 'Record not found' }, { status: 404 });
+    }
+
     // Use admin client to perform conversion
     const adminClient = createAdminClient();
-    
+
     // Call the conversion function
     const { data, error } = await adminClient.rpc('convert_lead_to_member', {
       p_lead_record_id: recordId,
