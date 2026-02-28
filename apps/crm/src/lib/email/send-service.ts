@@ -328,6 +328,7 @@ async function sendViaSendGrid(
 ): Promise<SendEmailResult> {
   const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
     method: 'POST',
+    signal: AbortSignal.timeout(30_000),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -372,6 +373,7 @@ async function sendViaResend(
 ): Promise<SendEmailResult> {
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
+    signal: AbortSignal.timeout(30_000),
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
@@ -408,6 +410,7 @@ async function sendViaTwilio(
     `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
     {
       method: 'POST',
+      signal: AbortSignal.timeout(30_000),
       headers: {
         'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',

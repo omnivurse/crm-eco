@@ -50,6 +50,14 @@ export async function POST(request: NextRequest) {
     const supabase = createServiceClient() as any;
     const resend = new Resend(apiKey);
 
+    // Recover stale 'sending' items that were orphaned by a crashed worker.
+    // If an item has been in 'sending' for > 5 minutes, it's stuck — reset to 'pending'.
+    await supabase
+      .from('notification_queue')
+      .update({ status: 'pending' })
+      .eq('status', 'sending')
+      .lt('updated_at', new Date(Date.now() - 5 * 60_000).toISOString());
+
     // Atomically claim pending emails using FOR UPDATE SKIP LOCKED
     // This prevents duplicate sends when multiple cron workers run concurrently
     const { data: queuedEmails, error: fetchError } = await supabase
@@ -161,13 +169,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const allFailed = sent === 0 && failed > 0;
     return NextResponse.json({
-      success: true,
+      success: !allFailed,
       processed: queuedEmails.length,
       sent,
       failed,
       timestamp: new Date().toISOString(),
-    });
+    }, allFailed ? { status: 500 } : {});
   } catch (error) {
     console.error('Error processing email queue:', error);
     return NextResponse.json(
