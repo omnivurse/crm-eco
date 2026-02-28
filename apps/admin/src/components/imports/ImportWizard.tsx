@@ -529,7 +529,7 @@ export function ImportWizard({
                     </div>
                     <ArrowLeft className="w-4 h-4 text-slate-400" />
                     <Select
-                      value={Object.entries(fieldMapping).find(([_, target]) => target === field.field)?.[0] || ''}
+                      value={Object.entries(fieldMapping).find(([_, target]) => target === field.field)?.[0] || '__unmapped__'}
                       onValueChange={(sourceCol) => {
                         const newMapping = { ...fieldMapping };
                         // Remove old mapping for this target
@@ -537,7 +537,7 @@ export function ImportWizard({
                           if (newMapping[key] === field.field) delete newMapping[key];
                         });
                         // Add new mapping
-                        if (sourceCol) {
+                        if (sourceCol && sourceCol !== '__unmapped__') {
                           newMapping[sourceCol] = field.field;
                         }
                         setFieldMapping(newMapping);
@@ -547,7 +547,7 @@ export function ImportWizard({
                         <SelectValue placeholder="Select column" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">-- Not mapped --</SelectItem>
+                        <SelectItem value="__unmapped__">-- Not mapped --</SelectItem>
                         {sourceColumns.map(col => (
                           <SelectItem key={col} value={col}>{col}</SelectItem>
                         ))}

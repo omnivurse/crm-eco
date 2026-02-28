@@ -36,7 +36,7 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const origin = request.headers.get('origin') || '';
   const allowedOrigins = [
-    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
     process.env.NEXT_PUBLIC_WEBSITE_URL,
     'https://payitforwardhealth.com',
     'https://www.payitforwardhealth.com',
@@ -360,7 +360,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin') || '';
   const allowedOrigins = [
-    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
     process.env.NEXT_PUBLIC_WEBSITE_URL,
     'https://payitforwardhealth.com',
     'https://www.payitforwardhealth.com',

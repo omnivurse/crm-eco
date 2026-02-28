@@ -145,7 +145,7 @@ export function ConditionBuilder({
               <SelectValue placeholder="Field" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="" disabled>Select field</SelectItem>
+              <SelectItem value="__placeholder__" disabled>Select field</SelectItem>
               {allFields.map((field) => (
                 <SelectItem key={field.key} value={field.key}>
                   {field.label}

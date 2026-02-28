@@ -464,11 +464,11 @@ export function ImportWizardClient({
                         <TableCell className="font-medium">{col}</TableCell>
                         <TableCell>
                           <Select
-                            value={columnMapping[col] || ''}
+                            value={columnMapping[col] || '__skip__'}
                             onValueChange={(value) => {
                               setColumnMapping((prev) => ({
                                 ...prev,
-                                [col]: value,
+                                [col]: value === '__skip__' ? '' : value,
                               }));
                             }}
                           >
@@ -476,7 +476,7 @@ export function ImportWizardClient({
                               <SelectValue placeholder="Select field..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">Skip this column</SelectItem>
+                              <SelectItem value="__skip__">Skip this column</SelectItem>
                               {targetFields.map((field) => (
                                 <SelectItem key={field.key} value={field.key}>
                                   {field.label}

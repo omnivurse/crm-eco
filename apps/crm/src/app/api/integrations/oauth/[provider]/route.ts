@@ -77,7 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Build redirect URI
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/oauth/callback`;
+    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL}/api/integrations/oauth/callback`;
 
     // Store OAuth state in database
     const { error: stateError } = await supabase.from('oauth_states').insert({

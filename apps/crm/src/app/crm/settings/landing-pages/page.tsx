@@ -673,12 +673,12 @@ export default function LandingPagesPage() {
                 <>
                   <div className="space-y-2">
                     <Label>Default Advisor</Label>
-                    <Select value={form.default_advisor_id} onValueChange={(v) => setForm({ ...form, default_advisor_id: v })}>
+                    <Select value={form.default_advisor_id || '__auto__'} onValueChange={(v) => setForm({ ...form, default_advisor_id: v === '__auto__' ? '' : v })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Auto-assign..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Auto-assign</SelectItem>
+                        <SelectItem value="__auto__">Auto-assign</SelectItem>
                         {advisors.map((advisor) => (
                           <SelectItem key={advisor.id} value={advisor.id}>{advisor.name}</SelectItem>
                         ))}
