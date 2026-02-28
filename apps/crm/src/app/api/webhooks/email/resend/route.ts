@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     // Find the sent email by provider_message_id (Resend email ID)
     const { data: sentEmail } = await supabase
       .from('sent_emails')
-      .select('id')
+      .select('id, organization_id, recipient_email')
       .eq('provider_message_id', emailId)
       .single();
 
@@ -141,6 +141,20 @@ export async function POST(request: NextRequest) {
       },
       occurred_at: occurredAt,
     });
+
+    // Suppress future sends on hard bounce or complaint
+    if ((ourEventType === 'bounced' || ourEventType === 'complained') && sentEmail.recipient_email && sentEmail.organization_id) {
+      await supabase
+        .from('email_unsubscribes')
+        .upsert({
+          org_id: sentEmail.organization_id,
+          email: sentEmail.recipient_email,
+          reason: ourEventType === 'bounced'
+            ? `Hard bounce: ${event.data.bounce?.message || 'unknown'}`
+            : `Spam complaint: ${event.data.complaint?.type || 'unknown'}`,
+          source: 'webhook',
+        }, { onConflict: 'org_id,email' });
+    }
 
     return NextResponse.json({ received: true, matched: true });
   } catch (error) {
