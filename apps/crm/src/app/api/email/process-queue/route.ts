@@ -18,6 +18,11 @@ function createServiceClient() {
 
 const BATCH_SIZE = 50;
 
+// Warn at startup if CRON_SECRET is missing — all cron-triggered processing will fail
+if (!process.env.CRON_SECRET) {
+  console.warn('[email/process-queue] CRON_SECRET is not set — cron requests will be rejected');
+}
+
 /**
  * POST /api/email/process-queue
  * Process pending email notifications from the notification_queue table.
@@ -29,7 +34,8 @@ export async function POST(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      console.error('[email/process-queue] CRON_SECRET env var is not configured — rejecting request');
+      return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
     }
 
     const expected = Buffer.from(`Bearer ${cronSecret}`);
@@ -115,7 +121,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Log to sent_emails and mark queue item as sent
-        const { data: sentEmail } = await supabase
+        const { data: sentEmail, error: insertError } = await supabase
           .from('sent_emails')
           .insert({
             organization_id: item.organization_id,
@@ -136,12 +142,27 @@ export async function POST(request: NextRequest) {
           .select('id')
           .single();
 
+        if (insertError) {
+          console.error(`Sent email ${item.id} but failed to record:`, insertError.message);
+          await supabase
+            .from('notification_queue')
+            .update({
+              status: 'sent',
+              sent_at: new Date().toISOString(),
+              sent_email_id: null,
+              error_message: `Sent via Resend (${sendResult?.id}) but tracking insert failed: ${insertError.message}`,
+            })
+            .eq('id', item.id);
+          failed++;
+          continue;
+        }
+
         await supabase
           .from('notification_queue')
           .update({
             status: 'sent',
             sent_at: new Date().toISOString(),
-            sent_email_id: sentEmail?.id || null,
+            sent_email_id: sentEmail.id,
           })
           .eq('id', item.id);
 
