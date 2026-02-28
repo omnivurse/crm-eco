@@ -127,6 +127,18 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         text: params.body_text,
         reply_to: replyTo,
       });
+    } else if (process.env.RESEND_API_KEY) {
+      // Fallback to system Resend API key when no org integration is configured
+      result = await sendViaResend(process.env.RESEND_API_KEY, {
+        from: `${fromName} <${fromEmail}>`,
+        to: toEmails,
+        cc: params.cc,
+        bcc: params.bcc,
+        subject: params.subject,
+        html: params.body_html,
+        text: params.body_text,
+        reply_to: replyTo,
+      });
     } else {
       return {
         success: false,

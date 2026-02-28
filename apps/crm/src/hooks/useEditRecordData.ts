@@ -26,7 +26,6 @@ interface Field {
   field_type: string;
   is_required: boolean;
   options?: string[];
-  placeholder?: string;
 }
 
 export interface EditRecordData {
@@ -67,10 +66,9 @@ async function fetchRecordWithModule(recordId: string): Promise<RecordData | nul
 async function fetchEditFields(moduleId: string): Promise<Field[]> {
   const { data, error } = await supabase
     .from('crm_fields')
-    .select('id, key, label, field_type, is_required, options, placeholder')
+    .select('id, key, label, field_type:type, is_required:required, options')
     .eq('module_id', moduleId)
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true });
+    .order('display_order', { ascending: true });
 
   if (error) throw error;
   return (data || []) as Field[];
