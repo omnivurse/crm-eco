@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@crm-eco/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import type { User, SupabaseClient } from '@supabase/supabase-js';
 
 interface AdminProfile {
   organization_id: string;
   full_name: string | null;
 }
 
-const supabase = createClient();
+// Use untyped client for documents module since doc_* tables
+// are not yet in the generated Database types
+const supabase: SupabaseClient = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 export function useAdminAuth() {
   const [user, setUser] = useState<User | null>(null);
