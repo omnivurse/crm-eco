@@ -17,3 +17,55 @@
     font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 }
+
+/* ============================================================
+   LOGIN HERO - Gradient Mesh Animations
+   ============================================================ */
+
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+  mix-blend-mode: normal;
+  will-change: transform;
+}
+
+@keyframes login-blob-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(60px, -40px) scale(1.08); }
+  50%      { transform: translate(-30px, 50px) scale(0.95); }
+  75%      { transform: translate(40px, 20px) scale(1.04); }
+}
+
+@keyframes login-blob-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(-50px, 30px) scale(1.05); }
+  50%      { transform: translate(40px, -60px) scale(0.97); }
+  75%      { transform: translate(-20px, -30px) scale(1.02); }
+}
+
+@keyframes login-blob-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(70px, 40px) scale(1.06); }
+  66%      { transform: translate(-60px, -20px) scale(0.94); }
+}
+
+@keyframes login-blob-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20%      { transform: translate(-40px, -50px) scale(1.03); }
+  40%      { transform: translate(30px, 60px) scale(0.96); }
+  60%      { transform: translate(50px, -30px) scale(1.07); }
+  80%      { transform: translate(-60px, 20px) scale(0.98); }
+}
+
+.login-blob-drift-1 { animation: login-blob-drift-1 14s ease-in-out infinite; }
+.login-blob-drift-2 { animation: login-blob-drift-2 18s ease-in-out infinite; }
+.login-blob-drift-3 { animation: login-blob-drift-3 12s ease-in-out infinite; }
+.login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .login-blob {
+    animation: none !important;
+  }
+}

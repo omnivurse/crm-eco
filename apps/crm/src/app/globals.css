@@ -81,3 +81,85 @@
     background: rgba(15, 23, 42, 0.95) !important;
   }
 }
+
+/* ============================================================
+   LOGIN HERO - Gradient Mesh Animations
+   Exempted from global animation disable for visual impact.
+   Only rendered on desktop (hidden on mobile via layout).
+   ============================================================ */
+
+/* Exempt login elements from the global animation kill rule */
+.login-blob,
+.login-quote-transition {
+  animation-duration: revert !important;
+  animation-iteration-count: revert !important;
+  transition-duration: revert !important;
+}
+
+/* Login blob base styles */
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.6;
+  mix-blend-mode: normal;
+  will-change: transform;
+}
+
+@keyframes login-blob-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(60px, -40px) scale(1.08); }
+  50%      { transform: translate(-30px, 50px) scale(0.95); }
+  75%      { transform: translate(40px, 20px) scale(1.04); }
+}
+
+@keyframes login-blob-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(-50px, 30px) scale(1.05); }
+  50%      { transform: translate(40px, -60px) scale(0.97); }
+  75%      { transform: translate(-20px, -30px) scale(1.02); }
+}
+
+@keyframes login-blob-drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(70px, 40px) scale(1.06); }
+  66%      { transform: translate(-60px, -20px) scale(0.94); }
+}
+
+@keyframes login-blob-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  20%      { transform: translate(-40px, -50px) scale(1.03); }
+  40%      { transform: translate(30px, 60px) scale(0.96); }
+  60%      { transform: translate(50px, -30px) scale(1.07); }
+  80%      { transform: translate(-60px, 20px) scale(0.98); }
+}
+
+.login-blob-drift-1 { animation: login-blob-drift-1 14s ease-in-out infinite !important; }
+.login-blob-drift-2 { animation: login-blob-drift-2 18s ease-in-out infinite !important; }
+.login-blob-drift-3 { animation: login-blob-drift-3 12s ease-in-out infinite !important; }
+.login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite !important; }
+
+/* Quote crossfade transitions */
+.login-quote-transition {
+  transition: opacity 1s ease-in-out, transform 1s ease-in-out !important;
+}
+
+.login-quote-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.login-quote-inactive {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* Reduced motion: disable login animations */
+@media (prefers-reduced-motion: reduce) {
+  .login-blob {
+    animation: none !important;
+  }
+  .login-quote-transition {
+    transition: none !important;
+  }
+}
