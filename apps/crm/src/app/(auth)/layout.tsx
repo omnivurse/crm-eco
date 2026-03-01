@@ -1,4 +1,4 @@
-import TwoPathsScene from '@/components/auth/TwoPathsScene';
+import LoginHero from '@/components/auth/LoginHero';
 
 export default function AuthLayout({
   children,
@@ -7,9 +7,9 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-row">
-      {/* Left: Two Paths illustration — hidden on mobile, 55-58% on desktop */}
-      <div className="hidden lg:flex lg:w-[55%] xl:w-[58%] relative bg-[#0f0f1a]">
-        <TwoPathsScene />
+      {/* Left: Hero image with brand gradient — hidden on mobile, 55-58% on desktop */}
+      <div className="hidden lg:flex lg:w-[55%] xl:w-[58%] relative bg-[#003560]">
+        <LoginHero />
       </div>
 
       {/* Right: form panel — full width mobile, 45-42% desktop */}

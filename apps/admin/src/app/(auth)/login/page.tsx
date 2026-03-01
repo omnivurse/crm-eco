@@ -7,108 +7,15 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Button, Input, Label } from '@crm-eco/ui';
 import {
   Shield,
-  Activity,
-  Users,
-  Settings,
-  Database,
-  BarChart3,
   Loader2,
   Lock,
   Eye,
   EyeOff,
   Mail,
   Square,
-  Sparkles,
-  Zap,
-  Building2,
-  UserCog,
 } from 'lucide-react';
 import Image from 'next/image';
-
-// Static Admin Visual (no animations)
-function StaticAdminVisual() {
-  return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      {/* Static ambient glow layers - purple/blue for admin */}
-      <div className="absolute w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px]" />
-      <div className="absolute w-[300px] h-[300px] bg-blue-500/15 rounded-full blur-[80px]" />
-      <div className="absolute w-[200px] h-[200px] bg-purple-400/20 rounded-full blur-[60px]" />
-
-      {/* Core nucleus - Company Logo */}
-      <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-purple-400/30 to-blue-500/20 backdrop-blur-xl border border-purple-400/40 flex items-center justify-center z-20 shadow-[0_0_60px_20px_rgba(147,51,234,0.3)]">
-        <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-[0_0_30px_10px_rgba(147,51,234,0.4)] overflow-hidden">
-          <Image
-            src="/logo-icon.png"
-            alt="Pay It Forward"
-            width={48}
-            height={48}
-            className="w-12 h-12 object-contain"
-          />
-        </div>
-      </div>
-
-      {/* Inner orbit ring with static icons */}
-      <div className="absolute w-[220px] h-[220px]">
-        <div className="absolute inset-0 rounded-full border border-purple-400/20" />
-        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-          <div className="relative bg-slate-900 p-2.5 rounded-full border border-purple-400/50 shadow-[0_0_20px_5px_rgba(147,51,234,0.3)]">
-            <Shield className="w-4 h-4 text-purple-400" />
-          </div>
-        </div>
-        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
-          <div className="relative bg-slate-900 p-2.5 rounded-full border border-blue-400/50 shadow-[0_0_20px_5px_rgba(96,165,250,0.3)]">
-            <Settings className="w-4 h-4 text-blue-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Middle orbit ring */}
-      <div className="absolute w-[360px] h-[360px]">
-        <div className="absolute inset-0 rounded-full border border-dashed border-purple-500/10" />
-        <div className="absolute top-8 -left-2">
-          <div className="relative bg-slate-900 p-3 rounded-full border border-indigo-400/50 shadow-[0_0_20px_5px_rgba(129,140,248,0.3)]">
-            <Users className="w-5 h-5 text-indigo-400" />
-          </div>
-        </div>
-        <div className="absolute bottom-8 -right-2">
-          <div className="relative bg-slate-900 p-3 rounded-full border border-emerald-400/50 shadow-[0_0_20px_5px_rgba(52,211,153,0.3)]">
-            <Database className="w-5 h-5 text-emerald-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/2 -left-3 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-2.5 rounded-full border border-violet-400/50 shadow-[0_0_20px_5px_rgba(167,139,250,0.3)]">
-            <Sparkles className="w-4 h-4 text-violet-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Outer orbit ring */}
-      <div className="absolute w-[500px] h-[500px]">
-        <div className="absolute inset-0 rounded-full border border-white/5" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-full border border-amber-400/50 shadow-[0_0_20px_5px_rgba(251,191,36,0.3)]">
-            <Building2 className="w-5 h-5 text-amber-400" />
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-full border border-pink-400/50 shadow-[0_0_20px_5px_rgba(244,114,182,0.3)]">
-            <BarChart3 className="w-5 h-5 text-pink-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-2.5 rounded-full border border-cyan-400/50 shadow-[0_0_20px_5px_rgba(34,211,238,0.3)]">
-            <UserCog className="w-4 h-4 text-cyan-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-2.5 rounded-full border border-lime-400/50 shadow-[0_0_20px_5px_rgba(163,230,53,0.3)]">
-            <Zap className="w-4 h-4 text-lime-400" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+import LoginHero from '@/components/auth/LoginHero';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -196,31 +103,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Side - Premium Visuals */}
-      <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-slate-950">
-        {/* Static gradient background - purple/blue for admin */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-purple-950" />
-
-        {/* Mesh gradient overlay */}
-        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_top_right,rgba(147,51,234,0.3),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(96,165,250,0.2),transparent_50%)]" />
-
-        {/* Grid pattern */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:50px_50px]" />
-
-        <StaticAdminVisual />
-
-          {/* Bottom branding */}
-          <div className="absolute bottom-12 left-12 z-10">
-            <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
-              <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Admin Portal</span>
-              <br />
-              <span className="text-white/90">Pay It Forward</span>
-            </h1>
-            <p className="text-slate-400 text-lg max-w-md">
-              System administration and management console
-            </p>
-          </div>
-        </div>
+      {/* Left Side - Hero Image */}
+      <div className="hidden lg:flex relative overflow-hidden bg-[#003560]">
+        <LoginHero />
+      </div>
 
         {/* Right Side - Login Form */}
         <div className="flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100">
