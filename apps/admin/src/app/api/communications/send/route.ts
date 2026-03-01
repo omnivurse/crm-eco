@@ -60,6 +60,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Guard: ensure email env vars are configured
+    if (!process.env.RESEND_API_KEY) {
+      return NextResponse.json(
+        { error: 'Email service not configured. RESEND_API_KEY environment variable is missing.' },
+        { status: 503 }
+      );
+    }
+
     // Create email service
     const emailService = createEmailService(supabase as any, profile.organization_id);
 
@@ -98,9 +106,10 @@ export async function POST(request: NextRequest) {
       sentEmailId: result.sentEmailId,
     });
   } catch (error) {
-    console.error('Email send API error:', error);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Email send API error:', message, error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: message },
       { status: 500 }
     );
   }
