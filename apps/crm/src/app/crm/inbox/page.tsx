@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import {
@@ -31,6 +32,7 @@ type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
 
 export default function InboxPage() {
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
+  const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
   const [conversations, setConversations] = useState<InboxConversation[]>([]);
@@ -42,6 +44,15 @@ export default function InboxPage() {
   const [statusFilter, setStatusFilter] = useState<ConversationStatus | 'active'>('active');
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [composeInitialSubject, setComposeInitialSubject] = useState<string | undefined>();
+  const [composeInitialBody, setComposeInitialBody] = useState<string | undefined>();
+
+  // Auto-open compose when ?compose=true
+  useEffect(() => {
+    if (searchParams?.get('compose') === 'true') {
+      setShowComposeModal(true);
+    }
+  }, [searchParams]);
 
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 300 });
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -228,7 +239,15 @@ export default function InboxPage() {
   // Callback for ReplyForm after sending
   const handleReplySent = useCallback((conversationId: string) => {
     loadMessages(conversationId);
-  }, [loadMessages]);
+    loadConversations();
+  }, [loadMessages, loadConversations]);
+
+  // Forward handler: open compose modal with forwarded content
+  const handleForward = useCallback((subject: string, body: string) => {
+    setComposeInitialSubject(subject);
+    setComposeInitialBody(body);
+    setShowComposeModal(true);
+  }, []);
 
   // Filter change handlers
   const handleFilterChange = useCallback((f: FilterType) => {
@@ -326,9 +345,11 @@ export default function InboxPage() {
               />
               <ReplyForm
                 selectedConversation={selectedConversation}
+                messages={messages}
                 authProfile={authProfile!}
                 authUserEmail={authUser?.email || ''}
                 onReplySent={handleReplySent}
+                onForward={handleForward}
               />
             </>
           ) : (
@@ -345,10 +366,18 @@ export default function InboxPage() {
       {authProfile && authUser && (
         <ComposeModal
           open={showComposeModal}
-          onOpenChange={setShowComposeModal}
+          onOpenChange={(open) => {
+            setShowComposeModal(open);
+            if (!open) {
+              setComposeInitialSubject(undefined);
+              setComposeInitialBody(undefined);
+            }
+          }}
           authProfile={authProfile}
           authUserEmail={authUser.email || ''}
           onMessageSent={loadConversations}
+          initialSubject={composeInitialSubject}
+          initialBody={composeInitialBody}
         />
       )}
     </div>
