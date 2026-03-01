@@ -14,6 +14,7 @@ const actSchema = z.object({
     'follow_up',
     'at_risk_deal',
     'unread_message',
+    'new_lead',
   ]),
   action: z.enum([
     'approve',
@@ -179,6 +180,32 @@ export async function POST(request: NextRequest) {
       }
 
       // 'open' / 'reply' handled client-side
+      return NextResponse.json({ success: true } satisfies WorkqueueActResponse);
+    }
+
+    // -------------------------------------------------------------------
+    // Lead actions (dismiss updates stage to "Contacted")
+    // -------------------------------------------------------------------
+    if (itemType === 'new_lead') {
+      if (action === 'dismiss') {
+        const supabase = await createCrmClient();
+        const { error } = await supabase
+          .from('crm_records')
+          .update({ stage: 'Contacted', updated_at: new Date().toISOString() })
+          .eq('id', itemId)
+          .eq('org_id', profile.organization_id);
+
+        if (error) {
+          return NextResponse.json(
+            { success: false, error: error.message } satisfies WorkqueueActResponse,
+            { status: 500 },
+          );
+        }
+
+        return NextResponse.json({ success: true } satisfies WorkqueueActResponse);
+      }
+
+      // 'open' handled client-side
       return NextResponse.json({ success: true } satisfies WorkqueueActResponse);
     }
 

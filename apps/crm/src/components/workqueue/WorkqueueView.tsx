@@ -115,6 +115,7 @@ const TAB_TYPE_MAP: Record<WorkqueueTab, WorkqueueItem['type'][] | null> = {
   all: null,
   approvals: ['pending_approval'],
   tasks: ['overdue_task', 'today_task', 'follow_up'],
+  leads: ['new_lead'],
   deals: ['at_risk_deal'],
   messages: ['unread_message'],
 };
@@ -138,6 +139,7 @@ export function WorkqueueView() {
     followUps: 0,
     atRiskDeals: 0,
     messages: 0,
+    newLeads: 0,
     total: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -251,7 +253,7 @@ export function WorkqueueView() {
   return (
     <div className="space-y-6">
       {/* Summary stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         {STAT_CARDS.map((stat) => {
           const Icon = stat.icon;
           const count = summary[stat.key] as number;
@@ -306,6 +308,10 @@ export function WorkqueueView() {
             <TabsTrigger value="tasks">
               <Clock className="w-3.5 h-3.5 mr-1.5" />
               Tasks & Follow-ups
+            </TabsTrigger>
+            <TabsTrigger value="leads">
+              <UserPlus className="w-3.5 h-3.5 mr-1.5" />
+              Leads
             </TabsTrigger>
             <TabsTrigger value="deals">
               <TrendingDown className="w-3.5 h-3.5 mr-1.5" />
