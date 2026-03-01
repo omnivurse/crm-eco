@@ -33,7 +33,7 @@ interface EmailTemplate {
   subject: string;
   body_html: string;
   body_text: string | null;
-  variables: { name: string }[];
+  available_variables: string[];
 }
 
 interface Member {
@@ -99,7 +99,7 @@ export default function ComposeEmailPage() {
     // Load templates
     const { data: templatesData } = await (supabase as any)
       .from('email_templates')
-      .select('id, name, slug, subject, body_html, body_text, variables')
+      .select('id, name, slug, subject, body_html, body_text, available_variables')
       .eq('organization_id', profile.organization_id)
       .eq('is_active', true)
       .order('name');
@@ -305,21 +305,21 @@ export default function ComposeEmailPage() {
                     </Select>
                   </div>
 
-                  {selectedTemplate && selectedTemplate.variables && selectedTemplate.variables.length > 0 && (
+                  {selectedTemplate && selectedTemplate.available_variables && selectedTemplate.available_variables.length > 0 && (
                     <div className="p-4 bg-slate-50 rounded-lg">
                       <p className="text-sm font-medium mb-3">Template Variables</p>
                       <div className="grid grid-cols-2 gap-3">
-                        {selectedTemplate.variables.map((v: any) => (
-                          <div key={v.name}>
-                            <Label className="text-xs">{v.name}</Label>
+                        {selectedTemplate.available_variables.map((varName: string) => (
+                          <div key={varName}>
+                            <Label className="text-xs">{varName}</Label>
                             <Input
                               size={1}
-                              value={formData.variables[v.name] || ''}
+                              value={formData.variables[varName] || ''}
                               onChange={(e) => setFormData(prev => ({
                                 ...prev,
-                                variables: { ...prev.variables, [v.name]: e.target.value },
+                                variables: { ...prev.variables, [varName]: e.target.value },
                               }))}
-                              placeholder={`Enter ${v.name}`}
+                              placeholder={`Enter ${varName}`}
                             />
                           </div>
                         ))}
