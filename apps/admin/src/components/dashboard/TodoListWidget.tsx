@@ -90,6 +90,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
 
   const fetchTasks = useCallback(async () => {
     try {
+      // Try full query with assignee join first
       const { data, error } = await supabase
         .from('tasks')
         .select(`
@@ -109,7 +110,22 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
         .order('due_date', { ascending: true, nullsFirst: false })
         .limit(8);
 
-      if (error) throw error;
+      if (error) {
+        // Fallback: query without the join (assignee_id column or FK may not exist yet)
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('tasks')
+          .select('id, title, description, status, priority, due_date, created_at')
+          .eq('user_id', profileId)
+          .neq('status', 'completed')
+          .order('priority', { ascending: false })
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .limit(8);
+
+        if (fallbackError) throw fallbackError;
+        setTasks((fallbackData || []) as unknown as Task[]);
+        return;
+      }
+
       setTasks((data || []) as unknown as Task[]);
     } catch (error) {
       console.error('Error fetching tasks:', error);

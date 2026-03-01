@@ -35,46 +35,46 @@ const navSections: NavSection[] = [
   {
     title: null,
     items: [
-      { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+      { name: 'Dashboard', href: '/crm', icon: LayoutDashboard },
     ],
   },
   {
     title: 'People',
     items: [
       { name: 'Members', href: '/crm/members', icon: Users },
-      { name: 'Advisors', href: '/advisors', icon: UserCheck, roles: ['owner', 'admin', 'staff'] },
-      { name: 'Leads', href: '/leads', icon: UserPlus },
+      { name: 'Advisors', href: '/crm', icon: UserCheck, roles: ['owner', 'admin', 'staff'] },
+      { name: 'Leads', href: '/crm/leads', icon: UserPlus },
     ],
   },
   {
     title: 'Service',
     items: [
-      { name: 'Tickets', href: '/tickets', icon: Ticket },
+      { name: 'Tickets', href: '/crm', icon: Ticket },
     ],
   },
   {
     title: 'Needs',
     items: [
-      { name: 'Need Requests', href: '/needs', icon: HeartPulse },
+      { name: 'Need Requests', href: '/crm/needs', icon: HeartPulse },
     ],
   },
   {
     title: 'Enrollment',
     items: [
-      { name: 'Enrollments', href: '/enrollments', icon: ClipboardCheck },
+      { name: 'Enrollments', href: '/crm/enrollment', icon: ClipboardCheck },
       { name: 'New Enrollment', href: '/crm/enrollment?new=true', icon: FilePlus, roles: ['owner', 'admin', 'advisor'] },
     ],
   },
   {
     title: 'Operations',
     items: [
-      { name: 'Vendors', href: '/vendors', icon: Building2, roles: ['owner', 'admin', 'staff'] },
+      { name: 'Vendors', href: '/crm/vendors', icon: Building2, roles: ['owner', 'admin', 'staff'] },
     ],
   },
   {
     title: 'Admin',
     items: [
-      { name: 'Settings', href: '/settings', icon: Settings, roles: ['owner', 'admin'] },
+      { name: 'Settings', href: '/crm/settings', icon: Settings, roles: ['owner', 'admin'] },
     ],
   },
 ];
