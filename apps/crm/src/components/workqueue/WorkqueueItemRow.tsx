@@ -10,6 +10,7 @@ import {
   Bell,
   TrendingDown,
   MessageSquare,
+  UserPlus,
   Check,
   X,
   AlarmClock,
@@ -68,6 +69,12 @@ const TYPE_VISUALS: Record<WorkqueueItem['type'], TypeVisual> = {
     dot: 'bg-teal-400',
     badgeCls: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
   },
+  new_lead: {
+    icon: UserPlus,
+    label: 'Lead',
+    dot: 'bg-orange-400',
+    badgeCls: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -86,6 +93,8 @@ function getItemHref(item: WorkqueueItem): string {
       return item.recordId ? `/crm/r/${item.recordId}` : '/crm/pipeline';
     case 'unread_message':
       return `/crm/inbox/${item.id}`;
+    case 'new_lead':
+      return item.recordId ? `/crm/r/${item.recordId}` : '/crm/modules/leads';
     default:
       return '/crm';
   }
