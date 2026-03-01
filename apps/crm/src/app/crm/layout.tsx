@@ -1,3 +1,6 @@
+// All /crm/* routes are auth-protected and read cookies — force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 import { redirect } from 'next/navigation';
 import { CrmShell } from '@/components/crm/shell';
 import {
