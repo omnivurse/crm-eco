@@ -23,7 +23,7 @@ interface InvitationDetails {
   expiresAt: string;
 }
 
-type PageState = 'loading' | 'unauthenticated' | 'email-mismatch' | 'ready' | 'signup' | 'accepting' | 'success' | 'error';
+type PageState = 'loading' | 'unauthenticated' | 'check-email' | 'email-mismatch' | 'ready' | 'signup' | 'accepting' | 'success' | 'error';
 
 /** Extract token from URL fragment (#token=xxx) — never sent to servers */
 function getTokenFromHash(): string | null {
@@ -97,21 +97,42 @@ export default function AcceptInvitePage() {
     setSignupLoading(true);
     setError('');
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: signupEmail,
-        password: signupPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/accept-invite#token=${token}`,
-        },
+      // Use server-side signup API that bypasses enable_signup=false
+      // The server validates the invite token before creating the account
+      const res = await fetch('/api/team/invite/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password: signupPassword }),
       });
 
-      if (signUpError) {
-        setError(signUpError.message);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Sign up failed');
         setSignupLoading(false);
         return;
       }
 
-      // Re-validate after signup (user may be auto-confirmed)
+      if (data.needsSignIn) {
+        // Account created but couldn't auto-sign-in — sign in manually
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: signupEmail,
+          password: signupPassword,
+        });
+        if (signInError) {
+          setError('Account created but sign-in failed. Please try signing in.');
+          setSignupLoading(false);
+          return;
+        }
+      } else if (data.session) {
+        // Set the session from the server response
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      }
+
+      // Re-validate after signup (user is now authenticated)
       if (token) await validateToken(token);
     } catch {
       setError('Sign up failed');
@@ -208,6 +229,31 @@ export default function AcceptInvitePage() {
               <p className="text-slate-500 mb-6">{error}</p>
               <Button variant="outline" onClick={() => router.push('/crm-login')}>
                 Go to Login
+              </Button>
+            </div>
+          )}
+
+          {/* Check email — signup succeeded but needs email confirmation */}
+          {state === 'check-email' && invitation && (
+            <div className="text-center py-8">
+              <Mail className="w-12 h-12 mx-auto text-teal-500 mb-4" />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+                Check Your Email
+              </h2>
+              <p className="text-slate-500 mb-2">
+                We sent a confirmation link to <strong>{signupEmail}</strong>.
+              </p>
+              <p className="text-sm text-slate-400 mb-6">
+                Click the link in the email to confirm your account, then return here to accept your invitation to <strong>{invitation.organizationName}</strong>.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setState('unauthenticated');
+                  setError('');
+                }}
+              >
+                Back to Sign In
               </Button>
             </div>
           )}
