@@ -7,6 +7,8 @@ import { createBrowserClient } from '@supabase/ssr';
 import { Button, Input, Label } from '@crm-eco/ui';
 import {
   Shield,
+  Activity,
+  Stethoscope,
   Loader2,
   Lock,
   Eye,
@@ -112,10 +114,10 @@ export default function LoginPage() {
           <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
               <h2 className="text-3xl font-bold tracking-tight text-slate-800">
-                Admin Portal
+                Welcome back
               </h2>
               <p className="mt-2 text-slate-500">
-                Sign in to manage members, agents, and enrollments
+                Sign in to access your admin dashboard
               </p>
             </div>
 
@@ -215,19 +217,67 @@ export default function LoginPage() {
                   </>
                 ) : (
                   <>
-                    Sign in
+                    Sign in to Admin
                     <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                   </>
                 )}
               </Button>
+
+              <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-gradient-to-br from-slate-50 via-white to-slate-100 px-4 text-slate-400 text-xs uppercase tracking-widest">
+                    Need Admin Access?
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-14 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 rounded-xl transition-all shadow-sm"
+                onClick={() => window.location.href = 'mailto:support@payitforwardhealth.com'}
+              >
+                Contact Administrator
+              </Button>
             </form>
 
-            <div className="mt-8 text-center space-y-4">
-              <div className="flex items-center justify-center gap-2 text-purple-600 text-xs font-medium">
-                <Shield className="w-3.5 h-3.5" />
-                <span>Secured with enterprise-grade encryption</span>
+            <div className="mt-8 space-y-4">
+              {/* Security Certifications */}
+              <div className="flex items-center justify-center gap-4">
+                {/* HIPAA Badge */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
+                  <Shield className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-semibold text-emerald-700">HIPAA Compliant</span>
+                </div>
+                {/* Encryption Badge */}
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+                  <Lock className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-semibold text-blue-700">256-bit Encryption</span>
+                </div>
               </div>
-              <p className="text-slate-400 text-xs">
+
+              {/* MFA & Session Security */}
+              <div className="flex items-center justify-center gap-3 text-xs text-slate-500">
+                <span className="flex items-center gap-1">
+                  <Activity className="w-3.5 h-3.5 text-purple-500" />
+                  MFA Protected
+                </span>
+                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                <span className="flex items-center gap-1">
+                  <Stethoscope className="w-3.5 h-3.5 text-purple-500" />
+                  PHI Secure
+                </span>
+                <span className="w-1 h-1 rounded-full bg-slate-300" />
+                <span className="flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-purple-500" />
+                  Audit Logging
+                </span>
+              </div>
+
+              <p className="text-slate-400 text-xs text-center">
                 © 2026 Pay It Forward Health. All rights reserved.
               </p>
             </div>
