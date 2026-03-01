@@ -105,6 +105,12 @@ export interface InboxMessage {
   subject: string | null;
   body_text: string | null;
   body_html: string | null;
+  cc_addresses: Array<{ email: string; name?: string }>;
+  bcc_addresses: Array<{ email: string; name?: string }>;
+  reply_to_address: string | null;
+  message_id: string | null;
+  in_reply_to: string | null;
+  references_ids: string[] | null;
   attachments: Array<{
     filename: string;
     content_type: string;

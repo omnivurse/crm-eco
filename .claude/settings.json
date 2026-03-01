@@ -88,10 +88,22 @@
       "Bash(supabase db push)",
       "Read(//c/Program Files/Supabase/**)",
       "Bash(npx supabase db push)",
-      "Bash(npx supabase secrets set FROM_EMAIL=noreply@mail.payitforwardhealth.com)"
+      "Bash(npx supabase secrets set FROM_EMAIL=noreply@mail.payitforwardhealth.com)",
+      "Bash(grep -r \"CREATE TABLE.*sent_emails\\\\|CREATE TABLE.*email_domains\\\\|CREATE TABLE.*email_sender\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Bash(grep -r \"email_domains\\\\|email_sender_addresses\" /c/Users/User/Documents/GitHub/crm-eco/supabase/migrations/*.sql)",
+      "Bash(find \"c:\\\\Users\\\\User\\\\Documents\\\\GitHub\\\\crm-eco\\\\apps\\\\admin\\\\src\\\\app\\\\\\(dashboard\\)\\\\communications\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(xargs grep -l \"resend.*inbound\\\\|inbound.*resend\")",
+      "Bash(npx supabase migration repair 202603070010 --status reverted --linked)",
+      "Bash(npx supabase db execute --linked \"SELECT conname, pg_get_constraintdef\\(oid\\) FROM pg_constraint WHERE conrelid = ''email_templates''::regclass AND contype = ''c'';\")",
+      "Bash(npx supabase db dump --linked --schema public --table email_templates)",
+      "Bash(npx supabase db dump --linked -s public)",
+      "Bash(npx supabase db dump --linked -s public -f /tmp/schema_dump.sql)",
+      "Bash(npx supabase functions deploy email-intake)",
+      "Bash(npx supabase secrets set INTAKE_MODE=inbox DEFAULT_ORG_ID='')"
     ],
     "additionalDirectories": [
-      "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public"
+      "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public",
+      "c:\\Users\\User\\.claude\\plans"
     ]
   }
 }
