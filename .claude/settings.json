@@ -55,7 +55,25 @@
       "Bash(curl -L -o \"c:/Users/User/Documents/GitHub/crm-eco/apps/crm/public/login-hero-j.jpg\" \"https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=1920&q=80&fm=jpg&fit=crop\")",
       "Bash(curl -L -o \"c:/Users/User/Documents/GitHub/crm-eco/apps/crm/public/login-hero-k.jpg\" \"https://images.unsplash.com/photo-1491438590914-bc09fcaaf77a?w=1920&q=80&fm=jpg&fit=crop\")",
       "Bash(npm run build --workspace=apps/crm)",
-      "Bash(npm run build --workspace=apps/admin)"
+      "Bash(npm run build --workspace=apps/admin)",
+      "WebFetch(domain:crm.payitforwardhealth.com)",
+      "Bash(npm run build:crm)",
+      "Bash(npm run dev)",
+      "Bash(xargs grep -l \"\\\\.update\\(\")",
+      "Bash(grep -n \"router.refresh\\\\|invalidateQueries\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
+      "Bash(grep -n \"queryClient\\\\|useQueryClient\\\\|invalidate\\\\|setQueryData\\\\|mutate\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/client.tsx)",
+      "Bash(xargs basename -a)",
+      "Bash(grep -n \"queryClient\\\\|useQueryClient\\\\|invalidate\\\\|setQueryData\\\\|mutate\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
+      "Bash(grep -A5 -B5 \"revalidatePath\\\\|revalidateTag\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/api/crm/records/[id]/route.ts)",
+      "Bash(grep -n \"router.refresh\\(\\)\\\\|router.push\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
+      "Bash(grep -n \"router.push\\\\|router.refresh\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/client.tsx)",
+      "Bash(grep -B5 -A15 \"router.push.*router.refresh\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
+      "Bash(grep -B 5 \"RecordTable\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/modules/[moduleKey]/ModuleListClient.tsx)",
+      "Bash(grep -A 20 \"const response = await fetch\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
+      "Bash(grep -B 10 \"body: JSON.stringify\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
+      "Bash(npx tsc --noEmit -p apps/crm/tsconfig.json)",
+      "Bash(npx turbo typecheck --filter=@crm-eco/crm --filter=@crm-eco/admin)",
+      "Bash(npx tsc --noEmit)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public"
