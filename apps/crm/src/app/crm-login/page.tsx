@@ -18,8 +18,6 @@ import {
   Mail,
   Square,
 } from 'lucide-react';
-import Image from 'next/image';
-
 export const dynamic = 'force-dynamic';
 
 const HEALTHCARE_QUOTES = [
@@ -192,16 +190,6 @@ export default function CrmLoginPage() {
       <div className="flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100">
         <div className="w-full max-w-md space-y-8">
           <div className="text-center lg:text-left">
-            <div className="flex justify-center lg:justify-start mb-6">
-              <Image
-                src="/logo.png"
-                alt="Pay It Forward Health"
-                width={200}
-                height={80}
-                className="h-16 w-auto object-contain"
-                priority
-              />
-            </div>
             <h2 className="text-3xl font-bold tracking-tight text-brand-navy-800">
               Welcome back
             </h2>
