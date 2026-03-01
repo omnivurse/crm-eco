@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
@@ -9,11 +9,32 @@ function getCorsHeaders(req: Request): Record<string, string> {
     (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
   return {
     'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 }
 
-serve(async (req) => {
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+async function validateUser(authHeader: string): Promise<{ id: string } | null> {
+  const token = authHeader.replace('Bearer ', '').trim();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SERVICE_ROLE_KEY,
+      },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.id ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -24,7 +45,7 @@ serve(async (req) => {
   }
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -33,18 +54,14 @@ serve(async (req) => {
       return jsonResponse({ error: 'Missing authorization header' }, 401);
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const user = await validateUser(authHeader);
+    if (!user) {
       return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
-    const { data: profile } = await supabase
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('organization_id')
       .eq('user_id', user.id)
@@ -61,11 +78,6 @@ serve(async (req) => {
     if (!action) {
       return jsonResponse({ error: 'action is required' }, 400);
     }
-
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     const docIds: string[] = ids || [];
     const folderIds: string[] = folder_ids || [];
@@ -95,7 +107,6 @@ serve(async (req) => {
           affected += count || 0;
         }
 
-        // Audit log
         for (const id of docIds) {
           await adminClient.from('document_audit_log').insert({
             org_id: orgId, document_id: id, user_id: user.id, action: 'trash',
@@ -144,7 +155,6 @@ serve(async (req) => {
       }
 
       case 'delete': {
-        // Permanently delete — remove storage files first
         if (docIds.length > 0) {
           const { data: docs } = await adminClient
             .from('documents')
@@ -154,7 +164,6 @@ serve(async (req) => {
 
           if (docs) {
             for (const doc of docs) {
-              // Get all version paths
               const { data: versions } = await adminClient
                 .from('document_versions')
                 .select('storage_path')
@@ -165,13 +174,11 @@ serve(async (req) => {
                 await adminClient.storage.from('org-documents').remove(paths);
               }
 
-              // Audit log before deletion
               await adminClient.from('document_audit_log').insert({
                 org_id: orgId, document_id: doc.id, user_id: user.id, action: 'delete',
               });
             }
 
-            // Delete document records (cascades to versions, favorites, links)
             const { count } = await adminClient
               .from('documents')
               .delete()
@@ -203,7 +210,6 @@ serve(async (req) => {
           return jsonResponse({ error: 'target_folder_id is required for move' }, 400);
         }
 
-        // Validate target folder belongs to org (null = root)
         if (target_folder_id !== null) {
           const { data: targetFolder, error: tfErr } = await adminClient
             .from('doc_folders')
@@ -257,6 +263,7 @@ serve(async (req) => {
 
     return jsonResponse({ success: true, affected });
   } catch (error) {
+    console.error('doc-bulk error:', error);
     return jsonResponse({ error: error.message || 'Internal server error' }, 500);
   }
 });

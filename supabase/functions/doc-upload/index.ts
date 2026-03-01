@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
@@ -9,11 +9,33 @@ function getCorsHeaders(req: Request): Record<string, string> {
     (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
   return {
     'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 }
 
-serve(async (req) => {
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+/** Validate user JWT via Supabase Auth API and return user object */
+async function validateUser(authHeader: string): Promise<{ id: string } | null> {
+  const token = authHeader.replace('Bearer ', '').trim();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SERVICE_ROLE_KEY,
+      },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.id ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -24,7 +46,7 @@ serve(async (req) => {
   }
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
   try {
@@ -33,18 +55,14 @@ serve(async (req) => {
       return jsonResponse({ error: 'Missing authorization header' }, 401);
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const user = await validateUser(authHeader);
+    if (!user) {
       return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
-    const { data: profile } = await supabase
+    const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('organization_id')
       .eq('user_id', user.id)
@@ -62,12 +80,6 @@ serve(async (req) => {
       return jsonResponse({ error: 'file_name is required' }, 400);
     }
 
-    // Use service-role client for storage operations
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     // New version of existing document
     if (document_id) {
       const { data: doc, error: docErr } = await adminClient
@@ -84,7 +96,6 @@ serve(async (req) => {
       const newVersion = doc.current_version + 1;
       const storagePath = `${orgId}/${document_id}/${newVersion}/${file_name}`;
 
-      // Create signed upload URL
       const { data: uploadData, error: uploadErr } = await adminClient.storage
         .from('org-documents')
         .createSignedUploadUrl(storagePath);
@@ -93,7 +104,6 @@ serve(async (req) => {
         return jsonResponse({ error: 'Failed to create upload URL: ' + uploadErr.message }, 500);
       }
 
-      // Insert version record
       await adminClient.from('document_versions').insert({
         document_id,
         version_number: newVersion,
@@ -102,7 +112,6 @@ serve(async (req) => {
         uploaded_by: user.id,
       });
 
-      // Update document
       await adminClient
         .from('documents')
         .update({
@@ -114,7 +123,6 @@ serve(async (req) => {
         })
         .eq('id', document_id);
 
-      // Audit log
       await adminClient.from('document_audit_log').insert({
         org_id: orgId,
         document_id,
@@ -145,7 +153,6 @@ serve(async (req) => {
       return jsonResponse({ error: 'Failed to create upload URL: ' + uploadErr.message }, 500);
     }
 
-    // Insert document record
     await adminClient.from('documents').insert({
       id: newDocId,
       org_id: orgId,
@@ -158,7 +165,6 @@ serve(async (req) => {
       uploaded_by: user.id,
     });
 
-    // Insert version 1
     await adminClient.from('document_versions').insert({
       document_id: newDocId,
       version_number: 1,
@@ -167,7 +173,6 @@ serve(async (req) => {
       uploaded_by: user.id,
     });
 
-    // Audit log
     await adminClient.from('document_audit_log').insert({
       org_id: orgId,
       document_id: newDocId,
@@ -186,6 +191,7 @@ serve(async (req) => {
       version: 1,
     });
   } catch (error) {
+    console.error('doc-upload error:', error);
     return jsonResponse({ error: error.message || 'Internal server error' }, 500);
   }
 });

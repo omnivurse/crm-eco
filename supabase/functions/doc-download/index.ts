@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
@@ -9,11 +9,32 @@ function getCorsHeaders(req: Request): Record<string, string> {
     (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
   return {
     'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   };
 }
 
-serve(async (req) => {
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+async function validateUser(authHeader: string): Promise<{ id: string } | null> {
+  const token = authHeader.replace('Bearer ', '').trim();
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: SERVICE_ROLE_KEY,
+      },
+    });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user?.id ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+Deno.serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
 
   function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -24,13 +45,10 @@ serve(async (req) => {
   }
 
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { status: 200, headers: corsHeaders });
   }
 
-  const adminClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-  );
+  const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
   try {
     // Public share link download (GET with ?token=)
@@ -99,18 +117,12 @@ serve(async (req) => {
       return jsonResponse({ error: 'Missing authorization header' }, 401);
     }
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const user = await validateUser(authHeader);
+    if (!user) {
       return jsonResponse({ error: 'Unauthorized' }, 401);
     }
 
-    const { data: profile } = await supabase
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('organization_id')
       .eq('user_id', user.id)
@@ -127,7 +139,6 @@ serve(async (req) => {
       return jsonResponse({ error: 'document_id is required' }, 400);
     }
 
-    // Get document
     const { data: doc, error: docErr } = await adminClient
       .from('documents')
       .select('id, name, storage_path, mime_type, current_version, org_id')
@@ -140,9 +151,8 @@ serve(async (req) => {
     }
 
     let storagePath = doc.storage_path;
-    let fileName = doc.name;
+    const fileName = doc.name;
 
-    // If specific version requested, get that version's path
     if (version_number && version_number !== doc.current_version) {
       const { data: version, error: verErr } = await adminClient
         .from('document_versions')
@@ -166,7 +176,6 @@ serve(async (req) => {
       return jsonResponse({ error: 'Failed to generate download URL' }, 500);
     }
 
-    // Audit log
     await adminClient.from('document_audit_log').insert({
       org_id: profile.organization_id,
       document_id,
@@ -182,6 +191,7 @@ serve(async (req) => {
       mime_type: doc.mime_type,
     });
   } catch (error) {
+    console.error('doc-download error:', error);
     return jsonResponse({ error: error.message || 'Internal server error' }, 500);
   }
 });
