@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
-import { Lock, ArrowRight, Loader2, Check } from 'lucide-react';
+import { Lock, ArrowRight, Loader2, Check, Shield, Activity, Stethoscope } from 'lucide-react';
 import Image from 'next/image';
 
 export default function UpdatePasswordPage() {
@@ -188,6 +188,39 @@ export default function UpdatePasswordPage() {
               Back to Sign In
             </Link>
           </div>
+        </div>
+
+        {/* Security Badges */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full">
+              <Shield className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-semibold text-emerald-700">HIPAA Compliant</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+              <Lock className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-semibold text-blue-700">256-bit Encryption</span>
+            </div>
+          </div>
+          <div className="flex items-center justify-center gap-3 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              <Activity className="w-3.5 h-3.5 text-brand-teal-500" />
+              MFA Protected
+            </span>
+            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="flex items-center gap-1">
+              <Stethoscope className="w-3.5 h-3.5 text-brand-teal-500" />
+              PHI Secure
+            </span>
+            <span className="w-1 h-1 rounded-full bg-slate-300" />
+            <span className="flex items-center gap-1">
+              <Shield className="w-3.5 h-3.5 text-brand-teal-500" />
+              Audit Logging
+            </span>
+          </div>
+          <p className="text-slate-400 text-xs text-center">
+            &copy; 2026 Pay It Forward Health. All rights reserved.
+          </p>
         </div>
       </div>
     </div>
