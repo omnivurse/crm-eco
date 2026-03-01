@@ -84,7 +84,11 @@
       "Bash(ls \"c:/Users/User/Documents/GitHub/crm-eco/.env\"*)",
       "Bash(ls \"c:/Users/User/Documents/GitHub/crm-eco/apps/crm/.env\"*)",
       "Bash(ls \"c:/Users/User/Documents/GitHub/crm-eco/apps/admin/.env\"*)",
-      "Bash(npx vercel env ls)"
+      "Bash(npx vercel env ls)",
+      "Bash(supabase db push)",
+      "Read(//c/Program Files/Supabase/**)",
+      "Bash(npx supabase db push)",
+      "Bash(npx supabase secrets set FROM_EMAIL=noreply@mail.payitforwardhealth.com)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public"
