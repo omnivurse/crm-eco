@@ -76,7 +76,15 @@
       "Bash(npx tsc --noEmit)",
       "Bash(ls -la /c/Users/User/Documents/GitHub/crm-eco/apps/admin/src/app/'\\(auth\\)')",
       "Bash(ls -la /c/Users/User/Documents/GitHub/crm-eco/apps/admin/src/app/'\\(auth\\)'/)",
-      "Bash(npx tsc --noEmit -p apps/admin/tsconfig.json)"
+      "Bash(npx tsc --noEmit -p apps/admin/tsconfig.json)",
+      "Bash(npx resend --version)",
+      "Bash(xargs grep -l \"email\\\\|mail\\\\|smtp\")",
+      "Bash(xargs grep -l \"resend\\\\|email\")",
+      "Bash(grep -r \"from_email\\\\|FROM_EMAIL\" /c/Users/User/Documents/GitHub/crm-eco/.env*)",
+      "Bash(ls \"c:/Users/User/Documents/GitHub/crm-eco/.env\"*)",
+      "Bash(ls \"c:/Users/User/Documents/GitHub/crm-eco/apps/crm/.env\"*)",
+      "Bash(ls \"c:/Users/User/Documents/GitHub/crm-eco/apps/admin/.env\"*)",
+      "Bash(npx vercel env ls)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public"
