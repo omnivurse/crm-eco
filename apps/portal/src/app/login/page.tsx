@@ -14,8 +14,6 @@ import {
   Mail,
   ArrowRight,
   CheckCircle2,
-  Users,
-  FileCheck,
   AlertCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -23,28 +21,49 @@ import Link from 'next/link';
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MS = 60_000;
 
-const trustPoints = [
-  {
-    icon: Shield,
-    title: 'HIPAA Compliant',
-    description: 'Your health information is protected to the highest standards.',
-  },
-  {
-    icon: Lock,
-    title: '256-bit Encryption',
-    description: 'All data in transit and at rest is encrypted end-to-end.',
-  },
-  {
-    icon: Users,
-    title: 'Member-First Community',
-    description: 'Join thousands of families sharing medical expenses together.',
-  },
-  {
-    icon: FileCheck,
-    title: 'Transparent Sharing',
-    description: 'Clear guidelines and real-time visibility into your needs.',
-  },
+const HEALTHCARE_QUOTES = [
+  { text: 'The greatest wealth is health.', author: 'Virgil' },
+  { text: 'Caring for others is an expression of what it means to be fully human.', author: 'Hillary Clinton' },
+  { text: 'Health is not valued till sickness comes.', author: 'Thomas Fuller' },
+  { text: 'Wherever the art of medicine is loved, there is also a love of humanity.', author: 'Hippocrates' },
+  { text: 'To care for those who once cared for us is one of the highest honors.', author: 'Tia Walker' },
+  { text: 'It is health that is real wealth and not pieces of gold and silver.', author: 'Mahatma Gandhi' },
+  { text: 'The good physician treats the disease; the great physician treats the patient who has the disease.', author: 'William Osler' },
+  { text: 'The art of medicine consists of amusing the patient while nature cures the disease.', author: 'Voltaire' },
 ];
+
+function QuoteRotator() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % HEALTHCARE_QUOTES.length);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="relative h-24 overflow-hidden">
+      {HEALTHCARE_QUOTES.map((quote, index) => (
+        <div
+          key={index}
+          className={`absolute inset-0 login-quote-transition ${
+            index === activeIndex ? 'login-quote-active' : 'login-quote-inactive'
+          }`}
+        >
+          <p className="text-white/90 text-lg italic leading-relaxed">
+            &ldquo;{quote.text}&rdquo;
+          </p>
+          <p className="text-white/60 text-sm mt-2">&mdash; {quote.author}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -140,71 +159,47 @@ export default function LoginPage() {
 
   return (
     <div className="fixed inset-0 z-[100] flex">
-      {/* Left Panel - Branding & Trust */}
-      <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] relative overflow-hidden flex-col justify-between">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#003560] via-[#04545c] to-[#047474]" />
+      {/* Left Panel - Animated Gradient Mesh Hero */}
+      <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] relative overflow-hidden">
+        {/* Animated gradient mesh background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#003560] via-[#047474] to-[#027343]" />
+          <div
+            className="login-blob login-blob-drift-1"
+            style={{ width: 500, height: 500, top: '-10%', left: '-5%', background: 'radial-gradient(circle, rgba(6,155,154,0.4) 0%, rgba(6,155,154,0.1) 50%, transparent 70%)' }}
+          />
+          <div
+            className="login-blob login-blob-drift-2"
+            style={{ width: 450, height: 450, top: '30%', right: '-10%', background: 'radial-gradient(circle, rgba(2,115,67,0.35) 0%, rgba(2,115,67,0.08) 50%, transparent 70%)' }}
+          />
+          <div
+            className="login-blob login-blob-drift-3"
+            style={{ width: 380, height: 380, bottom: '-5%', left: '20%', background: 'radial-gradient(circle, rgba(233,182,31,0.2) 0%, rgba(233,182,31,0.05) 50%, transparent 70%)' }}
+          />
+          <div
+            className="login-blob login-blob-drift-4"
+            style={{ width: 320, height: 320, top: '60%', right: '25%', background: 'radial-gradient(circle, rgba(4,116,116,0.3) 0%, rgba(4,116,116,0.08) 50%, transparent 70%)' }}
+          />
+        </div>
 
-        {/* Subtle pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
-            backgroundSize: '32px 32px',
-          }}
-        />
+        {/* Content overlay */}
+        <div className="relative z-10 flex flex-col justify-center px-10 xl:px-12 w-full">
+          <h1 className="text-5xl xl:text-6xl font-bold text-white mb-4 tracking-tight leading-[1.1]">
+            <span className="block">Your Health</span>
+            <span className="block bg-gradient-to-r from-[#6ac3c2] to-[#9bd7d7] bg-clip-text text-transparent">
+              Community
+            </span>
+          </h1>
+          <p className="text-white/70 text-lg max-w-md mb-10 leading-relaxed">
+            Join thousands of families sharing medical expenses and building stronger, healthier communities together.
+          </p>
+          <QuoteRotator />
+        </div>
 
-        {/* Glowing orbs for depth */}
-        <div className="absolute top-1/4 -left-20 w-64 h-64 bg-[#047474]/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#069B9A]/20 rounded-full blur-3xl" />
-
-        <div className="relative z-10 flex flex-col justify-between h-full p-10 xl:p-12">
-          {/* Logo */}
-          <div>
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <span className="font-bold text-white text-lg leading-tight block">Pay It Forward</span>
-                <span className="text-[#69d1d1] text-xs font-semibold tracking-wider uppercase">Health</span>
-              </div>
-            </Link>
-          </div>
-
-          {/* Hero text */}
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight">
-                Your health sharing<br />community awaits.
-              </h1>
-              <p className="text-white/60 mt-4 text-base leading-relaxed max-w-sm">
-                Access your dashboard, manage your needs, and stay connected with your health sharing family.
-              </p>
-            </div>
-
-            {/* Trust points */}
-            <div className="space-y-4">
-              {trustPoints.map((point) => (
-                <div
-                  key={point.title}
-                  className="flex items-start gap-3.5 group"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-colors">
-                    <point.icon className="w-4 h-4 text-[#69d1d1]" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">{point.title}</p>
-                    <p className="text-white/45 text-xs mt-0.5 leading-relaxed">{point.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <p className="text-white/30 text-xs">
-            &copy; {new Date().getFullYear()} Pay It Forward Health. All rights reserved.
+        {/* Bottom branding */}
+        <div className="absolute bottom-12 left-10 xl:left-12 z-10">
+          <p className="text-white/40 text-sm font-medium tracking-wider uppercase">
+            Pay It Forward Health
           </p>
         </div>
       </div>

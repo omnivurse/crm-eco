@@ -23,3 +23,59 @@
     font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;
   }
 }
+
+/* ── Login Hero Animations ───────────────────────────────── */
+
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.login-blob-drift-1 { animation: login-blob-drift-1 14s ease-in-out infinite alternate; }
+.login-blob-drift-2 { animation: login-blob-drift-2 18s ease-in-out infinite alternate; }
+.login-blob-drift-3 { animation: login-blob-drift-3 12s ease-in-out infinite alternate; }
+.login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite alternate; }
+
+@keyframes login-blob-drift-1 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(60px, 40px) scale(1.15); }
+  100% { transform: translate(-30px, 70px) scale(0.95); }
+}
+@keyframes login-blob-drift-2 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-50px, -30px) scale(1.1); }
+  100% { transform: translate(40px, -60px) scale(0.9); }
+}
+@keyframes login-blob-drift-3 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(40px, -50px) scale(1.2); }
+  100% { transform: translate(-20px, 30px) scale(1.05); }
+}
+@keyframes login-blob-drift-4 {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-60px, 20px) scale(1.08); }
+  100% { transform: translate(30px, -40px) scale(0.92); }
+}
+
+/* Quote crossfade */
+.login-quote-transition {
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.login-quote-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+.login-quote-inactive {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-blob,
+  .login-quote-transition {
+    animation: none !important;
+    transition: none !important;
+  }
+}
