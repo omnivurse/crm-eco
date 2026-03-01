@@ -330,15 +330,20 @@ export async function GET(request: NextRequest) {
     if (tab === 'all' || tab === 'leads') {
       const leadsModule = leadsModuleResult.status === 'fulfilled' ? leadsModuleResult.value.data : null;
       if (leadsModule?.id) {
-        const { data } = await supabase
+        const { data, error: leadsError } = await supabase
           .from('crm_records')
           .select('id, title, status, stage, data, owner_id, created_at, updated_at')
           .eq('module_id', leadsModule.id)
           .or(`owner_id.eq.${profile.id},owner_id.is.null`)
-          .not('stage', 'in', '("Converted","converted","Disqualified","disqualified","Closed","closed")')
+          .or('stage.is.null,and(stage.not.in.("Converted","converted","Disqualified","disqualified","Closed","closed"))')
           .order('created_at', { ascending: false })
           .limit(20);
+        if (leadsError) {
+          console.error('[Workqueue] Leads query error:', leadsError.message);
+        }
         newLeads = data || [];
+      } else {
+        console.warn('[Workqueue] No leads module found for org:', profile.organization_id);
       }
     }
 
