@@ -103,6 +103,10 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
   const startTime = Date.now();
 
   try {
+    // Get unsubscribe URL from integration settings for RFC 8058 compliance
+    const unsubscribeUrl = (emailConnection?.settings?.unsubscribe_url as string | undefined)
+      || (org?.settings as Record<string, unknown> | undefined)?.unsubscribe_url as string | undefined;
+
     if (provider === 'sendgrid' && emailConnection?.api_key_enc) {
       const apiKey = decrypt(emailConnection.api_key_enc);
       result = await sendViaSendGrid(apiKey, {
@@ -126,6 +130,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         html: params.body_html,
         text: params.body_text,
         reply_to: replyTo,
+        unsubscribe_url: unsubscribeUrl,
       });
     } else if (process.env.RESEND_API_KEY) {
       // Fallback to system Resend API key when no org integration is configured
@@ -138,6 +143,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         html: params.body_html,
         text: params.body_text,
         reply_to: replyTo,
+        unsubscribe_url: unsubscribeUrl,
       });
     } else {
       return {
@@ -385,8 +391,28 @@ async function sendViaResend(
     html?: string;
     text?: string;
     reply_to?: string;
+    unsubscribe_url?: string;
   }
 ): Promise<SendEmailResult> {
+  const payload: Record<string, unknown> = {
+    from: params.from,
+    to: params.to,
+    cc: params.cc,
+    bcc: params.bcc,
+    subject: params.subject,
+    html: params.html,
+    text: params.text,
+    reply_to: params.reply_to,
+  };
+
+  // Add List-Unsubscribe headers for deliverability (RFC 8058)
+  if (params.unsubscribe_url) {
+    payload.headers = {
+      'List-Unsubscribe': `<${params.unsubscribe_url}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    };
+  }
+
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     signal: AbortSignal.timeout(30_000),
@@ -394,23 +420,14 @@ async function sendViaResend(
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      from: params.from,
-      to: params.to,
-      cc: params.cc,
-      bcc: params.bcc,
-      subject: params.subject,
-      html: params.html,
-      text: params.text,
-      reply_to: params.reply_to,
-    }),
+    body: JSON.stringify(payload),
   });
-  
+
   if (!response.ok) {
     const error = await response.json();
     return { success: false, error: error.message || 'Resend error', provider: 'resend' };
   }
-  
+
   const data = await response.json();
   return { success: true, message_id: data.id, provider: 'resend' };
 }

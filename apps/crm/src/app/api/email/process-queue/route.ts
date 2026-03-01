@@ -172,7 +172,8 @@ export async function POST(request: NextRequest) {
         console.error(`Failed to send queued email ${item.id}:`, errorMessage);
 
         const maxAttempts = item.max_attempts || 3;
-        const newStatus = attempts >= maxAttempts ? 'failed' : 'pending';
+        const isPermanentFailure = attempts >= maxAttempts;
+        const newStatus = isPermanentFailure ? 'failed' : 'pending';
         const nextAttemptAt = newStatus === 'pending'
           ? new Date(Date.now() + Math.pow(2, attempts) * 60000).toISOString()
           : null;
@@ -185,6 +186,40 @@ export async function POST(request: NextRequest) {
             next_attempt_at: nextAttemptAt,
           })
           .eq('id', item.id);
+
+        if (isPermanentFailure) {
+          console.error(
+            `[EMAIL QUEUE] PERMANENT FAILURE: email to ${item.email_address} ` +
+            `(type: ${item.notification_type || 'unknown'}, queue_id: ${item.id}) ` +
+            `failed after ${attempts} attempts. Last error: ${errorMessage}`
+          );
+
+          // Alert org admins via in-app notification
+          if (item.organization_id) {
+            try {
+              const { data: admins } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('organization_id', item.organization_id)
+                .in('role', ['admin', 'super_admin'])
+                .limit(10);
+
+              if (admins && admins.length > 0) {
+                await supabase.from('admin_notifications').insert(
+                  admins.map((admin: { id: string }) => ({
+                    user_id: admin.id,
+                    organization_id: item.organization_id,
+                    type: 'email_failure',
+                    title: 'Email delivery failed',
+                    message: `Email to ${item.email_address} (${item.notification_type || 'notification'}) permanently failed after ${attempts} attempts: ${errorMessage}`,
+                  }))
+                );
+              }
+            } catch (alertErr) {
+              console.error('[EMAIL QUEUE] Failed to insert admin alert:', alertErr);
+            }
+          }
+        }
 
         failed++;
       }

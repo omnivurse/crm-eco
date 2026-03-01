@@ -1,10 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
-};
+const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") || "*").split(",").map(s => s.trim());
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("origin") || "";
+  const allowed = ALLOWED_ORIGINS.includes("*") ? "*" :
+    (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  return {
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  };
+}
 
 interface EmailPayload {
   from: string;
@@ -39,24 +46,75 @@ function constantTimeEqual(a: string, b: string): boolean {
   return result === 0;
 }
 
-function verifyAuth(req: Request): boolean {
+async function verifySvixSignature(
+  rawBody: string,
+  svixId: string,
+  svixTimestamp: string,
+  svixSignature: string,
+  secret: string
+): Promise<boolean> {
+  // Reject timestamps older than 5 minutes to prevent replay attacks
+  const timestampSec = parseInt(svixTimestamp, 10);
+  if (isNaN(timestampSec)) return false;
+  const now = Math.floor(Date.now() / 1000);
+  if (Math.abs(now - timestampSec) > 300) return false;
+
+  // Secret format: "whsec_<base64>" — strip prefix and decode
+  const secretBytes = Uint8Array.from(
+    atob(secret.startsWith("whsec_") ? secret.slice(6) : secret),
+    (c) => c.charCodeAt(0)
+  );
+
+  // Signed content: "{svixId}.{svixTimestamp}.{body}"
+  const signedContent = `${svixId}.${svixTimestamp}.${rawBody}`;
+  const encoder = new TextEncoder();
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    secretBytes,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signatureBytes = await crypto.subtle.sign("HMAC", key, encoder.encode(signedContent));
+  const expectedSig = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+
+  // svix-signature may contain multiple signatures: "v1,<sig1> v1,<sig2>"
+  const signatures = svixSignature.split(" ");
+  for (const sig of signatures) {
+    const parts = sig.split(",");
+    if (parts.length !== 2 || parts[0] !== "v1") continue;
+    if (constantTimeEqual(parts[1], expectedSig)) return true;
+  }
+
+  return false;
+}
+
+// Cache raw body for signature verification (body can only be read once)
+let cachedRawBody: string | null = null;
+
+async function verifyAuth(req: Request): Promise<boolean> {
   const secret = Deno.env.get("EDGE_FUNCTION_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const authHeader = req.headers.get("Authorization") || "";
   if (constantTimeEqual(authHeader, `Bearer ${secret}`)) return true;
 
-  // Also accept Resend webhook signature (svix)
+  // Verify Resend webhook signature (svix HMAC-SHA256)
   const svixId = req.headers.get("svix-id");
   const svixTimestamp = req.headers.get("svix-timestamp");
   const svixSignature = req.headers.get("svix-signature");
   if (svixId && svixTimestamp && svixSignature) {
     const webhookSecret = Deno.env.get("RESEND_WEBHOOK_SECRET");
-    if (webhookSecret) return true; // Resend webhook with signing secret configured
+    if (webhookSecret) {
+      cachedRawBody = await req.text();
+      return verifySvixSignature(cachedRawBody, svixId, svixTimestamp, svixSignature, webhookSecret);
+    }
   }
 
   return false;
 }
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -64,8 +122,8 @@ Deno.serve(async (req: Request) => {
     });
   }
 
-  // Authenticate: require Bearer token or valid Resend webhook signature
-  if (!verifyAuth(req)) {
+  // Authenticate: require Bearer token or verified Resend webhook signature
+  if (!(await verifyAuth(req))) {
     return new Response(
       JSON.stringify({ success: false, error: "Unauthorized" }),
       {
@@ -79,7 +137,10 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    const emailData = (await req.json()) as EmailPayload;
+    // Use cached body from signature verification, or read fresh for Bearer auth
+    const rawBody = cachedRawBody ?? await req.text();
+    cachedRawBody = null; // Clear cache after use
+    const emailData = JSON.parse(rawBody) as EmailPayload;
 
     const supabaseHeaders = {
       "Content-Type": "application/json",

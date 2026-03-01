@@ -10,10 +10,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '*').split(',').map(s => s.trim());
+
+function getCorsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('origin') || '';
+  const allowed = ALLOWED_ORIGINS.includes('*') ? '*' :
+    (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
+}
 
 interface ProcessingResult {
   processed: number;
@@ -24,6 +31,7 @@ interface ProcessingResult {
 }
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -137,7 +145,7 @@ serve(async (req) => {
 
             // Send receipt email
             if (schedule.members?.email) {
-              await sendEmail(supabase, schedule.organization_id, {
+              const emailResult = await sendEmail(supabase, schedule.organization_id, {
                 to: schedule.members.email,
                 toName: `${schedule.members.first_name} ${schedule.members.last_name}`,
                 templateSlug: 'payment_receipt',
@@ -150,6 +158,9 @@ serve(async (req) => {
                 memberId: schedule.member_id,
                 enrollmentId: schedule.enrollment_id,
               });
+              if (!emailResult.sent) {
+                results.errors.push(`Schedule ${schedule.id}: Payment succeeded but receipt email failed: ${emailResult.error}`);
+              }
             }
           } else {
             results.failed++;
@@ -189,7 +200,7 @@ serve(async (req) => {
 
             // Send failed payment email
             if (schedule.members?.email) {
-              await sendEmail(supabase, schedule.organization_id, {
+              const emailResult = await sendEmail(supabase, schedule.organization_id, {
                 to: schedule.members.email,
                 toName: `${schedule.members.first_name} ${schedule.members.last_name}`,
                 templateSlug: 'payment_failed',
@@ -202,6 +213,9 @@ serve(async (req) => {
                 memberId: schedule.member_id,
                 enrollmentId: schedule.enrollment_id,
               });
+              if (!emailResult.sent) {
+                results.errors.push(`Schedule ${schedule.id}: Payment failed notification email also failed: ${emailResult.error}`);
+              }
             }
           }
         } catch (error) {
@@ -423,7 +437,7 @@ async function sendEmail(
     memberId?: string;
     enrollmentId?: string;
   }
-) {
+): Promise<{ sent: boolean; error?: string }> {
   try {
     // Get template
     const { data: template } = await supabase
@@ -435,8 +449,9 @@ async function sendEmail(
       .single();
 
     if (!template) {
-      console.error(`CRITICAL: Missing email template '${params.templateSlug}' for org ${organizationId}. Billing email NOT sent to ${params.to}.`);
-      return;
+      const msg = `Missing email template '${params.templateSlug}' for org ${organizationId}. Billing email NOT sent to ${params.to}.`;
+      console.error(`[BILLING EMAIL] CRITICAL: ${msg}`);
+      return { sent: false, error: msg };
     }
 
     // Get email settings
@@ -453,8 +468,9 @@ async function sendEmail(
 
     const fromEmail = settingsMap['email_from_address'] || Deno.env.get('FROM_EMAIL');
     if (!fromEmail) {
-      console.error('No email_from_address in settings and FROM_EMAIL env var not set');
-      return;
+      const msg = `No email_from_address in settings and FROM_EMAIL env var not set. Billing email NOT sent to ${params.to}.`;
+      console.error(`[BILLING EMAIL] CRITICAL: ${msg}`);
+      return { sent: false, error: msg };
     }
     const fromName = settingsMap['email_from_name'] || 'CRM System';
 
@@ -464,7 +480,11 @@ async function sendEmail(
 
     // Send via Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendApiKey) return;
+    if (!resendApiKey) {
+      const msg = `RESEND_API_KEY not configured. Billing email NOT sent to ${params.to}.`;
+      console.error(`[BILLING EMAIL] CRITICAL: ${msg}`);
+      return { sent: false, error: msg };
+    }
 
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -481,6 +501,11 @@ async function sendEmail(
     });
 
     const result = await resendResponse.json();
+    const emailSent = !!result.id;
+
+    if (!emailSent) {
+      console.error(`[BILLING EMAIL] Resend API error for ${params.to}: ${result.message || JSON.stringify(result)}`);
+    }
 
     // Record sent email
     await supabase.from('sent_emails').insert({
@@ -497,18 +522,28 @@ async function sendEmail(
       from_name: fromName,
       provider: 'resend',
       provider_message_id: result.id,
-      status: result.id ? 'sent' : 'failed',
-      sent_at: result.id ? new Date().toISOString() : null,
+      status: emailSent ? 'sent' : 'failed',
+      error_message: emailSent ? null : (result.message || 'Resend API error'),
+      sent_at: emailSent ? new Date().toISOString() : null,
       metadata: { triggered_by: 'system', variables: params.variables },
     });
+
+    return { sent: emailSent, error: emailSent ? undefined : (result.message || 'Resend API error') };
   } catch (error) {
-    console.error('Failed to send email:', error);
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[BILLING EMAIL] Failed to send email to ${params.to}:`, msg);
+    return { sent: false, error: msg };
   }
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 }
 
 function replaceVariables(template: string, variables: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-    return variables[key] !== undefined ? variables[key] : match;
+    return variables[key] !== undefined ? escapeHtml(variables[key]) : match;
   });
 }
 
