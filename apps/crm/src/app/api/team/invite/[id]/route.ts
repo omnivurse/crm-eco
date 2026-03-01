@@ -20,8 +20,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check permissions
-    if (!profile.crm_role || !['owner', 'super_admin', 'admin'].includes(profile.crm_role)) {
+    // Check permissions using org-level role
+    if (!profile.role || !['owner', 'super_admin', 'admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 

@@ -11,7 +11,7 @@ import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-type InvitableRole = 'super_admin' | 'admin' | 'advisor' | 'staff';
+type InvitableRole = 'admin' | 'advisor' | 'staff';
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString('hex');
@@ -34,8 +34,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check permissions
-    if (!profile.crm_role || !['owner', 'super_admin', 'admin'].includes(profile.crm_role)) {
+    // Check permissions using org-level role
+    const allowedRoles = ['owner', 'super_admin', 'admin'];
+    if (!profile.role || !allowedRoles.includes(profile.role)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -48,13 +49,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate role
-    if (!['super_admin', 'admin', 'advisor', 'staff'].includes(role)) {
+    if (!['admin', 'advisor', 'staff'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    // Check if user can invite this role
-    if (role === 'super_admin' && (!profile.crm_role || !['owner', 'super_admin'].includes(profile.crm_role))) {
-      return NextResponse.json({ error: 'Cannot invite super admin' }, { status: 403 });
+    // Only owner/super_admin can invite admins
+    if (role === 'admin' && !['owner', 'super_admin'].includes(profile.role!)) {
+      return NextResponse.json({ error: 'Cannot invite admin role' }, { status: 403 });
     }
 
     // Check if email already exists in organization

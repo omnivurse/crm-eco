@@ -24,6 +24,7 @@ interface CachedAuthResult {
 interface CachedProfile {
   id: string;
   organization_id: string;
+  role: string | null;
   crm_role: string | null;
   full_name: string | null;
   user_id: string;
@@ -102,7 +103,7 @@ export const getAuthProfile = cache(async (): Promise<CachedProfile | null> => {
     const supabase = await createClient();
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, organization_id, crm_role, full_name, user_id')
+      .select('id, organization_id, role, crm_role, full_name, user_id')
       .eq('user_id', user.id)
       .single();
 
