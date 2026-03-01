@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
@@ -8,105 +8,60 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import {
-  Heart,
-  Users,
   Shield,
   Activity,
   Stethoscope,
-  HeartHandshake,
   Loader2,
   Lock,
   Eye,
   EyeOff,
   Mail,
   Square,
-  BarChart3,
-  Database,
-  Briefcase,
-  Target,
-  Zap,
-  Globe,
-  TrendingUp
 } from 'lucide-react';
 import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
-// Static CRM Visual (no animations)
-function StaticCrmVisual() {
+const HEALTHCARE_QUOTES = [
+  { text: 'The greatest wealth is health.', author: 'Virgil' },
+  { text: 'Caring for others is an expression of what it means to be fully human.', author: 'Hillary Clinton' },
+  { text: 'Health is not valued till sickness comes.', author: 'Thomas Fuller' },
+  { text: 'Wherever the art of medicine is loved, there is also a love of humanity.', author: 'Hippocrates' },
+  { text: 'To care for those who once cared for us is one of the highest honors.', author: 'Tia Walker' },
+  { text: 'It is health that is real wealth and not pieces of gold and silver.', author: 'Mahatma Gandhi' },
+  { text: 'The good physician treats the disease; the great physician treats the patient who has the disease.', author: 'William Osler' },
+  { text: 'The art of medicine consists of amusing the patient while nature cures the disease.', author: 'Voltaire' },
+];
+
+function QuoteRotator() {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) return;
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % HEALTHCARE_QUOTES.length);
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="relative w-full h-full flex items-center justify-center">
-      {/* Static ambient glow layers */}
-      <div className="absolute w-[600px] h-[600px] bg-teal-500/20 rounded-full blur-[150px]" />
-      <div className="absolute w-[400px] h-[400px] bg-emerald-500/25 rounded-full blur-[100px]" />
-      <div className="absolute w-[250px] h-[250px] bg-cyan-400/30 rounded-full blur-[80px]" />
-
-      {/* Core nucleus */}
-      <div className="absolute w-28 h-28 rounded-full bg-gradient-to-br from-teal-500/40 to-emerald-600/30 backdrop-blur-xl border-2 border-teal-400/60 flex items-center justify-center z-20 shadow-[0_0_80px_30px_rgba(20,184,166,0.4)]">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-[0_0_40px_15px_rgba(20,184,166,0.5)]">
-          <Heart className="w-7 h-7 text-white drop-shadow-lg" />
+    <div className="relative h-24 overflow-hidden">
+      {HEALTHCARE_QUOTES.map((quote, index) => (
+        <div
+          key={index}
+          className={`absolute inset-0 login-quote-transition ${
+            index === activeIndex ? 'login-quote-active' : 'login-quote-inactive'
+          }`}
+        >
+          <p className="text-white/90 text-lg italic leading-relaxed">
+            &ldquo;{quote.text}&rdquo;
+          </p>
+          <p className="text-white/60 text-sm mt-2">&mdash; {quote.author}</p>
         </div>
-      </div>
-
-      {/* Inner orbit ring with static icons */}
-      <div className="absolute w-[220px] h-[220px]">
-        <div className="absolute inset-0 rounded-full border border-teal-400/30" />
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-teal-400/70 shadow-[0_0_25px_8px_rgba(20,184,166,0.4)]">
-            <Users className="w-5 h-5 text-teal-400" />
-          </div>
-        </div>
-        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-violet-400/70 shadow-[0_0_25px_8px_rgba(139,92,246,0.4)]">
-            <BarChart3 className="w-5 h-5 text-violet-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Middle orbit ring */}
-      <div className="absolute w-[360px] h-[360px]">
-        <div className="absolute inset-0 rounded-full border border-dashed border-teal-500/20" />
-        <div className="absolute top-6 -left-3">
-          <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-blue-400/70 shadow-[0_0_25px_8px_rgba(59,130,246,0.4)]">
-            <Briefcase className="w-5 h-5 text-blue-400" />
-          </div>
-        </div>
-        <div className="absolute bottom-6 -right-3">
-          <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-emerald-400/70 shadow-[0_0_25px_8px_rgba(16,185,129,0.4)]">
-            <Database className="w-5 h-5 text-emerald-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/2 -left-4 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-amber-400/70 shadow-[0_0_25px_8px_rgba(245,158,11,0.4)]">
-            <Zap className="w-5 h-5 text-amber-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Outer orbit ring */}
-      <div className="absolute w-[500px] h-[500px]">
-        <div className="absolute inset-0 rounded-full border border-white/5" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-cyan-400/70 shadow-[0_0_25px_8px_rgba(6,182,212,0.4)]">
-            <Target className="w-5 h-5 text-cyan-400" />
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2">
-          <div className="relative bg-slate-900 p-3.5 rounded-xl border-2 border-rose-400/70 shadow-[0_0_25px_8px_rgba(244,63,94,0.4)]">
-            <HeartHandshake className="w-5 h-5 text-rose-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-indigo-400/70 shadow-[0_0_25px_8px_rgba(99,102,241,0.4)]">
-            <Globe className="w-5 h-5 text-indigo-400" />
-          </div>
-        </div>
-        <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2">
-          <div className="relative bg-slate-900 p-3 rounded-xl border-2 border-green-400/70 shadow-[0_0_25px_8px_rgba(34,197,94,0.4)]">
-            <TrendingUp className="w-5 h-5 text-green-400" />
-          </div>
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
@@ -188,28 +143,47 @@ export default function CrmLoginPage() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left Side - Premium Visuals with deep dark background */}
-      <div className="hidden lg:flex relative overflow-hidden items-center justify-center bg-slate-950">
-        {/* Static gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900" />
+      {/* Left Side - Animated Gradient Mesh Hero */}
+      <div className="hidden lg:flex relative overflow-hidden bg-[#003560]">
+        {/* Animated gradient mesh background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#003560] via-[#047474] to-[#027343]" />
+          <div
+            className="login-blob login-blob-drift-1"
+            style={{ width: 500, height: 500, top: '-10%', left: '-5%', background: 'radial-gradient(circle, rgba(6,155,154,0.4) 0%, rgba(6,155,154,0.1) 50%, transparent 70%)' }}
+          />
+          <div
+            className="login-blob login-blob-drift-2"
+            style={{ width: 450, height: 450, top: '30%', right: '-10%', background: 'radial-gradient(circle, rgba(2,115,67,0.35) 0%, rgba(2,115,67,0.08) 50%, transparent 70%)' }}
+          />
+          <div
+            className="login-blob login-blob-drift-3"
+            style={{ width: 380, height: 380, bottom: '-5%', left: '20%', background: 'radial-gradient(circle, rgba(233,182,31,0.2) 0%, rgba(233,182,31,0.05) 50%, transparent 70%)' }}
+          />
+          <div
+            className="login-blob login-blob-drift-4"
+            style={{ width: 320, height: 320, top: '60%', right: '25%', background: 'radial-gradient(circle, rgba(4,116,116,0.3) 0%, rgba(4,116,116,0.08) 50%, transparent 70%)' }}
+          />
+        </div>
 
-        {/* Vibrant mesh gradient overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.12),transparent_50%),radial-gradient(ellipse_at_center,rgba(6,182,212,0.08),transparent_60%)]" />
-
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(rgba(255,255,255,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.1)_1px,transparent_1px)] [background-size:60px_60px]" />
-
-        <StaticCrmVisual />
+        {/* Content overlay */}
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 w-full">
+          <h1 className="text-5xl xl:text-6xl font-bold text-white mb-4 tracking-tight leading-[1.1] font-heading">
+            <span className="block">Empowering</span>
+            <span className="block bg-gradient-to-r from-[#6ac3c2] to-[#9bd7d7] bg-clip-text text-transparent">
+              Healthier Lives
+            </span>
+          </h1>
+          <p className="text-white/70 text-lg max-w-md mb-10 leading-relaxed">
+            Building stronger communities through shared health and compassionate care.
+          </p>
+          <QuoteRotator />
+        </div>
 
         {/* Bottom branding */}
-        <div className="absolute bottom-12 left-12 z-10">
-          <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
-            <span className="bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(20,184,166,0.5)]">Pay It Forward</span>
-            <br />
-            <span className="text-white/95">Health</span>
-          </h1>
-          <p className="text-slate-400 text-lg max-w-md">
-            CRM Portal — Manage your healthcare community
+        <div className="absolute bottom-12 left-12 xl:left-16 z-10">
+          <p className="text-white/40 text-sm font-medium tracking-wider uppercase">
+            Pay It Forward Health
           </p>
         </div>
       </div>
