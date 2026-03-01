@@ -7,6 +7,27 @@ import { decrypt } from '@/lib/integrations/adapters/credentials';
 // Send emails via configured providers and log results
 // ============================================================================
 
+/** Strip HTML tags to produce a plain-text fallback for multipart emails */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<a[^>]+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export interface SendEmailParams {
   to: string | string[];
   subject: string;
@@ -94,8 +115,11 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
 
   // Use org's verified sending domain — never the user's personal email as FROM
   const integrationFromEmail = emailConnection?.settings?.from_email as string | undefined;
-  const fromEmail = integrationFromEmail || process.env.RESEND_FROM_EMAIL || 'noreply@mail.payitforwardhealth.com';
+  const fromEmail = integrationFromEmail || process.env.RESEND_FROM_EMAIL || 'hello@mail.payitforwardhealth.com';
   const replyTo = params.reply_to || profile.email;
+
+  // Auto-generate plain text from HTML if not provided (improves deliverability)
+  const bodyText = params.body_text || (params.body_html ? htmlToPlainText(params.body_html) : undefined);
 
   // Determine provider and send
   let result: SendEmailResult;
@@ -116,7 +140,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         bcc: params.bcc,
         subject: params.subject,
         html: params.body_html,
-        text: params.body_text,
+        text: bodyText,
         replyTo: replyTo,
       });
     } else if (provider === 'resend' && emailConnection?.api_key_enc) {
@@ -128,7 +152,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         bcc: params.bcc,
         subject: params.subject,
         html: params.body_html,
-        text: params.body_text,
+        text: bodyText,
         reply_to: replyTo,
         unsubscribe_url: unsubscribeUrl,
       });
@@ -141,7 +165,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
         bcc: params.bcc,
         subject: params.subject,
         html: params.body_html,
-        text: params.body_text,
+        text: bodyText,
         reply_to: replyTo,
         unsubscribe_url: unsubscribeUrl,
       });

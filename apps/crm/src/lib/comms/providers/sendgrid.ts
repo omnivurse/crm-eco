@@ -6,6 +6,31 @@
 import type { ProviderSendRequest, ProviderSendResult } from '../types';
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/** Strip HTML tags to produce a plain-text version for multipart emails */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '- ')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<a[^>]+href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ============================================================================
 // Configuration
 // ============================================================================
 
@@ -77,6 +102,10 @@ export async function sendEmail(request: ProviderSendRequest): Promise<ProviderS
       subject: request.subject || '(No Subject)',
       content: [
         {
+          type: 'text/plain',
+          value: htmlToPlainText(request.body),
+        },
+        {
           type: 'text/html',
           value: request.body,
         },
@@ -85,8 +114,8 @@ export async function sendEmail(request: ProviderSendRequest): Promise<ProviderS
         message_id: request.messageId,
       },
       tracking_settings: {
-        click_tracking: { enable: true },
-        open_tracking: { enable: true },
+        click_tracking: { enable: false },
+        open_tracking: { enable: false },
       },
     };
     
