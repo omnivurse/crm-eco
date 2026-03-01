@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createServerClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
 
@@ -110,7 +111,7 @@ export async function POST(
       // No body provided, use default redirect
     }
 
-    // Generate and send password reset link
+    // Generate recovery link via admin API (does NOT send email)
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
       type: 'recovery',
       email,
@@ -122,8 +123,69 @@ export async function POST(
     if (linkError) {
       console.error('[Users] Failed to generate reset link:', linkError);
       return NextResponse.json(
-        { error: 'Failed to send password reset email' },
+        { error: 'Failed to generate password reset link' },
         { status: 500 }
+      );
+    }
+
+    const actionLink = linkData?.properties?.action_link;
+    if (!actionLink) {
+      console.error('[Users] No action_link in generateLink response');
+      return NextResponse.json(
+        { error: 'Failed to generate password reset link' },
+        { status: 500 }
+      );
+    }
+
+    // Send the password reset email via Resend
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const fromEmail = process.env.RESEND_FROM_EMAIL;
+    const fromName = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+
+    if (!resendApiKey || !fromEmail) {
+      console.error('[Users] Missing RESEND_API_KEY or RESEND_FROM_EMAIL');
+      return NextResponse.json(
+        { error: 'Email service not configured' },
+        { status: 500 }
+      );
+    }
+
+    const resend = new Resend(resendApiKey);
+    const userName = targetUser.full_name || email;
+
+    const { error: emailError } = await resend.emails.send({
+      from: `${fromName} <${fromEmail}>`,
+      to: [email],
+      subject: 'Reset Your Password - Pay It Forward Health',
+      html: `<!doctype html>
+<html>
+  <body style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;background:#f8fafc;padding:24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;">
+      <tr>
+        <td style="padding:24px 24px 8px 24px;">
+          <h1 style="margin:0;font-size:20px;">Reset Your Password</h1>
+          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">Hi ${userName}, an administrator has requested a password reset for your account.</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:8px 24px 24px 24px;">
+          <p style="font-size:14px;color:#475569;margin:16px 0;">Click the button below to set a new password:</p>
+          <a href="${actionLink}" style="display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;">Reset Password</a>
+          <p style="font-size:12px;color:#94a3b8;margin-top:16px;">This link will expire in 1 hour. If you did not request this, you can safely ignore this email.</p>
+          <p style="font-size:11px;color:#cbd5e1;margin-top:12px;word-break:break-all;">Or copy this link: ${actionLink}</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`,
+      text: `Reset Your Password\n\nHi ${userName}, an administrator has requested a password reset for your account.\n\nClick this link to set a new password: ${actionLink}\n\nThis link will expire in 1 hour. If you did not request this, you can safely ignore this email.`,
+    });
+
+    if (emailError) {
+      console.error('[Users] Failed to send password reset email via Resend:', emailError);
+      return NextResponse.json(
+        { error: 'Password reset link generated but email delivery failed' },
+        { status: 502 }
       );
     }
 
