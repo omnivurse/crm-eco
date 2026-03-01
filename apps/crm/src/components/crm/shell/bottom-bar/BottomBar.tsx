@@ -40,7 +40,7 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
   }, []);
 
   return (
-    <div className="relative z-40 border-t border-slate-200/60 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+    <div className="relative z-40 border-t border-slate-200/60 dark:border-white/10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center h-10 px-2 lg:px-4 gap-1">
         {/* Left Section: Chat, Channels, Contacts */}
         <div className="flex items-center gap-0.5">

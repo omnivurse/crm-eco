@@ -6,12 +6,18 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    overflow-x: hidden;
+    touch-action: pan-y pinch-zoom;
+  }
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body), 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;

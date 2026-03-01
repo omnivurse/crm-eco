@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { PortalHeader } from '@/components/PortalHeader';
+import { BottomNav } from '@/components/BottomNav';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { PinLockOverlay } from '@crm-eco/ui';
 
@@ -36,6 +37,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -60,7 +62,7 @@ export default function RootLayout({
         <ServiceWorkerRegistration />
         <div className="min-h-screen bg-slate-50">
           <PortalHeader />
-          <main className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 py-6 lg:py-8">
+          <main className="w-full min-w-0 px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 py-6 lg:py-8 pb-20 md:pb-6">
             {children}
           </main>
           <footer className="border-t bg-white py-6 mt-auto">
@@ -71,6 +73,7 @@ export default function RootLayout({
               </p>
             </div>
           </footer>
+          <BottomNav />
         </div>
       </body>
     </html>

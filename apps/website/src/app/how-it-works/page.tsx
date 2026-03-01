@@ -236,8 +236,9 @@ export default function HowItWorksPage() {
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto overflow-x-auto">
-            <div className="min-w-[600px] border rounded-2xl overflow-hidden shadow-sm">
+          <div className="max-w-5xl mx-auto">
+            {/* Desktop: 3-column grid */}
+            <div className="hidden md:block border rounded-2xl overflow-hidden shadow-sm">
               <div className="grid grid-cols-3 bg-slate-50 border-b">
                 <div className="p-4 font-semibold text-slate-900">Category</div>
                 <div className="p-4 font-semibold text-teal-700 text-center">
@@ -266,6 +267,44 @@ export default function HowItWorksPage() {
                     <span className="text-slate-500 text-sm">
                       {row.insurance}
                     </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Mobile: stacked cards */}
+            <div className="md:hidden space-y-3">
+              {comparisonData.map((row) => (
+                <div
+                  key={row.category}
+                  className="border rounded-xl p-4 shadow-sm bg-white"
+                >
+                  <div className="font-semibold text-slate-900 mb-3">
+                    {row.category}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs font-medium text-teal-700 block">
+                          Health Sharing
+                        </span>
+                        <span className="text-sm text-slate-700">
+                          {row.sharing}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <XCircle className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-xs font-medium text-slate-500 block">
+                          Traditional Insurance
+                        </span>
+                        <span className="text-sm text-slate-500">
+                          {row.insurance}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
