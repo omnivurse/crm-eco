@@ -102,16 +102,19 @@ export async function POST(request: NextRequest) {
       const supabase = await createCrmClient();
 
       if (action === 'complete') {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('crm_tasks')
           .update({ status: 'completed', updated_at: new Date().toISOString() })
           .eq('id', itemId)
-          .eq('org_id', profile.organization_id);
+          .eq('org_id', profile.organization_id)
+          .select('id')
+          .single();
 
         if (error) {
+          const msg = error.code === 'PGRST116' ? 'Task not found or access denied' : error.message;
           return NextResponse.json(
-            { success: false, error: error.message } satisfies WorkqueueActResponse,
-            { status: 500 },
+            { success: false, error: msg } satisfies WorkqueueActResponse,
+            { status: error.code === 'PGRST116' ? 404 : 500 },
           );
         }
 
@@ -120,16 +123,19 @@ export async function POST(request: NextRequest) {
 
       if (action === 'snooze') {
         const snoozeUntil = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('crm_tasks')
           .update({ reminder_at: snoozeUntil, updated_at: new Date().toISOString() })
           .eq('id', itemId)
-          .eq('org_id', profile.organization_id);
+          .eq('org_id', profile.organization_id)
+          .select('id')
+          .single();
 
         if (error) {
+          const msg = error.code === 'PGRST116' ? 'Task not found or access denied' : error.message;
           return NextResponse.json(
-            { success: false, error: error.message } satisfies WorkqueueActResponse,
-            { status: 500 },
+            { success: false, error: msg } satisfies WorkqueueActResponse,
+            { status: error.code === 'PGRST116' ? 404 : 500 },
           );
         }
 
@@ -137,16 +143,19 @@ export async function POST(request: NextRequest) {
       }
 
       if (action === 'dismiss') {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('crm_tasks')
           .update({ reminder_at: null, updated_at: new Date().toISOString() })
           .eq('id', itemId)
-          .eq('org_id', profile.organization_id);
+          .eq('org_id', profile.organization_id)
+          .select('id')
+          .single();
 
         if (error) {
+          const msg = error.code === 'PGRST116' ? 'Task not found or access denied' : error.message;
           return NextResponse.json(
-            { success: false, error: error.message } satisfies WorkqueueActResponse,
-            { status: 500 },
+            { success: false, error: msg } satisfies WorkqueueActResponse,
+            { status: error.code === 'PGRST116' ? 404 : 500 },
           );
         }
 

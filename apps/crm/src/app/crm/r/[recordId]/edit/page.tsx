@@ -73,7 +73,12 @@ export default function EditRecordPage() {
         body: JSON.stringify({ data: formData }),
       });
 
-      if (!response.ok) throw new Error('Failed to save');
+      const result = await response.json();
+
+      if (!response.ok || !result?.id) {
+        toast.error(result?.error || 'Failed to save record');
+        return;
+      }
 
       // Invalidate all record caches so detail/list pages show fresh data
       await queryClient.invalidateQueries({ queryKey: ['edit-record', recordId] });

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   BarChart3,
   TrendingUp,
@@ -298,12 +299,18 @@ export default function ReportsPage() {
 
   const handleToggleFavorite = async (reportId: string) => {
     try {
-      await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      const res = await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data?.error || 'Failed to toggle favorite');
+        return;
+      }
       setSavedReports((prev) =>
         prev.map((r) => (r.id === reportId ? { ...r, isFavorite: !r.isFavorite } : r))
       );
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
+      toast.error('Failed to toggle favorite');
     }
   };
 

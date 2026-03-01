@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -157,10 +158,17 @@ export function FieldsSettingsClient({
     }
 
     try {
-      await fetch(`/api/crm/fields/${fieldId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/crm/fields/${fieldId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data?.error || 'Failed to delete field');
+        return;
+      }
       setFields((prev) => prev.filter((f) => f.id !== fieldId));
+      toast.success('Field deleted');
     } catch (error) {
       console.error('Failed to delete field:', error);
+      toast.error('Failed to delete field');
     }
   };
 

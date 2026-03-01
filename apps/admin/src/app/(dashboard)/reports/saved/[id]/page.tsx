@@ -187,7 +187,11 @@ export default function AdminSavedReportDetailPage() {
     if (!report) return;
 
     try {
-      await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      const res = await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      if (!res.ok) {
+        console.error('Failed to toggle favorite');
+        return;
+      }
       setReport({ ...report, is_favorite: !report.is_favorite });
     } catch (err) {
       console.error('Failed to toggle favorite:', err);
@@ -199,9 +203,12 @@ export default function AdminSavedReportDetailPage() {
 
     try {
       const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
-      if (res.ok) {
-        router.push('/reports/saved');
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data?.error || 'Failed to delete report');
+        return;
       }
+      router.push('/reports/saved');
     } catch (err) {
       setError('Failed to delete report');
     }

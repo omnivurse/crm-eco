@@ -165,8 +165,10 @@ export default function EditPlaybookPage() {
 
     try {
       const res = await fetch(`/api/playbooks/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        throw new Error('Failed to delete playbook');
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || 'Failed to delete playbook');
+        return;
       }
       toast.success('Playbook deleted');
       router.push('/crm/playbooks');

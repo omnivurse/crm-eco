@@ -35,16 +35,22 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: only the author or an admin can delete this note' }, { status: 403 });
     }
 
-    const { error: deleteError } = await supabase
+    const { data: deleted, error: deleteError } = await supabase
       .from('crm_notes')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', profile.organization_id)
+      .select('id')
+      .single();
 
     if (deleteError) {
+      if (deleteError.code === 'PGRST116') {
+        return NextResponse.json({ error: 'Note not found or already deleted' }, { status: 404 });
+      }
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true, id: deleted.id });
   } catch (error) {
     console.error('Error deleting note:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -66,12 +66,13 @@ export default function SchedulingPage() {
 
     try {
       const res = await fetch(`/api/scheduling/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        toast.success('Scheduling link deleted');
-        fetchLinks();
-      } else {
-        throw new Error('Failed to delete');
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || 'Failed to delete scheduling link');
+        return;
       }
+      toast.success('Scheduling link deleted');
+      fetchLinks();
     } catch (error) {
       toast.error('Failed to delete scheduling link');
     }

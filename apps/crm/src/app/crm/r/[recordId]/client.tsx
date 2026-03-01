@@ -126,12 +126,20 @@ export function RecordDetailClient({
         method: 'DELETE',
       });
 
-      if (response.ok) {
-        toast.success('Record deleted successfully');
-        router.push(`/modules/${module.key}`);
-      } else {
-        toast.error('Failed to delete record');
+      const result = await response.json();
+
+      if (result.requiresApproval) {
+        toast.info('Deletion requires approval — request submitted');
+        return;
       }
+
+      if (!response.ok || !result?.success) {
+        toast.error(result?.error || 'Failed to delete record');
+        return;
+      }
+
+      toast.success('Record deleted successfully');
+      router.push(`/modules/${module.key}`);
     } catch (error) {
       console.error('Failed to delete record:', error);
       toast.error('Failed to delete record');
@@ -153,14 +161,16 @@ export function RecordDetailClient({
         }),
       });
 
-      if (response.ok) {
-        const note = await response.json();
-        setNotes([note, ...notes]);
-        setNewNote('');
-        toast.success('Note added successfully');
-      } else {
-        toast.error('Failed to add note');
+      const note = await response.json();
+
+      if (!response.ok || !note?.id) {
+        toast.error(note?.error || 'Failed to add note');
+        return;
       }
+
+      setNotes([note, ...notes]);
+      setNewNote('');
+      toast.success('Note added successfully');
     } catch (error) {
       console.error('Failed to add note:', error);
       toast.error('Failed to add note');
@@ -175,14 +185,17 @@ export function RecordDetailClient({
         method: 'POST',
       });
 
-      if (response.ok) {
-        setTasks(tasks.map((t) =>
-          t.id === taskId ? { ...t, status: 'completed' as const, completed_at: new Date().toISOString() } : t
-        ));
-        toast.success('Task completed');
-      } else {
-        toast.error('Failed to complete task');
+      const result = await response.json();
+
+      if (!response.ok || !result?.success) {
+        toast.error(result?.error || 'Failed to complete task');
+        return;
       }
+
+      setTasks(tasks.map((t) =>
+        t.id === taskId ? { ...t, status: 'completed' as const, completed_at: new Date().toISOString() } : t
+      ));
+      toast.success('Task completed');
     } catch (error) {
       console.error('Failed to complete task:', error);
       toast.error('Failed to complete task');

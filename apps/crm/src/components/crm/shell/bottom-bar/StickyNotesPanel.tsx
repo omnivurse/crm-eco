@@ -228,10 +228,14 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
 
   const handleDelete = async (id: string) => {
     try {
-      await fetch(`/api/crm/sticky-notes/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/crm/sticky-notes/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data?.error || 'Failed to delete note');
+      }
       fetchNotes();
-    } catch {
-      toast.error('Failed to delete note');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete note');
     }
   };
 

@@ -153,7 +153,11 @@ export default function EditSchedulingLinkPage() {
 
     try {
       const res = await fetch(`/api/scheduling/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete');
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || 'Failed to delete scheduling link');
+        return;
+      }
       toast.success('Scheduling link deleted');
       router.push('/crm/scheduling');
     } catch (error) {

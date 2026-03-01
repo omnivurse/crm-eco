@@ -251,7 +251,8 @@ export default function DealWarRoomPage() {
     try {
       if (task.status !== 'completed') {
         const res = await fetch(`/api/crm/tasks/${task.id}/complete`, { method: 'POST' });
-        if (!res.ok) throw new Error('Failed to complete task');
+        const result = await res.json();
+        if (!res.ok || !result?.success) throw new Error(result?.error || 'Failed to complete task');
         toast.success(`"${task.title}" completed`);
       } else {
         // Reopen task

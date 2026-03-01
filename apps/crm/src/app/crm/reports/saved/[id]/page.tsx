@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Play,
@@ -200,10 +201,16 @@ export default function SavedReportDetailPage() {
     if (!report) return;
 
     try {
-      await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      const res = await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data?.error || 'Failed to toggle favorite');
+        return;
+      }
       setReport({ ...report, is_favorite: !report.is_favorite });
     } catch (err) {
       console.error('Failed to toggle favorite:', err);
+      toast.error('Failed to toggle favorite');
     }
   };
 
@@ -212,9 +219,12 @@ export default function SavedReportDetailPage() {
 
     try {
       const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
-      if (res.ok) {
-        router.push('/crm/reports/saved');
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || 'Failed to delete report');
+        return;
       }
+      router.push('/crm/reports/saved');
     } catch (err) {
       setError('Failed to delete report');
     }

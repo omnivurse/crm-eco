@@ -71,7 +71,11 @@ export default function AdminSavedReportsPage() {
 
   const handleToggleFavorite = async (reportId: string) => {
     try {
-      await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      const res = await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      if (!res.ok) {
+        console.error('Failed to toggle favorite');
+        return;
+      }
       setReports((prev) =>
         prev.map((r) => (r.id === reportId ? { ...r, is_favorite: !r.is_favorite } : r))
       );
@@ -85,9 +89,11 @@ export default function AdminSavedReportsPage() {
 
     try {
       const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setReports((prev) => prev.filter((r) => r.id !== reportId));
+      if (!res.ok) {
+        console.error('Failed to delete report');
+        return;
       }
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
     } catch (error) {
       console.error('Failed to delete report:', error);
     }

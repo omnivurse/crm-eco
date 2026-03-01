@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Search,
@@ -72,12 +73,18 @@ export default function SavedReportsPage() {
 
   const handleToggleFavorite = async (reportId: string) => {
     try {
-      await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      const res = await fetch(`/api/reports/${reportId}/favorite`, { method: 'PATCH' });
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(data?.error || 'Failed to toggle favorite');
+        return;
+      }
       setReports((prev) =>
         prev.map((r) => (r.id === reportId ? { ...r, is_favorite: !r.is_favorite } : r))
       );
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
+      toast.error('Failed to toggle favorite');
     }
   };
 
@@ -86,11 +93,16 @@ export default function SavedReportsPage() {
 
     try {
       const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
-      if (res.ok) {
-        setReports((prev) => prev.filter((r) => r.id !== reportId));
+      const data = await res.json();
+      if (!res.ok || !data?.success) {
+        toast.error(data?.error || 'Failed to delete report');
+        return;
       }
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+      toast.success('Report deleted');
     } catch (error) {
       console.error('Failed to delete report:', error);
+      toast.error('Failed to delete report');
     }
   };
 
