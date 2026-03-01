@@ -5,6 +5,10 @@ import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 
 async function invokeEdgeFunction(name: string, body: Record<string, unknown>) {
+  // Use getUser() first to force a token refresh if needed
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error('Not authenticated');
 
