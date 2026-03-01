@@ -5,10 +5,13 @@
  *
  * Allows admins to:
  * - View all organization users and their CRM roles
+ * - Invite new users to the organization
  * - Change CRM roles (crm_admin, crm_manager, crm_agent, crm_viewer, or revoke)
  * - Send password reset emails
  * - Directly set user passwords (admin override)
  * - Edit user details (name, active status)
+ * - Deactivate / remove users
+ * - View and manage pending invitations
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -20,7 +23,6 @@ import {
   Mail,
   MoreVertical,
   KeyRound,
-  Lock,
   UserCog,
   RefreshCw,
   Eye,
@@ -29,10 +31,17 @@ import {
   PowerOff,
   Check,
   X,
+  UserPlus,
+  Clock,
+  Send,
+  Trash2,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { Avatar } from '@/components/shared';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
+import { Label } from '@crm-eco/ui/components/label';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
   Dialog,
@@ -42,6 +51,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@crm-eco/ui/components/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -80,6 +99,17 @@ interface UserProfile {
   updated_at: string;
 }
 
+interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  expires_at: string;
+  created_at: string;
+  invited_by: string;
+  inviter_name?: string;
+}
+
 const ROLE_LABELS: Record<CrmRole, { label: string; color: string; description: string }> = {
   crm_admin: {
     label: 'Admin',
@@ -103,6 +133,14 @@ const ROLE_LABELS: Record<CrmRole, { label: string; color: string; description: 
   },
 };
 
+const ORG_ROLE_LABELS: Record<string, string> = {
+  owner: 'Owner',
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  advisor: 'Advisor',
+  staff: 'Staff',
+};
+
 // ============================================================================
 // User Row Component
 // ============================================================================
@@ -115,6 +153,7 @@ function UserRow({
   onSetPassword,
   onEditUser,
   onToggleActive,
+  onRemoveUser,
 }: {
   user: UserProfile;
   currentUserId: string;
@@ -123,6 +162,7 @@ function UserRow({
   onSetPassword: (user: UserProfile) => void;
   onEditUser: (user: UserProfile) => void;
   onToggleActive: (user: UserProfile) => void;
+  onRemoveUser: (user: UserProfile) => void;
 }) {
   const roleInfo = user.crm_role ? ROLE_LABELS[user.crm_role] : null;
   const isSelf = user.id === currentUserId;
@@ -211,7 +251,7 @@ function UserRow({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => onToggleActive(user)}
-                className={user.is_active ? 'text-red-600' : 'text-emerald-600'}
+                className={user.is_active ? 'text-amber-600' : 'text-emerald-600'}
               >
                 {user.is_active ? (
                   <>
@@ -225,6 +265,15 @@ function UserRow({
                   </>
                 )}
               </DropdownMenuItem>
+              {user.role !== 'owner' && (
+                <DropdownMenuItem
+                  onClick={() => onRemoveUser(user)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Remove User
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -245,6 +294,7 @@ export default function UsersPage() {
   // Data state
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
 
   // Dialog state
   const [passwordDialog, setPasswordDialog] = useState<{
@@ -255,6 +305,11 @@ export default function UsersPage() {
     open: boolean;
     user: UserProfile | null;
   }>({ open: false, user: null });
+  const [inviteDialog, setInviteDialog] = useState(false);
+  const [removeDialog, setRemoveDialog] = useState<{
+    open: boolean;
+    user: UserProfile | null;
+  }>({ open: false, user: null });
 
   // Form state
   const [newPassword, setNewPassword] = useState('');
@@ -262,6 +317,11 @@ export default function UsersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [editName, setEditName] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Invite form state
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<string>('staff');
+  const [inviting, setInviting] = useState(false);
 
   // ========================================================================
   // Data Loading
@@ -293,6 +353,28 @@ export default function UsersPage() {
     }
   }, [supabase, router, authProfile]);
 
+  const loadInvitations = useCallback(async () => {
+    if (!authProfile?.organization_id) return;
+
+    try {
+      const { data } = await supabase
+        .from('team_invitations')
+        .select('*, inviter:profiles!team_invitations_invited_by_fkey(full_name)')
+        .eq('organization_id', authProfile.organization_id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      setInvitations(
+        (data || []).map((inv: Record<string, unknown>) => ({
+          ...inv,
+          inviter_name: (inv.inviter as { full_name?: string } | null)?.full_name || 'Unknown',
+        })) as Invitation[]
+      );
+    } catch (error) {
+      console.error('Failed to load invitations:', error);
+    }
+  }, [supabase, authProfile]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!authUser) {
@@ -300,7 +382,8 @@ export default function UsersPage() {
       return;
     }
     loadUsers();
-  }, [authLoading, authUser, loadUsers, router]);
+    loadInvitations();
+  }, [authLoading, authUser, loadUsers, loadInvitations, router]);
 
   // ========================================================================
   // Actions
@@ -454,6 +537,119 @@ export default function UsersPage() {
     }
   }
 
+  /** Remove (deactivate + revoke CRM access) a user */
+  async function handleRemoveUser() {
+    if (!removeDialog.user) return;
+    const user = removeDialog.user;
+
+    setSaving(true);
+    try {
+      // Deactivate and remove CRM role
+      const res = await fetch(`/api/users/${user.id}/profile`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: false }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Also revoke CRM role
+      if (user.crm_role) {
+        await fetch(`/api/users/${user.id}/role`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ crm_role: '' }),
+        });
+      }
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id ? { ...u, is_active: false, crm_role: null } : u
+        )
+      );
+
+      toast.success(`${user.full_name} has been removed`);
+      setRemoveDialog({ open: false, user: null });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to remove user');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** Invite a new user */
+  async function handleInviteUser() {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setInviting(true);
+    try {
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, role: inviteRole }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      toast.success(data.emailSent
+        ? `Invitation sent to ${email}`
+        : `Invitation created for ${email} (email delivery pending)`
+      );
+
+      setInviteDialog(false);
+      setInviteEmail('');
+      setInviteRole('staff');
+      loadInvitations();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send invitation');
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  /** Revoke a pending invitation */
+  async function handleRevokeInvitation(invitationId: string) {
+    try {
+      const res = await fetch(`/api/team/invite/${invitationId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error);
+      }
+
+      setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
+      toast.success('Invitation revoked');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to revoke invitation');
+    }
+  }
+
+  /** Resend a pending invitation */
+  async function handleResendInvitation(invitationId: string) {
+    try {
+      const res = await fetch(`/api/team/invite/${invitationId}/resend`, {
+        method: 'POST',
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      toast.success('Invitation resent');
+      loadInvitations();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to resend invitation');
+    }
+  }
+
   // ========================================================================
   // Dialog Openers
   // ========================================================================
@@ -519,10 +715,16 @@ export default function UsersPage() {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={loadUsers}>
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => { loadUsers(); loadInvitations(); }}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
+          <Button size="sm" onClick={() => setInviteDialog(true)}>
+            <UserPlus className="w-4 h-4 mr-2" />
+            Invite User
+          </Button>
+        </div>
       </div>
 
       {/* Role Legend */}
@@ -541,6 +743,66 @@ export default function UsersPage() {
           )}
         </div>
       </div>
+
+      {/* Pending Invitations */}
+      {invitations.length > 0 && (
+        <div className="glass-card border border-amber-200 dark:border-amber-700/50 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-700/50 flex items-center gap-2 bg-amber-50/50 dark:bg-amber-500/5">
+            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <h2 className="text-sm font-medium text-amber-900 dark:text-amber-300">
+              Pending Invitations ({invitations.length})
+            </h2>
+          </div>
+          <div className="divide-y divide-amber-100 dark:divide-amber-700/30">
+            {invitations.map((inv) => {
+              const isExpired = new Date(inv.expires_at) < new Date();
+              return (
+                <div key={inv.id} className="flex items-center gap-4 p-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-900 dark:text-white font-medium">{inv.email}</span>
+                      {isExpired && (
+                        <span className="px-1.5 py-0.5 text-xs bg-red-500/10 text-red-600 dark:text-red-400 rounded">
+                          Expired
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Invited as {ORG_ROLE_LABELS[inv.role] || inv.role}
+                      {inv.inviter_name && <> by {inv.inviter_name}</>}
+                      {' \u00b7 '}
+                      {new Date(inv.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => handleResendInvitation(inv.id)}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1.5" />
+                      Resend
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10"
+                      onClick={() => handleRevokeInvitation(inv.id)}
+                    >
+                      <X className="w-3.5 h-3.5 mr-1.5" />
+                      Revoke
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* CRM Users */}
       <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -562,12 +824,13 @@ export default function UsersPage() {
                 onSetPassword={openSetPassword}
                 onEditUser={openEditUser}
                 onToggleActive={handleToggleActive}
+                onRemoveUser={(u) => setRemoveDialog({ open: true, user: u })}
               />
             ))}
           </div>
         ) : (
           <div className="p-8 text-center text-slate-500 dark:text-slate-400">
-            No users have CRM access yet
+            No users have CRM access yet. Invite users or assign CRM roles to existing organization members.
           </div>
         )}
       </div>
@@ -594,11 +857,118 @@ export default function UsersPage() {
                 onSetPassword={openSetPassword}
                 onEditUser={openEditUser}
                 onToggleActive={handleToggleActive}
+                onRemoveUser={(u) => setRemoveDialog({ open: true, user: u })}
               />
             ))}
           </div>
         </div>
       )}
+
+      {/* ================================================================== */}
+      {/* Invite User Dialog */}
+      {/* ================================================================== */}
+      <Dialog open={inviteDialog} onOpenChange={setInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-teal-500" />
+              Invite User
+            </DialogTitle>
+            <DialogDescription>
+              Send an invitation email to add a new user to your organization.
+              They will receive a link to create their account.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="invite-email" className="mb-1.5 block">
+                Email Address
+              </Label>
+              <Input
+                id="invite-email"
+                type="email"
+                placeholder="user@example.com"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleInviteUser(); }}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="invite-role" className="mb-1.5 block">
+                Organization Role
+              </Label>
+              <Select value={inviteRole} onValueChange={setInviteRole}>
+                <SelectTrigger id="invite-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="advisor">Advisor</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-slate-400 mt-1.5">
+                You can assign a CRM-specific role after they accept the invitation.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInviteUser} disabled={inviting}>
+              {inviting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Invitation
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ================================================================== */}
+      {/* Remove User Confirmation Dialog */}
+      {/* ================================================================== */}
+      <AlertDialog
+        open={removeDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setRemoveDialog({ open: false, user: null });
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              Remove User
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <strong>{removeDialog.user?.full_name}</strong>?
+              This will deactivate their account and revoke all CRM access.
+              They will no longer be able to log in. This action can be reversed by reactivating the user.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRemoveUser}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={saving}
+            >
+              {saving ? 'Removing...' : 'Remove User'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ================================================================== */}
       {/* Set Password Dialog */}
