@@ -14,7 +14,8 @@ export type WorkqueueItemType =
   | 'today_task'
   | 'follow_up'
   | 'at_risk_deal'
-  | 'unread_message';
+  | 'unread_message'
+  | 'new_lead';
 
 export type WorkqueuePriority = 'urgent' | 'high' | 'normal' | 'low';
 
@@ -62,6 +63,7 @@ export interface WorkqueueSummary {
   followUps: number;
   atRiskDeals: number;
   messages: number;
+  newLeads: number;
   total: number;
 }
 
@@ -73,6 +75,7 @@ export type WorkqueueTab =
   | 'all'
   | 'approvals'
   | 'tasks'
+  | 'leads'
   | 'deals'
   | 'messages';
 

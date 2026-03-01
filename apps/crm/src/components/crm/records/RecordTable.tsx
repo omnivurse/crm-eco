@@ -294,10 +294,11 @@ const RecordCard = memo(function RecordCard({
   onAddTask,
   onDelete,
 }: RecordCardProps) {
-  // Build display name from first_name and last_name if available
+  // Build display name: prefer DB-generated title, then common data fields
   const firstName = record.data?.first_name || '';
   const lastName = record.data?.last_name || '';
-  const displayName = [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  const displayName = (record.title && record.title !== 'Untitled' ? record.title : '') || fullName || record.data?.account_name as string || record.data?.name as string || record.title || 'Untitled';
 
   // Get status
   const rawStatus = record.status ?? record.data?.status ?? record.data?.lead_status ?? record.data?.contact_status;

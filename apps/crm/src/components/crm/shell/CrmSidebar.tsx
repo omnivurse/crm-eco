@@ -361,7 +361,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
           <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
             <Image
               src="/logo.png"
-              alt="Pay It Forward HealthShare"
+              alt="Pay It Forward Health"
               width={32}
               height={32}
               className="w-full h-full object-contain"
@@ -375,7 +375,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
                 {organizationName || 'Pay It Forward'}
               </h1>
               <p className="text-[10px] font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wider">
-                Healthshare CRM
+                Health CRM
               </p>
             </div>
           )}

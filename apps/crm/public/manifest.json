@@ -1,7 +1,7 @@
 {
   "name": "Pay It Forward CRM",
   "short_name": "PIF CRM",
-  "description": "Modern CRM platform for healthshare and insurance organizations",
+  "description": "Modern CRM platform for health sharing and insurance organizations",
   "start_url": "/crm",
   "display": "standalone",
   "background_color": "#ffffff",

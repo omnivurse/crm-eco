@@ -70,7 +70,7 @@ export function getWarningMessages(warnings: EnrollmentWarnings): string[] {
   const messages: string[] = [];
   
   if (warnings.has_mandate_warning) {
-    messages.push('This member resides in a state with an individual health insurance mandate. Healthshare plans may not satisfy the mandate requirement.');
+    messages.push('This member resides in a state with an individual health insurance mandate. Health sharing plans may not satisfy the mandate requirement.');
   }
   
   if (warnings.has_age65_warning) {

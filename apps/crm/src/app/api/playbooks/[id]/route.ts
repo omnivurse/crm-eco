@@ -38,7 +38,7 @@ export async function GET(
 
     const supabase = await createClient();
     const { data: playbook, error } = await supabase
-      .from('playbooks')
+      .from('advisor_playbooks')
       .select('*')
       .eq('id', id)
       .eq('org_id', profile.organization_id)
@@ -95,7 +95,7 @@ export async function PUT(
     updateData.updated_at = new Date().toISOString();
 
     const { data: playbook, error } = await supabase
-      .from('playbooks')
+      .from('advisor_playbooks')
       .update(updateData)
       .eq('id', id)
       .eq('org_id', profile.organization_id)
@@ -139,7 +139,7 @@ export async function DELETE(
     const supabase = await createClient();
 
     const { error } = await supabase
-      .from('playbooks')
+      .from('advisor_playbooks')
       .delete()
       .eq('id', id)
       .eq('org_id', profile.organization_id);

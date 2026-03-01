@@ -11,11 +11,11 @@ const COPY_VARIANTS = {
   advisor_assisted: {
     pageTitle: 'Required Acknowledgements',
     pageDescription: 'Please read and accept each statement to continue',
-    healthshareTitle: 'Healthshare Understanding *',
+    healthshareTitle: 'Health Sharing Understanding *',
     healthshareText: (
       <>
-        I understand that this is a <strong>healthshare membership</strong>, not insurance. 
-        Healthshare ministries operate on a voluntary sharing model where members share 
+        I understand that this is a <strong>health sharing membership</strong>, not insurance.
+        Health sharing ministries operate on a voluntary sharing model where members share
         each other&apos;s medical expenses according to the program guidelines.
       </>
     ),
@@ -38,7 +38,7 @@ const COPY_VARIANTS = {
     mandateWarning: (
       <>
         Your state may have individual coverage mandates or penalties for not maintaining 
-        qualified health coverage. Healthshare ministries are not insurance and may not 
+        qualified health coverage. Health sharing ministries are not insurance and may not 
         satisfy these requirements. You are responsible for understanding and complying 
         with your state&apos;s healthcare laws.
       </>
@@ -46,7 +46,7 @@ const COPY_VARIANTS = {
     age65Warning: (
       <>
         If you are eligible for Medicare or other government programs, please consult 
-        with a licensed advisor before cancelling any existing coverage. Healthshare 
+        with a licensed advisor before cancelling any existing coverage. Health sharing
         plans are not a substitute for Medicare and may not cover all your healthcare needs.
       </>
     ),
@@ -57,7 +57,7 @@ const COPY_VARIANTS = {
     healthshareTitle: 'This is NOT Insurance *',
     healthshareText: (
       <>
-        <strong className="text-amber-700">Important:</strong> This is a <strong>healthshare membership</strong>, 
+        <strong className="text-amber-700">Important:</strong> This is a <strong>health sharing membership</strong>,
         which is different from health insurance. Members voluntarily share each other&apos;s 
         medical expenses based on program guidelines. There is no guarantee that your medical 
         bills will be paid. Please make sure you understand this before continuing.
@@ -82,7 +82,7 @@ const COPY_VARIANTS = {
     ),
     mandateWarning: (
       <>
-        <strong>Your state may require you to have health insurance.</strong> Healthshare 
+        <strong>Your state may require you to have health insurance.</strong> Health sharing
         memberships are <strong>not health insurance</strong> and may not satisfy your 
         state&apos;s requirements. You could face tax penalties or other consequences. 
         Please research your state&apos;s healthcare laws before continuing.
@@ -91,8 +91,8 @@ const COPY_VARIANTS = {
     age65Warning: (
       <>
         <strong>You may be eligible for Medicare.</strong> If you are 65 or older, you 
-        should carefully consider Medicare enrollment before joining a healthshare. 
-        Healthshare programs do <strong>not</strong> replace Medicare and may leave 
+        should carefully consider Medicare enrollment before joining a health sharing program.
+        Health sharing programs do <strong>not</strong> replace Medicare and may leave 
         significant gaps in your coverage. We strongly recommend speaking with a 
         Medicare counselor first.
       </>
@@ -101,10 +101,10 @@ const COPY_VARIANTS = {
   internal_ops: {
     pageTitle: 'Compliance Acknowledgements',
     pageDescription: 'Record member acknowledgements',
-    healthshareTitle: 'Healthshare Understanding *',
+    healthshareTitle: 'Health Sharing Understanding *',
     healthshareText: (
       <>
-        Member understands this is a healthshare membership, not insurance, operating 
+        Member understands this is a health sharing membership, not insurance, operating
         on a voluntary sharing model.
       </>
     ),
@@ -122,7 +122,7 @@ const COPY_VARIANTS = {
     ),
     mandateWarning: (
       <>
-        Member is in a mandate state. Ensure they understand healthshare may not 
+        Member is in a mandate state. Ensure they understand health sharing may not
         satisfy state requirements.
       </>
     ),

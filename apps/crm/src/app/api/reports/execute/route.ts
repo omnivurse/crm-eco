@@ -3,29 +3,29 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
-// Data source to table mapping
-const DATA_SOURCE_TABLES: Record<string, string> = {
-  // Legacy tables
-  members: 'members',
-  advisors: 'advisors',
-  enrollments: 'enrollments',
-  commissions: 'commissions',
-  // CRM tables
-  deals: 'crm_records',
-  contacts: 'crm_records',
-  leads: 'crm_records',
-  accounts: 'crm_records',
-  tasks: 'crm_tasks',
-  activities: 'crm_tasks',
+// Data source configuration: table name and org column
+const DATA_SOURCE_CONFIG: Record<string, { table: string; orgColumn: string }> = {
+  // Legacy tables use organization_id
+  members: { table: 'members', orgColumn: 'organization_id' },
+  advisors: { table: 'advisors', orgColumn: 'organization_id' },
+  enrollments: { table: 'enrollments', orgColumn: 'organization_id' },
+  commissions: { table: 'commissions', orgColumn: 'organization_id' },
+  // CRM tables use org_id
+  deals: { table: 'crm_records', orgColumn: 'org_id' },
+  contacts: { table: 'crm_records', orgColumn: 'org_id' },
+  leads: { table: 'crm_records', orgColumn: 'org_id' },
+  accounts: { table: 'crm_records', orgColumn: 'org_id' },
+  tasks: { table: 'crm_tasks', orgColumn: 'org_id' },
+  activities: { table: 'crm_tasks', orgColumn: 'org_id' },
 };
 
-// Module key to filter CRM records by module
+// Module key to look up crm_modules.id for filtering crm_records by module_id
 const DATA_SOURCE_MODULE_KEY: Record<string, string | undefined> = {
   deals: 'deals',
   contacts: 'contacts',
   leads: 'leads',
   accounts: 'accounts',
-  tasks: undefined, // crm_tasks doesn't have module_key
+  tasks: undefined, // crm_tasks doesn't use module_id
   activities: undefined,
 };
 
@@ -64,10 +64,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Data source is required' }, { status: 400 });
     }
 
-    const table = DATA_SOURCE_TABLES[dataSource];
-    if (!table) {
+    const config = DATA_SOURCE_CONFIG[dataSource];
+    if (!config) {
       return NextResponse.json({ error: 'Invalid data source' }, { status: 400 });
     }
+    const { table, orgColumn } = config;
 
     // Validate column names to prevent injection (only allow alphanumeric + underscore)
     const COLUMN_NAME_RE = /^[a-z][a-z0-9_]*$/i;
@@ -88,13 +89,22 @@ export async function POST(request: NextRequest) {
 
     let query = supabase.from(table).select(selectString, { count: 'exact' }) as any;
 
-    // Always filter by organization
-    query = query.eq('org_id', profile.organization_id);
+    // Always filter by organization (column name varies between legacy and CRM tables)
+    query = query.eq(orgColumn, profile.organization_id);
 
-    // Filter by module_key for CRM record types
+    // Filter by module_id for CRM record types (look up module by key first)
     const moduleKey = DATA_SOURCE_MODULE_KEY[dataSource];
     if (moduleKey) {
-      query = query.eq('module_key', moduleKey);
+      const { data: moduleData } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('org_id', profile.organization_id)
+        .eq('key', moduleKey)
+        .single();
+      if (!moduleData) {
+        return NextResponse.json({ data: [], total: 0, page, pageSize });
+      }
+      query = query.eq('module_id', (moduleData as { id: string }).id);
     }
 
     // Apply filters

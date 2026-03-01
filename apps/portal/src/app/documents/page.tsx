@@ -208,7 +208,7 @@ export default function DocumentsPage() {
                 <p className="text-blue-200 text-xs uppercase tracking-wider mb-1">
                   Health Sharing Member ID Card
                 </p>
-                <h2 className="text-xl font-bold">Pay It Forward HealthShare</h2>
+                <h2 className="text-xl font-bold">Pay It Forward Health</h2>
               </div>
               <div className="text-right">
                 <Shield className="h-10 w-10 text-blue-300" />

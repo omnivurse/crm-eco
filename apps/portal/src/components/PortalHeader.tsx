@@ -89,7 +89,7 @@ export function PortalHeader() {
               </div>
               <div className="hidden sm:flex flex-col">
                 <span className="font-bold text-[#003560] leading-tight">Pay It Forward</span>
-                <span className="text-xs text-[#047474] font-semibold tracking-wide">HealthShare <span className="text-[#E9B61F]">Member Portal</span></span>
+                <span className="text-xs text-[#047474] font-semibold tracking-wide">Health <span className="text-[#E9B61F]">Member Portal</span></span>
               </div>
             </Link>
           </div>

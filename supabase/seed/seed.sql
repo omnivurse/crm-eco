@@ -5,8 +5,8 @@
 INSERT INTO organizations (id, name, slug, settings)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
-  'Demo Healthshare',
-  'demo-healthshare',
+  'Demo Health',
+  'demo-health',
   '{"timezone": "America/New_York", "currency": "USD"}'::jsonb
 );
 

@@ -7,7 +7,7 @@ import { PinLockOverlay } from '@crm-eco/ui';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-    title: 'Advisor Portal',
+    title: 'Advisor Portal | Pay It Forward Health',
     description: 'Manage your leads, team, and presentations',
 };
 

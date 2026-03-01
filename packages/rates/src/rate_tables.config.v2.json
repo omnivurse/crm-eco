@@ -2,7 +2,7 @@
   "meta": {
     "currency": "USD",
     "updated_at": "2026-02-16T00:00:00Z",
-    "notes": "PIF HealthShare E123 rate tables — seed data for development"
+    "notes": "PIF Health E123 rate tables — seed data for development"
   },
   "rate_sets": {
     "current": {

@@ -156,7 +156,7 @@ export default function ScheduledReportsPage() {
    */
   /** TODO: Remove type bypass after running `npm run db:generate-types` */
   const scheduledReports = useCallback(
-    () => (supabase as Record<string, any>).from('scheduled_reports'),
+    () => (supabase as Record<string, any>).from('crm_scheduled_reports'),
     [supabase]
   );
 

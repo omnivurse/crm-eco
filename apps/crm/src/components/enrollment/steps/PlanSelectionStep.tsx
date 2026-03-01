@@ -247,7 +247,7 @@ export function PlanSelectionStep({ plans }: PlanSelectionStepProps) {
                 <p className="font-medium text-amber-800">Mandate State Warning</p>
                 <p className="text-sm text-amber-700 mt-1">
                   This member resides in a state with an individual health insurance mandate. 
-                  Healthshare plans may not satisfy the mandate requirement. Please ensure the 
+                  Health sharing plans may not satisfy the mandate requirement. Please ensure the
                   member understands this before proceeding.
                 </p>
               </div>
@@ -261,7 +261,7 @@ export function PlanSelectionStep({ plans }: PlanSelectionStepProps) {
                 <p className="text-sm text-orange-700 mt-1">
                   This member is 65 or older and may be eligible for Medicare. Please review 
                   Medicare eligibility and ensure the member understands their options before 
-                  proceeding with a healthshare plan.
+                  proceeding with a health sharing plan.
                 </p>
               </div>
             </div>
@@ -277,7 +277,7 @@ export function PlanSelectionStep({ plans }: PlanSelectionStepProps) {
             Select a Plan
           </CardTitle>
           <CardDescription>
-            Choose the healthshare plan that best fits the member&apos;s needs
+            Choose the health sharing plan that best fits the member&apos;s needs
           </CardDescription>
         </CardHeader>
         <CardContent>

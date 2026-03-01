@@ -326,7 +326,7 @@ export function AdminSidebar({
             <Link href="/dashboard" className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
               <Image
                 src="/logo-pif-full.png"
-                alt="Pay It Forward HealthShare"
+                alt="Pay It Forward Health"
                 width={180}
                 height={44}
                 className="object-contain h-9 w-auto"

@@ -166,7 +166,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
       firstName: 'John',
       lastName: 'Doe',
       email: 'john@example.com',
-      organizationName: 'Pay It Forward Healthshare',
+      organizationName: 'Pay It Forward Health',
       planName: 'Premium Family Plan',
       amount: '$299.00',
       date: new Date().toLocaleDateString(),
@@ -541,7 +541,7 @@ export function EmailTemplateForm({ template }: EmailTemplateFormProps) {
                 <Input
                   id="from_name"
                   {...form.register('from_name')}
-                  placeholder="Pay It Forward Healthshare Team"
+                  placeholder="Pay It Forward Health Team"
                 />
               </div>
 

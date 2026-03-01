@@ -32,7 +32,7 @@ export default async function MemberDashboard() {
         <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-blue-100 flex items-center justify-center">
           <Heart className="w-8 h-8 text-blue-600" />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-4">Welcome to Pay It Forward HealthShare</h1>
+        <h1 className="text-2xl font-bold text-slate-900 mb-4">Welcome to Pay It Forward Health</h1>
         <p className="text-slate-600 mb-8">
           It looks like you don&apos;t have a member account yet. 
           Start your enrollment to become a member and access your benefits.

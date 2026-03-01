@@ -206,7 +206,7 @@ export default function CrmLoginPage() {
           <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
             <span className="bg-gradient-to-r from-teal-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(20,184,166,0.5)]">Pay It Forward</span>
             <br />
-            <span className="text-white/95">HealthShare</span>
+            <span className="text-white/95">Health</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-md">
             CRM Portal — Manage your healthcare community
@@ -221,7 +221,7 @@ export default function CrmLoginPage() {
             <div className="flex justify-center lg:justify-start mb-6">
               <Image
                 src="/logo.png"
-                alt="Pay It Forward HealthShare"
+                alt="Pay It Forward Health"
                 width={200}
                 height={80}
                 className="h-16 w-auto object-contain"
@@ -353,7 +353,7 @@ export default function CrmLoginPage() {
               type="button"
               variant="outline"
               className="w-full h-14 border-brand-navy-200 bg-white text-brand-navy-700 hover:bg-brand-navy-50 hover:text-brand-navy-900 hover:border-brand-navy-300 rounded-xl transition-all shadow-sm"
-              onClick={() => window.location.href = 'mailto:support@payitforwardhealthshare.com'}
+              onClick={() => window.location.href = 'mailto:support@payitforwardhealth.com'}
             >
               Contact Administrator
             </Button>
@@ -393,7 +393,7 @@ export default function CrmLoginPage() {
             </div>
 
             <p className="text-brand-navy-400 text-xs text-center">
-              © 2026 Pay It Forward HealthShare. All rights reserved.
+              © 2026 Pay It Forward Health. All rights reserved.
             </p>
           </div>
         </div>

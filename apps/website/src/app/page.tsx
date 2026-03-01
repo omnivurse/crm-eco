@@ -116,7 +116,7 @@ export default function HomePage() {
               },
               {
                 quote:
-                  'As a self-employed freelancer, traditional insurance was unaffordable. This healthshare gives me peace of mind at a price I can actually manage.',
+                  'As a self-employed freelancer, traditional insurance was unaffordable. This health sharing community gives me peace of mind at a price I can actually manage.',
                 name: 'Maria L.',
                 role: 'Individual plan member',
               },

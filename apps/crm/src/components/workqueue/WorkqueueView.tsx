@@ -15,6 +15,7 @@ import {
   Bell,
   TrendingDown,
   MessageSquare,
+  UserPlus,
   RefreshCw,
   Inbox,
   Loader2,
@@ -79,6 +80,14 @@ const STAT_CARDS: StatConfig[] = [
     bg: 'bg-purple-100 dark:bg-purple-500/20',
     filterTab: 'tasks',
     filterTypes: ['follow_up'],
+  },
+  {
+    key: 'newLeads',
+    label: 'New Leads',
+    icon: UserPlus,
+    color: 'text-orange-600 dark:text-orange-400',
+    bg: 'bg-orange-100 dark:bg-orange-500/20',
+    filterTab: 'leads',
   },
   {
     key: 'atRiskDeals',

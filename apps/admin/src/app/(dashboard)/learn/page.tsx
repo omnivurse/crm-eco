@@ -148,7 +148,7 @@ const QUICK_LINKS = [
   { title: 'Getting Started', icon: <PlayCircle className="w-5 h-5" />, href: '/learn/getting-started' },
   { title: 'FAQs', icon: <HelpCircle className="w-5 h-5" />, href: '/learn/faq' },
   { title: 'What\'s New', icon: <Sparkles className="w-5 h-5" />, href: '/learn/changelog' },
-  { title: 'Contact Support', icon: <MessageCircle className="w-5 h-5" />, href: 'mailto:support@payitforwardhealthshare.com' },
+  { title: 'Contact Support', icon: <MessageCircle className="w-5 h-5" />, href: 'mailto:support@payitforwardhealth.com'},
 ];
 
 export default function LearnPage() {
@@ -399,7 +399,7 @@ export default function LearnPage() {
           Our support team is here to help. Reach out and we&apos;ll get back to you within 24 hours.
         </p>
         <div className="flex items-center justify-center gap-4">
-          <a href="mailto:support@payitforwardhealthshare.com">
+          <a href="mailto:support@payitforwardhealth.com">
             <Button variant="outline" className="border-slate-600 text-white hover:bg-slate-800">
               <Mail className="w-4 h-4 mr-2" />
               Email Support

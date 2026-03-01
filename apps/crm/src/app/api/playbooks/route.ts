@@ -35,7 +35,7 @@ export async function GET() {
     const supabase = await createClient();
 
     const { data: playbooks, error } = await supabase
-      .from('playbooks')
+      .from('advisor_playbooks')
       .select('*')
       .eq('org_id', profile.organization_id)
       .order('created_at', { ascending: false });
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: playbook, error } = await supabase
-      .from('playbooks')
+      .from('advisor_playbooks')
       .insert({
         org_id: profile.organization_id,
         name: parsed.data.name,

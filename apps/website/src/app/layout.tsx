@@ -23,10 +23,10 @@ export const metadata: Metadata = {
     template: '%s | Pay It Forward Health',
   },
   description:
-    'Join a community of members who share medical expenses together. Affordable healthshare plans starting at less than traditional insurance. Not insurance.',
+    'Join a community of members who share medical expenses together. Affordable health sharing plans starting at less than traditional insurance. Not insurance.',
   keywords: [
     'health sharing',
-    'healthshare',
+    'health share',
     'medical cost sharing',
     'affordable healthcare',
     'health sharing ministry',
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Pay It Forward Health | Community Health Sharing',
     description:
-      'Join a community of members who share medical expenses together. Affordable healthshare plans for individuals and families.',
+      'Join a community of members who share medical expenses together. Affordable health sharing plans for individuals and families.',
     url: 'https://payitforwardhealth.com',
     siteName: 'Pay It Forward Health',
     type: 'website',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Pay It Forward Health | Community Health Sharing',
     description:
-      'Affordable healthshare plans for individuals and families. Join our sharing community today.',
+      'Affordable health sharing plans for individuals and families. Join our sharing community today.',
   },
   robots: {
     index: true,

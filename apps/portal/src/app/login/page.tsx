@@ -167,7 +167,7 @@ export default function LoginPage() {
               </div>
               <div>
                 <span className="font-bold text-white text-lg leading-tight block">Pay It Forward</span>
-                <span className="text-[#69d1d1] text-xs font-semibold tracking-wider uppercase">HealthShare</span>
+                <span className="text-[#69d1d1] text-xs font-semibold tracking-wider uppercase">Health</span>
               </div>
             </Link>
           </div>
@@ -179,7 +179,7 @@ export default function LoginPage() {
                 Your health sharing<br />community awaits.
               </h1>
               <p className="text-white/60 mt-4 text-base leading-relaxed max-w-sm">
-                Access your dashboard, manage your needs, and stay connected with your healthshare family.
+                Access your dashboard, manage your needs, and stay connected with your health sharing family.
               </p>
             </div>
 
@@ -204,7 +204,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-white/30 text-xs">
-            &copy; {new Date().getFullYear()} Pay It Forward HealthShare. All rights reserved.
+            &copy; {new Date().getFullYear()} Pay It Forward Health. All rights reserved.
           </p>
         </div>
       </div>
@@ -224,7 +224,7 @@ export default function LoginPage() {
               </div>
               <div className="flex flex-col items-start">
                 <span className="font-bold text-[#003560] leading-tight">Pay It Forward</span>
-                <span className="text-xs text-[#047474] font-semibold">HealthShare</span>
+                <span className="text-xs text-[#047474] font-semibold">Health</span>
               </div>
             </Link>
           </div>

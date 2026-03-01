@@ -153,7 +153,7 @@ export function AddMemberDialog() {
         <DialogHeader>
           <DialogTitle>Add New Member</DialogTitle>
           <DialogDescription>
-            Create a new member in your healthshare organization
+            Create a new member in your health sharing organization
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -318,7 +318,7 @@ export function AddMemberDialog() {
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="healthshare">Healthshare</SelectItem>
+                        <SelectItem value="healthshare">Health Sharing</SelectItem>
                         <SelectItem value="major_medical">Major Medical</SelectItem>
                         <SelectItem value="dental">Dental</SelectItem>
                         <SelectItem value="vision">Vision</SelectItem>

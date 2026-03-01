@@ -7,8 +7,8 @@
 INSERT INTO organizations (id, name, slug, settings)
 VALUES (
   '00000000-0000-0000-0000-000000000001',
-  'Demo Healthshare',
-  'demo-healthshare',
+  'Demo Health',
+  'demo-health',
   '{"timezone": "America/New_York", "currency": "USD"}'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
@@ -57,7 +57,7 @@ VALUES (
   '00000000-0000-0000-0000-000000000001',
   'Basic Health Share',
   'BHS-001',
-  'Standard healthshare plan with comprehensive coverage',
+  'Standard health sharing plan with comprehensive coverage',
   299.00,
   125.00,
   1000.00,

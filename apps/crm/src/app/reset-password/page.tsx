@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
           <div className="flex justify-center mb-6">
             <Image
               src="/logo.png"
-              alt="Pay It Forward HealthShare"
+              alt="Pay It Forward Health"
               width={200}
               height={80}
               className="h-16 w-auto object-contain"

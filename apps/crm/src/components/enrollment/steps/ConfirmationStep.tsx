@@ -308,7 +308,7 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
             {snapshot.compliance?.healthshareAcknowledgement && (
               <Badge variant="secondary" className="gap-1">
                 <CheckCircle className="w-3 h-3" />
-                Healthshare Understanding
+                Health Sharing Understanding
               </Badge>
             )}
             {snapshot.compliance?.guidelinesAcknowledgement && (
@@ -406,7 +406,7 @@ export function ConfirmationStep({ members, plans, advisors }: ConfirmationStepP
                 By checking this box and submitting, I confirm that the information provided in
                 this enrollment is true and accurate to the best of my knowledge. I understand
                 that my enrollment is subject to review and approval, and I agree to the terms
-                and conditions of the healthshare program.
+                and conditions of the health sharing program.
               </p>
             </div>
           </div>

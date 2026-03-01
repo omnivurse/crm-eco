@@ -50,15 +50,21 @@ function getInitials(record: CrmRecord): string {
   const lastName = String(record.data?.last_name || '');
   if (firstName && lastName) return `${firstName[0]}${lastName[0]}`.toUpperCase();
   if (firstName) return firstName[0].toUpperCase();
-  const title = record.title || '';
-  if (title) return title[0].toUpperCase();
+  const name = getDisplayName(record);
+  if (name && name !== 'Untitled') {
+    const parts = name.split(/\s+/);
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name[0].toUpperCase();
+  }
   return '?';
 }
 
 function getDisplayName(record: CrmRecord): string {
+  if (record.title && record.title !== 'Untitled') return record.title;
   const firstName = record.data?.first_name || '';
   const lastName = record.data?.last_name || '';
-  return [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  return fullName || record.data?.account_name as string || record.data?.name as string || record.title || 'Untitled';
 }
 
 function getStatusInfo(record: CrmRecord) {

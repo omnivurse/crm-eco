@@ -157,7 +157,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Bronze',
-    'Pay It Forward HealthShare',
+    'Pay It Forward Health',
     149.00, 125.00, 2500.00, 2500.00, 100000.00,
     true, false
   )
@@ -185,7 +185,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Silver',
-    'Pay It Forward HealthShare',
+    'Pay It Forward Health',
     249.00, 125.00, 1500.00, 1500.00, 250000.00,
     true, false
   )
@@ -212,7 +212,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Gold',
-    'Pay It Forward HealthShare',
+    'Pay It Forward Health',
     349.00, 125.00, 500.00, 500.00, 500000.00,
     true, false
   )

@@ -122,7 +122,7 @@ async function tryGeminiRxPricing(
     )
     .join('\n');
 
-  const prompt = `You are helping estimate prescription costs for healthshare members.
+  const prompt = `You are helping estimate prescription costs for health sharing members.
 
 Return STRICTLY valid JSON with this exact shape (no markdown, no explanation, just JSON):
 

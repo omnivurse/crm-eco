@@ -42,7 +42,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Sales Rep', 'Deal Stage', 'Product'],
     defaultTimeRange: '30d',
     dataSource: 'deals',
-    columns: ['id', 'name', 'data', 'stage_id', 'owner_id', 'created_at', 'updated_at'],
+    columns: ['id', 'title', 'data', 'stage', 'owner_id', 'created_at', 'updated_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
@@ -55,7 +55,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Sales Rep', 'Region'],
     defaultTimeRange: '90d',
     dataSource: 'deals',
-    columns: ['id', 'name', 'data', 'stage_id', 'owner_id', 'created_at'],
+    columns: ['id', 'title', 'data', 'stage', 'owner_id', 'created_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
@@ -68,7 +68,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Sales Rep', 'Team'],
     defaultTimeRange: '30d',
     dataSource: 'deals',
-    columns: ['id', 'name', 'data', 'stage_id', 'owner_id', 'created_at'],
+    columns: ['id', 'title', 'data', 'stage', 'owner_id', 'created_at'],
     sorting: [{ column: 'owner_id', direction: 'asc' }],
   },
   {
@@ -81,7 +81,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Deal Type', 'Product'],
     defaultTimeRange: '90d',
     dataSource: 'deals',
-    columns: ['id', 'name', 'data', 'stage_id', 'created_at', 'updated_at'],
+    columns: ['id', 'title', 'data', 'stage', 'created_at', 'updated_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   // Marketing Templates
@@ -95,7 +95,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Lead Source', 'Campaign'],
     defaultTimeRange: '30d',
     dataSource: 'leads',
-    columns: ['id', 'name', 'data', 'owner_id', 'created_at'],
+    columns: ['id', 'title', 'data', 'owner_id', 'created_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
@@ -108,7 +108,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Campaign', 'Channel'],
     defaultTimeRange: '30d',
     dataSource: 'leads',
-    columns: ['id', 'name', 'data', 'created_at'],
+    columns: ['id', 'title', 'data', 'created_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   // Team Templates
@@ -163,7 +163,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Product', 'Region'],
     defaultTimeRange: '30d',
     dataSource: 'deals',
-    columns: ['id', 'name', 'data', 'stage_id', 'created_at'],
+    columns: ['id', 'title', 'data', 'stage', 'created_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
   {
@@ -204,7 +204,7 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     filters: ['Date Range', 'Owner', 'Status'],
     defaultTimeRange: '30d',
     dataSource: 'contacts',
-    columns: ['id', 'name', 'data', 'owner_id', 'created_at'],
+    columns: ['id', 'title', 'data', 'owner_id', 'created_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
   },
 ];

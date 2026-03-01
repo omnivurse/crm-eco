@@ -41,6 +41,11 @@ const DEAL_ACTIONS: WorkqueueAction[] = [
   { key: 'open', label: 'View Deal', variant: 'primary' },
 ];
 
+const LEAD_ACTIONS: WorkqueueAction[] = [
+  { key: 'open', label: 'View Lead', variant: 'primary' },
+  { key: 'dismiss', label: 'Dismiss', variant: 'secondary' },
+];
+
 const MESSAGE_ACTIONS: WorkqueueAction[] = [
   { key: 'reply', label: 'Reply', variant: 'primary' },
   { key: 'open', label: 'Open', variant: 'secondary' },
@@ -73,6 +78,7 @@ export async function GET(request: NextRequest) {
       followUpResult,
       dealsModuleResult,
       messagesResult,
+      leadsModuleResult,
     ] = await Promise.allSettled([
       // 1. Pending approvals assigned to current user
       tab === 'all' || tab === 'approvals'
@@ -160,6 +166,16 @@ export async function GET(request: NextRequest) {
             .order('last_message_at', { ascending: false })
             .limit(20)
         : Promise.resolve({ data: [], error: null }),
+
+      // 7. Leads module ID (needed to query new leads)
+      tab === 'all' || tab === 'leads'
+        ? supabase
+            .from('crm_modules')
+            .select('id')
+            .eq('org_id', profile.organization_id)
+            .eq('key', 'leads')
+            .single()
+        : Promise.resolve({ data: null, error: null }),
     ]);
 
     // Fetch at-risk deals if we have the module ID
@@ -309,6 +325,42 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // -- New leads --------------------------------------------------------
+    let newLeads: any[] = [];
+    if (tab === 'all' || tab === 'leads') {
+      const leadsModule = leadsModuleResult.status === 'fulfilled' ? leadsModuleResult.value.data : null;
+      if (leadsModule?.id) {
+        const { data } = await supabase
+          .from('crm_records')
+          .select('id, title, status, stage, data, owner_id, created_at, updated_at')
+          .eq('module_id', leadsModule.id)
+          .or(`owner_id.eq.${profile.id},owner_id.is.null`)
+          .not('stage', 'in', '("Converted","converted","Disqualified","disqualified","Closed","closed")')
+          .order('created_at', { ascending: false })
+          .limit(20);
+        newLeads = data || [];
+      }
+    }
+
+    for (const l of newLeads) {
+      const isNew = (Date.now() - new Date(l.created_at).getTime()) < 48 * 3600000; // Created in last 48h
+      items.push({
+        id: l.id,
+        type: 'new_lead',
+        priority: isNew ? 'high' : 'normal',
+        title: l.title || 'Untitled Lead',
+        subtitle: l.stage
+          ? `${l.stage}${l.data?.company ? ' · ' + l.data.company : ''}`
+          : l.data?.company ? String(l.data.company) : 'New lead — needs attention',
+        recordId: l.id,
+        recordTitle: l.title || undefined,
+        moduleKey: 'leads',
+        meta: { stage: l.stage, status: l.status, ownerId: l.owner_id },
+        createdAt: l.created_at,
+        actions: LEAD_ACTIONS,
+      });
+    }
+
     // -- Unread messages --------------------------------------------------
     const messages = messagesResult.status === 'fulfilled'
       ? (messagesResult.value as { data: any[] | null }).data || []
@@ -346,6 +398,7 @@ export async function GET(request: NextRequest) {
       followUps: items.filter((i) => i.type === 'follow_up').length,
       atRiskDeals: items.filter((i) => i.type === 'at_risk_deal').length,
       messages: items.filter((i) => i.type === 'unread_message').length,
+      newLeads: items.filter((i) => i.type === 'new_lead').length,
       total: items.length,
     };
 

@@ -1,4 +1,4 @@
-# Pay It Forward HealthShare — Design System (v1)
+# Pay It Forward Health — Design System (v1)
 
 ## Brand Principles
 

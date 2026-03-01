@@ -58,39 +58,39 @@ const steps = [
 const comparisonData = [
   {
     category: 'Monthly Cost',
-    healthshare: 'Typically 40-60% lower',
+    sharing: 'Typically 40-60% lower',
     insurance: 'Higher premiums, deductibles',
-    healthshareGood: true,
+    sharingGood: true,
   },
   {
     category: 'Coverage Model',
-    healthshare: 'Members share eligible needs',
+    sharing: 'Members share eligible needs',
     insurance: 'Insurance company pays claims',
-    healthshareGood: true,
+    sharingGood: true,
   },
   {
     category: 'Transparency',
-    healthshare: 'Full visibility into sharing',
+    sharing: 'Full visibility into sharing',
     insurance: 'Complex policies, hidden terms',
-    healthshareGood: true,
+    sharingGood: true,
   },
   {
     category: 'Community',
-    healthshare: 'Direct member-to-member support',
+    sharing: 'Direct member-to-member support',
     insurance: 'Transactional relationship',
-    healthshareGood: true,
+    sharingGood: true,
   },
   {
     category: 'Flexibility',
-    healthshare: 'Choose your providers',
+    sharing: 'Choose your providers',
     insurance: 'Network restrictions often apply',
-    healthshareGood: true,
+    sharingGood: true,
   },
   {
     category: 'Claims Process',
-    healthshare: 'Simple submission, direct sharing',
+    sharing: 'Simple submission, direct sharing',
     insurance: 'Complex claims, denials common',
-    healthshareGood: true,
+    sharingGood: true,
   },
 ];
 
@@ -229,7 +229,7 @@ export default function HowItWorksPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-14">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Healthshare vs Traditional Insurance
+              Health Sharing vs Traditional Insurance
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
               See how community health sharing compares to conventional insurance.
@@ -241,7 +241,7 @@ export default function HowItWorksPage() {
               <div className="grid grid-cols-3 bg-slate-50 border-b">
                 <div className="p-4 font-semibold text-slate-900">Category</div>
                 <div className="p-4 font-semibold text-teal-700 text-center">
-                  Healthshare
+                  Health Sharing
                 </div>
                 <div className="p-4 font-semibold text-slate-600 text-center">
                   Traditional Insurance
@@ -258,7 +258,7 @@ export default function HowItWorksPage() {
                   <div className="p-4 flex items-center justify-center gap-2">
                     <CheckCircle2 className="w-5 h-5 text-teal-600 flex-shrink-0" />
                     <span className="text-slate-700 text-sm">
-                      {row.healthshare}
+                      {row.sharing}
                     </span>
                   </div>
                   <div className="p-4 flex items-center justify-center gap-2">

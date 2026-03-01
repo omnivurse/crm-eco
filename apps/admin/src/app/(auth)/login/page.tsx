@@ -229,7 +229,7 @@ export default function LoginPage() {
               <div className="flex justify-center lg:justify-start mb-6">
                 <Image
                   src="/logo.png"
-                  alt="Pay It Forward HealthShare"
+                  alt="Pay It Forward Health"
                   width={200}
                   height={80}
                   className="h-16 w-auto object-contain"
@@ -353,7 +353,7 @@ export default function LoginPage() {
                 <span>Secured with enterprise-grade encryption</span>
               </div>
               <p className="text-slate-400 text-xs">
-                © 2026 Pay It Forward HealthShare. All rights reserved.
+                © 2026 Pay It Forward Health. All rights reserved.
               </p>
             </div>
           </div>

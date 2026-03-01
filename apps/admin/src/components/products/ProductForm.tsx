@@ -288,7 +288,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
             value={formData.provider}
             onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
             disabled={loading}
-            placeholder="Insurance/Healthshare provider"
+            placeholder="Insurance/Health sharing provider"
           />
         </div>
       </div>

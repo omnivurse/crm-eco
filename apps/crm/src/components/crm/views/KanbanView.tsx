@@ -96,9 +96,11 @@ function getFieldValue(record: CrmRecord, fieldKey: string): string {
 }
 
 function getDisplayName(record: CrmRecord): string {
+  if (record.title && record.title !== 'Untitled') return record.title;
   const firstName = record.data?.first_name || '';
   const lastName = record.data?.last_name || '';
-  return [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
+  const fullName = [firstName, lastName].filter(Boolean).join(' ');
+  return fullName || record.data?.account_name as string || record.data?.name as string || record.title || 'Untitled';
 }
 
 // Sortable Kanban Card

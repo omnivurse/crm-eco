@@ -79,7 +79,7 @@ export function SelfServeComplianceStep({
               </h4>
               <p className="text-sm text-amber-800">
                 Before proceeding, you must understand and acknowledge the following
-                about healthshare programs. Take your time to read each section.
+                about health sharing programs. Take your time to read each section.
               </p>
             </div>
           </div>

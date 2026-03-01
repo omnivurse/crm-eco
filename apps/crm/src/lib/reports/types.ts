@@ -37,15 +37,22 @@ export interface ChartConfig {
   stacked?: boolean;
 }
 
+export interface ReportSorting {
+  column: string;
+  direction: 'asc' | 'desc';
+}
+
 export interface CrmReport {
   id: string;
   org_id: string;
   name: string;
   description?: string;
   module_id?: string;
+  data_source?: string;
   report_type: ReportType;
   columns: ReportColumn[];
   filters: ReportFilter[];
+  sorting: ReportSorting[];
   grouping: ReportGrouping[];
   aggregations: ReportAggregation[];
   chart_type: ChartType;
@@ -60,9 +67,11 @@ export interface CreateReportRequest {
   name: string;
   description?: string;
   module_id?: string;
+  data_source?: string;
   report_type?: ReportType;
   columns?: ReportColumn[];
   filters?: ReportFilter[];
+  sorting?: ReportSorting[];
   grouping?: ReportGrouping[];
   aggregations?: ReportAggregation[];
   chart_type?: ChartType;
@@ -74,9 +83,11 @@ export interface UpdateReportRequest {
   name?: string;
   description?: string;
   module_id?: string;
+  data_source?: string;
   report_type?: ReportType;
   columns?: ReportColumn[];
   filters?: ReportFilter[];
+  sorting?: ReportSorting[];
   grouping?: ReportGrouping[];
   aggregations?: ReportAggregation[];
   chart_type?: ChartType;

@@ -186,7 +186,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
 
             {/* Reimbursement Info */}
             <div className="space-y-4">
-              <h3 className="font-semibold text-slate-900">Reimbursement from Pay It Forward HealthShare</h3>
+              <h3 className="font-semibold text-slate-900">Reimbursement from Pay It Forward Health</h3>
               
               <div className="space-y-3 bg-slate-50 p-4 rounded-lg">
                 <div className="flex justify-between items-center">

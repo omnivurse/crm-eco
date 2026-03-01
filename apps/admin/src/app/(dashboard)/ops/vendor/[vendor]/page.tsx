@@ -117,9 +117,9 @@ interface VendorCredential {
 const vendorInfo: Record<string, { name: string; icon: any; color: string; description: string }> = {
   arm: { name: 'ARM', icon: Shield, color: 'bg-blue-100 text-blue-600', description: 'Alliance of Health Care Sharing Ministries' },
   sedera: { name: 'Sedera', icon: Users, color: 'bg-purple-100 text-purple-600', description: 'Health cost sharing community' },
-  zion: { name: 'Zion', icon: Building2, color: 'bg-emerald-100 text-emerald-600', description: 'Zion Healthshare' },
+  zion: { name: 'Zion', icon: Building2, color: 'bg-emerald-100 text-emerald-600', description: 'Zion Health' },
   mphc: { name: 'MPHC', icon: Shield, color: 'bg-amber-100 text-amber-600', description: 'Medical Professional Health Coalition' },
-  altrua: { name: 'Altrua', icon: Users, color: 'bg-pink-100 text-pink-600', description: 'Altrua Healthshare' },
+  altrua: { name: 'Altrua', icon: Users, color: 'bg-pink-100 text-pink-600', description: 'Altrua Health' },
 };
 
 const statusConfig: Record<string, { icon: any; color: string; label: string }> = {

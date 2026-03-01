@@ -36,7 +36,6 @@ export function SelfServePlanSelectionStep({
   requestedEffectiveDate,
   medications: initialMedications,
   rxPricingResult: initialRxPricing,
-  memberState,
   onComplete,
   onRxPricing,
   loading,
@@ -138,7 +137,7 @@ export function SelfServePlanSelectionStep({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <p className="text-sm text-blue-800">
-          <strong>Choose your coverage.</strong> Select a healthshare plan that fits
+          <strong>Choose your coverage.</strong> Select a health sharing plan that fits
           your needs and budget. All plans include access to our member sharing network
           and wellness resources.
         </p>

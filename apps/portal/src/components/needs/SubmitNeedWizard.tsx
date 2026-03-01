@@ -354,7 +354,7 @@ function Step3Consent({ state, setState, onNext, onBack }: StepProps) {
           <h4 className="font-medium text-blue-900 mb-2">Medical Records Authorization</h4>
           <p className="text-sm text-blue-800 mb-4">
             To process your Need, we may need to obtain medical records from your provider.
-            By checking the box below, you authorize Pay It Forward HealthShare and its partners to obtain
+            By checking the box below, you authorize Pay It Forward Health and its partners to obtain
             medical records related to this Need, as allowed by applicable laws.
           </p>
           <div className="flex items-start gap-3">
@@ -364,7 +364,7 @@ function Step3Consent({ state, setState, onNext, onBack }: StepProps) {
               onCheckedChange={(checked) => updateConsent(checked === true)}
             />
             <Label htmlFor="consent" className="text-sm font-normal leading-relaxed cursor-pointer">
-              I authorize Pay It Forward HealthShare and its partners to obtain medical records related to this
+              I authorize Pay It Forward Health and its partners to obtain medical records related to this
               Need for the purpose of processing my sharing request. I understand this authorization
               is voluntary and that I may revoke it at any time by contacting support.
             </Label>
@@ -492,7 +492,7 @@ function Step4Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
         <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
           <p className="text-sm text-green-800">
-            You have authorized Pay It Forward HealthShare to obtain medical records related to this Need.
+            You have authorized Pay It Forward Health to obtain medical records related to this Need.
           </p>
         </div>
 

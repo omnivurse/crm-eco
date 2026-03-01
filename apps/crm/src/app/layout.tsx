@@ -28,8 +28,8 @@ const plusJakarta = Plus_Jakarta_Sans({
  * PWA Metadata Configuration
  */
 export const metadata: Metadata = {
-  title: 'Pay It Forward CRM | Healthshare Management Platform',
-  description: 'Modern CRM platform for healthshare and insurance organizations',
+  title: 'Pay It Forward CRM | Health Management Platform',
+  description: 'Modern CRM platform for health sharing and insurance organizations',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.svg',

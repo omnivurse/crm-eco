@@ -132,7 +132,7 @@ export const CrmTopBar = memo(function CrmTopBar({
       <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
         <Image
           src="/logo.png"
-          alt="Pay It Forward HealthShare"
+          alt="Pay It Forward Health"
           width={180}
           height={48}
           className="h-10 lg:h-12 w-auto object-contain"

@@ -65,9 +65,11 @@ export async function PATCH(
     if (body.name !== undefined) updateData.name = body.name;
     if (body.description !== undefined) updateData.description = body.description;
     if (body.module_id !== undefined) updateData.module_id = body.module_id;
+    if (body.data_source !== undefined) updateData.data_source = body.data_source;
     if (body.report_type !== undefined) updateData.report_type = body.report_type;
     if (body.columns !== undefined) updateData.columns = body.columns;
     if (body.filters !== undefined) updateData.filters = body.filters;
+    if (body.sorting !== undefined) updateData.sorting = body.sorting;
     if (body.grouping !== undefined) updateData.grouping = body.grouping;
     if (body.aggregations !== undefined) updateData.aggregations = body.aggregations;
     if (body.chart_type !== undefined) updateData.chart_type = body.chart_type;

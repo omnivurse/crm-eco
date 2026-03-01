@@ -1,6 +1,6 @@
 # CRM-ECO
 
-Modern CRM platform for healthshare and insurance organizations. Built with Next.js 14, Supabase, and shadcn/ui.
+Modern CRM platform for health sharing and insurance organizations. Built with Next.js 14, Supabase, and shadcn/ui.
 
 ## Features
 

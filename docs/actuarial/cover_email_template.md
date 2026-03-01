@@ -1,12 +1,12 @@
 # Cover Email Template -- Actuarial Engagement
 
-**Subject:** Actuarial Funding Engagement -- Pay It Forward HealthShare (Experience Data Enclosed)
+**Subject:** Actuarial Funding Engagement -- Pay It Forward Health (Experience Data Enclosed)
 
 ---
 
 Dear [Actuarial Firm Name] Engagement Team,
 
-We are writing to formally engage your firm to perform an actuarial funding adequacy review for the Pay It Forward HealthShare program, a health care sharing ministry program administered on the Pay It Forward Technologies EMS platform.
+We are writing to formally engage your firm to perform an actuarial funding adequacy review for the Pay It Forward Health program, a health care sharing ministry program administered on the Pay It Forward Technologies EMS platform.
 
 **What We Are Requesting:**
 
@@ -44,7 +44,7 @@ Respectfully,
 
 [Your Name]  
 [Your Title]  
-Pay It Forward HealthShare  
+Pay It Forward Health  
 [Phone] | [Email]
 
 ---

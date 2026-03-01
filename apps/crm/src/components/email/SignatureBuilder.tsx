@@ -76,7 +76,7 @@ interface SignatureBuilderProps {
   };
 }
 
-// Preset Pay It Forward HealthShare signature images
+// Preset Pay It Forward Health signature images
 const PRESET_SIGNATURES = [
   {
     id: 'pif-horizontal',
@@ -230,7 +230,7 @@ export function SignatureBuilder({
       const html = `<table style="font-family: Arial, sans-serif;">
   <tr>
     <td>
-      <img src="${preset.image}" alt="Pay It Forward HealthShare" style="max-width: 100%; height: auto; display: block;" />
+      <img src="${preset.image}" alt="Pay It Forward Health" style="max-width: 100%; height: auto; display: block;" />
     </td>
   </tr>
 </table>`;
