@@ -73,7 +73,10 @@
       "Bash(grep -B 10 \"body: JSON.stringify\" /c/Users/User/Documents/GitHub/crm-eco/apps/crm/src/app/crm/r/[recordId]/edit/page.tsx)",
       "Bash(npx tsc --noEmit -p apps/crm/tsconfig.json)",
       "Bash(npx turbo typecheck --filter=@crm-eco/crm --filter=@crm-eco/admin)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(ls -la /c/Users/User/Documents/GitHub/crm-eco/apps/admin/src/app/'\\(auth\\)')",
+      "Bash(ls -la /c/Users/User/Documents/GitHub/crm-eco/apps/admin/src/app/'\\(auth\\)'/)",
+      "Bash(npx tsc --noEmit -p apps/admin/tsconfig.json)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public"
