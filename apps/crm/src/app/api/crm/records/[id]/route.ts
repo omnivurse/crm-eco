@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
 import { getModuleBlueprint } from '@/lib/blueprints';
@@ -42,7 +43,21 @@ export async function PATCH(
     const body = await request.json();
     const updates: Record<string, unknown> = {};
 
-    if (body.data !== undefined) updates.data = body.data;
+    if (body.data !== undefined) {
+      updates.data = body.data;
+      // Sync top-level indexed columns from JSONB data so search/filters stay current
+      const d = body.data as Record<string, unknown>;
+      if (d.email !== undefined) updates.email = d.email || null;
+      if (d.phone !== undefined) updates.phone = d.phone || null;
+      if (d.first_name !== undefined || d.last_name !== undefined) {
+        const first = (d.first_name as string) || '';
+        const last = (d.last_name as string) || '';
+        updates.title = [first, last].filter(Boolean).join(' ') || previousRecord.title;
+      }
+      if (d.contact_status !== undefined) updates.status = d.contact_status || null;
+      if (d.lead_status !== undefined) updates.status = d.lead_status || null;
+      if (d.status !== undefined) updates.status = d.status || null;
+    }
     if (body.owner_id !== undefined) updates.owner_id = body.owner_id;
     if (body.status !== undefined) updates.status = body.status;
     if (body.title !== undefined) updates.title = body.title;
@@ -80,6 +95,13 @@ export async function PATCH(
       }
     }
 
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: 'No fields to update', code: 'EMPTY_UPDATE' },
+        { status: 400 },
+      );
+    }
+
     const { data: record, error } = await supabase
       .from('crm_records')
       .update(updates)
@@ -89,7 +111,21 @@ export async function PATCH(
       .single();
 
     if (error) {
+      console.error('[Records] PATCH error:', { id, error: error.message, code: error.code });
+      if (error.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'Update affected 0 rows — record may have been deleted or access denied', code: 'ZERO_ROWS' },
+          { status: 404 },
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!record) {
+      return NextResponse.json(
+        { error: 'Update returned no data', code: 'NO_DATA' },
+        { status: 500 },
+      );
     }
 
     const typedRecord = record as CrmRecord;
@@ -139,6 +175,10 @@ export async function PATCH(
     } catch (err) {
       console.error('PHI audit logging error:', err);
     }
+
+    // Revalidate cached pages so navigating back shows fresh data
+    revalidatePath('/crm');
+    revalidatePath(`/crm/r/${id}`);
 
     return NextResponse.json(record);
   } catch (error) {

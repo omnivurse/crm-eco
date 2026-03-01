@@ -97,13 +97,29 @@ export function RecordDrawer() {
     setLocalRecordData(updatedData);
 
     try {
+      // Build update payload — sync top-level indexed columns when relevant fields change
+      const updatePayload: Record<string, unknown> = { data: updatedData };
+      if (fieldKey === 'email') updatePayload.email = value || null;
+      if (fieldKey === 'phone') updatePayload.phone = value || null;
+      if (fieldKey === 'contact_status' || fieldKey === 'lead_status' || fieldKey === 'status') {
+        updatePayload.status = value || null;
+      }
+      if (fieldKey === 'first_name' || fieldKey === 'last_name') {
+        const first = (fieldKey === 'first_name' ? value : updatedData.first_name) as string || '';
+        const last = (fieldKey === 'last_name' ? value : updatedData.last_name) as string || '';
+        const newTitle = [first, last].filter(Boolean).join(' ');
+        if (newTitle) updatePayload.title = newTitle;
+      }
+
       await supabase
         .from('crm_records')
-        .update({ data: updatedData })
+        .update(updatePayload)
         .eq('id', data.record.id);
 
-      // Invalidate cache to refetch fresh data
+      // Invalidate caches to refetch fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(data.record.id) });
+      queryClient.invalidateQueries({ queryKey: ['edit-record', data.record.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(data.record.id) });
     } catch (error) {
       // Rollback on error
       setLocalRecordData(null);

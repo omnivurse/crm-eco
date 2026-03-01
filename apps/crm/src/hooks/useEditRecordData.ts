@@ -80,7 +80,7 @@ export function useEditRecordData(recordId: string | null) {
     queryKey: ['edit-record', recordId],
     queryFn: () => fetchRecordWithModule(recordId!),
     enabled: !!recordId,
-    staleTime: 30_000, // 30 seconds fresh
+    staleTime: 0, // Always refetch — edits must show latest data
   });
 
   const moduleId = recordQuery.data?.module?.id;

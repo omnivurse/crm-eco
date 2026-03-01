@@ -8,7 +8,9 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
+import { queryKeys } from '@/lib/query-keys';
 import { getFieldOptions } from '@/lib/crm/utils';
 
 interface Field {
@@ -24,6 +26,7 @@ interface Field {
 export default function EditRecordPage() {
   const { recordId } = useParams<{ recordId: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [isInitialized, setIsInitialized] = useState(false);
@@ -72,9 +75,15 @@ export default function EditRecordPage() {
 
       if (!response.ok) throw new Error('Failed to save');
 
+      // Invalidate all record caches so detail/list pages show fresh data
+      await queryClient.invalidateQueries({ queryKey: ['edit-record', recordId] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(recordId) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(recordId) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
+
       toast.success('Record updated successfully');
-      router.push(`/crm/r/${recordId}`);
       router.refresh();
+      router.push(`/crm/r/${recordId}`);
     } catch (error) {
       console.error('Error saving record:', error);
       toast.error('Failed to save record');

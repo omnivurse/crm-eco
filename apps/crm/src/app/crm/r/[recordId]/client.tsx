@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from '@crm-eco/ui/components/button';
@@ -22,6 +23,7 @@ import type {
   CrmAuditLog,
   CrmProfile,
 } from '@/lib/crm/types';
+import { queryKeys } from '@/lib/query-keys';
 import {
   ArrowLeft,
   Pencil,
@@ -68,6 +70,7 @@ export function RecordDetailClient({
   const [newNote, setNewNote] = useState('');
   const [isAddingNote, setIsAddingNote] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const canEdit = ['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '');
   const canDelete = ['crm_admin', 'crm_manager'].includes(profile.crm_role || '');
@@ -89,13 +92,22 @@ export function RecordDetailClient({
         body: JSON.stringify({ data }),
       });
 
-      if (response.ok) {
-        toast.success('Record saved successfully');
-        setIsEditing(false);
-        router.refresh();
-      } else {
-        toast.error('Failed to save record');
+      const result = await response.json();
+
+      if (!response.ok || !result?.id) {
+        toast.error(result?.error || 'Failed to save record');
+        return;
       }
+
+      // Invalidate all record caches so pages show fresh data
+      await queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(record.id) });
+      await queryClient.invalidateQueries({ queryKey: ['edit-record', record.id] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(record.id) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
+
+      toast.success('Record saved successfully');
+      setIsEditing(false);
+      router.refresh();
     } catch (error) {
       console.error('Failed to save record:', error);
       toast.error('Failed to save record');
