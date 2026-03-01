@@ -6,6 +6,23 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || Deno.env.get('ALLOWED_ORIGIN') || '*').split(',').map(s => s.trim());
 
+// Simple in-memory rate limiter: 5 confirmations per user per hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5;
+const RATE_WINDOW_MS = 3600_000;
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || '';
   const allowedOrigin = ALLOWED_ORIGINS.includes('*') ? '*' : (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
@@ -215,6 +232,14 @@ Deno.serve(async (req) => {
     if (!isSuper && !isAdmin) {
       return new Response(JSON.stringify({ error: 'Forbidden - insufficient permissions' }), {
         status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Rate limit: 5 confirmations per target user per hour
+    if (!checkRateLimit(`confirm_${body.user_id}`)) {
+      return new Response(JSON.stringify({ error: 'Too many confirmation requests. Try again later.' }), {
+        status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }

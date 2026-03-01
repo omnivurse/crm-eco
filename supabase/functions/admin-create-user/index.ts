@@ -29,6 +29,30 @@ interface AdminProfile {
   organization_id: string | null;
 }
 
+// Simple in-memory rate limiter: 10 user creations per admin per hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 3600_000;
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
+function generateSecurePassword(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  const arr = new Uint8Array(20);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, (b) => chars[b % chars.length]).join('');
+}
+
 async function getAdminProfile(accessToken: string): Promise<AdminProfile | null> {
   try {
     const tokenParts = accessToken.split('.');
@@ -219,8 +243,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Rate limit: 10 user creations per admin per hour
+    if (!checkRateLimit(`create_user_${adminProfile.id}`)) {
+      return new Response(JSON.stringify({ error: 'Too many user creation requests. Try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Generate secure password if not provided
-    const password = body.password ?? crypto.randomUUID();
+    const password = body.password ?? generateSecurePassword();
 
     // Create user via Supabase Admin API
     const createUserRes = await fetch(`${SUPABASE_URL}/auth/v1/admin/users`, {

@@ -96,35 +96,43 @@ This is an automated message from Pay It Forward Health. Please do not reply dir
     let emailProvider = "";
     let errorMessage = "";
 
-    // Try Resend first if API key is available
+    // Try Resend with retry (up to 2 retries with backoff)
     if (resendApiKey) {
-      try {
-        const resendResponse = await sendViaResend(
-          resendApiKey,
-          fromEmail,
-          recipientEmail,
-          subject,
-          enhancedBodyText,
-          enhancedBodyHtml
-        );
-        
-        if (resendResponse.success) {
-          emailSent = true;
-          emailProvider = "resend";
-          console.log("Email sent via Resend:", resendResponse.id);
-        } else {
-          errorMessage = resendResponse.error || "Resend failed";
-          console.error("Resend error:", errorMessage);
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const resendResponse = await sendViaResend(
+            resendApiKey,
+            fromEmail,
+            recipientEmail,
+            subject,
+            enhancedBodyText,
+            enhancedBodyHtml
+          );
+
+          if (resendResponse.success) {
+            emailSent = true;
+            emailProvider = "resend";
+            console.log(`Email sent via Resend (attempt ${attempt}):`, resendResponse.id);
+            break;
+          } else {
+            errorMessage = resendResponse.error || "Resend failed";
+            console.error(`Resend error (attempt ${attempt}/${maxAttempts}):`, errorMessage);
+          }
+        } catch (error) {
+          errorMessage = error instanceof Error ? error.message : "Resend error";
+          console.error(`Resend exception (attempt ${attempt}/${maxAttempts}):`, error);
         }
-      } catch (error) {
-        errorMessage = error instanceof Error ? error.message : "Resend error";
-        console.error("Resend exception:", error);
+
+        // Wait before retry (1s, then 3s)
+        if (attempt < maxAttempts) {
+          await new Promise(r => setTimeout(r, attempt * 1000 + 1000));
+        }
       }
     }
 
-    // No fallback provider — if Resend fails, report the failure clearly
     if (!emailSent) {
-      console.error("CRITICAL: Resend failed and no fallback email provider is configured. Ticket email NOT sent.", errorMessage);
+      console.error("CRITICAL: All Resend attempts failed. Ticket email NOT sent.", errorMessage);
     }
 
     // Update notification status

@@ -158,7 +158,11 @@ export class ResendEmailService {
       result = result.replace(regex, this.escapeHtml(value || ''));
     }
 
-    // Remove any remaining unreplaced variables
+    // Warn about unreplaced variables before removing them
+    const unreplaced = result.match(/\{\{\s*\w+\s*\}\}/g);
+    if (unreplaced) {
+      console.warn(`[ResendEmailService] Unreplaced template variables found: ${unreplaced.join(', ')}`);
+    }
     result = result.replace(/\{\{\s*\w+\s*\}\}/g, '');
 
     return result;

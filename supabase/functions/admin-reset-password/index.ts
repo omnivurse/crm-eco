@@ -6,6 +6,23 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
 const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || Deno.env.get('ALLOWED_ORIGIN') || '*').split(',').map(s => s.trim());
 
+// Simple in-memory rate limiter: 5 requests per user per hour
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT = 5;
+const RATE_WINDOW_MS = 3600_000; // 1 hour
+
+function checkRateLimit(key: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
 function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') || '';
   const allowedOrigin = ALLOWED_ORIGINS.includes('*') ? '*' : (ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]);
@@ -21,14 +38,14 @@ interface ResetPasswordBody {
   email: string;
 }
 
-async function getProfileRole(accessToken: string): Promise<string | null> {
+async function getProfileRole(accessToken: string): Promise<{ role: string | null; userId: string | null }> {
   try {
     const tokenParts = accessToken.split('.');
-    if (tokenParts.length !== 3) return null;
+    if (tokenParts.length !== 3) return { role: null, userId: null };
 
     const payload = JSON.parse(atob(tokenParts[1]));
     const userId = payload?.sub;
-    if (!userId) return null;
+    if (!userId) return { role: null, userId: null };
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role&id=eq.${userId}`, {
       headers: {
@@ -38,13 +55,13 @@ async function getProfileRole(accessToken: string): Promise<string | null> {
       },
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) return { role: null, userId: null };
 
     const rows = await res.json();
-    return rows?.[0]?.role ?? null;
+    return { role: rows?.[0]?.role ?? null, userId };
   } catch (error) {
     console.error('Error fetching profile role:', error);
-    return null;
+    return { role: null, userId: null };
   }
 }
 
@@ -69,39 +86,46 @@ async function writeAudit(actorId: string, targetUserId: string, action: string,
   }
 }
 
-function generateSecurePassword(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  const arr = new Uint8Array(20);
-  crypto.getRandomValues(arr);
-  return Array.from(arr, (b) => chars[b % chars.length]).join('');
-}
+async function generateRecoveryLink(email: string): Promise<string> {
+  const siteUrl = Deno.env.get('SITE_URL') || 'https://crm.payitforwardhealth.com';
+  const redirectTo = `${siteUrl}/update-password`;
 
-async function generatePasswordResetLink(userId: string, email: string): Promise<string> {
-  const newPassword = generateSecurePassword();
-
-  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
-    method: 'PUT',
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${SERVICE_ROLE}`,
       apikey: SERVICE_ROLE,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      password: newPassword,
+      type: 'recovery',
+      email,
+      options: { redirectTo },
     })
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(`Failed to reset password: ${errorText}`);
+    throw new Error(`Failed to generate recovery link: ${errorText}`);
   }
 
-  return newPassword;
+  const result = await res.json();
+  const actionLink = result?.properties?.action_link;
+  if (!actionLink) {
+    throw new Error('No action_link in generateLink response');
+  }
+  return actionLink;
 }
 
-async function sendPasswordResetEmail(to: string, tempPassword: string): Promise<boolean> {
+async function sendPasswordResetEmail(to: string, recoveryLink: string): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY not configured - skipping email send');
+    return false;
+  }
+
+  const fromEmail = Deno.env.get('FROM_EMAIL');
+  if (!fromEmail) {
+    console.error('FROM_EMAIL not configured');
     return false;
   }
 
@@ -111,37 +135,30 @@ async function sendPasswordResetEmail(to: string, tempPassword: string): Promise
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;">
       <tr>
         <td style="padding:24px 24px 8px 24px;">
-          <h1 style="margin:0;font-size:20px;">Your Password Has Been Reset</h1>
-          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has reset your Pay It Forward Health account password.</p>
+          <h1 style="margin:0;font-size:20px;">Reset Your Password</h1>
+          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has requested a password reset for your Pay It Forward Health account.</p>
         </td>
       </tr>
       <tr>
         <td style="padding:8px 24px 24px 24px;">
-          <div style="background:#f1f5f9;padding:16px;border-radius:10px;margin:16px 0;">
-            <p style="margin:0;font-size:12px;color:#64748b;font-weight:600;">Temporary Password:</p>
-            <p style="margin:4px 0 0 0;font-size:16px;color:#0f172a;font-family:monospace;font-weight:bold;">${tempPassword}</p>
-          </div>
-          <a href="${Deno.env.get('SITE_URL') || 'https://app.payitforwardhealth.com'}/login" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;margin-top:12px;font-size:14px;font-weight:600;">Log In Now</a>
-          <p style="font-size:12px;color:#64748b;margin-top:16px;">Please log in and change your password immediately.</p>
-          <p style="font-size:12px;color:#ef4444;margin-top:12px;">Keep this password secure and do not share it with anyone.</p>
+          <p style="font-size:14px;color:#475569;margin:16px 0;">Click the button below to set a new password:</p>
+          <a href="${recoveryLink}" style="display:inline-block;background:#0d9488;color:#fff;text-decoration:none;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;">Reset Password</a>
+          <p style="font-size:12px;color:#94a3b8;margin-top:16px;">This link will expire in 1 hour. If you did not request this, you can safely ignore this email.</p>
+          <p style="font-size:11px;color:#cbd5e1;margin-top:12px;word-break:break-all;">Or copy this link: ${recoveryLink}</p>
         </td>
       </tr>
     </table>
-    <p style="font-size:12px;color:#94a3b8;margin-top:12px;">If you did not request this, please contact your administrator immediately.</p>
+    <p style="font-size:12px;color:#94a3b8;margin-top:12px;">If you did not request this, please contact your administrator.</p>
   </body>
 </html>`;
 
-  const text = `Your Password Has Been Reset
+  const text = `Reset Your Password
 
-An administrator has reset your Pay It Forward Health account password.
+An administrator has requested a password reset for your Pay It Forward Health account.
 
-Temporary Password: ${tempPassword}
+Click this link to set a new password: ${recoveryLink}
 
-Please log in and change your password immediately.
-
-Keep this password secure and do not share it with anyone.
-
-If you did not request this, please contact your administrator immediately.`;
+This link will expire in 1 hour. If you did not request this, you can safely ignore this email.`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -151,9 +168,9 @@ If you did not request this, please contact your administrator immediately.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `Pay It Forward Health <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
+        from: `Pay It Forward Health <${fromEmail}>`,
         to: [to],
-        subject: 'Password Reset - Pay It Forward Health',
+        subject: 'Reset Your Password - Pay It Forward Health',
         html,
         text
       })
@@ -199,7 +216,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    const requesterRole = await getProfileRole(token);
+    // Rate limit: 5 resets per target user per hour
+    if (!checkRateLimit(`reset_${body.user_id}`)) {
+      return new Response(JSON.stringify({ error: 'Too many password reset requests. Try again later.' }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const { role: requesterRole, userId: actorId } = await getProfileRole(token);
     if (!requesterRole) {
       return new Response(JSON.stringify({ error: 'Unauthorized - invalid token' }), {
         status: 401,
@@ -217,24 +242,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    const tempPassword = await generatePasswordResetLink(body.user_id, body.email);
+    // Generate a recovery link (does NOT change the user's password)
+    const recoveryLink = await generateRecoveryLink(body.email);
 
-    const emailSent = await sendPasswordResetEmail(body.email, tempPassword);
+    // Send the recovery email via Resend
+    const emailSent = await sendPasswordResetEmail(body.email, recoveryLink);
 
-    const tokenParts = token.split('.');
-    let actorId = 'system';
-    try {
-      if (tokenParts.length === 3) {
-        const payload = JSON.parse(atob(tokenParts[1]));
-        actorId = payload?.sub || 'system';
-      }
-    } catch (e) {
-      console.warn('Could not decode actor from token');
-    }
-
-    await writeAudit(actorId, body.user_id, 'password_reset_sent', {
+    await writeAudit(actorId || 'system', body.user_id, 'password_reset_sent', {
       email: body.email,
       email_sent: emailSent,
+      method: 'recovery_link',
     });
 
     const hasResendKey = !!RESEND_API_KEY;
@@ -245,7 +262,7 @@ Deno.serve(async (req) => {
           success: false,
           email_sent: false,
           resend_configured: hasResendKey,
-          message: 'Password was reset but email delivery failed. Please retry or configure RESEND_API_KEY.',
+          message: 'Recovery link generated but email delivery failed. Please retry or configure RESEND_API_KEY.',
         }),
         {
           status: 502,
