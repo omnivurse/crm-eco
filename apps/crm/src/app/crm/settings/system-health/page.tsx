@@ -38,8 +38,19 @@ interface HealthCheck {
 
 async function getHealthChecks(): Promise<HealthCheck[]> {
   const checks: HealthCheck[] = [];
-  const supabase = await createCrmClient();
-  const profile = await getCurrentProfile();
+  let supabase;
+  let profile;
+  try {
+    supabase = await createCrmClient();
+  } catch (err) {
+    console.error('[SystemHealth] Failed to create CRM client:', err);
+    return checks;
+  }
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[SystemHealth] Failed to get profile:', err);
+  }
 
   // ============================================
   // INFRASTRUCTURE CHECKS
@@ -543,7 +554,13 @@ function CategorySection({
 }
 
 async function SystemHealthContent() {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[SystemHealth] Failed to get profile:', err);
+    redirect('/crm-login');
+  }
 
   if (!profile) {
     redirect('/crm-login');

@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { getCurrentProfile, getAllModules, getFieldsForModule } from '@/lib/crm/queries';
+import type { CrmModule, CrmField } from '@/lib/crm/types';
 import { FieldsManagerClient } from './FieldsManagerClient';
 
 interface PageProps {
@@ -28,7 +29,7 @@ async function FieldsContent({ searchParams }: PageProps) {
     redirect('/crm/settings?error=admin_only');
   }
 
-  let modules;
+  let modules: CrmModule[];
   try {
     modules = await getAllModules(profile.organization_id);
   } catch (err) {
@@ -40,7 +41,7 @@ async function FieldsContent({ searchParams }: PageProps) {
     ? modules.find(m => m.id === moduleId)
     : modules[0];
 
-  let fields;
+  let fields: CrmField[];
   try {
     fields = selectedModule
       ? await getFieldsForModule(selectedModule.id)

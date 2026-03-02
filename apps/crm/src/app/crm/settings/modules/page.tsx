@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getCurrentProfile, getAllModules } from '@/lib/crm/queries';
+import type { CrmModule } from '@/lib/crm/types';
 import ModulesClient from './modules-client';
 
 async function ModulesContent() {
@@ -19,7 +20,7 @@ async function ModulesContent() {
     redirect('/crm/settings?error=admin_only');
   }
 
-  let modules;
+  let modules: CrmModule[];
   try {
     modules = await getAllModules(profile.organization_id);
   } catch (err) {

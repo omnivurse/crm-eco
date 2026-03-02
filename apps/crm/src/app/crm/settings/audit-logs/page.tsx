@@ -5,37 +5,62 @@ import { AuditLogsClient } from './client';
 
 export const dynamic = 'force-dynamic';
 
-async function getAuditData() {
-  // Use verifyCrmAccess for request-scoped cached auth
-  const { user, profile } = await verifyCrmAccess();
+async function AuditLogsContent() {
+  let user, profile;
+  try {
+    const access = await verifyCrmAccess();
+    user = access.user;
+    profile = access.profile;
+  } catch (err) {
+    console.error('[AuditLogs] Failed to verify access:', err);
+    redirect('/crm-login');
+  }
 
   if (!user || !profile) {
     redirect('/crm-login');
   }
-
-  // Get Supabase client for queries (also request-scoped cached)
-  const supabase = await createClient();
 
   // Only admin and manager can view audit logs
   if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
     redirect('/crm/settings');
   }
 
+  // Get Supabase client for queries (also request-scoped cached)
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (err) {
+    console.error('[AuditLogs] Failed to create client:', err);
+    redirect('/crm-login');
+  }
+
   // Fetch initial audit logs
-  const { data: initialLogs } = await supabase
-    .from('unified_audit_logs')
-    .select('*')
-    .eq('organization_id', profile.organization_id)
-    .order('created_at', { ascending: false })
-    .limit(100);
+  let initialLogs: any[] = [];
+  try {
+    const { data } = await supabase
+      .from('unified_audit_logs')
+      .select('*')
+      .eq('organization_id', profile.organization_id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    initialLogs = (data || []) as any[];
+  } catch (err) {
+    console.error('[AuditLogs] Failed to fetch logs:', err);
+  }
 
   // Fetch users for filter dropdown
-  const { data: users } = await supabase
-    .from('profiles')
-    .select('id, full_name, email')
-    .eq('organization_id', profile.organization_id)
-    .eq('is_active', true)
-    .order('full_name') as { data: { id: string; full_name: string; email: string }[] | null };
+  let users: { id: string; full_name: string; email: string }[] = [];
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .eq('organization_id', profile.organization_id)
+      .eq('is_active', true)
+      .order('full_name') as { data: { id: string; full_name: string; email: string }[] | null };
+    users = data || [];
+  } catch (err) {
+    console.error('[AuditLogs] Failed to fetch users:', err);
+  }
 
   // Extend profile with email from auth user for client component
   const extendedProfile = {
@@ -44,11 +69,13 @@ async function getAuditData() {
     email: user.email || '',
   };
 
-  return {
-    profile: extendedProfile,
-    initialLogs: (initialLogs || []) as any[],
-    users: users || [],
-  };
+  return (
+    <AuditLogsClient
+      initialLogs={initialLogs}
+      users={users}
+      profile={extendedProfile}
+    />
+  );
 }
 
 function AuditLogsSkeleton() {
@@ -106,16 +133,10 @@ function AuditLogsSkeleton() {
   );
 }
 
-export default async function AuditLogsPage() {
-  const { profile, initialLogs, users } = await getAuditData();
-
+export default function AuditLogsPage() {
   return (
     <Suspense fallback={<AuditLogsSkeleton />}>
-      <AuditLogsClient
-        initialLogs={initialLogs}
-        users={users}
-        profile={profile}
-      />
+      <AuditLogsContent />
     </Suspense>
   );
 }
