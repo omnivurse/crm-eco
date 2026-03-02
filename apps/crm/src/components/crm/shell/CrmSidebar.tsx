@@ -209,7 +209,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
     'Health Sharing': true,
     'Vendors': true,
     'Email': true,
-    'Communication': false,
+    'Communication': true,
     'Automation': false,
     'Integrations': false,
     'Settings': false,
@@ -294,7 +294,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
       defaultOpen: true,
       items: [
         { name: 'Inbox', href: '/crm/inbox', icon: Inbox },
-        { name: 'Compose Email', href: '/crm/inbox?compose=true', icon: Send },
+        { name: 'Compose Email', href: '/crm/inbox?compose=true', icon: Mail },
         { name: 'SMS Campaigns', href: '/crm/communications?tab=sms', icon: MessageSquare, isBeta: true },
         { name: 'Call Logs', href: '/crm/activities?type=calls', icon: Phone },
         { name: 'Notifications', href: '/crm/settings/comms', icon: Bell },
