@@ -14,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@crm-eco/ui/components/dialog';
 import {
   Select,
@@ -477,118 +476,125 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
+      {/* Create/Edit — Full-screen modal */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-7xl">
-          <DialogHeader>
-            <DialogTitle>
-              {editingTemplate ? 'Edit Template' : 'Create Template'}
-            </DialogTitle>
-            <DialogDescription>
-              {editingTemplate
-                ? 'Update your template content and settings'
-                : 'Create a reusable template for emails or SMS'}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          hideCloseButton
+          className="w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-none h-[calc(100vh-4rem)] flex flex-col p-0"
+        >
+          {/* Header bar */}
+          <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
+            <div>
+              <DialogTitle className="text-lg font-semibold">
+                {editingTemplate ? 'Edit Template' : 'Create Template'}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-slate-500 mt-0.5">
+                {editingTemplate
+                  ? 'Update your template content and settings'
+                  : 'Create a reusable template for emails or SMS'}
+              </DialogDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} size="sm">
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving} size="sm">
+                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                {editingTemplate ? 'Save Changes' : 'Create Template'}
+              </Button>
+            </div>
+          </div>
 
-          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="channel">Channel</Label>
-                <Select
-                  value={formChannel}
-                  onValueChange={(v) => setFormChannel(v as 'email' | 'sms')}
-                  disabled={!!editingTemplate}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="sms">SMS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Select value={formCategory} onValueChange={setFormCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat.value} value={cat.value}>
-                        {cat.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Metadata strip */}
+          <div className="flex flex-wrap items-end gap-4 px-6 py-3 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0">
+            <div className="space-y-1 w-36">
+              <Label className="text-xs text-slate-500">Channel</Label>
+              <Select
+                value={formChannel}
+                onValueChange={(v) => setFormChannel(v as 'email' | 'sms')}
+                disabled={!!editingTemplate}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="sms">SMS</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="name">Template Name</Label>
+            <div className="space-y-1 w-40">
+              <Label className="text-xs text-slate-500">Category</Label>
+              <Select value={formCategory} onValueChange={setFormCategory}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(cat => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1 flex-1 min-w-[200px]">
+              <Label className="text-xs text-slate-500">Template Name</Label>
               <Input
-                id="name"
                 placeholder="e.g., Welcome Email, Follow-up Message"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
+                className="h-9"
               />
             </div>
 
             {formChannel === 'email' && (
-              <div className="space-y-2">
-                <Label htmlFor="subject">Subject Line</Label>
+              <div className="space-y-1 flex-1 min-w-[200px]">
+                <Label className="text-xs text-slate-500">Subject Line</Label>
                 <Input
-                  id="subject"
                   placeholder="e.g., Welcome to {{company.name}}!"
                   value={formSubject}
                   onChange={(e) => setFormSubject(e.target.value)}
+                  className="h-9"
                 />
-                <p className="text-xs text-slate-500">
-                  Use {'{{field}}'} for merge fields
-                </p>
               </div>
             )}
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="body">
-                {formChannel === 'email' ? 'Email Body' : 'Message'}
-              </Label>
-              {formChannel === 'email' ? (
-                <LazyEmailEditor
-                  content={formBody}
-                  onChange={setFormBody}
-                  placeholder="Start composing your email template..."
-                  minHeight={300}
-                  showSourceToggle={true}
-                />
-              ) : (
+          {/* Editor — fills remaining height */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {formChannel === 'email' ? (
+              <LazyEmailEditor
+                content={formBody}
+                onChange={setFormBody}
+                placeholder="Start composing your email template..."
+                minHeight={500}
+                showSourceToggle={true}
+                className="h-full rounded-none border-0 [&_.ProseMirror]:min-h-[calc(100vh-320px)]"
+              />
+            ) : (
+              <div className="h-full p-6">
                 <Textarea
-                  id="body"
                   placeholder="Hi {{contact.first_name}}, your message here..."
                   value={formBody}
                   onChange={(e) => setFormBody(e.target.value)}
-                  rows={6}
-                  className="font-mono text-sm"
+                  className="font-mono text-sm h-full resize-none"
                 />
-              )}
-              <p className="text-xs text-slate-500">
-                Available merge fields: {'{{contact.first_name}}'}, {'{{contact.last_name}}'}, {'{{contact.email}}'}, {'{{company.name}}'}, {'{{owner.name}}'}
-              </p>
-            </div>
+              </div>
+            )}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-              {editingTemplate ? 'Save Changes' : 'Create Template'}
-            </Button>
-          </DialogFooter>
+          {/* Merge field hints in footer */}
+          <div className="flex items-center gap-3 px-6 py-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0 overflow-x-auto">
+            <span className="text-xs text-slate-400 flex-shrink-0">Merge fields:</span>
+            {['contact.first_name', 'contact.last_name', 'contact.email', 'company.name', 'owner.name'].map(f => (
+              <code key={f} className="text-xs px-1.5 py-0.5 bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 rounded-full border border-teal-200 dark:border-teal-500/30 flex-shrink-0 whitespace-nowrap">
+                {`{{${f}}}`}
+              </code>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
 

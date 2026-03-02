@@ -535,7 +535,7 @@ export function DynamicRecordForm({
   // Read-only mode: render as plain div without form or actions
   if (readOnly) {
     return (
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {renderSections()}
       </div>
     );

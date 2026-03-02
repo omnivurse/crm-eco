@@ -168,15 +168,17 @@ export function EmailEditor({
   }, [editor, onImageUpload]);
 
   return (
-    <div className={cn('email-editor rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900', className)}>
+    <div className={cn('email-editor flex flex-col rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900', className)}>
       {/* Toolbar */}
       {editable && !showSource && !showPreview && (
-        <EmailToolbar editor={editor} onImageUpload={handleImageUploadClick} />
+        <div className="flex-shrink-0">
+          <EmailToolbar editor={editor} onImageUpload={handleImageUploadClick} />
+        </div>
       )}
 
       {/* Mode Toggle Bar */}
       {showSourceToggle && (
-        <div className="flex items-center justify-end gap-2 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+        <div className="flex items-center justify-end gap-2 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex-shrink-0">
           <Button
             type="button"
             variant={!showSource && !showPreview ? 'secondary' : 'ghost'}
@@ -220,17 +222,17 @@ export function EmailEditor({
       )}
 
       {/* Editor Content */}
-      <div style={{ minHeight }}>
+      <div className="flex-1 min-h-0 overflow-y-auto" style={{ minHeight }}>
         {showSource ? (
-          <div className="p-3">
+          <div className="p-3 h-full flex flex-col">
             <textarea
               value={sourceContent}
               onChange={handleSourceChange}
-              className="w-full font-mono text-sm p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
+              className="w-full flex-1 font-mono text-sm p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
               style={{ minHeight: minHeight - 50 }}
               spellCheck={false}
             />
-            <div className="flex justify-end gap-2 mt-2">
+            <div className="flex justify-end gap-2 mt-2 flex-shrink-0">
               <Button
                 type="button"
                 variant="outline"
