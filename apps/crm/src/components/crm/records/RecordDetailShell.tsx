@@ -43,12 +43,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui/components/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@crm-eco/ui/components/sheet';
 import { ActionRail } from '@/components/layout/ActionRail';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { toast } from 'sonner';
-import type { CrmRecord, CrmModule, CrmField, CrmDealStage } from '@/lib/crm/types';
+import { formatDistanceToNow } from 'date-fns';
+import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 
 interface RecordDetailShellProps {
@@ -57,6 +65,8 @@ interface RecordDetailShellProps {
   fields: CrmField[];
   stages?: CrmDealStage[];
   noteCount?: number;
+  notes?: CrmNoteWithAuthor[];
+  orgId?: string;
   children: {
     overview: React.ReactNode;
     related: React.ReactNode;
@@ -135,6 +145,8 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   fields,
   stages = [],
   noteCount,
+  notes: notesProp = [],
+  orgId,
   children,
   onEdit,
   onAddTask,
@@ -163,6 +175,13 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const [noteContent, setNoteContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [showNotesDrawer, setShowNotesDrawer] = useState(false);
+
+  // Sort notes: most recent first
+  const sortedNotes = [...notesProp].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
+  const recentNotes = sortedNotes.slice(0, 3);
 
   // Lead-to-Contact conversion flags
   const isLeads = module.key === 'leads';
@@ -601,6 +620,61 @@ export const RecordDetailShell = memo(function RecordDetailShell({
       {/* Action Rail */}
       <ActionRail title="Quick Actions" width="sm" defaultCollapsed={false}>
         <div className="space-y-3">
+          {/* Notes Preview — above quick actions */}
+          <div className="pb-3 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <StickyNote className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                  Notes
+                </h4>
+                <span className="inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-slate-100 dark:bg-slate-700 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                  {notesProp.length}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddNote}
+                className="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium"
+              >
+                + Add
+              </button>
+            </div>
+            {recentNotes.length > 0 ? (
+              <div className="space-y-1.5">
+                {recentNotes.map((note) => (
+                  <button
+                    key={note.id}
+                    type="button"
+                    onClick={() => setShowNotesDrawer(true)}
+                    className="w-full text-left p-2 rounded-md bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-colors"
+                  >
+                    <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                      {note.body}
+                    </p>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block" suppressHydrationWarning>
+                      {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 dark:text-slate-500 py-2 text-center">
+                No notes yet
+              </p>
+            )}
+            {notesProp.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowNotesDrawer(true)}
+                className="mt-2 w-full text-center text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+              >
+                View all {notesProp.length} notes &rarr;
+              </button>
+            )}
+          </div>
+
+          {/* Quick Action buttons */}
           <Button
             variant="outline"
             className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5"
@@ -675,6 +749,57 @@ export const RecordDetailShell = memo(function RecordDetailShell({
           </div>
         </div>
       </ActionRail>
+
+      {/* Notes Drawer — slides from right */}
+      <Sheet open={showNotesDrawer} onOpenChange={setShowNotesDrawer}>
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-lg bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+              <StickyNote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              Notes
+              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
+                {notesProp.length}
+              </span>
+            </SheetTitle>
+            <SheetDescription className="text-slate-500 dark:text-slate-400">
+              All notes for {record.title || 'this record'}, most recent first.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6 space-y-3">
+            {sortedNotes.length > 0 ? (
+              sortedNotes.map((note) => (
+                <div
+                  key={note.id}
+                  className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                      <UserCircle className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
+                      {note.author?.full_name || 'Unknown'}
+                    </span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0" suppressHydrationWarning>
+                      {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                    {note.body}
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <StickyNote className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+                <p className="text-sm text-slate-500 dark:text-slate-400">No notes yet.</p>
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Add Task Modal */}
       <Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>

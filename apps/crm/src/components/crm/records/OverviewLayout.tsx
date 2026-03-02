@@ -6,10 +6,9 @@ import { SectionNav, type SectionMeta } from './SectionNav';
 interface OverviewLayoutProps {
   sections: SectionMeta[];
   fieldContent: React.ReactNode;
-  notesContent: React.ReactNode;
 }
 
-export function OverviewLayout({ sections, fieldContent, notesContent }: OverviewLayoutProps) {
+export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) {
   const [activeSectionKey, setActiveSectionKey] = useState(sections[0]?.key ?? '');
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +24,6 @@ export function OverviewLayout({ sections, fieldContent, notesContent }: Overvie
 
     const observer = new IntersectionObserver(
       (entries) => {
-        // Find the topmost visible section
         let topEntry: IntersectionObserverEntry | null = null;
         for (const entry of entries) {
           if (entry.isIntersecting) {
@@ -58,19 +56,9 @@ export function OverviewLayout({ sections, fieldContent, notesContent }: Overvie
         onSectionClick={setActiveSectionKey}
       />
 
-      {/* 2-column layout: fields left, notes right */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-5">
-        {/* Left column — field sections (wider) */}
-        <div className="lg:col-span-2 min-w-0">
-          {fieldContent}
-        </div>
-
-        {/* Right column — notes & metadata (sticky sidebar) */}
-        <div className="lg:col-span-1 min-w-0">
-          <div className="lg:sticky lg:top-16 space-y-5">
-            {notesContent}
-          </div>
-        </div>
+      {/* Full-width field sections */}
+      <div className="mt-5">
+        {fieldContent}
       </div>
     </div>
   );

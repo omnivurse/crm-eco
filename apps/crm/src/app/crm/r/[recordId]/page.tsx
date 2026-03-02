@@ -19,7 +19,6 @@ import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 import { getSectionMeta } from '@/components/crm/records/section-utils';
 import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
 import { NotesPanel } from './NotesPanel';
-import { NotesOverviewCard } from './NotesOverviewCard';
 import { LegacyNotesCard } from './LegacyNotesCard';
 
 interface PageProps {
@@ -119,6 +118,8 @@ async function RecordDetailContent({ params }: PageProps) {
       fields={fields}
       stages={stages}
       noteCount={notes.length}
+      notes={notes}
+      orgId={profile.organization_id}
       className="h-[calc(100vh-64px)]"
     >
       {{
@@ -126,18 +127,20 @@ async function RecordDetailContent({ params }: PageProps) {
           <OverviewLayout
             sections={sectionMeta}
             fieldContent={
-              <DynamicRecordForm
-                record={record}
-                fields={fields}
-                layout={layout}
-                defaultValues={defaultValues}
-                readOnly
-              />
-            }
-            notesContent={
               <>
-                <NotesOverviewCard notes={notes} recordId={recordId} />
-                {legacyNotes && <LegacyNotesCard notesHtml={legacyNotes} />}
+                <DynamicRecordForm
+                  record={record}
+                  fields={fields}
+                  layout={layout}
+                  defaultValues={defaultValues}
+                  readOnly
+                />
+                {/* Legacy Notes History (imported from Zoho) — below fields */}
+                {legacyNotes && (
+                  <div className="mt-4">
+                    <LegacyNotesCard notesHtml={legacyNotes} />
+                  </div>
+                )}
               </>
             }
           />
