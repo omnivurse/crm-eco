@@ -161,6 +161,31 @@ export default function InboxPage() {
     loadConversations();
   }, [loadConversations]);
 
+  // Realtime subscriptions for live inbox updates
+  useEffect(() => {
+    if (!authProfile) return;
+
+    const convChannel = supabase
+      .channel('inbox-conversations')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inbox_conversations',
+          filter: `org_id=eq.${authProfile.organization_id}`,
+        },
+        () => {
+          loadConversations();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(convChannel);
+    };
+  }, [authProfile, loadConversations]);
+
   // Load messages for selected conversation
   const loadMessages = useCallback(async (conversationId: string) => {
     setLoadingMessages(true);
@@ -180,6 +205,31 @@ export default function InboxPage() {
       setLoadingMessages(false);
     }
   }, []);
+
+  // Realtime for messages in the selected conversation
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const msgChannel = supabase
+      .channel(`inbox-messages-${selectedConversation.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'inbox_messages',
+          filter: `conversation_id=eq.${selectedConversation.id}`,
+        },
+        () => {
+          loadMessages(selectedConversation.id);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(msgChannel);
+    };
+  }, [selectedConversation, loadMessages]);
 
   // Select conversation
   const handleSelectConversation = useCallback(async (conv: InboxConversation) => {
@@ -249,6 +299,64 @@ export default function InboxPage() {
     setShowComposeModal(true);
   }, []);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in inputs/textareas/editors
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable ||
+        target.closest('[role="textbox"]') ||
+        target.closest('.tiptap')
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case 'c': // Compose
+          e.preventDefault();
+          setShowComposeModal(true);
+          break;
+        case 'e': // Archive
+          if (selectedConversation) {
+            e.preventDefault();
+            updateStatus(selectedConversation.id, 'archived');
+          }
+          break;
+        case 'j': // Next conversation
+          if (conversations.length > 0) {
+            e.preventDefault();
+            const currentIndex = selectedConversation
+              ? conversations.findIndex(c => c.id === selectedConversation.id)
+              : -1;
+            const nextIndex = Math.min(currentIndex + 1, conversations.length - 1);
+            handleSelectConversation(conversations[nextIndex]);
+          }
+          break;
+        case 'k': // Previous conversation
+          if (conversations.length > 0) {
+            e.preventDefault();
+            const currentIndex = selectedConversation
+              ? conversations.findIndex(c => c.id === selectedConversation.id)
+              : conversations.length;
+            const prevIndex = Math.max(currentIndex - 1, 0);
+            handleSelectConversation(conversations[prevIndex]);
+          }
+          break;
+        case 'Escape': // Back to list
+          if (selectedConversation) {
+            handleBackToList();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedConversation, conversations, handleSelectConversation, handleBackToList, updateStatus]);
+
   // Filter change handlers
   const handleFilterChange = useCallback((f: FilterType) => {
     setFilter(f);
@@ -313,6 +421,8 @@ export default function InboxPage() {
           onFilterChange={handleFilterChange}
           channelFilter={channelFilter}
           onChannelFilterChange={handleChannelFilterChange}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
           stats={stats}
           conversationCount={conversations.length}
           isMobileOpen={showMobileSidebar}
@@ -327,6 +437,7 @@ export default function InboxPage() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           mobileView={mobileView}
+          onBulkAction={loadConversations}
         />
 
         {/* Conversation Detail */}

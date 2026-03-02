@@ -99,11 +99,13 @@
       "Bash(npx supabase db dump --linked -s public)",
       "Bash(npx supabase db dump --linked -s public -f /tmp/schema_dump.sql)",
       "Bash(npx supabase functions deploy email-intake)",
-      "Bash(npx supabase secrets set INTAKE_MODE=inbox DEFAULT_ORG_ID='')"
+      "Bash(npx supabase secrets set INTAKE_MODE=inbox DEFAULT_ORG_ID='')",
+      "Bash(npx supabase functions deploy send-scheduled-emails --no-verify-jwt)"
     ],
     "additionalDirectories": [
       "c:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\public",
-      "c:\\Users\\User\\.claude\\plans"
+      "c:\\Users\\User\\.claude\\plans",
+      "C:\\Users\\User\\Documents\\GitHub\\crm-eco\\apps\\crm\\src\\app\\api\\inbox\\drafts"
     ]
   }
 }

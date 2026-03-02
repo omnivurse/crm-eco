@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   MessageSquare,
   Clock,
@@ -8,7 +8,12 @@ import {
   CheckCheck,
   Loader2,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   MoreVertical,
+  Paperclip,
+  Download,
+  Users,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
@@ -61,6 +66,17 @@ function formatTime(dateStr: string) {
   }
 }
 
+function formatFullDate(dateStr: string) {
+  return new Date(dateStr).toLocaleString([], {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function getInitials(name: string | null) {
   if (!name) return '?';
   return name
@@ -71,12 +87,249 @@ function getInitials(name: string | null) {
     .slice(0, 2);
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 interface MessageThreadProps {
   conversation: InboxConversation;
   messages: InboxMessage[];
   loadingMessages: boolean;
   onStatusChange: (conversationId: string, status: ConversationStatus) => void;
   onBackToList: () => void;
+}
+
+/** Renders HTML email body in a sandboxed iframe that auto-sizes to content */
+function HtmlEmailBody({ html }: { html: string }) {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(200);
+
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      try {
+        const doc = iframe.contentDocument;
+        if (doc?.body) {
+          setHeight(Math.max(60, doc.body.scrollHeight + 16));
+        }
+      } catch {
+        // cross-origin restriction - ignore
+      }
+    });
+
+    const handleLoad = () => {
+      try {
+        const doc = iframe.contentDocument;
+        if (doc?.body) {
+          setHeight(Math.max(60, doc.body.scrollHeight + 16));
+          resizeObserver.observe(doc.body);
+        }
+      } catch {
+        // cross-origin restriction - ignore
+      }
+    };
+
+    iframe.addEventListener('load', handleLoad);
+    return () => {
+      iframe.removeEventListener('load', handleLoad);
+      resizeObserver.disconnect();
+    };
+  }, [html]);
+
+  // Wrap HTML in a basic document with reset styles
+  const srcDoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #1e293b;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+    img { max-width: 100%; height: auto; }
+    a { color: #0d9488; }
+    blockquote {
+      border-left: 3px solid #e2e8f0;
+      margin: 8px 0;
+      padding: 4px 12px;
+      color: #64748b;
+    }
+    pre { overflow-x: auto; background: #f8fafc; padding: 8px; border-radius: 4px; }
+  </style>
+</head>
+<body>${html}</body>
+</html>`;
+
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={srcDoc}
+      sandbox="allow-popups allow-popups-to-escape-sandbox"
+      className="w-full border-0"
+      style={{ height: `${height}px`, minHeight: 60 }}
+      title="Email content"
+    />
+  );
+}
+
+/** Single email message in the thread */
+function EmailMessage({ msg }: { msg: InboxMessage }) {
+  const [expanded, setExpanded] = useState(true);
+  const isOutbound = msg.direction === 'outbound';
+  const hasHtml = !!msg.body_html;
+  const hasCc = msg.cc_addresses && msg.cc_addresses.length > 0;
+  const hasBcc = msg.bcc_addresses && msg.bcc_addresses.length > 0;
+  const hasAttachments = msg.attachments && msg.attachments.length > 0;
+
+  return (
+    <div className={cn(
+      'rounded-xl border overflow-hidden',
+      isOutbound
+        ? 'border-teal-200 dark:border-teal-500/30 bg-teal-50/50 dark:bg-teal-500/5'
+        : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50'
+    )}>
+      {/* Message header - always visible */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center justify-between p-3 lg:p-4 hover:bg-slate-50/50 dark:hover:bg-slate-700/20 transition-colors"
+      >
+        <div className="flex items-center gap-2 lg:gap-3 min-w-0">
+          <Avatar className="w-8 h-8 flex-shrink-0">
+            <AvatarFallback className={cn(
+              'text-xs font-medium',
+              isOutbound
+                ? 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400'
+                : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300'
+            )}>
+              {getInitials(isOutbound ? 'You' : msg.from_name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 text-left">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-slate-900 dark:text-white truncate">
+                {isOutbound ? 'You' : (msg.from_name || msg.from_address || 'Unknown')}
+              </span>
+              {!isOutbound && msg.from_address && msg.from_name && (
+                <span className="text-xs text-slate-400 truncate hidden sm:inline">
+                  &lt;{msg.from_address}&gt;
+                </span>
+              )}
+            </div>
+            {!expanded && (
+              <p className="text-xs text-slate-500 truncate max-w-[300px]">
+                {msg.body_text?.slice(0, 100) || msg.body_html?.replace(/<[^>]*>/g, '').slice(0, 100)}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {hasAttachments && (
+            <Paperclip className="w-3.5 h-3.5 text-slate-400" />
+          )}
+          <span className="text-xs text-slate-500" title={formatFullDate(msg.sent_at)}>
+            {formatTime(msg.sent_at)}
+          </span>
+          {isOutbound && (
+            msg.status === 'read' ? (
+              <CheckCheck className="w-3.5 h-3.5 text-teal-500" />
+            ) : msg.status === 'delivered' ? (
+              <Check className="w-3.5 h-3.5 text-slate-400" />
+            ) : (
+              <Clock className="w-3.5 h-3.5 text-slate-400" />
+            )
+          )}
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          )}
+        </div>
+      </button>
+
+      {/* Message body - collapsible */}
+      {expanded && (
+        <div className="border-t border-slate-100 dark:border-slate-700/50">
+          {/* To / CC / BCC line */}
+          <div className="px-3 lg:px-4 pt-2 space-y-0.5">
+            {msg.to_address && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className="font-medium w-8">To:</span>
+                <span>{msg.to_name ? `${msg.to_name} <${msg.to_address}>` : msg.to_address}</span>
+              </div>
+            )}
+            {hasCc && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className="font-medium w-8">CC:</span>
+                <span>{msg.cc_addresses.map(r => r.name ? `${r.name} <${r.email}>` : r.email).join(', ')}</span>
+              </div>
+            )}
+            {hasBcc && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                <span className="font-medium w-8">BCC:</span>
+                <span>{msg.bcc_addresses.map(r => r.name ? `${r.name} <${r.email}>` : r.email).join(', ')}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Email body */}
+          <div className="px-3 lg:px-4 py-3">
+            {hasHtml ? (
+              <HtmlEmailBody html={msg.body_html!} />
+            ) : (
+              <p className="whitespace-pre-wrap break-words text-sm text-slate-900 dark:text-white">
+                {msg.body_text || ''}
+              </p>
+            )}
+          </div>
+
+          {/* Attachments */}
+          {hasAttachments && (
+            <div className="px-3 lg:px-4 pb-3">
+              <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-500">
+                <Paperclip className="w-3.5 h-3.5" />
+                {msg.attachments.length} attachment{msg.attachments.length > 1 ? 's' : ''}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {msg.attachments.map((att, i) => (
+                  <a
+                    key={i}
+                    href={att.url || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      'inline-flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors',
+                      'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800',
+                      'hover:bg-slate-100 dark:hover:bg-slate-700',
+                      !att.url && 'opacity-50 pointer-events-none'
+                    )}
+                  >
+                    <Paperclip className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    <span className="truncate max-w-[150px] text-slate-700 dark:text-slate-300">
+                      {att.filename}
+                    </span>
+                    <span className="text-xs text-slate-400 flex-shrink-0">
+                      {formatFileSize(att.size)}
+                    </span>
+                    {att.url && <Download className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export const MessageThread = React.memo(function MessageThread({
@@ -153,12 +406,15 @@ export const MessageThread = React.memo(function MessageThread({
             <Clock className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
             Started {formatTime(conversation.first_message_at)}
           </span>
-          <span>{conversation.message_count} messages</span>
+          <span className="flex items-center gap-1">
+            <Users className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
+            {conversation.message_count} messages
+          </span>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 p-3 lg:p-4 overflow-y-auto space-y-3 lg:space-y-4">
+      <div className="flex-1 p-3 lg:p-4 overflow-y-auto space-y-3">
         {loadingMessages ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-teal-500" />
@@ -170,36 +426,7 @@ export const MessageThread = React.memo(function MessageThread({
           </div>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                'max-w-[90%] lg:max-w-[80%] p-3 lg:p-4 rounded-xl text-sm lg:text-base',
-                msg.direction === 'outbound'
-                  ? 'ml-auto bg-teal-500 text-white'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
-              )}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-medium opacity-75">
-                  {msg.direction === 'outbound' ? 'You' : msg.from_name || 'Contact'}
-                </span>
-                <span className="text-xs opacity-50">
-                  {formatTime(msg.sent_at)}
-                </span>
-              </div>
-              <p className="whitespace-pre-wrap break-words">{msg.body_text || msg.body_html}</p>
-              {msg.direction === 'outbound' && (
-                <div className="flex items-center justify-end mt-1">
-                  {msg.status === 'read' ? (
-                    <CheckCheck className="w-4 h-4 opacity-75" />
-                  ) : msg.status === 'delivered' ? (
-                    <Check className="w-4 h-4 opacity-75" />
-                  ) : (
-                    <Clock className="w-4 h-4 opacity-75" />
-                  )}
-                </div>
-              )}
-            </div>
+            <EmailMessage key={msg.id} msg={msg} />
           ))
         )}
       </div>

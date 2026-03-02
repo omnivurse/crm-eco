@@ -291,9 +291,10 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
     {
       title: 'Communication',
       collapsible: true,
-      defaultOpen: false,
+      defaultOpen: true,
       items: [
         { name: 'Inbox', href: '/crm/inbox', icon: Inbox },
+        { name: 'Compose Email', href: '/crm/inbox?compose=true', icon: Send },
         { name: 'SMS Campaigns', href: '/crm/communications?tab=sms', icon: MessageSquare, isBeta: true },
         { name: 'Call Logs', href: '/crm/activities?type=calls', icon: Phone },
         { name: 'Notifications', href: '/crm/settings/comms', icon: Bell },

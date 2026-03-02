@@ -173,6 +173,31 @@ export interface InboxView {
   updated_at: string;
 }
 
+export interface InboxDraft {
+  id: string;
+  org_id: string;
+  conversation_id: string | null;
+  author_id: string;
+  to_addresses: Array<{ email: string; name?: string }>;
+  cc_addresses: Array<{ email: string; name?: string }>;
+  bcc_addresses: Array<{ email: string; name?: string }>;
+  subject: string | null;
+  body_html: string | null;
+  body_text: string | null;
+  signature_id: string | null;
+  attachments: Array<{
+    filename: string;
+    content_type: string;
+    size: number;
+    url?: string;
+  }>;
+  scheduled_at: string | null;
+  is_reply: boolean;
+  reply_mode: 'reply' | 'reply_all' | 'forward' | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface InboxStats {
   total_open: number;
   total_pending: number;
