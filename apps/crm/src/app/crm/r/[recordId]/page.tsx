@@ -56,19 +56,27 @@ function TabSkeleton() {
 async function RecordDetailContent({ params }: PageProps) {
   const { recordId } = await params;
 
-  // Step 1: Parallelize profile and record+module (no dependency between them)
-  let profile;
-  try {
-    profile = await getCurrentProfile();
-  } catch (err) {
-    console.error('[RecordDetail] Failed to get profile:', err);
+  // Step 1: Fetch profile and record+module in parallel with safe error handling
+  const [profileResult, recordResult] = await Promise.allSettled([
+    getCurrentProfile(),
+    getRecordWithModule(recordId),
+  ]);
+
+  const profile = profileResult.status === 'fulfilled' ? profileResult.value : null;
+  if (!profile) {
+    if (profileResult.status === 'rejected') {
+      console.error('[RecordDetail] Failed to get profile:', profileResult.reason);
+    }
     return notFound();
   }
 
-  if (!profile) return notFound();
-
-  const result = await getRecordWithModule(recordId);
-  if (!result) return notFound();
+  const result = recordResult.status === 'fulfilled' ? recordResult.value : null;
+  if (!result) {
+    if (recordResult.status === 'rejected') {
+      console.error('[RecordDetail] Failed to get record:', recordResult.reason);
+    }
+    return notFound();
+  }
 
   const { record, module } = result;
 
@@ -87,19 +95,20 @@ async function RecordDetailContent({ params }: PageProps) {
 
   // Build defaultValues by merging JSONB data with top-level indexed columns
   // so email, phone, and status are visible even if not duplicated inside data
+  const recordData = record.data || {};
   const defaultValues: Record<string, unknown> = {
-    ...record.data,
-    ...(record.email && !record.data?.email && { email: record.email }),
-    ...(record.phone && !record.data?.phone && { phone: record.phone }),
-    ...(record.status && !record.data?.contact_status && { contact_status: record.status }),
+    ...recordData,
+    ...(record.email && !recordData.email && { email: record.email }),
+    ...(record.phone && !recordData.phone && { phone: record.phone }),
+    ...(record.status && !recordData.contact_status && { contact_status: record.status }),
   };
 
   // Compute section metadata on the server for the section navigator
   const sectionMeta = getSectionMeta(fields, layout);
 
   const legacyNotes =
-    typeof record.data?.notes_history === 'string' && record.data.notes_history.trim() !== ''
-      ? record.data.notes_history
+    typeof recordData.notes_history === 'string' && (recordData.notes_history as string).trim() !== ''
+      ? (recordData.notes_history as string)
       : null;
 
   return (
