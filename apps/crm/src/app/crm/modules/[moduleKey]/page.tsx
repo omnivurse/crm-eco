@@ -55,8 +55,28 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     getCachedTerritories(profile.organization_id),
   ]);
 
-  const crmModule = moduleResult.status === 'fulfilled' ? moduleResult.value : null;
+  let crmModule = moduleResult.status === 'fulfilled' ? moduleResult.value : null;
   const territories = territoriesResult.status === 'fulfilled' ? territoriesResult.value : [];
+
+  // Compatibility fallback:
+  // Some production orgs have records under the "members" module while users navigate
+  // to /crm/modules/contacts. If contacts is missing, use members as a source.
+  if (!crmModule && moduleKey === 'contacts') {
+    try {
+      const membersModule = await getModuleByKey(profile.organization_id, 'members');
+      if (membersModule) {
+        crmModule = {
+          ...membersModule,
+          key: 'contacts',
+          name: 'Contact',
+          name_plural: 'Contacts',
+        };
+      }
+    } catch (err) {
+      console.error('[ModulePage] Failed to resolve contacts fallback module:', err);
+    }
+  }
+
   if (!crmModule) return notFound();
 
   // Step 2: fields, views, defaultView in parallel (need module_id)
@@ -99,6 +119,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   }
 
   // Step 3: fetch records (needs resolved sort/filters from views)
+  let recordsModuleId = crmModule.id;
   let records: CrmRecord[] = [];
   let total = 0;
   try {
@@ -118,6 +139,40 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     console.error('[ModulePage] Failed to fetch records:', err);
   }
 
+  // Compatibility fallback:
+  // If contacts exists but has no rows, try reading from members records.
+  if (moduleKey === 'contacts' && total === 0) {
+    try {
+      const membersModule = await getModuleByKey(profile.organization_id, 'members');
+      if (membersModule && membersModule.id !== crmModule.id) {
+        const fallback = await getRecords({
+          moduleId: membersModule.id,
+          page,
+          pageSize,
+          search,
+          filters,
+          sort,
+          scope: scope || 'all',
+          territoryId: territoryId || undefined,
+        });
+
+        if (fallback.total > 0) {
+          recordsModuleId = membersModule.id;
+          records = fallback.records;
+          total = fallback.total;
+          console.warn('[ModulePage] Using contacts fallback records from members module', {
+            organizationId: profile.organization_id,
+            membersModuleId: membersModule.id,
+            contactsModuleId: crmModule.id,
+            total: fallback.total,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[ModulePage] Failed contacts->members record fallback:', err);
+    }
+  }
+
   // Step 4: fetch advisor tree data when in tree view mode
   let advisorTreeData: AdvisorTreeData | null = null;
   if (viewMode === 'tree' && treeGroupBy === 'advisor') {
@@ -129,7 +184,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
       const userAdvisorId = (profile as any).advisor_id || null;
       advisorTreeData = await getAdvisorsForTree(
         profile.organization_id,
-        crmModule.id,
+        recordsModuleId,
         userAdvisorId,
         isAdmin,
       );
@@ -150,7 +205,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     if (sortDirection) params.set('sortDirection', sortDirection);
     if (filtersParam) params.set('filters', filtersParam);
     if (territoryId) params.set('territory', territoryId);
-    return `/crm/modules/${crmModule.key}?${params.toString()}`;
+    return `/crm/modules/${moduleKey}?${params.toString()}`;
   };
 
   return (

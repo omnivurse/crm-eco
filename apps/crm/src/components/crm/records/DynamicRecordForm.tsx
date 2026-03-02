@@ -18,53 +18,10 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { CrmField, CrmLayout, CrmRecord, LayoutSection, LayoutConfig } from '@/lib/crm/types';
+import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
 import { FieldRenderer } from './FieldRenderer';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
-import type { SectionMeta } from './SectionNav';
-
-/**
- * Compute section metadata from fields + layout (can be called on the server).
- * Returns the list of sections with field counts, filtering out empty ones.
- */
-export function getSectionMeta(
-  fields: CrmField[],
-  layout?: CrmLayout | null,
-): SectionMeta[] {
-  const layoutConfig: LayoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
-
-  // Group fields by section
-  const grouped: Record<string, CrmField[]> = {};
-  for (const field of fields) {
-    const section = field.section || 'main';
-    if (!grouped[section]) grouped[section] = [];
-    grouped[section].push(field);
-  }
-
-  // Build section list from layout, then append any extras
-  const layoutSections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
-  const coveredKeys = new Set(layoutSections.map((s: LayoutSection) => s.key));
-
-  const allSections: LayoutSection[] = [...layoutSections];
-  for (const sectionKey of Object.keys(grouped)) {
-    if (!coveredKeys.has(sectionKey)) {
-      allSections.push({
-        key: sectionKey,
-        label: sectionKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-        columns: 2,
-      });
-    }
-  }
-
-  return allSections
-    .filter((s) => (grouped[s.key]?.length ?? 0) > 0)
-    .map((s) => ({
-      key: s.key,
-      label: s.label,
-      fieldCount: grouped[s.key]?.length ?? 0,
-    }));
-}
 
 // Search dropdown for lookup/user fields
 function LookupSearchField({

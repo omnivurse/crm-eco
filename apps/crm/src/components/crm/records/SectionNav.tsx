@@ -2,12 +2,9 @@
 
 import { useRef, useCallback } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import type { SectionMeta } from './section-utils';
 
-export interface SectionMeta {
-  key: string;
-  label: string;
-  fieldCount: number;
-}
+export type { SectionMeta };
 
 interface SectionNavProps {
   sections: SectionMeta[];
