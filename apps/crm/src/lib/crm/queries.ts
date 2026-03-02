@@ -219,7 +219,7 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
     return profile as CrmProfile | null;
   } catch (error) {
     console.error('[CRM] getCurrentProfile failed:', error);
-    throw error; // Re-throw so the layout can catch and redirect
+    return null; // Return null instead of throwing — callers check for null
   }
 }
 

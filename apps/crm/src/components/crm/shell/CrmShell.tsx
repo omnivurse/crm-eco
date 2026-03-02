@@ -6,6 +6,7 @@ import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
 import { ModuleProvider } from '@/contexts/ModuleContext';
+import { GizmoProvider, GizmoWidget } from '@/components/crm/gizmo';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 interface CrmShellProps {
@@ -53,48 +54,53 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
 
   return (
     <ModuleProvider>
-      <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
-        {/* Content Container */}
-        <div className="relative flex flex-col w-full h-full">
-          {/* Top Bar */}
-          <CrmTopBar
-            modules={modules}
-            profile={profile}
-            organizationName={organizationName}
-            onOpenCommandPalette={handleOpenCommandPalette}
-            mobileMenuOpen={mobileMenuOpen}
-            onMobileMenuToggle={handleMobileMenuToggle}
-          />
-
-          {/* Mobile Menu Overlay */}
-          {mobileMenuOpen && (
-            <div
-              className="fixed inset-0 bg-black/50 z-30 lg:hidden"
-              onClick={handleMobileClose}
-              aria-hidden="true"
-            />
-          )}
-
-          {/* Main Content Area */}
-          <div className="flex-1 flex min-h-0">
-            <ZohoContextualSidebar
-              isOpen={sidebarOpen}
-              onToggle={handleSidebarToggle}
+      <GizmoProvider profileId={profile.id}>
+        <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+          {/* Content Container */}
+          <div className="relative flex flex-col w-full h-full">
+            {/* Top Bar */}
+            <CrmTopBar
+              modules={modules}
+              profile={profile}
+              organizationName={organizationName}
+              onOpenCommandPalette={handleOpenCommandPalette}
               mobileMenuOpen={mobileMenuOpen}
-              onMobileClose={handleMobileClose}
+              onMobileMenuToggle={handleMobileMenuToggle}
             />
 
-            <main className="flex-1 min-w-0 overflow-auto p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 scrollbar-thin">
-              <div className="w-full pb-12">
-                {children}
-              </div>
-            </main>
-          </div>
+            {/* Mobile Menu Overlay */}
+            {mobileMenuOpen && (
+              <div
+                className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+                onClick={handleMobileClose}
+                aria-hidden="true"
+              />
+            )}
 
-          {/* Bottom Action Bar - Zoho-style */}
-          <BottomBar modules={modules} profile={profile} />
+            {/* Main Content Area */}
+            <div className="flex-1 flex min-h-0">
+              <ZohoContextualSidebar
+                isOpen={sidebarOpen}
+                onToggle={handleSidebarToggle}
+                mobileMenuOpen={mobileMenuOpen}
+                onMobileClose={handleMobileClose}
+              />
+
+              <main className="flex-1 min-w-0 overflow-auto p-3 sm:p-4 lg:p-6 xl:p-8 2xl:p-10 scrollbar-thin">
+                <div className="w-full pb-12">
+                  {children}
+                </div>
+              </main>
+            </div>
+
+            {/* Gizmo Tutorial Widget */}
+            <GizmoWidget />
+
+            {/* Bottom Action Bar - Zoho-style */}
+            <BottomBar modules={modules} profile={profile} />
+          </div>
         </div>
-      </div>
+      </GizmoProvider>
     </ModuleProvider>
   );
 }

@@ -123,7 +123,13 @@ const settingsCards: SettingCard[] = [
 ];
 
 async function SettingsContent() {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Settings] Failed to get profile:', err);
+    redirect('/crm-login');
+  }
   if (!profile) {
     redirect('/crm-login');
   }

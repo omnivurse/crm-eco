@@ -39,7 +39,13 @@ interface SearchRecord {
 }
 
 async function SearchResults({ query, moduleFilter }: { query: string; moduleFilter?: string }) {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Search] Failed to get profile:', err);
+    return notFound();
+  }
   if (!profile) return notFound();
 
   const supabase = await createClient();

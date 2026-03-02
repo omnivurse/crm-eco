@@ -53,7 +53,9 @@ import {
     X,
     type LucideIcon,
 } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import { useModule, getNavItemsForModule, TopModule, type NavItem } from '@/contexts/ModuleContext';
+import { useGizmo } from '@/components/crm/gizmo';
 
 // Icon mapping for all nav items
 const iconMap: Record<string, LucideIcon> = {
@@ -249,6 +251,9 @@ export function ZohoContextualSidebar({
                             </Link>
                         );
                     })}
+
+                    {/* Gizmo re-enable (only when hidden) */}
+                    <GizmoReEnableButton isOpen={isOpen} />
                 </nav>
 
                 {/* Toggle Button */}
@@ -332,5 +337,27 @@ export function ZohoContextualSidebar({
                 </div>
             </aside>
         </>
+    );
+}
+
+/** Small button shown at bottom of sidebar nav when Gizmo is globally disabled */
+function GizmoReEnableButton({ isOpen }: { isOpen: boolean }) {
+    const { enabled, setEnabled } = useGizmo();
+
+    if (enabled) return null;
+
+    return (
+        <button
+            onClick={() => setEnabled(true)}
+            className={cn(
+                'flex items-center gap-2.5 px-3 py-2 mt-4 rounded-lg text-sm font-medium transition-colors',
+                'text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10',
+                !isOpen && 'justify-center px-2'
+            )}
+            title="Show Gizmo page tips"
+        >
+            <Lightbulb className="w-5 h-5 flex-shrink-0" />
+            {isOpen && <span>Show Gizmo Tips</span>}
+        </button>
     );
 }

@@ -37,25 +37,38 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = await params;
   const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId, viewMode, treeGroupBy } = await searchParams;
   
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[ModulePage] Failed to get profile:', err);
+    return notFound();
+  }
   if (!profile) return notFound();
 
   const page = parseInt(pageStr || '1', 10);
   const pageSize = 25;
 
   // Step 1: module + territories in parallel (both only need org_id)
-  const [crmModule, territories] = await Promise.all([
+  const [moduleResult, territoriesResult] = await Promise.allSettled([
     getModuleByKey(profile.organization_id, moduleKey),
     getCachedTerritories(profile.organization_id),
   ]);
+
+  const crmModule = moduleResult.status === 'fulfilled' ? moduleResult.value : null;
+  const territories = territoriesResult.status === 'fulfilled' ? territoriesResult.value : [];
   if (!crmModule) return notFound();
 
   // Step 2: fields, views, defaultView in parallel (need module_id)
-  const [fields, views, defaultView] = await Promise.all([
+  const [fieldsResult, viewsResult, defaultViewResult] = await Promise.allSettled([
     getFieldsForModule(crmModule.id),
     getViewsForModule(crmModule.id),
     getDefaultView(crmModule.id),
   ]);
+
+  const fields = fieldsResult.status === 'fulfilled' ? fieldsResult.value : [];
+  const views = viewsResult.status === 'fulfilled' ? viewsResult.value : [];
+  const defaultView = defaultViewResult.status === 'fulfilled' ? defaultViewResult.value : null;
 
   // Resolve current view (sync — no extra await)
   let currentView: CrmView | null = null;
@@ -86,31 +99,43 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   }
 
   // Step 3: fetch records (needs resolved sort/filters from views)
-  const { records, total } = await getRecords({
-    moduleId: crmModule.id,
-    page,
-    pageSize,
-    search,
-    filters,
-    sort,
-    scope: scope || 'all',
-    territoryId: territoryId || undefined,
-  });
+  let records: CrmRecord[] = [];
+  let total = 0;
+  try {
+    const result = await getRecords({
+      moduleId: crmModule.id,
+      page,
+      pageSize,
+      search,
+      filters,
+      sort,
+      scope: scope || 'all',
+      territoryId: territoryId || undefined,
+    });
+    records = result.records;
+    total = result.total;
+  } catch (err) {
+    console.error('[ModulePage] Failed to fetch records:', err);
+  }
 
   // Step 4: fetch advisor tree data when in tree view mode
   let advisorTreeData: AdvisorTreeData | null = null;
   if (viewMode === 'tree' && treeGroupBy === 'advisor') {
-    const role = (profile as any).role || '';
-    const crmRole = (profile as any).crm_role || '';
-    const isAdmin = ['owner', 'admin', 'super_admin', 'staff'].includes(role)
-      || ['crm_admin', 'crm_manager'].includes(crmRole);
-    const userAdvisorId = (profile as any).advisor_id || null;
-    advisorTreeData = await getAdvisorsForTree(
-      profile.organization_id,
-      crmModule.id,
-      userAdvisorId,
-      isAdmin,
-    );
+    try {
+      const role = (profile as any).role || '';
+      const crmRole = (profile as any).crm_role || '';
+      const isAdmin = ['owner', 'admin', 'super_admin', 'staff'].includes(role)
+        || ['crm_admin', 'crm_manager'].includes(crmRole);
+      const userAdvisorId = (profile as any).advisor_id || null;
+      advisorTreeData = await getAdvisorsForTree(
+        profile.organization_id,
+        crmModule.id,
+        userAdvisorId,
+        isAdmin,
+      );
+    } catch (err) {
+      console.error('[ModulePage] Failed to fetch advisor tree:', err);
+    }
   }
 
   const totalPages = Math.ceil(total / pageSize);

@@ -13,33 +13,48 @@ import { PipelineClient } from './PipelineClient';
 import type { CrmRecord, CrmDealStage } from '@/lib/crm/types';
 
 async function PipelineContent() {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Pipeline] Failed to get profile:', err);
+    redirect('/crm-login');
+  }
   if (!profile) {
     redirect('/crm-login');
   }
 
   // Get deals module and stages
-  const dealsModule = await getModuleByKey(profile.organization_id, 'deals');
+  let dealsModule;
+  try {
+    dealsModule = await getModuleByKey(profile.organization_id, 'deals');
+  } catch (err) {
+    console.error('[Pipeline] Failed to get deals module:', err);
+  }
 
   let deals: CrmRecord[] = [];
   let stages: CrmDealStage[] = [];
   let totalDeals = 0;
 
   if (dealsModule) {
-    const [result, stagesResult] = await Promise.all([
-      getRecords({
-        moduleId: dealsModule.id,
-        page: 1,
-        pageSize: 100,
-        filters: [],
-        sort: [{ field: 'created_at', direction: 'desc' }],
-      }),
-      getDealStages(profile.organization_id),
-    ]);
+    try {
+      const [result, stagesResult] = await Promise.all([
+        getRecords({
+          moduleId: dealsModule.id,
+          page: 1,
+          pageSize: 100,
+          filters: [],
+          sort: [{ field: 'created_at', direction: 'desc' }],
+        }),
+        getDealStages(profile.organization_id),
+      ]);
 
-    deals = result.records;
-    totalDeals = result.total;
-    stages = stagesResult;
+      deals = result.records;
+      totalDeals = result.total;
+      stages = stagesResult;
+    } catch (err) {
+      console.error('[Pipeline] Failed to fetch deals/stages:', err);
+    }
   }
 
   // If no stages exist, show a message to configure them

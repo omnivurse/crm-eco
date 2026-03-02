@@ -63,13 +63,22 @@ async function RecordFormView({
   orgId: string;
   profileId: string;
 }) {
-  const crmModule = await getModuleByKey(orgId, moduleKey);
+  let crmModule;
+  try {
+    crmModule = await getModuleByKey(orgId, moduleKey);
+  } catch (err) {
+    console.error('[NewRecord] Failed to get module:', err);
+    return notFound();
+  }
   if (!crmModule) return notFound();
 
-  const [fields, layout] = await Promise.all([
+  const [fieldsResult, layoutResult] = await Promise.allSettled([
     getFieldsForModule(crmModule.id),
     getDefaultLayout(crmModule.id),
   ]);
+
+  const fields = fieldsResult.status === 'fulfilled' ? fieldsResult.value : [];
+  const layout = layoutResult.status === 'fulfilled' ? layoutResult.value : null;
 
   async function handleSubmit(formData: FormData) {
     'use server';
@@ -156,7 +165,13 @@ async function RecordFormView({
 async function NewRecordContent({ searchParams }: PageProps) {
   const { module: moduleKey } = await searchParams;
 
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[NewRecord] Failed to get profile:', err);
+    return notFound();
+  }
   if (!profile) return notFound();
 
   // Check create permission
