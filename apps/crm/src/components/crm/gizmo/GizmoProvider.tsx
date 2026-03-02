@@ -60,8 +60,14 @@ export function GizmoProvider({ children, profileId }: GizmoProviderProps) {
     [storageKey]
   );
 
-  // Route-derived tip state
-  const match = useMemo(() => getTipSetForPath(pathname ?? ''), [pathname]);
+  // Route-derived tip state (safe — never throws during SSR)
+  const match = useMemo(() => {
+    try {
+      return getTipSetForPath(pathname ?? '');
+    } catch {
+      return null;
+    }
+  }, [pathname]);
 
   const allCurrentTips: GizmoTip[] = match?.tipSet.tips ?? [];
   const currentPageLabel = match?.tipSet.pageLabel ?? null;
@@ -142,4 +148,9 @@ export function useGizmo() {
     throw new Error('useGizmo must be used within GizmoProvider');
   }
   return context;
+}
+
+/** Safe version that returns null instead of throwing when outside GizmoProvider */
+export function useGizmoSafe() {
+  return useContext(GizmoContext);
 }

@@ -1,4 +1,4 @@
-export { GizmoProvider, useGizmo } from './GizmoProvider';
+export { GizmoProvider, useGizmo, useGizmoSafe } from './GizmoProvider';
 export { GizmoWidget } from './GizmoWidget';
 export type {
   GizmoTip,

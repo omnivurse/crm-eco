@@ -6,7 +6,13 @@ import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
 import { ModuleProvider } from '@/contexts/ModuleContext';
-import { GizmoProvider, GizmoWidget } from '@/components/crm/gizmo';
+import { GizmoProvider } from '@/components/crm/gizmo';
+import dynamic from 'next/dynamic';
+
+const GizmoWidget = dynamic(
+  () => import('@/components/crm/gizmo/GizmoWidget').then((m) => m.GizmoWidget),
+  { ssr: false }
+);
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 interface CrmShellProps {

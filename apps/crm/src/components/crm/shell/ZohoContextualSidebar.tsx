@@ -55,7 +55,7 @@ import {
 } from 'lucide-react';
 import { Lightbulb } from 'lucide-react';
 import { useModule, getNavItemsForModule, TopModule, type NavItem } from '@/contexts/ModuleContext';
-import { useGizmo } from '@/components/crm/gizmo';
+import { useGizmoSafe } from '@/components/crm/gizmo';
 
 // Icon mapping for all nav items
 const iconMap: Record<string, LucideIcon> = {
@@ -342,13 +342,14 @@ export function ZohoContextualSidebar({
 
 /** Small button shown at bottom of sidebar nav when Gizmo is globally disabled */
 function GizmoReEnableButton({ isOpen }: { isOpen: boolean }) {
-    const { enabled, setEnabled } = useGizmo();
+    const gizmo = useGizmoSafe();
 
-    if (enabled) return null;
+    // If GizmoProvider isn't mounted yet or Gizmo is enabled, don't show
+    if (!gizmo || gizmo.enabled) return null;
 
     return (
         <button
-            onClick={() => setEnabled(true)}
+            onClick={() => gizmo.setEnabled(true)}
             className={cn(
                 'flex items-center gap-2.5 px-3 py-2 mt-4 rounded-lg text-sm font-medium transition-colors',
                 'text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10',
