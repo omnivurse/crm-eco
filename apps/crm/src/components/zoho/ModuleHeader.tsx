@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Users,
   UserPlus,
+  UserCheck,
   DollarSign,
   Building2,
   CheckSquare,
@@ -65,8 +66,37 @@ export function ModuleHeader({
   className
 }: ModuleHeaderProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
+
+  // Check if a quick sort is currently active
+  const currentSort = searchParams.get('sortField');
+  const isAdvisorSort = currentSort === 'producer_name' || currentSort === 'advisor';
+  const isAgentSort = currentSort === 'agent';
+
+  // Quick filter: sort by a field and filter to non-empty values
+  const applyQuickSort = (fieldKey: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const alreadyActive = currentSort === fieldKey;
+
+    if (alreadyActive) {
+      // Toggle off: remove sort and filter
+      params.delete('sortField');
+      params.delete('sortDirection');
+      params.delete('filters');
+    } else {
+      params.set('sortField', fieldKey);
+      params.set('sortDirection', 'asc');
+      // Add a "is not empty" filter for this field
+      const filters = JSON.stringify([
+        { field: fieldKey, operator: 'is_not_null', value: null, category: 'field' },
+      ]);
+      params.set('filters', filters);
+    }
+    params.delete('page');
+    router.push(`/crm/modules/${module.key}?${params.toString()}`);
+  };
 
   const handleManageFields = () => {
     router.push(`/crm/settings/fields?module=${module.id}`);
@@ -126,6 +156,42 @@ export function ModuleHeader({
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          {/* Quick sort by Advisor / Agent — only for contacts & leads */}
+          {(module.key === 'contacts' || module.key === 'leads') && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => applyQuickSort(module.key === 'contacts' ? 'producer_name' : 'advisor')}
+                className={cn(
+                  'h-9',
+                  isAdvisorSort
+                    ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-950/50 dark:text-violet-300'
+                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
+                )}
+              >
+                <UserCheck className="w-4 h-4 mr-1.5" />
+                By Advisor
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => applyQuickSort('agent')}
+                className={cn(
+                  'h-9',
+                  isAgentSort
+                    ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                    : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
+                )}
+              >
+                <Users className="w-4 h-4 mr-1.5" />
+                By Agent
+              </Button>
+
+              <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
+            </>
+          )}
+
           <Button
             variant="outline"
             size="sm"

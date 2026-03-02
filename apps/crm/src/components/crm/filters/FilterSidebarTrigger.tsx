@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { Filter } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from '@crm-eco/ui/components/sheet';
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from '@crm-eco/ui/components/dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FilterSidebar } from './FilterSidebar';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
@@ -20,8 +21,8 @@ interface FilterSidebarTriggerProps {
 }
 
 /**
- * FilterSidebarTrigger -- Button that opens the full FilterSidebar in a Sheet.
- * Opens the FilterSidebar sheet for composing advanced filters.
+ * FilterSidebarTrigger -- Button that opens the full FilterSidebar in a centered Dialog.
+ * Opens the FilterSidebar dialog for composing advanced filters.
  */
 export function FilterSidebarTrigger({
   fields,
@@ -33,8 +34,8 @@ export function FilterSidebarTrigger({
   const activeCount = filters.length;
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
         <Button
           variant="outline"
           size="sm"
@@ -52,17 +53,21 @@ export function FilterSidebarTrigger({
             </span>
           )}
         </Button>
-      </SheetTrigger>
-      <SheetContent
-        side="right"
-        className="w-[380px] sm:w-[420px] p-0 flex flex-col"
+      </DialogTrigger>
+      <DialogContent
+        hideCloseButton
+        className="sm:max-w-[600px] md:max-w-[700px] p-0 max-h-[85vh] overflow-hidden flex flex-col"
+        aria-describedby={undefined}
       >
-        <FilterSidebar
-          fields={fields}
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-        />
-      </SheetContent>
-    </Sheet>
+        <DialogTitle className="sr-only">Filters</DialogTitle>
+        <div className="flex-1 overflow-y-auto">
+          <FilterSidebar
+            fields={fields}
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
