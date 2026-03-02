@@ -70,29 +70,29 @@ export function ModuleHeader({
   const icon = MODULE_ICONS[module.key] || <Users className="w-5 h-5" />;
   const colors = MODULE_COLORS[module.key] || MODULE_COLORS.contacts;
 
-  // Check if a quick sort is currently active
-  const currentSort = searchParams.get('sortField');
-  const isAdvisorSort = currentSort === 'producer_name' || currentSort === 'advisor';
-  const isAgentSort = currentSort === 'agent';
+  // Check if tree view is currently active
+  const currentViewMode = searchParams.get('viewMode');
+  const currentTreeGroupBy = searchParams.get('treeGroupBy');
+  const isAdvisorTree = currentViewMode === 'tree' && currentTreeGroupBy === 'advisor';
+  const isAgentTree = currentViewMode === 'tree' && currentTreeGroupBy === 'agent';
 
-  // Quick filter: sort by a field and filter to non-empty values
-  const applyQuickSort = (fieldKey: string) => {
+  // Toggle tree view mode for "By Advisor" / "By Agent" buttons
+  const handleTreeToggle = (groupBy: 'advisor' | 'agent') => {
     const params = new URLSearchParams(searchParams.toString());
-    const alreadyActive = currentSort === fieldKey;
+    const alreadyActive =
+      currentViewMode === 'tree' && currentTreeGroupBy === groupBy;
 
     if (alreadyActive) {
-      // Toggle off: remove sort and filter
+      // Toggle off: return to default table view
+      params.delete('viewMode');
+      params.delete('treeGroupBy');
+    } else {
+      params.set('viewMode', 'tree');
+      params.set('treeGroupBy', groupBy);
+      // Clean up sort/filter params from the old quick-sort behaviour
       params.delete('sortField');
       params.delete('sortDirection');
       params.delete('filters');
-    } else {
-      params.set('sortField', fieldKey);
-      params.set('sortDirection', 'asc');
-      // Add a "is not empty" filter for this field
-      const filters = JSON.stringify([
-        { field: fieldKey, operator: 'is_not_null', value: null, category: 'field' },
-      ]);
-      params.set('filters', filters);
     }
     params.delete('page');
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
@@ -162,10 +162,10 @@ export function ModuleHeader({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => applyQuickSort(module.key === 'contacts' ? 'producer_name' : 'advisor')}
+                onClick={() => handleTreeToggle('advisor')}
                 className={cn(
                   'h-9',
-                  isAdvisorSort
+                  isAdvisorTree
                     ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-950/50 dark:text-violet-300'
                     : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
                 )}
@@ -176,10 +176,10 @@ export function ModuleHeader({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => applyQuickSort('agent')}
+                onClick={() => handleTreeToggle('agent')}
                 className={cn(
                   'h-9',
-                  isAgentSort
+                  isAgentTree
                     ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
                     : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
                 )}

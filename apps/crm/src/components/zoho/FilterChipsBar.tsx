@@ -70,6 +70,30 @@ const SYSTEM_PRESET_LABELS: Record<string, string> = {
   has_notes: 'Has Notes',
   has_open_tasks: 'Has Open Tasks',
   has_overdue_tasks: 'Has Overdue Tasks',
+  locked: 'Locked',
+  website_activity: 'Website Activity',
+  chats: 'Chats',
+  campaigns: 'Campaigns',
+  cadences: 'Cadences',
+  record_action: 'Record Action',
+  related_records_action: 'Related Records Action',
+  scoring_rules: 'Scoring Rules',
+  latest_email_status: 'Latest Email Status',
+  attended_by: 'Attended By',
+  browser: 'Browser',
+  operating_system: 'Operating System',
+  portal_name: 'Portal Name',
+  search_engine: 'Search Engine',
+  time_spent_minutes: 'Time Spent (Min)',
+  time_visited: 'Time Visited',
+  avg_time_spent_minutes: 'Avg Time Spent (Min)',
+  days_visited: 'Days Visited',
+  first_page_visited: 'First Page Visited',
+  first_visit: 'First Visit',
+  most_recent_visit: 'Most Recent Visit',
+  number_of_chats: 'Number Of Chats',
+  referrer: 'Referrer',
+  visitor_score: 'Visitor Score',
 };
 
 /** Human-readable labels for related module keys */
@@ -83,6 +107,12 @@ const RELATED_MODULE_LABELS: Record<string, string> = {
   leads: 'Leads',
   products: 'Products',
   prospects: 'Prospects',
+  invoices: 'Invoices',
+  data_subject_requests: 'Data Subject Requests',
+  prospect_roles: 'Prospect Contact Roles',
+  providers: 'Providers',
+  reporting_contacts: 'Contacts (Reporting)',
+  meeting_invitees: 'Meeting Invitees',
 };
 
 export function FilterChipsBar({
@@ -128,6 +158,8 @@ export function FilterChipsBar({
 
         // System preset chip
         if (category === 'system' && filter.systemPreset) {
+          const presetLabel = SYSTEM_PRESET_LABELS[filter.systemPreset] || filter.systemPreset;
+          const hasValue = filter.secondValue != null && filter.secondValue !== '';
           return (
             <div
               key={index}
@@ -135,9 +167,12 @@ export function FilterChipsBar({
                 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300
                 border border-purple-200 dark:border-purple-800"
             >
-              <span className="font-medium">
-                {SYSTEM_PRESET_LABELS[filter.systemPreset] || filter.systemPreset}
-              </span>
+              <span className="font-medium">{presetLabel}</span>
+              {hasValue && (
+                <span className="text-purple-500 dark:text-purple-400">
+                  : {formatValue(filter.secondValue)}
+                </span>
+              )}
               <button
                 onClick={() => onRemoveFilter(index)}
                 className="ml-0.5 p-0.5 rounded-full hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors"

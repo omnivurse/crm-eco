@@ -3,17 +3,19 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
-import { 
+import {
   getCurrentProfile,
-  getModuleByKey, 
-  getFieldsForModule, 
+  getModuleByKey,
+  getFieldsForModule,
   getViewsForModule,
   getDefaultView,
   getRecords,
   getCachedTerritories,
+  getAdvisorsForTree,
 } from '@/lib/crm/queries';
+import type { AdvisorTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
-import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter } from '@/lib/crm/types';
+import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy } from '@/lib/crm/types';
 
 interface PageProps {
   params: Promise<{ moduleKey: string }>;
@@ -27,12 +29,13 @@ interface PageProps {
     filters?: string;
     territory?: string;
     viewMode?: string;
+    treeGroupBy?: TreeGroupBy;
   }>;
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = await params;
-  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId } = await searchParams;
+  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId, viewMode, treeGroupBy } = await searchParams;
   
   const profile = await getCurrentProfile();
   if (!profile) return notFound();
@@ -94,6 +97,22 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     territoryId: territoryId || undefined,
   });
 
+  // Step 4: fetch advisor tree data when in tree view mode
+  let advisorTreeData: AdvisorTreeData | null = null;
+  if (viewMode === 'tree' && treeGroupBy === 'advisor') {
+    const role = (profile as any).role || '';
+    const crmRole = (profile as any).crm_role || '';
+    const isAdmin = ['owner', 'admin', 'super_admin', 'staff'].includes(role)
+      || ['crm_admin', 'crm_manager'].includes(crmRole);
+    const userAdvisorId = (profile as any).advisor_id || null;
+    advisorTreeData = await getAdvisorsForTree(
+      profile.organization_id,
+      crmModule.id,
+      userAdvisorId,
+      isAdmin,
+    );
+  }
+
   const totalPages = Math.ceil(total / pageSize);
 
   const buildPageUrl = (p: number) => {
@@ -121,6 +140,8 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         totalCount={total}
         userRole={(profile as any).role || null}
         territories={territories}
+        advisorTreeData={advisorTreeData}
+        treeGroupBy={treeGroupBy}
       />
 
       {/* Pagination */}

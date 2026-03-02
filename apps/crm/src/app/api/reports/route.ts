@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       .from('crm_reports')
       .select(`
         *,
-        created_by_profile:profiles!crm_reports_created_by_fkey(full_name, avatar_url)
+        created_by_profile:profiles(full_name, avatar_url)
       `)
       .eq('org_id', profile.organization_id)
       .or(`created_by.eq.${profile.id},is_shared.eq.true`)
@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
 
     const { data: reports, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase reports query error:', error.message, error.code, error.details);
+      throw error;
+    }
 
     return NextResponse.json({ reports: reports || [] });
   } catch (error) {
@@ -71,6 +74,8 @@ export async function POST(request: NextRequest) {
         chart_type: body.chart_type || 'none',
         chart_config: body.chart_config || {},
         is_shared: body.is_shared ?? true,
+        related_modules: body.related_modules || [],
+        filter_logic: body.filter_logic || null,
         template_category: body.templateCategory || body.template_category || null,
         created_by: profile.id,
       })

@@ -6,9 +6,30 @@
 // CRM View Modes
 // ============================================================================
 
-export type ViewMode = 'table' | 'list' | 'kanban' | 'chart' | 'timeline' | 'split';
+export type ViewMode = 'table' | 'list' | 'kanban' | 'chart' | 'timeline' | 'split' | 'tree';
 
 export const VIEW_MODES: ViewMode[] = ['table', 'list', 'kanban', 'chart', 'timeline', 'split'];
+
+// ============================================================================
+// Tree View Types
+// ============================================================================
+
+export type TreeGroupBy = 'advisor' | 'agent';
+
+export interface AdvisorTreeNode {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string | null;
+  status: string;
+  commission_tier: string | null;
+  agency_name: string | null;
+  parent_advisor_id: string | null;
+  producer_code: string | null;
+  children: AdvisorTreeNode[];
+  recordCount: number;
+}
 
 // ============================================================================
 // CRM Modules
@@ -174,7 +195,33 @@ export type SystemFilterPreset =
   | 'no_activities'
   | 'has_notes'
   | 'has_open_tasks'
-  | 'has_overdue_tasks';
+  | 'has_overdue_tasks'
+  // Toggle-only presets
+  | 'locked'
+  | 'website_activity'
+  | 'chats'
+  | 'campaigns'
+  | 'cadences'
+  // Value-based presets
+  | 'record_action'
+  | 'related_records_action'
+  | 'scoring_rules'
+  | 'latest_email_status'
+  | 'attended_by'
+  | 'browser'
+  | 'operating_system'
+  | 'portal_name'
+  | 'search_engine'
+  | 'time_spent_minutes'
+  | 'time_visited'
+  | 'avg_time_spent_minutes'
+  | 'days_visited'
+  | 'first_page_visited'
+  | 'first_visit'
+  | 'most_recent_visit'
+  | 'number_of_chats'
+  | 'referrer'
+  | 'visitor_score';
 
 /** Related module filter condition */
 export type RelatedFilterCondition = 'has_any' | 'has_none' | 'count_gt' | 'count_lt';

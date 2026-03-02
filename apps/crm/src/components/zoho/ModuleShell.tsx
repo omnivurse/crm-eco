@@ -565,6 +565,10 @@ export const ModuleShell = memo(function ModuleShell({
     } else {
       params.set('viewMode', mode);
     }
+    // Clean up tree-specific params when switching away from tree view
+    if (mode !== 'tree') {
+      params.delete('treeGroupBy');
+    }
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
   }, [router, module.key]);
 

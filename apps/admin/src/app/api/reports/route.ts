@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       .from('crm_reports')
       .select(`
         *,
-        created_by_profile:profiles!crm_reports_created_by_fkey(full_name, avatar_url)
+        created_by_profile:profiles(full_name, avatar_url)
       `)
       .eq('org_id', profile.organization_id)
       .order('updated_at', { ascending: false });
@@ -49,7 +49,10 @@ export async function GET(request: NextRequest) {
 
     const { data: reports, error } = await query;
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase reports query error:', error.message, error.code, error.details);
+      throw error;
+    }
 
     return NextResponse.json({ reports: reports || [] });
   } catch (error) {

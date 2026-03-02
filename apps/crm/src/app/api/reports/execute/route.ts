@@ -25,19 +25,31 @@ const DATA_SOURCE_MODULE_KEY: Record<string, string | undefined> = {
   contacts: 'contacts',
   leads: 'leads',
   accounts: 'accounts',
-  tasks: undefined, // crm_tasks doesn't use module_id
+  tasks: undefined,
   activities: undefined,
 };
 
-interface Filter {
+interface ReportFilter {
   column: string;
   operator: string;
   value: unknown;
 }
 
-interface Sorting {
+interface ReportSorting {
   column: string;
   direction: 'asc' | 'desc';
+}
+
+interface RelatedModule {
+  module_key: string;
+  module_id: string;
+  join_type: 'inclusive' | 'exclusive';
+}
+
+const COLUMN_NAME_RE = /^[a-z][a-z0-9_]*$/i;
+
+function validateColumnName(name: string): boolean {
+  return COLUMN_NAME_RE.test(name);
 }
 
 // POST /api/reports/execute - Execute a report query
@@ -53,97 +65,97 @@ export async function POST(request: NextRequest) {
 
     const {
       dataSource,
+      moduleId,
       columns = [],
-      filters = [] as Filter[],
-      sorting = [] as Sorting[],
+      filters = [] as ReportFilter[],
+      filterLogic,
+      sorting = [] as ReportSorting[],
+      relatedModules = [] as RelatedModule[],
       page = 1,
       pageSize = 100,
     } = body;
 
-    if (!dataSource) {
-      return NextResponse.json({ error: 'Data source is required' }, { status: 400 });
+    const effectiveDataSource = dataSource || '';
+
+    // ----- Multi-module query via RPC -----
+    if (relatedModules.length > 0 && moduleId) {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('execute_report_query', {
+        p_org_id: profile.organization_id,
+        p_primary_module_id: moduleId,
+        p_related_modules: JSON.stringify(relatedModules),
+        p_columns: JSON.stringify(columns),
+        p_filters: JSON.stringify(filters),
+        p_filter_logic: filterLogic ? JSON.stringify(filterLogic) : null,
+        p_limit: pageSize,
+        p_offset: (page - 1) * pageSize,
+      });
+
+      if (rpcError) {
+        console.error('RPC error:', rpcError);
+        // Fall through to simple query on RPC failure
+      } else {
+        return NextResponse.json({
+          data: rpcData || [],
+          total: (rpcData || []).length,
+          page,
+          pageSize,
+        });
+      }
     }
 
-    const config = DATA_SOURCE_CONFIG[dataSource];
-    if (!config) {
-      return NextResponse.json({ error: 'Invalid data source' }, { status: 400 });
-    }
-    const { table, orgColumn } = config;
+    // ----- Simple single-table query -----
+    const config = effectiveDataSource
+      ? DATA_SOURCE_CONFIG[effectiveDataSource]
+      : null;
 
-    // Validate column names to prevent injection (only allow alphanumeric + underscore)
-    const COLUMN_NAME_RE = /^[a-z][a-z0-9_]*$/i;
-    const safeColumns = (columns as string[]).filter((c: string) => COLUMN_NAME_RE.test(c));
+    if (!config && !moduleId) {
+      return NextResponse.json({ error: 'Data source or module is required' }, { status: 400 });
+    }
+
+    const table = config?.table || 'crm_records';
+    const orgColumn = config?.orgColumn || 'org_id';
+
+    // Validate column names
+    const safeColumns = (columns as string[]).filter((c: string) => validateColumnName(c));
     const selectString = safeColumns.length > 0 ? safeColumns.join(', ') : '*';
 
-    // Validate filter and sorting column names
-    for (const filter of filters as Filter[]) {
-      if (!COLUMN_NAME_RE.test(filter.column)) {
+    for (const filter of filters as ReportFilter[]) {
+      if (!validateColumnName(filter.column)) {
         return NextResponse.json({ error: `Invalid filter column: ${filter.column}` }, { status: 400 });
       }
     }
-    for (const sort of sorting as Sorting[]) {
-      if (!COLUMN_NAME_RE.test(sort.column)) {
+    for (const sort of sorting as ReportSorting[]) {
+      if (!validateColumnName(sort.column)) {
         return NextResponse.json({ error: `Invalid sort column: ${sort.column}` }, { status: 400 });
       }
     }
 
     let query = supabase.from(table).select(selectString, { count: 'exact' }) as any;
 
-    // Always filter by organization (column name varies between legacy and CRM tables)
+    // Filter by organization
     query = query.eq(orgColumn, profile.organization_id);
 
-    // Filter by module_id for CRM record types (look up module by key first)
-    const moduleKey = DATA_SOURCE_MODULE_KEY[dataSource];
-    if (moduleKey) {
-      const { data: moduleData } = await supabase
-        .from('crm_modules')
-        .select('id')
-        .eq('org_id', profile.organization_id)
-        .eq('key', moduleKey)
-        .single();
-      if (!moduleData) {
-        return NextResponse.json({ data: [], total: 0, page, pageSize });
+    // Filter by module_id
+    if (moduleId) {
+      query = query.eq('module_id', moduleId);
+    } else {
+      const moduleKey = DATA_SOURCE_MODULE_KEY[effectiveDataSource];
+      if (moduleKey) {
+        const { data: moduleData } = await supabase
+          .from('crm_modules')
+          .select('id')
+          .eq('org_id', profile.organization_id)
+          .eq('key', moduleKey)
+          .single();
+        if (!moduleData) {
+          return NextResponse.json({ data: [], total: 0, page, pageSize });
+        }
+        query = query.eq('module_id', (moduleData as { id: string }).id);
       }
-      query = query.eq('module_id', (moduleData as { id: string }).id);
     }
 
     // Apply filters
-    for (const filter of filters) {
-      const { column, operator, value } = filter;
-      switch (operator) {
-        case 'eq':
-          query = query.eq(column, value);
-          break;
-        case 'neq':
-          query = query.neq(column, value);
-          break;
-        case 'gt':
-          query = query.gt(column, value);
-          break;
-        case 'gte':
-          query = query.gte(column, value);
-          break;
-        case 'lt':
-          query = query.lt(column, value);
-          break;
-        case 'lte':
-          query = query.lte(column, value);
-          break;
-        case 'like':
-        case 'ilike':
-          query = query.ilike(column, `%${value}%`);
-          break;
-        case 'in':
-          query = query.in(column, value as unknown[]);
-          break;
-        case 'is_null':
-          query = query.is(column, null);
-          break;
-        case 'is_not_null':
-          query = query.not(column, 'is', null);
-          break;
-      }
-    }
+    query = applyFilters(query, filters);
 
     // Apply sorting
     if (sorting.length > 0) {
@@ -175,4 +187,71 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+function applyFilters(query: any, filters: ReportFilter[]): any {
+  for (const filter of filters) {
+    const { column, operator, value } = filter;
+    switch (operator) {
+      case 'eq':
+      case 'equals':
+        query = query.eq(column, value);
+        break;
+      case 'neq':
+      case 'not_equals':
+        query = query.neq(column, value);
+        break;
+      case 'gt':
+        query = query.gt(column, value);
+        break;
+      case 'gte':
+        query = query.gte(column, value);
+        break;
+      case 'lt':
+        query = query.lt(column, value);
+        break;
+      case 'lte':
+        query = query.lte(column, value);
+        break;
+      case 'like':
+      case 'ilike':
+      case 'contains':
+        query = query.ilike(column, `%${value}%`);
+        break;
+      case 'not_contains':
+        query = query.not(column, 'ilike', `%${value}%`);
+        break;
+      case 'starts_with':
+        query = query.ilike(column, `${value}%`);
+        break;
+      case 'ends_with':
+        query = query.ilike(column, `%${value}`);
+        break;
+      case 'in':
+      case 'is_any_of':
+        query = query.in(column, Array.isArray(value) ? value : [value]);
+        break;
+      case 'is_null':
+      case 'is_empty':
+        query = query.is(column, null);
+        break;
+      case 'is_not_null':
+      case 'is_not_empty':
+        query = query.not(column, 'is', null);
+        break;
+      case 'is_true':
+        query = query.eq(column, true);
+        break;
+      case 'is_false':
+        query = query.eq(column, false);
+        break;
+      case 'before':
+        query = query.lt(column, value);
+        break;
+      case 'after':
+        query = query.gt(column, value);
+        break;
+    }
+  }
+  return query;
 }

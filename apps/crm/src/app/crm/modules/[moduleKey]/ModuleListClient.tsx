@@ -10,7 +10,9 @@ import { ListView } from '@/components/crm/views/ListView';
 import { KanbanView } from '@/components/crm/views/KanbanView';
 import { TimelineView } from '@/components/crm/views/TimelineView';
 import { SplitView } from '@/components/crm/views/SplitView';
-import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory } from '@/lib/crm/types';
+import { TreeView } from '@/components/crm/views/TreeView';
+import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, TreeGroupBy } from '@/lib/crm/types';
+import type { AdvisorTreeData } from '@/lib/crm/queries';
 
 // Lazy-load ChartView (~150KB recharts) only when user switches to chart mode
 const ChartView = dynamic(
@@ -28,6 +30,10 @@ interface ModuleListClientProps {
   userRole?: string | null;
   /** Available territories for territory filter */
   territories?: CrmTerritory[];
+  /** Advisor tree data for tree view (advisor mode) */
+  advisorTreeData?: AdvisorTreeData | null;
+  /** Which field the tree groups by */
+  treeGroupBy?: TreeGroupBy;
 }
 
 // Inner component that consumes the ModuleShell context and renders the active view
@@ -37,12 +43,16 @@ function ModuleViewContent({
   moduleKey,
   views,
   activeViewId,
+  advisorTreeData,
+  treeGroupBy,
 }: {
   records: CrmRecord[];
   fields: CrmField[];
   moduleKey: string;
   views: CrmView[];
   activeViewId?: string;
+  advisorTreeData?: AdvisorTreeData | null;
+  treeGroupBy?: TreeGroupBy;
 }) {
   const router = useRouter();
   const shellContext = useModuleShellOptional();
@@ -124,6 +134,18 @@ function ModuleViewContent({
         />
       );
 
+    case 'tree':
+      return (
+        <TreeView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+          advisorTreeData={advisorTreeData}
+          treeGroupBy={treeGroupBy}
+          onRowClick={handleRowClick}
+        />
+      );
+
     case 'table':
     default:
       return (
@@ -151,6 +173,8 @@ function ModuleListContent({
   totalCount,
   userRole,
   territories,
+  advisorTreeData,
+  treeGroupBy,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -169,6 +193,8 @@ function ModuleListContent({
         moduleKey={module.key}
         views={views}
         activeViewId={activeViewId}
+        advisorTreeData={advisorTreeData}
+        treeGroupBy={treeGroupBy}
       />
     </ModuleShell>
   );

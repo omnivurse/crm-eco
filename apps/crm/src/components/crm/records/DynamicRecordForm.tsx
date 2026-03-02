@@ -18,10 +18,53 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
+import type { CrmField, CrmLayout, CrmRecord, LayoutSection, LayoutConfig } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
 import { FieldRenderer } from './FieldRenderer';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import type { SectionMeta } from './SectionNav';
+
+/**
+ * Compute section metadata from fields + layout (can be called on the server).
+ * Returns the list of sections with field counts, filtering out empty ones.
+ */
+export function getSectionMeta(
+  fields: CrmField[],
+  layout?: CrmLayout | null,
+): SectionMeta[] {
+  const layoutConfig: LayoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
+
+  // Group fields by section
+  const grouped: Record<string, CrmField[]> = {};
+  for (const field of fields) {
+    const section = field.section || 'main';
+    if (!grouped[section]) grouped[section] = [];
+    grouped[section].push(field);
+  }
+
+  // Build section list from layout, then append any extras
+  const layoutSections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
+  const coveredKeys = new Set(layoutSections.map((s: LayoutSection) => s.key));
+
+  const allSections: LayoutSection[] = [...layoutSections];
+  for (const sectionKey of Object.keys(grouped)) {
+    if (!coveredKeys.has(sectionKey)) {
+      allSections.push({
+        key: sectionKey,
+        label: sectionKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        columns: 2,
+      });
+    }
+  }
+
+  return allSections
+    .filter((s) => (grouped[s.key]?.length ?? 0) > 0)
+    .map((s) => ({
+      key: s.key,
+      label: s.label,
+      fieldCount: grouped[s.key]?.length ?? 0,
+    }));
+}
 
 // Search dropdown for lookup/user fields
 function LookupSearchField({
@@ -468,9 +511,12 @@ export function DynamicRecordForm({
         const isCollapsed = collapsedSections.has(section.key);
 
         return (
-          <Card key={section.key}>
+          <Card key={section.key} id={`section-${section.key}`} data-section={section.key}>
             <CardHeader
-              className="cursor-pointer hover:bg-muted/50 transition-colors py-3"
+              className={cn(
+                'cursor-pointer hover:bg-muted/50 transition-colors',
+                readOnly ? 'py-2.5' : 'py-3',
+              )}
               onClick={() => toggleSection(section.key)}
             >
               <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -486,11 +532,14 @@ export function DynamicRecordForm({
               </CardTitle>
             </CardHeader>
             {!isCollapsed && (
-              <CardContent>
+              <CardContent className={readOnly ? 'pt-0 pb-4' : undefined}>
                 <div
                   className={cn(
-                    'grid gap-4',
-                    section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'
+                    'grid',
+                    readOnly
+                      ? 'grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5'
+                      : 'gap-4',
+                    !readOnly && (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
                   )}
                 >
                   {sectionFields.map((field) => (
@@ -498,12 +547,12 @@ export function DynamicRecordForm({
                       key={field.key}
                       className={cn(field.width === 'full' && 'md:col-span-2')}
                     >
-                      <Label htmlFor={field.key} className="mb-1.5 block text-muted-foreground text-xs uppercase tracking-wider">
+                      <Label htmlFor={field.key} className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider">
                         {field.label}
                         {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
                       </Label>
                       {readOnly ? (
-                        <div className="py-1 text-sm min-h-[28px]">
+                        <div className="py-0.5 text-sm min-h-[24px]">
                           <FieldRenderer field={field} value={defaultValues[field.key]} />
                         </div>
                       ) : (
@@ -529,7 +578,7 @@ export function DynamicRecordForm({
   // Read-only mode: render as plain div without form or actions
   if (readOnly) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         {renderSections()}
       </div>
     );

@@ -102,19 +102,21 @@ function getOperatorsForType(type: string): FilterOperator[] {
 // System Defined Filters config
 // ============================================================================
 
+type SystemFilterValueType = 'text' | 'number' | 'date' | 'select';
+
 interface SystemFilterDef {
   preset: SystemFilterPreset;
   label: string;
   icon: typeof MousePointer;
   enabled: boolean;
-}
-
-interface UnavailableFilterDef {
-  label: string;
-  icon: typeof Lock;
+  needsValue?: boolean;
+  valueType?: SystemFilterValueType;
+  valueOptions?: { value: string; label: string }[];
+  valuePlaceholder?: string;
 }
 
 const SYSTEM_FILTERS: SystemFilterDef[] = [
+  // Existing toggle-only
   { preset: 'touched_records', label: 'Touched Records', icon: MousePointerClick, enabled: true },
   { preset: 'untouched_records', label: 'Untouched Records', icon: MousePointer, enabled: true },
   { preset: 'my_records', label: 'My Records', icon: Users, enabled: true },
@@ -128,33 +130,63 @@ const SYSTEM_FILTERS: SystemFilterDef[] = [
   { preset: 'has_notes', label: 'Has Notes', icon: FileText, enabled: true },
   { preset: 'has_open_tasks', label: 'Has Open Tasks', icon: CheckSquare, enabled: true },
   { preset: 'has_overdue_tasks', label: 'Has Overdue Tasks', icon: AlertTriangle, enabled: true },
-];
-
-const UNAVAILABLE_FILTERS: UnavailableFilterDef[] = [
-  { label: 'Record Action', icon: Lock },
-  { label: 'Related Records Action', icon: Lock },
-  { label: 'Scoring Rules', icon: Lock },
-  { label: 'Locked', icon: Lock },
-  { label: 'Latest Email Status', icon: Lock },
-  { label: 'Campaigns', icon: Lock },
-  { label: 'Cadences', icon: Lock },
-  { label: 'Website Activity', icon: Lock },
-  { label: 'Chats', icon: Lock },
-  { label: 'Attended By', icon: Lock },
-  { label: 'Browser', icon: Lock },
-  { label: 'Operating System', icon: Lock },
-  { label: 'Portal Name', icon: Lock },
-  { label: 'Search Engine', icon: Lock },
-  { label: 'Time Spent (Minutes)', icon: Lock },
-  { label: 'Time Visited', icon: Lock },
-  { label: 'Average Time Spent (Minutes)', icon: Lock },
-  { label: 'Days Visited', icon: Lock },
-  { label: 'First Page Visited', icon: Lock },
-  { label: 'First Visit', icon: Lock },
-  { label: 'Most Recent Visit', icon: Lock },
-  { label: 'Number Of Chats', icon: Lock },
-  { label: 'Referrer', icon: Lock },
-  { label: 'Visitor Score', icon: Lock },
+  // New toggle-only
+  { preset: 'locked', label: 'Locked', icon: Lock, enabled: true },
+  { preset: 'website_activity', label: 'Website Activity', icon: MousePointer, enabled: true },
+  { preset: 'chats', label: 'Chats', icon: Mail, enabled: true },
+  { preset: 'campaigns', label: 'Campaigns', icon: Mail, enabled: true },
+  { preset: 'cadences', label: 'Cadences', icon: Activity, enabled: true },
+  // Value-based
+  { preset: 'record_action', label: 'Record Action', icon: Activity, enabled: true,
+    needsValue: true, valueType: 'select', valuePlaceholder: 'Select action...',
+    valueOptions: [
+      { value: 'create', label: 'Create' }, { value: 'update', label: 'Update' },
+      { value: 'delete', label: 'Delete' }, { value: 'stage_change', label: 'Stage Change' },
+    ] },
+  { preset: 'related_records_action', label: 'Related Records Action', icon: Link2, enabled: true,
+    needsValue: true, valueType: 'select', valuePlaceholder: 'Select action...',
+    valueOptions: [
+      { value: 'create', label: 'Create' }, { value: 'update', label: 'Update' },
+      { value: 'delete', label: 'Delete' }, { value: 'stage_change', label: 'Stage Change' },
+    ] },
+  { preset: 'scoring_rules', label: 'Scoring Rules', icon: Target, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min score...' },
+  { preset: 'latest_email_status', label: 'Latest Email Status', icon: Mail, enabled: true,
+    needsValue: true, valueType: 'select', valuePlaceholder: 'Select status...',
+    valueOptions: [
+      { value: 'sent', label: 'Sent' }, { value: 'delivered', label: 'Delivered' },
+      { value: 'bounced', label: 'Bounced' }, { value: 'failed', label: 'Failed' },
+    ] },
+  { preset: 'attended_by', label: 'Attended By', icon: Users, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'Name or ID...' },
+  { preset: 'browser', label: 'Browser', icon: MousePointer, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'e.g. Chrome' },
+  { preset: 'operating_system', label: 'Operating System', icon: MousePointer, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'e.g. Windows' },
+  { preset: 'portal_name', label: 'Portal Name', icon: MousePointer, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'Portal name...' },
+  { preset: 'search_engine', label: 'Search Engine', icon: MousePointer, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'e.g. Google' },
+  { preset: 'time_spent_minutes', label: 'Time Spent (Minutes)', icon: Activity, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min minutes...' },
+  { preset: 'time_visited', label: 'Time Visited', icon: Activity, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min visits...' },
+  { preset: 'avg_time_spent_minutes', label: 'Average Time Spent (Minutes)', icon: Activity, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min avg minutes...' },
+  { preset: 'days_visited', label: 'Days Visited', icon: CalendarDays, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min days...' },
+  { preset: 'first_page_visited', label: 'First Page Visited', icon: MousePointer, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'URL contains...' },
+  { preset: 'first_visit', label: 'First Visit', icon: Calendar, enabled: true,
+    needsValue: true, valueType: 'date', valuePlaceholder: 'On or after...' },
+  { preset: 'most_recent_visit', label: 'Most Recent Visit', icon: Calendar, enabled: true,
+    needsValue: true, valueType: 'date', valuePlaceholder: 'On or after...' },
+  { preset: 'number_of_chats', label: 'Number Of Chats', icon: Mail, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min chats...' },
+  { preset: 'referrer', label: 'Referrer', icon: Link2, enabled: true,
+    needsValue: true, valueType: 'text', valuePlaceholder: 'URL contains...' },
+  { preset: 'visitor_score', label: 'Visitor Score', icon: Target, enabled: true,
+    needsValue: true, valueType: 'number', valuePlaceholder: 'Min score...' },
 ];
 
 // ============================================================================
@@ -178,15 +210,12 @@ const RELATED_MODULES: RelatedModuleDef[] = [
   { key: 'leads', label: 'Leads (Converted)', icon: Target, enabled: true },
   { key: 'products', label: 'Contact Product Relation', icon: Package, enabled: true },
   { key: 'prospects', label: 'Prospects', icon: Users, enabled: true },
-];
-
-const UNAVAILABLE_RELATED: { label: string }[] = [
-  { label: 'Invoices' },
-  { label: 'Data Subject Requests' },
-  { label: 'Prospect Contact Roles' },
-  { label: 'Providers' },
-  { label: 'Contacts (Reporting Contacts)' },
-  { label: 'Invitees (Invited Meetings)' },
+  { key: 'invoices', label: 'Invoices', icon: FileText, enabled: true },
+  { key: 'data_subject_requests', label: 'Data Subject Requests', icon: FileText, enabled: true },
+  { key: 'prospect_roles', label: 'Prospect Contact Roles', icon: Users, enabled: true },
+  { key: 'providers', label: 'Providers', icon: Package, enabled: true },
+  { key: 'reporting_contacts', label: 'Contacts (Reporting Contacts)', icon: Users, enabled: true },
+  { key: 'meeting_invitees', label: 'Invitees (Invited Meetings)', icon: Calendar, enabled: true },
 ];
 
 // ============================================================================
@@ -334,9 +363,17 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
   const [expandedField, setExpandedField] = useState<string | null>(null);
 
   // Partition filters
-  const activeSystemPresets = useMemo(
-    () => new Set(filters.filter((f) => f.category === 'system').map((f) => f.systemPreset)),
+  const activeSystemFilters = useMemo(
+    () => new Map(
+      filters
+        .filter((f) => f.category === 'system' && f.systemPreset)
+        .map((f) => [f.systemPreset!, f.secondValue ?? null] as const),
+    ),
     [filters],
+  );
+  const activeSystemPresets = useMemo(
+    () => new Set(activeSystemFilters.keys()),
+    [activeSystemFilters],
   );
 
   const activeRelatedModules = useMemo(
@@ -361,17 +398,27 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
   }, [fields, fieldSearch]);
 
   // ── System filter toggle ──
-  const toggleSystemFilter = useCallback((preset: SystemFilterPreset) => {
+  const toggleSystemFilter = useCallback((preset: SystemFilterPreset, filterValue?: string | number | null) => {
+    const def = SYSTEM_FILTERS.find((f) => f.preset === preset);
     const isActive = activeSystemPresets.has(preset);
     const otherFilters = filters.filter(
       (f) => !(f.category === 'system' && f.systemPreset === preset),
     );
-    if (isActive) {
+
+    if (isActive && filterValue === undefined) {
+      // Remove: clicked the same toggle with no new value
       onFiltersChange(otherFilters);
     } else {
       onFiltersChange([
         ...otherFilters,
-        { field: '__system', operator: 'equals', value: preset, category: 'system', systemPreset: preset },
+        {
+          field: '__system',
+          operator: 'equals',
+          value: preset,
+          category: 'system',
+          systemPreset: preset,
+          secondValue: def?.needsValue ? (filterValue ?? null) : null,
+        },
       ]);
     }
   }, [filters, activeSystemPresets, onFiltersChange]);
@@ -502,46 +549,70 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
             </AccordionTrigger>
             <AccordionContent className="px-2 pb-3">
               <div className="space-y-0.5">
-                {SYSTEM_FILTERS.map(({ preset, label, icon: Icon, enabled }) => {
+                {SYSTEM_FILTERS.map(({ preset, label, icon: Icon, enabled, needsValue, valueType, valueOptions, valuePlaceholder }) => {
                   const isActive = activeSystemPresets.has(preset);
+                  const currentValue = activeSystemFilters.get(preset) ?? null;
+
                   return (
-                    <button
-                      key={preset}
-                      onClick={() => enabled && toggleSystemFilter(preset)}
-                      disabled={!enabled}
-                      className={cn(
-                        'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
-                        isActive
-                          ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
-                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
-                        !enabled && 'opacity-40 cursor-not-allowed',
+                    <div key={preset}>
+                      <button
+                        onClick={() => {
+                          if (!enabled) return;
+                          if (needsValue && !isActive) {
+                            toggleSystemFilter(preset, null);
+                          } else {
+                            toggleSystemFilter(preset);
+                          }
+                        }}
+                        disabled={!enabled}
+                        className={cn(
+                          'flex items-center gap-2 w-full px-3 py-2 rounded-lg text-xs transition-colors text-left',
+                          isActive
+                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-medium'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+                          !enabled && 'opacity-40 cursor-not-allowed',
+                        )}
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="flex-1">{label}</span>
+                        {isActive && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
+                      </button>
+
+                      {isActive && needsValue && (
+                        <div className="pl-8 pr-3 py-1">
+                          {valueType === 'select' && valueOptions ? (
+                            <Select
+                              value={String(currentValue || '')}
+                              onValueChange={(v) => toggleSystemFilter(preset, v)}
+                            >
+                              <SelectTrigger className="h-7 text-xs bg-white dark:bg-slate-900/50">
+                                <SelectValue placeholder={valuePlaceholder || 'Select...'} />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
+                                {valueOptions.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              type={valueType === 'number' ? 'number' : valueType === 'date' ? 'date' : 'text'}
+                              value={String(currentValue || '')}
+                              onChange={(e) => {
+                                const v = valueType === 'number' ? (e.target.valueAsNumber || null) : e.target.value;
+                                toggleSystemFilter(preset, v);
+                              }}
+                              placeholder={valuePlaceholder || 'Value...'}
+                              className="h-7 text-xs bg-white dark:bg-slate-900/50"
+                            />
+                          )}
+                        </div>
                       )}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      <span className="flex-1">{label}</span>
-                      {isActive && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
-                    </button>
+                    </div>
                   );
                 })}
-
-                {/* Coming Soon divider */}
-                <div className="px-3 pt-3 pb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Coming Soon
-                  </span>
-                </div>
-                {UNAVAILABLE_FILTERS.map(({ label, icon: Icon }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="flex-1">{label}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-medium">
-                      Soon
-                    </span>
-                  </div>
-                ))}
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -708,24 +779,6 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
                   );
                 })}
 
-                {/* Coming Soon */}
-                <div className="px-3 pt-3 pb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    Coming Soon
-                  </span>
-                </div>
-                {UNAVAILABLE_RELATED.map(({ label }) => (
-                  <div
-                    key={label}
-                    className="flex items-center gap-2 w-full px-3 py-1.5 rounded-lg text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed"
-                  >
-                    <Link2 className="w-3.5 h-3.5 shrink-0" />
-                    <span className="flex-1">{label}</span>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 font-medium">
-                      Soon
-                    </span>
-                  </div>
-                ))}
               </div>
             </AccordionContent>
           </AccordionItem>

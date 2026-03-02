@@ -156,14 +156,46 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     dataKey: 'revenueChart',
     comingSoon: true,
   },
+  'sales-command-tiles': {
+    id: 'sales-command-tiles',
+    name: 'Sales Overview',
+    description: 'Pipeline, leads, activity & relationships at a glance',
+    icon: 'Target',
+    defaultSize: 'full',
+    allowedSizes: ['large', 'full'],
+    category: 'metrics',
+    dataKey: 'salesCommandTiles',
+  },
+  'module-stats': {
+    id: 'module-stats',
+    name: 'Module Stats',
+    description: 'Record counts across your CRM modules',
+    icon: 'LayoutGrid',
+    defaultSize: 'full',
+    allowedSizes: ['large', 'full'],
+    category: 'metrics',
+    dataKey: 'moduleStats',
+  },
+  'pipeline-funnel': {
+    id: 'pipeline-funnel',
+    name: 'Sales Pipeline',
+    description: 'Lead to deal conversion funnel visualization',
+    icon: 'BarChart3',
+    defaultSize: 'full',
+    allowedSizes: ['large', 'full'],
+    category: 'deals',
+    dataKey: 'pipelineFunnel',
+  },
 };
 
 export const DEFAULT_LAYOUT: DashboardLayoutConfig = {
   widgets: [
-    { id: 'widget-1', type: 'todays-tasks', position: 0, size: 'medium' },
-    { id: 'widget-2', type: 'at-risk-deals', position: 1, size: 'medium' },
-    { id: 'widget-3', type: 'quick-actions', position: 2, size: 'small' },
-    { id: 'widget-4', type: 'recent-activity', position: 3, size: 'medium' },
+    { id: 'widget-1', type: 'sales-command-tiles', position: 0, size: 'full' },
+    { id: 'widget-2', type: 'todays-tasks', position: 1, size: 'medium' },
+    { id: 'widget-3', type: 'at-risk-deals', position: 2, size: 'medium' },
+    { id: 'widget-4', type: 'pipeline-funnel', position: 3, size: 'full' },
+    { id: 'widget-5', type: 'recent-activity', position: 4, size: 'medium' },
+    { id: 'widget-6', type: 'quick-actions', position: 5, size: 'small' },
   ],
 };
 

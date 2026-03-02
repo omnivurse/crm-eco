@@ -12,17 +12,13 @@ import {
   getCalendarEvents,
   getOrganization,
 } from '@/lib/crm/queries';
-import type { PersonalWorkItem } from '@/components/dashboard';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
+import { DashboardHero } from '@/components/dashboard/DashboardHero';
+import type { HeroCalendarEvent } from '@/components/dashboard/DashboardHero';
 import {
-  CommandBar,
-  DashboardStats,
-  WorkQueue,
   CrmAlerts,
-  SalesCommandTiles,
-  DealPipelineFunnel,
   DashboardToolbar,
   DashboardSkeleton,
 } from '@/components/dashboard';
@@ -32,7 +28,12 @@ import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
 // Server-side data fetching based on widget types
 async function fetchWidgetData(
   profile: { id: string; organization_id: string },
-  widgetTypes: string[]
+  widgetTypes: string[],
+  sharedData: {
+    moduleStats: unknown;
+    heroStats: unknown;
+    reportSummary: unknown;
+  }
 ) {
   const dataKeys = new Set(
     widgetTypes.map((type) => WIDGET_REGISTRY[type]?.dataKey).filter(Boolean)
@@ -53,6 +54,19 @@ async function fetchWidgetData(
     leadConversion: () => Promise.resolve(null),
     teamLeaderboard: () => Promise.resolve([]),
     revenueChart: () => Promise.resolve(null),
+    // New widget data — uses already-fetched shared data (no extra DB calls)
+    salesCommandTiles: () =>
+      Promise.resolve({
+        moduleStats: sharedData.moduleStats,
+        heroStats: sharedData.heroStats,
+        reportSummary: sharedData.reportSummary,
+      }),
+    moduleStats: () => Promise.resolve(sharedData.moduleStats),
+    pipelineFunnel: () =>
+      Promise.resolve({
+        moduleStats: sharedData.moduleStats,
+        reportSummary: sharedData.reportSummary,
+      }),
   };
 
   const results: Record<string, unknown> = {};
@@ -71,38 +85,6 @@ async function fetchWidgetData(
   );
 
   return results;
-}
-
-/**
- * Build personal work queue items from overdue tasks and at-risk deals.
- */
-function buildPersonalWorkItems(
-  overdueTasks: { id: string; title: string; due_at: string | null; created_at: string }[],
-  atRiskDeals: { id: string; name: string; stage: string; daysInStage: number }[],
-): PersonalWorkItem[] {
-  const items: PersonalWorkItem[] = [];
-
-  for (const deal of atRiskDeals.slice(0, 4)) {
-    items.push({
-      id: deal.id,
-      type: 'at_risk_deal',
-      title: deal.name,
-      subtitle: `${deal.stage} · ${deal.daysInStage}d without update`,
-      createdAt: new Date(Date.now() - deal.daysInStage * 86400000).toISOString(),
-    });
-  }
-
-  for (const task of overdueTasks.slice(0, 4)) {
-    items.push({
-      id: task.id,
-      type: 'overdue_task',
-      title: task.title || 'Untitled Task',
-      subtitle: task.due_at ? `Due ${new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'No due date',
-      createdAt: task.due_at || task.created_at,
-    });
-  }
-
-  return items;
 }
 
 async function DashboardContent() {
@@ -142,85 +124,66 @@ async function DashboardContent() {
 
   const widgetTypes = layout.widgets.map((w) => w.type);
 
-  // Fetch all data in parallel: personal stats, org info, module stats, tasks, at-risk deals, report summary, widget data
-  const [heroStatsResult, orgResult, moduleStatsResult, overdueTasksResult, atRiskDealsResult, reportSummaryResult, widgetDataResult] =
+  // Fetch hero/shared data in parallel first
+  const [heroStatsResult, moduleStatsResult, reportSummaryResult, calendarEventsResult] =
     await Promise.allSettled([
       getCachedDashboardHeroStats(profile.organization_id, profile.id),
-      getOrganization(profile.organization_id),
       getCachedModuleStats(profile.organization_id),
-      getMyTasks(profile.id, false, 50),
-      getCachedAtRiskDeals(profile.organization_id, 5),
       getReportSummary(profile.organization_id),
-      fetchWidgetData(profile, widgetTypes),
+      getCalendarEvents(profile.organization_id),
     ]);
 
   const heroStats = heroStatsResult.status === 'fulfilled'
     ? heroStatsResult.value
     : { todaysTaskCount: 0, overdueCount: 0, atRiskCount: 0, newThisWeek: 0 };
 
-  const orgName = orgResult.status === 'fulfilled' && orgResult.value
-    ? orgResult.value.name
-    : 'Operations';
-
   const moduleStats = moduleStatsResult.status === 'fulfilled'
     ? moduleStatsResult.value
     : [];
-
-  // Build personal work queue from overdue tasks and at-risk deals
-  const overdueTasks = overdueTasksResult.status === 'fulfilled'
-    ? (overdueTasksResult.value || []).filter((t) => t.due_at && new Date(t.due_at) < new Date())
-    : [];
-
-  const atRiskDeals = atRiskDealsResult.status === 'fulfilled'
-    ? atRiskDealsResult.value || []
-    : [];
-
-  const personalItems = buildPersonalWorkItems(overdueTasks, atRiskDeals);
 
   const reportSummary = reportSummaryResult.status === 'fulfilled'
     ? reportSummaryResult.value
     : null;
 
-  const widgetData = widgetDataResult.status === 'fulfilled'
-    ? widgetDataResult.value
-    : {};
+  const calendarEvents = calendarEventsResult.status === 'fulfilled'
+    ? calendarEventsResult.value || []
+    : [];
+
+  // Map calendar events to hero format
+  const upcomingMeetings: HeroCalendarEvent[] = calendarEvents.slice(0, 3).map((event: { id: string; title: string; start_time: string; event_type?: string }) => ({
+    id: event.id,
+    title: event.title,
+    start_time: event.start_time,
+    type: (event.event_type === 'call' ? 'call' : event.event_type === 'meeting' ? 'meeting' : 'task') as HeroCalendarEvent['type'],
+  }));
+
+  // Fetch widget-specific data (passes shared data to avoid duplicate DB calls)
+  const widgetData = await fetchWidgetData(profile, widgetTypes, {
+    moduleStats,
+    heroStats,
+    reportSummary,
+  });
 
   return (
     <DashboardLayoutProvider initialLayout={layout}>
       <div className="space-y-5 pb-8">
-        {/* Personal Command Bar */}
-        <CommandBar
+        {/* Enterprise Hero — always visible, personalized greeting + quick actions + key stats */}
+        <DashboardHero
           profile={profile}
-          orgName={orgName}
-          stats={heroStats}
+          todaysTaskCount={heroStats.todaysTaskCount}
+          overdueCount={heroStats.overdueCount}
+          newThisWeek={heroStats.newThisWeek}
+          atRiskCount={heroStats.atRiskCount}
+          upcomingMeetings={upcomingMeetings}
         />
 
-        {/* CRM Alerts -- overdue tasks, at-risk deals, tasks today */}
+        {/* CRM Alerts — only renders when there are actionable items */}
         <CrmAlerts heroStats={heroStats} />
 
-        {/* Sales Command Tiles -- pipeline, leads, activity, relationships */}
-        <SalesCommandTiles
-          moduleStats={moduleStats}
-          heroStats={heroStats}
-          reportSummary={reportSummary}
-        />
-
-        {/* CRM Stats Cards -- Contacts, Leads, Deals, Accounts */}
-        <DashboardStats stats={moduleStats} />
-
-        {/* Deal Pipeline Funnel */}
-        <DealPipelineFunnel
-          moduleStats={moduleStats}
-          reportSummary={reportSummary}
-        />
-
-        {/* Personal Work Queue */}
-        <WorkQueue items={personalItems} />
-
-        {/* Dashboard Toolbar */}
+        {/* Dashboard Toolbar — customize / edit mode controls */}
         <DashboardToolbar />
 
-        {/* Customizable Widget Grid (preserved) */}
+        {/* Customizable Widget Grid — all content is drag-and-drop widgets */}
         <DashboardGrid renderedWidgets={preRenderWidgets(layout.widgets, widgetData)} />
       </div>
     </DashboardLayoutProvider>

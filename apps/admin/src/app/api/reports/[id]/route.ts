@@ -39,7 +39,7 @@ export async function GET(
       .from('crm_reports')
       .select(`
         *,
-        created_by_profile:profiles!crm_reports_created_by_fkey(full_name, avatar_url)
+        created_by_profile:profiles(full_name, avatar_url)
       `)
       .eq('id', id)
       .eq('org_id', profile.organization_id)

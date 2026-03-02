@@ -15,7 +15,8 @@ import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
 import { RelatedRecordsPanel } from '@/components/crm/records/RelatedRecordsPanel';
-import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
+import { DynamicRecordForm, getSectionMeta } from '@/components/crm/records/DynamicRecordForm';
+import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
 import { NotesPanel } from './NotesPanel';
 import { NotesOverviewCard } from './NotesOverviewCard';
 import { LegacyNotesCard } from './LegacyNotesCard';
@@ -83,6 +84,13 @@ async function RecordDetailContent({ params }: PageProps) {
     ...(record.status && !record.data?.contact_status && { contact_status: record.status }),
   };
 
+  // Compute section metadata on the server for the section navigator
+  const sectionMeta = getSectionMeta(fields, layout);
+
+  const legacyNotes =
+    typeof record.data?.notes_history === 'string' && record.data.notes_history.trim() !== ''
+      ? record.data.notes_history
+      : null;
 
   return (
     <RecordDetailShell
@@ -95,21 +103,9 @@ async function RecordDetailContent({ params }: PageProps) {
     >
       {{
         overview: (
-          <div className="space-y-6">
-            {/* Notes - Prime Real Estate */}
-            <NotesOverviewCard
-              notes={notes}
-              recordId={recordId}
-            />
-
-            {/* Legacy Notes History (imported from Zoho) */}
-            {typeof record.data?.notes_history === 'string' && record.data.notes_history.trim() !== '' && (
-              <LegacyNotesCard notesHtml={record.data.notes_history} />
-            )}
-
-            {/* Record Details Form */}
-            <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-6">Record Details</h3>
+          <OverviewLayout
+            sections={sectionMeta}
+            fieldContent={
               <DynamicRecordForm
                 record={record}
                 fields={fields}
@@ -117,8 +113,14 @@ async function RecordDetailContent({ params }: PageProps) {
                 defaultValues={defaultValues}
                 readOnly
               />
-            </div>
-          </div>
+            }
+            notesContent={
+              <>
+                <NotesOverviewCard notes={notes} recordId={recordId} />
+                {legacyNotes && <LegacyNotesCard notesHtml={legacyNotes} />}
+              </>
+            }
+          />
         ),
 
         related: (

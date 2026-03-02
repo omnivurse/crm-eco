@@ -16,6 +16,9 @@ import EmailStatsWidget from './widgets/EmailStatsWidget';
 import LeadConversionWidget from './widgets/LeadConversionWidget';
 import TeamLeaderboardWidget from './widgets/TeamLeaderboardWidget';
 import RevenueChartWidget from './widgets/RevenueChartWidget';
+import SalesCommandTilesWidget from './widgets/SalesCommandTilesWidget';
+import ModuleStatsWidget from './widgets/ModuleStatsWidget';
+import PipelineFunnelWidget from './widgets/PipelineFunnelWidget';
 
 // Base props interface for all widgets
 interface BaseWidgetProps {
@@ -43,6 +46,9 @@ const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'lead-conversion': LeadConversionWidget as WidgetComponent,
   'team-leaderboard': TeamLeaderboardWidget as WidgetComponent,
   'revenue-chart': RevenueChartWidget as WidgetComponent,
+  'sales-command-tiles': SalesCommandTilesWidget as WidgetComponent,
+  'module-stats': ModuleStatsWidget as WidgetComponent,
+  'pipeline-funnel': PipelineFunnelWidget as WidgetComponent,
 };
 
 interface ServerWidgetRendererProps {

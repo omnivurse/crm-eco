@@ -20,7 +20,7 @@ export async function GET(
       .from('crm_reports')
       .select(`
         *,
-        created_by_profile:profiles!crm_reports_created_by_fkey(full_name, avatar_url)
+        created_by_profile:profiles(full_name, avatar_url)
       `)
       .eq('id', id)
       .eq('org_id', profile.organization_id)
@@ -74,6 +74,8 @@ export async function PATCH(
     if (body.aggregations !== undefined) updateData.aggregations = body.aggregations;
     if (body.chart_type !== undefined) updateData.chart_type = body.chart_type;
     if (body.chart_config !== undefined) updateData.chart_config = body.chart_config;
+    if (body.related_modules !== undefined) updateData.related_modules = body.related_modules;
+    if (body.filter_logic !== undefined) updateData.filter_logic = body.filter_logic;
     if (body.is_shared !== undefined) updateData.is_shared = body.is_shared;
 
     const { data: report, error } = await supabase

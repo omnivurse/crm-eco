@@ -1,6 +1,20 @@
 export type ReportType = 'tabular' | 'summary' | 'matrix';
-export type ChartType = 'none' | 'bar' | 'line' | 'pie' | 'funnel' | 'area';
+export type ChartType = 'none' | 'bar' | 'line' | 'pie' | 'funnel' | 'area' | 'stacked_bar';
 export type AggregationFunction = 'count' | 'sum' | 'avg' | 'min' | 'max';
+export type JoinType = 'inclusive' | 'exclusive'; // LEFT JOIN vs INNER JOIN
+
+export interface RelatedModuleConfig {
+  module_key: string;
+  module_id: string;
+  module_name: string;
+  join_type: JoinType;
+  relationship: 'child' | 'parent';
+}
+
+export interface FilterGroup {
+  logic: 'and' | 'or';
+  conditions: (ReportFilter | FilterGroup)[];
+}
 
 export interface ReportColumn {
   field: string;
@@ -8,6 +22,7 @@ export interface ReportColumn {
   type: 'text' | 'number' | 'date' | 'currency' | 'boolean' | 'select';
   width?: number;
   sortable?: boolean;
+  module_key?: string;
 }
 
 export interface ReportFilter {
@@ -57,6 +72,8 @@ export interface CrmReport {
   aggregations: ReportAggregation[];
   chart_type: ChartType;
   chart_config: ChartConfig;
+  related_modules: RelatedModuleConfig[];
+  filter_logic: FilterGroup | null;
   is_shared: boolean;
   created_by: string;
   created_at: string;
@@ -76,6 +93,8 @@ export interface CreateReportRequest {
   aggregations?: ReportAggregation[];
   chart_type?: ChartType;
   chart_config?: ChartConfig;
+  related_modules?: RelatedModuleConfig[];
+  filter_logic?: FilterGroup | null;
   is_shared?: boolean;
 }
 
@@ -92,6 +111,8 @@ export interface UpdateReportRequest {
   aggregations?: ReportAggregation[];
   chart_type?: ChartType;
   chart_config?: ChartConfig;
+  related_modules?: RelatedModuleConfig[];
+  filter_logic?: FilterGroup | null;
   is_shared?: boolean;
 }
 

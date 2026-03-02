@@ -554,6 +554,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
           p_module_id: moduleId,
           p_preset: sf.systemPreset,
           p_user_profile_id: userProfileId,
+          p_value: sf.secondValue != null ? String(sf.secondValue) : null,
         })
       )
     );
@@ -585,6 +586,12 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
       leads: { relatedType: 'linked_records', activityType: 'leads' },
       products: { relatedType: 'linked_records', activityType: 'products' },
       prospects: { relatedType: 'linked_records', activityType: 'prospects' },
+      invoices: { relatedType: 'linked_records', activityType: 'invoices' },
+      data_subject_requests: { relatedType: 'linked_records', activityType: 'data_subject_requests' },
+      prospect_roles: { relatedType: 'linked_by_type', activityType: 'prospect_role' },
+      providers: { relatedType: 'linked_records', activityType: 'providers' },
+      reporting_contacts: { relatedType: 'linked_records', activityType: 'contacts' },
+      meeting_invitees: { relatedType: 'meeting_invitees', activityType: null },
     };
 
     // Build RPC calls for related filters, skipping unmapped modules
@@ -1793,3 +1800,77 @@ export async function getCommandConsoleStats(
 export const getCachedCommandConsoleStats = cache(
   async (orgId: string, userId: string) => getCommandConsoleStats(orgId, userId)
 );
+
+// ============================================================================
+// Advisor Tree Queries (for "By Advisor" tree view)
+// ============================================================================
+
+export interface AdvisorTreeData {
+  advisors: Array<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+    status: string;
+    commission_tier: string | null;
+    agency_name: string | null;
+    parent_advisor_id: string | null;
+    producer_code: string | null;
+  }>;
+  recordCounts: Record<string, number>;
+}
+
+/**
+ * Fetch advisors and their record counts for the tree view.
+ * Admins see all org advisors; agents/advisors see only their downline.
+ */
+export async function getAdvisorsForTree(
+  orgId: string,
+  moduleId: string,
+  userAdvisorId: string | null,
+  isAdmin: boolean,
+): Promise<AdvisorTreeData> {
+  const supabase = await createCrmClient();
+
+  // 1. Fetch advisors scoped by role
+  let advisorQuery = supabase
+    .from('advisors')
+    .select('id, first_name, last_name, email, phone, status, commission_tier, agency_name, parent_advisor_id, producer_code')
+    .eq('organization_id', orgId)
+    .order('first_name');
+
+  if (!isAdmin && userAdvisorId) {
+    // Get self + downline advisor IDs
+    const { data: downlineIds } = await supabase.rpc('get_advisor_downline_ids', { p_advisor_id: userAdvisorId });
+    const allowedIds = [userAdvisorId, ...(downlineIds || [])];
+    advisorQuery = advisorQuery.in('id', allowedIds);
+  }
+
+  const { data: advisors, error } = await advisorQuery;
+  if (error) {
+    console.error('Error fetching advisors for tree:', error);
+    return { advisors: [], recordCounts: {} };
+  }
+
+  const advisorList = advisors || [];
+  if (advisorList.length === 0) {
+    return { advisors: [], recordCounts: {} };
+  }
+
+  // 2. Get record counts per advisor
+  const advisorIds = advisorList.map(a => a.id);
+  const { data: counts } = await supabase.rpc('get_record_counts_by_advisor', {
+    p_module_id: moduleId,
+    p_advisor_ids: advisorIds,
+  });
+
+  const recordCounts: Record<string, number> = {};
+  if (counts) {
+    for (const c of counts as Array<{ advisor_id: string; record_count: number }>) {
+      recordCounts[c.advisor_id] = Number(c.record_count);
+    }
+  }
+
+  return { advisors: advisorList, recordCounts };
+}
