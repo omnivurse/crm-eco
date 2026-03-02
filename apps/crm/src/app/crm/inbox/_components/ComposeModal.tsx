@@ -251,7 +251,7 @@ export function ComposeModal({
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="w-[98vw] max-w-5xl sm:max-w-5xl mx-auto max-h-[90vh] overflow-y-auto p-0">
+        <DialogContent className="w-[98vw] max-w-[900px] sm:max-w-[900px] mx-auto max-h-[90vh] overflow-y-auto p-0">
           <DialogHeader className="px-6 pt-6 pb-0">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-lg">
