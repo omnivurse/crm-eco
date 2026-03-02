@@ -150,19 +150,24 @@ async function DashboardContent() {
     : [];
 
   // Map calendar events to hero format
-  const upcomingMeetings: HeroCalendarEvent[] = calendarEvents.slice(0, 3).map((event: { id: string; title: string; start_time: string; event_type?: string }) => ({
+  const upcomingMeetings: HeroCalendarEvent[] = calendarEvents.slice(0, 3).map((event: { id: string; title: string; start_time: string; type?: string }) => ({
     id: event.id,
     title: event.title,
     start_time: event.start_time,
-    type: (event.event_type === 'call' ? 'call' : event.event_type === 'meeting' ? 'meeting' : 'task') as HeroCalendarEvent['type'],
+    type: (event.type === 'call' ? 'call' : event.type === 'meeting' ? 'meeting' : 'task') as HeroCalendarEvent['type'],
   }));
 
   // Fetch widget-specific data (passes shared data to avoid duplicate DB calls)
-  const widgetData = await fetchWidgetData(profile, widgetTypes, {
-    moduleStats,
-    heroStats,
-    reportSummary,
-  });
+  let widgetData: Record<string, unknown> = {};
+  try {
+    widgetData = await fetchWidgetData(profile, widgetTypes, {
+      moduleStats,
+      heroStats,
+      reportSummary,
+    });
+  } catch (err) {
+    console.error('[Dashboard] fetchWidgetData failed:', err);
+  }
 
   return (
     <DashboardLayoutProvider initialLayout={layout}>

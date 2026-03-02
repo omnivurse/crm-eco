@@ -803,8 +803,10 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
 
 export async function getNotesForRecord(recordId: string, limit = 100): Promise<CrmNoteWithAuthor[]> {
   const supabase = await createCrmClient();
-  
-  const { data, error } = await supabase
+
+  // Try with FK hint first, fallback to simple join if constraint name doesn't match
+  let data, error;
+  ({ data, error } = await supabase
     .from('crm_notes')
     .select(`
       *,
@@ -816,9 +818,30 @@ export async function getNotesForRecord(recordId: string, limit = 100): Promise<
     `)
     .eq('record_id', recordId)
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(limit));
 
-  if (error) throw error;
+  // Fallback: if FK hint fails, try without it
+  if (error) {
+    console.warn('[CRM] Notes FK hint failed, trying without hint:', error.message);
+    ({ data, error } = await supabase
+      .from('crm_notes')
+      .select(`
+        *,
+        author:profiles(
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('record_id', recordId)
+      .order('created_at', { ascending: false })
+      .limit(limit));
+  }
+
+  if (error) {
+    console.error('[CRM] getNotesForRecord failed:', error);
+    return [];
+  }
   return (data || []) as CrmNoteWithAuthor[];
 }
 

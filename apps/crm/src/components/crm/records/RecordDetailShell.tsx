@@ -22,6 +22,8 @@ import {
   MessageSquare,
   X,
   Loader2,
+  UserCheck,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
@@ -47,6 +49,7 @@ import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { toast } from 'sonner';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage } from '@/lib/crm/types';
+import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 
 interface RecordDetailShellProps {
   record: CrmRecord;
@@ -159,6 +162,12 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const [taskDueDate, setTaskDueDate] = useState('');
   const [noteContent, setNoteContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showConvertDialog, setShowConvertDialog] = useState(false);
+
+  // Lead-to-Contact conversion flags
+  const isLeads = module.key === 'leads';
+  const isAlreadyConverted = record.status === 'Converted' || (record.data as Record<string, unknown>)?.is_converted === true;
+  const canConvertToContact = isLeads && !isAlreadyConverted;
 
   // Check if we should show ComposerBar on timeline tab
   const showComposer = activeTab === 'timeline';
@@ -368,6 +377,15 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                         {record.status}
                       </Badge>
                     )}
+                    {isLeads && isAlreadyConverted && !!(record.data as Record<string, unknown>)?.converted_contact_id && (
+                      <Link
+                        href={`/crm/r/${String((record.data as Record<string, unknown>).converted_contact_id)}`}
+                        className="flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        View Contact
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -419,6 +437,18 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     >
                       Print
                     </DropdownMenuItem>
+                    {canConvertToContact && (
+                      <>
+                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                        <DropdownMenuItem
+                          className="text-emerald-600 dark:text-emerald-400 focus:text-emerald-700 dark:focus:text-emerald-300 focus:bg-emerald-50 dark:focus:bg-emerald-500/10"
+                          onClick={() => setShowConvertDialog(true)}
+                        >
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          Convert to Contact
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                     <DropdownMenuItem
                       className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
@@ -606,6 +636,17 @@ export const RecordDetailShell = memo(function RecordDetailShell({
             <Upload className="w-4 h-4 mr-2" />
             Upload File
           </Button>
+
+          {canConvertToContact && (
+            <Button
+              variant="outline"
+              className="w-full justify-start border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/5"
+              onClick={() => setShowConvertDialog(true)}
+            >
+              <UserCheck className="w-4 h-4 mr-2" />
+              Convert to Contact
+            </Button>
+          )}
 
           <div className="border-t border-slate-200 dark:border-white/10 pt-3 mt-4">
             <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
@@ -812,6 +853,17 @@ export const RecordDetailShell = memo(function RecordDetailShell({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Convert Lead to Contact Dialog */}
+      {canConvertToContact && (
+        <ConvertToContactDialog
+          open={showConvertDialog}
+          onOpenChange={setShowConvertDialog}
+          recordId={record.id}
+          recordTitle={record.title || 'Untitled'}
+          recordData={(record.data || {}) as Record<string, unknown>}
+        />
+      )}
     </div>
   );
 });

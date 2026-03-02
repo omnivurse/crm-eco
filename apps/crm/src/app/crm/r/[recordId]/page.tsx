@@ -57,23 +57,33 @@ async function RecordDetailContent({ params }: PageProps) {
   const { recordId } = await params;
 
   // Step 1: Parallelize profile and record+module (no dependency between them)
-  const [profile, result] = await Promise.all([
-    getCurrentProfile(),
-    getRecordWithModule(recordId),
-  ]);
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[RecordDetail] Failed to get profile:', err);
+    return notFound();
+  }
 
   if (!profile) return notFound();
+
+  const result = await getRecordWithModule(recordId);
   if (!result) return notFound();
 
   const { record, module } = result;
 
-  // Step 2: Fetch overview-critical data in parallel (fields, layout, notes, stages)
-  const [fields, layout, notes, stages] = await Promise.all([
+  // Step 2: Fetch overview-critical data in parallel with safe error handling
+  const [fieldsResult, layoutResult, notesResult, stagesResult] = await Promise.allSettled([
     getFieldsForModule(module.id),
     getDefaultLayout(module.id),
     getNotesForRecord(recordId),
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
   ]);
+
+  const fields = fieldsResult.status === 'fulfilled' ? fieldsResult.value : [];
+  const layout = layoutResult.status === 'fulfilled' ? layoutResult.value : null;
+  const notes = notesResult.status === 'fulfilled' ? notesResult.value : [];
+  const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
 
   // Build defaultValues by merging JSONB data with top-level indexed columns
   // so email, phone, and status are visible even if not duplicated inside data
