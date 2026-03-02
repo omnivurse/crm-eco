@@ -72,6 +72,10 @@ interface EmailComposerProps {
   // Campaign/Template context
   campaignId?: string;
   templateId?: string;
+
+  // Fallback sender info when no sender addresses configured
+  fallbackEmail?: string;
+  fallbackName?: string;
 }
 
 export interface EmailComposerData {
@@ -108,6 +112,8 @@ export const EmailComposer = memo(function EmailComposer({
   previewData = {},
   campaignId,
   templateId,
+  fallbackEmail,
+  fallbackName,
 }: EmailComposerProps) {
   // Form state
   const [senderAddressId, setSenderAddressId] = useState<string>('');
@@ -317,6 +323,8 @@ export const EmailComposer = memo(function EmailComposer({
               value={senderAddressId}
               onChange={(id) => setSenderAddressId(id)}
               disabled={disabled}
+              fallbackEmail={fallbackEmail}
+              fallbackName={fallbackName}
             />
           </div>
         </div>
@@ -684,7 +692,7 @@ export const EmailComposer = memo(function EmailComposer({
               size="sm"
               onClick={handleSend}
               disabled={disabled || isSending || isSaving || uploadingCount > 0 || to.length === 0}
-              className="gap-1"
+              className="gap-1 bg-teal-600 hover:bg-teal-700 text-white"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

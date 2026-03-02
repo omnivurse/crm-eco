@@ -33,6 +33,8 @@ interface SenderSelectorProps {
   className?: string;
   disabled?: boolean;
   placeholder?: string;
+  fallbackEmail?: string;
+  fallbackName?: string;
 }
 
 export function SenderSelector({
@@ -41,6 +43,8 @@ export function SenderSelector({
   className,
   disabled = false,
   placeholder = 'Select sender...',
+  fallbackEmail,
+  fallbackName,
 }: SenderSelectorProps) {
   const [addresses, setAddresses] = useState<SenderAddress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,6 +129,14 @@ export function SenderSelector({
   }
 
   if (addresses.length === 0) {
+    if (fallbackEmail) {
+      return (
+        <div className={cn('flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-800', className)}>
+          <Mail className="w-4 h-4 text-teal-500" />
+          {fallbackName ? `${fallbackName} <${fallbackEmail}>` : fallbackEmail}
+        </div>
+      );
+    }
     return (
       <div className={cn('flex items-center gap-2 px-3 py-2 text-sm text-slate-500 border border-slate-200 dark:border-slate-700 rounded-md', className)}>
         <Mail className="w-4 h-4" />
