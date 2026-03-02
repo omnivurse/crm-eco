@@ -13,7 +13,13 @@ interface PageProps {
 async function FieldsContent({ searchParams }: PageProps) {
   const { module: moduleId } = await searchParams;
 
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Fields] Failed to get profile:', err);
+    redirect('/crm-login');
+  }
   if (!profile) {
     redirect('/crm-login');
   }
@@ -22,14 +28,27 @@ async function FieldsContent({ searchParams }: PageProps) {
     redirect('/crm/settings?error=admin_only');
   }
 
-  const modules = await getAllModules(profile.organization_id);
+  let modules;
+  try {
+    modules = await getAllModules(profile.organization_id);
+  } catch (err) {
+    console.error('[Fields] Failed to load modules:', err);
+    modules = [];
+  }
+
   const selectedModule = moduleId
     ? modules.find(m => m.id === moduleId)
     : modules[0];
 
-  const fields = selectedModule
-    ? await getFieldsForModule(selectedModule.id)
-    : [];
+  let fields;
+  try {
+    fields = selectedModule
+      ? await getFieldsForModule(selectedModule.id)
+      : [];
+  } catch (err) {
+    console.error('[Fields] Failed to load fields:', err);
+    fields = [];
+  }
 
   // Sort fields by display_order
   const sortedFields = [...fields].sort((a, b) => a.display_order - b.display_order);

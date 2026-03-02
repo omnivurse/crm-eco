@@ -4,7 +4,13 @@ import { getCurrentProfile, getAllModules } from '@/lib/crm/queries';
 import ModulesClient from './modules-client';
 
 async function ModulesContent() {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Modules] Failed to get profile:', err);
+    redirect('/crm-login');
+  }
   if (!profile) {
     redirect('/crm-login');
   }
@@ -13,7 +19,13 @@ async function ModulesContent() {
     redirect('/crm/settings?error=admin_only');
   }
 
-  const modules = await getAllModules(profile.organization_id);
+  let modules;
+  try {
+    modules = await getAllModules(profile.organization_id);
+  } catch (err) {
+    console.error('[Modules] Failed to load modules:', err);
+    modules = [];
+  }
 
   return (
     <ModulesClient

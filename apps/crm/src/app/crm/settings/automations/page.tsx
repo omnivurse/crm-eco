@@ -132,7 +132,13 @@ function getColorClasses(color: string) {
 }
 
 async function AutomationsContent() {
-  const profile = await getCurrentProfile();
+  let profile;
+  try {
+    profile = await getCurrentProfile();
+  } catch (err) {
+    console.error('[Automations] Failed to get profile:', err);
+    redirect('/crm-login');
+  }
   if (!profile) {
     redirect('/crm-login');
   }
