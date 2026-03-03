@@ -17,6 +17,7 @@ import {
   FilePlus,
   Sparkles,
   Trophy,
+  Crown,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth';
 
@@ -70,6 +71,7 @@ const navSections: NavSection[] = [
     title: 'Analytics',
     items: [
       { name: 'Leaderboard', href: '/crm/analytics/leaderboard', icon: Trophy },
+      { name: 'Executive', href: '/crm/executive', icon: Crown, roles: ['owner', 'admin'] },
     ],
   },
   {
