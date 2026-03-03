@@ -60,6 +60,9 @@ DROP MATERIALIZED VIEW IF EXISTS mv_commission_rate_analysis CASCADE;
 -- 3. Re-create refresh_advisor_commission_summary with ::date cast
 -- ═══════════════════════════════════════════════════════════════════════════════
 
+DROP FUNCTION IF EXISTS refresh_advisor_commission_summary(uuid, date);
+DROP FUNCTION IF EXISTS refresh_advisor_commission_summary();
+
 CREATE OR REPLACE FUNCTION refresh_advisor_commission_summary(
   p_org_id uuid DEFAULT NULL,
   p_month  date DEFAULT date_trunc('month', current_date)::date
@@ -144,6 +147,8 @@ $$;
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 4. Re-create refresh_reporting_views
 -- ═══════════════════════════════════════════════════════════════════════════════
+
+DROP FUNCTION IF EXISTS refresh_reporting_views();
 
 CREATE OR REPLACE FUNCTION refresh_reporting_views()
 RETURNS void
