@@ -77,6 +77,10 @@ export async function POST(request: NextRequest) {
         related_modules: body.related_modules || [],
         filter_logic: body.filter_logic || null,
         template_category: body.templateCategory || body.template_category || null,
+        product_type_filter: body.product_type_filter || null,
+        scope: body.scope || 'all',
+        advisor_id: body.advisor_id || null,
+        include_downline: body.include_downline || false,
         created_by: profile.id,
       })
       .select()

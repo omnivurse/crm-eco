@@ -140,16 +140,11 @@ BEGIN
     IF p_include_downline THEN
       v_where := v_where || format(
         ' AND advisor_id IN (
-          WITH RECURSIVE downline AS (
-            SELECT id FROM advisors WHERE id = %L AND organization_id = %L
-            UNION ALL
-            SELECT a.id FROM advisors a
-            JOIN downline d ON a.upline_id = d.id
-            WHERE a.organization_id = %L
-          )
-          SELECT id FROM downline
+          SELECT %L::uuid
+          UNION ALL
+          SELECT id FROM get_advisor_downline_ids(%L)
         )',
-        p_advisor_id, p_org_id, p_org_id
+        p_advisor_id, p_advisor_id
       );
     ELSE
       v_where := v_where || format(' AND advisor_id = %L', p_advisor_id);
@@ -262,40 +257,9 @@ COMMENT ON FUNCTION public.execute_report_aggregation IS
   'Server-side report execution with GROUP BY, aggregations, capacity filtering, and downline support';
 
 
--- 3. RPC: Get advisor downline IDs (for client-side use)
-CREATE OR REPLACE FUNCTION public.get_advisor_downline_ids(
-  p_advisor_id uuid,
-  p_org_id uuid
-)
-RETURNS uuid[]
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_ids uuid[];
-BEGIN
-  WITH RECURSIVE downline AS (
-    SELECT id FROM advisors WHERE id = p_advisor_id AND organization_id = p_org_id
-    UNION ALL
-    SELECT a.id FROM advisors a
-    JOIN downline d ON a.upline_id = d.id
-    WHERE a.organization_id = p_org_id
-  )
-  SELECT array_agg(id) INTO v_ids FROM downline;
+-- 3. (get_advisor_downline_ids already created in 202603020001 — reusing existing function)
 
-  RETURN COALESCE(v_ids, ARRAY[]::uuid[]);
-END;
-$$;
-
-
--- 4. Index for downline queries on advisors.upline_id
-CREATE INDEX IF NOT EXISTS idx_advisors_upline_id
-  ON public.advisors (upline_id)
-  WHERE upline_id IS NOT NULL;
-
--- 5. Index for report queries
+-- 4. Index for report queries
 CREATE INDEX IF NOT EXISTS idx_crm_reports_org_scope
   ON public.crm_reports (org_id, scope)
   WHERE scope IS NOT NULL;

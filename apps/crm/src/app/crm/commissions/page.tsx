@@ -11,6 +11,8 @@ import {
   Loader2,
   Download,
   Building2,
+  Shield,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
@@ -140,6 +142,8 @@ export default function CommissionsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'hierarchy' | 'transactions'>('hierarchy');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [productTypeTab, setProductTypeTab] = useState<'all' | 'health_insurance' | 'health_share'>('all');
+  const [productSummary, setProductSummary] = useState<{ product_type: string; total_commissions: number; commission_count: number }[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -147,9 +151,10 @@ export default function CommissionsPage() {
 
   async function fetchData() {
     try {
-      const [hierarchyRes, commissionsRes] = await Promise.all([
+      const [hierarchyRes, commissionsRes, summaryByTypeRes] = await Promise.all([
         fetch('/api/commissions/hierarchy'),
         fetch('/api/commissions'),
+        fetch('/api/commissions/summary-by-type').catch(() => null),
       ]);
 
       if (hierarchyRes.ok) {
@@ -166,6 +171,11 @@ export default function CommissionsPage() {
         setSummary(data.summary || { totalPending: 0, totalApproved: 0, totalPaid: 0, count: 0 });
       } else {
         toast.error('Failed to load commission transactions');
+      }
+
+      if (summaryByTypeRes?.ok) {
+        const data = await summaryByTypeRes.json();
+        setProductSummary(data.summary || []);
       }
     } catch (error) {
       console.error('Failed to fetch commission data:', error);
@@ -200,9 +210,11 @@ export default function CommissionsPage() {
     }
   }
 
-  const filteredTransactions = statusFilter === 'all' 
-    ? transactions 
-    : transactions.filter(t => t.status === statusFilter);
+  const filteredTransactions = transactions.filter(t => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (productTypeTab !== 'all' && (t as any).product_type !== productTypeTab) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -293,6 +305,53 @@ export default function CommissionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Product Type Split Tabs */}
+      {productSummary.length > 0 && (
+        <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800/50 rounded-lg w-fit">
+          <button
+            onClick={() => setProductTypeTab('all')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              productTypeTab === 'all'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5 inline-block mr-1.5" />
+            All Types
+          </button>
+          <button
+            onClick={() => setProductTypeTab('health_insurance')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              productTypeTab === 'health_insurance'
+                ? 'bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5 inline-block mr-1.5" />
+            Insurance
+            {(() => {
+              const ins = productSummary.find(s => s.product_type === 'health_insurance');
+              return ins ? <span className="ml-1.5 text-xs opacity-75">{formatCurrency(ins.total_commissions)}</span> : null;
+            })()}
+          </button>
+          <button
+            onClick={() => setProductTypeTab('health_share')}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              productTypeTab === 'health_share'
+                ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}
+          >
+            <Heart className="w-3.5 h-3.5 inline-block mr-1.5" />
+            Health Share
+            {(() => {
+              const hs = productSummary.find(s => s.product_type === 'health_share');
+              return hs ? <span className="ml-1.5 text-xs opacity-75">{formatCurrency(hs.total_commissions)}</span> : null;
+            })()}
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-slate-200 dark:border-slate-700">

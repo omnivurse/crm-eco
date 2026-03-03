@@ -77,6 +77,10 @@ export async function PATCH(
     if (body.related_modules !== undefined) updateData.related_modules = body.related_modules;
     if (body.filter_logic !== undefined) updateData.filter_logic = body.filter_logic;
     if (body.is_shared !== undefined) updateData.is_shared = body.is_shared;
+    if (body.product_type_filter !== undefined) updateData.product_type_filter = body.product_type_filter;
+    if (body.scope !== undefined) updateData.scope = body.scope;
+    if (body.advisor_id !== undefined) updateData.advisor_id = body.advisor_id;
+    if (body.include_downline !== undefined) updateData.include_downline = body.include_downline;
 
     const { data: report, error } = await supabase
       .from('crm_reports')

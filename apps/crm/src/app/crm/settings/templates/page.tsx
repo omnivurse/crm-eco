@@ -22,12 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@crm-eco/ui/components/tabs';
+// Tabs import reserved for future use
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
   FileText,
@@ -40,7 +35,6 @@ import {
   Copy,
   Eye,
   Loader2,
-  Tag,
   Clock,
   TrendingUp,
   Sparkles,
@@ -59,11 +53,17 @@ interface Template {
   body: string;
   channel: 'email' | 'sms';
   category: string | null;
+  product_type: string | null;
   is_system: boolean;
   usage_count: number;
   created_at: string;
   updated_at: string;
 }
+
+const PRODUCT_TYPES = [
+  { value: 'health_insurance', label: 'Health Insurance', color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' },
+  { value: 'health_share', label: 'Health Share', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' },
+];
 
 const CATEGORIES = [
   { value: 'sales', label: 'Sales', color: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400' },
@@ -130,6 +130,14 @@ function TemplateCard({
                 </Badge>
               )}
               <CategoryBadge category={template.category} />
+              {template.product_type && (() => {
+                const pt = PRODUCT_TYPES.find(p => p.value === template.product_type);
+                return pt ? (
+                  <Badge variant="secondary" className={cn('text-xs', pt.color)}>
+                    {pt.label}
+                  </Badge>
+                ) : null;
+              })()}
             </div>
             {template.subject && (
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 truncate">
@@ -209,6 +217,7 @@ export default function TemplatesPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChannel, setSelectedChannel] = useState<string>('all');
+  const [selectedProductType, setSelectedProductType] = useState<string>('all');
 
   // Live search with debounce
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
@@ -225,6 +234,7 @@ export default function TemplatesPage() {
   const [formBody, setFormBody] = useState('');
   const [formChannel, setFormChannel] = useState<'email' | 'sms'>('email');
   const [formCategory, setFormCategory] = useState('');
+  const [formProductType, setFormProductType] = useState('');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -251,6 +261,7 @@ export default function TemplatesPage() {
     setFormBody('');
     setFormChannel('email');
     setFormCategory('');
+    setFormProductType('');
     setDialogOpen(true);
   }
 
@@ -261,6 +272,7 @@ export default function TemplatesPage() {
     setFormBody(template.body);
     setFormChannel(template.channel);
     setFormCategory(template.category || '');
+    setFormProductType(template.product_type || '');
     setDialogOpen(true);
   }
 
@@ -292,6 +304,7 @@ export default function TemplatesPage() {
           body: formBody,
           channel: formChannel,
           category: formCategory || null,
+          product_type: formProductType || null,
         }),
       });
 
@@ -343,6 +356,7 @@ export default function TemplatesPage() {
           body: template.body,
           channel: template.channel,
           category: template.category,
+          product_type: template.product_type,
         }),
       });
 
@@ -364,6 +378,8 @@ export default function TemplatesPage() {
     return templates.filter(t => {
       if (selectedChannel !== 'all' && t.channel !== selectedChannel) return false;
       if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
+      // Product type filter: show matching + general (null) templates
+      if (selectedProductType !== 'all' && t.product_type !== null && t.product_type !== selectedProductType) return false;
       if (searchLower) {
         return (
           t.name.toLowerCase().includes(searchLower) ||
@@ -373,7 +389,7 @@ export default function TemplatesPage() {
       }
       return true;
     });
-  }, [templates, debouncedQuery, selectedChannel, selectedCategory]);
+  }, [templates, debouncedQuery, selectedChannel, selectedCategory, selectedProductType]);
 
   if (loading) {
     return (
@@ -443,6 +459,20 @@ export default function TemplatesPage() {
             ))}
           </SelectContent>
         </Select>
+
+        <Select value={selectedProductType} onValueChange={setSelectedProductType}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="All Product Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Product Types</SelectItem>
+            {PRODUCT_TYPES.map(pt => (
+              <SelectItem key={pt.value} value={pt.value}>
+                {pt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Templates Grid */}
@@ -450,7 +480,7 @@ export default function TemplatesPage() {
         <div className="text-center py-16 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl">
           <FileText className="w-12 h-12 mx-auto text-slate-300 dark:text-slate-600 mb-4" />
           <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">
-            {searchQuery || selectedChannel !== 'all' || selectedCategory !== 'all'
+            {searchQuery || selectedChannel !== 'all' || selectedCategory !== 'all' || selectedProductType !== 'all'
               ? 'No templates match your filters'
               : 'No templates yet'}
           </h3>
@@ -535,6 +565,23 @@ export default function TemplatesPage() {
                   {CATEGORIES.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>
                       {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1 w-44">
+              <Label className="text-xs text-slate-500">Product Type</Label>
+              <Select value={formProductType || '__general__'} onValueChange={(v) => setFormProductType(v === '__general__' ? '' : v)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="General (All)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__general__">General (All)</SelectItem>
+                  {PRODUCT_TYPES.map(pt => (
+                    <SelectItem key={pt.value} value={pt.value}>
+                      {pt.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

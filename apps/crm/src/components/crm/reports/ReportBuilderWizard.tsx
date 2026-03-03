@@ -166,6 +166,14 @@ export function ReportBuilderWizard() {
             onUpdateFilter={builder.updateFilter}
             onRemoveFilter={builder.removeFilter}
             onSetFilterLogic={builder.setFilterLogic}
+            productTypeFilter={builder.productTypeFilter}
+            reportScope={builder.reportScope}
+            advisorId={builder.advisorId}
+            includeDownline={builder.includeDownline}
+            onProductTypeChange={builder.setProductTypeFilter}
+            onScopeChange={builder.setReportScope}
+            onAdvisorIdChange={builder.setAdvisorId}
+            onIncludeDownlineChange={builder.setIncludeDownline}
           />
         )}
 

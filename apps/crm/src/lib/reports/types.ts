@@ -25,10 +25,15 @@ export interface ReportColumn {
   module_key?: string;
 }
 
+export type ReportScope = 'all' | 'mine' | 'downline' | 'capacity';
+
+export type ProductTypeFilter = 'health_insurance' | 'health_share' | null;
+
 export interface ReportFilter {
   field: string;
   operator: string;
   value: unknown;
+  value2?: unknown; // For 'between' operator
 }
 
 export interface ReportGrouping {
@@ -78,6 +83,11 @@ export interface CrmReport {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Capacity/scope fields
+  product_type_filter?: ProductTypeFilter;
+  scope?: ReportScope;
+  advisor_id?: string;
+  include_downline?: boolean;
 }
 
 export interface CreateReportRequest {
@@ -96,6 +106,10 @@ export interface CreateReportRequest {
   related_modules?: RelatedModuleConfig[];
   filter_logic?: FilterGroup | null;
   is_shared?: boolean;
+  product_type_filter?: ProductTypeFilter;
+  scope?: ReportScope;
+  advisor_id?: string;
+  include_downline?: boolean;
 }
 
 export interface UpdateReportRequest {
@@ -114,6 +128,10 @@ export interface UpdateReportRequest {
   related_modules?: RelatedModuleConfig[];
   filter_logic?: FilterGroup | null;
   is_shared?: boolean;
+  product_type_filter?: ProductTypeFilter;
+  scope?: ReportScope;
+  advisor_id?: string;
+  include_downline?: boolean;
 }
 
 export interface ReportResult {

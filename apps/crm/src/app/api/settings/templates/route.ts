@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const channel = searchParams.get('channel');
     const category = searchParams.get('category');
+    const productType = searchParams.get('product_type');
 
     // Build query
     let query = supabase
@@ -37,6 +38,11 @@ export async function GET(request: NextRequest) {
       query = query.eq('category', category);
     }
 
+    // Filter by product_type: show templates matching the type OR general (null) templates
+    if (productType) {
+      query = query.or(`product_type.eq.${productType},product_type.is.null`);
+    }
+
     const { data: templates, error } = await query;
 
     if (error) throw error;
@@ -52,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, subject, body: templateBody, channel, category, moduleId } = body;
+    const { name, subject, body: templateBody, channel, category, moduleId, product_type } = body;
 
     if (!name || !templateBody || !channel) {
       return NextResponse.json({
@@ -92,6 +98,7 @@ export async function POST(request: NextRequest) {
         subject: subject || null,
         body: templateBody,
         category: category || null,
+        product_type: product_type || null,
         is_system: false,
         usage_count: 0,
         created_by: profile.id,

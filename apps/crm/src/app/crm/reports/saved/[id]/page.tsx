@@ -16,8 +16,6 @@ import {
   AlertCircle,
   Star,
   Clock,
-  Download,
-  Edit,
   Trash2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
@@ -42,16 +40,23 @@ interface SavedReport {
   name: string;
   description?: string;
   data_source: string;
-  columns: string[];
-  filters: Array<{ column: string; operator: string; value: unknown }>;
-  grouping: Array<{ column: string; label: string }>;
-  aggregations: Array<{ column: string; type: string; alias: string }>;
+  module_id?: string;
+  report_type?: string;
+  columns: string[] | Array<{ field: string; label: string; type: string; module_key?: string }>;
+  filters: Array<{ field?: string; column?: string; operator: string; value: unknown; value2?: unknown }>;
+  grouping: Array<{ field?: string; column?: string; order?: string; label?: string }>;
+  aggregations: Array<{ field?: string; column?: string; function?: string; type?: string; alias?: string }>;
   sorting: Array<{ column: string; direction: string }>;
   template_category?: string;
   run_count?: number;
   last_run_at?: string;
   is_favorite?: boolean;
   created_at: string;
+  // Capacity/scope
+  product_type_filter?: string | null;
+  scope?: string;
+  advisor_id?: string | null;
+  include_downline?: boolean;
 }
 
 interface RunHistory {
@@ -76,10 +81,13 @@ export default function SavedReportDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [results, setResults] = useState<Record<string, unknown>[]>([]);
   const [totalRows, setTotalRows] = useState(0);
+  const [isAggregated, setIsAggregated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [history, setHistory] = useState<RunHistory[]>([]);
   const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
 
   // Editable fields
   const [reportName, setReportName] = useState('');
@@ -91,9 +99,11 @@ export default function SavedReportDetailPage() {
         const res = await fetch(`/api/reports/${reportId}`);
         if (res.ok) {
           const data = await res.json();
-          setReport(data.report);
-          setReportName(data.report.name);
-          setReportDescription(data.report.description || '');
+          // API returns report directly or nested under .report
+          const rpt = data.report || data;
+          setReport(rpt);
+          setReportName(rpt.name);
+          setReportDescription(rpt.description || '');
         } else {
           setError('Report not found');
         }
@@ -108,47 +118,73 @@ export default function SavedReportDetailPage() {
 
   useEffect(() => {
     if (autoRun && report && !isRunning) {
-      handleRunReport();
+      handleRunReport(1);
     }
   }, [autoRun, report]);
 
-  const handleRunReport = async () => {
+  const handleRunReport = async (page = 1) => {
     if (!report) return;
 
     setIsRunning(true);
     setError(null);
-    setResults([]);
+    if (page === 1) setResults([]);
 
     try {
-      const filters = [...report.filters];
+      // Normalize filters to use 'field' key
+      const filters = report.filters.map(f => ({
+        field: f.field || f.column || '',
+        operator: f.operator,
+        value: f.value,
+        value2: f.value2,
+      }));
 
       if (dateRange.from) {
         filters.push({
-          column: 'created_at',
+          field: 'created_at',
           operator: 'gte',
           value: dateRange.from.toISOString(),
+          value2: undefined,
         });
       }
       if (dateRange.to) {
         filters.push({
-          column: 'created_at',
+          field: 'created_at',
           operator: 'lte',
           value: dateRange.to.toISOString(),
+          value2: undefined,
         });
       }
+
+      // Normalize grouping
+      const grouping = report.grouping.map(g => ({
+        field: g.field || g.column || '',
+        order: g.order || 'asc',
+      }));
+
+      // Normalize aggregations
+      const aggregations = report.aggregations.map(a => ({
+        field: a.field || a.column || '',
+        function: a.function || a.type || 'count',
+      }));
 
       const response = await fetch('/api/reports/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dataSource: report.data_source,
+          moduleId: report.module_id || undefined,
           columns: report.columns,
           filters,
-          grouping: report.grouping,
-          aggregations: report.aggregations,
+          grouping,
+          aggregations,
           sorting: report.sorting,
-          page: 1,
-          pageSize: 100,
+          page,
+          pageSize,
+          // Capacity/scope
+          productType: report.product_type_filter || undefined,
+          advisorId: report.advisor_id || undefined,
+          includeDownline: report.include_downline || false,
+          scope: report.scope || 'all',
         }),
       });
 
@@ -160,6 +196,8 @@ export default function SavedReportDetailPage() {
       const data = await response.json();
       setResults(data.data || []);
       setTotalRows(data.total || 0);
+      setIsAggregated(data.isAggregated || false);
+      setCurrentPage(page);
       setActiveTab('data');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -233,7 +271,6 @@ export default function SavedReportDetailPage() {
   const handleExport = async (format: ExportFormat) => {
     if (!report || results.length === 0) return;
 
-    // Map ExportFormat to ExportOptions format
     const exportFormat = format === 'excel' ? 'xlsx' : format;
     const fileExt = format === 'excel' ? 'xlsx' : format;
     const filename = `${reportName.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}`;
@@ -241,17 +278,48 @@ export default function SavedReportDetailPage() {
     const result = exportData({
       format: exportFormat as 'csv' | 'xlsx' | 'pdf' | 'json',
       data: results,
-      columns: report.columns,
       filename,
     });
 
     downloadExport(result, `${filename}.${fileExt}`);
   };
 
-  const getColumnHeaders = () => {
-    if (results.length === 0) return report?.columns || [];
+  const getColumnHeaders = (): string[] => {
+    if (results.length === 0) {
+      // Derive from report columns
+      if (Array.isArray(report?.columns)) {
+        return report.columns.map(c => typeof c === 'string' ? c : c.field);
+      }
+      return [];
+    }
     return Object.keys(results[0]);
   };
+
+  const formatColumnHeader = (col: string): string => {
+    // e.g., count_id -> Count of ID, sum_commission_amount -> Sum of Commission Amount
+    const prefixes = ['count_', 'sum_', 'avg_', 'min_', 'max_'];
+    for (const prefix of prefixes) {
+      if (col.startsWith(prefix)) {
+        const label = prefix.replace('_', '').toUpperCase();
+        const field = col.slice(prefix.length).replace(/_/g, ' ');
+        return `${label} of ${field}`;
+      }
+    }
+    return col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const formatCellValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'number') {
+      // Format numbers nicely
+      if (Number.isInteger(value)) return value.toLocaleString();
+      return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
+  const totalPages = Math.ceil(totalRows / pageSize);
 
   if (isLoading) {
     return (
@@ -335,7 +403,7 @@ export default function SavedReportDetailPage() {
             <Star className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
           </Button>
           <Button
-            onClick={handleRunReport}
+            onClick={() => handleRunReport(1)}
             disabled={isRunning}
             className="bg-teal-600 hover:bg-teal-700 text-white"
           >
@@ -407,16 +475,42 @@ export default function SavedReportDetailPage() {
                       Columns ({report.columns.length})
                     </Label>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {report.columns.map((col) => (
-                        <span
-                          key={col}
-                          className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                        >
-                          {col}
-                        </span>
-                      ))}
+                      {report.columns.map((col, i) => {
+                        const label = typeof col === 'string' ? col : col.label || col.field;
+                        return (
+                          <span
+                            key={`${label}-${i}`}
+                            className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                          >
+                            {label}
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
+                  {/* Capacity/Scope info */}
+                  {(report.product_type_filter || report.scope !== 'all') && (
+                    <div>
+                      <Label className="text-slate-500 dark:text-slate-400">Scope</Label>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {report.product_type_filter && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400">
+                            {report.product_type_filter.replace('_', ' ')}
+                          </span>
+                        )}
+                        {report.scope && report.scope !== 'all' && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400">
+                            {report.scope}
+                          </span>
+                        )}
+                        {report.include_downline && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400">
+                            + downline
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {report.filters.length > 0 && (
                     <div>
                       <Label className="text-slate-500 dark:text-slate-400">
@@ -425,7 +519,7 @@ export default function SavedReportDetailPage() {
                       <div className="text-sm text-slate-600 dark:text-slate-400 mt-1">
                         {report.filters.map((f, i) => (
                           <div key={i}>
-                            {f.column} {f.operator} {String(f.value)}
+                            {f.field || f.column} {f.operator} {String(f.value)}
                           </div>
                         ))}
                       </div>
@@ -443,7 +537,7 @@ export default function SavedReportDetailPage() {
                 <div className="space-y-2">
                   <Button
                     className="w-full bg-teal-600 hover:bg-teal-700 text-white"
-                    onClick={handleRunReport}
+                    onClick={() => handleRunReport(1)}
                     disabled={isRunning}
                   >
                     <Play className="w-4 h-4 mr-2" />
@@ -461,38 +555,85 @@ export default function SavedReportDetailPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="data" className="mt-4">
+        <TabsContent value="data" className="mt-4 space-y-4">
+          {/* Aggregation badge */}
+          {isAggregated && results.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-400">
+                Grouped & Aggregated
+              </span>
+              <span className="text-xs text-slate-500">
+                {totalRows} group{totalRows !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+
           {results.length > 0 ? (
             <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 overflow-hidden">
               <div className="p-4 border-b border-slate-200 dark:border-white/10 flex items-center justify-between">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Showing {results.length} of {totalRows} rows
+                  Showing {((currentPage - 1) * pageSize) + 1}–{Math.min(currentPage * pageSize, totalRows)} of {totalRows.toLocaleString()} {isAggregated ? 'groups' : 'rows'}
                 </p>
+                <ExportButton onExport={handleExport} disabled={results.length === 0} />
               </div>
               <div className="overflow-x-auto">
                 <UITable>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="bg-slate-50 dark:bg-slate-800/50">
                       {getColumnHeaders().map((col) => (
-                        <TableHead key={col} className="whitespace-nowrap">
-                          {col.replace(/_/g, ' ').replace(/\./g, ' ')}
+                        <TableHead key={col} className="whitespace-nowrap font-semibold text-xs uppercase tracking-wider">
+                          {formatColumnHeader(col)}
                         </TableHead>
                       ))}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {results.map((row, idx) => (
-                      <TableRow key={idx}>
-                        {getColumnHeaders().map((col) => (
-                          <TableCell key={col} className="whitespace-nowrap">
-                            {String(row[col] ?? '-')}
-                          </TableCell>
-                        ))}
+                      <TableRow key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                        {getColumnHeaders().map((col) => {
+                          const val = row[col];
+                          const isNumeric = typeof val === 'number';
+                          return (
+                            <TableCell
+                              key={col}
+                              className={`whitespace-nowrap ${isNumeric ? 'text-right font-mono tabular-nums' : ''}`}
+                            >
+                              {formatCellValue(val)}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ))}
                   </TableBody>
                 </UITable>
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="p-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
+                  <p className="text-sm text-slate-500">
+                    Page {currentPage} of {totalPages}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage <= 1 || isRunning}
+                      onClick={() => handleRunReport(currentPage - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage >= totalPages || isRunning}
+                      onClick={() => handleRunReport(currentPage + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="glass-card rounded-xl p-8 border border-slate-200 dark:border-white/10 text-center">
@@ -504,7 +645,7 @@ export default function SavedReportDetailPage() {
                 Run the report to see results
               </p>
               <Button
-                onClick={handleRunReport}
+                onClick={() => handleRunReport()}
                 disabled={isRunning}
                 className="bg-teal-600 hover:bg-teal-700 text-white"
               >

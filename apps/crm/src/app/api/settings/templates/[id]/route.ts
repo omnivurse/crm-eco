@@ -69,7 +69,7 @@ export async function PATCH(
       updated_at: new Date().toISOString(),
     };
 
-    const allowedFields = ['name', 'subject', 'body', 'category', 'module_id', 'is_active'];
+    const allowedFields = ['name', 'subject', 'body', 'category', 'module_id', 'is_active', 'product_type'];
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
         updateData[field] = body[field];

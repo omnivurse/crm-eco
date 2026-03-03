@@ -18,7 +18,9 @@ import {
   RefreshCw,
   Trash2,
   Edit,
+  Heart,
 } from 'lucide-react';
+import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import { toast } from 'sonner';
@@ -58,6 +60,7 @@ interface TeamMember {
   role: UserRole;
   is_active: boolean;
   created_at: string;
+  capacities?: string[];
 }
 
 interface TeamInvitation {
@@ -135,6 +138,8 @@ export default function TeamManagementPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<InvitableRole>('staff');
   const [inviting, setInviting] = useState(false);
+  const [editCapacities, setEditCapacities] = useState<string[]>([]);
+  const [savingCapacities, setSavingCapacities] = useState(false);
 
   const loadTeamData = useCallback(async () => {
     if (!authProfile) return;
@@ -157,7 +162,7 @@ export default function TeamManagementPage() {
         return;
       }
 
-      // Get team members
+      // Get team members with advisor capacities
       const { data: members } = await supabase
         .from('profiles')
         .select('*')
@@ -165,7 +170,18 @@ export default function TeamManagementPage() {
         .order('role')
         .order('full_name');
 
-      setTeamMembers((members || []) as TeamMember[]);
+      // Fetch advisor capacities for all members
+      const { data: advisors } = await supabase
+        .from('advisors')
+        .select('profile_id, capacities')
+        .eq('organization_id', authProfile.organization_id);
+
+      const advisorMap = new Map((advisors || []).map((a: any) => [a.profile_id, a.capacities || []]));
+
+      setTeamMembers((members || []).map((m: any) => ({
+        ...m,
+        capacities: advisorMap.get(m.id) || m.capacity_preferences || [],
+      })) as TeamMember[]);
 
       // Get pending invitations
       const { data: invites } = await supabase
@@ -304,6 +320,34 @@ export default function TeamManagementPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to deactivate member');
     }
+  }
+
+  async function handleSaveCapacities() {
+    if (!editingMember) return;
+    setSavingCapacities(true);
+    try {
+      const response = await fetch(`/api/team/members/${editingMember.id}/capacities`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ capacities: editCapacities }),
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || 'Failed to update capacities');
+      }
+      toast.success('Capacities updated');
+      loadTeamData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update capacities');
+    } finally {
+      setSavingCapacities(false);
+    }
+  }
+
+  function toggleCapacity(cap: string) {
+    setEditCapacities(prev =>
+      prev.includes(cap) ? prev.filter(c => c !== cap) : [...prev, cap]
+    );
   }
 
   async function handleReactivateMember(memberId: string) {
@@ -469,6 +513,7 @@ export default function TeamManagementPage() {
               currentUser={currentUser}
               onEditRole={() => {
                 setEditingMember(member);
+                setEditCapacities(member.capacities || []);
                 setShowEditModal(true);
               }}
               onDeactivate={() => handleDeactivateMember(member.id)}
@@ -554,14 +599,14 @@ export default function TeamManagementPage() {
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Role</DialogTitle>
+            <DialogTitle>Edit Member Settings</DialogTitle>
             <DialogDescription>
-              Change role for {editingMember?.full_name}
+              Change role and capacities for {editingMember?.full_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-5 py-4">
             <div className="space-y-2">
-              <Label>New Role</Label>
+              <Label>Role</Label>
               <Select
                 value={editingMember?.role}
                 onValueChange={(v: string) => {
@@ -584,10 +629,74 @@ export default function TeamManagementPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Capacity Multi-Select */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Heart className="w-3.5 h-3.5 text-teal-500" />
+                Product Capacities
+              </Label>
+              <p className="text-xs text-slate-500">
+                Select which product types this member can sell/manage.
+              </p>
+              <div className="flex flex-col gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={() => toggleCapacity('health_insurance')}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    editCapacities.includes('health_insurance')
+                      ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-300 dark:border-blue-500/30'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border ${
+                    editCapacities.includes('health_insurance')
+                      ? 'bg-blue-500 border-blue-500 text-white'
+                      : 'border-slate-300 dark:border-slate-600'
+                  }`}>
+                    {editCapacities.includes('health_insurance') && <Check className="w-3 h-3" />}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-slate-900 dark:text-white">Health Insurance</div>
+                    <div className="text-xs text-slate-500">Can sell and manage health insurance products</div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => toggleCapacity('health_share')}
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                    editCapacities.includes('health_share')
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded flex items-center justify-center border ${
+                    editCapacities.includes('health_share')
+                      ? 'bg-emerald-500 border-emerald-500 text-white'
+                      : 'border-slate-300 dark:border-slate-600'
+                  }`}>
+                    {editCapacities.includes('health_share') && <Check className="w-3 h-3" />}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-slate-900 dark:text-white">Health Share</div>
+                    <div className="text-xs text-slate-500">Can sell and manage health share products</div>
+                  </div>
+                </button>
+              </div>
+              {editCapacities.length === 0 && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  No capacities selected — member will have access to all product types.
+                </p>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditModal(false)}>
               Cancel
+            </Button>
+            <Button onClick={handleSaveCapacities} disabled={savingCapacities}>
+              {savingCapacities ? 'Saving...' : 'Save Capacities'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -640,6 +749,9 @@ function MemberRow({ member, currentUser, onEditRole, onDeactivate, onReactivate
           {member.role === 'owner' && <Crown className="w-3 h-3" />}
           {roleInfo?.label || member.role}
         </span>
+        {member.capacities && member.capacities.length > 0 && (
+          <CapacityBadges capacities={member.capacities} size="sm" short />
+        )}
 
         {canManage && member.is_active && (
           <DropdownMenu>

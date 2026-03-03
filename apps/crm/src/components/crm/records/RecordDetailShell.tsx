@@ -58,6 +58,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
+import { CapacityBadges } from '@/components/shared/capacity-badge';
 
 interface RecordDetailShellProps {
   record: CrmRecord;
@@ -396,6 +397,17 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                         {record.status}
                       </Badge>
                     )}
+                    {/* Capacity badges from record data */}
+                    {(() => {
+                      const data = record.data as Record<string, unknown> | undefined;
+                      const capacities: string[] = [];
+                      if (data?.product_type && typeof data.product_type === 'string') {
+                        capacities.push(data.product_type);
+                      } else if (Array.isArray(data?.capacities)) {
+                        capacities.push(...(data.capacities as string[]));
+                      }
+                      return capacities.length > 0 ? <CapacityBadges capacities={capacities} size="sm" /> : null;
+                    })()}
                     {isLeads && isAlreadyConverted && !!(record.data as Record<string, unknown>)?.converted_contact_id && (
                       <Link
                         href={`/crm/r/${String((record.data as Record<string, unknown>).converted_contact_id)}`}

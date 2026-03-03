@@ -15,6 +15,8 @@ import type {
   AggregationFunction,
   RelatedModuleConfig,
   FilterGroup,
+  ReportScope,
+  ProductTypeFilter,
 } from '@/lib/reports/types';
 
 /* ------------------------------------------------------------------ */
@@ -163,6 +165,12 @@ export function useReportBuilder() {
   const [chartConfig, setChartConfig] = useState<ChartConfig>({});
   const [isShared, setIsShared] = useState(false);
 
+  // ----- Capacity/scope -----
+  const [productTypeFilter, setProductTypeFilter] = useState<ProductTypeFilter>(null);
+  const [reportScope, setReportScope] = useState<ReportScope>('all');
+  const [advisorId, setAdvisorId] = useState<string>('');
+  const [includeDownline, setIncludeDownline] = useState(false);
+
   // Derived
   const primaryModule = modules.find(m => m.id === primaryModuleId);
   const primaryModuleKey = primaryModule?.key || '';
@@ -246,6 +254,10 @@ export function useReportBuilder() {
       setIsShared(report.is_shared);
       setRelatedModules(report.related_modules || []);
       setFilterLogic(report.filter_logic || null);
+      setProductTypeFilter(report.product_type_filter || null);
+      setReportScope(report.scope || 'all');
+      setAdvisorId(report.advisor_id || '');
+      setIncludeDownline(report.include_downline || false);
     } catch {
       toast.error('Failed to load report');
     } finally {
@@ -420,6 +432,10 @@ export function useReportBuilder() {
         related_modules: relatedModules,
         filter_logic: filterLogic,
         is_shared: isShared,
+        product_type_filter: productTypeFilter,
+        scope: reportScope,
+        advisor_id: advisorId || undefined,
+        include_downline: includeDownline,
       };
 
       const url = reportId ? `/api/reports/${reportId}` : '/api/reports';
@@ -442,6 +458,7 @@ export function useReportBuilder() {
     reportName, reportDescription, primaryModuleId, dataSource, reportType,
     columns, filters, grouping, aggregations, chartType, chartConfig,
     relatedModules, filterLogic, isShared, reportId, router,
+    productTypeFilter, reportScope, advisorId, includeDownline,
   ]);
 
   return {
@@ -470,6 +487,10 @@ export function useReportBuilder() {
     chartType,
     chartConfig,
     isShared,
+    productTypeFilter,
+    reportScope,
+    advisorId,
+    includeDownline,
 
     // Setters
     setReportName,
@@ -482,6 +503,10 @@ export function useReportBuilder() {
     setChartType,
     setChartConfig,
     setIsShared,
+    setProductTypeFilter,
+    setReportScope,
+    setAdvisorId,
+    setIncludeDownline,
 
     // Column actions
     addColumn,

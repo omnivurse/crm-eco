@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
+import { Label } from '@crm-eco/ui/components/label';
+import { Switch } from '@crm-eco/ui/components/switch';
 import {
   Select,
   SelectContent,
@@ -11,9 +12,9 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Plus, Trash2, Filter, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Trash2, Filter, ToggleLeft, ToggleRight, Shield, Users } from 'lucide-react';
 import { FILTER_OPERATORS_BY_TYPE, type FieldOption } from '../useReportBuilder';
-import type { ReportFilter, FilterGroup } from '@/lib/reports/types';
+import type { ReportFilter, FilterGroup, ReportScope, ProductTypeFilter } from '@/lib/reports/types';
 
 interface StepFiltersProps {
   allFields: FieldOption[];
@@ -23,6 +24,15 @@ interface StepFiltersProps {
   onUpdateFilter: (index: number, updates: Partial<ReportFilter>) => void;
   onRemoveFilter: (index: number) => void;
   onSetFilterLogic: (logic: FilterGroup | null) => void;
+  // Capacity/scope props
+  productTypeFilter?: ProductTypeFilter;
+  reportScope?: ReportScope;
+  advisorId?: string;
+  includeDownline?: boolean;
+  onProductTypeChange?: (v: ProductTypeFilter) => void;
+  onScopeChange?: (v: ReportScope) => void;
+  onAdvisorIdChange?: (v: string) => void;
+  onIncludeDownlineChange?: (v: boolean) => void;
 }
 
 export function StepFilters({
@@ -33,6 +43,14 @@ export function StepFilters({
   onUpdateFilter,
   onRemoveFilter,
   onSetFilterLogic,
+  productTypeFilter,
+  reportScope = 'all',
+  advisorId = '',
+  includeDownline = false,
+  onProductTypeChange,
+  onScopeChange,
+  onAdvisorIdChange,
+  onIncludeDownlineChange,
 }: StepFiltersProps) {
   // Global logic: AND or OR between all top-level filter rows
   const globalLogic = filterLogic?.logic || 'and';
@@ -51,12 +69,94 @@ export function StepFilters({
     return FILTER_OPERATORS_BY_TYPE[type] || FILTER_OPERATORS_BY_TYPE.text;
   };
 
-  const getFieldLabel = (fieldKey: string) => {
-    return allFields.find(f => f.key === fieldKey)?.label || fieldKey;
-  };
-
   return (
     <div className="space-y-6">
+      {/* Scope & Capacity Section */}
+      <div className="bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/20 dark:to-emerald-950/20 border border-teal-200 dark:border-teal-800 rounded-xl p-5 space-y-4">
+        <div>
+          <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2 mb-1">
+            <Shield className="w-4 h-4 text-teal-500" />
+            Scope & Capacity
+          </h3>
+          <p className="text-sm text-slate-500">
+            Control which records are included based on role capacity and ownership.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Product Type Filter */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Product Type
+            </Label>
+            <Select
+              value={productTypeFilter || '__all__'}
+              onValueChange={(v) => onProductTypeChange?.(v === '__all__' ? null : v as ProductTypeFilter)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All product types" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All Product Types</SelectItem>
+                <SelectItem value="health_insurance">Health Insurance</SelectItem>
+                <SelectItem value="health_share">Health Share</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Report Scope */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Report Scope
+            </Label>
+            <Select
+              value={reportScope}
+              onValueChange={(v) => onScopeChange?.(v as ReportScope)}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Records</SelectItem>
+                <SelectItem value="mine">My Records Only</SelectItem>
+                <SelectItem value="downline">My Downline</SelectItem>
+                <SelectItem value="capacity">By Capacity</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Advisor ID Filter */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" />
+              Specific Advisor
+            </Label>
+            <Input
+              placeholder="Advisor ID (optional)"
+              value={advisorId}
+              onChange={(e) => onAdvisorIdChange?.(e.target.value)}
+            />
+          </div>
+
+          {/* Include Downline */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Include Downline
+            </Label>
+            <div className="flex items-center gap-3 pt-1">
+              <Switch
+                checked={includeDownline}
+                onCheckedChange={(v) => onIncludeDownlineChange?.(v)}
+              />
+              <span className="text-sm text-slate-600 dark:text-slate-400">
+                {includeDownline ? 'Include all downline records' : 'Direct records only'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Field Filters Section */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
@@ -119,6 +219,7 @@ export function StepFilters({
             const operators = getOperatorsForField(filter.field);
             const currentOp = operators.find(op => op.value === filter.operator);
             const needsValue = currentOp?.needsValue !== false;
+            const isBetween = filter.operator === 'between';
 
             return (
               <div key={index}>
@@ -178,15 +279,31 @@ export function StepFilters({
                     </SelectContent>
                   </Select>
 
-                  {/* Value input */}
-                  {needsValue && (
+                  {/* Value input(s) */}
+                  {needsValue && isBetween ? (
+                    <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                      <Input
+                        placeholder="From"
+                        value={String(filter.value || '')}
+                        onChange={(e) => onUpdateFilter(index, { value: e.target.value })}
+                        className="flex-1"
+                      />
+                      <span className="text-xs text-slate-400">to</span>
+                      <Input
+                        placeholder="To"
+                        value={String(filter.value2 || '')}
+                        onChange={(e) => onUpdateFilter(index, { value2: e.target.value })}
+                        className="flex-1"
+                      />
+                    </div>
+                  ) : needsValue ? (
                     <Input
                       placeholder="Value"
                       value={String(filter.value || '')}
                       onChange={(e) => onUpdateFilter(index, { value: e.target.value })}
                       className="flex-1 min-w-[120px]"
                     />
-                  )}
+                  ) : null}
 
                   <Button
                     variant="ghost"
