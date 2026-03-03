@@ -85,7 +85,21 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // 4. Process SLA escalations (future implementation)
+    // 4. Auto-create weekly payout batches (runs every invocation;
+    //    the DB function is idempotent — skips orgs that already have a batch)
+    try {
+      const supabase = createServiceClient();
+      const { data: payoutResult, error: payoutError } = await supabase
+        .rpc('auto_create_weekly_batches');
+      if (payoutError) throw payoutError;
+      results.weeklyPayoutBatches = payoutResult;
+    } catch (error) {
+      results.weeklyPayoutBatches = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+
+    // 5. Process SLA escalations (future implementation)
     // results.sla = await processSlaEscalations();
 
     return NextResponse.json({

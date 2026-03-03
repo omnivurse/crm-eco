@@ -17,6 +17,7 @@ import {
   Calendar,
   RefreshCw,
 } from 'lucide-react';
+import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { toast } from 'sonner';
@@ -222,15 +223,23 @@ export default function AnalyticsPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h1>
           <p className="text-slate-600 dark:text-slate-400">Real-time insights into your organization</p>
         </div>
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline" 
-          className="border-slate-300 dark:border-slate-700"
-          disabled={refreshing}
-        >
-          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/crm/analytics/performance">
+            <Button variant="outline" className="border-slate-300 dark:border-slate-700">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Performance
+            </Button>
+          </Link>
+          <Button
+            onClick={handleRefresh}
+            variant="outline"
+            className="border-slate-300 dark:border-slate-700"
+            disabled={refreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Key Metrics */}
