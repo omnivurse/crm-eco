@@ -132,13 +132,15 @@ export function EmailEditor({
     }
   }, [content, editor]);
 
-  // Handle source code editing
+  // Handle source code editing — sync to parent on every keystroke
+  // so Save always uses the latest content even without "Apply Changes"
   const handleSourceChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const newContent = e.target.value;
       setSourceContent(newContent);
+      onChange?.(newContent);
     },
-    []
+    [onChange]
   );
 
   const applySourceChanges = useCallback(() => {
@@ -185,6 +187,10 @@ export function EmailEditor({
             size="sm"
             className="h-7 text-xs"
             onClick={() => {
+              // Auto-apply source content to Tiptap when leaving source mode
+              if (showSource && editor) {
+                editor.commands.setContent(sourceContent);
+              }
               setShowSource(false);
               setShowPreview(false);
             }}
@@ -197,6 +203,10 @@ export function EmailEditor({
             size="sm"
             className="h-7 text-xs gap-1"
             onClick={() => {
+              // Auto-apply source content to Tiptap so preview uses latest HTML
+              if (showSource && editor) {
+                editor.commands.setContent(sourceContent);
+              }
               setShowSource(false);
               setShowPreview(true);
             }}

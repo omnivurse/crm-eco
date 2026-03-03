@@ -80,6 +80,7 @@ export async function PATCH(
       .from('crm_message_templates')
       .update(updateData)
       .eq('id', id)
+      .eq('org_id', profile.organization_id)
       .select()
       .single();
 
@@ -125,7 +126,8 @@ export async function DELETE(
     const { error } = await supabase
       .from('crm_message_templates')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', profile.organization_id);
 
     if (error) throw error;
 

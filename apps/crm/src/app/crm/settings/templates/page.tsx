@@ -480,7 +480,7 @@ export default function TemplatesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
           hideCloseButton
-          className="w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-none h-[calc(100vh-4rem)] flex flex-col p-0"
+          className="w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-none h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)] sm:max-h-[calc(100vh-4rem)] overflow-hidden flex flex-col p-0 gap-0"
         >
           {/* Header bar */}
           <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
