@@ -279,7 +279,7 @@ function AgentGroup({
       .toUpperCase() || '?';
 
   const count = recordCount ?? records.length;
-  const hasRecords = records.length > 0;
+  const hasRecords = count > 0;
 
   return (
     <div className="border-b border-slate-100 dark:border-white/5 last:border-0">
@@ -312,41 +312,54 @@ function AgentGroup({
 
       {isExpanded && hasRecords && (
         <div className="pl-12 pb-2">
-          {records.map((record) => {
-            const name =
-              record.title ||
-              [record.data?.first_name, record.data?.last_name]
-                .filter(Boolean)
-                .join(' ') ||
-              'Untitled';
-            const email = (record.email || record.data?.email) as string | undefined;
-            const status = String(
-              record.status || record.data?.status || record.data?.lead_status || '',
-            );
+          {records.length > 0 ? (
+            <>
+              {records.map((record) => {
+                const name =
+                  record.title ||
+                  [record.data?.first_name, record.data?.last_name]
+                    .filter(Boolean)
+                    .join(' ') ||
+                  'Untitled';
+                const email = (record.email || record.data?.email) as string | undefined;
+                const status = String(
+                  record.status || record.data?.status || record.data?.lead_status || '',
+                );
 
-            return (
-              <div
-                key={record.id}
-                className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] cursor-pointer transition-colors"
-                onClick={() => onRowClick?.(record.id)}
-              >
-                <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                <span className="text-sm text-slate-900 dark:text-white font-medium truncate flex-1">
-                  {name}
-                </span>
-                {status && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400">
-                    {status}
-                  </span>
-                )}
-                {email && (
-                  <span className="hidden md:block text-xs text-slate-400 truncate max-w-[150px]">
-                    {email}
-                  </span>
-                )}
-              </div>
-            );
-          })}
+                return (
+                  <div
+                    key={record.id}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/[0.03] cursor-pointer transition-colors"
+                    onClick={() => onRowClick?.(record.id)}
+                  >
+                    <User className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <span className="text-sm text-slate-900 dark:text-white font-medium truncate flex-1">
+                      {name}
+                    </span>
+                    {status && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400">
+                        {status}
+                      </span>
+                    )}
+                    {email && (
+                      <span className="hidden md:block text-xs text-slate-400 truncate max-w-[150px]">
+                        {email}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+              {recordCount != null && records.length < recordCount && (
+                <div className="px-3 py-2 text-xs text-slate-400 dark:text-slate-500 italic">
+                  Showing {records.length} of {recordCount} records
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="px-3 py-3 text-xs text-slate-400 dark:text-slate-500 italic">
+              {count} record{count !== 1 ? 's' : ''} &mdash; switch to list view to browse
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -404,9 +417,18 @@ export const TreeView = memo(function TreeView({
 
     // Prefer server-provided data (complete counts across all records)
     if (agentTreeData) {
+      // Distribute paginated records to their respective agents
+      const recordsByAgent = new Map<string, CrmRecord[]>();
+      for (const r of records) {
+        const agent =
+          String(r.data?.agent || r.data?.producer_name || '').trim() || 'Unassigned';
+        if (!recordsByAgent.has(agent)) recordsByAgent.set(agent, []);
+        recordsByAgent.get(agent)!.push(r);
+      }
+
       let entries = agentTreeData.agents.map((a) => ({
         name: a.name,
-        records: [] as CrmRecord[],
+        records: recordsByAgent.get(a.name) || [],
         recordCount: a.recordCount,
       }));
       if (sortBy === 'count') {
