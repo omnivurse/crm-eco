@@ -114,6 +114,13 @@ export const ModuleShell = memo(function ModuleShell({
     searchParamsRef.current = searchParams;
   }, [searchParams]);
 
+  // Sync viewMode from URL when navigation changes the query params
+  // (e.g., clicking "By Agent" / "By Advisor" buttons in ModuleHeader)
+  useEffect(() => {
+    const urlViewMode = (searchParams.get('viewMode') as ViewMode) || 'table';
+    setViewMode((prev) => (prev === urlViewMode ? prev : urlViewMode));
+  }, [searchParams]);
+
   // Sync filter state from URL on browser back/forward navigation
   useEffect(() => {
     const filtersParam = searchParams.get('filters');
