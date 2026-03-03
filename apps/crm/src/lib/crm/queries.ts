@@ -208,7 +208,7 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, user_id, organization_id, email, full_name, avatar_url, role, crm_role, is_active, created_at, updated_at')
+      .select('id, user_id, organization_id, email, full_name, avatar_url, role, crm_role, is_active, created_at, updated_at, advisor_id')
       .eq('user_id', user.id)
       .single();
 
@@ -1896,4 +1896,70 @@ export async function getAdvisorsForTree(
   }
 
   return { advisors: advisorList, recordCounts };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Agent tree (text-field based grouping with server-side counts)     */
+/* ------------------------------------------------------------------ */
+
+export interface AgentTreeData {
+  agents: Array<{ name: string; recordCount: number }>;
+  totalRecords: number;
+}
+
+/**
+ * Fetch distinct agent names with record counts for the agent tree view.
+ * Admins see all agents; non-admins see only records they own (or their downline's).
+ */
+export async function getAgentTreeData(
+  orgId: string,
+  moduleId: string,
+  userProfileId: string,
+  userAdvisorId: string | null,
+  isAdmin: boolean,
+): Promise<AgentTreeData> {
+  const supabase = await createCrmClient();
+
+  // Determine owner scoping
+  let ownerIds: string[] | null = null;
+
+  if (!isAdmin) {
+    if (userAdvisorId) {
+      // Get downline advisor IDs, then resolve to profile IDs
+      const { data: downlineIds } = await supabase.rpc('get_advisor_downline_ids', {
+        p_advisor_id: userAdvisorId,
+      });
+      const allAdvisorIds = [userAdvisorId, ...(downlineIds || [])];
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('advisor_id', allAdvisorIds);
+
+      ownerIds = profiles && profiles.length > 0
+        ? profiles.map((p: { id: string }) => p.id)
+        : [userProfileId];
+    } else {
+      ownerIds = [userProfileId];
+    }
+  }
+
+  const { data, error } = await supabase.rpc('get_agent_tree_data', {
+    p_module_id: moduleId,
+    p_owner_ids: ownerIds,
+  });
+
+  if (error) {
+    console.error('Error fetching agent tree data:', error);
+    return { agents: [], totalRecords: 0 };
+  }
+
+  const agents = (data || []).map((d: { agent_name: string; record_count: number }) => ({
+    name: d.agent_name,
+    recordCount: Number(d.record_count),
+  }));
+
+  const totalRecords = agents.reduce((sum: number, a: { recordCount: number }) => sum + a.recordCount, 0);
+
+  return { agents, totalRecords };
 }

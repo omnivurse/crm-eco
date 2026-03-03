@@ -684,6 +684,17 @@ export interface CrmUserContext {
 }
 
 // ============================================================================
+// Dual-Capacity Product Types
+// ============================================================================
+
+export type ProductType = 'health_insurance' | 'health_share';
+
+export const PRODUCT_TYPES: { value: ProductType; label: string }[] = [
+  { value: 'health_insurance', label: 'Health Insurance' },
+  { value: 'health_share', label: 'Health Share' },
+];
+
+// ============================================================================
 // Email Campaigns
 // ============================================================================
 

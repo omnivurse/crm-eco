@@ -12,8 +12,9 @@ import {
   getRecords,
   getCachedTerritories,
   getAdvisorsForTree,
+  getAgentTreeData,
 } from '@/lib/crm/queries';
-import type { AdvisorTreeData } from '@/lib/crm/queries';
+import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy } from '@/lib/crm/types';
 
@@ -173,15 +174,18 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     }
   }
 
-  // Step 4: fetch advisor tree data when in tree view mode
+  // Step 4: fetch tree data when in tree view mode
+  const role = (profile as any).role || '';
+  const crmRole = (profile as any).crm_role || '';
+  const isAdmin = ['owner', 'admin', 'super_admin', 'staff'].includes(role)
+    || ['crm_admin', 'crm_manager'].includes(crmRole);
+  const userAdvisorId = (profile as any).advisor_id || null;
+
   let advisorTreeData: AdvisorTreeData | null = null;
+  let agentTreeData: AgentTreeData | null = null;
+
   if (viewMode === 'tree' && treeGroupBy === 'advisor') {
     try {
-      const role = (profile as any).role || '';
-      const crmRole = (profile as any).crm_role || '';
-      const isAdmin = ['owner', 'admin', 'super_admin', 'staff'].includes(role)
-        || ['crm_admin', 'crm_manager'].includes(crmRole);
-      const userAdvisorId = (profile as any).advisor_id || null;
       advisorTreeData = await getAdvisorsForTree(
         profile.organization_id,
         recordsModuleId,
@@ -190,6 +194,20 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
       );
     } catch (err) {
       console.error('[ModulePage] Failed to fetch advisor tree:', err);
+    }
+  }
+
+  if (viewMode === 'tree' && treeGroupBy === 'agent') {
+    try {
+      agentTreeData = await getAgentTreeData(
+        profile.organization_id,
+        recordsModuleId,
+        profile.id,
+        userAdvisorId,
+        isAdmin,
+      );
+    } catch (err) {
+      console.error('[ModulePage] Failed to fetch agent tree:', err);
     }
   }
 
@@ -221,6 +239,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         userRole={(profile as any).role || null}
         territories={territories}
         advisorTreeData={advisorTreeData}
+        agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}
       />
 

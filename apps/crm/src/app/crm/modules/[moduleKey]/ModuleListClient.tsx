@@ -12,7 +12,7 @@ import { TimelineView } from '@/components/crm/views/TimelineView';
 import { SplitView } from '@/components/crm/views/SplitView';
 import { TreeView } from '@/components/crm/views/TreeView';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, TreeGroupBy } from '@/lib/crm/types';
-import type { AdvisorTreeData } from '@/lib/crm/queries';
+import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 
 // Lazy-load ChartView (~150KB recharts) only when user switches to chart mode
 const ChartView = dynamic(
@@ -32,6 +32,8 @@ interface ModuleListClientProps {
   territories?: CrmTerritory[];
   /** Advisor tree data for tree view (advisor mode) */
   advisorTreeData?: AdvisorTreeData | null;
+  /** Agent tree data for tree view (agent mode) */
+  agentTreeData?: AgentTreeData | null;
   /** Which field the tree groups by */
   treeGroupBy?: TreeGroupBy;
 }
@@ -44,6 +46,7 @@ function ModuleViewContent({
   views,
   activeViewId,
   advisorTreeData,
+  agentTreeData,
   treeGroupBy,
 }: {
   records: CrmRecord[];
@@ -52,6 +55,7 @@ function ModuleViewContent({
   views: CrmView[];
   activeViewId?: string;
   advisorTreeData?: AdvisorTreeData | null;
+  agentTreeData?: AgentTreeData | null;
   treeGroupBy?: TreeGroupBy;
 }) {
   const router = useRouter();
@@ -141,6 +145,7 @@ function ModuleViewContent({
           fields={fields}
           moduleKey={moduleKey}
           advisorTreeData={advisorTreeData}
+          agentTreeData={agentTreeData}
           treeGroupBy={treeGroupBy}
           onRowClick={handleRowClick}
         />
@@ -174,6 +179,7 @@ function ModuleListContent({
   userRole,
   territories,
   advisorTreeData,
+  agentTreeData,
   treeGroupBy,
 }: ModuleListClientProps) {
   return (
@@ -194,6 +200,7 @@ function ModuleListContent({
         views={views}
         activeViewId={activeViewId}
         advisorTreeData={advisorTreeData}
+        agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}
       />
     </ModuleShell>
