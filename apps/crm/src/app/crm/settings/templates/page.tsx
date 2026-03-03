@@ -601,7 +601,7 @@ export default function TemplatesPage() {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
-        <DialogContent className="max-w-4xl w-[calc(100%-2rem)] sm:w-full">
+        <DialogContent className="max-w-6xl w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-[1100px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {previewTemplate?.channel === 'email' ? (
