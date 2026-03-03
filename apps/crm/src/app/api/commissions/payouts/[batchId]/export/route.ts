@@ -27,15 +27,7 @@ export async function GET(
     const { batchId } = await params;
     const supabase = await createClient();
 
-    // Log the export
-    await supabase.rpc('log_payout_export', {
-      p_org_id: profile.organization_id,
-      p_actor_id: profile.id,
-      p_batch_id: batchId,
-      p_format: 'csv',
-    });
-
-    // Fetch batch info
+    // Fetch batch info (before logging so we have totals)
     const { data: batch, error: batchError } = await supabase
       .from('commission_payment_batches')
       .select('batch_number, period_start, period_end, total_amount, total_advisors, status')
@@ -46,6 +38,16 @@ export async function GET(
     if (batchError || !batch) {
       return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
     }
+
+    // Log the export with batch metadata
+    await supabase.rpc('log_payout_export', {
+      p_org_id: profile.organization_id,
+      p_actor_id: profile.id,
+      p_batch_id: batchId,
+      p_format: 'csv',
+      p_record_count: batch.total_advisors,
+      p_total_amount: batch.total_amount,
+    });
 
     // Fetch payout items with advisor info (PII-safe: only name + ID)
     const { data: payouts, error: payoutError } = await supabase

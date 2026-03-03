@@ -16,6 +16,7 @@ import type { WebhookContext } from '@/lib/integrations/webhooks/types';
 
 // Import webhook handlers to register them
 import '@/lib/integrations/webhooks/handlers/stripe';
+import '@/lib/integrations/webhooks/handlers/stripe-payouts';
 
 // Force dynamic rendering - this route uses env vars at runtime
 export const dynamic = 'force-dynamic';

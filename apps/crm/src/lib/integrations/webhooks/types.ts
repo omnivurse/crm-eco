@@ -82,6 +82,11 @@ export const WEBHOOK_CONFIGS: Record<string, WebhookConfig> = {
     signatureMethod: 'stripe',
     signatureHeader: 'stripe-signature',
   },
+  stripe_payouts: {
+    providerId: 'stripe_payouts',
+    signatureMethod: 'stripe',
+    signatureHeader: 'stripe-signature',
+  },
   sendgrid: {
     providerId: 'sendgrid',
     signatureMethod: 'none', // SendGrid uses basic auth or signed event webhooks

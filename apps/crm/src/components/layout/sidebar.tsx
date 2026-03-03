@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   FilePlus,
   Sparkles,
+  Trophy,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/auth';
 
@@ -63,6 +64,12 @@ const navSections: NavSection[] = [
     items: [
       { name: 'Enrollments', href: '/crm/enrollment', icon: ClipboardCheck },
       { name: 'New Enrollment', href: '/crm/enrollment?new=true', icon: FilePlus, roles: ['owner', 'admin', 'advisor'] },
+    ],
+  },
+  {
+    title: 'Analytics',
+    items: [
+      { name: 'Leaderboard', href: '/crm/analytics/leaderboard', icon: Trophy },
     ],
   },
   {
