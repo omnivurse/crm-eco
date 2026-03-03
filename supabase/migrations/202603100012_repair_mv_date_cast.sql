@@ -49,51 +49,11 @@ CREATE INDEX idx_mv_advisor_monthly_perf_parent
 
 
 -- ═══════════════════════════════════════════════════════════════════════════════
--- 2. Re-create mv_commission_rate_analysis with ::date cast
+-- 2. Skip mv_commission_rate_analysis (commission_rate_type column not yet on remote)
+--    Drop it if it exists from a partial earlier run so refresh_reporting_views won't fail.
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 DROP MATERIALIZED VIEW IF EXISTS mv_commission_rate_analysis CASCADE;
-
-CREATE MATERIALIZED VIEW mv_commission_rate_analysis AS
-SELECT
-  cr.organization_id,
-  cr.agent_level_id,
-  cr.product_id,
-  cr.commission_type,
-  cr.commission_rate_type,
-  cr.override_commission_percent,
-  p.name          AS product_name,
-  p.product_type,
-  al.level_name   AS agent_level_name,
-  count(c.id)     AS times_applied,
-  sum(c.commission_amount) AS total_generated,
-  avg(c.commission_amount) AS avg_commission,
-  date_trunc('month', c.commission_period::date) AS month
-FROM commission_rates cr
-LEFT JOIN commissions c
-  ON c.commission_rate_type = cr.commission_rate_type
- AND c.organization_id = cr.organization_id
-LEFT JOIN products p ON p.id = cr.product_id
-LEFT JOIN agent_levels al ON al.id = cr.agent_level_id
-WHERE cr.is_active = true
-  AND (cr.end_date IS NULL OR cr.end_date >= current_date)
-GROUP BY
-  cr.organization_id, cr.agent_level_id, cr.product_id,
-  cr.commission_type, cr.commission_rate_type,
-  cr.override_commission_percent,
-  p.name, p.product_type, al.level_name,
-  date_trunc('month', c.commission_period::date);
-
-CREATE UNIQUE INDEX idx_mv_comm_rate_analysis_pk
-  ON mv_commission_rate_analysis (
-    organization_id, COALESCE(agent_level_id, '00000000-0000-0000-0000-000000000000'),
-    COALESCE(product_id, '00000000-0000-0000-0000-000000000000'),
-    commission_type, commission_rate_type,
-    COALESCE(month, '1970-01-01'::timestamptz)
-  );
-
-CREATE INDEX idx_mv_comm_rate_analysis_org
-  ON mv_commission_rate_analysis (organization_id);
 
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -192,7 +152,7 @@ SECURITY DEFINER
 AS $$
 BEGIN
   REFRESH MATERIALIZED VIEW CONCURRENTLY mv_advisor_monthly_performance;
-  REFRESH MATERIALIZED VIEW CONCURRENTLY mv_commission_rate_analysis;
+  -- mv_commission_rate_analysis skipped (commission_rate_type not on remote yet)
 END;
 $$;
 
