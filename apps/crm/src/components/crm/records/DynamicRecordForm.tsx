@@ -468,7 +468,7 @@ export function DynamicRecordForm({
         const isCollapsed = collapsedSections.has(section.key);
 
         return (
-          <Card key={section.key} id={`section-${section.key}`} data-section={section.key}>
+          <Card key={section.key} id={`section-${section.key}`} data-section={section.key} className="break-inside-avoid">
             <CardHeader
               className={cn(
                 'cursor-pointer hover:bg-muted/50 transition-colors',
@@ -533,9 +533,10 @@ export function DynamicRecordForm({
   );
 
   // Read-only mode: render as plain div without form or actions
+  // Use CSS columns (not grid) so collapsed cards truly shrink and siblings flow up
   if (readOnly) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="columns-1 lg:columns-2 gap-4 space-y-4">
         {renderSections()}
       </div>
     );
