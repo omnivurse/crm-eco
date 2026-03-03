@@ -222,14 +222,13 @@ export function EmailEditor({
       )}
 
       {/* Editor Content */}
-      <div className="flex-1 min-h-0 overflow-y-auto" style={{ minHeight }}>
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {showSource ? (
-          <div className="p-3 h-full flex flex-col">
+          <div className="p-3 flex flex-col" style={{ minHeight }}>
             <textarea
               value={sourceContent}
               onChange={handleSourceChange}
               className="w-full flex-1 font-mono text-sm p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white resize-none"
-              style={{ minHeight: minHeight - 50 }}
               spellCheck={false}
             />
             <div className="flex justify-end gap-2 mt-2 flex-shrink-0">

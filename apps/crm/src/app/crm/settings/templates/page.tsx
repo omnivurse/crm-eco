@@ -570,9 +570,9 @@ export default function TemplatesPage() {
                 content={formBody}
                 onChange={setFormBody}
                 placeholder="Start composing your email template..."
-                minHeight={500}
+                minHeight={200}
                 showSourceToggle={true}
-                className="h-full rounded-none border-0 [&_.ProseMirror]:min-h-[calc(100vh-320px)]"
+                className="h-full rounded-none border-0"
               />
             ) : (
               <div className="h-full p-6">
