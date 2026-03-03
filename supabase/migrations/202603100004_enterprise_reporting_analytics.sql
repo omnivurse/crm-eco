@@ -27,7 +27,7 @@ SELECT
   a.commission_tier,
   a.agent_level_id,
   COALESCE(c.product_type, 'all')         AS product_type,
-  date_trunc('month', c.commission_period) AS month,
+  date_trunc('month', c.commission_period::date) AS month,
   count(DISTINCT c.enrollment_id)         AS total_enrollments,
   count(c.id)                             AS commission_count,
   sum(CASE WHEN c.commission_type = 'signup'   THEN c.commission_amount ELSE 0 END) AS signup_commissions,
@@ -45,7 +45,7 @@ GROUP BY
   a.id, a.organization_id, a.parent_advisor_id,
   a.commission_tier, a.agent_level_id,
   COALESCE(c.product_type, 'all'),
-  date_trunc('month', c.commission_period);
+  date_trunc('month', c.commission_period::date);
 
 -- UNIQUE index required for CONCURRENTLY refresh
 CREATE UNIQUE INDEX idx_mv_advisor_monthly_perf_pk
@@ -65,7 +65,7 @@ CREATE MATERIALIZED VIEW mv_org_monthly_dashboard AS
 SELECT
   c.organization_id,
   COALESCE(c.product_type, 'all')            AS product_type,
-  date_trunc('month', c.commission_period)   AS month,
+  date_trunc('month', c.commission_period::date)   AS month,
   count(DISTINCT c.advisor_id)               AS active_advisors,
   count(DISTINCT c.enrollment_id)            AS total_enrollments,
   count(DISTINCT c.member_id)                AS total_members,
@@ -80,7 +80,7 @@ FROM commissions c
 GROUP BY
   c.organization_id,
   COALESCE(c.product_type, 'all'),
-  date_trunc('month', c.commission_period);
+  date_trunc('month', c.commission_period::date);
 
 CREATE UNIQUE INDEX idx_mv_org_monthly_dash_pk
   ON mv_org_monthly_dashboard (organization_id, month, product_type);
@@ -150,7 +150,7 @@ BEGIN
   SELECT
     c.organization_id,
     c.advisor_id,
-    date_trunc('month', c.commission_period)::date AS period_month,
+    date_trunc('month', c.commission_period::date)::date AS period_month,
     count(DISTINCT c.enrollment_id)::int,
     sum(CASE WHEN c.commission_type = 'signup'   THEN c.commission_amount ELSE 0 END),
     sum(CASE WHEN c.commission_type = 'monthly'  THEN c.commission_amount ELSE 0 END),
@@ -161,7 +161,7 @@ BEGIN
       FROM commission_adjustments adj
       WHERE adj.advisor_id = c.advisor_id
         AND adj.organization_id = c.organization_id
-        AND adj.effective_period = date_trunc('month', c.commission_period)::date
+        AND adj.effective_period = date_trunc('month', c.commission_period::date)::date
         AND adj.status = 'approved'
         AND adj.adjustment_type NOT IN ('clawback', 'chargeback')
     ), 0),
@@ -170,7 +170,7 @@ BEGIN
       FROM commission_adjustments adj
       WHERE adj.advisor_id = c.advisor_id
         AND adj.organization_id = c.organization_id
-        AND adj.effective_period = date_trunc('month', c.commission_period)::date
+        AND adj.effective_period = date_trunc('month', c.commission_period::date)::date
         AND adj.status = 'approved'
         AND adj.adjustment_type IN ('clawback', 'chargeback')
     ), 0),
@@ -181,7 +181,7 @@ BEGIN
           FROM commission_adjustments adj
           WHERE adj.advisor_id = c.advisor_id
             AND adj.organization_id = c.organization_id
-            AND adj.effective_period = date_trunc('month', c.commission_period)::date
+            AND adj.effective_period = date_trunc('month', c.commission_period::date)::date
             AND adj.status = 'approved'
         ), 0),
     sum(CASE WHEN c.status = 'paid'    THEN c.commission_amount ELSE 0 END),
@@ -189,9 +189,9 @@ BEGIN
     now(),
     now()
   FROM commissions c
-  WHERE date_trunc('month', c.commission_period)::date = p_month
+  WHERE date_trunc('month', c.commission_period::date)::date = p_month
     AND (p_org_id IS NULL OR c.organization_id = p_org_id)
-  GROUP BY c.organization_id, c.advisor_id, date_trunc('month', c.commission_period)::date
+  GROUP BY c.organization_id, c.advisor_id, date_trunc('month', c.commission_period::date)::date
   ON CONFLICT (advisor_id, period_month)
   DO UPDATE SET
     total_enrollments    = EXCLUDED.total_enrollments,

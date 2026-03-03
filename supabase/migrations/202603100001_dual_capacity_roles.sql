@@ -165,8 +165,8 @@ BEGIN
   FROM commissions c
   WHERE c.advisor_id = p_advisor_id
     AND c.organization_id = p_org_id
-    AND (p_period_start IS NULL OR c.commission_period >= p_period_start)
-    AND (p_period_end IS NULL OR c.commission_period <= p_period_end)
+    AND (p_period_start IS NULL OR c.commission_period::date >= p_period_start)
+    AND (p_period_end IS NULL OR c.commission_period::date <= p_period_end)
   GROUP BY COALESCE(c.product_type, 'unclassified')
   ORDER BY total_commissions DESC;
 END;
