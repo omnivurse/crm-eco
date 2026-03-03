@@ -50,6 +50,7 @@ import {
     Globe,
     FileUp,
     GitBranch,
+    MailPlus,
     X,
     type LucideIcon,
 } from 'lucide-react';
@@ -103,6 +104,7 @@ const iconMap: Record<string, LucideIcon> = {
     'globe': Globe,
     'file-up': FileUp,
     'git-branch': GitBranch,
+    'mail-plus': MailPlus,
 };
 
 function getIcon(iconName: string): LucideIcon {

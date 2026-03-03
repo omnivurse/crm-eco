@@ -71,6 +71,7 @@ const CATEGORIES = [
   { value: 'support', label: 'Support', color: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' },
   { value: 'follow-up', label: 'Follow-up', color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' },
   { value: 'onboarding', label: 'Onboarding', color: 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-400' },
+  { value: 'notification', label: 'Notification', color: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400' },
 ];
 
 // ============================================================================
@@ -600,7 +601,7 @@ export default function TemplatesPage() {
 
       {/* Preview Dialog */}
       <Dialog open={!!previewTemplate} onOpenChange={() => setPreviewTemplate(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl w-[calc(100%-2rem)] sm:w-full">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {previewTemplate?.channel === 'email' ? (
@@ -629,7 +630,7 @@ export default function TemplatesPage() {
               <div>
                 <Label className="text-xs text-slate-500">Body</Label>
                 <div
-                  className="mt-2 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg prose prose-sm dark:prose-invert max-w-none"
+                  className="mt-2 p-6 bg-white dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 prose prose-sm dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{
                     __html: replaceMergeFields(previewTemplate.body),
                   }}

@@ -122,6 +122,7 @@ export const INTEGRATIONS_NAV_ITEMS = [
 // Communications sidebar navigation items
 export const COMMUNICATIONS_NAV_ITEMS = [
     { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
+    { key: 'compose', label: 'Compose', icon: 'mail-plus', href: '/crm/communications/compose' },
     { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/communications' },
     { key: 'campaigns', label: 'Email Campaigns', icon: 'mail', href: '/crm/campaigns' },
     { key: 'sequences', label: 'Sequences', icon: 'repeat', href: '/crm/sequences' },
