@@ -241,7 +241,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
               disabled={page <= 1}
               asChild
             >
-              <Link href={buildPageUrl(page - 1)}>
+              <Link href={buildPageUrl(page - 1)} prefetch={false}>
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Previous
               </Link>
@@ -264,6 +264,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
                   <Link
                     key={pageNum}
                     href={buildPageUrl(pageNum)}
+                    prefetch={false}
                     className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
                       pageNum === page
                         ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30'
@@ -283,7 +284,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
               disabled={page >= totalPages}
               asChild
             >
-              <Link href={buildPageUrl(page + 1)}>
+              <Link href={buildPageUrl(page + 1)} prefetch={false}>
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Link>

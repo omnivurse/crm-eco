@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 
 // Cache profile data in a signed cookie to avoid DB query on every request
 const PROFILE_CACHE_COOKIE = 'crm_profile_cache';
-const PROFILE_CACHE_TTL = 2 * 60 * 1000; // 2 minutes in ms
+const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
 
 interface CachedProfile {
   id: string;
@@ -168,17 +168,34 @@ export async function middleware(request: NextRequest) {
   let profile: CachedProfile | null = await getCachedProfile(request, user.id);
 
   if (!profile) {
-    // Cache miss - fetch from database
-    const { data: dbProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, crm_role, organization_id, is_active')
-      .eq('user_id', user.id)
-      .single();
+    // Cache miss - fetch from database (retry once on transient failure)
+    let dbProfile: { id: string; crm_role: string | null; organization_id: string; is_active: boolean } | null = null;
+    let profileError: { code?: string; message?: string } | null = null;
 
-    if (profileError || !dbProfile) {
-      // No profile found, clear cache and redirect to login
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, crm_role, organization_id, is_active')
+        .eq('user_id', user.id)
+        .single();
+
+      dbProfile = data;
+      profileError = error;
+      if (data || error?.code === 'PGRST116') break; // success or confirmed row-not-found
+    }
+
+    if (profileError && profileError.code !== 'PGRST116') {
+      // Transient DB error (network, rate-limit, RLS timing) — do NOT sign out.
+      // Let the request through; page-level auth will handle gracefully.
+      console.warn('[Middleware] Profile query failed (transient), allowing request through:', profileError.message);
+      return supabaseResponse;
+    }
+
+    if (!dbProfile) {
+      // Profile genuinely does not exist for this user — clear cache and redirect.
+      // Do NOT call signOut() here; let the login page handle re-auth so the
+      // session cookies are not destroyed mid-navigation.
       clearProfileCache(supabaseResponse);
-      await supabase.auth.signOut();
       return NextResponse.redirect(new URL('/crm-login', request.url));
     }
 
@@ -190,7 +207,9 @@ export async function middleware(request: NextRequest) {
   // Check if user has been deactivated
   if (profile.is_active === false) {
     clearProfileCache(supabaseResponse);
-    await supabase.auth.signOut();
+    // Do NOT call signOut() — let the access-denied page handle it.
+    // Calling signOut() in middleware destroys the session and can cause
+    // race conditions with concurrent requests (e.g., Link prefetching).
     return NextResponse.redirect(new URL('/crm-access-denied?reason=inactive', request.url));
   }
 
