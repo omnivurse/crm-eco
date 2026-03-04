@@ -29,6 +29,7 @@ export function PortalHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [memberName, setMemberName] = useState<string>('');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -42,9 +43,13 @@ export function PortalHeader() {
         // Get member name
         const { data: profile } = await supabase
           .from('profiles')
-          .select('member_id')
+          .select('member_id, role')
           .eq('user_id', user.id)
-          .single() as { data: { member_id: string } | null };
+          .single() as { data: { member_id: string; role: string } | null };
+
+        if (profile?.role && ['owner', 'super_admin', 'admin'].includes(profile.role)) {
+          setIsSuperAdmin(true);
+        }
 
         if (profile?.member_id) {
           const { data: member } = await supabase
@@ -83,8 +88,8 @@ export function PortalHeader() {
         <div className="flex items-center justify-between h-16">
           {/* Left side - App Switcher + Logo */}
           <div className="flex items-center gap-3">
-            {user && <AppSwitcher currentApp="portal" />}
-            {user && <div className="h-6 w-px bg-slate-200 hidden sm:block" />}
+            {isSuperAdmin && <AppSwitcher currentApp="portal" />}
+            {isSuperAdmin && <div className="h-6 w-px bg-slate-200 hidden sm:block" />}
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
                 <Heart className="w-5 h-5 text-white" />
