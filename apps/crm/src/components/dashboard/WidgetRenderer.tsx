@@ -43,6 +43,11 @@ const EmailStatsWidget = dynamic(() => import('./widgets/EmailStatsWidget'), { l
 const LeadConversionWidget = dynamic(() => import('./widgets/LeadConversionWidget'), { loading: WidgetSkeleton });
 const TeamLeaderboardWidget = dynamic(() => import('./widgets/TeamLeaderboardWidget'), { loading: WidgetSkeleton });
 const RevenueChartWidget = dynamic(() => import('./widgets/RevenueChartWidget'), { loading: WidgetSkeleton });
+const AdvisorContactsWidget = dynamic(() => import('./widgets/AdvisorContactsWidget'), { loading: WidgetSkeleton });
+const AdvisorGrowthWidget = dynamic(() => import('./widgets/AdvisorGrowthWidget'), { loading: WidgetSkeleton });
+const TopAdvisorsWidget = dynamic(() => import('./widgets/TopAdvisorsWidget'), { loading: WidgetSkeleton });
+const LowestChurnAdvisorsWidget = dynamic(() => import('./widgets/LowestChurnAdvisorsWidget'), { loading: WidgetSkeleton });
+const AdvisorRetentionWidget = dynamic(() => import('./widgets/AdvisorRetentionWidget'), { loading: WidgetSkeleton });
 
 // Using 'any' here since each widget has its own specific data type
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
@@ -60,6 +65,11 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
   'lead-conversion': LeadConversionWidget,
   'team-leaderboard': TeamLeaderboardWidget,
   'revenue-chart': RevenueChartWidget,
+  'advisor-contacts': AdvisorContactsWidget,
+  'advisor-growth': AdvisorGrowthWidget,
+  'top-advisors': TopAdvisorsWidget,
+  'lowest-churn-advisors': LowestChurnAdvisorsWidget,
+  'advisor-member-retention': AdvisorRetentionWidget,
 };
 
 interface WidgetRendererProps {

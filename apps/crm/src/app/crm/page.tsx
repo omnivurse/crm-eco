@@ -11,6 +11,7 @@ import {
   getTodaysTasks,
   getCalendarEvents,
   getOrganization,
+  getAdvisorContactSummary,
 } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
@@ -67,6 +68,11 @@ async function fetchWidgetData(
         moduleStats: sharedData.moduleStats,
         reportSummary: sharedData.reportSummary,
       }),
+    advisorContacts: () => getAdvisorContactSummary(profile.organization_id),
+    advisorGrowth: () => getAdvisorContactSummary(profile.organization_id),
+    topAdvisors: () => Promise.resolve([]),
+    lowestChurnAdvisors: () => Promise.resolve([]),
+    advisorMemberRetention: () => Promise.resolve([]),
   };
 
   const results: Record<string, unknown> = {};

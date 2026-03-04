@@ -48,6 +48,12 @@ export async function GET(request: NextRequest) {
           .gte('termination_date', today)
           .lte('termination_date', ninetyDaysOut);
         break;
+      case 'healthshare':
+      case 'insurance':
+      case 'medicaid':
+      case 'short_term':
+        query = query.eq('status', 'active').eq('active_plan_type', filter);
+        break;
       default:
         break;
     }

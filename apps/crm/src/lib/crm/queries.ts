@@ -473,7 +473,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   let query = supabase
     .from('crm_records')
-    .select('id, org_id, module_id, owner_id, title, status, stage, email, phone, advisor_id, contact_type, system, data, territory_id, created_by, created_at, updated_at', { count: 'exact' })
+    .select('id, org_id, module_id, owner_id, title, status, stage, email, phone, advisor_id, contact_type, is_medicaid, medicaid_start_date, medicaid_end_date, medicaid_state, system, data, territory_id, created_by, created_at, updated_at', { count: 'exact' })
     .eq('module_id', moduleId);
 
   // Apply territory filter
@@ -2024,4 +2024,55 @@ export async function getGroupsForRecord(recordId: string) {
   }
 
   return data || [];
+}
+
+/**
+ * Fetch Medicaid dashboard stats for the org.
+ */
+export async function getMedicaidStats(orgId: string) {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase
+    .from('medicaid_dashboard_stats')
+    .select('*')
+    .eq('organization_id', orgId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching medicaid stats:', error);
+  }
+
+  return data || {
+    total_medicaid_members: 0,
+    active_medicaid: 0,
+    former_medicaid: 0,
+    transitioning_from_medicaid: 0,
+    new_medicaid_this_month: 0,
+  };
+}
+
+/**
+ * Fetch org-wide lifecycle KPIs.
+ */
+export async function getLifecycleStats(orgId: string) {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase
+    .from('lifecycle_org_stats')
+    .select('*')
+    .eq('organization_id', orgId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error fetching lifecycle stats:', error);
+  }
+
+  return data || {
+    total_tracked_members: 0,
+    enrolled_this_month: 0,
+    cancelled_this_month: 0,
+    total_returned: 0,
+    churn_rate_12m: 0,
+    top_cancel_reason: null,
+  };
 }

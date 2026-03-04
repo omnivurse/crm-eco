@@ -218,16 +218,17 @@ export function MembersListClient() {
       })
     : members;
 
-  const filterLabel =
-    activeFilter === 'active'
-      ? 'Active'
-      : activeFilter === 'inactive'
-        ? 'Inactive'
-        : activeFilter === 'futureActive'
-          ? 'Future Active'
-          : activeFilter === 'futureInactive'
-            ? 'Future Inactive'
-            : 'All';
+  const filterLabels: Record<string, string> = {
+    active: 'Active',
+    inactive: 'Inactive',
+    futureActive: 'Future Active',
+    futureInactive: 'Future Inactive',
+    healthshare: 'Healthshare',
+    insurance: 'Insurance',
+    medicaid: 'Medicaid',
+    short_term: 'Short-Term',
+  };
+  const filterLabel = activeFilter ? (filterLabels[activeFilter] ?? 'All') : 'All';
 
   return (
     <div className="space-y-8">

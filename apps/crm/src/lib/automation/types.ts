@@ -180,7 +180,7 @@ export interface WorkflowAction {
 // Workflow Types
 // ============================================================================
 
-export type TriggerType = 'on_create' | 'on_update' | 'on_stage_change' | 'scheduled' | 'webform' | 'inbound_webhook';
+export type TriggerType = 'on_create' | 'on_update' | 'on_stage_change' | 'field_value_changed' | 'scheduled' | 'webform' | 'inbound_webhook';
 
 export interface ScheduledTriggerConfig {
   cron?: string;
@@ -209,12 +209,19 @@ export interface InboundWebhookTriggerConfig {
   validateSignature?: boolean;
 }
 
-export type TriggerConfig = 
-  | ScheduledTriggerConfig 
-  | UpdateTriggerConfig 
-  | WebformTriggerConfig 
+export interface FieldValueChangedTriggerConfig {
+  watchFields: string[]; // Fields to monitor for changes
+  fromValue?: string; // Only fire when old value matches
+  toValue?: string; // Only fire when new value matches
+}
+
+export type TriggerConfig =
+  | ScheduledTriggerConfig
+  | UpdateTriggerConfig
+  | WebformTriggerConfig
   | StageChangeTriggerConfig
   | InboundWebhookTriggerConfig
+  | FieldValueChangedTriggerConfig
   | Record<string, unknown>;
 
 export interface CrmWorkflow {
@@ -231,6 +238,29 @@ export interface CrmWorkflow {
   priority: number;
   webhook_secret: string | null; // For inbound webhook validation
   created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// Workflow Trigger Types (Normalized trigger definitions)
+// ============================================================================
+
+export interface CrmWorkflowTrigger {
+  id: string;
+  workflow_id: string;
+  organization_id: string;
+  trigger_type: TriggerType;
+  name: string | null;
+  config: TriggerConfig;
+  watch_fields: string[] | null;
+  from_value: string | null;
+  to_value: string | null;
+  cron_expression: string | null;
+  timezone: string;
+  is_enabled: boolean;
+  last_fired_at: string | null;
+  fire_count: number;
   created_at: string;
   updated_at: string;
 }

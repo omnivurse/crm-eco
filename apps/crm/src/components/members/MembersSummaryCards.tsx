@@ -5,8 +5,11 @@ import {
   UserX,
   UserPlus,
   Clock,
-  TrendingUp,
   ArrowUpRight,
+  Heart,
+  Shield,
+  Stethoscope,
+  Timer,
 } from 'lucide-react';
 
 export interface MemberStats {
@@ -15,6 +18,12 @@ export interface MemberStats {
   inactive: number;
   futureActive: number;
   futureInactive: number;
+  byPlanType?: {
+    healthshare: number;
+    insurance: number;
+    medicaid: number;
+    short_term: number;
+  };
 }
 
 interface SummaryCardProps {
@@ -131,22 +140,78 @@ export function MembersSummaryCards({
     },
   ];
 
+  const planTypeCards = stats.byPlanType ? [
+    {
+      key: 'healthshare',
+      title: 'Healthshare Members',
+      value: stats.byPlanType.healthshare,
+      subtitle: 'Active healthshare plans',
+      icon: <Heart className="w-5 h-5" />,
+      gradient: 'bg-gradient-to-r from-emerald-500 to-green-400',
+    },
+    {
+      key: 'insurance',
+      title: 'Insurance Clients',
+      value: stats.byPlanType.insurance,
+      subtitle: 'Active insurance plans',
+      icon: <Shield className="w-5 h-5" />,
+      gradient: 'bg-gradient-to-r from-blue-500 to-cyan-400',
+    },
+    {
+      key: 'medicaid',
+      title: 'Medicaid Clients',
+      value: stats.byPlanType.medicaid,
+      subtitle: 'Active Medicaid coverage',
+      icon: <Stethoscope className="w-5 h-5" />,
+      gradient: 'bg-gradient-to-r from-violet-500 to-purple-400',
+    },
+    {
+      key: 'short_term',
+      title: 'Short-Term Clients',
+      value: stats.byPlanType.short_term,
+      subtitle: 'Active short-term plans',
+      icon: <Timer className="w-5 h-5" />,
+      gradient: 'bg-gradient-to-r from-orange-500 to-yellow-400',
+    },
+  ] : [];
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-      {cards.map((card) => (
-        <SummaryCard
-          key={card.key}
-          title={card.title}
-          value={card.value}
-          subtitle={card.subtitle}
-          icon={card.icon}
-          gradient={card.gradient}
-          isSelected={activeFilter === card.key}
-          onClick={() =>
-            onFilterChange(activeFilter === card.key ? null : card.key)
-          }
-        />
-      ))}
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        {cards.map((card) => (
+          <SummaryCard
+            key={card.key}
+            title={card.title}
+            value={card.value}
+            subtitle={card.subtitle}
+            icon={card.icon}
+            gradient={card.gradient}
+            isSelected={activeFilter === card.key}
+            onClick={() =>
+              onFilterChange(activeFilter === card.key ? null : card.key)
+            }
+          />
+        ))}
+      </div>
+
+      {planTypeCards.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          {planTypeCards.map((card) => (
+            <SummaryCard
+              key={card.key}
+              title={card.title}
+              value={card.value}
+              subtitle={card.subtitle}
+              icon={card.icon}
+              gradient={card.gradient}
+              isSelected={activeFilter === card.key}
+              onClick={() =>
+                onFilterChange(activeFilter === card.key ? null : card.key)
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

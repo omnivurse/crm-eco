@@ -26,6 +26,7 @@ import {
   Plus,
   ChevronRight,
   Search,
+  UserCheck,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -229,6 +230,7 @@ const categoryIcons: Record<string, React.ElementType> = {
   operations: Settings,
   finance: Wallet,
   productivity: Zap,
+  advisors: UserCheck,
 };
 
 // ============================================================================
@@ -522,7 +524,27 @@ export default function ReportsPage() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Link
+          href="/crm/reports/advisors"
+          className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-cyan-500/30 transition-all group"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-gradient-to-br from-cyan-500/20 to-teal-500/20">
+              <UserCheck className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-slate-900 dark:text-white font-semibold group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">
+                Advisor Reports
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Enrollments, revenue &amp; retention
+              </p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" />
+          </div>
+        </Link>
+
         <Link
           href="/crm/reports/templates"
           className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-violet-500/30 transition-all group"

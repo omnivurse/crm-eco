@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic';
 
 /**
  * GET /api/members/stats
- * Returns member counts grouped by status category:
- *   active, inactive, futureActive, futureInactive, total
+ * Returns member counts grouped by status category and plan type:
+ *   active, inactive, futureActive, futureInactive, total,
+ *   byPlanType: { healthshare, insurance, medicaid, short_term }
  */
 export async function GET() {
   try {
@@ -28,6 +29,10 @@ export async function GET() {
       inactiveCount,
       futureActiveCount,
       futureInactiveCount,
+      healthshareCount,
+      insuranceCount,
+      medicaidCount,
+      shortTermCount,
     ] = await Promise.all([
       // Total members
       supabase
@@ -64,6 +69,38 @@ export async function GET() {
         .eq('status', 'active')
         .gte('termination_date', today)
         .lte('termination_date', ninetyDaysOut),
+
+      // Active Healthshare Members
+      supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .eq('active_plan_type', 'healthshare'),
+
+      // Active Insurance Clients
+      supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .eq('active_plan_type', 'insurance'),
+
+      // Medicaid Clients
+      supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .eq('active_plan_type', 'medicaid'),
+
+      // Short-term Clients
+      supabase
+        .from('members')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId)
+        .eq('status', 'active')
+        .eq('active_plan_type', 'short_term'),
     ]);
 
     return NextResponse.json({
@@ -72,6 +109,12 @@ export async function GET() {
       inactive: inactiveCount.count ?? 0,
       futureActive: futureActiveCount.count ?? 0,
       futureInactive: futureInactiveCount.count ?? 0,
+      byPlanType: {
+        healthshare: healthshareCount.count ?? 0,
+        insurance: insuranceCount.count ?? 0,
+        medicaid: medicaidCount.count ?? 0,
+        short_term: shortTermCount.count ?? 0,
+      },
     });
   } catch (error) {
     console.error('[Members Stats] Error:', error);

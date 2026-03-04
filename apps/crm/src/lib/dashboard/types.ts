@@ -11,6 +11,7 @@ export type WidgetCategory =
   | 'metrics'
   | 'quick-actions'
   | 'email'
+  | 'advisors'
   | 'other';
 
 export interface WidgetDefinition {
@@ -59,6 +60,11 @@ export interface WidgetDataMap {
   teamLeaderboard: unknown;
   revenueChart: unknown;
   moduleStats: unknown;
+  advisorContacts: unknown;
+  advisorGrowth: unknown;
+  topAdvisors: unknown;
+  lowestChurnAdvisors: unknown;
+  advisorMemberRetention: unknown;
 }
 
 export type WidgetDataKey = keyof WidgetDataMap;

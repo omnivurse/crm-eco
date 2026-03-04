@@ -1,6 +1,6 @@
 // Reports Library - Template definitions and utilities
 
-export type TemplateCategory = 'all' | 'sales' | 'marketing' | 'team' | 'operations' | 'finance' | 'productivity';
+export type TemplateCategory = 'all' | 'sales' | 'marketing' | 'team' | 'operations' | 'finance' | 'productivity' | 'advisors';
 
 export interface ReportTemplate {
   id: string;
@@ -28,6 +28,7 @@ export const TEMPLATE_CATEGORIES = [
   { id: 'operations' as const, label: 'Operations', icon: 'Settings', color: 'amber' },
   { id: 'finance' as const, label: 'Finance', icon: 'Wallet', color: 'green' },
   { id: 'productivity' as const, label: 'Productivity', icon: 'Zap', color: 'orange' },
+  { id: 'advisors' as const, label: 'Advisors', icon: 'UserCheck', color: 'cyan' },
 ];
 
 export const REPORT_TEMPLATES: ReportTemplate[] = [
@@ -206,6 +207,62 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     dataSource: 'contacts',
     columns: ['id', 'title', 'data', 'owner_id', 'created_at'],
     sorting: [{ column: 'created_at', direction: 'desc' }],
+  },
+  // Advisor Templates
+  {
+    id: 'advisor-enrollments',
+    name: 'Advisor Enrollment Report',
+    description: 'Enrollments by advisor with status breakdown and date range filtering',
+    category: 'advisors',
+    icon: 'UserCheck',
+    metrics: ['Total Enrollments', 'By Status', 'By Advisor'],
+    filters: ['Date Range', 'Advisor', 'State', 'Status'],
+    defaultTimeRange: '30d',
+    dataSource: 'enrollments',
+    columns: ['advisor_name', 'total_enrollments', 'active', 'pending', 'cancelled', 'terminated'],
+    grouping: [{ column: 'advisor_id', aggregation: 'count' }],
+    sorting: [{ column: 'total_enrollments', direction: 'desc' }],
+  },
+  {
+    id: 'advisor-active-members',
+    name: 'Advisor Active Members',
+    description: 'Active members per advisor with plan and status details',
+    category: 'advisors',
+    icon: 'Users',
+    metrics: ['Active Members', 'By Plan', 'By Advisor'],
+    filters: ['Advisor', 'State', 'Plan'],
+    dataSource: 'members',
+    columns: ['advisor_name', 'active_members', 'states', 'plan_breakdown'],
+    grouping: [{ column: 'advisor_id', aggregation: 'count' }],
+    sorting: [{ column: 'active_members', direction: 'desc' }],
+  },
+  {
+    id: 'advisor-cancellations',
+    name: 'Advisor Cancellations',
+    description: 'Terminated and cancelled members by advisor with cancellation rates',
+    category: 'advisors',
+    icon: 'UserMinus',
+    metrics: ['Cancellations', 'Cancellation Rate', 'By Advisor'],
+    filters: ['Date Range', 'Advisor', 'State'],
+    defaultTimeRange: '90d',
+    dataSource: 'members',
+    columns: ['advisor_name', 'total_members', 'cancelled_count', 'terminated_count', 'cancellation_rate'],
+    grouping: [{ column: 'advisor_id', aggregation: 'count' }],
+    sorting: [{ column: 'cancellation_rate', direction: 'desc' }],
+  },
+  {
+    id: 'advisor-revenue',
+    name: 'Advisor Revenue',
+    description: 'Commission revenue per advisor broken down by commission type',
+    category: 'advisors',
+    icon: 'DollarSign',
+    metrics: ['Gross Revenue', 'Net Revenue', 'By Commission Type'],
+    filters: ['Date Range', 'Advisor'],
+    defaultTimeRange: '30d',
+    dataSource: 'commissions',
+    columns: ['advisor_name', 'signup_commissions', 'monthly_commissions', 'override_commissions', 'bonus_commissions', 'gross_commissions', 'net_commissions'],
+    grouping: [{ column: 'advisor_id', aggregation: 'sum' }],
+    sorting: [{ column: 'gross_commissions', direction: 'desc' }],
   },
 ];
 

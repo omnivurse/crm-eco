@@ -51,7 +51,7 @@ const createWorkflowSchema = z.object({
   module_id: z.string().uuid(),
   name: z.string().min(1),
   description: z.string().optional(),
-  trigger_type: z.enum(['on_create', 'on_update', 'scheduled', 'webform']),
+  trigger_type: z.enum(['on_create', 'on_update', 'on_stage_change', 'field_value_changed', 'scheduled', 'webform', 'inbound_webhook']),
   trigger_config: z.record(z.unknown()).optional(),
   conditions: z.unknown(),
   actions: z.array(z.unknown()),

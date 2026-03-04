@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 const updateWorkflowSchema = z.object({
   name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
-  trigger_type: z.enum(['on_create', 'on_update', 'scheduled', 'webform']).optional(),
+  trigger_type: z.enum(['on_create', 'on_update', 'on_stage_change', 'field_value_changed', 'scheduled', 'webform', 'inbound_webhook']).optional(),
   trigger_config: z.record(z.unknown()).optional(),
   conditions: z.unknown().optional(),
   actions: z.array(z.unknown()).optional(),

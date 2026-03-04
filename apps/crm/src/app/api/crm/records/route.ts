@@ -23,6 +23,9 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const pageSize = Math.min(parseInt(searchParams.get('page_size') || '25', 10), 100);
     const search = searchParams.get('search');
+    const advisorId = searchParams.get('advisor_id');
+    const contactType = searchParams.get('contact_type');
+    const groupId = searchParams.get('group_id');
 
     if (!moduleKey) {
       return NextResponse.json({ error: 'module_key is required' }, { status: 400 });
@@ -46,6 +49,37 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact' })
       .eq('module_id', module.id)
       .eq('org_id', profile.organization_id);
+
+    // Apply group filter — fetch record IDs in the group, then filter
+    if (groupId) {
+      const { data: groupMembers } = await supabase
+        .from('crm_contact_group_members')
+        .select('record_id')
+        .eq('group_id', groupId)
+        .eq('organization_id', profile.organization_id);
+
+      const memberIds = (groupMembers || []).map((m) => m.record_id);
+      if (memberIds.length === 0) {
+        return NextResponse.json({
+          records: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        });
+      }
+      query = query.in('id', memberIds);
+    }
+
+    // Apply advisor filter
+    if (advisorId) {
+      query = query.eq('advisor_id', advisorId);
+    }
+
+    // Apply contact type filter
+    if (contactType) {
+      query = query.eq('contact_type', contactType);
+    }
 
     // Apply search if provided
     if (search) {

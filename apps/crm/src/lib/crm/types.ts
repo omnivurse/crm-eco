@@ -319,6 +319,12 @@ export interface CrmRecord {
   stage: string | null;
   email: string | null;
   phone: string | null;
+  advisor_id: string | null;
+  contact_type: ContactType | null;
+  is_medicaid: boolean;
+  medicaid_start_date: string | null;
+  medicaid_end_date: string | null;
+  medicaid_state: string | null;
   system: Record<string, unknown>;
   data: Record<string, unknown>;
   created_by: string | null;
@@ -420,6 +426,72 @@ export interface CrmDealStage {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================================================
+// CRM Pipelines
+// ============================================================================
+
+export type PipelineType = 'standard' | 'lead' | 'enrollment' | 'support' | 'custom';
+
+export interface CrmPipeline {
+  id: string;
+  organization_id: string;
+  module_id: string | null;
+  name: string;
+  key: string;
+  description: string | null;
+  pipeline_type: PipelineType;
+  is_default: boolean;
+  is_active: boolean;
+  color: string;
+  icon: string;
+  display_order: number;
+  config: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmPipelineStage {
+  id: string;
+  pipeline_id: string;
+  organization_id: string;
+  name: string;
+  key: string;
+  color: string;
+  probability: number;
+  is_won: boolean;
+  is_lost: boolean;
+  display_order: number;
+  is_active: boolean;
+  required_fields: string[];
+  allowed_from: string[] | null;
+  allowed_to: string[] | null;
+  auto_actions: unknown[];
+  sla_hours: number | null;
+  rotting_days: number | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmStagePermission {
+  id: string;
+  stage_id: string;
+  organization_id: string;
+  role: string | null;
+  user_id: string | null;
+  can_enter: boolean;
+  can_exit: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmPipelineWithStages extends CrmPipeline {
+  crm_pipeline_stages: CrmPipelineStage[];
 }
 
 // ============================================================================
@@ -629,6 +701,440 @@ export interface CrmImportRow {
   match_type: ImportMatchType | null;
   error: string | null;
   warnings: string[];
+  created_at: string;
+}
+
+// ============================================================================
+// CRM Export Jobs
+// ============================================================================
+
+export type ExportStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'expired';
+export type ExportType = 'records' | 'report' | 'audit_logs' | 'analytics' | 'backup';
+export type ExportFormat = 'csv' | 'json' | 'xlsx';
+
+export interface CrmExportJob {
+  id: string;
+  organization_id: string;
+  module_id: string | null;
+  name: string | null;
+  export_type: ExportType;
+  format: ExportFormat;
+  columns: string[] | null;
+  column_labels: Record<string, string>;
+  filters: Record<string, unknown>;
+  sort_by: string | null;
+  sort_order: 'asc' | 'desc';
+  status: ExportStatus;
+  total_rows: number;
+  processed_rows: number;
+  file_url: string | null;
+  file_name: string | null;
+  file_size_bytes: number | null;
+  expires_at: string | null;
+  error_message: string | null;
+  stats: Record<string, unknown>;
+  created_by: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+// ============================================================================
+// CRM Data Administration Jobs
+// ============================================================================
+
+export type DataJobType = 'deduplicate' | 'merge' | 'mass_update' | 'mass_delete' | 'enrich';
+export type DataJobStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'review';
+
+export interface CrmDataJob {
+  id: string;
+  organization_id: string;
+  module_id: string | null;
+  job_type: DataJobType;
+  name: string | null;
+  status: DataJobStatus;
+  config: Record<string, unknown>;
+  filters: Record<string, unknown>;
+  total_records: number;
+  processed: number;
+  affected: number;
+  skipped: number;
+  error_count: number;
+  results: Record<string, unknown>;
+  error_message: string | null;
+  created_by: string | null;
+  approved_by: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+// ============================================================================
+// CRM Signals (Experience Center)
+// ============================================================================
+
+export type SignalCategory = 'engagement' | 'risk' | 'opportunity' | 'compliance' | 'lifecycle' | 'health' | 'activity' | 'custom';
+export type SignalSeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+export type SignalTriggerType = 'condition' | 'threshold' | 'inactivity' | 'scheduled' | 'manual';
+export type SignalEventStatus = 'active' | 'resolved' | 'dismissed' | 'expired';
+
+export interface CrmSignal {
+  id: string;
+  organization_id: string;
+  module_id: string | null;
+  name: string;
+  key: string;
+  description: string | null;
+  category: SignalCategory;
+  severity: SignalSeverity;
+  icon: string;
+  color: string;
+  trigger_type: SignalTriggerType;
+  conditions: unknown[];
+  threshold_field: string | null;
+  threshold_op: string | null;
+  threshold_value: unknown;
+  inactivity_days: number | null;
+  inactivity_field: string | null;
+  cron_expression: string | null;
+  auto_resolve: boolean;
+  resolve_after_days: number | null;
+  on_fire_actions: unknown[];
+  on_resolve_actions: unknown[];
+  is_enabled: boolean;
+  is_system: boolean;
+  fire_count: number;
+  last_evaluated_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmSignalEvent {
+  id: string;
+  organization_id: string;
+  signal_id: string;
+  record_id: string | null;
+  status: SignalEventStatus;
+  severity: string;
+  trigger_data: Record<string, unknown>;
+  message: string | null;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolution_note: string | null;
+  fired_at: string;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export interface CrmSignalEventWithSignal extends CrmSignalEvent {
+  signal: {
+    name: string;
+    key: string;
+    category: string;
+    icon: string;
+    color: string;
+  };
+}
+
+// ============================================================================
+// CRM Segmentations (Experience Center)
+// ============================================================================
+
+export type SegmentType = 'dynamic' | 'static' | 'smart';
+
+export interface CrmSegmentation {
+  id: string;
+  organization_id: string;
+  module_id: string | null;
+  name: string;
+  key: string;
+  description: string | null;
+  segment_type: SegmentType;
+  icon: string;
+  color: string;
+  criteria: Record<string, unknown>;
+  required_signals: string[];
+  excluded_signals: string[];
+  min_score: number | null;
+  max_score: number | null;
+  score_field: string;
+  member_count: number;
+  last_computed_at: string | null;
+  compute_interval_hours: number;
+  is_active: boolean;
+  is_system: boolean;
+  tags: string[];
+  config: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmSegmentMember {
+  id: string;
+  segment_id: string;
+  record_id: string;
+  organization_id: string;
+  added_by: 'system' | 'manual' | 'import';
+  added_at: string;
+}
+
+export interface CrmSegmentationWithMembers extends CrmSegmentation {
+  members: CrmSegmentMember[];
+}
+
+// ============================================================================
+// CRM Extensions (Marketplace)
+// ============================================================================
+
+export type ExtensionCategory = 'communication' | 'analytics' | 'automation' | 'data' | 'finance' | 'compliance' | 'productivity' | 'utility' | 'custom';
+export type ExtensionType = 'plugin' | 'integration' | 'theme' | 'widget' | 'automation' | 'report';
+export type ExtensionStatus = 'draft' | 'review' | 'published' | 'deprecated' | 'archived';
+export type ExtensionInstallStatus = 'active' | 'disabled' | 'suspended' | 'pending_upgrade' | 'trial' | 'expired' | 'error';
+
+export interface CrmExtension {
+  id: string;
+  name: string;
+  key: string;
+  slug: string;
+  description: string | null;
+  long_description: string | null;
+  provider: string;
+  provider_name: string;
+  provider_url: string | null;
+  category: ExtensionCategory;
+  tags: string[];
+  version: string;
+  min_app_version: string | null;
+  changelog: unknown[];
+  icon: string;
+  icon_url: string | null;
+  banner_url: string | null;
+  screenshots: string[];
+  color: string;
+  config_schema: Record<string, unknown>;
+  default_config: Record<string, unknown>;
+  required_scopes: string[];
+  extension_type: ExtensionType;
+  entry_points: Record<string, unknown>;
+  hooks: Record<string, unknown>;
+  status: ExtensionStatus;
+  is_featured: boolean;
+  is_verified: boolean;
+  is_free: boolean;
+  price_monthly: number | null;
+  price_yearly: number | null;
+  trial_days: number;
+  install_count: number;
+  rating_avg: number;
+  rating_count: number;
+  documentation_url: string | null;
+  support_url: string | null;
+  source_url: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmExtensionWithInstallStatus extends CrmExtension {
+  installed: boolean;
+  install_status: ExtensionInstallStatus | null;
+}
+
+export interface CrmExtensionInstall {
+  id: string;
+  organization_id: string;
+  extension_id: string;
+  installed_version: string;
+  config: Record<string, unknown>;
+  granted_scopes: string[];
+  status: ExtensionInstallStatus;
+  error_message: string | null;
+  license_key: string | null;
+  trial_ends_at: string | null;
+  subscription_id: string | null;
+  last_used_at: string | null;
+  usage_count: number;
+  installed_by: string | null;
+  installed_at: string;
+  enabled_at: string | null;
+  disabled_at: string | null;
+  updated_at: string;
+}
+
+export interface CrmExtensionInstallWithExtension extends CrmExtensionInstall {
+  extension: Pick<CrmExtension,
+    'name' | 'key' | 'slug' | 'description' | 'category' | 'extension_type' |
+    'icon' | 'icon_url' | 'color' | 'version' | 'provider_name' | 'is_free'
+  >;
+}
+
+export interface CrmExtensionReview {
+  id: string;
+  extension_id: string;
+  organization_id: string;
+  reviewer_id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmExtensionReviewWithReviewer extends CrmExtensionReview {
+  reviewer: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
+// ============================================================================
+// CRM API Keys (Developer Hub)
+// ============================================================================
+
+export type ApiKeyStatus = 'active' | 'disabled' | 'revoked' | 'expired';
+export type ApiKeyEnvironment = 'production' | 'staging' | 'development' | 'test';
+
+export type ApiScope =
+  | 'crm.read' | 'crm.write' | 'crm.admin'
+  | 'records.read' | 'records.write' | 'records.delete'
+  | 'contacts.read' | 'contacts.write'
+  | 'pipelines.read' | 'pipelines.write'
+  | 'automations.read' | 'automations.write'
+  | 'analytics.read'
+  | 'import.execute' | 'export.execute'
+  | 'webhooks.manage'
+  | 'extensions.read' | 'extensions.manage';
+
+export interface CrmApiKey {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  key_prefix: string;
+  scopes: ApiScope[];
+  allowed_ips: string[];
+  allowed_origins: string[];
+  rate_limit_rpm: number;
+  status: ApiKeyStatus;
+  expires_at: string | null;
+  last_used_at: string | null;
+  last_used_ip: string | null;
+  usage_count: number;
+  environment: ApiKeyEnvironment;
+  created_by: string | null;
+  revoked_by: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmApiKeyWithSecret extends CrmApiKey {
+  key: string;  // Full key, only returned on creation
+}
+
+// ============================================================================
+// CRM Webhooks (Developer Hub)
+// ============================================================================
+
+export type WebhookStatus = 'active' | 'disabled' | 'failed' | 'suspended';
+export type WebhookAuthType = 'hmac_sha256' | 'basic' | 'bearer' | 'none';
+export type WebhookDeliveryStatus = 'pending' | 'success' | 'failed' | 'retrying';
+
+export type WebhookEvent =
+  | 'record.created' | 'record.updated' | 'record.deleted' | 'record.stage_changed'
+  | 'contact.created' | 'contact.updated' | 'contact.deleted'
+  | 'deal.created' | 'deal.updated' | 'deal.won' | 'deal.lost'
+  | 'task.created' | 'task.completed'
+  | 'note.created'
+  | 'import.completed' | 'export.completed'
+  | 'pipeline.stage_changed'
+  | 'signal.fired' | 'signal.resolved'
+  | 'extension.installed' | 'extension.uninstalled'
+  | 'api_key.created' | 'api_key.revoked';
+
+export interface CrmWebhook {
+  id: string;
+  organization_id: string;
+  name: string;
+  description: string | null;
+  url: string;
+  events: WebhookEvent[];
+  auth_type: WebhookAuthType;
+  custom_headers: Record<string, string>;
+  module_id: string | null;
+  filters: Record<string, unknown>;
+  timeout_ms: number;
+  max_retries: number;
+  retry_interval_seconds: number;
+  status: WebhookStatus;
+  is_verified: boolean;
+  verified_at: string | null;
+  delivery_count: number;
+  success_count: number;
+  failure_count: number;
+  last_triggered_at: string | null;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  last_error: string | null;
+  consecutive_failures: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  // Masked fields from API
+  secret_masked?: string | null;
+  has_auth?: boolean;
+}
+
+export interface CrmWebhookDelivery {
+  id: string;
+  webhook_id: string;
+  organization_id: string;
+  event_type: string;
+  event_id: string | null;
+  request_url: string;
+  request_headers: Record<string, unknown>;
+  request_body: Record<string, unknown>;
+  response_status: number | null;
+  response_headers: Record<string, unknown>;
+  response_body: string | null;
+  duration_ms: number | null;
+  status: WebhookDeliveryStatus;
+  error_message: string | null;
+  attempt: number;
+  max_attempts: number;
+  next_retry_at: string | null;
+  delivered_at: string | null;
+  created_at: string;
+}
+
+// ============================================================================
+// CRM API Logs (Developer Hub)
+// ============================================================================
+
+export interface CrmApiLog {
+  id: string;
+  organization_id: string;
+  api_key_id: string | null;
+  user_id: string | null;
+  method: string;
+  path: string;
+  query_params: Record<string, unknown>;
+  request_body: Record<string, unknown> | null;
+  request_headers: Record<string, unknown>;
+  response_status: number;
+  response_body_size: number | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  duration_ms: number | null;
+  resource_type: string | null;
+  resource_id: string | null;
+  action: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  rate_limited: boolean;
   created_at: string;
 }
 
@@ -858,4 +1364,276 @@ export interface RecentView {
   module_id: string;
   viewed_at: string;
   view_count: number;
+}
+
+// ============================================================================
+// CRM Advisors (Contact Hierarchy)
+// ============================================================================
+
+export type ContactType = 'lead' | 'member' | 'former_member';
+
+export interface CrmAdvisor {
+  id: string;
+  organization_id: string;
+  user_id: string | null;
+  advisor_name: string;
+  agency_name: string | null;
+  state: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdvisorContactSummary {
+  advisor_id: string;
+  organization_id: string;
+  advisor_name: string;
+  agency_name: string | null;
+  state: string | null;
+  advisor_active: boolean;
+  total_contacts: number;
+  active_members: number;
+  inactive_members: number;
+  leads: number;
+  contacts_this_month: number;
+}
+
+// ============================================================================
+// CRM Contact Groups
+// ============================================================================
+
+export type ContactGroupType = 'status' | 'product' | 'source' | 'custom';
+
+export interface CrmContactGroup {
+  id: string;
+  organization_id: string;
+  group_name: string;
+  group_type: ContactGroupType;
+  description: string | null;
+  color: string;
+  icon: string;
+  is_system: boolean;
+  is_active: boolean;
+  display_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CrmContactGroupMember {
+  id: string;
+  group_id: string;
+  record_id: string;
+  organization_id: string;
+  added_by: string | null;
+  added_at: string;
+}
+
+export interface ContactGroupWithCount extends CrmContactGroup {
+  member_count: number;
+}
+
+// ============================================================================
+// Insurance Carriers & Plans (Carrier Database)
+// ============================================================================
+
+export type CarrierType = 'insurance' | 'healthshare' | 'medicaid' | 'short_term';
+export type MetalLevel = 'catastrophic' | 'bronze' | 'silver' | 'gold' | 'platinum';
+
+export interface InsuranceCarrier {
+  id: string;
+  organization_id: string;
+  carrier_name: string;
+  naic_code: string | null;
+  website: string | null;
+  logo_url: string | null;
+  carrier_type: CarrierType;
+  phone: string | null;
+  email: string | null;
+  is_active: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InsurancePlan {
+  id: string;
+  organization_id: string;
+  carrier_id: string;
+  plan_name: string;
+  plan_type: CarrierType;
+  metal_level: MetalLevel | null;
+  base_premium: number | null;
+  tax_credit_estimate: number | null;
+  deductible: number | null;
+  max_out_of_pocket: number | null;
+  copay_primary: number | null;
+  copay_specialist: number | null;
+  rx_coverage: boolean;
+  dental_included: boolean;
+  vision_included: boolean;
+  hsa_eligible: boolean;
+  plan_year: number | null;
+  summary_url: string | null;
+  is_active: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InsurancePlanWithCarrier extends InsurancePlan {
+  carrier: Pick<InsuranceCarrier, 'carrier_name' | 'carrier_type' | 'logo_url'>;
+}
+
+export interface CarrierStateAvailability {
+  id: string;
+  carrier_id: string;
+  organization_id: string;
+  state: string;
+  rating_area: string | null;
+  marketplace_id: string | null;
+  effective_date: string | null;
+  expiration_date: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ============================================================================
+// Premium Comparison Engine
+// ============================================================================
+
+export interface PremiumComparison {
+  id: string;
+  organization_id: string;
+  record_id: string | null;
+  comparison_name: string;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PremiumComparisonItem {
+  id: string;
+  comparison_id: string;
+  plan_id: string | null;
+  label: string;
+  plan_type: CarrierType;
+  full_premium: number;
+  tax_credit: number;
+  net_premium: number; // Generated column: full_premium - tax_credit
+  deductible: number | null;
+  max_oop: number | null;
+  metal_level: string | null;
+  display_order: number;
+  metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface PremiumComparisonWithItems extends PremiumComparison {
+  items: PremiumComparisonItem[];
+}
+
+export interface ComparisonSummary {
+  comparison_id: string;
+  organization_id: string;
+  record_id: string | null;
+  comparison_name: string;
+  created_by: string | null;
+  created_at: string;
+  plan_count: number;
+  best_net_premium: number | null;
+  worst_net_premium: number | null;
+  avg_net_premium: number | null;
+}
+
+export interface NetPremiumResult {
+  gross_premium: number;
+  tax_credit: number;
+  net_premium: number;
+}
+
+// ============================================================================
+// Medicaid Tracking
+// ============================================================================
+
+export interface MedicaidDashboardStats {
+  organization_id: string;
+  total_medicaid_members: number;
+  active_medicaid: number;
+  former_medicaid: number;
+  transitioning_from_medicaid: number;
+  new_medicaid_this_month: number;
+}
+
+export interface MedicaidStateBreakdown {
+  organization_id: string;
+  state: string;
+  total: number;
+  active: number;
+  transitioning: number;
+}
+
+// ============================================================================
+// Member Lifecycle Tracking
+// ============================================================================
+
+export type LifecycleEventType = 'enrolled' | 'cancelled' | 'returned' | 'paused';
+
+export type LifecycleReason =
+  | 'cost'
+  | 'coverage_change'
+  | 'moved_state'
+  | 'joined_medicaid'
+  | 'joined_employer_plan'
+  | 'dissatisfied'
+  | 'non_payment'
+  | 'aging_out'
+  | 'life_event'
+  | 'better_option'
+  | 'voluntary'
+  | 'involuntary'
+  | 'other';
+
+export interface MemberLifecycleEvent {
+  id: string;
+  organization_id: string;
+  contact_id: string;
+  event_type: LifecycleEventType;
+  event_date: string;
+  reason: LifecycleReason | null;
+  reason_detail: string | null;
+  plan_type: CarrierType | null;
+  advisor_id: string | null;
+  source: string;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface MemberHistorySummary {
+  contact_id: string;
+  organization_id: string;
+  contact_name: string | null;
+  contact_email: string | null;
+  advisor_id: string | null;
+  total_events: number;
+  enroll_count: number;
+  cancel_count: number;
+  return_count: number;
+  pause_count: number;
+  first_enrolled: string | null;
+  last_event_date: string | null;
+  current_status: LifecycleEventType | null;
+  top_cancel_reason: LifecycleReason | null;
+}
+
+export interface LifecycleOrgStats {
+  organization_id: string;
+  total_tracked_members: number;
+  enrolled_this_month: number;
+  cancelled_this_month: number;
+  total_returned: number;
+  churn_rate_12m: number;
+  top_cancel_reason: LifecycleReason | null;
 }

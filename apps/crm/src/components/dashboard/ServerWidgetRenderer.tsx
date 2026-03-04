@@ -19,6 +19,11 @@ import RevenueChartWidget from './widgets/RevenueChartWidget';
 import SalesCommandTilesWidget from './widgets/SalesCommandTilesWidget';
 import ModuleStatsWidget from './widgets/ModuleStatsWidget';
 import PipelineFunnelWidget from './widgets/PipelineFunnelWidget';
+import AdvisorContactsWidget from './widgets/AdvisorContactsWidget';
+import AdvisorGrowthWidget from './widgets/AdvisorGrowthWidget';
+import TopAdvisorsWidget from './widgets/TopAdvisorsWidget';
+import LowestChurnAdvisorsWidget from './widgets/LowestChurnAdvisorsWidget';
+import AdvisorRetentionWidget from './widgets/AdvisorRetentionWidget';
 
 // Base props interface for all widgets
 interface BaseWidgetProps {
@@ -49,6 +54,11 @@ const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'sales-command-tiles': SalesCommandTilesWidget as WidgetComponent,
   'module-stats': ModuleStatsWidget as WidgetComponent,
   'pipeline-funnel': PipelineFunnelWidget as WidgetComponent,
+  'advisor-contacts': AdvisorContactsWidget as WidgetComponent,
+  'advisor-growth': AdvisorGrowthWidget as WidgetComponent,
+  'top-advisors': TopAdvisorsWidget as WidgetComponent,
+  'lowest-churn-advisors': LowestChurnAdvisorsWidget as WidgetComponent,
+  'advisor-member-retention': AdvisorRetentionWidget as WidgetComponent,
 };
 
 interface ServerWidgetRendererProps {

@@ -150,8 +150,11 @@ export default function WorkflowsPage() {
   const triggerLabels: Record<string, string> = {
     on_create: 'On Create',
     on_update: 'On Update',
+    on_stage_change: 'Stage Change',
+    field_value_changed: 'Field Changed',
     scheduled: 'Scheduled',
     webform: 'Webform',
+    inbound_webhook: 'Webhook',
   };
 
   return (
