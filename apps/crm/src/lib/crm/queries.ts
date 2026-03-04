@@ -473,7 +473,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   let query = supabase
     .from('crm_records')
-    .select('id, org_id, module_id, owner_id, title, status, stage, email, phone, advisor_id, contact_type, is_medicaid, medicaid_start_date, medicaid_end_date, medicaid_state, system, data, territory_id, created_by, created_at, updated_at', { count: 'exact' })
+    .select('*', { count: 'exact' })
     .eq('module_id', moduleId);
 
   // Apply territory filter
