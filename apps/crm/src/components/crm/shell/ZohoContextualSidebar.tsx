@@ -31,15 +31,18 @@ import {
     MessageSquare,
     Megaphone,
     TrendingUp,
+    TrendingDown,
     BookOpen,
     ClipboardCheck,
     Heart,
+    HeartPulse,
     Award,
     Layers,
     List,
     Layout,
     Zap,
     Upload,
+    Download,
     Settings,
     ChevronLeft,
     ChevronRight,
@@ -52,6 +55,32 @@ import {
     GitBranch,
     MailPlus,
     X,
+    UserCog,
+    UsersRound,
+    Target,
+    Calculator,
+    ShieldPlus,
+    ShieldCheck,
+    Shield,
+    Lock,
+    Key,
+    Star,
+    Clock,
+    Bot,
+    Gauge,
+    Trophy,
+    KanbanSquare,
+    Workflow,
+    Link2,
+    RefreshCw,
+    Database,
+    Radio,
+    Bell,
+    CreditCard,
+    Wallet,
+    Puzzle,
+    Code,
+    SlidersHorizontal,
     type LucideIcon,
 } from 'lucide-react';
 import { Lightbulb } from 'lucide-react';
@@ -86,25 +115,54 @@ const iconMap: Record<string, LucideIcon> = {
     'message-square': MessageSquare,
     'megaphone': Megaphone,
     'trending-up': TrendingUp,
+    'trending-down': TrendingDown,
     'chart-line': TrendingUp,
     'book-open': BookOpen,
     'clipboard-check': ClipboardCheck,
     'heart': Heart,
+    'heart-pulse': HeartPulse,
     'award': Award,
     'layers': Layers,
     'list': List,
     'layout': Layout,
     'zap': Zap,
     'upload': Upload,
+    'download': Download,
     'settings': Settings,
     'video': Video,
     'repeat': Repeat,
     'folder': FolderOpen,
+    'folder-users': UsersRound,
     'file-signature': FileSignature,
     'globe': Globe,
     'file-up': FileUp,
     'git-branch': GitBranch,
     'mail-plus': MailPlus,
+    'user-cog': UserCog,
+    'target': Target,
+    'calculator': Calculator,
+    'shield-plus': ShieldPlus,
+    'shield-check': ShieldCheck,
+    'shield': Shield,
+    'lock': Lock,
+    'key': Key,
+    'star': Star,
+    'clock': Clock,
+    'bot': Bot,
+    'gauge': Gauge,
+    'trophy': Trophy,
+    'kanban': KanbanSquare,
+    'workflow': Workflow,
+    'link-2': Link2,
+    'refresh-cw': RefreshCw,
+    'database': Database,
+    'radio': Radio,
+    'bell': Bell,
+    'credit-card': CreditCard,
+    'wallet': Wallet,
+    'puzzle': Puzzle,
+    'code': Code,
+    'sliders': SlidersHorizontal,
 };
 
 function getIcon(iconName: string): LucideIcon {
@@ -134,10 +192,11 @@ export function ZohoContextualSidebar({
         // Integrations
         if (pathname.startsWith('/crm/integrations')) return 'integrations';
 
-        // Analytics & Reports
-        if (pathname.startsWith('/crm/analytics')) return 'analytics';
+        // Analytics & Reports & Executive
+        if (pathname.startsWith('/crm/analytics') ||
+            pathname.startsWith('/crm/executive')) return 'analytics';
 
-        // Operations: scheduling, playbooks, enrollment, needs, approvals, vendors
+        // Operations: scheduling, playbooks, enrollment, needs, approvals, vendors, import
         if (pathname.startsWith('/crm/operations') ||
             pathname.startsWith('/crm/scheduling') ||
             pathname.startsWith('/crm/playbooks') ||
@@ -146,7 +205,7 @@ export function ZohoContextualSidebar({
             pathname.startsWith('/crm/approvals') ||
             pathname.startsWith('/crm/vendors')) return 'operations';
 
-        // Documents — now part of main CRM nav
+        // Documents — part of main CRM nav
         if (pathname.startsWith('/crm/documents')) return 'crm';
 
         // Revenue: products, quotes, invoices, forecasting, commissions, revenue overview
@@ -164,9 +223,7 @@ export function ZohoContextualSidebar({
             pathname.startsWith('/crm/email') ||
             pathname.startsWith('/crm/inbox')) return 'communications';
 
-        // CRM routes: dashboard, calendar, modules (leads/contacts/deals), accounts, pipeline, activities, tasks, reports
-        if (pathname.startsWith('/crm/calendar')) return 'crm';
-        
+        // CRM routes: dashboard, calendar, modules, accounts, pipeline, activities, tasks, reports, members, import
         return 'crm';
     };
 
@@ -204,7 +261,7 @@ export function ZohoContextualSidebar({
             <aside
                 className={cn(
                     'relative hidden lg:flex flex-col border-r border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-200',
-                    isOpen ? 'w-56' : 'w-16'
+                    isOpen ? 'w-60' : 'w-16'
                 )}
             >
                 {/* Module Title */}
@@ -217,14 +274,19 @@ export function ZohoContextualSidebar({
                 )}
 
                 {/* Navigation Items */}
-                <nav className="flex-1 px-2 py-3 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto scrollbar-thin">
                     {navItems.map((item) => {
                         if (item.separator) {
                             return (
-                                <hr
-                                    key={item.key}
-                                    className="my-2 border-slate-200 dark:border-white/10"
-                                />
+                                <div key={item.key} className="pt-3 pb-1">
+                                    {isOpen && item.sectionTitle ? (
+                                        <p className="px-3 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.12em]">
+                                            {item.sectionTitle}
+                                        </p>
+                                    ) : (
+                                        <hr className="border-slate-200 dark:border-white/10" />
+                                    )}
+                                </div>
                             );
                         }
 
@@ -236,7 +298,7 @@ export function ZohoContextualSidebar({
                                 key={item.key}
                                 href={item.href}
                                 className={cn(
-                                    'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                                    'flex items-center gap-3 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
                                     active
                                         ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-l-2 border-teal-500'
@@ -246,10 +308,24 @@ export function ZohoContextualSidebar({
                                 title={!isOpen ? item.label : undefined}
                             >
                                 <Icon className={cn(
-                                    'w-5 h-5 flex-shrink-0',
+                                    'w-4 h-4 flex-shrink-0',
                                     active && 'text-teal-600 dark:text-teal-400'
                                 )} />
-                                {isOpen && <span>{item.label}</span>}
+                                {isOpen && (
+                                    <>
+                                        <span className="flex-1 truncate">{item.label}</span>
+                                        {item.badge === 'new' && (
+                                            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 uppercase tracking-wider">
+                                                New
+                                            </span>
+                                        )}
+                                        {item.badge === 'beta' && (
+                                            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 uppercase tracking-wider">
+                                                Beta
+                                            </span>
+                                        )}
+                                    </>
+                                )}
                             </Link>
                         );
                     })}
@@ -288,14 +364,19 @@ export function ZohoContextualSidebar({
                 </div>
 
                 {/* Mobile Navigation Items */}
-                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-thin">
                     {navItems.map((item) => {
                         if (item.separator) {
                             return (
-                                <hr
-                                    key={item.key}
-                                    className="my-2 border-slate-200 dark:border-white/10"
-                                />
+                                <div key={item.key} className="pt-4 pb-1">
+                                    {item.sectionTitle ? (
+                                        <p className="px-4 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.12em]">
+                                            {item.sectionTitle}
+                                        </p>
+                                    ) : (
+                                        <hr className="border-slate-200 dark:border-white/10" />
+                                    )}
+                                </div>
                             );
                         }
 
@@ -308,7 +389,7 @@ export function ZohoContextualSidebar({
                                 href={item.href}
                                 onClick={handleLinkClick}
                                 className={cn(
-                                    'flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium transition-all',
+                                    'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
                                     'active:scale-[0.98]',
                                     active
@@ -320,7 +401,17 @@ export function ZohoContextualSidebar({
                                     'w-5 h-5 flex-shrink-0',
                                     active && 'text-teal-600 dark:text-teal-400'
                                 )} />
-                                <span>{item.label}</span>
+                                <span className="flex-1">{item.label}</span>
+                                {item.badge === 'new' && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 uppercase">
+                                        New
+                                    </span>
+                                )}
+                                {item.badge === 'beta' && (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 uppercase">
+                                        Beta
+                                    </span>
+                                )}
                             </Link>
                         );
                     })}

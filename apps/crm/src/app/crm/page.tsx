@@ -73,6 +73,9 @@ async function fetchWidgetData(
     topAdvisors: () => Promise.resolve([]),
     lowestChurnAdvisors: () => Promise.resolve([]),
     advisorMemberRetention: () => Promise.resolve([]),
+    networkCoverageHealth: () => Promise.resolve([]),
+    networkProviderStats: () => Promise.resolve([]),
+    networkCostRouter: () => Promise.resolve([]),
   };
 
   const results: Record<string, unknown> = {};

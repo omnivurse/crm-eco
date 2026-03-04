@@ -12,6 +12,7 @@ export type WidgetCategory =
   | 'quick-actions'
   | 'email'
   | 'advisors'
+  | 'healthcare'
   | 'other';
 
 export interface WidgetDefinition {
@@ -65,6 +66,9 @@ export interface WidgetDataMap {
   topAdvisors: unknown;
   lowestChurnAdvisors: unknown;
   advisorMemberRetention: unknown;
+  networkCoverageHealth: unknown;
+  networkProviderStats: unknown;
+  networkCostRouter: unknown;
 }
 
 export type WidgetDataKey = keyof WidgetDataMap;

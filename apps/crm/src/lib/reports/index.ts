@@ -1,6 +1,6 @@
 // Reports Library - Template definitions and utilities
 
-export type TemplateCategory = 'all' | 'sales' | 'marketing' | 'team' | 'operations' | 'finance' | 'productivity' | 'advisors';
+export type TemplateCategory = 'all' | 'sales' | 'marketing' | 'team' | 'operations' | 'finance' | 'productivity' | 'advisors' | 'healthcare';
 
 export interface ReportTemplate {
   id: string;
@@ -29,6 +29,7 @@ export const TEMPLATE_CATEGORIES = [
   { id: 'finance' as const, label: 'Finance', icon: 'Wallet', color: 'green' },
   { id: 'productivity' as const, label: 'Productivity', icon: 'Zap', color: 'orange' },
   { id: 'advisors' as const, label: 'Advisors', icon: 'UserCheck', color: 'cyan' },
+  { id: 'healthcare' as const, label: 'Healthcare', icon: 'Heart', color: 'rose' },
 ];
 
 export const REPORT_TEMPLATES: ReportTemplate[] = [
@@ -263,6 +264,31 @@ export const REPORT_TEMPLATES: ReportTemplate[] = [
     columns: ['advisor_name', 'signup_commissions', 'monthly_commissions', 'override_commissions', 'bonus_commissions', 'gross_commissions', 'net_commissions'],
     grouping: [{ column: 'advisor_id', aggregation: 'sum' }],
     sorting: [{ column: 'gross_commissions', direction: 'desc' }],
+  },
+  // Healthcare Templates
+  {
+    id: 'network-coverage-report',
+    name: 'Network Coverage Report',
+    description: 'Provider network coverage by ZIP code and state with coverage grades',
+    category: 'healthcare',
+    icon: 'Shield',
+    metrics: ['Coverage Score', 'Provider Count', 'Preferred Providers', 'Coverage Grade'],
+    filters: ['Network', 'State', 'ZIP Code'],
+    dataSource: 'network_coverage_zips',
+    columns: ['network_name', 'zip_code', 'state', 'provider_count', 'preferred_count', 'coverage_score', 'coverage_grade'],
+    sorting: [{ column: 'coverage_score', direction: 'desc' }],
+  },
+  {
+    id: 'network-provider-search-report',
+    name: 'Network Provider Search',
+    description: 'In-network provider search results with distance and tier information',
+    category: 'healthcare',
+    icon: 'Search',
+    metrics: ['Total Providers', 'Avg Distance', 'Preferred Count'],
+    filters: ['Network', 'ZIP Code', 'Service Category', 'Radius'],
+    dataSource: 'network_providers',
+    columns: ['provider_name', 'provider_type', 'city', 'state', 'network_tier', 'distance_miles', 'specialty_tags'],
+    sorting: [{ column: 'distance_miles', direction: 'asc' }],
   },
 ];
 

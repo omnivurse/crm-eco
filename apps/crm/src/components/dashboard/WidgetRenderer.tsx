@@ -48,6 +48,9 @@ const AdvisorGrowthWidget = dynamic(() => import('./widgets/AdvisorGrowthWidget'
 const TopAdvisorsWidget = dynamic(() => import('./widgets/TopAdvisorsWidget'), { loading: WidgetSkeleton });
 const LowestChurnAdvisorsWidget = dynamic(() => import('./widgets/LowestChurnAdvisorsWidget'), { loading: WidgetSkeleton });
 const AdvisorRetentionWidget = dynamic(() => import('./widgets/AdvisorRetentionWidget'), { loading: WidgetSkeleton });
+const NetworkCoverageHealthWidget = dynamic(() => import('./widgets/NetworkCoverageHealthWidget'), { loading: WidgetSkeleton });
+const NetworkProviderStatsWidget = dynamic(() => import('./widgets/NetworkProviderStatsWidget'), { loading: WidgetSkeleton });
+const NetworkCostRouterWidget = dynamic(() => import('./widgets/NetworkCostRouterWidget'), { loading: WidgetSkeleton });
 
 // Using 'any' here since each widget has its own specific data type
 const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
@@ -70,6 +73,9 @@ const WIDGET_COMPONENTS: Record<string, React.ComponentType<any>> = {
   'top-advisors': TopAdvisorsWidget,
   'lowest-churn-advisors': LowestChurnAdvisorsWidget,
   'advisor-member-retention': AdvisorRetentionWidget,
+  'network-coverage-health': NetworkCoverageHealthWidget,
+  'network-provider-stats': NetworkProviderStatsWidget,
+  'network-cost-router': NetworkCostRouterWidget,
 };
 
 interface WidgetRendererProps {

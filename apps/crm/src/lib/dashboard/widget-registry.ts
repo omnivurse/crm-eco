@@ -236,6 +236,36 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     category: 'advisors',
     dataKey: 'advisorMemberRetention',
   },
+  'network-coverage-health': {
+    id: 'network-coverage-health',
+    name: 'Network Coverage Health',
+    description: 'Provider network coverage scores and grades',
+    icon: 'Shield',
+    defaultSize: 'medium',
+    allowedSizes: ['medium', 'large'],
+    category: 'healthcare',
+    dataKey: 'networkCoverageHealth',
+  },
+  'network-provider-stats': {
+    id: 'network-provider-stats',
+    name: 'Network Provider Stats',
+    description: 'Provider counts by network tier',
+    icon: 'Building2',
+    defaultSize: 'small',
+    allowedSizes: ['small', 'medium'],
+    category: 'healthcare',
+    dataKey: 'networkProviderStats',
+  },
+  'network-cost-router': {
+    id: 'network-cost-router',
+    name: 'Cost-Optimized Routing',
+    description: 'Cheapest in-network providers for common procedures',
+    icon: 'DollarSign',
+    defaultSize: 'medium',
+    allowedSizes: ['medium', 'large'],
+    category: 'healthcare',
+    dataKey: 'networkCostRouter',
+  },
 };
 
 export const DEFAULT_LAYOUT: DashboardLayoutConfig = {
@@ -257,6 +287,7 @@ export const WIDGET_CATEGORIES = [
   { id: 'email', label: 'Email', icon: 'Mail' },
   { id: 'quick-actions', label: 'Actions', icon: 'Zap' },
   { id: 'advisors', label: 'Advisors', icon: 'UserCheck' },
+  { id: 'healthcare', label: 'Healthcare', icon: 'Heart' },
   { id: 'other', label: 'Other', icon: 'MoreHorizontal' },
 ] as const;
 

@@ -24,6 +24,9 @@ import AdvisorGrowthWidget from './widgets/AdvisorGrowthWidget';
 import TopAdvisorsWidget from './widgets/TopAdvisorsWidget';
 import LowestChurnAdvisorsWidget from './widgets/LowestChurnAdvisorsWidget';
 import AdvisorRetentionWidget from './widgets/AdvisorRetentionWidget';
+import NetworkCoverageHealthWidget from './widgets/NetworkCoverageHealthWidget';
+import NetworkProviderStatsWidget from './widgets/NetworkProviderStatsWidget';
+import NetworkCostRouterWidget from './widgets/NetworkCostRouterWidget';
 
 // Base props interface for all widgets
 interface BaseWidgetProps {
@@ -59,6 +62,9 @@ const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'top-advisors': TopAdvisorsWidget as WidgetComponent,
   'lowest-churn-advisors': LowestChurnAdvisorsWidget as WidgetComponent,
   'advisor-member-retention': AdvisorRetentionWidget as WidgetComponent,
+  'network-coverage-health': NetworkCoverageHealthWidget as WidgetComponent,
+  'network-provider-stats': NetworkProviderStatsWidget as WidgetComponent,
+  'network-cost-router': NetworkCostRouterWidget as WidgetComponent,
 };
 
 interface ServerWidgetRendererProps {
