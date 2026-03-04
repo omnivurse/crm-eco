@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import SmsCampaigns from '@/components/communications/SmsCampaigns';
 import {
   MessageSquare,
   Mail,
@@ -206,6 +208,9 @@ function getTimeAgo(dateString: string): string {
 // ============================================================================
 
 export default function CommunicationsPage() {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
+
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const [loading, setLoading] = useState(true);
   const [channels, setChannels] = useState<CommunicationChannel[]>([]);
@@ -352,6 +357,11 @@ export default function CommunicationsPage() {
 
     loadData();
   }, [authProfile]);
+
+  // SMS tab override
+  if (tab === 'sms') {
+    return <SmsCampaigns />;
+  }
 
   if (loading) {
     return <CommunicationsSkeleton />;

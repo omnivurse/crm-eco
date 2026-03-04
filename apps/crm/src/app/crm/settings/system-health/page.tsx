@@ -26,6 +26,7 @@ import {
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createCrmClient } from '@/lib/crm/queries';
 import { PageHeader } from '@/components/layout';
+import SystemHealthTabs from '@/components/system-health/SystemHealthTabs';
 
 interface HealthCheck {
   name: string;
@@ -732,7 +733,30 @@ function SystemHealthSkeleton() {
   );
 }
 
-export default function SystemHealthPage() {
+export default async function SystemHealthPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const params = await searchParams;
+  const tab = params?.tab;
+
+  // If a tab is specified, render the client-side tab component
+  if (tab && ['jobs', 'signals', 'export', 'audit'].includes(tab)) {
+    return (
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+          </div>
+        }
+      >
+        <SystemHealthTabs />
+      </Suspense>
+    );
+  }
+
+  // Default: render existing server-side health checks
   return (
     <Suspense fallback={<SystemHealthSkeleton />}>
       <SystemHealthContent />

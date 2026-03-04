@@ -1,6 +1,7 @@
-import { Suspense } from 'react';
+import { Suspense, type ComponentType } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
@@ -18,6 +19,23 @@ import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy } from '@/lib/crm/types';
 
+/* ---------- Contacts tab components (lazy-loaded) ---------- */
+const ContactGroups = dynamic(() => import('@/components/contacts/ContactGroups'));
+const ContactSegments = dynamic(() => import('@/components/contacts/ContactSegments'));
+const ContactLifecycle = dynamic(() => import('@/components/contacts/ContactLifecycle'));
+const ContactMedicaid = dynamic(() => import('@/components/contacts/ContactMedicaid'));
+const CarrierPlans = dynamic(() => import('@/components/contacts/CarrierPlans'));
+const PremiumCompare = dynamic(() => import('@/components/contacts/PremiumCompare'));
+
+const contactsTabComponents: Record<string, ComponentType> = {
+  groups: ContactGroups,
+  segments: ContactSegments,
+  lifecycle: ContactLifecycle,
+  medicaid: ContactMedicaid,
+  carriers: CarrierPlans,
+  premiums: PremiumCompare,
+};
+
 interface PageProps {
   params: Promise<{ moduleKey: string }>;
   searchParams: Promise<{
@@ -31,12 +49,13 @@ interface PageProps {
     territory?: string;
     viewMode?: string;
     treeGroupBy?: TreeGroupBy;
+    tab?: string;
   }>;
 }
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = await params;
-  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId, viewMode, treeGroupBy } = await searchParams;
+  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId, viewMode, treeGroupBy, tab } = await searchParams;
   
   let profile;
   try {
@@ -79,6 +98,25 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   }
 
   if (!crmModule) return notFound();
+
+  // ---- Contacts sub-tab: render dedicated component and skip record queries ----
+  if (moduleKey === 'contacts' && tab) {
+    const TabComponent = contactsTabComponents[tab];
+    if (TabComponent) {
+      return (
+        <div className="max-w-7xl mx-auto space-y-4">
+          <Link
+            href="/crm/modules/contacts"
+            className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to Contacts
+          </Link>
+          <TabComponent />
+        </div>
+      );
+    }
+  }
 
   // Step 2: fields, views, defaultView in parallel (need module_id)
   const [fieldsResult, viewsResult, defaultViewResult] = await Promise.allSettled([
