@@ -163,3 +163,65 @@
     transition: none !important;
   }
 }
+
+/* ============================================================
+   STICKY SCROLLBAR
+   Forces always-visible scrollbars on the record table so
+   desktop mouse users can see and grab the horizontal scrollbar
+   without scrolling to the bottom of the content first.
+   Styling ::-webkit-scrollbar opts out of macOS overlay mode.
+   ============================================================ */
+@media (min-width: 768px) {
+  .sticky-scrollbar::-webkit-scrollbar {
+    height: 10px;
+    width: 8px;
+  }
+
+  .sticky-scrollbar::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.8);
+    border-radius: 5px;
+  }
+
+  .dark .sticky-scrollbar::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.6);
+  }
+
+  .sticky-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.4);
+    border-radius: 5px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .sticky-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.6);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .dark .sticky-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.35);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .dark .sticky-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.55);
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .sticky-scrollbar::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox: always show scrollbar */
+  .sticky-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100, 116, 139, 0.4) rgba(241, 245, 249, 0.8);
+  }
+
+  .dark .sticky-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.35) rgba(30, 41, 59, 0.6);
+  }
+}

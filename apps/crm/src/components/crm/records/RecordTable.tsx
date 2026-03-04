@@ -1032,8 +1032,15 @@ export const RecordTable = memo(function RecordTable({
       {/* Desktop Table View */}
       <div
         ref={tableContainerRef}
+        onWheel={(e) => {
+          // Shift+scroll = horizontal scroll for desktop mouse users
+          if (e.shiftKey && tableContainerRef.current) {
+            e.preventDefault();
+            tableContainerRef.current.scrollLeft += e.deltaY;
+          }
+        }}
         className={cn(
-          'hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin',
+          'hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin sticky-scrollbar',
           isResizing && 'select-none'
         )}
       >
