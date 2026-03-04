@@ -5,16 +5,18 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Shield,
-  CreditCard,
   Heart,
   MessageSquare,
+  Stethoscope,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 
 const navItems = [
   { label: 'Home', href: '/', icon: LayoutDashboard },
   { label: 'Coverage', href: '/coverage', icon: Shield },
-  { label: 'Billing', href: '/billing', icon: CreditCard },
+  { label: 'Services', href: '/services', icon: Stethoscope },
+  { label: 'Pricing', href: '/pricing', icon: DollarSign },
   { label: 'Needs', href: '/needs', icon: Heart },
   { label: 'Support', href: '/support', icon: MessageSquare },
 ];

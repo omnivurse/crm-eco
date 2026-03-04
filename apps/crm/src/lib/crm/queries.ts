@@ -473,7 +473,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   let query = supabase
     .from('crm_records')
-    .select('id, org_id, module_id, owner_id, title, status, stage, email, phone, system, data, territory_id, created_by, created_at, updated_at', { count: 'exact' })
+    .select('id, org_id, module_id, owner_id, title, status, stage, email, phone, advisor_id, contact_type, system, data, territory_id, created_by, created_at, updated_at', { count: 'exact' })
     .eq('module_id', moduleId);
 
   // Apply territory filter
@@ -1962,4 +1962,66 @@ export async function getAgentTreeData(
   const totalRecords = agents.reduce((sum: number, a: { recordCount: number }) => sum + a.recordCount, 0);
 
   return { agents, totalRecords };
+}
+
+/**
+ * Fetch advisor contact summary from the reporting view.
+ * Used by the dashboard advisor widgets.
+ */
+export async function getAdvisorContactSummary(orgId: string) {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase
+    .from('advisor_contact_summary')
+    .select('*')
+    .eq('organization_id', orgId)
+    .order('total_contacts', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching advisor contact summary:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Fetch contact groups with member counts from the summary view.
+ */
+export async function getContactGroups(orgId: string) {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase
+    .from('group_contact_counts')
+    .select('*')
+    .eq('organization_id', orgId)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('group_name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching contact groups:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+/**
+ * Fetch groups that a specific record belongs to.
+ */
+export async function getGroupsForRecord(recordId: string) {
+  const supabase = await createCrmClient();
+
+  const { data, error } = await supabase
+    .from('crm_contact_group_members')
+    .select('group_id, added_at, crm_contact_groups(id, group_name, group_type, color, icon)')
+    .eq('record_id', recordId);
+
+  if (error) {
+    console.error('Error fetching groups for record:', error);
+    return [];
+  }
+
+  return data || [];
 }

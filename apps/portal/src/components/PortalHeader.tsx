@@ -18,6 +18,8 @@ import {
 const navItems = [
   { label: 'Dashboard', href: '/' },
   { label: 'Coverage', href: '/coverage' },
+  { label: 'Services', href: '/services' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Billing', href: '/billing' },
   { label: 'Needs', href: '/needs' },
   { label: 'Support', href: '/support' },
