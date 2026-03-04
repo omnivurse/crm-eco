@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
   Settings,
@@ -101,10 +102,14 @@ function parseInputValue(raw: string): unknown {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function SystemConfigurationPage() {
+  const searchParams = useSearchParams();
+  const urlTab = searchParams.get('tab');
   const [settings, setSettings] = useState<SystemSetting[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['general']));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set([urlTab === 'pipelines' ? 'process' : 'general'])
+  );
 
   // Inline editing
   const [editingId, setEditingId] = useState<string | null>(null);

@@ -84,23 +84,31 @@ export async function middleware(request: NextRequest) {
       .eq('user_id', user.id)
       .single() as { data: { id: string; role: string } | null };
 
-    if (!profile || profile.role !== 'advisor') {
+    if (!profile) {
       return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
     }
 
-    // Check if they have an active advisor record
-    const { data: advisor } = await supabase
-      .from('advisors')
-      .select('id, status')
-      .eq('profile_id', profile.id)
-      .single() as { data: { id: string; status: string } | null };
+    // Owners and admins bypass advisor checks — they have full access
+    const bypassRoles = ['owner', 'super_admin', 'admin'];
+    if (!bypassRoles.includes(profile.role)) {
+      if (profile.role !== 'advisor') {
+        return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
+      }
 
-    if (!advisor) {
-      return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
-    }
+      // Check if they have an active advisor record
+      const { data: advisor } = await supabase
+        .from('advisors')
+        .select('id, status')
+        .eq('profile_id', profile.id)
+        .single() as { data: { id: string; status: string } | null };
 
-    if (advisor.status !== 'active') {
-      return NextResponse.redirect(new URL('/access-denied?reason=agent_inactive', request.url));
+      if (!advisor) {
+        return NextResponse.redirect(new URL('/access-denied?reason=not_agent', request.url));
+      }
+
+      if (advisor.status !== 'active') {
+        return NextResponse.redirect(new URL('/access-denied?reason=agent_inactive', request.url));
+      }
     }
   }
 

@@ -14,8 +14,8 @@
  * - View and manage pending invitations
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -288,8 +288,10 @@ function UserRow({
 
 export default function UsersPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
+  const rolesRef = useRef<HTMLDivElement>(null);
 
   // Data state
   const [loading, setLoading] = useState(true);
@@ -322,6 +324,13 @@ export default function UsersPage() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<string>('staff');
   const [inviting, setInviting] = useState(false);
+
+  // Auto-scroll to roles section if ?tab=roles
+  useEffect(() => {
+    if (searchParams.get('tab') === 'roles' && rolesRef.current) {
+      rolesRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [searchParams, loading]);
 
   // ========================================================================
   // Data Loading
@@ -728,7 +737,7 @@ export default function UsersPage() {
       </div>
 
       {/* Role Legend */}
-      <div className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
+      <div ref={rolesRef} className="glass-card border border-slate-200 dark:border-slate-700 rounded-xl p-4">
         <h3 className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-3">Role Permissions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(Object.entries(ROLE_LABELS) as [CrmRole, (typeof ROLE_LABELS)[CrmRole]][]).map(

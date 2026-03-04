@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   DollarSign,
   Users,
@@ -134,13 +135,15 @@ function HierarchyNode({ node, level = 0 }: { node: AdvisorNode; level?: number 
 }
 
 export default function CommissionsPage() {
+  const searchParams = useSearchParams();
+  const urlTab = searchParams.get('tab');
   const [hierarchy, setHierarchy] = useState<AdvisorNode[]>([]);
   const [transactions, setTransactions] = useState<CommissionTransaction[]>([]);
   const [summary, setSummary] = useState<CommissionSummary>({ totalPending: 0, totalApproved: 0, totalPaid: 0, count: 0 });
   const [stats, setStats] = useState<CommissionStats>({ totalAdvisors: 0, activeAdvisors: 0, totalProduction: 0, avgTeamSize: 0 });
   const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'hierarchy' | 'transactions'>('hierarchy');
+  const [activeTab, setActiveTab] = useState<'hierarchy' | 'transactions'>(urlTab === 'payments' ? 'transactions' : 'hierarchy');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [productTypeTab, setProductTypeTab] = useState<'all' | 'health_insurance' | 'health_share'>('all');
   const [productSummary, setProductSummary] = useState<{ product_type: string; total_commissions: number; commission_count: number }[]>([]);

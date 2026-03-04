@@ -52,12 +52,11 @@ export async function middleware(request: NextRequest) {
     // Check advisor role and active status
     const { data: profile } = await supabase
         .from('profiles')
-        .select('id, advisor_role, advisor_id, organization_id, is_active')
+        .select('id, role, advisor_role, advisor_id, organization_id, is_active')
         .eq('user_id', user.id)
         .single();
 
-    if (!profile || !profile.advisor_role) {
-        // No advisor access - redirect to login with error
+    if (!profile) {
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('error', 'no_advisor_access');
         return NextResponse.redirect(redirectUrl);
@@ -69,6 +68,15 @@ export async function middleware(request: NextRequest) {
         const accessDeniedUrl = new URL('/login', request.url);
         accessDeniedUrl.searchParams.set('error', 'account_inactive');
         return NextResponse.redirect(accessDeniedUrl);
+    }
+
+    // Owners and admins bypass advisor_role check — they have full access
+    const bypassRoles = ['owner', 'super_admin', 'admin'];
+    if (!bypassRoles.includes(profile.role) && !profile.advisor_role) {
+        // No advisor access - redirect to login with error
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('error', 'no_advisor_access');
+        return NextResponse.redirect(redirectUrl);
     }
 
     return supabaseResponse;

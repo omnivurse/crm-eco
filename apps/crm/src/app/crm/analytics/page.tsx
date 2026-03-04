@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   BarChart3,
   Users,
@@ -21,6 +22,11 @@ import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { toast } from 'sonner';
+import LifecycleStats from '@/components/analytics/LifecycleStats';
+import MedicaidStats from '@/components/analytics/MedicaidStats';
+import AdvisorAnalytics from '@/components/analytics/AdvisorAnalytics';
+import ChurnAnalysis from '@/components/analytics/ChurnAnalysis';
+import LeaderboardPage from '@/app/crm/analytics/leaderboard/page';
 
 interface DashboardData {
   summary: {
@@ -163,7 +169,28 @@ function PipelineFunnel({ pipeline }: { pipeline: DashboardData['pipeline'] }) {
   );
 }
 
+const TAB_COMPONENTS: Record<string, React.ComponentType> = {
+  lifecycle: LifecycleStats,
+  medicaid: MedicaidStats,
+  advisors: AdvisorAnalytics,
+  churn: ChurnAnalysis,
+  leaderboard: LeaderboardPage,
+};
+
 export default function AnalyticsPage() {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
+
+  // Render sub-tab if one is selected
+  if (tab && TAB_COMPONENTS[tab]) {
+    const TabComponent = TAB_COMPONENTS[tab];
+    return <TabComponent />;
+  }
+
+  return <AnalyticsDashboard />;
+}
+
+function AnalyticsDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
