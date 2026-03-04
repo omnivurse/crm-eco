@@ -80,7 +80,12 @@ export default function AdvisorAnalytics() {
 
   const summary = data.orgAnalytics?.summary;
   const growth = data.growth?.growth_pct;
-  const totalAdvisors = data.advisorStatusBreakdown.reduce((s, a) => s + a.count, 0);
+  const safeEnrollments = Array.isArray(data.topByEnrollments) ? data.topByEnrollments : [];
+  const safeRevenue = Array.isArray(data.topByRevenue) ? data.topByRevenue : [];
+  const safeRetention = Array.isArray(data.retentionTrend) ? data.retentionTrend : [];
+  const safeStatusBreakdown = Array.isArray(data.advisorStatusBreakdown) ? data.advisorStatusBreakdown : [];
+  const safeTierDistribution = Array.isArray(data.tierDistribution) ? data.tierDistribution : [];
+  const totalAdvisors = safeStatusBreakdown.reduce((s, a) => s + a.count, 0);
 
   return (
     <div className="space-y-6">
@@ -150,11 +155,11 @@ export default function AdvisorAnalytics() {
             <CardDescription>Ranked by total enrollments</CardDescription>
           </CardHeader>
           <CardContent>
-            {(data.topByEnrollments || []).length === 0 ? (
+            {safeEnrollments.length === 0 ? (
               <p className="text-slate-500 text-center py-8">No data</p>
             ) : (
               <div className="space-y-3">
-                {data.topByEnrollments.map((a, idx) => {
+                {safeEnrollments.map((a, idx) => {
                   const d = a.row_data || a;
                   return (
                     <div key={(d as { advisor_id: string }).advisor_id || idx} className="flex items-center gap-3">
@@ -179,11 +184,11 @@ export default function AdvisorAnalytics() {
             <CardDescription>Ranked by total commissions</CardDescription>
           </CardHeader>
           <CardContent>
-            {(data.topByRevenue || []).length === 0 ? (
+            {safeRevenue.length === 0 ? (
               <p className="text-slate-500 text-center py-8">No data</p>
             ) : (
               <div className="space-y-3">
-                {data.topByRevenue.map((a, idx) => {
+                {safeRevenue.map((a, idx) => {
                   const d = a.row_data || a;
                   return (
                     <div key={(d as { advisor_id: string }).advisor_id || idx} className="flex items-center gap-3">
@@ -210,7 +215,7 @@ export default function AdvisorAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {data.advisorStatusBreakdown.map((s) => (
+              {safeStatusBreakdown.map((s) => (
                 <div key={s.status} className="flex items-center gap-3">
                   <div className={`w-3 h-3 rounded-full shrink-0 ${STATUS_COLORS[s.status] || 'bg-slate-400'}`} />
                   <span className="flex-1 text-sm text-slate-600 dark:text-slate-400 capitalize">{s.status}</span>
@@ -228,11 +233,11 @@ export default function AdvisorAnalytics() {
             <CardDescription>Active advisor distribution</CardDescription>
           </CardHeader>
           <CardContent>
-            {data.tierDistribution.length === 0 ? (
+            {safeTierDistribution.length === 0 ? (
               <p className="text-slate-500 text-center py-8">No tier data</p>
             ) : (
               <div className="space-y-3">
-                {data.tierDistribution.map((t) => (
+                {safeTierDistribution.map((t) => (
                   <div key={t.tier} className="flex items-center gap-3">
                     <Award className="w-4 h-4 text-amber-500 shrink-0" />
                     <span className="flex-1 text-sm text-slate-600 dark:text-slate-400">{t.tier}</span>
@@ -251,11 +256,11 @@ export default function AdvisorAnalytics() {
             <CardDescription>Member retention rate trend</CardDescription>
           </CardHeader>
           <CardContent>
-            {(data.retentionTrend || []).length === 0 ? (
+            {safeRetention.length === 0 ? (
               <p className="text-slate-500 text-center py-8">No retention data</p>
             ) : (
               <div className="space-y-2">
-                {data.retentionTrend.map((r) => {
+                {safeRetention.map((r) => {
                   const d = r.row_data || r;
                   const rate = (d as { retention_rate: number }).retention_rate;
                   return (

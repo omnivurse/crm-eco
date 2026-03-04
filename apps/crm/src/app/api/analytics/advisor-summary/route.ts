@@ -80,9 +80,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       orgAnalytics: orgAnalytics || {},
-      topByEnrollments: topByEnrollments || [],
-      topByRevenue: topByRevenue || [],
-      retentionTrend: retentionTrend || [],
+      topByEnrollments: Array.isArray(topByEnrollments) ? topByEnrollments : [],
+      topByRevenue: Array.isArray(topByRevenue) ? topByRevenue : [],
+      retentionTrend: Array.isArray(retentionTrend) ? retentionTrend : [],
       advisorStatusBreakdown: Object.entries(statusCounts).map(([status, count]) => ({ status, count })),
       tierDistribution,
       growth: growth || {},
