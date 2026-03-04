@@ -465,6 +465,9 @@ BEGIN
 END;
 $$;
 
+-- Drop old 5-param overload so the upgraded 6-param version replaces it cleanly
+DROP FUNCTION IF EXISTS compare_premiums(text[], integer, text, boolean, integer);
+
 -- Upgrade compare_premiums with tier support
 CREATE OR REPLACE FUNCTION compare_premiums(
   p_plan_codes text[],
@@ -507,4 +510,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION compare_premiums TO authenticated;
+GRANT EXECUTE ON FUNCTION compare_premiums(text[], integer, text, boolean, integer, text) TO authenticated;
