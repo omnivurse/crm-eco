@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import { Button } from '@crm-eco/ui/components/button';
@@ -116,6 +117,7 @@ interface Advisor {
 
 export default function LandingPagesPage() {
   const { profile: authProfile } = useClientAuth();
+  const router = useRouter();
 
   const [pages, setPages] = useState<LandingPage[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -451,9 +453,13 @@ export default function LandingPagesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/crm/settings/landing-pages/${page.id}`)}>
+                          <Layout className="w-4 h-4 mr-2" />
+                          Open Builder
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEditDialog(page)}>
                           <Pencil className="w-4 h-4 mr-2" />
-                          Edit
+                          Edit Settings
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => copyUrl(page.slug, page.id)}>
                           {copied === page.id ? (
