@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Heart } from 'lucide-react';
+import Image from 'next/image';
 
 const footerLinks = {
   company: [
@@ -33,18 +33,15 @@ export function SiteFooter() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-base font-bold text-white leading-tight">
-                  Pay It Forward
-                </span>
-                <span className="text-xs text-teal-400 font-medium -mt-0.5">
-                  Health
-                </span>
-              </div>
+            <Link href="/" className="flex items-center mb-4">
+              <Image
+                src="/logo.png"
+                alt="Pay It Forward Health"
+                width={160}
+                height={42}
+                className="h-10 w-auto object-contain brightness-0 invert"
+                loading="lazy"
+              />
             </Link>
             <p className="text-sm text-slate-400 leading-relaxed">
               A community of members sharing medical expenses together, promoting

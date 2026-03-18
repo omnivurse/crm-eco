@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { cn } from '@crm-eco/ui';
+import Image from 'next/image';
 import {
     LayoutDashboard,
     Users,
@@ -16,7 +17,6 @@ import {
     Menu,
     X,
     ChevronRight,
-    ShieldCheck,
 } from 'lucide-react';
 
 import type { Profile as ProfileRow, Advisor } from '@crm-eco/lib/types';
@@ -75,11 +75,15 @@ export function PortalShell({ profile, children }: PortalShellProps) {
             >
                 {/* Logo */}
                 <div className="h-16 flex items-center gap-3 px-4 border-b border-gray-200 dark:border-gray-700">
-                    <div className="w-10 h-10 bg-gradient-to-br from-advisor-500 to-advisor-600 rounded-lg flex items-center justify-center">
-                        <ShieldCheck className="w-6 h-6 text-white" />
-                    </div>
+                    <Image
+                        src="/logo.png"
+                        alt="Pay It Forward Health"
+                        width={140}
+                        height={36}
+                        className="h-9 w-auto object-contain"
+                        priority
+                    />
                     <div>
-                        <h1 className="font-bold text-gray-900 dark:text-white">Advisor Portal</h1>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             {profile.advisors?.agency_name || 'Agency'}
                         </p>

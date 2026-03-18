@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@crm-eco/ui';
-import { Menu, X, Heart } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 const navigation = [
   { name: 'About', href: '/about' },
@@ -40,18 +41,15 @@ export function SiteHeader() {
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-              <Heart className="w-5 h-5 text-white" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-slate-900 leading-tight">
-                Pay It Forward
-              </span>
-              <span className="text-xs text-teal-600 font-medium -mt-0.5">
-                Health
-              </span>
-            </div>
+          <Link href="/" className="flex items-center group">
+            <Image
+              src="/logo.png"
+              alt="Pay It Forward Health"
+              width={180}
+              height={48}
+              className="h-10 w-auto object-contain"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}

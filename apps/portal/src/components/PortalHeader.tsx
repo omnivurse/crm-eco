@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Heart, User, LogOut, Menu, X, ChevronDown, FileText, Users, Settings, CreditCard, LifeBuoy } from 'lucide-react';
+import Image from 'next/image';
+import { User, LogOut, Menu, X, ChevronDown, FileText, Users, Settings, CreditCard, LifeBuoy } from 'lucide-react';
 import { Button, AppSwitcher, cn } from '@crm-eco/ui';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -91,13 +92,15 @@ export function PortalHeader() {
             {isSuperAdmin && <AppSwitcher currentApp="portal" />}
             {isSuperAdmin && <div className="h-6 w-px bg-slate-200 hidden sm:block" />}
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <div className="hidden sm:flex flex-col">
-                <span className="font-bold text-[#003560] leading-tight">Pay It Forward</span>
-                <span className="text-xs text-[#047474] font-semibold tracking-wide">Health <span className="text-[#E9B61F]">Member Portal</span></span>
-              </div>
+              <Image
+                src="/logo.png"
+                alt="Pay It Forward Health"
+                width={180}
+                height={48}
+                className="h-10 w-auto object-contain"
+                priority
+              />
+              <span className="hidden sm:inline text-xs text-[#E9B61F] font-semibold tracking-wide">Member Portal</span>
             </Link>
           </div>
 
