@@ -40,10 +40,11 @@ BEGIN
 
     IF v_advisor_id IS NULL THEN
       v_counter := v_counter + 1;
-      INSERT INTO advisors (organization_id, first_name, last_name, email, status)
+      INSERT INTO advisors (organization_id, first_name, last_name, email, status, advisor_code)
       VALUES (v_org_id, v_first, v_last,
         LOWER(REPLACE(REPLACE(v_first, ' ', ''), ',', '') || '.' || REPLACE(REPLACE(v_last, ' ', ''), ',', '') || '+' || v_counter || '@placeholder.local'),
-        'active')
+        'active',
+        'IMP-' || LPAD(v_counter::text, 4, '0'))
       RETURNING id INTO v_advisor_id;
       v_inserted := v_inserted + 1;
     END IF;
