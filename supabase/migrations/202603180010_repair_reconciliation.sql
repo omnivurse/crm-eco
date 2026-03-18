@@ -437,7 +437,7 @@ BEGIN
       (v_mod.org_id, v_mod.id, 'age_range', 'Age Range', 'select', false, true, false, 122,
        'personal', 'Age bracket for reporting',
        '["0-17","18-25","26-34","35-44","45-54","55-64","65+"]'::jsonb),
-      (v_mod.org_id, v_mod.id, 'age_is_estimated', 'Age Is Estimated', 'checkbox', false, true, false, 123,
+      (v_mod.org_id, v_mod.id, 'age_is_estimated', 'Age Is Estimated', 'boolean', false, true, false, 123,
        'personal', 'Whether the age value is an estimate', NULL),
       (v_mod.org_id, v_mod.id, 'age_notes', 'Age Notes', 'text', false, true, false, 124,
        'personal', 'Context about age data source or confidence', NULL)
