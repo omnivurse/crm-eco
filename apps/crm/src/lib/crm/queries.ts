@@ -632,7 +632,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   // ── Apply field-based filters ──
   for (const filter of fieldFilters) {
     // Determine the field path - system fields vs custom fields in data jsonb
-    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id', 'market_type', 'normalization_status', 'normalized_advisor_name', 'normalized_agent_name', 'canonical_advisor_id', 'import_source', 'source_record_id'].includes(filter.field);
+    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id', 'market_type', 'normalization_status', 'normalized_advisor_name', 'normalized_agent_name', 'canonical_advisor_id', 'import_source', 'source_record_id', 'estimated_age', 'age_range', 'age_is_estimated', 'carrier_id'].includes(filter.field);
     const fieldPath = isSystemField ? filter.field : `data->>${filter.field}`;
 
     switch (filter.operator) {

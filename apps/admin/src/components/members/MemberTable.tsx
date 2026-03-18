@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Button } from '@crm-eco/ui';
+import { Badge, Button, MarketTypeBadge } from '@crm-eco/ui';
 import { Eye, Users, Mail, Phone, MapPin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -125,7 +125,7 @@ export function MemberTable({ members }: MemberTableProps) {
               <th className="pb-3 font-medium text-slate-500 text-sm">Phone</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">State</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Plan</th>
-              <th className="pb-3 font-medium text-slate-500 text-sm">Agent</th>
+              <th className="pb-3 font-medium text-slate-500 text-sm">Advisor</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Status</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Created</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Actions</th>
