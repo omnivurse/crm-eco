@@ -125,7 +125,7 @@ export function MemberTable({ members }: MemberTableProps) {
               <th className="pb-3 font-medium text-slate-500 text-sm">Phone</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">State</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Plan</th>
-              <th className="pb-3 font-medium text-slate-500 text-sm">Advisor</th>
+              <th className="pb-3 font-medium text-slate-500 text-sm">Advisor / Agent</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Status</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Created</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Actions</th>

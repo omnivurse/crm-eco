@@ -60,6 +60,7 @@ const navSections: NavSection[] = [
       { label: 'Members', href: '/members', icon: <Users className="h-5 w-5" /> },
       { label: 'Agents', href: '/agents', icon: <UserCog className="h-5 w-5" /> },
       { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" /> },
+      { label: 'Carriers', href: '/carriers', icon: <Shield className="h-5 w-5" /> },
       { label: 'Enrollments', href: '/enrollments', icon: <FileText className="h-5 w-5" /> },
       { label: 'Vendors', href: '/vendors', icon: <Building2 className="h-5 w-5" /> },
       { label: 'Documents', href: '/documents', icon: <FileText className="h-5 w-5" /> },

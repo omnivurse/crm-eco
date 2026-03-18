@@ -26,6 +26,7 @@ import {
   Sparkles,
   Puzzle,
   Code2,
+  Building2,
 } from 'lucide-react';
 import { getCurrentProfile } from '@/lib/crm/queries';
 
@@ -84,6 +85,14 @@ const settingsCards: SettingCard[] = [
     description: 'Import, export, deduplication, mass updates, and data cleanup',
     href: '/crm/import',
     icon: <Database className="w-6 h-6" />,
+    adminOnly: true,
+    highlight: true,
+  },
+  {
+    title: 'Carrier Management',
+    description: 'Add, edit, and archive insurance carriers and HealthShare programs',
+    href: '/crm/settings/carriers',
+    icon: <Building2 className="w-6 h-6" />,
     adminOnly: true,
     highlight: true,
   },
