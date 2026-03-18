@@ -4,7 +4,7 @@
 -- ============================================================================
 
 -- Disable all triggers on advisors during bulk insert
-ALTER TABLE advisors DISABLE TRIGGER ALL;
+ALTER TABLE advisors DISABLE TRIGGER USER;
 
 DO $$
 DECLARE
@@ -60,7 +60,7 @@ BEGIN
 END $$;
 
 -- Re-enable all triggers
-ALTER TABLE advisors ENABLE TRIGGER ALL;
+ALTER TABLE advisors ENABLE TRIGGER USER;
 
 -- Update normalization status for newly linked records
 UPDATE crm_records
