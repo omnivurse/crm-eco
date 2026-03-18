@@ -27,7 +27,7 @@ import {
   Heart, Shield, Building2, Globe, Phone, Mail,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createBrowserClient } from '@crm-eco/lib/supabase/client';
+import { createClient } from '@crm-eco/lib/supabase/client';
 import { cn } from '@crm-eco/ui/lib/utils';
 
 interface Carrier {
@@ -68,7 +68,7 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const supabase = createBrowserClient();
+  const supabase = createClient();
 
   const refresh = useCallback(async () => {
     const { data } = await supabase
