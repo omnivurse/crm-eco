@@ -4,44 +4,9 @@
 
 -- ============================================================================
 -- SECTION 1: ADVISOR TABLE GUARDRAILS
---
--- DECISION: `advisors` is the sole operational source of truth.
--- `crm_advisors` is a dead table (zero data population, zero import
--- integration, only 2 API route files reference it).
---
--- STRATEGY: Staged consolidation with guardrails NOW.
---   Step 1 (this migration): Mark crm_advisors as deprecated via comment,
---     add a redirect trigger for any new crm_advisors inserts to also
---     create a matching advisors record, and stop new writes to
---     crm_records.advisor_id (the dead FK to crm_advisors).
---   Step 2 (future): Drop crm_advisors and crm_records.advisor_id FK
---     once no application code references them.
+-- Deferred to migration 202603180010_repair_reconciliation.sql
+-- (crm_advisors table may not exist in all environments)
 -- ============================================================================
-
-COMMENT ON TABLE crm_advisors IS
-  'DEPRECATED: Use the advisors table as the source of truth. '
-  'This table exists for backward compatibility but receives no data from '
-  'import pipelines, triggers, or core business logic. '
-  'All new advisor references should use canonical_advisor_id (FK to advisors). '
-  'Scheduled for removal in a future consolidation migration.';
-
-COMMENT ON COLUMN crm_records.advisor_id IS
-  'DEPRECATED: FK to crm_advisors (dead table). Use canonical_advisor_id instead. '
-  'This column is never populated by any import or business logic.';
-
--- Guardrail: if anything does write to crm_advisors, log it for awareness
-CREATE OR REPLACE FUNCTION fn_crm_advisors_deprecation_notice()
-RETURNS trigger AS $$
-BEGIN
-  RAISE WARNING 'crm_advisors is deprecated. Use the advisors table instead. Inserted advisor_name=%', NEW.advisor_name;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trg_crm_advisors_deprecation ON crm_advisors;
-CREATE TRIGGER trg_crm_advisors_deprecation
-  BEFORE INSERT ON crm_advisors
-  FOR EACH ROW EXECUTE FUNCTION fn_crm_advisors_deprecation_notice();
 
 
 -- ============================================================================
