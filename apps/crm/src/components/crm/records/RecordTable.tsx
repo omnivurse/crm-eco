@@ -65,6 +65,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MarketTypeBadge, NormalizationBadge, OwnershipDisplay } from '@/components/shared/crm-lane-badges';
 
 interface RecordTableProps {
   records: CrmRecord[];
@@ -334,14 +335,18 @@ const RecordCard = memo(function RecordCard({
           >
             {displayName}
           </Link>
-          {status && (
-            <span className={cn(
-              'inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium border',
-              statusStyle.bg, statusStyle.text, statusStyle.border
-            )}>
-              {status}
-            </span>
-          )}
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {status && (
+              <span className={cn(
+                'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border',
+                statusStyle.bg, statusStyle.text, statusStyle.border
+              )}>
+                {status}
+              </span>
+            )}
+            <MarketTypeBadge marketType={(record as any).market_type} size="sm" />
+            <NormalizationBadge status={(record as any).normalization_status} size="sm" />
+          </div>
         </div>
         {/* More Actions */}
         <DropdownMenu>
@@ -759,6 +764,10 @@ export const RecordTable = memo(function RecordTable({
     if (col === 'lead_status') return 'Status';
     if (col === 'contact_status') return 'Status';
     if (col === 'owner_id') return 'Owner';
+    if (col === 'market_type') return 'Market Type';
+    if (col === 'normalized_advisor_name') return 'Advisor';
+    if (col === 'normalized_agent_name') return 'Agent';
+    if (col === 'normalization_status') return 'Data Quality';
     if (col === 'created_at') return 'Created';
     if (col === 'updated_at') return 'Updated';
     return fieldMap[col]?.label || col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -889,6 +898,25 @@ export const RecordTable = memo(function RecordTable({
       ) : (
         <span className="text-slate-400 dark:text-slate-600">Unassigned</span>
       );
+    }
+
+    // ── Canonical Phase 2 fields ──
+    if (col === 'market_type') {
+      return <MarketTypeBadge marketType={(record as any).market_type} showIcon />;
+    }
+
+    if (col === 'normalized_advisor_name' || col === 'normalized_agent_name') {
+      const value = (record as any)[col];
+      if (!value) return <span className="text-slate-400 dark:text-slate-600">—</span>;
+      return <span className="text-slate-700 dark:text-slate-300 truncate text-sm">{value}</span>;
+    }
+
+    if (col === 'normalization_status') {
+      const status = (record as any).normalization_status;
+      if (!status || status === 'normalized') {
+        return <span className="text-emerald-600 dark:text-emerald-400 text-xs">Verified</span>;
+      }
+      return <NormalizationBadge status={status} />;
     }
 
     if (col === 'created_at') {

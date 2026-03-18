@@ -222,12 +222,12 @@ function AdvisorNode({
         <div className="flex items-center gap-2 flex-shrink-0">
           {node.recordCount > 0 && (
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-teal-500/10 text-teal-700 dark:text-teal-400 border border-teal-500/30">
-              {node.recordCount} record{node.recordCount !== 1 ? 's' : ''}
+              {node.recordCount} contact{node.recordCount !== 1 ? 's' : ''}
             </span>
           )}
           {hasChildren && subtreeCount > node.recordCount && (
             <span className="text-[10px] text-slate-400 dark:text-slate-500">
-              ({subtreeCount} total)
+              ({subtreeCount} total contacts)
             </span>
           )}
         </div>
@@ -389,7 +389,7 @@ function AgentHierarchyNode({
           )}
         </div>
         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/30 flex-shrink-0">
-          {item.totalCount.toLocaleString()} record{item.totalCount !== 1 ? 's' : ''}
+          {item.totalCount.toLocaleString()} contact{item.totalCount !== 1 ? 's' : ''}
         </span>
       </button>
 
@@ -483,7 +483,7 @@ function AgentSubGroupNode({
           {subGroupName}
         </span>
         <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 flex-shrink-0">
-          {recordCount.toLocaleString()} record{recordCount !== 1 ? 's' : ''}
+          {recordCount.toLocaleString()} contact{recordCount !== 1 ? 's' : ''}
         </span>
       </button>
 
@@ -704,8 +704,8 @@ export const TreeView = memo(function TreeView({
           </div>
           <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
             {treeGroupBy === 'advisor'
-              ? `${totalAdvisors} advisor${totalAdvisors !== 1 ? 's' : ''} \u00B7 ${totalTreeRecords.toLocaleString()} record${totalTreeRecords !== 1 ? 's' : ''}`
-              : `${agentHierarchy.length} agent${agentHierarchy.length !== 1 ? 's' : ''} \u00B7 ${totalAgentRecords.toLocaleString()} record${totalAgentRecords !== 1 ? 's' : ''}`}
+              ? `${totalAdvisors} advisor${totalAdvisors !== 1 ? 's' : ''} \u00B7 ${totalTreeRecords.toLocaleString()} contact${totalTreeRecords !== 1 ? 's' : ''} assigned`
+              : `${agentHierarchy.length} agent${agentHierarchy.length !== 1 ? 's' : ''} \u00B7 ${totalAgentRecords.toLocaleString()} contact${totalAgentRecords !== 1 ? 's' : ''} assigned`}
           </span>
         </div>
 
@@ -778,9 +778,14 @@ export const TreeView = memo(function TreeView({
           advisorTree.length === 0 ? (
             <div className="py-12 text-center">
               <Users className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                {search ? 'No advisors match your search' : 'No advisor data available'}
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                {search ? 'No advisors match your search' : 'No HealthShare advisors found'}
               </p>
+              {!search && (
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto">
+                  Advisors manage HealthShare contacts. Make sure advisor records exist and contacts are assigned.
+                </p>
+              )}
             </div>
           ) : (
             <div className="py-1">
@@ -798,9 +803,14 @@ export const TreeView = memo(function TreeView({
         ) : agentHierarchy.length === 0 ? (
           <div className="py-12 text-center">
             <Inbox className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              {search ? 'No agents match your search' : 'No agent data available'}
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {search ? 'No agents match your search' : 'No insurance agents found'}
             </p>
+            {!search && (
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto">
+                Agents manage Traditional Insurance contacts. Contacts are grouped by their assigned agent name.
+              </p>
+            )}
           </div>
         ) : (
           <div>

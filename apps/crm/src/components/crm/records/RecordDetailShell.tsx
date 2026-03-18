@@ -57,6 +57,7 @@ import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
+import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisplay, getOwnerLabel } from '@/components/shared/crm-lane-badges';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 
@@ -397,6 +398,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                         {record.status}
                       </Badge>
                     )}
+                    {/* Market type + normalization badges */}
+                    <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />
+                    <NormalizationBadge status={(record as any).normalization_status} size="sm" />
                     {/* Capacity badges from record data */}
                     {(() => {
                       const data = record.data as Record<string, unknown> | undefined;
@@ -523,6 +527,13 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                 <StageIndicator currentStage={record.stage} stages={stages} />
               </div>
             )}
+
+            {/* Normalization review banner */}
+            <NormalizationBanner
+              status={(record as any).normalization_status}
+              notes={(record as any).normalization_notes}
+              className="mt-4"
+            />
 
             {/* Tabs */}
             <div className="mt-6 -mb-px">
@@ -739,6 +750,23 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               Record Info
             </h4>
             <div className="space-y-2 text-sm">
+              {/* Market Type */}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Market</span>
+                <MarketTypeBadge marketType={(record as any).market_type} size="sm" />
+              </div>
+              {/* Lane-appropriate owner */}
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">{getOwnerLabel((record as any).market_type)}</span>
+                <OwnershipDisplay record={record as any} size="sm" showLabel={false} />
+              </div>
+              {/* Data quality */}
+              {(record as any).normalization_status && (record as any).normalization_status !== 'normalized' && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Data Quality</span>
+                  <NormalizationBadge status={(record as any).normalization_status} size="sm" />
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-500">Created</span>
                 <span className="text-slate-700 dark:text-slate-300" suppressHydrationWarning>
@@ -751,10 +779,13 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   {new Date(record.updated_at).toLocaleDateString()}
                 </span>
               </div>
-              {record.owner_id && (
+              {/* Import source (secondary metadata) */}
+              {(record as any).import_source && (record as any).import_source !== 'manual' && (
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Owner</span>
-                  <span className="text-slate-700 dark:text-slate-300">Assigned</span>
+                  <span className="text-slate-500">Source</span>
+                  <span className="text-slate-400 dark:text-slate-500 text-xs">
+                    {(record as any).import_source === 'zoho_csv' ? 'Zoho Import' : (record as any).import_source}
+                  </span>
                 </div>
               )}
             </div>

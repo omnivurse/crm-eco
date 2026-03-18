@@ -25,6 +25,9 @@ import {
   Package,
   Target,
   Link2,
+  Heart,
+  Shield,
+  HelpCircle,
 } from 'lucide-react';
 import { Input } from '@crm-eco/ui/components/input';
 import {
@@ -116,6 +119,11 @@ interface SystemFilterDef {
 }
 
 const SYSTEM_FILTERS: SystemFilterDef[] = [
+  // Business lane filters
+  { preset: 'healthshare_records', label: 'HealthShare Records', icon: Heart, enabled: true },
+  { preset: 'insurance_records', label: 'Insurance Records', icon: Shield, enabled: true },
+  { preset: 'unclassified_records', label: 'Needs Classification', icon: HelpCircle, enabled: true },
+  { preset: 'needs_review_records', label: 'Needs Review', icon: AlertTriangle, enabled: true },
   // Existing toggle-only
   { preset: 'touched_records', label: 'Touched Records', icon: MousePointerClick, enabled: true },
   { preset: 'untouched_records', label: 'Untouched Records', icon: MousePointer, enabled: true },

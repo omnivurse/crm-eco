@@ -221,7 +221,12 @@ export type SystemFilterPreset =
   | 'most_recent_visit'
   | 'number_of_chats'
   | 'referrer'
-  | 'visitor_score';
+  | 'visitor_score'
+  // Business lane & normalization presets (Phase 3)
+  | 'healthshare_records'
+  | 'insurance_records'
+  | 'unclassified_records'
+  | 'needs_review_records';
 
 /** Related module filter condition */
 export type RelatedFilterCondition = 'has_any' | 'has_none' | 'count_gt' | 'count_lt';

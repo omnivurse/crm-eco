@@ -163,20 +163,22 @@ export function ModuleHeader({
                 variant="outline"
                 size="sm"
                 onClick={() => handleTreeToggle('advisor')}
+                title="Group by HealthShare Advisor"
                 className={cn(
                   'h-9',
                   isAdvisorTree
-                    ? 'border-violet-300 bg-violet-50 text-violet-700 dark:border-violet-700 dark:bg-violet-950/50 dark:text-violet-300'
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
                     : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/5'
                 )}
               >
                 <UserCheck className="w-4 h-4 mr-1.5" />
-                By Advisor
+                {module.name_plural || module.name} by Advisor
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleTreeToggle('agent')}
+                title="Group by Insurance Agent"
                 className={cn(
                   'h-9',
                   isAgentTree
@@ -185,7 +187,7 @@ export function ModuleHeader({
                 )}
               >
                 <Users className="w-4 h-4 mr-1.5" />
-                By Agent
+                {module.name_plural || module.name} by Agent
               </Button>
 
               <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />
