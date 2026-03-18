@@ -527,7 +527,10 @@ WHERE age_range IS NULL
 
 -- Drop audit constraint and disable trigger to avoid check violations during bulk insert
 ALTER TABLE unified_audit_logs DROP CONSTRAINT IF EXISTS unified_audit_logs_action_category_check;
-ALTER TABLE insurance_carriers DISABLE TRIGGER IF EXISTS trg_audit_insurance_carriers;
+DO $$ BEGIN
+  ALTER TABLE insurance_carriers DISABLE TRIGGER trg_audit_insurance_carriers;
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
 
 DO $$
 DECLARE
@@ -595,7 +598,10 @@ END $$;
 
 
 -- Re-enable audit trigger after population
-ALTER TABLE insurance_carriers ENABLE TRIGGER trg_audit_insurance_carriers;
+DO $$ BEGIN
+  ALTER TABLE insurance_carriers ENABLE TRIGGER trg_audit_insurance_carriers;
+EXCEPTION WHEN undefined_object THEN NULL;
+END $$;
 
 -- ============================================================================
 -- 18. Carrier backfill (from migration 007/008)
