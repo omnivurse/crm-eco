@@ -15,6 +15,7 @@ import {
   Checkbox,
 } from '@crm-eco/ui';
 import { Loader2 } from 'lucide-react';
+import { Combobox, type ComboboxOption } from '@crm-eco/ui';
 
 interface ParentAgent {
   id: string;
@@ -316,24 +317,22 @@ export function AgentForm({ parentAgents, initialData }: AgentFormProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="parent_advisor_id">Upline (Parent Agent)</Label>
-            <Select
+            <Combobox
+              options={parentAgents
+                .filter((a) => a.id !== initialData?.id)
+                .map((agent): ComboboxOption => ({
+                  value: agent.id,
+                  label: `${agent.first_name} ${agent.last_name}`,
+                  subtext: agent.email,
+                }))}
               value={formData.parent_advisor_id}
               onValueChange={(value) => setFormData({ ...formData, parent_advisor_id: value })}
+              placeholder="Select upline agent"
+              searchPlaceholder="Search agents..."
+              emptyText="No agents found."
               disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select upline agent" />
-              </SelectTrigger>
-              <SelectContent>
-                {parentAgents
-                  .filter((a) => a.id !== initialData?.id)
-                  .map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.first_name} {agent.last_name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+              clearable
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>

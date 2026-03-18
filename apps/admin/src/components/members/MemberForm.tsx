@@ -15,6 +15,7 @@ import {
   Checkbox,
 } from '@crm-eco/ui';
 import { Loader2 } from 'lucide-react';
+import { AdvisorCombobox } from './AdvisorCombobox';
 
 interface Agent {
   id: string;
@@ -39,6 +40,7 @@ interface MemberFormProps {
     state: string | null;
     zip_code: string | null;
     advisor_id: string | null;
+    market_type: string | null;
     status: string;
     existing_condition: boolean;
     existing_condition_description: string | null;
@@ -75,6 +77,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
     state: initialData?.state ?? '',
     zip_code: initialData?.zip_code ?? '',
     advisor_id: initialData?.advisor_id ?? '',
+    market_type: initialData?.market_type ?? '',
     status: initialData?.status ?? 'pending',
     existing_condition: initialData?.existing_condition ?? false,
     existing_condition_description: initialData?.existing_condition_description ?? '',
@@ -118,6 +121,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       ...formData,
       organization_id: profile.organization_id,
       advisor_id: formData.advisor_id || null,
+      market_type: formData.market_type || null,
       date_of_birth: formData.date_of_birth || null,
       phone: formData.phone || null,
       gender: formData.gender || null,
@@ -374,26 +378,40 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       {/* Assignment & Status */}
       <div className="space-y-4">
         <h3 className="font-medium text-slate-900">Assignment & Status</h3>
-        
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="advisor_id">Assigned Agent</Label>
+            <Label htmlFor="market_type">Market Type</Label>
             <Select
-              value={formData.advisor_id}
-              onValueChange={(value) => setFormData({ ...formData, advisor_id: value })}
+              value={formData.market_type || 'unknown'}
+              onValueChange={(value) => setFormData({ ...formData, market_type: value === 'unknown' ? '' : value })}
               disabled={loading}
             >
               <SelectTrigger className="h-11 sm:h-10">
-                <SelectValue placeholder="Select agent" />
+                <SelectValue placeholder="Select market type" />
               </SelectTrigger>
               <SelectContent>
-                {agents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.first_name} {agent.last_name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="healthshare">HealthShare</SelectItem>
+                <SelectItem value="traditional_insurance">Traditional Insurance</SelectItem>
+                <SelectItem value="unknown">Unknown</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="advisor_id">
+              {formData.market_type === 'healthshare'
+                ? 'Assigned Advisor'
+                : formData.market_type === 'traditional_insurance'
+                  ? 'Assigned Agent'
+                  : 'Assigned Advisor / Agent'}
+            </Label>
+            <AdvisorCombobox
+              agents={agents}
+              value={formData.advisor_id}
+              onValueChange={(value) => setFormData({ ...formData, advisor_id: value })}
+              disabled={loading}
+              label={formData.market_type === 'traditional_insurance' ? 'agent' : 'advisor'}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>

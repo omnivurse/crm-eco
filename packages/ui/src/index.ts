@@ -6,6 +6,8 @@ export * from './components/badge';
 export * from './components/button';
 export * from './components/card';
 export * from './components/checkbox';
+export * from './components/combobox';
+export * from './components/command';
 export * from './components/date-range-picker';
 export * from './components/dialog';
 export * from './components/dropdown-menu';
