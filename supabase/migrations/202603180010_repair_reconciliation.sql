@@ -477,8 +477,8 @@ END $$;
 -- 15. Advisor deprecation guardrails (from migration 007)
 -- ============================================================================
 
-COMMENT ON COLUMN crm_records.advisor_id IS
-  'DEPRECATED: FK to crm_advisors (deprecated table). Use canonical_advisor_id instead.';
+-- Note: crm_records.advisor_id does not exist in this database.
+-- The deprecated FK was never created. canonical_advisor_id is the only advisor FK.
 
 CREATE OR REPLACE FUNCTION fn_crm_advisors_deprecation_notice()
 RETURNS trigger AS $$
