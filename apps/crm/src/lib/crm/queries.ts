@@ -517,7 +517,10 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
             myProfile.id,
             ...(downlineProfiles?.map((p: any) => p.id) || []),
           ];
-          query = query.in('owner_id', profileIds);
+          // Include records by owner_id (manually created) OR canonical_advisor_id (imported)
+          query = query.or(
+            `owner_id.in.(${profileIds.join(',')}),canonical_advisor_id.in.(${advisorIds.join(',')})`
+          );
         } else if (myProfile) {
           // User is not an advisor, just show their own records
           query = query.eq('owner_id', myProfile.id);
@@ -629,7 +632,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   // ── Apply field-based filters ──
   for (const filter of fieldFilters) {
     // Determine the field path - system fields vs custom fields in data jsonb
-    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id'].includes(filter.field);
+    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id', 'market_type', 'normalization_status', 'normalized_advisor_name', 'normalized_agent_name', 'canonical_advisor_id', 'import_source', 'source_record_id'].includes(filter.field);
     const fieldPath = isSystemField ? filter.field : `data->>${filter.field}`;
 
     switch (filter.operator) {
@@ -1920,17 +1923,22 @@ export async function getAgentTreeData(
 ): Promise<AgentTreeData> {
   const supabase = await createCrmClient();
 
-  // Determine owner scoping
+  // Determine scoping: use canonical_advisor_id for imported records + owner_id for legacy
   let ownerIds: string[] | null = null;
+  let canonicalAdvisorIds: string[] | null = null;
 
   if (!isAdmin) {
     if (userAdvisorId) {
-      // Get downline advisor IDs, then resolve to profile IDs
+      // Get downline advisor IDs
       const { data: downlineIds } = await supabase.rpc('get_advisor_downline_ids', {
         p_advisor_id: userAdvisorId,
       });
       const allAdvisorIds = [userAdvisorId, ...(downlineIds || [])];
 
+      // Pass advisor IDs for canonical_advisor_id scoping (imported records)
+      canonicalAdvisorIds = allAdvisorIds;
+
+      // Also resolve profile IDs for owner_id scoping (manually created records)
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id')
@@ -1947,6 +1955,7 @@ export async function getAgentTreeData(
   const { data, error } = await supabase.rpc('get_agent_tree_data', {
     p_module_id: moduleId,
     p_owner_ids: ownerIds,
+    p_canonical_advisor_ids: canonicalAdvisorIds,
   });
 
   if (error) {

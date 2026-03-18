@@ -17,6 +17,31 @@ interface ImportRequest {
   skipDuplicates?: boolean; // Skip records that already exist (by email/phone)
 }
 
+// ── Market type classification for CSV imports ──
+const HEALTHSHARE_PATTERNS = /health\s*share|sharing|ministry|impact|knew\s*health|oneshare|sedera|liberty|zion|aliera|medishare|medi-share|samaritan|mpowering|mpb\b|mpower|jericho|unite\s*health|chr\b/i;
+const INSURANCE_CARRIER_PATTERNS = /blue\s*cross|bcbs|aetna|united\s*health|cigna|humana|anthem|kaiser|molina|centene|oscar|ambetter|caresource|coventry|wellcare|bright\s*health|clover/i;
+const INSURANCE_PRODUCT_PATTERNS = /\bhmo\b|\bppo\b|\bepo\b|\bpos\b|marketplace|aca\s|exchange|medicaid|medicare|cobra|short[\s-]*term|gap\s*(plan|coverage)|supplemental|indemnity/i;
+
+function classifyMarketType(data: Record<string, unknown>): 'healthshare' | 'traditional_insurance' | 'unknown' {
+  const product = String(data.product || data.coverage_option || '');
+  const carrier = String(data.carrier || '');
+  const iua = String(data.iua_amount || '').trim();
+
+  if (HEALTHSHARE_PATTERNS.test(product) || HEALTHSHARE_PATTERNS.test(carrier)) return 'healthshare';
+  if (iua) return 'healthshare';
+  if (INSURANCE_CARRIER_PATTERNS.test(carrier) || INSURANCE_PRODUCT_PATTERNS.test(product)) return 'traditional_insurance';
+  return 'unknown';
+}
+
+function extractCanonicalNames(data: Record<string, unknown>, marketType: string) {
+  const advisorRaw = String(data.advisor || data.producer_name || data.contact_owner || '').trim() || null;
+  const agentRaw = String(data.agent || data.producer_name || data.contact_owner || '').trim() || null;
+
+  if (marketType === 'healthshare') return { advisorName: advisorRaw, agentName: null };
+  if (marketType === 'traditional_insurance') return { advisorName: null, agentName: agentRaw };
+  return { advisorName: advisorRaw, agentName: agentRaw };
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   
@@ -186,17 +211,27 @@ export async function POST(request: NextRequest) {
     for (let batchStart = 0; batchStart < validRows.length; batchStart += BATCH_SIZE) {
       const batch = validRows.slice(batchStart, batchStart + BATCH_SIZE);
 
-      const recordsToInsert = batch.map(row => ({
-        org_id: organizationId,
-        module_id: moduleId,
-        owner_id: profile.id,
-        title: row.title,
-        status: row.status,
-        data: row.recordData,
-        email: row.email,
-        phone: row.phone,
-        created_by: profile.id,
-      }));
+      const recordsToInsert = batch.map(row => {
+        const mType = classifyMarketType(row.recordData);
+        const { advisorName, agentName } = extractCanonicalNames(row.recordData, mType);
+        return {
+          org_id: organizationId,
+          module_id: moduleId,
+          owner_id: profile.id,
+          title: row.title,
+          status: row.status,
+          data: row.recordData,
+          email: row.email,
+          phone: row.phone,
+          created_by: profile.id,
+          // Canonical fields (Phase 2)
+          import_source: 'csv_import',
+          market_type: mType,
+          normalized_advisor_name: advisorName,
+          normalized_agent_name: agentName,
+          normalization_status: mType !== 'unknown' ? 'normalized' : 'needs_review' as const,
+        };
+      });
 
       const { data: insertedBatch, error: batchError } = await supabase
         .from('crm_records')
@@ -207,6 +242,8 @@ export async function POST(request: NextRequest) {
         // If batch fails due to unique constraint, fall back to row-by-row insert
         if ((batchError as any).code === '23505') {
           for (const row of batch) {
+            const singleMType = classifyMarketType(row.recordData);
+            const singleCanon = extractCanonicalNames(row.recordData, singleMType);
             const { data: singleRecord, error: singleError } = await supabase
               .from('crm_records')
               .insert({
@@ -219,6 +256,11 @@ export async function POST(request: NextRequest) {
                 email: row.email,
                 phone: row.phone,
                 created_by: profile.id,
+                import_source: 'csv_import',
+                market_type: singleMType,
+                normalized_advisor_name: singleCanon.advisorName,
+                normalized_agent_name: singleCanon.agentName,
+                normalization_status: singleMType !== 'unknown' ? 'normalized' : 'needs_review',
               })
               .select('id');
 
