@@ -133,9 +133,9 @@ export const CrmTopBar = memo(function CrmTopBar({
         <Image
           src="/logo.png"
           alt="Pay It Forward Health"
-          width={180}
-          height={48}
-          className="h-10 lg:h-12 w-auto object-contain"
+          width={140}
+          height={38}
+          className="h-8 lg:h-9 w-auto object-contain"
           priority={false}
           loading="lazy"
           quality={80}
@@ -143,7 +143,7 @@ export const CrmTopBar = memo(function CrmTopBar({
       </Link>
 
       {/* Center Section: Module Tabs - hidden on mobile */}
-      <div className="hidden lg:flex flex-1 justify-center px-8">
+      <div className="hidden lg:flex flex-1 justify-center px-4">
         <ZohoModuleBar />
       </div>
 
@@ -152,29 +152,13 @@ export const CrmTopBar = memo(function CrmTopBar({
 
       {/* Right Section: Search + Actions */}
       <div className="flex items-center gap-1 lg:gap-2">
-        {/* Search Button */}
-        <button
-          onClick={() => setSearchOpen(true)}
-          className={cn(
-            'hidden md:flex items-center gap-2 px-3 h-9 rounded-lg border text-sm cursor-pointer',
-            'bg-white dark:bg-slate-900/50 text-slate-500 dark:text-slate-400',
-            'border-slate-200 dark:border-white/10',
-            'hover:border-teal-500 hover:text-teal-600 dark:hover:text-teal-400'
-          )}
-        >
-          <Search className="w-4 h-4" />
-          <span className="hidden lg:inline">Search records...</span>
-          <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 px-1.5 font-mono text-[10px] text-slate-400 ml-4">
-            ⌘K
-          </kbd>
-        </button>
-
-        {/* Search - Mobile */}
+        {/* Search Button — opens global search overlay */}
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white"
+          className="h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
           onClick={() => setSearchOpen(true)}
+          title="Search (⌘K)"
         >
           <Search className="w-4 h-4" />
         </Button>

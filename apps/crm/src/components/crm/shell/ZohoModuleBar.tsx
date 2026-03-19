@@ -52,7 +52,7 @@ export function ZohoModuleBar() {
     const currentActive = getActiveFromPath();
 
     return (
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-0.5">
             {TOP_MODULES.map((module) => {
                 const Icon = getIcon(module.icon);
                 const isActive = currentActive === module.key;
@@ -63,7 +63,7 @@ export function ZohoModuleBar() {
                         href={module.href}
                         onClick={() => handleModuleClick(module.key)}
                         className={cn(
-                            'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
                             'hover:bg-slate-100 dark:hover:bg-white/10',
                             isActive
                                 ? 'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
@@ -71,10 +71,10 @@ export function ZohoModuleBar() {
                         )}
                     >
                         <Icon className={cn(
-                            'w-4 h-4',
+                            'w-3.5 h-3.5',
                             isActive && 'text-teal-600 dark:text-teal-400'
                         )} />
-                        <span className="hidden lg:inline">{module.label}</span>
+                        <span className="hidden xl:inline">{module.label}</span>
                     </Link>
                 );
             })}
