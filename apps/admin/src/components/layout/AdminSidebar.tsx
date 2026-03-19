@@ -26,8 +26,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronLeft,
-  BookOpen,
-  HelpCircle,
   PieChart,
   Activity,
 } from 'lucide-react';
@@ -52,188 +50,98 @@ interface NavSection {
   collapsible?: boolean;
 }
 
+// Navigation ordered by admin operational workflow priority
 const navSections: NavSection[] = [
+  // ── Core: always visible, never collapsed ──
   {
     title: 'Main',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
       { label: 'Members', href: '/members', icon: <Users className="h-5 w-5" /> },
       { label: 'Agents', href: '/agents', icon: <UserCog className="h-5 w-5" /> },
+    ],
+  },
+  // ── Products & Carriers: what members are on ──
+  {
+    title: 'Products',
+    collapsible: true,
+    items: [
       { label: 'Products', href: '/products', icon: <Package className="h-5 w-5" /> },
       { label: 'Carriers', href: '/carriers', icon: <Shield className="h-5 w-5" /> },
+    ],
+  },
+  // ── Enrollment: onboarding funnel ──
+  {
+    title: 'Enrollment',
+    collapsible: true,
+    items: [
       { label: 'Enrollments', href: '/enrollments', icon: <FileText className="h-5 w-5" /> },
-      { label: 'Vendors', href: '/vendors', icon: <Building2 className="h-5 w-5" /> },
-      { label: 'Documents', href: '/documents', icon: <FileText className="h-5 w-5" /> },
+      { label: 'Landing Pages', href: '/enrollment-links', icon: <LinkIcon className="h-5 w-5" /> },
+      { label: 'Agent Links', href: '/enrollment-links/agents', icon: <UserCog className="h-5 w-5" /> },
     ],
   },
-  {
-    title: 'Operations',
-    collapsible: true,
-    items: [
-      {
-        label: 'Ops Dashboard',
-        href: '/ops',
-        icon: <Zap className="h-5 w-5" />,
-      },
-      {
-        label: 'Eligibility',
-        href: '/ops/eligibility',
-        icon: <Shield className="h-5 w-5" />,
-      },
-      {
-        label: 'Job History',
-        href: '/ops/jobs',
-        icon: <BarChart3 className="h-5 w-5" />,
-      },
-      {
-        label: 'Scheduler',
-        href: '/ops/scheduler',
-        icon: <Settings className="h-5 w-5" />,
-      },
-    ],
-  },
-  {
-    title: 'Enrollment Links',
-    collapsible: true,
-    items: [
-      {
-        label: 'Landing Pages',
-        href: '/enrollment-links',
-        icon: <LinkIcon className="h-5 w-5" />,
-      },
-      {
-        label: 'Agent Links',
-        href: '/enrollment-links/agents',
-        icon: <UserCog className="h-5 w-5" />,
-      },
-    ],
-  },
+  // ── Money: billing + commissions ──
   {
     title: 'Billing',
     collapsible: true,
     items: [
-      {
-        label: 'Overview',
-        href: '/billing',
-        icon: <CreditCard className="h-5 w-5" />,
-      },
-      {
-        label: 'Transactions',
-        href: '/billing/transactions',
-        icon: <FileText className="h-5 w-5" />,
-      },
-      {
-        label: 'Failed Payments',
-        href: '/billing/failures',
-        icon: <Shield className="h-5 w-5" />,
-      },
+      { label: 'Overview', href: '/billing', icon: <CreditCard className="h-5 w-5" /> },
+      { label: 'Transactions', href: '/billing/transactions', icon: <FileText className="h-5 w-5" /> },
+      { label: 'Failed Payments', href: '/billing/failures', icon: <Shield className="h-5 w-5" /> },
     ],
   },
   {
     title: 'Commissions',
     collapsible: true,
     items: [
-      {
-        label: 'Overview',
-        href: '/commissions',
-        icon: <Layers className="h-5 w-5" />,
-      },
-      {
-        label: 'Tiers',
-        href: '/commissions/tiers',
-        icon: <BarChart3 className="h-5 w-5" />,
-      },
-      {
-        label: 'Transactions',
-        href: '/commissions/transactions',
-        icon: <FileText className="h-5 w-5" />,
-      },
-      {
-        label: 'Payouts',
-        href: '/commissions/payouts',
-        icon: <CreditCard className="h-5 w-5" />,
-      },
+      { label: 'Overview', href: '/commissions', icon: <Layers className="h-5 w-5" /> },
+      { label: 'Tiers', href: '/commissions/tiers', icon: <BarChart3 className="h-5 w-5" /> },
+      { label: 'Transactions', href: '/commissions/transactions', icon: <FileText className="h-5 w-5" /> },
+      { label: 'Payouts', href: '/commissions/payouts', icon: <CreditCard className="h-5 w-5" /> },
     ],
   },
+  // ── Ops: back-office tasks ──
+  {
+    title: 'Operations',
+    collapsible: true,
+    items: [
+      { label: 'Ops Dashboard', href: '/ops', icon: <Zap className="h-5 w-5" /> },
+      { label: 'Eligibility', href: '/ops/eligibility', icon: <Shield className="h-5 w-5" /> },
+      { label: 'Job History', href: '/ops/jobs', icon: <BarChart3 className="h-5 w-5" /> },
+      { label: 'Scheduler', href: '/ops/scheduler', icon: <Settings className="h-5 w-5" /> },
+      { label: 'Vendors', href: '/vendors', icon: <Building2 className="h-5 w-5" /> },
+      { label: 'Documents', href: '/documents', icon: <FileText className="h-5 w-5" /> },
+    ],
+  },
+  // ── Communications ──
   {
     title: 'Communications',
     collapsible: true,
     items: [
-      {
-        label: 'Dashboard',
-        href: '/communications',
-        icon: <Mail className="h-5 w-5" />,
-      },
-      {
-        label: 'Templates',
-        href: '/communications/templates',
-        icon: <FileText className="h-5 w-5" />,
-      },
-      {
-        label: 'History',
-        href: '/communications/history',
-        icon: <BarChart3 className="h-5 w-5" />,
-      },
-      {
-        label: 'Compose',
-        href: '/communications/compose',
-        icon: <Mail className="h-5 w-5" />,
-      },
+      { label: 'Compose', href: '/communications/compose', icon: <Mail className="h-5 w-5" /> },
+      { label: 'Templates', href: '/communications/templates', icon: <FileText className="h-5 w-5" /> },
+      { label: 'History', href: '/communications/history', icon: <BarChart3 className="h-5 w-5" /> },
     ],
   },
+  // ── Analytics ──
   {
     title: 'Analytics',
+    collapsible: true,
     items: [
       { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
       { label: 'Demographics', href: '/analytics/demographics', icon: <PieChart className="h-5 w-5" /> },
       { label: 'Actuarial Data', href: '/analytics/actuarial', icon: <Activity className="h-5 w-5" /> },
     ],
   },
+  // ── Settings: collapsed by default ──
   {
     title: 'Settings',
     collapsible: true,
     items: [
-      {
-        label: 'General',
-        href: '/settings',
-        icon: <Settings className="h-5 w-5" />,
-      },
-      {
-        label: 'User Security',
-        href: '/settings/security',
-        icon: <Shield className="h-5 w-5" />,
-      },
-      {
-        label: 'Automations',
-        href: '/settings/automations',
-        icon: <Zap className="h-5 w-5" />,
-      },
-      {
-        label: 'Audit Logs',
-        href: '/settings/audit-logs',
-        icon: <FileText className="h-5 w-5" />,
-      },
-    ],
-  },
-  {
-    title: 'Resources',
-    collapsible: true,
-    items: [
-      {
-        label: 'Features',
-        href: '/features',
-        icon: <Sparkles className="h-5 w-5" />,
-      },
-      {
-        label: 'Learn',
-        href: '/learn',
-        icon: <BookOpen className="h-5 w-5" />,
-      },
-      {
-        label: 'Help',
-        href: '/learn/getting-started',
-        icon: <HelpCircle className="h-5 w-5" />,
-      },
+      { label: 'General', href: '/settings', icon: <Settings className="h-5 w-5" /> },
+      { label: 'User Security', href: '/settings/security', icon: <Shield className="h-5 w-5" /> },
+      { label: 'Automations', href: '/settings/automations', icon: <Zap className="h-5 w-5" /> },
+      { label: 'Audit Logs', href: '/settings/audit-logs', icon: <FileText className="h-5 w-5" /> },
     ],
   },
 ];

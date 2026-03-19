@@ -205,14 +205,12 @@ interface CrmSidebarProps {
 export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }: CrmSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    'Tools': true,
+    'Work': true,
     'Health Sharing': true,
-    'Vendors': true,
-    'Email': true,
-    'Communication': true,
-    'Automation': false,
-    'Integrations': false,
-    'Settings': false,
+    'Outreach': true,
+    'Insights': false,
+    'Data': false,
+    'System': false,
   });
   const pathname = usePathname();
 
@@ -234,19 +232,16 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
     }));
   };
 
-  // Build navigation sections
+  // Build navigation sections — ordered by CRM power-user workflow priority
   const navSections: NavSection[] = [
+    // ── Daily drivers: always visible, always expanded ──
     {
-      title: 'Tools',
+      title: 'Work',
       collapsible: true,
       defaultOpen: true,
       items: [
-        { name: 'Import Data', href: '/crm/import', icon: Upload },
-        { name: 'Sales Pipeline', href: '/crm/pipeline', icon: KanbanSquare },
+        { name: 'Pipeline', href: '/crm/pipeline', icon: KanbanSquare },
         { name: 'Deals', href: '/crm/deals', icon: Briefcase },
-        { name: 'Reports', href: '/crm/reports', icon: BarChart3 },
-        { name: 'Analytics', href: '/crm/analytics', icon: PieChart },
-        { name: 'Commissions', href: '/crm/commissions', icon: Wallet },
         { name: 'Activities', href: '/crm/activities', icon: Activity },
         { name: 'Tasks', href: '/crm/activities?type=tasks', icon: CheckCircle2 },
         { name: 'Calendar', href: '/crm/calendar', icon: CalendarDays },
@@ -260,85 +255,54 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
         { name: 'Enrollment', href: '/crm/enrollment', icon: ClipboardList },
         { name: 'Needs', href: '/crm/needs', icon: HeartHandshake },
         { name: 'Approvals', href: '/crm/approvals', icon: CheckCircle2 },
-        { name: 'Payments', href: '/crm/commissions', icon: CircleDollarSign },
       ],
     },
+    // ── Communication: merged Email + Communication into one section ──
     {
-      title: 'Vendors',
-      collapsible: true,
-      defaultOpen: true,
-      items: [
-        { name: 'Vendor Hub', href: '/crm/vendors', icon: Building2, isNew: true },
-        { name: 'Upload Files', href: '/crm/vendors/upload', icon: FileUp },
-        { name: 'Review Changes', href: '/crm/vendors/changes', icon: GitBranch },
-        { name: 'Connectors', href: '/crm/vendors/connectors', icon: Link2 },
-        { name: 'Processing Jobs', href: '/crm/vendors/jobs', icon: RefreshCcw },
-      ],
-    },
-    {
-      title: 'Email',
-      collapsible: true,
-      defaultOpen: true,
-      items: [
-        { name: 'Email Campaigns', href: '/crm/campaigns', icon: Send, isNew: true },
-        { name: 'Sequences', href: '/crm/sequences', icon: Repeat },
-        { name: 'Templates', href: '/crm/settings/templates', icon: LayoutTemplate },
-        { name: 'Asset Library', href: '/crm/email/assets', icon: FolderOpen, isNew: true },
-        { name: 'Signatures', href: '/crm/settings/signatures', icon: FileText },
-        { name: 'Domains', href: '/crm/settings/email-domains', icon: Globe },
-      ],
-    },
-    {
-      title: 'Communication',
+      title: 'Outreach',
       collapsible: true,
       defaultOpen: true,
       items: [
         { name: 'Inbox', href: '/crm/inbox', icon: Inbox },
-        { name: 'Compose Email', href: '/crm/inbox?compose=true', icon: Mail },
-        { name: 'SMS Campaigns', href: '/crm/communications?tab=sms', icon: MessageSquare, isBeta: true },
-        { name: 'Call Logs', href: '/crm/activities?type=calls', icon: Phone },
-        { name: 'Notifications', href: '/crm/settings/comms', icon: Bell },
+        { name: 'Campaigns', href: '/crm/campaigns', icon: Send },
+        { name: 'Sequences', href: '/crm/sequences', icon: Repeat },
+        { name: 'SMS', href: '/crm/communications?tab=sms', icon: MessageSquare, isBeta: true },
+        { name: 'Templates', href: '/crm/settings/templates', icon: LayoutTemplate },
       ],
     },
+    // ── Analysis: collapsed by default — not daily actions ──
     {
-      title: 'Automation',
+      title: 'Insights',
       collapsible: true,
       defaultOpen: false,
       items: [
-        { name: 'Workflows', href: '/crm/settings/automations', icon: Workflow },
-        { name: 'Blueprints', href: '/crm/settings/blueprints', icon: GitBranch },
+        { name: 'Reports', href: '/crm/reports', icon: BarChart3 },
+        { name: 'Analytics', href: '/crm/analytics', icon: PieChart },
+        { name: 'Commissions', href: '/crm/commissions', icon: Wallet },
+      ],
+    },
+    // ── Data management: collapsed — periodic tasks ──
+    {
+      title: 'Data',
+      collapsible: true,
+      defaultOpen: false,
+      items: [
+        { name: 'Import', href: '/crm/import', icon: Upload },
+        { name: 'Documents', href: '/crm/documents', icon: FileText },
+        { name: 'Vendors', href: '/crm/vendors', icon: Building2 },
+      ],
+    },
+    // ── System: collapsed — admin/config tasks ──
+    {
+      title: 'System',
+      collapsible: true,
+      defaultOpen: false,
+      items: [
+        { name: 'Automations', href: '/crm/settings/automations', icon: Workflow },
         { name: 'Playbooks', href: '/crm/playbooks', icon: BookOpen, isNew: true },
-        { name: 'Scoring Rules', href: '/crm/settings/scorecards', icon: Star },
-        { name: 'Assignment Rules', href: '/crm/settings/automations/assignment', icon: UserCog },
-        { name: 'Auto-Responses', href: '/crm/settings/automations/responses', icon: Bot },
-      ],
-    },
-    {
-      title: 'Integrations',
-      collapsible: true,
-      defaultOpen: false,
-      items: [
-        { name: 'All Integrations', href: '/crm/integrations', icon: Link2 },
-        { name: 'Email Integration', href: '/crm/integrations/email', icon: Mail },
-        { name: 'SMS / Voice', href: '/crm/integrations/phone', icon: Phone },
-        { name: 'Calendar Sync', href: '/crm/integrations/calendar', icon: Calendar },
-        { name: 'Webhooks', href: '/crm/integrations/webhooks', icon: Webhook },
-      ],
-    },
-    {
-      title: 'Settings',
-      collapsible: true,
-      defaultOpen: false,
-      items: [
-        { name: 'General', href: '/crm/settings', icon: Settings },
+        { name: 'Integrations', href: '/crm/integrations', icon: Link2 },
         { name: 'Users & Teams', href: '/crm/settings/users', icon: Users2 },
-        { name: 'Roles & Permissions', href: '/crm/settings/users?tab=roles', icon: Shield },
-        { name: 'Modules', href: '/crm/settings/modules', icon: Grid3x3 },
-        { name: 'Fields', href: '/crm/settings/fields', icon: Columns3 },
-        { name: 'Layouts', href: '/crm/settings/layouts', icon: LayoutTemplate },
-        { name: 'Customization', href: '/crm/settings/customization', icon: Palette },
-        { name: 'Data Admin', href: '/crm/settings/system-health', icon: Database },
-        { name: 'Landing Pages', href: '/crm/settings/landing-pages', icon: Globe, isBeta: true },
+        { name: 'Settings', href: '/crm/settings', icon: Settings },
       ],
     },
   ];
@@ -459,30 +423,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
             </>
           )}
 
-          {/* Documents - Main Nav Item */}
-          <div className="mb-4">
-            <Button
-              asChild
-              variant="ghost"
-              className={cn(
-                'w-full gap-3 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all duration-200',
-                'hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl h-11',
-                isActive('/crm/documents') &&
-                'bg-teal-50 dark:bg-gradient-to-r dark:from-teal-500/20 dark:to-emerald-500/10 text-teal-700 dark:text-white border border-teal-200 dark:border-teal-500/30',
-                collapsed ? 'justify-center px-2' : 'justify-start px-3'
-              )}
-            >
-              <Link href="/crm/documents" title={collapsed ? 'Documents' : undefined}>
-                <FileText className={cn(
-                  'w-5 h-5 flex-shrink-0 transition-colors',
-                  isActive('/crm/documents') && 'text-teal-600 dark:text-teal-400'
-                )} />
-                {!collapsed && <span className="font-medium">Documents</span>}
-              </Link>
-            </Button>
-          </div>
-
-          {/* Dynamic Nav Sections */}
+          {/* Nav Sections */}
           {navSections.map((section) => {
             const isOpen = openSections[section.title] ?? section.defaultOpen ?? true;
 
