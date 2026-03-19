@@ -17,12 +17,12 @@ async function getCarriers() {
   if (!profile) redirect('/login');
 
   const { data: carriers } = await supabase
-    .from('insurance_carriers' as any)
+    .from('insurance_carriers')
     .select('*')
     .eq('organization_id', profile.organization_id)
     .order('carrier_name');
 
-  return { carriers: (carriers || []) as any[], orgId: profile.organization_id };
+  return { carriers: carriers || [], orgId: profile.organization_id };
 }
 
 export default async function CarriersPage() {
