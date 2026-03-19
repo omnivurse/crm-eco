@@ -58,7 +58,35 @@ export async function PATCH(
       if (d.lead_status !== undefined) updates.status = d.lead_status || null;
       if (d.status !== undefined) updates.status = d.status || null;
     }
-    if (body.owner_id !== undefined) updates.owner_id = body.owner_id;
+    if (body.owner_id !== undefined) {
+      updates.owner_id = body.owner_id;
+
+      // Sync canonical ownership fields when owner changes
+      if (body.owner_id) {
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('id, full_name, advisor_id')
+          .eq('id', body.owner_id)
+          .single();
+
+        if (ownerProfile) {
+          const marketType = previousRecord.market_type;
+          if (marketType === 'healthshare') {
+            updates.canonical_advisor_id = ownerProfile.advisor_id || null;
+            updates.normalized_advisor_name = ownerProfile.full_name || null;
+            updates.normalization_status = 'normalized';
+          } else if (marketType === 'traditional_insurance') {
+            updates.normalized_agent_name = ownerProfile.full_name || null;
+            updates.normalization_status = 'normalized';
+          } else {
+            // Unknown lane: set both
+            updates.canonical_advisor_id = ownerProfile.advisor_id || null;
+            updates.normalized_advisor_name = ownerProfile.full_name || null;
+            updates.normalized_agent_name = ownerProfile.full_name || null;
+          }
+        }
+      }
+    }
     if (body.status !== undefined) updates.status = body.status;
     if (body.title !== undefined) updates.title = body.title;
 
