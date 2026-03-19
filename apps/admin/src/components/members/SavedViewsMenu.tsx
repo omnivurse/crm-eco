@@ -33,7 +33,7 @@ interface SavedView {
 
 interface SavedViewsMenuProps {
   orgId: string;
-  currentFilters: { search?: string; advisor?: string; status?: string };
+  currentFilters: { search?: string; advisor?: string; status?: string; market_type?: string };
 }
 
 export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
@@ -114,6 +114,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
       if (currentFilters.search) filters.search = currentFilters.search;
       if (currentFilters.advisor) filters.advisor = currentFilters.advisor;
       if (currentFilters.status) filters.status = currentFilters.status;
+      if (currentFilters.market_type) filters.market_type = currentFilters.market_type;
 
       const { error } = await supabase.from('saved_views').insert({
         organization_id: orgId,
@@ -170,7 +171,7 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
   };
 
   const hasActiveFilters =
-    !!currentFilters.search || !!currentFilters.advisor || !!currentFilters.status;
+    !!currentFilters.search || !!currentFilters.advisor || !!currentFilters.status || !!currentFilters.market_type;
 
   return (
     <>
