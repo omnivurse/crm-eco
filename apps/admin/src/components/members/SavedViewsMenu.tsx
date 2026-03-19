@@ -55,14 +55,14 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
       .from('saved_views')
       .select('id, name, filters, is_default, created_at')
       .eq('organization_id', orgId)
-      .eq('page_key', 'members')
+      .eq('context', 'members')
       .order('is_default', { ascending: false })
       .order('name');
 
     if (error) {
       console.error('Failed to fetch saved views:', error);
     } else {
-      setViews(data ?? []);
+      setViews((data ?? []).map(v => ({ ...v, filters: (v.filters ?? {}) as Record<string, string> })));
     }
     setLoading(false);
   }, [orgId, supabase]);
@@ -104,8 +104,8 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
           .from('saved_views')
           .update({ is_default: false, updated_at: new Date().toISOString() })
           .eq('organization_id', orgId)
-          .eq('user_id', userData.user.id)
-          .eq('page_key', 'members')
+          .eq('owner_profile_id', userData.user.id)
+          .eq('context', 'members')
           .eq('is_default', true);
       }
 
@@ -118,10 +118,10 @@ export function SavedViewsMenu({ orgId, currentFilters }: SavedViewsMenuProps) {
 
       const { error } = await supabase.from('saved_views').insert({
         organization_id: orgId,
-        user_id: userData.user.id,
+        owner_profile_id: userData.user.id,
         name: trimmedName,
         filters,
-        page_key: 'members',
+        context: 'members',
         is_default: isDefault,
       });
 
