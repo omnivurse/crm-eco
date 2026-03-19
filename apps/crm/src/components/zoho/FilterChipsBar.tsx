@@ -94,6 +94,13 @@ const SYSTEM_PRESET_LABELS: Record<string, string> = {
   number_of_chats: 'Number Of Chats',
   referrer: 'Referrer',
   visitor_score: 'Visitor Score',
+  // Business lane presets
+  healthshare_records: 'HealthShare Records',
+  insurance_records: 'Insurance Records',
+  unclassified_records: 'Needs Classification',
+  needs_review_records: 'Needs Review',
+  // Owner filter
+  owner_is: 'Filtered by Owner',
 };
 
 /** Human-readable labels for related module keys */

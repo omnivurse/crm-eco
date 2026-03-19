@@ -73,7 +73,7 @@ export function BulkActions({
             className="h-8 px-2.5 text-sm text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-500/20"
           >
             <UserPlus className="w-3.5 h-3.5 mr-1.5" />
-            Assign
+            Assign Advisor / Agent
           </Button>
 
           <Button

@@ -91,7 +91,7 @@ export function MassActionsBar({
                     className="h-8 gap-2 border-teal-300 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/50"
                 >
                     <UserPlus className="w-4 h-4" />
-                    <span className="hidden sm:inline">Assign Owner</span>
+                    <span className="hidden sm:inline">Assign Advisor / Agent</span>
                 </Button>
 
                 {/* Change Status/Stage */}

@@ -226,7 +226,9 @@ export type SystemFilterPreset =
   | 'healthshare_records'
   | 'insurance_records'
   | 'unclassified_records'
-  | 'needs_review_records';
+  | 'needs_review_records'
+  // Owner filter
+  | 'owner_is';
 
 /** Related module filter condition */
 export type RelatedFilterCondition = 'has_any' | 'has_none' | 'count_gt' | 'count_lt';

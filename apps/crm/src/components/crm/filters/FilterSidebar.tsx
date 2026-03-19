@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Search,
   Check,
@@ -44,7 +44,9 @@ import {
   AccordionTrigger,
 } from '@crm-eco/ui/components/accordion';
 import { Button } from '@crm-eco/ui/components/button';
+import { Combobox, type ComboboxOption } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { createClient } from '@crm-eco/lib/supabase/client';
 import type {
   CrmField,
   ViewFilter,
@@ -364,11 +366,63 @@ interface FilterSidebarProps {
   fields: CrmField[];
   filters: ViewFilter[];
   onFiltersChange: (filters: ViewFilter[]) => void;
+  orgId?: string;
 }
 
-export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSidebarProps) {
+export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: FilterSidebarProps) {
   const [fieldSearch, setFieldSearch] = useState('');
   const [expandedField, setExpandedField] = useState<string | null>(null);
+  const [advisorsList, setAdvisorsList] = useState<ComboboxOption[]>([]);
+
+  // Fetch advisors for owner filter
+  useEffect(() => {
+    if (!orgId) return;
+    async function fetchAdvisors() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('advisors')
+        .select('id, first_name, last_name, email')
+        .eq('organization_id', orgId!)
+        .eq('status', 'active')
+        .order('first_name');
+      setAdvisorsList(
+        (data ?? []).map((a: any) => ({
+          value: a.id,
+          label: `${a.first_name} ${a.last_name}`,
+          subtext: a.email,
+        }))
+      );
+    }
+    fetchAdvisors();
+  }, [orgId]);
+
+  // Owner filter derived state
+  const activeOwnerFilter = useMemo(
+    () => filters.find((f) => f.category === 'system' && f.systemPreset === 'owner_is'),
+    [filters]
+  );
+  const activeOwnerId = (activeOwnerFilter?.secondValue as string) || '';
+
+  const handleOwnerFilterChange = useCallback((ownerId: string) => {
+    const otherFilters = filters.filter(
+      (f) => !(f.category === 'system' && f.systemPreset === 'owner_is')
+    );
+    if (ownerId) {
+      onFiltersChange([
+        ...otherFilters,
+        {
+          field: '__system',
+          operator: 'equals',
+          value: 'owner_is',
+          category: 'system',
+          systemPreset: 'owner_is',
+          secondValue: ownerId,
+        },
+      ]);
+    } else {
+      onFiltersChange(otherFilters);
+    }
+  }, [filters, onFiltersChange]);
 
   // Partition filters
   const activeSystemFilters = useMemo(
@@ -549,7 +603,7 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
 
       {/* Accordion Sections */}
       <div className="flex-1 overflow-y-auto">
-        <Accordion type="multiple" defaultValue={['system', 'fields', 'related']} className="w-full">
+        <Accordion type="multiple" defaultValue={['system', 'owner', 'fields', 'related']} className="w-full">
           {/* ── Section 1: System Defined Filters ── */}
           <AccordionItem value="system" className="border-b border-slate-200 dark:border-slate-700">
             <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
@@ -622,6 +676,31 @@ export function FilterSidebar({ fields, filters, onFiltersChange }: FilterSideba
                   );
                 })}
               </div>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* ── Section: Filter by Owner ── */}
+          <AccordionItem value="owner" className="border-b border-slate-200 dark:border-slate-700">
+            <AccordionTrigger className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 hover:no-underline">
+              Filter by Owner
+              {activeOwnerFilter && (
+                <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-bold">1</span>
+              )}
+            </AccordionTrigger>
+            <AccordionContent className="px-3 pb-3">
+              <Combobox
+                options={advisorsList}
+                value={activeOwnerId}
+                onValueChange={handleOwnerFilterChange}
+                placeholder="Choose an Advisor / Agent"
+                searchPlaceholder="Search by name..."
+                emptyText="No advisors or agents found."
+                clearable
+                triggerClassName="h-8 text-xs"
+              />
+              <p className="text-[10px] text-slate-400 mt-1.5 px-1">
+                Search and filter by a specific advisor or agent
+              </p>
             </AccordionContent>
           </AccordionItem>
 

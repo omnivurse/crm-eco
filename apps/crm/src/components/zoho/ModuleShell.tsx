@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@crm-eco/ui';
+import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
+import type { ComboboxOption } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Search, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -284,7 +285,7 @@ export const ModuleShell = memo(function ModuleShell({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           record_ids: Array.from(selectedIds),
-          updates: { owner_id: selectedOwnerId },
+          updates: { owner_id: selectedOwnerId === '__unassigned__' ? null : selectedOwnerId },
         }),
       });
 
@@ -294,7 +295,7 @@ export const ModuleShell = memo(function ModuleShell({
       }
 
       const result = await response.json();
-      toast.success(`Owner assigned successfully`, {
+      toast.success(selectedOwnerId === '__unassigned__' ? 'Owner cleared' : 'Owner assigned', {
         description: `Updated ${result.updated_count} records`,
       });
       setShowAssignOwnerDialog(false);
@@ -854,18 +855,27 @@ export const ModuleShell = memo(function ModuleShell({
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Select value={selectedOwnerId} onValueChange={setSelectedOwnerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select team member" />
-              </SelectTrigger>
-              <SelectContent>
-                {teamMembers.map((member) => (
-                  <SelectItem key={member.id} value={member.id}>
-                    {member.full_name || member.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {(() => {
+              const ownerOptions: ComboboxOption[] = [
+                { value: '__unassigned__', label: 'Unassigned', subtext: 'Clear owner assignment' },
+                ...teamMembers.map((m) => ({
+                  value: m.id,
+                  label: m.full_name || m.email,
+                  subtext: m.full_name ? m.email : undefined,
+                })),
+              ];
+              return (
+                <Combobox
+                  options={ownerOptions}
+                  value={selectedOwnerId}
+                  onValueChange={setSelectedOwnerId}
+                  placeholder="Choose an Advisor / Agent"
+                  searchPlaceholder="Search by name..."
+                  emptyText="No team members found."
+                  clearable
+                />
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAssignOwnerDialog(false)} disabled={isProcessing}>
@@ -878,7 +888,7 @@ export const ModuleShell = memo(function ModuleShell({
                   Assigning...
                 </>
               ) : (
-                'Assign Owner'
+                'Assign'
               )}
             </Button>
           </DialogFooter>
