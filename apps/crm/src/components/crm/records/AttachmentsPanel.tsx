@@ -101,7 +101,7 @@ function AttachmentRow({
   const size = formatFileSize(attachment.file_size);
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/30 border border-white/5 hover:border-white/10 transition-colors group">
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-white/10 transition-colors group">
       <div className="p-2 rounded-lg bg-slate-800/50 text-slate-400">
         {icon}
       </div>
@@ -156,7 +156,7 @@ function AttachmentRow({
               <MoreHorizontal className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="glass-card border-white/10">
+          <DropdownMenuContent align="end" className="glass-card border-slate-200 dark:border-white/10">
             <DropdownMenuItem 
               onClick={handleDownload}
               className="text-slate-300 focus:text-white focus:bg-white/10"
@@ -251,7 +251,7 @@ function UploadZone({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Add a description (optional)"
-          className="mb-4 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500"
+          className="mb-4 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
 
         <div className="flex justify-end gap-2">
@@ -295,7 +295,7 @@ function UploadZone({
         'flex flex-col items-center justify-center gap-3',
         isDragOver
           ? 'border-teal-500 bg-teal-500/5'
-          : 'border-slate-700 hover:border-slate-600 hover:bg-slate-900/30'
+          : 'border-slate-700 hover:border-slate-600 hover:bg-slate-50 dark:bg-slate-900/30'
       )}
     >
       <input

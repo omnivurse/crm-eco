@@ -74,10 +74,10 @@ function FilterRow({
           value={String(filter.value || '')}
           onValueChange={(value) => onUpdate({ ...filter, value })}
         >
-          <SelectTrigger className="h-9 bg-slate-900/50 border-white/10 text-white">
+          <SelectTrigger className="h-9 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
             <SelectValue placeholder="Select value" />
           </SelectTrigger>
-          <SelectContent className="glass-card border-white/10">
+          <SelectContent className="glass-card border-slate-200 dark:border-white/10">
             {getFieldOptions(field.options).map((option) => (
               <SelectItem 
                 key={option} 
@@ -98,10 +98,10 @@ function FilterRow({
           value={String(filter.value || '')}
           onValueChange={(value) => onUpdate({ ...filter, value: value === 'true' })}
         >
-          <SelectTrigger className="h-9 bg-slate-900/50 border-white/10 text-white">
+          <SelectTrigger className="h-9 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
             <SelectValue placeholder="Select value" />
           </SelectTrigger>
-          <SelectContent className="glass-card border-white/10">
+          <SelectContent className="glass-card border-slate-200 dark:border-white/10">
             <SelectItem value="true" className="text-slate-300 focus:text-white focus:bg-white/10">
               Yes
             </SelectItem>
@@ -119,7 +119,7 @@ function FilterRow({
           type="date"
           value={String(filter.value || '')}
           onChange={(e) => onUpdate({ ...filter, value: e.target.value })}
-          className="h-9 bg-slate-900/50 border-white/10 text-white"
+          className="h-9 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
         />
       );
     }
@@ -131,7 +131,7 @@ function FilterRow({
           value={String(filter.value || '')}
           onChange={(e) => onUpdate({ ...filter, value: e.target.valueAsNumber || 0 })}
           placeholder="Enter value"
-          className="h-9 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500"
+          className="h-9 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
       );
     }
@@ -142,22 +142,22 @@ function FilterRow({
         value={String(filter.value || '')}
         onChange={(e) => onUpdate({ ...filter, value: e.target.value })}
         placeholder="Enter value"
-        className="h-9 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500"
+        className="h-9 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
       />
     );
   };
 
   return (
-    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-900/30 border border-white/5">
+    <div className="flex items-center gap-2 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5">
       {/* Field Select */}
       <Select
         value={filter.field}
         onValueChange={(value) => onUpdate({ ...filter, field: value, value: null })}
       >
-        <SelectTrigger className="h-9 w-40 bg-slate-900/50 border-white/10 text-white">
+        <SelectTrigger className="h-9 w-40 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
           <SelectValue placeholder="Select field" />
         </SelectTrigger>
-        <SelectContent className="glass-card border-white/10">
+        <SelectContent className="glass-card border-slate-200 dark:border-white/10">
           {fields.map((f) => (
             <SelectItem 
               key={f.key} 
@@ -175,10 +175,10 @@ function FilterRow({
         value={filter.operator}
         onValueChange={(value) => onUpdate({ ...filter, operator: value as FilterOperator })}
       >
-        <SelectTrigger className="h-9 w-44 bg-slate-900/50 border-white/10 text-white">
+        <SelectTrigger className="h-9 w-44 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="glass-card border-white/10">
+        <SelectContent className="glass-card border-slate-200 dark:border-white/10">
           {availableOperators.map((op) => (
             <SelectItem 
               key={op} 
@@ -250,7 +250,7 @@ export function FilterBuilder({
         <Button
           variant="outline"
           className={cn(
-            'h-10 px-3 rounded-xl bg-slate-900/50 border-white/10 text-slate-300 hover:text-white hover:border-white/20',
+            'h-10 px-3 rounded-xl bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-white/20',
             filters.length > 0 && 'border-teal-500/50 text-teal-400',
             className
           )}
@@ -266,7 +266,7 @@ export function FilterBuilder({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[600px] p-4 glass-card border-white/10" 
+        className="w-[600px] p-4 glass-card border-slate-200 dark:border-white/10" 
         align="start"
       >
         <div className="space-y-4">
@@ -300,14 +300,14 @@ export function FilterBuilder({
             variant="outline"
             size="sm"
             onClick={addFilter}
-            className="w-full glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+            className="w-full glass border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-white/20"
           >
             <Plus className="w-4 h-4 mr-2" />
             Add filter
           </Button>
 
           {filters.length > 0 && (
-            <div className="pt-3 border-t border-white/10 flex justify-end gap-2">
+            <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex justify-end gap-2">
               <Button
                 variant="ghost"
                 size="sm"

@@ -126,7 +126,7 @@ export function ActivityForm({
             className={cn(
               formData.activity_type === type.value
                 ? 'bg-teal-500 hover:bg-teal-400 text-white'
-                : 'glass border-white/10 text-slate-300 hover:text-white hover:border-white/20'
+                : 'glass border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-white/20'
             )}
           >
             {type.icon}
@@ -143,7 +143,7 @@ export function ActivityForm({
           onChange={(e) => updateField('title', e.target.value)}
           placeholder={`Enter ${formData.activity_type} subject...`}
           required
-          className="bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500"
+          className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
       </div>
 
@@ -155,7 +155,7 @@ export function ActivityForm({
           onChange={(e) => updateField('description', e.target.value)}
           placeholder="Add details..."
           rows={3}
-          className="bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 resize-none"
+          className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
         />
       </div>
 
@@ -170,7 +170,7 @@ export function ActivityForm({
             type="datetime-local"
             value={formData.due_at || ''}
             onChange={(e) => updateField('due_at', e.target.value)}
-            className="bg-slate-900/50 border-white/10 text-white"
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
           />
         </div>
         <div>
@@ -179,10 +179,10 @@ export function ActivityForm({
             value={formData.priority} 
             onValueChange={(value) => updateField('priority', value as ActivityFormData['priority'])}
           >
-            <SelectTrigger className="bg-slate-900/50 border-white/10 text-white">
+            <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="glass-card border-white/10">
+            <SelectContent className="glass-card border-slate-200 dark:border-white/10">
               {PRIORITIES.map((p) => (
                 <SelectItem 
                   key={p.value} 
@@ -206,10 +206,10 @@ export function ActivityForm({
               value={formData.call_type || ''} 
               onValueChange={(value) => updateField('call_type', value as CallType)}
             >
-              <SelectTrigger className="bg-slate-900/50 border-white/10 text-white">
+              <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent className="glass-card border-white/10">
+              <SelectContent className="glass-card border-slate-200 dark:border-white/10">
                 {CALL_TYPES.map((t) => (
                   <SelectItem 
                     key={t.value} 
@@ -228,10 +228,10 @@ export function ActivityForm({
               value={formData.call_result || ''} 
               onValueChange={(value) => updateField('call_result', value as CallResult)}
             >
-              <SelectTrigger className="bg-slate-900/50 border-white/10 text-white">
+              <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                 <SelectValue placeholder="Select result" />
               </SelectTrigger>
-              <SelectContent className="glass-card border-white/10">
+              <SelectContent className="glass-card border-slate-200 dark:border-white/10">
                 {CALL_RESULTS.map((r) => (
                   <SelectItem 
                     key={r.value} 
@@ -256,10 +256,10 @@ export function ActivityForm({
               value={formData.meeting_type || ''} 
               onValueChange={(value) => updateField('meeting_type', value as MeetingType)}
             >
-              <SelectTrigger className="bg-slate-900/50 border-white/10 text-white">
+              <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
-              <SelectContent className="glass-card border-white/10">
+              <SelectContent className="glass-card border-slate-200 dark:border-white/10">
                 {MEETING_TYPES.map((t) => (
                   <SelectItem 
                     key={t.value} 
@@ -278,7 +278,7 @@ export function ActivityForm({
               value={formData.meeting_location || ''}
               onChange={(e) => updateField('meeting_location', e.target.value)}
               placeholder="Enter location or meeting link"
-              className="bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500"
+              className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
         </div>
@@ -292,7 +292,7 @@ export function ActivityForm({
           onChange={(e) => updateField('outcome', e.target.value)}
           placeholder="What was the result?"
           rows={2}
-          className="bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 resize-none"
+          className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
         />
       </div>
 
@@ -306,7 +306,7 @@ export function ActivityForm({
           type="datetime-local"
           value={formData.reminder_at || ''}
           onChange={(e) => updateField('reminder_at', e.target.value)}
-          className="bg-slate-900/50 border-white/10 text-white"
+          className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white"
         />
       </div>
 

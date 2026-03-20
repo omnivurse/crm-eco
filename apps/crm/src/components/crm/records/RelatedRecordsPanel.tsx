@@ -106,7 +106,7 @@ function LinkedRecordCard({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-900/30 border border-white/5 hover:border-white/10 transition-colors group">
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-white/10 transition-colors group">
       {/* Direction indicator */}
       <div className={cn('p-2 rounded-lg', colors.bg, colors.text)}>
         {record.direction === 'outbound' ? (
@@ -239,13 +239,13 @@ function LinkRecordDialog({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="w-full glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+          className="w-full glass border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-white/20"
         >
           <Plus className="w-4 h-4 mr-2" />
           Link Record
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-card border-white/10 max-w-lg">
+      <DialogContent className="glass-card border-slate-200 dark:border-white/10 max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-white">Link a Record</DialogTitle>
         </DialogHeader>
@@ -259,13 +259,13 @@ function LinkRecordDialog({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 placeholder="Search for a record..."
-                className="flex-1 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500"
+                className="flex-1 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
               />
               <Button
                 variant="outline"
                 onClick={handleSearch}
                 disabled={isSearching}
-                className="glass border-white/10 text-slate-300 hover:text-white"
+                className="glass border-slate-200 dark:border-white/10 text-slate-300 hover:text-white"
               >
                 {isSearching ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -291,7 +291,7 @@ function LinkRecordDialog({
                       'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
                       isSelected
                         ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-white/5 hover:border-white/10 bg-slate-900/30'
+                        : 'border-white/5 hover:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/30'
                     )}
                   >
                     <div className="p-1.5 rounded bg-slate-800/50 text-slate-400">
@@ -321,10 +321,10 @@ function LinkRecordDialog({
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Link Type</label>
                 <Select value={linkType} onValueChange={setLinkType}>
-                  <SelectTrigger className="bg-slate-900/50 border-white/10 text-white">
+                  <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="glass-card border-white/10">
+                  <SelectContent className="glass-card border-slate-200 dark:border-white/10">
                     {LINK_TYPES.map((type) => (
                       <SelectItem 
                         key={type.value} 
@@ -344,7 +344,7 @@ function LinkRecordDialog({
                   type="checkbox"
                   checked={isPrimary}
                   onChange={(e) => setIsPrimary(e.target.checked)}
-                  className="rounded border-white/20 bg-slate-900/50 text-teal-500 focus:ring-teal-500/50"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900/50 text-teal-500 focus:ring-teal-500/50"
                 />
                 <span className="text-sm text-slate-300">Mark as primary relationship</span>
               </label>
