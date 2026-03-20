@@ -7,7 +7,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import type { CrmNote, CrmNoteWithAuthor } from '@/lib/crm/types';
+import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
 interface NotesPanelProps {
   recordId: string;
@@ -42,22 +42,22 @@ function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: 
   };
 
   return (
-    <div className="p-4 rounded-xl bg-slate-900/30 border border-white/5 hover:border-white/10 transition-colors group">
+    <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-colors group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
             {note.author?.avatar_url ? (
-              <img 
-                src={note.author.avatar_url} 
-                alt="" 
+              <img
+                src={note.author.avatar_url}
+                alt=""
                 className="w-8 h-8 rounded-full"
               />
             ) : (
-              <User className="w-4 h-4 text-slate-400" />
+              <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             )}
           </div>
           <div>
-            <p className="text-sm font-medium text-white">
+            <p className="text-sm font-medium text-slate-900 dark:text-white">
               {note.author?.full_name || 'Unknown'}
             </p>
             <p className="text-xs text-slate-500">
@@ -65,7 +65,7 @@ function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: 
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           {note.is_pinned && (
             <Pin className="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -73,7 +73,7 @@ function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: 
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+            className="h-7 w-7 text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
             disabled={isDeleting}
             onClick={handleDelete}
           >
@@ -85,8 +85,8 @@ function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: 
           </Button>
         </div>
       </div>
-      
-      <p className="text-sm text-slate-300 whitespace-pre-wrap">
+
+      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
         {note.body}
       </p>
     </div>
@@ -101,7 +101,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
 
   const handleSubmit = async () => {
     if (!newNote.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/crm/notes', {
@@ -112,7 +112,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
           body: newNote.trim(),
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create note');
       }
@@ -140,13 +140,13 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
     <div className="space-y-4">
       {/* Add Note Button/Form */}
       {isAdding ? (
-        <div className="p-4 rounded-xl bg-slate-900/50 border border-teal-500/30">
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900/50 border border-teal-200 dark:border-teal-500/30">
           <Textarea
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write a note..."
             rows={4}
-            className="mb-3 bg-slate-900/50 border-white/10 text-white placeholder:text-slate-500 resize-none"
+            className="mb-3 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:border-teal-500 focus:ring-teal-500/20"
             autoFocus
           />
           <div className="flex justify-end gap-2">
@@ -157,7 +157,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
                 setIsAdding(false);
                 setNewNote('');
               }}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             >
               Cancel
             </Button>
@@ -165,7 +165,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
               size="sm"
               onClick={handleSubmit}
               disabled={isSubmitting || !newNote.trim()}
-              className="bg-teal-500 hover:bg-teal-400 text-white"
+              className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white"
             >
               {isSubmitting ? (
                 <>
@@ -182,7 +182,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
         <Button
           variant="outline"
           onClick={() => setIsAdding(true)}
-          className="w-full glass border-white/10 text-slate-300 hover:text-white hover:border-white/20"
+          className="w-full border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/5"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Note
@@ -198,9 +198,9 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
         </div>
       ) : (
         <div className="text-center py-12">
-          <StickyNote className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-1">No notes yet</h3>
-          <p className="text-slate-400">
+          <StickyNote className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No notes yet</h3>
+          <p className="text-slate-500 dark:text-slate-400">
             Add a note to keep track of important information
           </p>
         </div>
