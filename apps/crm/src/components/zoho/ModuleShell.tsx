@@ -18,6 +18,7 @@ import { DensityToggle } from './DensityToggle';
 import { MassActionsBar } from './MassActionsBar';
 import { ModuleShellProvider } from './ModuleShellContext';
 import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
+import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
 import type { Density } from './ViewPreferencesContext';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 
@@ -692,6 +693,18 @@ export const ModuleShell = memo(function ModuleShell({
               </>
             )}
           </div>
+        </div>
+
+        {/* Saved Views Bar */}
+        <div className="px-1">
+          <SavedViewsBar
+            pageKey={module.key}
+            currentFilters={filters}
+            onApplyView={(newFilters) => {
+              setFilters(newFilters as ViewFilter[]);
+              pushFiltersToUrl(newFilters as ViewFilter[]);
+            }}
+          />
         </div>
 
         {/* Filter Chips Bar */}

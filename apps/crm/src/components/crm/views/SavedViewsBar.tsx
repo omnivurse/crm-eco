@@ -36,10 +36,16 @@ interface SavedView {
   created_at: string;
 }
 
+interface ViewFilter {
+  field: string;
+  operator: string;
+  value: string | number | boolean | string[] | null;
+}
+
 interface SavedViewsBarProps {
   pageKey: string;
-  currentFilters: Record<string, unknown>;
-  onApplyView: (filters: Record<string, unknown>) => void;
+  currentFilters: ViewFilter[];
+  onApplyView: (filters: ViewFilter[]) => void;
 }
 
 export function SavedViewsBar({
@@ -114,43 +120,56 @@ export function SavedViewsBar({
 
   const handleApply = (view: SavedView) => {
     setActiveViewId(view.id);
-    onApplyView(view.filters);
+    // Saved view filters are stored as JSONB — cast to ViewFilter[]
+    const viewFilters = Array.isArray(view.filters)
+      ? (view.filters as unknown as ViewFilter[])
+      : Object.entries(view.filters).map(([field, value]) => ({
+          field,
+          operator: 'equals' as const,
+          value: value as string,
+        }));
+    onApplyView(viewFilters);
   };
 
-  const hasActiveFilters = Object.keys(currentFilters).length > 0;
+  const hasActiveFilters = currentFilters.length > 0;
+
+  // Helper to build ViewFilter arrays from simple key-value pairs
+  const makeFilters = (pairs: Record<string, string>): ViewFilter[] =>
+    Object.entries(pairs).map(([field, value]) => ({
+      field,
+      operator: 'equals',
+      value,
+    }));
 
   // Built-in quick views
   const builtInViews = [
     {
       name: 'All Members',
-      filters: { record_type: 'individual' },
+      filters: makeFilters({ record_type: 'individual' }),
     },
     {
       name: 'HealthShare Members',
-      filters: { record_type: 'individual', market_type: 'healthshare' },
+      filters: makeFilters({ record_type: 'individual', market_type: 'healthshare' }),
     },
     {
       name: 'Insurance Members',
-      filters: {
-        record_type: 'individual',
-        market_type: 'traditional_insurance',
-      },
+      filters: makeFilters({ record_type: 'individual', market_type: 'traditional_insurance' }),
     },
     {
       name: 'Needs Review',
-      filters: { normalization_status: 'needs_review' },
+      filters: makeFilters({ normalization_status: 'needs_review' }),
     },
     {
       name: 'Needs Classification',
-      filters: { market_type: 'unknown' },
+      filters: makeFilters({ market_type: 'unknown' }),
     },
     {
       name: 'Tobacco Users',
-      filters: { record_type: 'individual', tobacco_user: 'true' },
+      filters: makeFilters({ record_type: 'individual', tobacco_user: 'true' }),
     },
     {
       name: 'Group Records',
-      filters: { record_type: 'group' },
+      filters: makeFilters({ record_type: 'group' }),
     },
   ];
 
@@ -246,7 +265,7 @@ export function SavedViewsBar({
           <button
             onClick={() => {
               setActiveViewId(null);
-              onApplyView({});
+              onApplyView([]);
             }}
             className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
           >
