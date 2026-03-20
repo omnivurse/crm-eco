@@ -13,8 +13,35 @@ import { BulkAssignBar } from './BulkAssignBar';
 type MemberWithAdvisor = Pick<MemberRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'state' | 'plan_name' | 'effective_date'> & {
   created_at: string;
   market_type?: string | null;
+  active_plan_type?: string | null;
+  plan_type?: string | null;
+  is_smoker?: boolean | null;
   advisor: { id: string; first_name: string; last_name: string } | null;
 };
+
+/** CRM-aligned market display (canonical market_type, else plan hints). */
+function getMarketBadge(member: MemberWithAdvisor): { label: string; className: string } {
+  const mt = member.market_type?.trim();
+  if (mt === 'healthshare') {
+    return { label: 'HealthShare', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+  }
+  if (mt === 'traditional_insurance') {
+    return { label: 'Insurance', className: 'bg-blue-100 text-blue-800 border-blue-200' };
+  }
+  if (mt === 'unknown') {
+    return { label: 'Unknown', className: 'bg-slate-100 text-slate-700 border-slate-200' };
+  }
+
+  const lane = member.active_plan_type ?? member.plan_type;
+  if (lane === 'healthshare') {
+    return { label: 'HealthShare', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+  }
+  if (lane === 'insurance' || lane === 'medicaid' || lane === 'short_term') {
+    return { label: 'Insurance', className: 'bg-blue-100 text-blue-800 border-blue-200' };
+  }
+
+  return { label: '—', className: 'bg-transparent text-slate-400 border-transparent' };
+}
 
 interface MemberTableProps {
   members: MemberWithAdvisor[];
@@ -111,7 +138,21 @@ function MemberCard({
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
+        <div className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-100 text-xs">
+          {(() => {
+            const m = getMarketBadge(member);
+            return m.label !== '—' ? (
+              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium ${m.className}`}>
+                {m.label}
+              </Badge>
+            ) : null;
+          })()}
+          <span className="text-slate-500">
+            Tobacco:{' '}
+            {member.is_smoker === true ? 'Yes' : member.is_smoker === false ? 'No' : '—'}
+          </span>
+        </div>
+        <div className="flex items-center justify-between mt-2 text-xs text-slate-500">
           <span>{member.plan_name || 'No plan'}</span>
           <span>{format(new Date(member.created_at), 'MMM d, yyyy')}</span>
         </div>
@@ -205,6 +246,8 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
               <th className="pb-3 font-medium text-slate-500 text-sm">Phone</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">State</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Plan</th>
+              <th className="pb-3 font-medium text-slate-500 text-sm">Market</th>
+              <th className="pb-3 font-medium text-slate-500 text-sm">Tobacco</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Advisor</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Status</th>
               <th className="pb-3 font-medium text-slate-500 text-sm">Created</th>
@@ -240,18 +283,26 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
                   {member.plan_name || <span className="text-slate-400">—</span>}
                 </td>
                 <td className="py-3 text-sm">
+                  {(() => {
+                    const m = getMarketBadge(member);
+                    if (m.label === '—') {
+                      return <span className="text-slate-400">—</span>;
+                    }
+                    return (
+                      <Badge variant="outline" className={`text-xs px-1.5 py-0 font-medium ${m.className}`}>
+                        {m.label}
+                      </Badge>
+                    );
+                  })()}
+                </td>
+                <td className="py-3 text-sm text-slate-700">
+                  {member.is_smoker === true && <span className="text-amber-800">Yes</span>}
+                  {member.is_smoker === false && <span className="text-slate-600">No</span>}
+                  {member.is_smoker == null && <span className="text-slate-400">—</span>}
+                </td>
+                <td className="py-3 text-sm">
                   {member.advisor ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      {member.market_type === 'healthshare' && (
-                        <Badge variant="outline" className="text-xs px-1.5 py-0 font-medium bg-emerald-100 text-emerald-700 border-emerald-200">
-                          Advisor
-                        </Badge>
-                      )}
-                      {member.market_type === 'traditional_insurance' && (
-                        <Badge variant="outline" className="text-xs px-1.5 py-0 font-medium bg-blue-100 text-blue-700 border-blue-200">
-                          Agent
-                        </Badge>
-                      )}
+                    <span>
                       {member.advisor.first_name} {member.advisor.last_name}
                     </span>
                   ) : (

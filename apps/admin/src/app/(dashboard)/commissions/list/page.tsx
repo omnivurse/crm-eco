@@ -491,7 +491,7 @@ export default function CommissionsListPage() {
   // Export commissions
   const exportCommissions = () => {
     const csv = [
-      ['Agent', 'Email', 'Member', 'Type', 'Amount', 'Rate %', 'Status', 'Date', 'Bonus', 'Reason'].join(','),
+      ['Advisor', 'Email', 'Member', 'Type', 'Amount', 'Rate %', 'Status', 'Date', 'Bonus', 'Reason'].join(','),
       ...filteredCommissions.map((c) =>
         [
           `"${c.advisor?.first_name || ''} ${c.advisor?.last_name || ''}"`,
@@ -676,7 +676,7 @@ export default function CommissionsListPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b bg-slate-50">
-                    <th className="text-left py-3 px-4 font-medium text-slate-600">Agent</th>
+                    <th className="text-left py-3 px-4 font-medium text-slate-600">Advisor</th>
                     <th className="text-left py-3 px-4 font-medium text-slate-600">Member</th>
                     <th className="text-left py-3 px-4 font-medium text-slate-600">Type</th>
                     <th className="text-right py-3 px-4 font-medium text-slate-600">Amount</th>

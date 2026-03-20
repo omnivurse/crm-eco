@@ -398,19 +398,13 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="advisor_id">
-              {formData.market_type === 'healthshare'
-                ? 'Assigned Advisor'
-                : formData.market_type === 'traditional_insurance'
-                  ? 'Assigned Agent'
-                  : 'Assigned Advisor / Agent'}
-            </Label>
+            <Label htmlFor="advisor_id">Assigned advisor</Label>
             <AdvisorCombobox
               agents={agents}
               value={formData.advisor_id}
               onValueChange={(value) => setFormData({ ...formData, advisor_id: value })}
               disabled={loading}
-              label={formData.market_type === 'traditional_insurance' ? 'agent' : 'advisor'}
+              label="advisor"
             />
           </div>
           <div className="space-y-2">

@@ -235,10 +235,10 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Agent */}
+          {/* Advisor */}
           <Card>
             <CardHeader>
-              <CardTitle>Assigned Agent</CardTitle>
+              <CardTitle>Assigned Advisor</CardTitle>
             </CardHeader>
             <CardContent>
               {member.advisor ? (

@@ -395,10 +395,10 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
             </CardContent>
           </Card>
 
-          {/* Agent */}
+          {/* Advisor */}
           <Card>
             <CardHeader>
-              <CardTitle>Assigned Agent</CardTitle>
+              <CardTitle>Assigned Advisor</CardTitle>
             </CardHeader>
             <CardContent>
               {enrollment.advisor ? (

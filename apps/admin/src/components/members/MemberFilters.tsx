@@ -179,7 +179,7 @@ export function MemberFilters({ orgId }: MemberFiltersProps) {
               onClick={() => handleMarketTypeChange(pill.value)}
               className={`px-3 py-1 text-xs font-medium rounded-full border transition-colors ${
                 marketType === pill.value
-                  ? 'bg-slate-900 text-white border-slate-900'
+                  ? 'bg-slate-800 dark:bg-slate-900 text-slate-900 dark:text-white border-slate-300 dark:border-slate-900'
                   : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
               }`}
             >

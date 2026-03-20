@@ -41,6 +41,9 @@ async function getMembers(page: number, filters: { search?: string; advisor?: st
       effective_date,
       created_at,
       market_type,
+      active_plan_type,
+      plan_type,
+      is_smoker,
       advisor:advisors(id, first_name, last_name)
     `, { count: 'exact' })
     .eq('organization_id', profile.organization_id);

@@ -109,7 +109,7 @@ export default async function EnrollmentsPage() {
                     <th className="pb-3 font-medium text-slate-500 text-sm">Enrollment #</th>
                     <th className="pb-3 font-medium text-slate-500 text-sm">Member</th>
                     <th className="pb-3 font-medium text-slate-500 text-sm">Plan</th>
-                    <th className="pb-3 font-medium text-slate-500 text-sm">Agent</th>
+                    <th className="pb-3 font-medium text-slate-500 text-sm">Advisor</th>
                     <th className="pb-3 font-medium text-slate-500 text-sm">Status</th>
                     <th className="pb-3 font-medium text-slate-500 text-sm">Effective Date</th>
                     <th className="pb-3 font-medium text-slate-500 text-sm">Created</th>

@@ -673,18 +673,18 @@ export default function JobsPage() {
                       Export
                     </Button>
                   </div>
-                  <ScrollArea className="h-64 rounded-lg border bg-slate-900 p-4">
-                    <div className="font-mono text-xs text-slate-300 space-y-1">
+                  <ScrollArea className="h-64 rounded-lg border border-slate-200 bg-slate-100 p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="font-mono text-xs text-slate-700 space-y-1 dark:text-slate-300">
                       {selectedJob.logs.map((log: any, i: number) => (
                         <div key={i} className="flex gap-3">
-                          <span className="text-slate-500 shrink-0">
+                          <span className="text-slate-500 shrink-0 dark:text-slate-500">
                             {log.timestamp ? format(new Date(log.timestamp), 'HH:mm:ss.SSS') : `[${i}]`}
                           </span>
                           <span className={
-                            log.level === 'error' ? 'text-red-400' :
-                            log.level === 'warn' ? 'text-amber-400' :
-                            log.level === 'info' ? 'text-blue-400' :
-                            'text-slate-300'
+                            log.level === 'error' ? 'text-red-600 dark:text-red-400' :
+                            log.level === 'warn' ? 'text-amber-700 dark:text-amber-400' :
+                            log.level === 'info' ? 'text-blue-700 dark:text-blue-400' :
+                            'text-slate-800 dark:text-slate-300'
                           }>
                             {log.message}
                           </span>

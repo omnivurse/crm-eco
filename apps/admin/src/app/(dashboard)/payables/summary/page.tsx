@@ -238,7 +238,7 @@ export default function PayablesSummaryPage() {
   const getPayeeTypeLabel = (type: string) => {
     switch (type) {
       case 'agent':
-        return 'Agent';
+        return 'Advisor';
       case 'vendor':
         return 'Vendor';
       case 'provider':

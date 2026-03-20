@@ -354,7 +354,7 @@ export function AdminSidebar({
                       )}
                       {/* Tooltip on hover when collapsed */}
                       {!forMobile && isCollapsed && (
-                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+                        <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 dark:bg-slate-900 text-slate-900 dark:text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
                           {item.label}
                         </div>
                       )}
@@ -388,7 +388,7 @@ export function AdminSidebar({
             </>
           )}
           {!forMobile && isCollapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 dark:bg-slate-900 text-slate-900 dark:text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
               Command Center
             </div>
           )}

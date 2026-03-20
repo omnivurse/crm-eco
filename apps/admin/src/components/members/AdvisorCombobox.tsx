@@ -30,7 +30,7 @@ export function AdvisorCombobox({
     subtext: agent.email,
   }));
 
-  const labelText = label === 'advisor' ? 'Advisor' : 'Agent';
+  const labelText = 'Advisor';
 
   return (
     <Combobox

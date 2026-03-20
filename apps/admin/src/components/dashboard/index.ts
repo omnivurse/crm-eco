@@ -15,3 +15,4 @@ export { AdminAlertsStrip } from './AdminAlertsStrip';
 export { AdminOperationalTiles } from './AdminOperationalTiles';
 export { AdminWorkQueue } from './AdminWorkQueue';
 export { AdminMemberFunnel } from './AdminMemberFunnel';
+export { CrmKpiCards } from './CrmKpiCards';

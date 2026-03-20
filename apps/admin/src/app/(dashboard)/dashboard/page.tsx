@@ -29,8 +29,8 @@ import {
   AdminOperationalTiles,
   AdminWorkQueue,
   AdminMemberFunnel,
+  CrmKpiCards,
 } from '@/components/dashboard';
-import { CrmKpiCards } from '@/components/dashboard/CrmKpiCards';
 import type { FutureEnrollmentsData, MemberActivityData } from '@/components/dashboard';
 import { getCachedAdminConsoleStats } from '@/lib/admin-console-queries';
 

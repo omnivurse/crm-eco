@@ -101,7 +101,7 @@ function getRoleLabel(role: string) {
     owner: 'Owner',
     admin: 'Administrator',
     staff: 'Staff',
-    agent: 'Agent',
+    agent: 'Advisor',
     member: 'Member',
   };
   return map[role] || role;

@@ -333,17 +333,17 @@ export function JobsWidget({ organizationId }: JobsWidgetProps) {
               {selectedJob.logs && selectedJob.logs.length > 0 && (
                 <div>
                   <p className="text-sm font-medium text-slate-700 mb-2">Logs</p>
-                  <ScrollArea className="h-48 rounded-lg border bg-slate-900 p-3">
-                    <div className="font-mono text-xs text-slate-300 space-y-1">
+                  <ScrollArea className="h-48 rounded-lg border border-slate-200 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-900">
+                    <div className="font-mono text-xs text-slate-700 space-y-1 dark:text-slate-300">
                       {selectedJob.logs.map((log: any, i: number) => (
                         <div key={i} className="flex gap-2">
-                          <span className="text-slate-500">
+                          <span className="text-slate-500 dark:text-slate-500">
                             {log.timestamp ? format(new Date(log.timestamp), 'HH:mm:ss') : ''}
                           </span>
                           <span className={
-                            log.level === 'error' ? 'text-red-400' :
-                            log.level === 'warn' ? 'text-amber-400' :
-                            'text-slate-300'
+                            log.level === 'error' ? 'text-red-600 dark:text-red-400' :
+                            log.level === 'warn' ? 'text-amber-700 dark:text-amber-400' :
+                            'text-slate-800 dark:text-slate-300'
                           }>
                             {log.message}
                           </span>

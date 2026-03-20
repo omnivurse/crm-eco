@@ -328,7 +328,7 @@ export default function CommissionTransactionsPage() {
                         className="rounded border-slate-300"
                       />
                     </th>
-                    <th className="pb-3 pr-4 font-medium text-slate-600">Agent</th>
+                    <th className="pb-3 pr-4 font-medium text-slate-600">Advisor</th>
                     <th className="pb-3 pr-4 font-medium text-slate-600">Type</th>
                     <th className="pb-3 pr-4 font-medium text-slate-600">Gross</th>
                     <th className="pb-3 pr-4 font-medium text-slate-600">Rate</th>

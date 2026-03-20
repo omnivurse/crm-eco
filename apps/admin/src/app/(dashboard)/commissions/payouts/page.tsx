@@ -395,7 +395,7 @@ export default function CommissionPayoutsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b text-left">
-                    <th className="pb-3 pr-4 font-medium text-slate-600">Agent</th>
+                    <th className="pb-3 pr-4 font-medium text-slate-600">Advisor</th>
                     <th className="pb-3 pr-4 font-medium text-slate-600">Period</th>
                     <th className="pb-3 pr-4 font-medium text-slate-600">Commissions</th>
                     <th className="pb-3 pr-4 font-medium text-slate-600">Overrides</th>
