@@ -17,9 +17,9 @@ import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
-import { 
-  TodoListWidget, 
-  JobsWidget, 
+import {
+  TodoListWidget,
+  JobsWidget,
   RecentPagesWidget,
   CommissionCard,
   FutureEnrollmentsCard,
@@ -30,6 +30,7 @@ import {
   AdminWorkQueue,
   AdminMemberFunnel,
 } from '@/components/dashboard';
+import { CrmKpiCards } from '@/components/dashboard/CrmKpiCards';
 import type { FutureEnrollmentsData, MemberActivityData } from '@/components/dashboard';
 import { getCachedAdminConsoleStats } from '@/lib/admin-console-queries';
 
@@ -306,6 +307,11 @@ async function DashboardContent() {
           <AdminMemberFunnel stats={consoleStats} />
         </>
       )}
+
+      {/* ── CRM Member KPI Overview ── */}
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/60 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] p-6">
+        <CrmKpiCards orgId={orgId} />
+      </div>
 
       {/* ── Commission Stats (preserved) ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
