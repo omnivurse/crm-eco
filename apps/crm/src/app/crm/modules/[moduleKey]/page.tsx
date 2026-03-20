@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
-  getCurrentProfile,
+  getCachedCurrentProfile,
   getModuleByKey,
   getFieldsForModule,
   getViewsForModule,
@@ -59,7 +59,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   
   let profile;
   try {
-    profile = await getCurrentProfile();
+    profile = await getCachedCurrentProfile();
   } catch (err) {
     console.error('[ModulePage] Failed to get profile:', err);
     return notFound();

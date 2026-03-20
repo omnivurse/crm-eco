@@ -9,7 +9,7 @@ import {
   getRecordLinks,
   getAttachmentsForRecord,
   getDealStages,
-  getCurrentProfile,
+  getCachedCurrentProfile,
 } from '@/lib/crm/queries';
 import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
@@ -57,8 +57,10 @@ async function RecordDetailContent({ params }: PageProps) {
   const { recordId } = await params;
 
   // Step 1: Fetch profile and record+module in parallel with safe error handling
+  // Use getCachedCurrentProfile to share the layout's auth result (avoids duplicate
+  // profile queries and prevents transient auth failures from showing as logouts)
   const [profileResult, recordResult] = await Promise.allSettled([
-    getCurrentProfile(),
+    getCachedCurrentProfile(),
     getRecordWithModule(recordId),
   ]);
 
