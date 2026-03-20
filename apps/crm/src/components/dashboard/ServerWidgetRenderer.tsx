@@ -27,6 +27,7 @@ import AdvisorRetentionWidget from './widgets/AdvisorRetentionWidget';
 import NetworkCoverageHealthWidget from './widgets/NetworkCoverageHealthWidget';
 import NetworkProviderStatsWidget from './widgets/NetworkProviderStatsWidget';
 import NetworkCostRouterWidget from './widgets/NetworkCostRouterWidget';
+import MemberKpiWidget from './widgets/MemberKpiWidget';
 
 // Base props interface for all widgets
 interface BaseWidgetProps {
@@ -65,6 +66,7 @@ const WIDGET_COMPONENTS: Record<string, WidgetComponent> = {
   'network-coverage-health': NetworkCoverageHealthWidget as WidgetComponent,
   'network-provider-stats': NetworkProviderStatsWidget as WidgetComponent,
   'network-cost-router': NetworkCostRouterWidget as WidgetComponent,
+  'member-kpi-stats': MemberKpiWidget as WidgetComponent,
 };
 
 interface ServerWidgetRendererProps {

@@ -76,6 +76,7 @@ async function fetchWidgetData(
     networkCoverageHealth: () => Promise.resolve([]),
     networkProviderStats: () => Promise.resolve([]),
     networkCostRouter: () => Promise.resolve([]),
+    memberKpiStats: () => Promise.resolve(null), // MemberKpiWidget fetches its own data client-side
   };
 
   const results: Record<string, unknown> = {};

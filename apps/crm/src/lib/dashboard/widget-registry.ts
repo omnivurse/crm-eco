@@ -266,12 +266,23 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     category: 'healthcare',
     dataKey: 'networkCostRouter',
   },
+  'member-kpi-stats': {
+    id: 'member-kpi-stats',
+    name: 'Member KPI Overview',
+    description: 'Key member metrics: plan types, tobacco, review status, advisor assignment',
+    icon: 'BarChart3',
+    defaultSize: 'full',
+    allowedSizes: ['large', 'full'],
+    category: 'metrics',
+    dataKey: 'memberKpiStats',
+  },
 };
 
 export const DEFAULT_LAYOUT: DashboardLayoutConfig = {
   widgets: [
     { id: 'widget-1', type: 'sales-command-tiles', position: 0, size: 'full' },
-    { id: 'widget-2', type: 'todays-tasks', position: 1, size: 'medium' },
+    { id: 'widget-kpi', type: 'member-kpi-stats', position: 1, size: 'full' },
+    { id: 'widget-2', type: 'todays-tasks', position: 2, size: 'medium' },
     { id: 'widget-3', type: 'at-risk-deals', position: 2, size: 'medium' },
     { id: 'widget-4', type: 'pipeline-funnel', position: 3, size: 'full' },
     { id: 'widget-5', type: 'recent-activity', position: 4, size: 'medium' },
