@@ -695,7 +695,7 @@ export const TreeView = memo(function TreeView({
             <Input
               type="search"
               placeholder={
-                treeGroupBy === 'advisor' ? 'Search advisors...' : 'Search agents...'
+                'Search advisors...'
               }
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -705,7 +705,7 @@ export const TreeView = memo(function TreeView({
           <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
             {treeGroupBy === 'advisor'
               ? `${totalAdvisors} advisor${totalAdvisors !== 1 ? 's' : ''} \u00B7 ${totalTreeRecords.toLocaleString()} contact${totalTreeRecords !== 1 ? 's' : ''} assigned`
-              : `${agentHierarchy.length} agent${agentHierarchy.length !== 1 ? 's' : ''} \u00B7 ${totalAgentRecords.toLocaleString()} contact${totalAgentRecords !== 1 ? 's' : ''} assigned`}
+              : `${agentHierarchy.length} advisor${agentHierarchy.length !== 1 ? 's' : ''} \u00B7 ${totalAgentRecords.toLocaleString()} contact${totalAgentRecords !== 1 ? 's' : ''} assigned`}
           </span>
         </div>
 
@@ -804,11 +804,11 @@ export const TreeView = memo(function TreeView({
           <div className="py-12 text-center">
             <Inbox className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              {search ? 'No agents match your search' : 'No insurance agents found'}
+              {search ? 'No advisors match your search' : 'No advisors found'}
             </p>
             {!search && (
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto">
-                Agents manage Traditional Insurance contacts. Contacts are grouped by their assigned agent name.
+                Contacts are grouped by their assigned advisor. Use plan type to distinguish HealthShare from Traditional Insurance.
               </p>
             )}
           </div>

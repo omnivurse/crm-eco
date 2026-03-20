@@ -692,14 +692,14 @@ export function FilterSidebar({ fields, filters, onFiltersChange, orgId }: Filte
                 options={advisorsList}
                 value={activeOwnerId}
                 onValueChange={handleOwnerFilterChange}
-                placeholder="Choose an Advisor / Agent"
+                placeholder="Choose an Advisor"
                 searchPlaceholder="Search by name..."
-                emptyText="No advisors or agents found."
+                emptyText="No advisors found."
                 clearable
                 triggerClassName="h-8 text-xs"
               />
               <p className="text-[10px] text-slate-400 mt-1.5 px-1">
-                Search and filter by a specific advisor or agent
+                Search and filter by a specific advisor
               </p>
             </AccordionContent>
           </AccordionItem>

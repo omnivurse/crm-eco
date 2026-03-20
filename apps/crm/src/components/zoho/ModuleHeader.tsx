@@ -178,7 +178,7 @@ export function ModuleHeader({
                 variant="outline"
                 size="sm"
                 onClick={() => handleTreeToggle('agent')}
-                title="Group by Insurance Agent"
+                title="Group by Advisor (Insurance)"
                 className={cn(
                   'h-9',
                   isAgentTree
@@ -187,7 +187,7 @@ export function ModuleHeader({
                 )}
               >
                 <Users className="w-4 h-4 mr-1.5" />
-                {module.name_plural || module.name} by Agent
+                {module.name_plural || module.name} by Advisor
               </Button>
 
               <div className="w-px h-6 bg-slate-200 dark:bg-white/10" />

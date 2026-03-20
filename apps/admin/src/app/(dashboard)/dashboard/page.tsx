@@ -319,7 +319,7 @@ async function DashboardContent() {
         <CommissionCard
           title="Commissions Paid This Month"
           value={`$${commissions.paidThisMonth.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          subtitle="Successfully disbursed to agents"
+          subtitle="Successfully disbursed to advisors"
           icon={<DollarSign className="w-6 h-6 text-slate-600" />}
           href="/commissions"
         />
@@ -407,7 +407,7 @@ async function DashboardContent() {
             <div className="p-4 space-y-2">
               {[
                 { href: '/members/new', icon: Users, title: 'Add New Member', sub: 'Register a new member' },
-                { href: '/agents/new', icon: UserCheck, title: 'Add New Agent', sub: 'Register a new agent' },
+                { href: '/agents/new', icon: UserCheck, title: 'Add New Advisor', sub: 'Register a new advisor' },
                 { href: '/enrollments', icon: FileText, title: 'View Enrollments', sub: 'Manage applications' },
                 { href: '/commissions', icon: CreditCard, title: 'Process Commissions', sub: 'Review payouts' },
                 { href: '/reports', icon: BarChart3, title: 'View Reports', sub: 'Analytics & insights' },

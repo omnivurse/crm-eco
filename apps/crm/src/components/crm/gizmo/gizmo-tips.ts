@@ -65,8 +65,8 @@ export const GIZMO_TIP_REGISTRY: Record<string, GizmoTipSet> = {
       },
       {
         id: 'contacts-advisor',
-        title: 'Sort by Advisor or Agent',
-        body: 'Use the "By Advisor" and "By Agent" buttons at the top to quickly group contacts by their assigned advisor or selling agent.',
+        title: 'Sort by Advisor',
+        body: 'Use the "By Advisor" buttons at the top to quickly group contacts by their assigned advisor.',
         icon: 'user-check',
       },
     ],
