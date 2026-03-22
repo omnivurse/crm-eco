@@ -211,21 +211,38 @@ interface RelatedModuleDef {
 }
 
 const RELATED_MODULES: RelatedModuleDef[] = [
+  // Core activities
   { key: 'activities', label: 'Activities (All)', icon: Activity, enabled: true },
-  { key: 'appointments', label: 'Appointments', icon: Calendar, enabled: true },
   { key: 'calls', label: 'Calls', icon: Phone, enabled: true },
   { key: 'emails', label: 'Emails', icon: Mail, enabled: true },
+  { key: 'meetings', label: 'Meetings', icon: Calendar, enabled: true },
   { key: 'tasks', label: 'Tasks', icon: CheckSquare, enabled: true },
   { key: 'notes', label: 'Notes', icon: FileText, enabled: true },
+  // Connected records
+  { key: 'accounts', label: 'Accounts (Connected Records)', icon: Users, enabled: true },
+  { key: 'contacts', label: 'Contacts (Connected Records)', icon: Users, enabled: true },
   { key: 'leads', label: 'Leads (Converted)', icon: Target, enabled: true },
-  { key: 'products', label: 'Contact Product Relation', icon: Package, enabled: true },
-  { key: 'prospects', label: 'Prospects', icon: Users, enabled: true },
-  { key: 'invoices', label: 'Invoices', icon: FileText, enabled: true },
-  { key: 'data_subject_requests', label: 'Data Subject Requests', icon: FileText, enabled: true },
+  { key: 'campaigns', label: 'Campaigns (Connected Records)', icon: Mail, enabled: true },
+  { key: 'products', label: 'Products (Connected Records)', icon: Package, enabled: true },
+  { key: 'lead_products', label: 'Lead Product Relation (Products)', icon: Package, enabled: true },
+  { key: 'invoices', label: 'Invoices (Connected Records)', icon: FileText, enabled: true },
+  { key: 'prospects', label: 'Prospects (Connected Records)', icon: Users, enabled: true },
   { key: 'prospect_roles', label: 'Prospect Contact Roles', icon: Users, enabled: true },
-  { key: 'providers', label: 'Providers', icon: Package, enabled: true },
-  { key: 'reporting_contacts', label: 'Contacts (Reporting Contacts)', icon: Users, enabled: true },
+  { key: 'providers', label: 'Providers (Connected Records)', icon: Package, enabled: true },
+  // Health sharing specific
+  { key: 'aca_clients', label: 'ACA Clients (Connected Records)', icon: Heart, enabled: true },
+  { key: 'cirrusmd_contacts', label: 'CirrusMD Contacts (Connected Records)', icon: Shield, enabled: true },
+  { key: 'planstin_contacts', label: 'Planstin Contacts (Connected Records)', icon: Shield, enabled: true },
+  { key: 'pricing_matrix', label: 'Pricing Matrix (Connected Records)', icon: Package, enabled: true },
+  { key: 'producers', label: 'Producers (Connected Records)', icon: Users, enabled: true },
+  // Service & support
+  { key: 'services', label: 'Services (Connected Records)', icon: Package, enabled: true },
+  { key: 'solutions', label: 'Solutions (Connected Records)', icon: Package, enabled: true },
+  { key: 'support', label: 'Support (Connected Records)', icon: AlertTriangle, enabled: true },
+  // System
+  { key: 'data_subject_requests', label: 'Data Subject Requests', icon: FileText, enabled: true },
   { key: 'meeting_invitees', label: 'Invitees (Invited Meetings)', icon: Calendar, enabled: true },
+  { key: 'reporting_contacts', label: 'Contacts (Reporting Contacts)', icon: Users, enabled: true },
 ];
 
 // ============================================================================
