@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -24,6 +24,8 @@ import {
   Loader2,
   UserCheck,
   CheckCircle,
+  Search,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
@@ -50,6 +52,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@crm-eco/ui/components/sheet';
+import { supabase } from '@/lib/supabase-client';
 import { ActionRail } from '@/components/layout/ActionRail';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { StageSelector } from '@/components/crm/blueprints';
@@ -99,7 +102,198 @@ const MODULE_COLORS: Record<string, { text: string; bg: string; border: string }
   accounts: { text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
 };
 
-function StageIndicator({ 
+// --- Inline Record Search (persistent search while viewing a record) ---
+const SEARCH_MODULE_ICONS: Record<string, React.ReactNode> = {
+  contacts: <Users className="w-3.5 h-3.5" />,
+  leads: <UserPlus className="w-3.5 h-3.5" />,
+  deals: <DollarSign className="w-3.5 h-3.5" />,
+  accounts: <Building2 className="w-3.5 h-3.5" />,
+};
+
+const SEARCH_MODULE_COLORS: Record<string, string> = {
+  contacts: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
+  leads: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
+  deals: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
+  accounts: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
+};
+
+interface InlineSearchResult {
+  id: string;
+  title: string;
+  subtitle?: string;
+  module: string;
+  moduleName: string;
+}
+
+function InlineRecordSearch({ currentRecordId }: { currentRecordId: string }) {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<InlineSearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const doSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setResults([]); return; }
+    setLoading(true);
+    try {
+      const { data: records } = await supabase
+        .from('crm_records')
+        .select('id, title, email, phone, module_id, data, crm_modules!inner(key, name)')
+        .or(`title.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
+        .neq('id', currentRecordId)
+        .limit(12);
+
+      setResults((records || []).map((r: any) => ({
+        id: r.id,
+        title: r.title || [r.data?.first_name, r.data?.last_name].filter(Boolean).join(' ') || 'Untitled',
+        subtitle: r.email || r.phone || undefined,
+        module: r.crm_modules?.key || 'unknown',
+        moduleName: r.crm_modules?.name || 'Record',
+      })));
+      setSelectedIndex(0);
+    } catch { /* silent */ } finally { setLoading(false); }
+  }, [currentRecordId]);
+
+  // Debounced search
+  useEffect(() => {
+    const t = setTimeout(() => doSearch(query), 250);
+    return () => clearTimeout(t);
+  }, [query, doSearch]);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Keyboard nav
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(i => Math.min(i + 1, results.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(i => Math.max(i - 1, 0));
+    } else if (e.key === 'Enter' && results[selectedIndex]) {
+      e.preventDefault();
+      navigateTo(results[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+      inputRef.current?.blur();
+    }
+  };
+
+  const navigateTo = (result: InlineSearchResult) => {
+    router.push(`/crm/r/${result.id}`);
+    setQuery('');
+    setResults([]);
+    setIsOpen(false);
+  };
+
+  // Group by module
+  const grouped = results.reduce((acc, r) => {
+    if (!acc[r.module]) acc[r.module] = [];
+    acc[r.module].push(r);
+    return acc;
+  }, {} as Record<string, InlineSearchResult[]>);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-white/5 rounded-lg px-2.5 py-1.5 border border-transparent focus-within:border-teal-500/50 focus-within:bg-white dark:focus-within:bg-slate-900 transition-all w-56 focus-within:w-72">
+        <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
+          onFocus={() => { if (query.trim()) setIsOpen(true); }}
+          onKeyDown={handleKeyDown}
+          placeholder="Search records..."
+          className="flex-1 bg-transparent text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none"
+        />
+        {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0" />}
+        {query && !loading && (
+          <button
+            onClick={() => { setQuery(''); setResults([]); setIsOpen(false); }}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* Dropdown results */}
+      {isOpen && query.trim() && (
+        <div className="absolute top-full left-0 mt-1.5 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden">
+          {results.length === 0 && !loading ? (
+            <div className="py-6 text-center text-sm text-slate-500">
+              No records found
+            </div>
+          ) : (
+            <div className="max-h-72 overflow-y-auto py-1">
+              {Object.entries(grouped).map(([mod, modResults]) => (
+                <div key={mod}>
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    {modResults[0]?.moduleName || mod}
+                  </div>
+                  {modResults.map((result) => {
+                    const gi = results.indexOf(result);
+                    return (
+                      <button
+                        key={result.id}
+                        onClick={() => navigateTo(result)}
+                        onMouseEnter={() => setSelectedIndex(gi)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
+                          gi === selectedIndex
+                            ? 'bg-slate-100 dark:bg-white/5'
+                            : 'hover:bg-slate-50 dark:hover:bg-white/5'
+                        )}
+                      >
+                        <div className={cn(
+                          'flex items-center justify-center w-6 h-6 rounded-md shrink-0',
+                          SEARCH_MODULE_COLORS[mod] || SEARCH_MODULE_COLORS.contacts
+                        )}>
+                          {SEARCH_MODULE_ICONS[mod] || <Users className="w-3.5 h-3.5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                            {result.title}
+                          </p>
+                          {result.subtitle && (
+                            <p className="text-xs text-slate-500 truncate">{result.subtitle}</p>
+                          )}
+                        </div>
+                        {gi === selectedIndex && (
+                          <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="border-t border-slate-100 dark:border-white/5 px-3 py-1.5 text-[10px] text-slate-400 flex items-center gap-3">
+            <span><kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">↑↓</kbd> navigate</span>
+            <span><kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">↵</kbd> open</span>
+            <span><kbd className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-[10px]">esc</kbd> close</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StageIndicator({
   currentStage, 
   stages 
 }: { 
@@ -349,19 +543,22 @@ export const RecordDetailShell = memo(function RecordDetailShell({
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
           <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 xl:px-8 py-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 mb-4">
-              <Link 
-                href={backUrl}
-                className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {module.name_plural || module.name}
-              </Link>
-              <span className="text-slate-300 dark:text-slate-600">/</span>
-              <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
-                {record.title || 'Untitled'}
-              </span>
+            {/* Breadcrumb + Search */}
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-2 min-w-0">
+                <Link
+                  href={backUrl}
+                  className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  {module.name_plural || module.name}
+                </Link>
+                <span className="text-slate-300 dark:text-slate-600 shrink-0">/</span>
+                <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
+                  {record.title || 'Untitled'}
+                </span>
+              </div>
+              <InlineRecordSearch currentRecordId={record.id} />
             </div>
 
             {/* Title Row */}
