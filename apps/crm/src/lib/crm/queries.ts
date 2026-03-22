@@ -580,19 +580,36 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   if (relatedFilters.length > 0) {
     // Map related module keys to RPC arguments
     const RELATED_MODULE_MAP: Record<string, { relatedType: string; activityType: string | null }> = {
+      // Core activities
       activities: { relatedType: 'activities', activityType: null },
-      appointments: { relatedType: 'appointments', activityType: 'meeting' },
       calls: { relatedType: 'calls', activityType: 'call' },
       emails: { relatedType: 'emails', activityType: 'email' },
+      meetings: { relatedType: 'appointments', activityType: 'meeting' },
       tasks: { relatedType: 'tasks', activityType: 'task' },
       notes: { relatedType: 'notes', activityType: null },
+      // Connected records
+      accounts: { relatedType: 'linked_records', activityType: 'accounts' },
+      contacts: { relatedType: 'linked_records', activityType: 'contacts' },
       leads: { relatedType: 'linked_records', activityType: 'leads' },
+      campaigns: { relatedType: 'linked_records', activityType: 'campaigns' },
       products: { relatedType: 'linked_records', activityType: 'products' },
-      prospects: { relatedType: 'linked_records', activityType: 'prospects' },
+      lead_products: { relatedType: 'linked_records', activityType: 'products' },
       invoices: { relatedType: 'linked_records', activityType: 'invoices' },
-      data_subject_requests: { relatedType: 'linked_records', activityType: 'data_subject_requests' },
+      prospects: { relatedType: 'linked_records', activityType: 'prospects' },
       prospect_roles: { relatedType: 'linked_by_type', activityType: 'prospect_role' },
       providers: { relatedType: 'linked_records', activityType: 'providers' },
+      // Health sharing specific
+      aca_clients: { relatedType: 'linked_records', activityType: 'aca_clients' },
+      cirrusmd_contacts: { relatedType: 'linked_records', activityType: 'cirrusmd_contacts' },
+      planstin_contacts: { relatedType: 'linked_records', activityType: 'planstin_contacts' },
+      pricing_matrix: { relatedType: 'linked_records', activityType: 'pricing_matrix' },
+      producers: { relatedType: 'linked_records', activityType: 'producers' },
+      // Service & support
+      services: { relatedType: 'linked_records', activityType: 'services' },
+      solutions: { relatedType: 'linked_records', activityType: 'solutions' },
+      support: { relatedType: 'linked_records', activityType: 'support' },
+      // System
+      data_subject_requests: { relatedType: 'linked_records', activityType: 'data_subject_requests' },
       reporting_contacts: { relatedType: 'linked_records', activityType: 'contacts' },
       meeting_invitees: { relatedType: 'meeting_invitees', activityType: null },
     };
