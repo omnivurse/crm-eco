@@ -39,6 +39,10 @@ export async function GET(request: NextRequest) {
 
     const { data, error, count } = await query;
     if (error) {
+      // Table may not exist yet if migration hasn't been applied
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return NextResponse.json({ segments: [], total: 0 });
+      }
       console.error('[Segmentations] Query error:', error);
       return NextResponse.json({ error: 'Failed to fetch segments' }, { status: 500 });
     }

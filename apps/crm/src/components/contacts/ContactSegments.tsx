@@ -57,11 +57,13 @@ export default function ContactSegments() {
       if (res.ok) {
         const json = await res.json();
         setSegments(json.segments || []);
-      } else {
-        toast.error('Failed to load segments');
+      } else if (res.status !== 503) {
+        // Suppress 503 errors (table may not exist yet)
+        console.warn('[Segments] Failed to load:', res.status);
       }
     } catch {
-      toast.error('Failed to load segments');
+      // Silent fail — segments are optional
+      console.warn('[Segments] Failed to load segments');
     } finally {
       setLoading(false);
     }
