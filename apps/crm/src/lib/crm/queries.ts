@@ -632,16 +632,23 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   // ── Apply field-based filters ──
   for (const filter of fieldFilters) {
     // Determine the field path - system fields vs custom fields in data jsonb
-    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id', 'market_type', 'normalization_status', 'normalized_advisor_name', 'normalized_agent_name', 'canonical_advisor_id', 'import_source', 'source_record_id', 'estimated_age', 'age_range', 'age_is_estimated', 'carrier_id', 'record_type', 'tobacco_user'].includes(filter.field);
+    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id', 'market_type', 'normalization_status', 'normalized_advisor_name', 'normalized_agent_name', 'canonical_advisor_id', 'import_source', 'source_record_id', 'estimated_age', 'age_range', 'age_is_estimated', 'carrier_id', 'record_type', 'tobacco_user', 'original_start_date', 'current_year_start_date'].includes(filter.field);
     const fieldPath = isSystemField ? filter.field : `data->>${filter.field}`;
+
+    // Boolean system columns: convert string 'true'/'false' to actual boolean
+    const isBooleanColumn = ['tobacco_user', 'age_is_estimated'].includes(filter.field);
+    let filterValue = filter.value;
+    if (isBooleanColumn && typeof filterValue === 'string') {
+      filterValue = filterValue === 'true';
+    }
 
     switch (filter.operator) {
       // Basic comparison operators
       case 'equals':
-        query = query.eq(fieldPath, filter.value);
+        query = query.eq(fieldPath, filterValue);
         break;
       case 'not_equals':
-        query = query.neq(fieldPath, filter.value);
+        query = query.neq(fieldPath, filterValue);
         break;
       case 'contains':
         query = query.ilike(fieldPath, `%${escapeLikePattern(String(filter.value ?? ''))}%`);
