@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildRequest, buildProfile } from '@/test/helpers';
 
-// Mocks
-const mockProfile = buildProfile();
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
+// Mocks — org_id must be a UUID (matches createRecordSchema)
+const VALID_ORG_ID = '00000000-0000-0000-0000-000000000001';
+const mockProfile = buildProfile({ organization_id: VALID_ORG_ID });
 const mockCreateClient = vi.fn();
 const mockGetAuthUser = vi.fn();
 const mockGetAuthProfile = vi.fn();
@@ -20,7 +25,6 @@ vi.mock('@/lib/automation', () => ({
 
 import { GET, POST } from './route';
 
-const VALID_ORG_ID = '00000000-0000-0000-0000-000000000001';
 const VALID_MODULE_ID = '00000000-0000-0000-0000-000000000002';
 
 function buildMockSupabase(overrides?: {
@@ -38,7 +42,9 @@ function buildMockSupabase(overrides?: {
   chainable.single = vi.fn(() => {
     callCount++;
     if (callCount === 1) {
-      return Promise.resolve(overrides?.moduleResult ?? { data: { id: 'mod-1', org_id: 'org-1' }, error: null });
+      return Promise.resolve(
+        overrides?.moduleResult ?? { data: { id: 'mod-1', org_id: VALID_ORG_ID }, error: null }
+      );
     }
     return Promise.resolve(overrides?.insertResult ?? { data: { id: 'rec-1' }, error: null });
   });
@@ -147,7 +153,7 @@ describe('POST /api/crm/records', () => {
     mockGetAuthProfile.mockResolvedValue(null);
     const req = buildRequest('http://localhost:3000/api/crm/records', {
       method: 'POST',
-      body: { org_id: 'org-1', module_id: 'mod-1', data: {} },
+      body: { org_id: VALID_ORG_ID, module_id: VALID_MODULE_ID, data: {} },
     });
     const res = await POST(req);
     expect(res.status).toBe(401);
@@ -187,9 +193,24 @@ describe('POST /api/crm/records', () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
     const newRecord = { id: 'rec-new', org_id: VALID_ORG_ID, module_id: VALID_MODULE_ID, data: { name: 'Test' } };
     const chainable: Record<string, any> = {};
-    ['insert', 'select', 'eq'].forEach(m => { chainable[m] = vi.fn(() => chainable); });
-    chainable.single = vi.fn(() => Promise.resolve({ data: newRecord, error: null }));
-    mockCreateClient.mockResolvedValue({ from: vi.fn(() => chainable) });
+    ['insert', 'select', 'eq'].forEach(m => {
+      chainable[m] = vi.fn(() => chainable);
+    });
+    let singleCount = 0;
+    chainable.single = vi.fn(() => {
+      singleCount++;
+      if (singleCount === 1) {
+        return Promise.resolve({
+          data: { id: VALID_MODULE_ID, org_id: VALID_ORG_ID },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: newRecord, error: null });
+    });
+    mockCreateClient.mockResolvedValue({
+      from: vi.fn(() => chainable),
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    });
 
     const req = buildRequest('http://localhost:3000/api/crm/records', {
       method: 'POST',
@@ -209,9 +230,24 @@ describe('POST /api/crm/records', () => {
     mockGetAuthUser.mockResolvedValue({ user: { id: 'user-1' }, error: null });
     mockGetAuthProfile.mockResolvedValue(mockProfile);
     const chainable: Record<string, any> = {};
-    ['insert', 'select', 'eq'].forEach(m => { chainable[m] = vi.fn(() => chainable); });
-    chainable.single = vi.fn(() => Promise.resolve({ data: null, error: { message: 'DB error' } }));
-    mockCreateClient.mockResolvedValue({ from: vi.fn(() => chainable) });
+    ['insert', 'select', 'eq'].forEach(m => {
+      chainable[m] = vi.fn(() => chainable);
+    });
+    let singleCount = 0;
+    chainable.single = vi.fn(() => {
+      singleCount++;
+      if (singleCount === 1) {
+        return Promise.resolve({
+          data: { id: VALID_MODULE_ID, org_id: VALID_ORG_ID },
+          error: null,
+        });
+      }
+      return Promise.resolve({ data: null, error: { message: 'DB error' } });
+    });
+    mockCreateClient.mockResolvedValue({
+      from: vi.fn(() => chainable),
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    });
 
     const req = buildRequest('http://localhost:3000/api/crm/records', {
       method: 'POST',

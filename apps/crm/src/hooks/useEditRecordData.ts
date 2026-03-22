@@ -3,21 +3,17 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-client';
 import { queryKeys } from '@/lib/query-keys';
+import type { CrmRecord } from '@/lib/crm/types';
 
-interface RecordData {
-  id: string;
-  title: string;
-  email: string | null;
-  phone: string | null;
-  status: string | null;
-  data: Record<string, unknown>;
+/** Full `crm_records` row + module (must match server reads — use `select('*')`). */
+export type EditRecordRow = CrmRecord & {
   module: {
     id: string;
     key: string;
     name: string;
     name_plural: string | null;
   };
-}
+};
 
 interface Field {
   id: string;
@@ -29,22 +25,17 @@ interface Field {
 }
 
 export interface EditRecordData {
-  record: RecordData;
+  record: EditRecordRow;
   fields: Field[];
 }
 
-// Fetch record data with module info
-async function fetchRecordWithModule(recordId: string): Promise<RecordData | null> {
+// Fetch full row + module — same columns as getRecordWithModule / list queries
+async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | null> {
   const { data, error } = await supabase
     .from('crm_records')
     .select(`
-      id,
-      title,
-      email,
-      phone,
-      status,
-      data,
-      module:crm_modules(id, key, name, name_plural)
+      *,
+      module:crm_modules!crm_records_module_id_fkey(id, key, name, name_plural)
     `)
     .eq('id', recordId)
     .single();
@@ -59,7 +50,7 @@ async function fetchRecordWithModule(recordId: string): Promise<RecordData | nul
   return {
     ...data,
     module: moduleData,
-  } as RecordData;
+  } as EditRecordRow;
 }
 
 // Fetch fields for module

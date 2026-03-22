@@ -13,6 +13,7 @@ import {
 import { AlertCircle, CheckCircle, Circle } from 'lucide-react';
 import type { CrmField } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 
 interface Blocker {
   fieldKey: string;
@@ -90,14 +91,21 @@ function BlockerItem({
   blocker: Blocker;
   onResolve: (value: unknown) => void;
 }) {
-  const [value, setValue] = useState<string>(
-    blocker.currentValue !== null && blocker.currentValue !== undefined 
-      ? String(blocker.currentValue) 
-      : ''
-  );
+  const [value, setValue] = useState<string>(() => {
+    if (blocker.currentValue === null || blocker.currentValue === undefined) return '';
+    if (blocker.field.type === 'datetime') {
+      return toDatetimeLocalValue(blocker.currentValue);
+    }
+    return String(blocker.currentValue);
+  });
 
   const handleChange = (newValue: string) => {
     setValue(newValue);
+    if (blocker.field.type === 'datetime' && newValue) {
+      const d = new Date(newValue);
+      onResolve(Number.isNaN(d.getTime()) ? newValue : d.toISOString());
+      return;
+    }
     onResolve(newValue || null);
   };
 

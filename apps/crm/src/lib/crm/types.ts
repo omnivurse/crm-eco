@@ -332,6 +332,20 @@ export interface CrmRecord {
   medicaid_start_date: string | null;
   medicaid_end_date: string | null;
   medicaid_state: string | null;
+  /** Indexed lane + data-quality columns (crm_records — not only JSONB `data`) */
+  market_type?: string | null;
+  carrier_id?: string | null;
+  normalization_status?: string | null;
+  normalization_notes?: string | null;
+  canonical_advisor_id?: string | null;
+  normalized_advisor_name?: string | null;
+  normalized_agent_name?: string | null;
+  tobacco_user?: boolean | null;
+  record_type?: string | null;
+  import_source?: string | null;
+  territory_id?: string | null;
+  source_record_id?: string | null;
+  import_batch_id?: string | null;
   system: Record<string, unknown>;
   data: Record<string, unknown>;
   created_by: string | null;

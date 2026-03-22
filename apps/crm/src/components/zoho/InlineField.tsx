@@ -14,6 +14,7 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import { Check, X, Pencil, Loader2 } from 'lucide-react';
 import type { CrmField } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 
 interface InlineFieldProps {
   field: CrmField;
@@ -39,6 +40,12 @@ export function InlineField({
   function formatValue(val: unknown): string {
     if (val === null || val === undefined) return '';
     if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+    if (field.type === 'datetime') return toDatetimeLocalValue(val);
+    if (field.type === 'date') {
+      if (val instanceof Date) return val.toISOString().split('T')[0];
+      const s = String(val);
+      return s.includes('T') ? s.split('T')[0] : s.slice(0, 10);
+    }
     if (val instanceof Date) return val.toISOString().split('T')[0];
     return String(val);
   }
@@ -50,6 +57,10 @@ export function InlineField({
     }
     if (field.type === 'boolean') {
       return val.toLowerCase() === 'yes' || val === 'true';
+    }
+    if (field.type === 'datetime' && val) {
+      const d = new Date(val);
+      return Number.isNaN(d.getTime()) ? val : d.toISOString();
     }
     return val || null;
   }

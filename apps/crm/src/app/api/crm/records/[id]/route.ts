@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
-import { getModuleBlueprint } from '@/lib/blueprints';
 import {
   getRecordPendingApproval,
   checkApprovalRequired,
   createApprovalRequest,
 } from '@/lib/approvals';
-import { logPHIAccess, identifyPHIFields } from '@/lib/security';
-import type { CrmRecord } from '@/lib/crm/types';
+import { logPHIAccess } from '@/lib/security';
+import { executeCrmRecordPatch } from '@/lib/crm/record-patch-service';
 
 export async function PATCH(
   request: NextRequest,
@@ -18,7 +15,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    
+
     const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,187 +25,19 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get the previous record state for change detection
-    const { data: previousRecord } = await supabase
-      .from('crm_records')
-      .select('*')
-      .eq('id', id)
-      .eq('org_id', profile.organization_id)
-      .single();
-
-    if (!previousRecord) {
-      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
-    }
-
     const body = await request.json();
-    const updates: Record<string, unknown> = {};
-
-    if (body.data !== undefined) {
-      updates.data = body.data;
-      // Sync top-level indexed columns from JSONB data so search/filters stay current
-      const d = body.data as Record<string, unknown>;
-      if (d.email !== undefined) updates.email = d.email || null;
-      if (d.phone !== undefined) updates.phone = d.phone || null;
-      if (d.first_name !== undefined || d.last_name !== undefined) {
-        const first = (d.first_name as string) || '';
-        const last = (d.last_name as string) || '';
-        updates.title = [first, last].filter(Boolean).join(' ') || previousRecord.title;
-      }
-      if (d.contact_status !== undefined) updates.status = d.contact_status || null;
-      if (d.lead_status !== undefined) updates.status = d.lead_status || null;
-      if (d.status !== undefined) updates.status = d.status || null;
-    }
-    if (body.owner_id !== undefined) {
-      updates.owner_id = body.owner_id;
-
-      // Sync canonical ownership fields when owner changes
-      if (body.owner_id) {
-        const { data: ownerProfile } = await supabase
-          .from('profiles')
-          .select('id, full_name, advisor_id')
-          .eq('id', body.owner_id)
-          .single();
-
-        if (ownerProfile) {
-          const marketType = previousRecord.market_type;
-          if (marketType === 'healthshare') {
-            updates.canonical_advisor_id = ownerProfile.advisor_id || null;
-            updates.normalized_advisor_name = ownerProfile.full_name || null;
-            updates.normalization_status = 'normalized';
-          } else if (marketType === 'traditional_insurance') {
-            updates.normalized_agent_name = ownerProfile.full_name || null;
-            updates.normalization_status = 'normalized';
-          } else {
-            // Unknown lane: set both
-            updates.canonical_advisor_id = ownerProfile.advisor_id || null;
-            updates.normalized_advisor_name = ownerProfile.full_name || null;
-            updates.normalized_agent_name = ownerProfile.full_name || null;
-          }
-        }
-      }
-    }
-    if (body.status !== undefined) updates.status = body.status;
-    if (body.title !== undefined) updates.title = body.title;
-
-    // BLUEPRINT PROTECTION: Block direct stage changes when blueprint exists
-    if (body.stage !== undefined && body.stage !== previousRecord.stage) {
-      // Check if module has a blueprint
-      const blueprint = await getModuleBlueprint(previousRecord.module_id);
-
-      if (blueprint) {
-        return NextResponse.json({
-          error: 'Stage changes must go through the transition API when a blueprint is active',
-          code: 'BLUEPRINT_STAGE_PROTECTION',
-          hint: 'Use POST /api/crm/transition instead',
-        }, { status: 400 });
-      }
-
-      // No blueprint - allow direct stage change
-      updates.stage = body.stage;
-    } else if (body.stage !== undefined) {
-      // Same stage, just include it
-      updates.stage = body.stage;
-    }
-
-    // APPROVAL PROTECTION: Block updates when pending approval exists
-    const pendingApproval = await getRecordPendingApproval(id);
-    if (pendingApproval && pendingApproval.context.action_type === 'stage_transition') {
-      // Block stage-related changes while approval is pending
-      if (body.stage !== undefined && body.stage !== previousRecord.stage) {
-        return NextResponse.json({
-          error: 'Cannot modify stage while an approval is pending',
-          code: 'PENDING_APPROVAL',
-          approvalId: pendingApproval.id,
-        }, { status: 400 });
-      }
-    }
-
-    if (Object.keys(updates).length === 0) {
-      return NextResponse.json(
-        { error: 'No fields to update', code: 'EMPTY_UPDATE' },
-        { status: 400 },
-      );
-    }
-
-    const { data: record, error } = await supabase
-      .from('crm_records')
-      .update(updates)
-      .eq('id', id)
-      .eq('org_id', profile.organization_id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[Records] PATCH error:', { id, error: error.message, code: error.code });
-      if (error.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Update affected 0 rows — record may have been deleted or access denied', code: 'ZERO_ROWS' },
-          { status: 404 },
-        );
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    if (!record) {
-      return NextResponse.json(
-        { error: 'Update returned no data', code: 'NO_DATA' },
-        { status: 500 },
-      );
-    }
-
-    const typedRecord = record as CrmRecord;
-
-    // Execute on_update workflows (fire and forget for faster response)
-    if (previousRecord) {
-      executeMatchingWorkflows({
-        orgId: typedRecord.org_id,
-        moduleId: typedRecord.module_id,
-        record: typedRecord,
-        trigger: 'on_update',
-        previousRecord: previousRecord as CrmRecord,
-        dryRun: false,
-        userId: profile.user_id,
-        profileId: profile.id,
-      }).catch(err => {
-        console.error('Workflow execution error:', err);
-      });
-    }
-
-    // Apply scoring rules
-    applyScoring(typedRecord, {
-      orgId: typedRecord.org_id,
-      moduleId: typedRecord.module_id,
-      record: typedRecord,
-      trigger: 'on_update',
-      dryRun: false,
-    }).catch(err => {
-      console.error('Scoring error:', err);
+    const result = await executeCrmRecordPatch({
+      supabase,
+      profile,
+      id,
+      body,
     });
 
-    // Log PHI access for HIPAA compliance
-    try {
-      const phiFields = identifyPHIFields(typedRecord.data || {});
-      if (phiFields.length > 0) {
-        await logPHIAccess({
-          userId: profile.id,
-          organizationId: typedRecord.org_id,
-          action: 'update',
-          resourceType: 'record',
-          resourceId: id,
-          recordName: typedRecord.title || undefined,
-          phiFieldsAccessed: phiFields,
-          metadata: { module_id: typedRecord.module_id },
-        });
-      }
-    } catch (err) {
-      console.error('PHI audit logging error:', err);
+    if (!result.ok) {
+      return NextResponse.json(result.body, { status: result.status });
     }
 
-    // Revalidate cached pages so navigating back shows fresh data
-    revalidatePath('/crm');
-    revalidatePath(`/crm/r/${id}`);
-
-    return NextResponse.json(record);
+    return NextResponse.json(result.record);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -221,7 +50,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     const supabase = await createClient();
-    
+
     const profile = await getAuthProfile();
     if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -279,12 +108,15 @@ export async function DELETE(
       });
 
       if (result.success) {
-        return NextResponse.json({
-          success: false,
-          requiresApproval: true,
-          approvalId: result.approvalId,
-          message: 'Deletion requires approval',
-        }, { status: 202 });
+        return NextResponse.json(
+          {
+            success: false,
+            requiresApproval: true,
+            approvalId: result.approvalId,
+            message: 'Deletion requires approval',
+          },
+          { status: 202 }
+        );
       }
     }
 

@@ -12,6 +12,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
 import { queryKeys } from '@/lib/query-keys';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 
 interface Field {
   id: string;
@@ -36,16 +38,12 @@ export default function EditRecordPage() {
   // Use TanStack Query for cached data fetching
   const { data, isLoading, error } = useEditRecordData(recordId);
 
-  // Initialize form data when record loads, merging top-level indexed columns
+  // Initialize form data when record loads — full row + merge indexed columns into `data` shape
   useEffect(() => {
     if (data?.record && !isInitialized) {
-      const r = data.record;
-      const initial = {
-        ...r.data,
-        ...(r.email && !r.data?.email && { email: r.email }),
-        ...(r.phone && !r.data?.phone && { phone: r.phone }),
-        ...(r.status && !r.data?.contact_status && { contact_status: r.status }),
-      };
+      const initial = mergeCrmRecordRowIntoFormDefaults(
+        data.record as unknown as Parameters<typeof mergeCrmRecordRowIntoFormDefaults>[0]
+      );
       setFormData(initial);
       initialFormData.current = initial;
       setIsInitialized(true);
@@ -189,7 +187,7 @@ export default function EditRecordPage() {
         return (
           <Input
             type="datetime-local"
-            value={value || ''}
+            value={toDatetimeLocalValue(value)}
             onChange={(e) => handleFieldChange(field.key, e.target.value)}
             className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
           />

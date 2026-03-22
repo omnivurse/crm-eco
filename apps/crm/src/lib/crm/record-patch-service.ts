@@ -1,0 +1,248 @@
+import { revalidatePath } from 'next/cache';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
+import { getModuleBlueprint } from '@/lib/blueprints';
+import { getRecordPendingApproval } from '@/lib/approvals';
+import { logPHIAccess, identifyPHIFields } from '@/lib/security';
+import type { CrmRecord } from '@/lib/crm/types';
+import { mergeCrmDataJsonIntoRowColumns } from '@/lib/crm/merge-crm-data-json-to-row';
+
+/** Matches `getAuthProfile()` shape used by CRM API routes */
+/** Profile fields required by CRM record create/patch (matches `getAuthProfile()`). */
+export interface CrmPatchAuthProfile {
+  id: string;
+  organization_id: string;
+  crm_role: string | null;
+  /** Auth user id (profiles.user_id) */
+  user_id: string;
+}
+
+export type CrmRecordPatchResult =
+  | { ok: true; record: CrmRecord; previousRecord: CrmRecord }
+  | { ok: false; status: number; body: Record<string, unknown> };
+
+const CANONICAL_TOP_LEVEL_KEYS = [
+  'market_type',
+  'carrier_id',
+  'normalization_status',
+  'normalization_notes',
+  'canonical_advisor_id',
+  'normalized_advisor_name',
+  'normalized_agent_name',
+  'tobacco_user',
+  'record_type',
+  'import_source',
+  'advisor_id',
+  'contact_type',
+  'territory_id',
+  'source_record_id',
+  'import_batch_id',
+] as const;
+
+/**
+ * Single implementation of CRM record PATCH logic (workflows, scoring, PHI, revalidation).
+ * Used by `PATCH /api/crm/records/[id]` and server-side `updateRecord()`.
+ */
+export async function executeCrmRecordPatch(params: {
+  supabase: SupabaseClient;
+  profile: CrmPatchAuthProfile;
+  id: string;
+  body: Record<string, unknown>;
+}): Promise<CrmRecordPatchResult> {
+  const { supabase, profile, id, body } = params;
+
+  const { data: previousRecord, error: fetchError } = await supabase
+    .from('crm_records')
+    .select('*')
+    .eq('id', id)
+    .eq('org_id', profile.organization_id)
+    .single();
+
+  if (fetchError || !previousRecord) {
+    return { ok: false, status: 404, body: { error: 'Record not found' } };
+  }
+
+  const updates: Record<string, unknown> = {};
+
+  if (body.data !== undefined) {
+    updates.data = body.data;
+    const d = body.data as Record<string, unknown>;
+    Object.assign(
+      updates,
+      mergeCrmDataJsonIntoRowColumns(d, { previousTitle: previousRecord.title })
+    );
+  }
+
+  if (body.owner_id !== undefined) {
+    updates.owner_id = body.owner_id;
+
+    if (body.owner_id) {
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('id, full_name, advisor_id')
+        .eq('id', body.owner_id)
+        .single();
+
+      if (ownerProfile) {
+        const marketType = previousRecord.market_type;
+        if (marketType === 'healthshare') {
+          updates.canonical_advisor_id = ownerProfile.advisor_id || null;
+          updates.normalized_advisor_name = ownerProfile.full_name || null;
+          updates.normalization_status = 'normalized';
+        } else if (marketType === 'traditional_insurance') {
+          updates.normalized_agent_name = ownerProfile.full_name || null;
+          updates.normalization_status = 'normalized';
+        } else {
+          updates.canonical_advisor_id = ownerProfile.advisor_id || null;
+          updates.normalized_advisor_name = ownerProfile.full_name || null;
+          updates.normalized_agent_name = ownerProfile.full_name || null;
+        }
+      }
+    }
+  }
+
+  if (body.status !== undefined) updates.status = body.status;
+  if (body.title !== undefined) updates.title = body.title;
+
+  if (body.stage !== undefined && body.stage !== previousRecord.stage) {
+    const blueprint = await getModuleBlueprint(previousRecord.module_id);
+
+    if (blueprint) {
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          error: 'Stage changes must go through the transition API when a blueprint is active',
+          code: 'BLUEPRINT_STAGE_PROTECTION',
+          hint: 'Use POST /api/crm/transition instead',
+        },
+      };
+    }
+
+    updates.stage = body.stage;
+  } else if (body.stage !== undefined) {
+    updates.stage = body.stage;
+  }
+
+  for (const key of CANONICAL_TOP_LEVEL_KEYS) {
+    if (body[key] !== undefined) {
+      (updates as Record<string, unknown>)[key] = body[key];
+    }
+  }
+
+  const dataObj =
+    body.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : null;
+  const laneOrCarrierTouched =
+    body.market_type !== undefined ||
+    body.carrier_id !== undefined ||
+    (dataObj && (dataObj.market_type !== undefined || dataObj.carrier_id !== undefined));
+
+  if (laneOrCarrierTouched && body.normalization_status === undefined) {
+    const mt = (updates.market_type ?? previousRecord.market_type) as string | null | undefined;
+    const carrierId =
+      updates.carrier_id !== undefined ? updates.carrier_id : previousRecord.carrier_id;
+    if (mt === 'healthshare') {
+      updates.normalization_status = 'normalized';
+    } else if (mt === 'traditional_insurance' && carrierId) {
+      updates.normalization_status = 'normalized';
+    }
+  }
+
+  const pendingApproval = await getRecordPendingApproval(id);
+  if (pendingApproval && pendingApproval.context.action_type === 'stage_transition') {
+    if (body.stage !== undefined && body.stage !== previousRecord.stage) {
+      return {
+        ok: false,
+        status: 400,
+        body: {
+          error: 'Cannot modify stage while an approval is pending',
+          code: 'PENDING_APPROVAL',
+          approvalId: pendingApproval.id,
+        },
+      };
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return {
+      ok: false,
+      status: 400,
+      body: { error: 'No fields to update', code: 'EMPTY_UPDATE' },
+    };
+  }
+
+  const { data: record, error } = await supabase
+    .from('crm_records')
+    .update(updates)
+    .eq('id', id)
+    .eq('org_id', profile.organization_id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('[Records] PATCH error:', { id, error: error.message, code: error.code });
+    if (error.code === 'PGRST116') {
+      return {
+        ok: false,
+        status: 404,
+        body: {
+          error: 'Update affected 0 rows — record may have been deleted or access denied',
+          code: 'ZERO_ROWS',
+        },
+      };
+    }
+    return { ok: false, status: 500, body: { error: error.message } };
+  }
+
+  if (!record) {
+    return { ok: false, status: 500, body: { error: 'Update returned no data', code: 'NO_DATA' } };
+  }
+
+  const typedRecord = record as CrmRecord;
+
+  executeMatchingWorkflows({
+    orgId: typedRecord.org_id,
+    moduleId: typedRecord.module_id,
+    record: typedRecord,
+    trigger: 'on_update',
+    previousRecord: previousRecord as CrmRecord,
+    dryRun: false,
+    userId: profile.user_id,
+    profileId: profile.id,
+  }).catch(err => {
+    console.error('Workflow execution error:', err);
+  });
+
+  applyScoring(typedRecord, {
+    orgId: typedRecord.org_id,
+    moduleId: typedRecord.module_id,
+    record: typedRecord,
+    trigger: 'on_update',
+    dryRun: false,
+  }).catch(err => {
+    console.error('Scoring error:', err);
+  });
+
+  try {
+    const phiFields = identifyPHIFields(typedRecord.data || {});
+    if (phiFields.length > 0) {
+      await logPHIAccess({
+        userId: profile.id,
+        organizationId: typedRecord.org_id,
+        action: 'update',
+        resourceType: 'record',
+        resourceId: id,
+        recordName: typedRecord.title || undefined,
+        phiFieldsAccessed: phiFields,
+        metadata: { module_id: typedRecord.module_id },
+      });
+    }
+  } catch (err) {
+    console.error('PHI audit logging error:', err);
+  }
+
+  revalidatePath('/crm');
+  revalidatePath(`/crm/r/${id}`);
+
+  return { ok: true, record: typedRecord, previousRecord: previousRecord as CrmRecord };
+}

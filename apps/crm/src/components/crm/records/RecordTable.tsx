@@ -41,6 +41,7 @@ import {
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FieldRenderer } from './FieldRenderer';
+import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { ResizeHandle } from './ResizeHandle';
 import { useColumnResize } from '@/hooks/useColumnResize';
 import { prefetchRecordForDrawer } from '@/lib/prefetch';
@@ -193,13 +194,31 @@ function InlineEditor({
   }
 
   // Date field
-  if (fieldType === 'date' || fieldType === 'datetime') {
+  if (fieldType === 'date') {
     return (
       <div className="flex items-center gap-1">
         <Input
           ref={inputRef}
           type="date"
           value={String(editValue).split('T')[0] || ''}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleSave}
+          className="h-8 text-sm w-full"
+          disabled={saving}
+        />
+        {saving && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+      </div>
+    );
+  }
+
+  if (fieldType === 'datetime') {
+    return (
+      <div className="flex items-center gap-1">
+        <Input
+          ref={inputRef}
+          type="datetime-local"
+          value={toDatetimeLocalValue(editValue)}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           onBlur={handleSave}
@@ -539,12 +558,23 @@ export const RecordTable = memo(function RecordTable({
       const record = records.find(r => r.id === editingCell.recordId);
       if (!record) return;
 
+      const fieldMeta = fields.find((f) => f.key === editingCell.field);
+      let storeValue = value;
+      if (
+        fieldMeta?.type === 'datetime' &&
+        typeof value === 'string' &&
+        value
+      ) {
+        const d = new Date(value);
+        if (!Number.isNaN(d.getTime())) storeValue = d.toISOString();
+      }
+
       // Determine if this is a system field or data field
       const isSystemField = ['status', 'title', 'owner_id'].includes(editingCell.field);
 
       const updates: Record<string, unknown> = isSystemField
-        ? { [editingCell.field]: value }
-        : { data: { ...record.data, [editingCell.field]: value } };
+        ? { [editingCell.field]: storeValue }
+        : { data: { ...record.data, [editingCell.field]: storeValue } };
 
       await onRecordUpdate(editingCell.recordId, updates);
       toast.success('Updated successfully');
@@ -554,7 +584,7 @@ export const RecordTable = memo(function RecordTable({
     } finally {
       setEditingCell(null);
     }
-  }, [editingCell, onRecordUpdate, records]);
+  }, [editingCell, onRecordUpdate, records, fields]);
 
   // Cancel inline edit
   const handleInlineEditCancel = useCallback(() => {

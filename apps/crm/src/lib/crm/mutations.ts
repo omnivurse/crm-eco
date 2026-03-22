@@ -23,6 +23,9 @@ import type {
 } from './types';
 import { createCrmClient } from './queries';
 import { cache } from 'react';
+import { getAuthUser, getAuthProfile } from '@/lib/supabase-server';
+import { executeCrmRecordCreate } from './record-create-service';
+import { executeCrmRecordPatch } from './record-patch-service';
 
 // ============================================================================
 // Cached Auth Helper - prevents 8+ auth calls per request
@@ -82,28 +85,39 @@ export interface CreateRecordInput {
   data: Record<string, unknown>;
   status?: string;
   stage?: string;
+  /** Skip duplicate RPC check (same as POST /api/crm/records) */
+  force?: boolean;
 }
 
 export async function createRecord(input: CreateRecordInput): Promise<CrmRecord> {
   const supabase = await createCrmClient();
-  const profileId = await getProfileId();
+  const { user } = await getAuthUser();
+  const profile = await getAuthProfile();
+  if (!user || !profile) {
+    throw new Error('Not authenticated');
+  }
 
-  const { data, error } = await supabase
-    .from('crm_records')
-    .insert({
+  const result = await executeCrmRecordCreate({
+    supabase,
+    profile,
+    user,
+    input: {
       org_id: input.org_id,
       module_id: input.module_id,
-      owner_id: input.owner_id || profileId,
+      owner_id: input.owner_id,
       data: input.data,
       status: input.status,
       stage: input.stage,
-      created_by: profileId,
-    })
-    .select()
-    .single();
+      force: input.force,
+    },
+  });
 
-  if (error) throw error;
-  return data as CrmRecord;
+  if (!result.ok) {
+    const errMsg =
+      typeof result.body.error === 'string' ? result.body.error : JSON.stringify(result.body);
+    throw new Error(errMsg);
+  }
+  return result.record;
 }
 
 export interface UpdateRecordInput {
@@ -115,25 +129,40 @@ export interface UpdateRecordInput {
   title?: string;
 }
 
+/**
+ * Server-side record update — same logic as `PATCH /api/crm/records/[id]`
+ * (JSONB→column sync, blueprint stage guard, workflows, scoring, PHI audit).
+ */
 export async function updateRecord(input: UpdateRecordInput): Promise<CrmRecord> {
   const supabase = await createCrmClient();
-  
-  const updates: Record<string, unknown> = {};
-  if (input.data !== undefined) updates.data = input.data;
-  if (input.owner_id !== undefined) updates.owner_id = input.owner_id;
-  if (input.status !== undefined) updates.status = input.status;
-  if (input.stage !== undefined) updates.stage = input.stage;
-  if (input.title !== undefined) updates.title = input.title;
+  const profile = await getAuthProfile();
+  if (!profile) {
+    throw new Error('Not authenticated');
+  }
+  if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
+    throw new Error('Forbidden');
+  }
 
-  const { data, error } = await supabase
-    .from('crm_records')
-    .update(updates)
-    .eq('id', input.id)
-    .select()
-    .single();
+  const body: Record<string, unknown> = {};
+  if (input.data !== undefined) body.data = input.data;
+  if (input.owner_id !== undefined) body.owner_id = input.owner_id;
+  if (input.status !== undefined) body.status = input.status;
+  if (input.stage !== undefined) body.stage = input.stage;
+  if (input.title !== undefined) body.title = input.title;
 
-  if (error) throw error;
-  return data as CrmRecord;
+  const result = await executeCrmRecordPatch({
+    supabase,
+    profile,
+    id: input.id,
+    body,
+  });
+
+  if (!result.ok) {
+    const errMsg =
+      typeof result.body.error === 'string' ? result.body.error : JSON.stringify(result.body);
+    throw new Error(errMsg);
+  }
+  return result.record;
 }
 
 export async function deleteRecord(recordId: string): Promise<void> {

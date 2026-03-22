@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
-import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
-import type { CrmRecord } from '@/lib/crm/types';
+import { executeCrmRecordCreate } from '@/lib/crm/record-create-service';
 
 /**
  * GET /api/crm/records
@@ -147,81 +145,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Duplicate check before insert
-    const emailToCheck = (parsed.data.data?.email as string) || null;
-    const phoneToCheck = (parsed.data.data?.phone as string) || null;
-
-    if (!parsed.data.force && (emailToCheck || phoneToCheck)) {
-      const { data: duplicates } = await (supabase as any).rpc('check_crm_duplicate', {
-        p_org_id: profile.organization_id,
-        p_module_id: parsed.data.module_id,
-        p_email: emailToCheck,
-        p_phone: phoneToCheck,
-      });
-
-      if (duplicates && duplicates.length > 0) {
-        return NextResponse.json({
-          error: 'A record with this email already exists',
-          code: 'DUPLICATE_RECORD',
-          duplicates,
-        }, { status: 409 });
-      }
-    }
-
-    const { data: record, error } = await supabase
-      .from('crm_records')
-      .insert({
-        org_id: profile.organization_id,
+    const created = await executeCrmRecordCreate({
+      supabase,
+      profile,
+      user,
+      input: {
+        org_id: parsed.data.org_id,
         module_id: parsed.data.module_id,
-        owner_id: parsed.data.owner_id || profile.id,
-        data: parsed.data.data,
+        owner_id: parsed.data.owner_id,
+        data: parsed.data.data as Record<string, unknown>,
         status: parsed.data.status,
         stage: parsed.data.stage,
-        created_by: profile.id,
-      })
-      .select()
-      .single();
+        force: parsed.data.force,
+      },
+    });
 
-    if (error) {
-      // Catch unique constraint violation as safety net
-      if ((error as any).code === '23505') {
-        return NextResponse.json({
-          error: 'A record with this email already exists',
-          code: 'DUPLICATE_RECORD',
-        }, { status: 409 });
-      }
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (!created.ok) {
+      return NextResponse.json(created.body, { status: created.status });
     }
 
-    const typedRecord = record as CrmRecord;
-
-    // Execute on_create workflows (fire and forget for faster response)
-    executeMatchingWorkflows({
-      orgId: typedRecord.org_id,
-      moduleId: typedRecord.module_id,
-      record: typedRecord,
-      trigger: 'on_create',
-      dryRun: false,
-      userId: user.id,
-      profileId: profile.id,
-    }).catch(err => {
-      console.error('Workflow execution error:', err);
-    });
-
-    // Apply scoring rules
-    applyScoring(typedRecord, {
-      orgId: typedRecord.org_id,
-      moduleId: typedRecord.module_id,
-      record: typedRecord,
-      trigger: 'on_create',
-      dryRun: false,
-    }).catch(err => {
-      console.error('Scoring error:', err);
-    });
-
-    revalidatePath('/crm');
-
-    return NextResponse.json(record);
+    return NextResponse.json(created.record);
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

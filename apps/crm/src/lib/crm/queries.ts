@@ -760,13 +760,36 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     query = query.textSearch('search', search, { type: 'websearch' });
   }
 
-  // Apply sorting
+  // Apply sorting — real columns on crm_records vs JSONB `data` paths
+  const SORTABLE_SYSTEM_COLUMNS = [
+    'title',
+    'status',
+    'stage',
+    'email',
+    'phone',
+    'created_at',
+    'updated_at',
+    'owner_id',
+    'market_type',
+    'normalization_status',
+    'normalized_advisor_name',
+    'normalized_agent_name',
+    'canonical_advisor_id',
+    'carrier_id',
+    'record_type',
+    'tobacco_user',
+    'advisor_id',
+    'contact_type',
+    'territory_id',
+    'import_source',
+  ];
+
   if (sort.length > 0) {
     for (const s of sort) {
-      if (['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at'].includes(s.field)) {
+      if (SORTABLE_SYSTEM_COLUMNS.includes(s.field)) {
         query = query.order(s.field, { ascending: s.direction === 'asc' });
       } else {
-        // For custom fields, we need to sort by jsonb path
+        // Custom / blueprint fields stored in JSONB
         query = query.order(`data->>${s.field}`, { ascending: s.direction === 'asc' });
       }
     }

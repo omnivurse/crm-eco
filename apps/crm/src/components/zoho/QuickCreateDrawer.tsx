@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -33,6 +32,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { postCrmRecord } from '@/lib/crm/create-record-client';
 
 type ModuleType = 'contacts' | 'leads' | 'deals' | 'accounts';
 
@@ -168,45 +168,18 @@ export function QuickCreateDrawer({
     setSubmitting(true);
 
     try {
-      // Get module ID
-      const { data: module } = await supabase
-        .from('crm_modules')
-        .select('id')
-        .eq('key', selectedModule)
-        .single();
+      const modulesRes = await fetch('/api/crm/modules');
+      if (!modulesRes.ok) throw new Error('Failed to load modules');
+      const modules = (await modulesRes.json()) as { id: string; key: string; org_id: string }[];
+      const mod = modules.find(m => m.key === selectedModule);
+      if (!mod) throw new Error('Module not found');
 
-      if (!module) throw new Error('Module not found');
-
-      // Build title
-      let title = formData.title;
-      if (!title && (formData.first_name || formData.last_name)) {
-        title = [formData.first_name, formData.last_name].filter(Boolean).join(' ');
-      }
-      if (!title && formData.name) {
-        title = formData.name;
-      }
-
-      // Create record
-      const { data: record, error } = await supabase
-        .from('crm_records')
-        .insert({
-          module_id: module.id,
-          title,
-          email: formData.email || null,
-          phone: formData.phone || null,
-          data: formData,
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        // Catch unique constraint violation
-        if ((error as any).code === '23505') {
-          toast.error('A record with this email already exists');
-          return;
-        }
-        throw error;
-      }
+      const record = await postCrmRecord({
+        org_id: mod.org_id,
+        module_id: mod.id,
+        data: formData,
+        force: forceCreate,
+      });
 
       toast.success(`${config.name} created successfully`);
 

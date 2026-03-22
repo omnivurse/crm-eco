@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { FieldRenderer } from './FieldRenderer';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
@@ -198,11 +199,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
     }
 
     case 'datetime': {
-      // Sanitize ISO 8601 values (e.g. "2026-02-05T18:26:56.000Z") to the
-      // "yyyy-MM-ddThh:mm" format required by <input type="datetime-local">
-      const dtValue = typeof value === 'string' && value
-        ? value.replace(/(\.\d{3})?Z$/, '').slice(0, 16)
-        : (value as string) || '';
+      const dtValue = toDatetimeLocalValue(value);
       input = (
         <Input
           {...commonProps}

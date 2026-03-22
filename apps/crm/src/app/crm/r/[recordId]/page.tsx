@@ -17,6 +17,7 @@ import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
 import { RelatedRecordsPanel } from '@/components/crm/records/RelatedRecordsPanel';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 import { getSectionMeta } from '@/components/crm/records/section-utils';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
 import { NotesPanel } from './NotesPanel';
 import { LegacyNotesCard } from './LegacyNotesCard';
@@ -95,19 +96,20 @@ async function RecordDetailContent({ params }: PageProps) {
   const notes = notesResult.status === 'fulfilled' ? notesResult.value : [];
   const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
 
-  // Build defaultValues by merging JSONB data with top-level indexed columns
-  // so email, phone, and status are visible even if not duplicated inside data
-  const recordData = record.data || {};
-  const defaultValues: Record<string, unknown> = {
-    ...recordData,
-    ...(record.email && !recordData.email && { email: record.email }),
-    ...(record.phone && !recordData.phone && { phone: record.phone }),
-    ...(record.status && !recordData.contact_status && { contact_status: record.status }),
-  };
+  // Merge JSONB `data` with indexed `crm_records` columns (source of truth for lane/filters)
+  const defaultValues = mergeCrmRecordRowIntoFormDefaults(
+    record as unknown as Record<string, unknown> & {
+      data?: Record<string, unknown> | null;
+      email?: string | null;
+      phone?: string | null;
+      status?: string | null;
+    }
+  );
 
   // Compute section metadata on the server for the section navigator
   const sectionMeta = getSectionMeta(fields, layout);
 
+  const recordData = record.data || {};
   const legacyNotes =
     typeof recordData.notes_history === 'string' && (recordData.notes_history as string).trim() !== ''
       ? (recordData.notes_history as string)

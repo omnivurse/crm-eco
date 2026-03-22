@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { buildRequest, buildProfile } from '@/test/helpers';
 
-const mockProfile = buildProfile();
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+}));
+
+const VALID_ORG_ID = '00000000-0000-0000-0000-000000000001';
+const mockProfile = buildProfile({ organization_id: VALID_ORG_ID });
 const mockCreateClient = vi.fn();
 const mockGetAuthProfile = vi.fn();
 
@@ -87,7 +92,7 @@ describe('PATCH /api/crm/records/[id]', () => {
 
   it('blocks direct stage change when blueprint exists', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
-    const existingRecord = { id: 'rec-1', stage: 'lead', module_id: 'mod-1', org_id: 'org-1', data: {} };
+    const existingRecord = { id: 'rec-1', stage: 'lead', module_id: 'mod-1', org_id: VALID_ORG_ID, data: {} };
     const c = buildChainable({ data: existingRecord, error: null });
     mockCreateClient.mockResolvedValue({ from: vi.fn(() => c) });
     vi.mocked(getModuleBlueprint).mockResolvedValue({ id: 'bp-1' } as any);
@@ -104,7 +109,7 @@ describe('PATCH /api/crm/records/[id]', () => {
 
   it('blocks stage change when pending approval exists', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
-    const existingRecord = { id: 'rec-1', stage: 'lead', module_id: 'mod-1', org_id: 'org-1', data: {} };
+    const existingRecord = { id: 'rec-1', stage: 'lead', module_id: 'mod-1', org_id: VALID_ORG_ID, data: {} };
     const c = buildChainable({ data: existingRecord, error: null });
     mockCreateClient.mockResolvedValue({ from: vi.fn(() => c) });
     vi.mocked(getModuleBlueprint).mockResolvedValue(null);
@@ -125,7 +130,7 @@ describe('PATCH /api/crm/records/[id]', () => {
 
   it('updates record successfully', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
-    const existingRecord = { id: 'rec-1', stage: 'lead', module_id: 'mod-1', org_id: 'org-1', data: {} };
+    const existingRecord = { id: 'rec-1', stage: 'lead', module_id: 'mod-1', org_id: VALID_ORG_ID, data: {} };
     const updatedRecord = { ...existingRecord, title: 'Updated' };
     let callCount = 0;
     const c: Record<string, any> = {};
@@ -179,7 +184,7 @@ describe('DELETE /api/crm/records/[id]', () => {
 
   it('returns 202 when deletion requires approval', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
-    const record = { id: 'rec-1', title: 'Test', stage: 'lead', module_id: 'mod-1', org_id: 'org-1', data: {} };
+    const record = { id: 'rec-1', title: 'Test', stage: 'lead', module_id: 'mod-1', org_id: VALID_ORG_ID, data: {} };
     const c = buildChainable({ data: record, error: null });
     mockCreateClient.mockResolvedValue({ from: vi.fn(() => c) });
     vi.mocked(checkApprovalRequired).mockResolvedValue({ processId: 'proc-1', ruleId: 'rule-1' } as any);
@@ -194,25 +199,31 @@ describe('DELETE /api/crm/records/[id]', () => {
 
   it('deletes record successfully', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
-    const record = { id: 'rec-1', title: 'Test', stage: 'lead', module_id: 'mod-1', org_id: 'org-1', data: {} };
+    const record = { id: 'rec-1', title: 'Test', stage: 'lead', module_id: 'mod-1', org_id: VALID_ORG_ID, data: {} };
 
     // Explicitly ensure approval mocks return null/false for this test
     vi.mocked(checkApprovalRequired).mockResolvedValue(null as any);
     vi.mocked(createApprovalRequest).mockResolvedValue({ success: false } as any);
 
-    // Build chainable that tracks select vs delete calls
+    // Build chainable: select().eq().eq().single() then delete().eq().eq() → Promise
     let isDeletePath = false;
+    let deleteEqStep = 0;
     const c: Record<string, any> = {};
     c.select = vi.fn(() => c);
     c.eq = vi.fn(() => {
       if (isDeletePath) {
-        // delete().eq() should resolve as a promise with { error: null }
-        return Promise.resolve({ error: null });
+        deleteEqStep++;
+        // PostgREST: delete().eq('id').eq('org_id') — second eq completes the request
+        if (deleteEqStep >= 2) {
+          return Promise.resolve({ error: null });
+        }
+        return c;
       }
       return c;
     });
     c.delete = vi.fn(() => {
       isDeletePath = true;
+      deleteEqStep = 0;
       return c;
     });
     c.single = vi.fn(() => Promise.resolve({ data: record, error: null }));

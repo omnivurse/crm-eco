@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -32,6 +31,8 @@ import { RecordMiniTimeline } from './RecordMiniTimeline';
 import { useRecordDrawerData } from '@/hooks/useRecordDrawerData';
 import { queryKeys } from '@/lib/query-keys';
 import type { CrmField } from '@/lib/crm/types';
+import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
+import { patchCrmRecord } from '@/lib/crm/patch-record-client';
 
 // Readable labels for section keys
 const SECTION_LABELS: Record<string, string> = {
@@ -84,37 +85,24 @@ export function RecordDrawer() {
   const [localRecordData, setLocalRecordData] = useState<Record<string, unknown> | null>(null);
   // Track which sections are collapsed
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setLocalRecordData(null);
+  }, [recordId]);
   // Toggle to show all fields including empty sections
   const [showAllFields, setShowAllFields] = useState(false);
 
   const handleFieldUpdate = async (fieldKey: string, value: unknown) => {
     if (!data?.record) return;
 
-    const currentData = localRecordData || data.record.data;
+    const currentData = localRecordData || data.record.data || {};
     const updatedData = { ...currentData, [fieldKey]: value };
 
     // Optimistic update
     setLocalRecordData(updatedData);
 
     try {
-      // Build update payload — sync top-level indexed columns when relevant fields change
-      const updatePayload: Record<string, unknown> = { data: updatedData };
-      if (fieldKey === 'email') updatePayload.email = value || null;
-      if (fieldKey === 'phone') updatePayload.phone = value || null;
-      if (fieldKey === 'contact_status' || fieldKey === 'lead_status' || fieldKey === 'status') {
-        updatePayload.status = value || null;
-      }
-      if (fieldKey === 'first_name' || fieldKey === 'last_name') {
-        const first = (fieldKey === 'first_name' ? value : updatedData.first_name) as string || '';
-        const last = (fieldKey === 'last_name' ? value : updatedData.last_name) as string || '';
-        const newTitle = [first, last].filter(Boolean).join(' ');
-        if (newTitle) updatePayload.title = newTitle;
-      }
-
-      await supabase
-        .from('crm_records')
-        .update(updatePayload)
-        .eq('id', data.record.id);
+      await patchCrmRecord(data.record.id, { data: updatedData });
 
       // Invalidate caches to refetch fresh data
       queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(data.record.id) });
@@ -128,8 +116,15 @@ export function RecordDrawer() {
     }
   };
 
-  // Reset local state when drawer closes or record changes
-  const effectiveRecordData = localRecordData || data?.record?.data;
+  // Merge full row + JSONB so lane/carrier fields from crm_records columns display correctly
+  const effectiveRecordData = useMemo(() => {
+    if (!data?.record) return null;
+    const dataOnly = localRecordData ?? (data.record.data as Record<string, unknown>) ?? {};
+    return mergeCrmRecordRowIntoFormDefaults({
+      ...(data.record as unknown as Record<string, unknown>),
+      data: dataOnly,
+    });
+  }, [data?.record, localRecordData]);
 
   // Build display name
   const getDisplayName = () => {
