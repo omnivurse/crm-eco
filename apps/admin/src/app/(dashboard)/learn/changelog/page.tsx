@@ -11,6 +11,49 @@ interface Release {
 
 const RELEASES: Release[] = [
   {
+    version: 'v1.7.0',
+    date: 'March 2026',
+    type: 'major',
+    highlights: [
+      'Searchable Advisor/Agent selection across all forms',
+      'Full-name and family member search (spouse, children)',
+      'Unsaved changes protection with sticky save bar',
+      'Duplicate note prevention and cleanup',
+    ],
+    details: [
+      'Searchable Advisor combobox replaces plain dropdowns in member forms, agent forms, and bulk assign',
+      'Search now supports full name ("Anna Martin"), spouse name, and child/dependent name queries',
+      'Edit forms show "Unsaved changes" warning with browser navigation protection',
+      'Save button is now always visible (sticky at bottom of form)',
+      'Notes textarea expanded and duplicate note prevention added (60-second window)',
+      'One-time cleanup of existing duplicate notes across all records',
+      'Contact Status field now consistently available on all contact, lead, and member records',
+      'Original Start Date and Current Year Start Date fields added to records',
+    ],
+  },
+  {
+    version: 'v1.6.0',
+    date: 'March 2026',
+    type: 'major',
+    highlights: [
+      'Saved Views for member list filtering',
+      'Bulk Assign Advisor for multiple members at once',
+      'Market Type quick-filter pills (HealthShare / Insurance)',
+      'Active filter chips with easy clear controls',
+    ],
+    details: [
+      'Save current filter combinations as named views (e.g., "My HealthShare Clients")',
+      'Load, rename, and delete saved views from the Saved Views dropdown',
+      'Bulk assign: select multiple members via checkboxes, assign Advisor or clear assignment',
+      'Market Type pills filter members by HealthShare or Traditional Insurance with one click',
+      'Active filters display as removable chips below the filter bar',
+      'Sidebar navigation restructured by workflow priority: Main, Products, Enrollment, Billing, etc.',
+      'KPI dashboard cards showing member counts, tobacco users, needs review, and unassigned',
+      'Group vs individual record classification with record_type field',
+      'Tobacco user tracking with reliable counting (excludes group records)',
+    ],
+  },
+  {
     version: 'v1.5.0',
     date: 'February 2026',
     type: 'major',

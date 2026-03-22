@@ -40,14 +40,16 @@ const CATEGORIES = [
   {
     id: 'contacts',
     title: 'Managing Contacts',
-    description: 'Organize and track your relationships',
+    description: 'Search, filter, assign Advisors, and manage family records',
     icon: <Users className="w-6 h-6" />,
     color: 'blue',
     articles: [
       { title: 'Creating Contacts', href: '/crm/learn/contacts/creating', time: '3 min' },
+      { title: 'Search by Name, Spouse, or Child', href: '/crm/learn/contacts/searching', time: '4 min' },
+      { title: 'Filtering & Saved Views', href: '/crm/learn/contacts/searching', time: '4 min' },
+      { title: 'Bulk Assign Advisor / Agent', href: '/crm/learn/contacts/searching', time: '3 min' },
       { title: 'Importing Contacts', href: '/crm/learn/contacts/importing', time: '4 min' },
-      { title: 'Contact Fields & Custom Fields', href: '/crm/learn/contacts/fields', time: '5 min' },
-      { title: 'Merging Duplicate Contacts', href: '/crm/learn/contacts/merging', time: '3 min' },
+      { title: 'Merging Duplicates', href: '/crm/learn/contacts/merging', time: '3 min' },
     ],
   },
   {

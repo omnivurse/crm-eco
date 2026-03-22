@@ -47,15 +47,15 @@ const ARTICLES = [
   },
   {
     title: 'Searching & Filtering',
-    description: 'Find contacts quickly with search and filters',
-    time: '3 min',
+    description: 'Find contacts by name, spouse, child, Advisor, market type, and more',
+    time: '4 min',
     href: '/crm/learn/contacts/searching',
     icon: <Search className="w-5 h-5" />,
     steps: [
-      'Use the search bar for quick lookups',
-      'Apply filters for specific criteria',
-      'Save views for frequent searches',
-      'Use advanced filter builder',
+      'Search by full name, spouse, or child name',
+      'Filter by Advisor using searchable dropdown',
+      'Use market type pills (HealthShare / Insurance)',
+      'Save views for one-click access later',
     ],
   },
   {
@@ -216,6 +216,35 @@ export default function ContactsLearnPage() {
               This helps you see all contacts at a company and track account-level activities.
             </p>
           </div>
+          <div className="p-5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+              Advisor vs. Agent
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              <strong>Advisors</strong> manage HealthShare members.
+              <strong> Agents</strong> manage Traditional Insurance clients.
+              The label changes automatically based on the record&apos;s market type.
+            </p>
+          </div>
+          <div className="p-5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+              Family Search
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Search finds contacts by <strong>spouse name</strong>, <strong>child name</strong>,
+              or <strong>full name</strong> (e.g., &quot;Anna Martin&quot;). You don&apos;t need to remember
+              whether a name belongs to the primary member or a family member.
+            </p>
+          </div>
+          <div className="p-5 rounded-xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-2">
+              Saved Views
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Save your current filters as a <strong>named view</strong> (e.g., &quot;My HealthShare Clients&quot;).
+              Load any saved view with one click from the Saved Views bar above the list.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -284,7 +313,17 @@ export default function ContactsLearnPage() {
           </QuickTip>
           <QuickTip title="Before Deleting" type="warning">
             Deleting a contact removes all associated activities and history. Consider
-            archiving or tagging as "Inactive" instead to preserve historical data.
+            archiving or tagging as &quot;Inactive&quot; instead to preserve historical data.
+          </QuickTip>
+          <QuickTip title="Save Your Filters" type="tip">
+            If you regularly filter by the same Advisor or market type, save it as a view.
+            Click the Saved Views bar and save the current filter state with a meaningful name
+            like &quot;Jane&apos;s HealthShare Clients&quot; or &quot;Needs Review&quot;.
+          </QuickTip>
+          <QuickTip title="Unsaved Changes Protection" type="info">
+            When editing a contact, the system warns you before navigating away if you have
+            unsaved changes. The Save button is always visible at the bottom of the form.
+            Look for the amber &quot;Unsaved changes&quot; indicator.
           </QuickTip>
         </div>
       </section>

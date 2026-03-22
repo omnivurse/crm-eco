@@ -12,9 +12,38 @@ import {
 
 const RELEASES = [
   {
+    version: '2.7.0',
+    date: 'March 2026',
+    tag: 'Latest',
+    changes: [
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Full-name search: type "Anna Martin" to find contacts by first + last name together' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Family search: find contacts by spouse name or child name' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Unsaved changes protection: browser warns before navigating away from unsaved edits' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Sticky Save button always visible at bottom of edit forms' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Original Start Date and Current Year Start Date fields on contact records' },
+      { type: 'improvement', icon: <Zap className="w-4 h-4" />, text: 'Notes textarea expanded for easier note entry' },
+      { type: 'improvement', icon: <Zap className="w-4 h-4" />, text: 'Duplicate note prevention (60-second window) and one-time cleanup of existing duplicates' },
+      { type: 'fix', icon: <Bug className="w-4 h-4" />, text: 'Contact Status field now consistently editable on all contact, lead, and member records' },
+    ],
+  },
+  {
+    version: '2.6.0',
+    date: 'March 2026',
+    changes: [
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Searchable Advisor/Agent combobox replaces plain dropdowns everywhere' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Saved Views: save, load, and manage named filter combinations' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Bulk Assign: select multiple records and assign Advisor/Agent in one action' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Market type quick-filter pills (All / HealthShare / Insurance)' },
+      { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Filter by Owner section in the filter sidebar with searchable advisor list' },
+      { type: 'improvement', icon: <Zap className="w-4 h-4" />, text: 'Active filter chips showing all applied filters with easy clear controls' },
+      { type: 'improvement', icon: <Zap className="w-4 h-4" />, text: 'Sidebar navigation restructured: Work, Health Sharing, Outreach always visible' },
+      { type: 'improvement', icon: <Zap className="w-4 h-4" />, text: 'KPI cards on dashboard: total members, tobacco users, needs review, unassigned' },
+      { type: 'fix', icon: <Bug className="w-4 h-4" />, text: 'Fixed contact detail page logout issue caused by uncached auth' },
+    ],
+  },
+  {
     version: '2.5.0',
     date: 'January 2026',
-    tag: 'Latest',
     changes: [
       { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Email sequences with multi-step automation' },
       { type: 'feature', icon: <Sparkles className="w-4 h-4" />, text: 'Visual workflow builder with drag-and-drop' },
