@@ -730,9 +730,10 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     }
   }
 
-  // Apply search
+  // Apply search — use 'websearch' mode so natural queries like
+  // "Anna Martin" or "spouse name" work without requiring tsquery operators
   if (search) {
-    query = query.textSearch('search', search);
+    query = query.textSearch('search', search, { type: 'websearch' });
   }
 
   // Apply sorting
