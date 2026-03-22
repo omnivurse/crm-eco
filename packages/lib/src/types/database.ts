@@ -7804,6 +7804,118 @@ export type Database = {
           },
         ]
       }
+      crm_contact_group_members: {
+        Row: {
+          added_at: string
+          added_by: string | null
+          group_id: string
+          id: string
+          organization_id: string
+          record_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by?: string | null
+          group_id: string
+          id?: string
+          organization_id: string
+          record_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string | null
+          group_id?: string
+          id?: string
+          organization_id?: string
+          record_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contact_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contact_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "group_contact_counts"
+            referencedColumns: ["group_id"]
+          },
+          {
+            foreignKeyName: "crm_contact_group_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contact_group_members_record_id_fkey"
+            columns: ["record_id"]
+            isOneToOne: false
+            referencedRelation: "crm_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contact_groups: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          display_order: number
+          group_name: string
+          group_type: string
+          icon: string
+          id: string
+          is_active: boolean
+          is_system: boolean
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          group_name: string
+          group_type?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          display_order?: number
+          group_name?: string
+          group_type?: string
+          icon?: string
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contact_groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_contact_preferences: {
         Row: {
           created_at: string | null
@@ -9214,6 +9326,7 @@ export type Database = {
           carrier_id: string | null
           created_at: string | null
           created_by: string | null
+          current_year_start_date: string | null
           data: Json | null
           email: string | null
           estimated_age: number | null
@@ -9231,8 +9344,10 @@ export type Database = {
           normalized_advisor_name: string | null
           normalized_agent_name: string | null
           org_id: string
+          original_start_date: string | null
           owner_id: string | null
           phone: string | null
+          record_type: string | null
           search: unknown
           source_record_id: string | null
           stage: string | null
@@ -9240,6 +9355,7 @@ export type Database = {
           system: Json | null
           territory_id: string | null
           title: string | null
+          tobacco_user: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -9250,6 +9366,7 @@ export type Database = {
           carrier_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          current_year_start_date?: string | null
           data?: Json | null
           email?: string | null
           estimated_age?: number | null
@@ -9267,8 +9384,10 @@ export type Database = {
           normalized_advisor_name?: string | null
           normalized_agent_name?: string | null
           org_id: string
+          original_start_date?: string | null
           owner_id?: string | null
           phone?: string | null
+          record_type?: string | null
           search?: unknown
           source_record_id?: string | null
           stage?: string | null
@@ -9276,6 +9395,7 @@ export type Database = {
           system?: Json | null
           territory_id?: string | null
           title?: string | null
+          tobacco_user?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -9286,6 +9406,7 @@ export type Database = {
           carrier_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          current_year_start_date?: string | null
           data?: Json | null
           email?: string | null
           estimated_age?: number | null
@@ -9303,8 +9424,10 @@ export type Database = {
           normalized_advisor_name?: string | null
           normalized_agent_name?: string | null
           org_id?: string
+          original_start_date?: string | null
           owner_id?: string | null
           phone?: string | null
+          record_type?: string | null
           search?: unknown
           source_record_id?: string | null
           stage?: string | null
@@ -9312,6 +9435,7 @@ export type Database = {
           system?: Json | null
           territory_id?: string | null
           title?: string | null
+          tobacco_user?: boolean | null
           updated_at?: string | null
         }
         Relationships: [
@@ -11170,6 +11294,7 @@ export type Database = {
           email: string | null
           existing_condition: boolean | null
           existing_condition_description: string | null
+          external_dependent_id: string | null
           external_ref: string | null
           first_name: string
           gender: string | null
@@ -11178,6 +11303,7 @@ export type Database = {
           included_in_enrollment: boolean | null
           is_primary: boolean | null
           is_smoker: boolean | null
+          is_student: boolean | null
           last_name: string
           member_id: string
           organization_id: string
@@ -11204,6 +11330,7 @@ export type Database = {
           email?: string | null
           existing_condition?: boolean | null
           existing_condition_description?: string | null
+          external_dependent_id?: string | null
           external_ref?: string | null
           first_name: string
           gender?: string | null
@@ -11212,6 +11339,7 @@ export type Database = {
           included_in_enrollment?: boolean | null
           is_primary?: boolean | null
           is_smoker?: boolean | null
+          is_student?: boolean | null
           last_name: string
           member_id: string
           organization_id: string
@@ -11238,6 +11366,7 @@ export type Database = {
           email?: string | null
           existing_condition?: boolean | null
           existing_condition_description?: string | null
+          external_dependent_id?: string | null
           external_ref?: string | null
           first_name?: string
           gender?: string | null
@@ -11246,6 +11375,7 @@ export type Database = {
           included_in_enrollment?: boolean | null
           is_primary?: boolean | null
           is_smoker?: boolean | null
+          is_student?: boolean | null
           last_name?: string
           member_id?: string
           organization_id?: string
@@ -12949,6 +13079,7 @@ export type Database = {
           coverage_start_date: string | null
           created_at: string | null
           dependent_id: string
+          dependent_product_fee: number | null
           enrollment_id: string
           has_pre_existing_conditions: boolean | null
           id: string
@@ -12965,6 +13096,7 @@ export type Database = {
           coverage_start_date?: string | null
           created_at?: string | null
           dependent_id: string
+          dependent_product_fee?: number | null
           enrollment_id: string
           has_pre_existing_conditions?: boolean | null
           id?: string
@@ -12981,6 +13113,7 @@ export type Database = {
           coverage_start_date?: string | null
           created_at?: string | null
           dependent_id?: string
+          dependent_product_fee?: number | null
           enrollment_id?: string
           has_pre_existing_conditions?: boolean | null
           id?: string
@@ -13757,48 +13890,76 @@ export type Database = {
       }
       enrollments: {
         Row: {
+          administration_fee: number | null
           advisor_email: string | null
           advisor_first_name: string | null
           advisor_id: string | null
           advisor_last_name: string | null
           advisor_level: string | null
+          agent_code: string | null
           agreed_to_guidelines: boolean | null
           agreed_to_privacy: boolean | null
           agreed_to_terms: boolean | null
           annual_fee: number | null
           approved_at: string | null
           approved_by: string | null
+          assigned_agents: string | null
+          association_fee: number | null
           base_monthly_cost: number | null
           benefit_tier_id: string | null
           benefit_type_id: string | null
           cancelled_at: string | null
           cancelled_reason: string | null
+          category: string | null
+          category3: string | null
+          category4: string | null
           channel: string | null
+          code: string | null
+          contract_length: number | null
+          contract_number: string | null
           created_at: string | null
           custom_fields: Json | null
           effective_date: string | null
           end_date: string | null
+          enroller_id: string | null
+          enroller_name: string | null
           enrollment_date: string | null
           enrollment_mode: string
           enrollment_number: string | null
           enrollment_source: string | null
           external_vendor_enrollment_id: string | null
+          first_billing_date: string | null
+          fulfillment_date: string | null
           guidelines_agreed_at: string | null
           has_age65_warning: boolean | null
           has_mandate_warning: boolean | null
           has_pre_existing_conditions: boolean | null
+          hold_amount: number | null
+          hold_date: string | null
+          hold_reason: string | null
+          hold_return_date: string | null
           household_size: number | null
           id: string
           initial_payment_amount: number | null
           initial_payment_date: string | null
           initial_payment_paid: boolean | null
           initial_transaction_id: string | null
+          is_paid: boolean | null
+          iua_fee: number | null
           iua_id: string | null
+          last_payment_date: string | null
           last_status_change_at: string | null
           lead_id: string | null
           metadata: Json | null
+          monthly_contribution_fee: number | null
+          next_billing_amount: number | null
+          next_billing_date: string | null
+          note_date: string | null
           notes: string | null
           organization_id: string
+          pay_type: string | null
+          period_label: string | null
+          permanent_bill_day: number | null
           plan_type: string | null
           pre_existing_conditions_details: string | null
           pricing_matrix_id: string | null
@@ -13806,14 +13967,39 @@ export type Database = {
           primary_member_id: string
           primary_tobacco_date: string | null
           privacy_agreed_at: string | null
+          product_agent_id: string | null
+          product_agent_label: string | null
+          product_benefit: string | null
+          product_call_status: string | null
+          product_code: string | null
+          product_created_date: string | null
+          product_estimated_close_date: string | null
+          product_fee: number | null
           product_id: string | null
+          product_label: string | null
+          product_next_step: string | null
+          product_next_step_date: string | null
+          product_number_of_calls: number | null
+          product_paid_through_date: string | null
+          product_source: string | null
+          product_source_detail: string | null
+          product_stage: string | null
+          product_status: string | null
+          quantity: number | null
           quoted_plan_id: string | null
           referrer_url: string | null
+          refund_comment: string | null
+          refund_provided: boolean | null
+          refund_provided_date: string | null
+          refund_requested: boolean | null
+          refund_requested_date: string | null
           rejected_at: string | null
           rejection_reason: string | null
+          renewal_date: string | null
           requested_effective_date: string | null
           rx_medications: Json | null
           rx_pricing_result: Json | null
+          sale_date: string | null
           selected_plan_id: string | null
           setup_fee: number | null
           signature_data: string | null
@@ -13822,15 +14008,20 @@ export type Database = {
           signature_user_agent: string | null
           snapshot: Json | null
           source: string | null
+          source_detail: string | null
           source_url: string | null
           start_date: string | null
           status: string
           status_reason: string | null
           submitted_at: string | null
+          system_id: string | null
           termination_date: string | null
           terms_agreed_at: string | null
           tobacco_surcharge: number | null
           total_monthly_cost: number | null
+          tpv_code: string | null
+          tpv_date: string | null
+          underwriter: string | null
           updated_at: string | null
           utm_campaign: string | null
           utm_content: string | null
@@ -13839,48 +14030,76 @@ export type Database = {
           utm_term: string | null
         }
         Insert: {
+          administration_fee?: number | null
           advisor_email?: string | null
           advisor_first_name?: string | null
           advisor_id?: string | null
           advisor_last_name?: string | null
           advisor_level?: string | null
+          agent_code?: string | null
           agreed_to_guidelines?: boolean | null
           agreed_to_privacy?: boolean | null
           agreed_to_terms?: boolean | null
           annual_fee?: number | null
           approved_at?: string | null
           approved_by?: string | null
+          assigned_agents?: string | null
+          association_fee?: number | null
           base_monthly_cost?: number | null
           benefit_tier_id?: string | null
           benefit_type_id?: string | null
           cancelled_at?: string | null
           cancelled_reason?: string | null
+          category?: string | null
+          category3?: string | null
+          category4?: string | null
           channel?: string | null
+          code?: string | null
+          contract_length?: number | null
+          contract_number?: string | null
           created_at?: string | null
           custom_fields?: Json | null
           effective_date?: string | null
           end_date?: string | null
+          enroller_id?: string | null
+          enroller_name?: string | null
           enrollment_date?: string | null
           enrollment_mode?: string
           enrollment_number?: string | null
           enrollment_source?: string | null
           external_vendor_enrollment_id?: string | null
+          first_billing_date?: string | null
+          fulfillment_date?: string | null
           guidelines_agreed_at?: string | null
           has_age65_warning?: boolean | null
           has_mandate_warning?: boolean | null
           has_pre_existing_conditions?: boolean | null
+          hold_amount?: number | null
+          hold_date?: string | null
+          hold_reason?: string | null
+          hold_return_date?: string | null
           household_size?: number | null
           id?: string
           initial_payment_amount?: number | null
           initial_payment_date?: string | null
           initial_payment_paid?: boolean | null
           initial_transaction_id?: string | null
+          is_paid?: boolean | null
+          iua_fee?: number | null
           iua_id?: string | null
+          last_payment_date?: string | null
           last_status_change_at?: string | null
           lead_id?: string | null
           metadata?: Json | null
+          monthly_contribution_fee?: number | null
+          next_billing_amount?: number | null
+          next_billing_date?: string | null
+          note_date?: string | null
           notes?: string | null
           organization_id: string
+          pay_type?: string | null
+          period_label?: string | null
+          permanent_bill_day?: number | null
           plan_type?: string | null
           pre_existing_conditions_details?: string | null
           pricing_matrix_id?: string | null
@@ -13888,14 +14107,39 @@ export type Database = {
           primary_member_id: string
           primary_tobacco_date?: string | null
           privacy_agreed_at?: string | null
+          product_agent_id?: string | null
+          product_agent_label?: string | null
+          product_benefit?: string | null
+          product_call_status?: string | null
+          product_code?: string | null
+          product_created_date?: string | null
+          product_estimated_close_date?: string | null
+          product_fee?: number | null
           product_id?: string | null
+          product_label?: string | null
+          product_next_step?: string | null
+          product_next_step_date?: string | null
+          product_number_of_calls?: number | null
+          product_paid_through_date?: string | null
+          product_source?: string | null
+          product_source_detail?: string | null
+          product_stage?: string | null
+          product_status?: string | null
+          quantity?: number | null
           quoted_plan_id?: string | null
           referrer_url?: string | null
+          refund_comment?: string | null
+          refund_provided?: boolean | null
+          refund_provided_date?: string | null
+          refund_requested?: boolean | null
+          refund_requested_date?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
+          renewal_date?: string | null
           requested_effective_date?: string | null
           rx_medications?: Json | null
           rx_pricing_result?: Json | null
+          sale_date?: string | null
           selected_plan_id?: string | null
           setup_fee?: number | null
           signature_data?: string | null
@@ -13904,15 +14148,20 @@ export type Database = {
           signature_user_agent?: string | null
           snapshot?: Json | null
           source?: string | null
+          source_detail?: string | null
           source_url?: string | null
           start_date?: string | null
           status?: string
           status_reason?: string | null
           submitted_at?: string | null
+          system_id?: string | null
           termination_date?: string | null
           terms_agreed_at?: string | null
           tobacco_surcharge?: number | null
           total_monthly_cost?: number | null
+          tpv_code?: string | null
+          tpv_date?: string | null
+          underwriter?: string | null
           updated_at?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -13921,48 +14170,76 @@ export type Database = {
           utm_term?: string | null
         }
         Update: {
+          administration_fee?: number | null
           advisor_email?: string | null
           advisor_first_name?: string | null
           advisor_id?: string | null
           advisor_last_name?: string | null
           advisor_level?: string | null
+          agent_code?: string | null
           agreed_to_guidelines?: boolean | null
           agreed_to_privacy?: boolean | null
           agreed_to_terms?: boolean | null
           annual_fee?: number | null
           approved_at?: string | null
           approved_by?: string | null
+          assigned_agents?: string | null
+          association_fee?: number | null
           base_monthly_cost?: number | null
           benefit_tier_id?: string | null
           benefit_type_id?: string | null
           cancelled_at?: string | null
           cancelled_reason?: string | null
+          category?: string | null
+          category3?: string | null
+          category4?: string | null
           channel?: string | null
+          code?: string | null
+          contract_length?: number | null
+          contract_number?: string | null
           created_at?: string | null
           custom_fields?: Json | null
           effective_date?: string | null
           end_date?: string | null
+          enroller_id?: string | null
+          enroller_name?: string | null
           enrollment_date?: string | null
           enrollment_mode?: string
           enrollment_number?: string | null
           enrollment_source?: string | null
           external_vendor_enrollment_id?: string | null
+          first_billing_date?: string | null
+          fulfillment_date?: string | null
           guidelines_agreed_at?: string | null
           has_age65_warning?: boolean | null
           has_mandate_warning?: boolean | null
           has_pre_existing_conditions?: boolean | null
+          hold_amount?: number | null
+          hold_date?: string | null
+          hold_reason?: string | null
+          hold_return_date?: string | null
           household_size?: number | null
           id?: string
           initial_payment_amount?: number | null
           initial_payment_date?: string | null
           initial_payment_paid?: boolean | null
           initial_transaction_id?: string | null
+          is_paid?: boolean | null
+          iua_fee?: number | null
           iua_id?: string | null
+          last_payment_date?: string | null
           last_status_change_at?: string | null
           lead_id?: string | null
           metadata?: Json | null
+          monthly_contribution_fee?: number | null
+          next_billing_amount?: number | null
+          next_billing_date?: string | null
+          note_date?: string | null
           notes?: string | null
           organization_id?: string
+          pay_type?: string | null
+          period_label?: string | null
+          permanent_bill_day?: number | null
           plan_type?: string | null
           pre_existing_conditions_details?: string | null
           pricing_matrix_id?: string | null
@@ -13970,14 +14247,39 @@ export type Database = {
           primary_member_id?: string
           primary_tobacco_date?: string | null
           privacy_agreed_at?: string | null
+          product_agent_id?: string | null
+          product_agent_label?: string | null
+          product_benefit?: string | null
+          product_call_status?: string | null
+          product_code?: string | null
+          product_created_date?: string | null
+          product_estimated_close_date?: string | null
+          product_fee?: number | null
           product_id?: string | null
+          product_label?: string | null
+          product_next_step?: string | null
+          product_next_step_date?: string | null
+          product_number_of_calls?: number | null
+          product_paid_through_date?: string | null
+          product_source?: string | null
+          product_source_detail?: string | null
+          product_stage?: string | null
+          product_status?: string | null
+          quantity?: number | null
           quoted_plan_id?: string | null
           referrer_url?: string | null
+          refund_comment?: string | null
+          refund_provided?: boolean | null
+          refund_provided_date?: string | null
+          refund_requested?: boolean | null
+          refund_requested_date?: string | null
           rejected_at?: string | null
           rejection_reason?: string | null
+          renewal_date?: string | null
           requested_effective_date?: string | null
           rx_medications?: Json | null
           rx_pricing_result?: Json | null
+          sale_date?: string | null
           selected_plan_id?: string | null
           setup_fee?: number | null
           signature_data?: string | null
@@ -13986,15 +14288,20 @@ export type Database = {
           signature_user_agent?: string | null
           snapshot?: Json | null
           source?: string | null
+          source_detail?: string | null
           source_url?: string | null
           start_date?: string | null
           status?: string
           status_reason?: string | null
           submitted_at?: string | null
+          system_id?: string | null
           termination_date?: string | null
           terms_agreed_at?: string | null
           tobacco_surcharge?: number | null
           total_monthly_cost?: number | null
+          tpv_code?: string | null
+          tpv_date?: string | null
+          underwriter?: string | null
           updated_at?: string | null
           utm_campaign?: string | null
           utm_content?: string | null
@@ -18076,50 +18383,85 @@ export type Database = {
           address_line1: string | null
           address_line2: string | null
           advisor_id: string | null
+          best_call_time: string | null
+          call_status: string | null
           city: string | null
           communication_preferences: Json | null
+          company_name: string | null
           country: string | null
+          county: string | null
           coverage_type: string | null
           created_at: string | null
           custom_fields: Json | null
           customer_profile_id: string | null
           date_of_birth: string | null
           default_payment_profile_id: string | null
+          department: string | null
+          disability: string | null
+          division: string | null
+          do_not_call: boolean | null
+          drivers_license: string | null
           effective_date: string | null
           email: string
+          email2: string | null
+          email3: string | null
+          ethnicity: string | null
           existing_condition: boolean | null
           existing_condition_description: string | null
+          external_username: string | null
+          fax: string | null
+          fax_ext: string | null
           first_name: string
           gender: string | null
           has_existing_condition: boolean | null
+          height: string | null
           household_id: string | null
           household_role: string | null
           id: string
+          internal_id: string | null
           is_smoker: boolean | null
           last_name: string
           marital_status: string | null
           member_number: string
+          member_type: string | null
+          member_type2: string | null
           monthly_share: number | null
+          next_step: string | null
+          next_step_date: string | null
+          number_of_calls: number | null
           organization_id: string
           payment_profile_id: string | null
           phone: string | null
+          phone_ext: string | null
+          phone2: string | null
+          phone2_ext: string | null
+          phone3: string | null
+          phone3_ext: string | null
           plan_id: string | null
           plan_name: string | null
           plan_type: string | null
+          position: string | null
           postal_code: string | null
           preferred_language: string | null
           primary_enrollment_id: string | null
+          probability: number | null
           program_type: string | null
           receive_emails: boolean | null
           receive_sms: boolean | null
+          referral: string | null
           renewal_month: number | null
+          source: string | null
+          source_only: string | null
+          ssn_encrypted: string | null
           ssn_last4: string | null
+          stage: string | null
           state: string | null
           status: string
           termination_date: string | null
           termination_reason: string | null
           tobacco_use_date: string | null
           updated_at: string | null
+          weight: string | null
         }
         Insert: {
           active_plan_type?: string | null
@@ -18127,50 +18469,85 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           advisor_id?: string | null
+          best_call_time?: string | null
+          call_status?: string | null
           city?: string | null
           communication_preferences?: Json | null
+          company_name?: string | null
           country?: string | null
+          county?: string | null
           coverage_type?: string | null
           created_at?: string | null
           custom_fields?: Json | null
           customer_profile_id?: string | null
           date_of_birth?: string | null
           default_payment_profile_id?: string | null
+          department?: string | null
+          disability?: string | null
+          division?: string | null
+          do_not_call?: boolean | null
+          drivers_license?: string | null
           effective_date?: string | null
           email: string
+          email2?: string | null
+          email3?: string | null
+          ethnicity?: string | null
           existing_condition?: boolean | null
           existing_condition_description?: string | null
+          external_username?: string | null
+          fax?: string | null
+          fax_ext?: string | null
           first_name: string
           gender?: string | null
           has_existing_condition?: boolean | null
+          height?: string | null
           household_id?: string | null
           household_role?: string | null
           id?: string
+          internal_id?: string | null
           is_smoker?: boolean | null
           last_name: string
           marital_status?: string | null
           member_number: string
+          member_type?: string | null
+          member_type2?: string | null
           monthly_share?: number | null
+          next_step?: string | null
+          next_step_date?: string | null
+          number_of_calls?: number | null
           organization_id: string
           payment_profile_id?: string | null
           phone?: string | null
+          phone_ext?: string | null
+          phone2?: string | null
+          phone2_ext?: string | null
+          phone3?: string | null
+          phone3_ext?: string | null
           plan_id?: string | null
           plan_name?: string | null
           plan_type?: string | null
+          position?: string | null
           postal_code?: string | null
           preferred_language?: string | null
           primary_enrollment_id?: string | null
+          probability?: number | null
           program_type?: string | null
           receive_emails?: boolean | null
           receive_sms?: boolean | null
+          referral?: string | null
           renewal_month?: number | null
+          source?: string | null
+          source_only?: string | null
+          ssn_encrypted?: string | null
           ssn_last4?: string | null
+          stage?: string | null
           state?: string | null
           status?: string
           termination_date?: string | null
           termination_reason?: string | null
           tobacco_use_date?: string | null
           updated_at?: string | null
+          weight?: string | null
         }
         Update: {
           active_plan_type?: string | null
@@ -18178,50 +18555,85 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           advisor_id?: string | null
+          best_call_time?: string | null
+          call_status?: string | null
           city?: string | null
           communication_preferences?: Json | null
+          company_name?: string | null
           country?: string | null
+          county?: string | null
           coverage_type?: string | null
           created_at?: string | null
           custom_fields?: Json | null
           customer_profile_id?: string | null
           date_of_birth?: string | null
           default_payment_profile_id?: string | null
+          department?: string | null
+          disability?: string | null
+          division?: string | null
+          do_not_call?: boolean | null
+          drivers_license?: string | null
           effective_date?: string | null
           email?: string
+          email2?: string | null
+          email3?: string | null
+          ethnicity?: string | null
           existing_condition?: boolean | null
           existing_condition_description?: string | null
+          external_username?: string | null
+          fax?: string | null
+          fax_ext?: string | null
           first_name?: string
           gender?: string | null
           has_existing_condition?: boolean | null
+          height?: string | null
           household_id?: string | null
           household_role?: string | null
           id?: string
+          internal_id?: string | null
           is_smoker?: boolean | null
           last_name?: string
           marital_status?: string | null
           member_number?: string
+          member_type?: string | null
+          member_type2?: string | null
           monthly_share?: number | null
+          next_step?: string | null
+          next_step_date?: string | null
+          number_of_calls?: number | null
           organization_id?: string
           payment_profile_id?: string | null
           phone?: string | null
+          phone_ext?: string | null
+          phone2?: string | null
+          phone2_ext?: string | null
+          phone3?: string | null
+          phone3_ext?: string | null
           plan_id?: string | null
           plan_name?: string | null
           plan_type?: string | null
+          position?: string | null
           postal_code?: string | null
           preferred_language?: string | null
           primary_enrollment_id?: string | null
+          probability?: number | null
           program_type?: string | null
           receive_emails?: boolean | null
           receive_sms?: boolean | null
+          referral?: string | null
           renewal_month?: number | null
+          source?: string | null
+          source_only?: string | null
+          ssn_encrypted?: string | null
           ssn_last4?: string | null
+          stage?: string | null
           state?: string | null
           status?: string
           termination_date?: string | null
           termination_reason?: string | null
           tobacco_use_date?: string | null
           updated_at?: string | null
+          weight?: string | null
         }
         Relationships: [
           {
@@ -24568,7 +24980,9 @@ export type Database = {
           name: string
           organization_id: string
           owner_profile_id: string
+          page_key: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           context: string
@@ -24579,7 +24993,9 @@ export type Database = {
           name: string
           organization_id: string
           owner_profile_id: string
+          page_key?: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           context?: string
@@ -24590,7 +25006,9 @@ export type Database = {
           name?: string
           organization_id?: string
           owner_profile_id?: string
+          page_key?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -29318,6 +29736,29 @@ export type Database = {
           },
         ]
       }
+      group_contact_counts: {
+        Row: {
+          color: string | null
+          display_order: number | null
+          group_id: string | null
+          group_name: string | null
+          group_type: string | null
+          icon: string | null
+          is_active: boolean | null
+          is_system: boolean | null
+          member_count: number | null
+          organization_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contact_groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lifecycle_org_stats: {
         Row: {
           cancelled_this_month: number | null
@@ -30509,6 +30950,10 @@ export type Database = {
           uptime_24h: number
         }[]
       }
+      get_crm_dashboard_stats: {
+        Args: { p_module_id?: string; p_org_id: string }
+        Returns: Json
+      }
       get_daily_log_entry_count: { Args: { log_id: string }; Returns: number }
       get_dashboard_hero_stats: {
         Args: { p_org_id: string; p_user_id: string }
@@ -30614,6 +31059,37 @@ export type Database = {
       get_member_default_payment_profile: {
         Args: { p_member_id: string }
         Returns: string
+      }
+      get_members_by_advisor: {
+        Args: { p_limit?: number; p_org_id: string }
+        Returns: {
+          advisor_name: string
+          healthshare_count: number
+          insurance_count: number
+          record_count: number
+        }[]
+      }
+      get_members_by_age_range: {
+        Args: { p_org_id: string }
+        Returns: {
+          age_bucket: string
+          record_count: number
+        }[]
+      }
+      get_members_by_carrier: {
+        Args: { p_limit?: number; p_org_id: string }
+        Returns: {
+          carrier_name: string
+          carrier_type: string
+          record_count: number
+        }[]
+      }
+      get_members_by_status: {
+        Args: { p_org_id: string }
+        Returns: {
+          member_status: string
+          record_count: number
+        }[]
       }
       get_module_blueprint: {
         Args: { p_module_id: string }
@@ -30903,6 +31379,15 @@ export type Database = {
       get_ticket_requester_name: {
         Args: { p_ticket_id: string }
         Returns: string
+      }
+      get_tobacco_counts: {
+        Args: { p_module_id: string; p_record_type?: string }
+        Returns: {
+          non_tobacco: number
+          tobacco_users: number
+          total_records: number
+          unknown_tobacco: number
+        }[]
       }
       get_user_advisor_id: { Args: never; Returns: string }
       get_user_crm_role: { Args: { p_org_id: string }; Returns: string }
@@ -31425,6 +31910,10 @@ export type Database = {
           tier_discount_pct: number
           zip: string
         }[]
+      }
+      search_members_with_dependents: {
+        Args: { p_org_id: string; p_search: string }
+        Returns: string[]
       }
       search_procedure_prices: {
         Args: {

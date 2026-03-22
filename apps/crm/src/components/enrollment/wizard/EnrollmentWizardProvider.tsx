@@ -29,6 +29,7 @@ export interface HouseholdMember {
   dateOfBirth: string;
   gender: 'male' | 'female' | 'other' | '';
   tobaccoUse: boolean;
+  isStudent: boolean;
 }
 
 export interface WizardSnapshot {

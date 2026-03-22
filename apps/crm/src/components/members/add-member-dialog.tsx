@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogDescription,
@@ -22,7 +27,7 @@ import {
   SelectValue,
   Separator,
 } from '@crm-eco/ui';
-import { Plus, User, MapPin, Shield } from 'lucide-react';
+import { Plus, User, MapPin, Shield, Building2, Contact, ChevronDown } from 'lucide-react';
 import type { Database } from '@crm-eco/lib/types';
 import { logActivityForMember, ActivityTypes } from '@crm-eco/lib';
 import { CustomFieldsForm } from '@/components/shared/custom-fields-form';
@@ -56,6 +61,38 @@ export function AddMemberDialog() {
     status: 'prospect' | 'pending' | 'active' | 'paused' | 'terminated' | 'inactive';
     programType: string;
     coverageType: string;
+    // Extended contact
+    phoneExt: string;
+    phone2: string;
+    phone2Ext: string;
+    phone3: string;
+    phone3Ext: string;
+    fax: string;
+    faxExt: string;
+    email2: string;
+    email3: string;
+    county: string;
+    // Employment
+    companyName: string;
+    position: string;
+    department: string;
+    division: string;
+    // Demographics
+    ethnicity: string;
+    height: string;
+    weight: string;
+    disability: string;
+    driversLicense: string;
+    // CRM tracking
+    source: string;
+    referral: string;
+    memberType: string;
+    memberType2: string;
+    stage: string;
+    doNotCall: boolean;
+    // System IDs
+    internalId: string;
+    externalUsername: string;
   }>({
     firstName: '',
     lastName: '',
@@ -68,6 +105,33 @@ export function AddMemberDialog() {
     status: 'pending',
     programType: '',
     coverageType: '',
+    phoneExt: '',
+    phone2: '',
+    phone2Ext: '',
+    phone3: '',
+    phone3Ext: '',
+    fax: '',
+    faxExt: '',
+    email2: '',
+    email3: '',
+    county: '',
+    companyName: '',
+    position: '',
+    department: '',
+    division: '',
+    ethnicity: '',
+    height: '',
+    weight: '',
+    disability: '',
+    driversLicense: '',
+    source: '',
+    referral: '',
+    memberType: '',
+    memberType2: '',
+    stage: '',
+    doNotCall: false,
+    internalId: '',
+    externalUsername: '',
   });
 
   const [customFields, setCustomFields] = useState<Record<string, any>>({});
@@ -95,6 +159,38 @@ export function AddMemberDialog() {
         program_type: formData.programType || null,
         coverage_type: formData.coverageType || null,
         custom_fields: Object.keys(customFields).length > 0 ? customFields : null,
+        // Extended contact
+        phone_ext: formData.phoneExt || null,
+        phone2: formData.phone2 || null,
+        phone2_ext: formData.phone2Ext || null,
+        phone3: formData.phone3 || null,
+        phone3_ext: formData.phone3Ext || null,
+        fax: formData.fax || null,
+        fax_ext: formData.faxExt || null,
+        email2: formData.email2 || null,
+        email3: formData.email3 || null,
+        county: formData.county || null,
+        // Employment
+        company_name: formData.companyName || null,
+        position: formData.position || null,
+        department: formData.department || null,
+        division: formData.division || null,
+        // Demographics
+        ethnicity: formData.ethnicity || null,
+        height: formData.height || null,
+        weight: formData.weight || null,
+        disability: formData.disability || null,
+        drivers_license: formData.driversLicense || null,
+        // CRM tracking
+        source: formData.source || null,
+        referral: formData.referral || null,
+        member_type: formData.memberType || null,
+        member_type2: formData.memberType2 || null,
+        stage: formData.stage || null,
+        do_not_call: formData.doNotCall,
+        // System IDs
+        internal_id: formData.internalId || null,
+        external_username: formData.externalUsername || null,
       };
 
       const { data: insertedMember, error: insertError } = await supabase
@@ -130,6 +226,33 @@ export function AddMemberDialog() {
         status: 'pending',
         programType: '',
         coverageType: '',
+        phoneExt: '',
+        phone2: '',
+        phone2Ext: '',
+        phone3: '',
+        phone3Ext: '',
+        fax: '',
+        faxExt: '',
+        email2: '',
+        email3: '',
+        county: '',
+        companyName: '',
+        position: '',
+        department: '',
+        division: '',
+        ethnicity: '',
+        height: '',
+        weight: '',
+        disability: '',
+        driversLicense: '',
+        source: '',
+        referral: '',
+        memberType: '',
+        memberType2: '',
+        stage: '',
+        doNotCall: false,
+        internalId: '',
+        externalUsername: '',
       });
       setCustomFields({});
       router.refresh();
@@ -346,6 +469,299 @@ export function AddMemberDialog() {
                 </div>
               </div>
             </div>
+
+            {/* Advanced Fields - Collapsible */}
+            <Accordion type="single" collapsible>
+              <AccordionItem value="extended-contact" className="border rounded-lg px-3">
+                <AccordionTrigger className="text-sm font-medium text-slate-700 py-3">
+                  <div className="flex items-center gap-2">
+                    <Contact className="w-4 h-4 text-slate-400" />
+                    Extended Contact Info
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2 col-span-2">
+                        <Label>Phone 1 Extension</Label>
+                        <Input
+                          value={formData.phoneExt}
+                          onChange={(e) => setFormData({ ...formData, phoneExt: e.target.value })}
+                          placeholder="Ext"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>County</Label>
+                        <Input
+                          value={formData.county}
+                          onChange={(e) => setFormData({ ...formData, county: e.target.value })}
+                          placeholder="County"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Phone 2</Label>
+                        <Input
+                          value={formData.phone2}
+                          onChange={(e) => setFormData({ ...formData, phone2: e.target.value })}
+                          placeholder="(555) 234-5678"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Phone 2 Ext</Label>
+                        <Input
+                          value={formData.phone2Ext}
+                          onChange={(e) => setFormData({ ...formData, phone2Ext: e.target.value })}
+                          placeholder="Ext"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Phone 3</Label>
+                        <Input
+                          value={formData.phone3}
+                          onChange={(e) => setFormData({ ...formData, phone3: e.target.value })}
+                          placeholder="(555) 345-6789"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Phone 3 Ext</Label>
+                        <Input
+                          value={formData.phone3Ext}
+                          onChange={(e) => setFormData({ ...formData, phone3Ext: e.target.value })}
+                          placeholder="Ext"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Fax</Label>
+                        <Input
+                          value={formData.fax}
+                          onChange={(e) => setFormData({ ...formData, fax: e.target.value })}
+                          placeholder="(555) 456-7890"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fax Ext</Label>
+                        <Input
+                          value={formData.faxExt}
+                          onChange={(e) => setFormData({ ...formData, faxExt: e.target.value })}
+                          placeholder="Ext"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Email 2</Label>
+                        <Input
+                          type="email"
+                          value={formData.email2}
+                          onChange={(e) => setFormData({ ...formData, email2: e.target.value })}
+                          placeholder="alternate@example.com"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email 3</Label>
+                        <Input
+                          type="email"
+                          value={formData.email3}
+                          onChange={(e) => setFormData({ ...formData, email3: e.target.value })}
+                          placeholder="third@example.com"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-1">
+                      <Checkbox
+                        id="doNotCall"
+                        checked={formData.doNotCall}
+                        onCheckedChange={(checked) =>
+                          setFormData({ ...formData, doNotCall: checked === true })
+                        }
+                      />
+                      <Label htmlFor="doNotCall" className="text-sm font-normal">Do Not Call</Label>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="employment" className="border rounded-lg px-3 mt-2">
+                <AccordionTrigger className="text-sm font-medium text-slate-700 py-3">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-slate-400" />
+                    Employment
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Company Name</Label>
+                        <Input
+                          value={formData.companyName}
+                          onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                          placeholder="Acme Corp"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Position</Label>
+                        <Input
+                          value={formData.position}
+                          onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                          placeholder="Manager"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Department</Label>
+                        <Input
+                          value={formData.department}
+                          onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                          placeholder="Sales"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Division</Label>
+                        <Input
+                          value={formData.division}
+                          onChange={(e) => setFormData({ ...formData, division: e.target.value })}
+                          placeholder="West Region"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="demographics" className="border rounded-lg px-3 mt-2">
+                <AccordionTrigger className="text-sm font-medium text-slate-700 py-3">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-slate-400" />
+                    Demographics
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Ethnicity</Label>
+                        <Input
+                          value={formData.ethnicity}
+                          onChange={(e) => setFormData({ ...formData, ethnicity: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Height</Label>
+                        <Input
+                          value={formData.height}
+                          onChange={(e) => setFormData({ ...formData, height: e.target.value })}
+                          placeholder={`5'10"`}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Weight</Label>
+                        <Input
+                          value={formData.weight}
+                          onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                          placeholder="180 lbs"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Disability</Label>
+                        <Input
+                          value={formData.disability}
+                          onChange={(e) => setFormData({ ...formData, disability: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Drivers License</Label>
+                        <Input
+                          value={formData.driversLicense}
+                          onChange={(e) => setFormData({ ...formData, driversLicense: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="crm-tracking" className="border rounded-lg px-3 mt-2">
+                <AccordionTrigger className="text-sm font-medium text-slate-700 py-3">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-slate-400" />
+                    Source & Tracking
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4">
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Source</Label>
+                        <Input
+                          value={formData.source}
+                          onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                          placeholder="Referral, Web, Phone..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Referral</Label>
+                        <Input
+                          value={formData.referral}
+                          onChange={(e) => setFormData({ ...formData, referral: e.target.value })}
+                          placeholder="Referral source"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Member Type</Label>
+                        <Input
+                          value={formData.memberType}
+                          onChange={(e) => setFormData({ ...formData, memberType: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Member Type 2</Label>
+                        <Input
+                          value={formData.memberType2}
+                          onChange={(e) => setFormData({ ...formData, memberType2: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Stage</Label>
+                        <Input
+                          value={formData.stage}
+                          onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Internal ID</Label>
+                        <Input
+                          value={formData.internalId}
+                          onChange={(e) => setFormData({ ...formData, internalId: e.target.value })}
+                          placeholder="External system ID"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Username</Label>
+                      <Input
+                        value={formData.externalUsername}
+                        onChange={(e) => setFormData({ ...formData, externalUsername: e.target.value })}
+                        placeholder="External system username"
+                      />
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {/* Custom Fields */}
             <CustomFieldsForm

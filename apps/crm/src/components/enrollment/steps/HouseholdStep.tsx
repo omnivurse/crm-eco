@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button } from '@crm-eco/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Checkbox, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Button } from '@crm-eco/ui';
 import { Users, Plus, Trash2 } from 'lucide-react';
 import { useEnrollmentWizard, WizardNavigation, HouseholdMember } from '../wizard';
 import { completeHouseholdStep } from '@/app/crm/enrollment/actions';
@@ -39,6 +39,7 @@ export function HouseholdStep() {
       dateOfBirth: snapshot.intake?.newMember?.dateOfBirth || '',
       gender: '',
       tobaccoUse: false,
+      isStudent: false,
     },
   ];
 
@@ -54,6 +55,7 @@ export function HouseholdStep() {
         dateOfBirth: '',
         gender: '',
         tobaccoUse: false,
+        isStudent: false,
       },
     ]);
   };
@@ -257,6 +259,19 @@ export function HouseholdStep() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {member.relationship !== 'primary' && (
+                    <div className="space-y-2 flex items-end">
+                      <div className="flex items-center gap-2 pb-2">
+                        <Checkbox
+                          id={`student-${index}`}
+                          checked={member.isStudent}
+                          onCheckedChange={(checked) => updateMember(index, 'isStudent', checked === true)}
+                        />
+                        <Label htmlFor={`student-${index}`} className="text-sm font-normal">Student</Label>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
