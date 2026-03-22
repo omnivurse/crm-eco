@@ -180,13 +180,39 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       );
       break;
 
-    case 'date':
-      input = <Input {...commonProps} type="date" />;
+    case 'date': {
+      // Sanitize: ISO timestamps (e.g. "2026-02-05T00:00:00.000Z") must be
+      // truncated to "yyyy-MM-dd" for <input type="date">
+      const dateValue = typeof value === 'string' && value
+        ? value.slice(0, 10)
+        : (value as string) || '';
+      input = (
+        <Input
+          {...commonProps}
+          type="date"
+          value={dateValue}
+          onChange={(e) => setValue(field.key, e.target.value)}
+        />
+      );
       break;
+    }
 
-    case 'datetime':
-      input = <Input {...commonProps} type="datetime-local" />;
+    case 'datetime': {
+      // Sanitize ISO 8601 values (e.g. "2026-02-05T18:26:56.000Z") to the
+      // "yyyy-MM-ddThh:mm" format required by <input type="datetime-local">
+      const dtValue = typeof value === 'string' && value
+        ? value.replace(/(\.\d{3})?Z$/, '').slice(0, 16)
+        : (value as string) || '';
+      input = (
+        <Input
+          {...commonProps}
+          type="datetime-local"
+          value={dtValue}
+          onChange={(e) => setValue(field.key, e.target.value)}
+        />
+      );
       break;
+    }
 
     case 'boolean':
       input = (
