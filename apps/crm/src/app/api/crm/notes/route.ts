@@ -28,6 +28,23 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createCrmClient();
 
+    // Duplicate prevention: if an identical note was created in the last 60 seconds, return it instead
+    const sixtySecondsAgo = new Date(Date.now() - 60_000).toISOString();
+    const { data: existingNote } = await supabase
+      .from('crm_notes')
+      .select()
+      .eq('record_id', parsed.data.record_id)
+      .eq('body', parsed.data.body)
+      .eq('created_by', profile.id)
+      .gte('created_at', sixtySecondsAgo)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (existingNote) {
+      return NextResponse.json(existingNote);
+    }
+
     const { data: note, error } = await supabase
       .from('crm_notes')
       .insert({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2, X } from 'lucide-react';
@@ -30,6 +30,8 @@ export default function EditRecordPage() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const initialFormData = useRef<Record<string, unknown>>({});
 
   // Use TanStack Query for cached data fetching
   const { data, isLoading, error } = useEditRecordData(recordId);
@@ -38,12 +40,14 @@ export default function EditRecordPage() {
   useEffect(() => {
     if (data?.record && !isInitialized) {
       const r = data.record;
-      setFormData({
+      const initial = {
         ...r.data,
         ...(r.email && !r.data?.email && { email: r.email }),
         ...(r.phone && !r.data?.phone && { phone: r.phone }),
         ...(r.status && !r.data?.contact_status && { contact_status: r.status }),
-      });
+      };
+      setFormData(initial);
+      initialFormData.current = initial;
       setIsInitialized(true);
     }
   }, [data?.record, isInitialized]);
@@ -58,9 +62,26 @@ export default function EditRecordPage() {
   const record = data?.record;
   const fields = data?.fields || [];
 
-  const handleFieldChange = (key: string, value: unknown) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
-  };
+  const handleFieldChange = useCallback((key: string, value: unknown) => {
+    setFormData(prev => {
+      const updated = { ...prev, [key]: value };
+      // Check if form has diverged from initial values
+      const dirty = JSON.stringify(updated) !== JSON.stringify(initialFormData.current);
+      setIsDirty(dirty);
+      return updated;
+    });
+  }, []);
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isDirty]);
 
   const handleSave = async () => {
     if (!record) return;
@@ -86,6 +107,7 @@ export default function EditRecordPage() {
       await queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(recordId) });
       await queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
 
+      setIsDirty(false);
       toast.success('Record updated successfully');
       router.refresh();
       router.push(`/crm/r/${recordId}`);
@@ -294,8 +316,14 @@ export default function EditRecordPage() {
         )}
       </div>
 
-      {/* Footer Actions */}
-      <div className="flex justify-end gap-2 mt-6">
+      {/* Footer Actions — sticky so save button is always reachable */}
+      <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-white/10 z-10 py-3 px-6 -mx-6 mt-6 flex items-center justify-end gap-3">
+        {isDirty && (
+          <span className="mr-auto text-sm text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-500" />
+            Unsaved changes
+          </span>
+        )}
         <Button
           variant="outline"
           onClick={() => router.push(`/crm/r/${recordId}`)}

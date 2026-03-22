@@ -145,8 +145,8 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write a note..."
-            rows={4}
-            className="mb-3 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:border-teal-500 focus:ring-teal-500/20"
+            rows={8}
+            className="mb-3 min-h-[120px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:border-teal-500 focus:ring-teal-500/20"
             autoFocus
           />
           <div className="flex justify-end gap-2">

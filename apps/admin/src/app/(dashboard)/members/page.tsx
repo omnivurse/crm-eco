@@ -56,7 +56,16 @@ async function getMembers(page: number, filters: { search?: string; advisor?: st
     query = query.eq('status', filters.status);
   }
   if (filters.search) {
-    query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+    if (filters.search.includes(' ')) {
+      // Full name search: split into parts and match first + last
+      const parts = filters.search.trim().split(/\s+/);
+      const first = parts[0];
+      const last = parts.slice(1).join(' ');
+      query = query.ilike('first_name', `%${first}%`).ilike('last_name', `%${last}%`);
+    } else {
+      // Single-term search: match any of first_name, last_name, email
+      query = query.or(`first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+    }
   }
   if (filters.market_type) {
     query = query.eq('market_type', filters.market_type);
