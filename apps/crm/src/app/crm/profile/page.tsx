@@ -18,6 +18,10 @@ import {
     Key,
     Bell,
     Palette,
+    Eye,
+    EyeOff,
+    CheckCircle,
+    AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@crm-eco/ui/components/avatar';
@@ -29,6 +33,7 @@ interface ProfileData {
     email: string;
     phone: string | null;
     avatar_url: string | null;
+    role: string | null;
     crm_role: string | null;
     organization_id: string;
     ui_theme: string | null;
@@ -44,6 +49,19 @@ export default function ProfilePage() {
         phone: '',
         ui_theme: 'light',
     });
+
+    // Email change state
+    const [showEmailChange, setShowEmailChange] = useState(false);
+    const [newEmail, setNewEmail] = useState('');
+    const [emailSaving, setEmailSaving] = useState(false);
+
+    // Password change state
+    const [showPasswordChange, setShowPasswordChange] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordSaving, setPasswordSaving] = useState(false);
+
+    const isAdmin = profile?.role === 'owner' || profile?.role === 'admin';
 
     useEffect(() => {
         if (!authLoading && !authUser) {
@@ -234,16 +252,79 @@ export default function ProfilePage() {
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                     Email Address
                                 </label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                                    <input
-                                        type="email"
-                                        value={profile.email}
-                                        disabled
-                                        className="w-full pl-10 pr-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                                    />
-                                </div>
-                                <p className="text-xs text-slate-500 mt-1">Email cannot be changed</p>
+                                {!showEmailChange ? (
+                                    <>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="email"
+                                                value={profile.email}
+                                                disabled
+                                                className="w-full pl-10 pr-3 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                                            />
+                                        </div>
+                                        {isAdmin && (
+                                            <button
+                                                type="button"
+                                                onClick={() => { setShowEmailChange(true); setNewEmail(profile.email); }}
+                                                className="text-xs text-teal-600 dark:text-teal-400 hover:underline mt-1"
+                                            >
+                                                Change email address
+                                            </button>
+                                        )}
+                                        {!isAdmin && (
+                                            <p className="text-xs text-slate-500 mt-1">Contact an admin to change your email</p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                            <input
+                                                type="email"
+                                                value={newEmail}
+                                                onChange={(e) => setNewEmail(e.target.value)}
+                                                placeholder="new@example.com"
+                                                className="w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-800 border border-teal-300 dark:border-teal-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={emailSaving || !newEmail || newEmail === profile.email}
+                                                onClick={async () => {
+                                                    setEmailSaving(true);
+                                                    try {
+                                                        const { error } = await supabase.auth.updateUser({ email: newEmail });
+                                                        if (error) throw error;
+                                                        toast.success('Confirmation email sent to your new address. Check your inbox.');
+                                                        setShowEmailChange(false);
+                                                    } catch (err: any) {
+                                                        toast.error(err?.message || 'Failed to update email');
+                                                    } finally {
+                                                        setEmailSaving(false);
+                                                    }
+                                                }}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-teal-500 hover:bg-teal-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+                                            >
+                                                {emailSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+                                                Update Email
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowEmailChange(false)}
+                                                className="px-3 py-1.5 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                            <AlertTriangle className="w-3 h-3" />
+                                            A confirmation email will be sent to the new address
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
@@ -291,18 +372,112 @@ export default function ProfilePage() {
                             <Key className="w-4 h-4" />
                             Security
                         </h3>
-                        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                            <div>
-                                <p className="text-sm font-medium text-slate-900 dark:text-white">Password</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Last changed: Never</p>
+                        {!showPasswordChange ? (
+                            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-900 dark:text-white">Password</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        {isAdmin ? 'You can change your password below' : 'Contact an admin to reset your password'}
+                                    </p>
+                                </div>
+                                {isAdmin && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPasswordChange(true)}
+                                        className="px-4 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 rounded-lg transition-colors"
+                                    >
+                                        Change Password
+                                    </button>
+                                )}
                             </div>
-                            <button
-                                type="button"
-                                className="px-4 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10 rounded-lg transition-colors"
-                            >
-                                Change Password
-                            </button>
-                        </div>
+                        ) : (
+                            <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        New Password
+                                    </label>
+                                    <div className="relative">
+                                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={passwordForm.newPassword}
+                                            onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                                            placeholder="Minimum 12 characters"
+                                            className="w-full pl-10 pr-10 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                            autoFocus
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                    {passwordForm.newPassword && passwordForm.newPassword.length < 12 && (
+                                        <p className="text-xs text-amber-600 mt-1">Must be at least 12 characters</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                        Confirm Password
+                                    </label>
+                                    <div className="relative">
+                                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={passwordForm.confirmPassword}
+                                            onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                                            placeholder="Confirm new password"
+                                            className="w-full pl-10 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    {passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword && (
+                                        <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        disabled={
+                                            passwordSaving ||
+                                            passwordForm.newPassword.length < 12 ||
+                                            passwordForm.newPassword !== passwordForm.confirmPassword
+                                        }
+                                        onClick={async () => {
+                                            setPasswordSaving(true);
+                                            try {
+                                                const { error } = await supabase.auth.updateUser({
+                                                    password: passwordForm.newPassword,
+                                                });
+                                                if (error) throw error;
+                                                toast.success('Password updated successfully');
+                                                setShowPasswordChange(false);
+                                                setPasswordForm({ newPassword: '', confirmPassword: '' });
+                                            } catch (err: any) {
+                                                toast.error(err?.message || 'Failed to update password');
+                                            } finally {
+                                                setPasswordSaving(false);
+                                            }
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-teal-500 hover:bg-teal-600 text-white rounded-lg disabled:opacity-50 transition-colors"
+                                    >
+                                        {passwordSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                                        Update Password
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowPasswordChange(false);
+                                            setPasswordForm({ newPassword: '', confirmPassword: '' });
+                                        }}
+                                        className="px-4 py-2 text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Actions */}
