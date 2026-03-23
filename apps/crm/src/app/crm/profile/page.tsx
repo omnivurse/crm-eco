@@ -296,9 +296,15 @@ export default function ProfilePage() {
                                                 onClick={async () => {
                                                     setEmailSaving(true);
                                                     try {
-                                                        const { error } = await supabase.auth.updateUser({ email: newEmail });
-                                                        if (error) throw error;
-                                                        toast.success('Confirmation email sent to your new address. Check your inbox.');
+                                                        const res = await fetch(`/api/users/${profile.id}/email`, {
+                                                            method: 'PUT',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({ email: newEmail }),
+                                                        });
+                                                        const data = await res.json();
+                                                        if (!res.ok) throw new Error(data.error || 'Failed to update email');
+                                                        toast.success('Email updated successfully. Use your new email to log in.');
+                                                        setProfile({ ...profile, email: newEmail.trim().toLowerCase() });
                                                         setShowEmailChange(false);
                                                     } catch (err: any) {
                                                         toast.error(err?.message || 'Failed to update email');
@@ -319,9 +325,8 @@ export default function ProfilePage() {
                                                 Cancel
                                             </button>
                                         </div>
-                                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                                            <AlertTriangle className="w-3 h-3" />
-                                            A confirmation email will be sent to the new address
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                            Email change takes effect immediately — no confirmation needed
                                         </p>
                                     </div>
                                 )}
