@@ -1124,8 +1124,8 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
                 placeholder="Enter your note..."
-                rows={5}
-                className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
+                rows={12}
+                className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 min-h-[240px] resize-y"
               />
             </div>
             <div className="flex justify-end gap-2 pt-4">

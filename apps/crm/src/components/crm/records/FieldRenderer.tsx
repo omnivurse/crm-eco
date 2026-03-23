@@ -54,13 +54,18 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
 
     case 'phone':
       return (
-        <a
-          href={`tel:${String(value).replace(/[^\d+]/g, '')}`}
-          className={cn('inline-flex items-center gap-1 text-brand-teal-600 hover:underline', className)}
-        >
-          <Phone className="w-3 h-3" />
-          {String(value)}
-        </a>
+        <span className="inline-flex flex-col">
+          <a
+            href={`tel:${String(value).replace(/[^\d+]/g, '')}`}
+            className={cn('inline-flex items-center gap-1 text-brand-teal-600 hover:underline', className)}
+          >
+            <Phone className="w-3 h-3" />
+            {String(value)}
+          </a>
+          {field.tooltip && (
+            <span className="text-[10px] text-slate-400 mt-0.5">{field.tooltip}</span>
+          )}
+        </span>
       );
 
     case 'url':

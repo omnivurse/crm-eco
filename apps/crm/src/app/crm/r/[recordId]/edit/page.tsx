@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2, X } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
@@ -70,7 +70,7 @@ export default function EditRecordPage() {
     });
   }, []);
 
-  // Warn user before leaving with unsaved changes
+  // Warn user before leaving with unsaved changes (browser close/refresh)
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -80,6 +80,47 @@ export default function EditRecordPage() {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
+
+  // In-app navigation guard: intercept clicks on internal links when dirty
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+      // Internal link click while dirty — confirm before navigating
+      const confirmed = window.confirm('You have unsaved changes. Leave without saving?');
+      if (!confirmed) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
+  }, [isDirty]);
+
+  // Auto-save: debounced save 8 seconds after last change
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isDirty || !record) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/crm/records/${recordId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: formData }),
+        });
+        if (response.ok) {
+          initialFormData.current = { ...formData };
+          setIsDirty(false);
+          toast.success('Auto-saved', { duration: 2000 });
+        }
+      } catch { /* silent auto-save failure */ }
+    }, 8000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [isDirty, formData, record, recordId]);
 
   const handleSave = async () => {
     if (!record) return;

@@ -18435,8 +18435,10 @@ export type Database = {
           phone_ext: string | null
           phone2: string | null
           phone2_ext: string | null
+          phone2_owner: string | null
           phone3: string | null
           phone3_ext: string | null
+          phone3_owner: string | null
           plan_id: string | null
           plan_name: string | null
           plan_type: string | null
@@ -18521,8 +18523,10 @@ export type Database = {
           phone_ext?: string | null
           phone2?: string | null
           phone2_ext?: string | null
+          phone2_owner?: string | null
           phone3?: string | null
           phone3_ext?: string | null
+          phone3_owner?: string | null
           plan_id?: string | null
           plan_name?: string | null
           plan_type?: string | null
@@ -18607,8 +18611,10 @@ export type Database = {
           phone_ext?: string | null
           phone2?: string | null
           phone2_ext?: string | null
+          phone2_owner?: string | null
           phone3?: string | null
           phone3_ext?: string | null
+          phone3_owner?: string | null
           plan_id?: string | null
           plan_name?: string | null
           plan_type?: string | null
