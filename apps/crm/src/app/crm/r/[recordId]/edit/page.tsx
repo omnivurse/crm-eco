@@ -280,7 +280,7 @@ export default function EditRecordPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="w-full px-3 sm:px-4 py-3">
       {/* Header */}
       <div className="mb-6">
         <Link

@@ -542,9 +542,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
-          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 xl:px-6 py-3">
+          <div className="w-full px-3 sm:px-4 xl:px-5 py-3">
             {/* Breadcrumb + Search */}
-            <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex items-center justify-between gap-4 mb-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Link
                   href={backUrl}
@@ -847,7 +847,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
 
         {/* Composer Bar - shown on Timeline tab */}
         {showComposer && (
-          <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 xl:px-6 pt-3">
+          <div className="w-full px-3 sm:px-4 xl:px-5 pt-3">
             <ComposerBar
               recordId={record.id}
               onNoteCreated={onRefresh}
@@ -858,7 +858,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
         )}
 
         {/* Tab Content */}
-        <div className="max-w-screen-2xl mx-auto px-3 sm:px-4 xl:px-6 py-4">
+        <div className="w-full px-3 sm:px-4 xl:px-5 py-3">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsContent value="overview" className="mt-0">
               {children.overview}
@@ -889,7 +889,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
       </main>
 
       {/* Action Rail */}
-      <ActionRail title="Quick Actions" width="sm" defaultCollapsed={false}>
+      <ActionRail title="Quick Actions" width="sm" defaultCollapsed={true}>
         <div className="space-y-3">
           {/* Notes Preview — above quick actions */}
           <div className="pb-3 border-b border-slate-200 dark:border-white/10">

@@ -104,7 +104,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     const TabComponent = contactsTabComponents[tab];
     if (TabComponent) {
       return (
-        <div className="max-w-7xl mx-auto space-y-4">
+        <div className="w-full space-y-3">
           <Link
             href="/crm/modules/contacts"
             className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -283,7 +283,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="max-w-7xl mx-auto mt-4 glass-card rounded-xl p-4 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+        <div className="w-full mt-3 glass-card rounded-lg p-3 border border-slate-200 dark:border-white/10 flex items-center justify-between">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
             <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
@@ -363,7 +363,7 @@ export default function ModulePage(props: PageProps) {
 
 function ModuleSkeleton() {
   return (
-    <div className="max-w-7xl mx-auto space-y-4">
+    <div className="w-full space-y-3">
       {/* Header skeleton */}
       <div className="space-y-3">
         <div className="h-4 w-24 bg-slate-200 dark:bg-slate-800/50 rounded animate-pulse" />
