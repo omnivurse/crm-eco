@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const pageSize = Math.min(parseInt(searchParams.get('page_size') || '25', 10), 100);
     const search = searchParams.get('search');
     const advisorId = searchParams.get('advisor_id');
+    const includeDownline = searchParams.get('include_downline') === 'true';
     const contactType = searchParams.get('contact_type');
     const groupId = searchParams.get('group_id');
 
@@ -69,9 +70,18 @@ export async function GET(request: NextRequest) {
       query = query.in('id', memberIds);
     }
 
-    // Apply advisor filter
+    // Apply advisor filter — optionally include downline advisors
     if (advisorId) {
-      query = query.eq('advisor_id', advisorId);
+      if (includeDownline) {
+        // Fetch all advisor IDs in the hierarchy tree
+        const { data: downlineIds } = await supabase.rpc('get_advisor_downline_ids', {
+          p_advisor_id: advisorId,
+        });
+        const allIds = [advisorId, ...(downlineIds || []).map((r: any) => r.id || r)];
+        query = query.in('advisor_id', allIds);
+      } else {
+        query = query.eq('advisor_id', advisorId);
+      }
     }
 
     // Apply contact type filter

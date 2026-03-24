@@ -591,9 +591,58 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       </a>
                     )}
                     {record.status && (
-                      <Badge variant="outline" className="bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300">
-                        {record.status}
-                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="inline-flex items-center gap-1 cursor-pointer hover:ring-2 hover:ring-teal-500/30 rounded-full transition-all">
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'border text-xs font-medium',
+                                record.status === 'Active'
+                                  ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                                  : record.status === 'Inactive' || record.status === 'Terminated' || record.status === 'Cancelled'
+                                  ? 'bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-400'
+                                  : 'bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
+                              )}
+                            >
+                              {record.status}
+                            </Badge>
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[160px]">
+                          {['Active', 'Inactive', 'Pending', 'Cancelled', 'Terminated', 'Hold', 'Archived'].map((s) => (
+                            <DropdownMenuItem
+                              key={s}
+                              disabled={s === record.status}
+                              className={cn(
+                                'text-sm',
+                                s === record.status && 'opacity-50',
+                                s === 'Active' && 'text-emerald-600 dark:text-emerald-400',
+                                (s === 'Inactive' || s === 'Terminated' || s === 'Cancelled') && 'text-red-600 dark:text-red-400',
+                              )}
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch(`/api/crm/records/${record.id}/status`, {
+                                    method: 'PATCH',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ status: s, reason: 'Manual CRM status change' }),
+                                  });
+                                  if (!res.ok) {
+                                    const err = await res.json();
+                                    throw new Error(err.error || 'Failed');
+                                  }
+                                  toast.success(`Status changed to ${s}`);
+                                  router.refresh();
+                                } catch (err) {
+                                  toast.error(err instanceof Error ? err.message : 'Failed to update status');
+                                }
+                              }}
+                            >
+                              {s}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     )}
                     {/* Market type + normalization badges */}
                     {!isLeads && <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />}

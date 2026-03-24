@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
     }
     if (search) {
       const safe = search.replace(/[%_,().\\]/g, '\\$&');
-      query = query.or(`advisor_name.ilike.%${safe}%,agency_name.ilike.%${safe}%`);
+      query = query.or(
+        `advisor_name.ilike.%${safe}%,agency_name.ilike.%${safe}%,email.ilike.%${safe}%,producer_code.ilike.%${safe}%,first_name.ilike.%${safe}%,last_name.ilike.%${safe}%`
+      );
     }
 
     query = query.range(offset, offset + limit - 1);
