@@ -18,6 +18,7 @@ import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import DOMPurify from 'dompurify';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
 interface NotesOverviewCardProps {
@@ -54,9 +55,10 @@ function NotePreviewItem({ note }: { note: CrmNoteWithAuthor }) {
           <Pin className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />
         )}
       </div>
-      <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-        {displayBody}
-      </p>
+      <div
+        className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayBody) }}
+      />
       {isTruncated && (
         <button
           onClick={() => setExpanded(!expanded)}
@@ -180,8 +182,8 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write a note..."
-            rows={3}
-            className="mb-2 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none text-sm"
+            rows={10}
+            className="mb-2 min-h-[200px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-y text-sm"
             autoFocus
           />
           <div className="flex justify-end gap-2">

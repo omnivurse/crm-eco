@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { StickyNote, Plus, Pin, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Textarea } from '@crm-eco/ui/components/textarea';
+import DOMPurify from 'dompurify';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -86,9 +87,10 @@ function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: 
         </div>
       </div>
 
-      <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
-        {note.body}
-      </p>
+      <div
+        className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(note.body) }}
+      />
     </div>
   );
 }
@@ -145,8 +147,8 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
             placeholder="Write a note..."
-            rows={8}
-            className="mb-3 min-h-[120px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none focus:border-teal-500 focus:ring-teal-500/20"
+            rows={14}
+            className="mb-3 min-h-[280px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-y focus:border-teal-500 focus:ring-teal-500/20"
             autoFocus
           />
           <div className="flex justify-end gap-2">
