@@ -495,29 +495,29 @@ export function DynamicRecordForm({
             <CardHeader
               className={cn(
                 'cursor-pointer hover:bg-muted/50 transition-colors',
-                readOnly ? 'py-2.5' : 'py-3',
+                readOnly ? 'py-2 px-4' : 'py-3',
               )}
               onClick={() => toggleSection(section.key)}
             >
-              <CardTitle className="text-base font-medium flex items-center gap-2">
+              <CardTitle className={cn('font-medium flex items-center gap-2', readOnly ? 'text-sm' : 'text-base')}>
                 {isCollapsed ? (
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 ) : (
-                  <ChevronDown className="w-4 h-4" />
+                  <ChevronDown className="w-3.5 h-3.5" />
                 )}
                 {section.label}
-                <span className="text-muted-foreground font-normal text-sm">
-                  ({sectionFields.length} field{sectionFields.length !== 1 ? 's' : ''})
+                <span className="text-muted-foreground font-normal text-xs">
+                  ({sectionFields.length})
                 </span>
               </CardTitle>
             </CardHeader>
             {!isCollapsed && (
-              <CardContent className={readOnly ? 'pt-0 pb-4' : undefined}>
+              <CardContent className={readOnly ? 'pt-0 pb-3 px-4' : undefined}>
                 <div
                   className={cn(
                     'grid',
                     readOnly
-                      ? 'grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2.5'
+                      ? 'grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-1.5'
                       : 'gap-4',
                     !readOnly && (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
                   )}
@@ -559,7 +559,7 @@ export function DynamicRecordForm({
   // Use CSS columns (not grid) so collapsed cards truly shrink and siblings flow up
   if (readOnly) {
     return (
-      <div className="columns-1 lg:columns-2 gap-4 space-y-4">
+      <div className="columns-1 lg:columns-2 xl:columns-2 gap-3 space-y-3">
         {renderSections()}
       </div>
     );

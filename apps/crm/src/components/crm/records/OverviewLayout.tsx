@@ -38,7 +38,7 @@ export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) 
         }
       },
       {
-        rootMargin: '-80px 0px -60% 0px',
+        rootMargin: '-180px 0px -60% 0px',
         threshold: 0.1,
       },
     );
@@ -57,7 +57,7 @@ export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) 
       />
 
       {/* Full-width field sections */}
-      <div className="mt-5">
+      <div className="mt-3">
         {fieldContent}
       </div>
     </div>

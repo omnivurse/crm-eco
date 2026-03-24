@@ -31,7 +31,7 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
   if (sections.length <= 1) return null;
 
   return (
-    <div className="sticky top-0 z-[5] bg-white/80 dark:bg-slate-950/80 backdrop-blur-lg border-b border-slate-200 dark:border-white/5 -mx-1 px-1">
+    <div className="sticky top-[140px] z-[5] bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200 dark:border-white/5 -mx-1 px-1 shadow-sm">
       <div
         ref={scrollRef}
         className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-hide"

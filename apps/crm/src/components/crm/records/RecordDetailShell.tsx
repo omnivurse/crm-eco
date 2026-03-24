@@ -596,8 +596,8 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       </Badge>
                     )}
                     {/* Market type + normalization badges */}
-                    <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />
-                    <NormalizationBadge status={(record as any).normalization_status} size="sm" />
+                    {!isLeads && <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />}
+                    {!isLeads && <NormalizationBadge status={(record as any).normalization_status} size="sm" />}
                     {/* Capacity badges from record data */}
                     {(() => {
                       const data = record.data as Record<string, unknown> | undefined;
@@ -725,12 +725,14 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               </div>
             )}
 
-            {/* Normalization review banner */}
-            <NormalizationBanner
-              status={(record as any).normalization_status}
-              notes={(record as any).normalization_notes}
-              className="mt-4"
-            />
+            {/* Normalization review banner — hidden on Leads to reduce noise */}
+            {!isLeads && (
+              <NormalizationBanner
+                status={(record as any).normalization_status}
+                notes={(record as any).normalization_notes}
+                className="mt-4"
+              />
+            )}
 
             {/* Tabs */}
             <div className="mt-6 -mb-px">
