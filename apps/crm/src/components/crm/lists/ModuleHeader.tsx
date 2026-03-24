@@ -82,7 +82,7 @@ export function ModuleHeader({
     };
 
     return (
-        <div className="space-y-4 mb-6">
+        <div className="space-y-2 mb-3">
             {/* Title Row */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">

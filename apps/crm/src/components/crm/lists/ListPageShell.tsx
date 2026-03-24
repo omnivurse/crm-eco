@@ -77,7 +77,7 @@ export function ListPageShell({
     const selectedCount = selectedIds.length;
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-2">
             {/* Module Header */}
             <ModuleHeader
                 moduleName={moduleName}

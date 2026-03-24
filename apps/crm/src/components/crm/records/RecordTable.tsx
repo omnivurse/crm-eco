@@ -989,7 +989,7 @@ export const RecordTable = memo(function RecordTable({
     return (
       <>
         {/* Desktop Loading Skeleton */}
-        <div className="hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
+        <div className="hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden">
           <div className="animate-pulse">
             <div className="h-12 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-white/5" />
             {[...Array(5)].map((_, i) => (
@@ -1098,7 +1098,7 @@ export const RecordTable = memo(function RecordTable({
           }
         }}
         className={cn(
-          'hidden md:block glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-280px)] scrollbar-thin sticky-scrollbar',
+          'hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-220px)] scrollbar-thin sticky-scrollbar',
           isResizing && 'select-none'
         )}
       >
