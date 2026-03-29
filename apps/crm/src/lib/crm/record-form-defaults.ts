@@ -24,6 +24,10 @@ export const CRM_ROW_FIELDS_MERGED_INTO_FORM = [
   'territory_id',
   'source_record_id',
   'import_batch_id',
+  'original_start_date',
+  'current_year_start_date',
+  'cancellation_date',
+  'group_name',
 ] as const;
 
 /**
@@ -46,6 +50,10 @@ export const CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH: readonly string[] = [
   'territory_id',
   'source_record_id',
   'import_batch_id',
+  'original_start_date',
+  'current_year_start_date',
+  'cancellation_date',
+  'group_name',
 ];
 
 /**

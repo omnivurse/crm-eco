@@ -609,37 +609,46 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                             </Badge>
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[160px]">
-                          {['Active', 'Inactive', 'Pending', 'Cancelled', 'Terminated', 'Hold', 'Archived'].map((s) => (
-                            <DropdownMenuItem
-                              key={s}
-                              disabled={s === record.status}
-                              className={cn(
-                                'text-sm',
-                                s === record.status && 'opacity-50',
-                                s === 'Active' && 'text-emerald-600 dark:text-emerald-400',
-                                (s === 'Inactive' || s === 'Terminated' || s === 'Cancelled') && 'text-red-600 dark:text-red-400',
-                              )}
-                              onClick={async () => {
-                                try {
-                                  const res = await fetch(`/api/crm/records/${record.id}/status`, {
-                                    method: 'PATCH',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ status: s, reason: 'Manual CRM status change' }),
-                                  });
-                                  if (!res.ok) {
-                                    const err = await res.json();
-                                    throw new Error(err.error || 'Failed');
-                                  }
-                                  toast.success(`Status changed to ${s}`);
-                                  router.refresh();
-                                } catch (err) {
-                                  toast.error(err instanceof Error ? err.message : 'Failed to update status');
-                                }
-                              }}
-                            >
-                              {s}
-                            </DropdownMenuItem>
+                        <DropdownMenuContent align="start" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[200px] max-h-80 overflow-y-auto">
+                          {[
+                            { label: 'Status', items: ['Active', 'Active HS Member', 'Active Member', 'Inactive', 'In-Active', 'Pending', 'Hold'] },
+                            { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled 2026', 'Enrolled Member', 'Approved Pending'] },
+                            { label: 'Close', items: ['Cancelled', 'Cancellation Pending', 'Terminated', 'Suspended', 'Archived', 'Converted'] },
+                          ].map((group) => (
+                            <div key={group.label}>
+                              <div className="px-2 py-1.5 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{group.label}</div>
+                              {group.items.map((s) => (
+                                <DropdownMenuItem
+                                  key={s}
+                                  disabled={s === record.status}
+                                  className={cn(
+                                    'text-sm',
+                                    s === record.status && 'opacity-50',
+                                    (s.startsWith('Active') || s.startsWith('Enrolled')) && 'text-emerald-600 dark:text-emerald-400',
+                                    (s === 'Inactive' || s === 'In-Active' || s === 'Terminated' || s === 'Cancelled' || s === 'Suspended') && 'text-red-600 dark:text-red-400',
+                                  )}
+                                  onClick={async () => {
+                                    try {
+                                      const res = await fetch(`/api/crm/records/${record.id}/status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ status: s, reason: 'Manual CRM status change' }),
+                                      });
+                                      if (!res.ok) {
+                                        const err = await res.json();
+                                        throw new Error(err.error || 'Failed');
+                                      }
+                                      toast.success(`Status changed to ${s}`);
+                                      router.refresh();
+                                    } catch (err) {
+                                      toast.error(err instanceof Error ? err.message : 'Failed to update status');
+                                    }
+                                  }}
+                                >
+                                  {s}
+                                </DropdownMenuItem>
+                              ))}
+                            </div>
                           ))}
                         </DropdownMenuContent>
                       </DropdownMenu>

@@ -10,8 +10,33 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
 export const dynamic = 'force-dynamic';
 
 const ALLOWED_STATUSES = [
-  'Active', 'Inactive', 'Pending', 'Cancelled', 'Terminated',
-  'Converted', 'Deceased', 'Hold', 'Archived',
+  // Core operational
+  'Active', 'Active HS Member', 'Active Member', 'Active DPC', 'Active ADVISOR',
+  'Inactive', 'In-Active', 'Pending', 'Cancelled', 'Cancellation Pending',
+  'Terminated', 'Converted', 'Deceased', 'Hold', 'Archived', 'Suspended',
+  // Enrollment
+  'Enrolled - 2016', 'Enrolled - 2017', 'Enrolled - 2018', 'Enrolled - 2019',
+  'Enrolled 2020', 'Enrolled - 2021', 'Enrolled - 2022', 'Enrolled - 2023',
+  'Enrolled - 2024', 'Enrolled - 2025', 'Enrolled - 2026', 'Enrolled 2026',
+  'Enrolled Member', 'Enrolled-2016',
+  // Pipeline
+  'Approved Pending', 'Application in Process', 'Application In Process',
+  'In process', 'In Process', 'Contacted', 'Not Contacted',
+  'Attempted Contact One', 'Attempted Contact Two',
+  'Attempted Contact Three', 'Attempted Contact Four', 'Attempted to Contact',
+  // Prospects
+  'Hot Prospect - ready to move', 'Warm Prospect - Maybe', 'Warm - Future Prospect',
+  'Cold Prospect - Released', 'Future Prospect', 'DPC Prospect',
+  'Agent - Prospect', 'Agent- PROSPECT', 'Employee Prospect',
+  // Outcomes
+  'Lost Opportunity', 'Dropout', 'Released', 'Not Qualified', 'Junk Lead',
+  'Ready to Convert', 'Closed - New Member',
+  'Decision Making Stage', 'Full Presentation Given - Decision Mode',
+  'Full Presentation Completed', 'Product Selection', 'Qualification',
+  // Special
+  'Group Policy', 'Non Client', 'PERSONAL', 'Complimentary', 'LIVE',
+  'Agency- SUPPORT', 'Agent- SPONSOR', 'Agent- SPONSOR- InActive',
+  'Cancelled - In New CRM', 'Cancelled Application',
 ];
 
 export async function PATCH(

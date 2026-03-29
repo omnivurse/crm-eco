@@ -66,7 +66,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
     setLoading(true);
     
     try {
-      // Search across CRM records
+      // Search across ALL CRM records (contacts + leads + all modules) using full-text search
       const { data: records } = await supabase
         .from('crm_records')
         .select(`
@@ -74,19 +74,20 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
           title,
           email,
           phone,
+          status,
           module_id,
           data,
           crm_modules!inner(key, name)
         `)
-        .or(`title.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
-        .limit(20);
+        .textSearch('search', searchQuery, { type: 'websearch', config: 'english' })
+        .limit(25);
 
       const searchResults: SearchResult[] = (records || []).map((record: any) => ({
         id: record.id,
-        title: record.title || 
-          [record.data?.first_name, record.data?.last_name].filter(Boolean).join(' ') || 
+        title: record.title ||
+          [record.data?.first_name, record.data?.last_name].filter(Boolean).join(' ') ||
           'Untitled',
-        subtitle: record.email || record.phone || undefined,
+        subtitle: [record.email, record.phone, record.status].filter(Boolean).join(' · ') || undefined,
         module: record.crm_modules?.key || 'unknown',
         moduleName: record.crm_modules?.name || 'Record',
       }));

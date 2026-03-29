@@ -83,9 +83,42 @@ import {
     SlidersHorizontal,
     type LucideIcon,
 } from 'lucide-react';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Search } from 'lucide-react';
 import { useModule, getNavItemsForModule, TopModule, type NavItem } from '@/contexts/ModuleContext';
 import { useGizmoSafe } from '@/components/crm/gizmo';
+
+/** Compact search box that opens the global search overlay via Cmd+K event */
+function SidebarSearchTrigger({ collapsed }: { collapsed?: boolean }) {
+    const handleClick = () => {
+        // Dispatch Cmd+K to open the global search overlay
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
+    };
+
+    if (collapsed) {
+        return (
+            <button
+                onClick={handleClick}
+                className="flex items-center justify-center w-full h-9 rounded-lg text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
+                title="Search Contacts (⌘K)"
+            >
+                <Search className="w-4 h-4" />
+            </button>
+        );
+    }
+
+    return (
+        <button
+            onClick={handleClick}
+            className="flex items-center gap-2 w-full h-9 px-3 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-sm"
+        >
+            <Search className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="flex-1 text-left truncate">Search contacts...</span>
+            <kbd className="hidden sm:inline-flex text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1 py-0.5">
+                ⌘K
+            </kbd>
+        </button>
+    );
+}
 
 // Icon mapping for all nav items
 const iconMap: Record<string, LucideIcon> = {
@@ -273,6 +306,11 @@ export function ZohoContextualSidebar({
                     </div>
                 )}
 
+                {/* Quick Search */}
+                <div className={cn('px-2 pt-3 pb-1', !isOpen && 'px-2')}>
+                    <SidebarSearchTrigger collapsed={!isOpen} />
+                </div>
+
                 {/* Navigation Items */}
                 <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto scrollbar-thin">
                     {navItems.map((item) => {
@@ -361,6 +399,11 @@ export function ZohoContextualSidebar({
                     <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                         {moduleTitle[activeTopModule]}
                     </h2>
+                </div>
+
+                {/* Mobile Quick Search */}
+                <div className="px-3 pt-3 pb-1">
+                    <SidebarSearchTrigger />
                 </div>
 
                 {/* Mobile Navigation Items */}

@@ -37,6 +37,10 @@ const CANONICAL_TOP_LEVEL_KEYS = [
   'territory_id',
   'source_record_id',
   'import_batch_id',
+  'original_start_date',
+  'current_year_start_date',
+  'cancellation_date',
+  'group_name',
 ] as const;
 
 /**
