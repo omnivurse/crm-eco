@@ -120,6 +120,21 @@ function normMemberStatus(s: string): string {
   return MEMBER_STATUS_MAP[(s || '').toLowerCase().trim()] || 'active';
 }
 
+function normGender(s: string): string | null {
+  const v = (s || '').trim().toLowerCase();
+  if (v === 'm' || v === 'male') return 'Male';
+  if (v === 'f' || v === 'female') return 'Female';
+  if (v) return 'Other';
+  return null;
+}
+
+function normRelationship(s: string): string {
+  const v = (s || '').trim().toLowerCase();
+  if (v === 'spouse' || v === 'wife' || v === 'husband') return 'Spouse';
+  if (v === 'child' || v === 'son' || v === 'daughter') return 'Child';
+  return 'Dependent';
+}
+
 async function sbPost(table: string, body: Record<string, unknown>): Promise<Record<string, unknown> | null> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
@@ -520,8 +535,8 @@ async function main() {
               first_name: dep['First Name']?.trim() || 'Unknown',
               last_name: dep['Last Name']?.trim() || 'Unknown',
               date_of_birth: depDob,
-              gender: dep['Gender']?.trim() || null,
-              relationship: dep['Relationship']?.trim() || 'Other',
+              gender: normGender(dep['Gender'] || ''),
+              relationship: normRelationship(dep['Relationship'] || ''),
               is_smoker: parseBool(dep['Tobacco Use']),
               ssn_last4: (dep['SSN'] || '').slice(-4) || null,
               email: dep['Email']?.trim() || null,
@@ -543,7 +558,7 @@ async function main() {
           const createdLink = await sbPost('enrollment_dependents', {
             enrollment_id: enrollmentId,
             dependent_id: depId,
-            relationship: dep['Relationship']?.trim() || 'Other',
+            relationship: normRelationship(dep['Relationship'] || ''),
             is_primary: false,
             is_smoker: parseBool(dep['Tobacco Use']),
             coverage_start_date: parseDate(dep['Active Date']) || null,
