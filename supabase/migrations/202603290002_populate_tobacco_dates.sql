@@ -120,32 +120,9 @@ CREATE TRIGGER crm_records_search_trigger
   EXECUTE FUNCTION crm_records_search_update();
 
 -- ============================================================================
--- Step 6: Rebuild search vectors for all existing records
+-- Step 6: Search vector rebuild skipped — 'search' is a generated column
+-- that auto-updates via its GENERATED ALWAYS AS expression.
 -- ============================================================================
-UPDATE crm_records
-SET search = to_tsvector('english',
-  coalesce(title, '') || ' ' ||
-  coalesce(email, '') || ' ' ||
-  coalesce(phone, '') || ' ' ||
-  coalesce(status, '') || ' ' ||
-  coalesce(data->>'first_name', '') || ' ' ||
-  coalesce(data->>'last_name', '') || ' ' ||
-  coalesce(data->>'spouse', '') || ' ' ||
-  coalesce(data->>'spouse_name', '') || ' ' ||
-  coalesce(data->>'child_1_name', '') || ' ' ||
-  coalesce(data->>'child_2_name', '') || ' ' ||
-  coalesce(data->>'child_3_name', '') || ' ' ||
-  coalesce(data->>'child_4_name', '') || ' ' ||
-  coalesce(data->>'child_5_name', '') || ' ' ||
-  coalesce(data->>'contact_name', '') || ' ' ||
-  coalesce(data->>'mailing_city', '') || ' ' ||
-  coalesce(data->>'mailing_state', '') || ' ' ||
-  coalesce(data->>'carrier', '') || ' ' ||
-  coalesce(data->>'product', '') || ' ' ||
-  coalesce(data->>'producer_name', '') || ' ' ||
-  coalesce(group_name, '') || ' ' ||
-  coalesce(CASE WHEN tobacco_user = true THEN 'tobacco smoker' ELSE '' END, '')
-);
 
 -- ============================================================================
 -- Step 7: Add indexes for new searchable columns
