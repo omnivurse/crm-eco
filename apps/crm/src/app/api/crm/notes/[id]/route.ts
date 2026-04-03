@@ -1,6 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!profile.crm_role || !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const supabase = await createCrmClient();
+    const { id } = await params;
+    const body = await request.json();
+
+    if (!body.body || typeof body.body !== 'string' || !body.body.trim()) {
+      return NextResponse.json({ error: 'Note body is required' }, { status: 400 });
+    }
+
+    // Verify note exists and belongs to this org
+    const { data: note, error: fetchError } = await supabase
+      .from('crm_notes')
+      .select('id, created_by, org_id')
+      .eq('id', id)
+      .eq('org_id', profile.organization_id)
+      .single();
+
+    if (fetchError || !note) {
+      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
+    }
+
+    // Only the note creator or a crm_admin can edit
+    if (note.created_by !== profile.id && profile.crm_role !== 'crm_admin') {
+      return NextResponse.json({ error: 'Forbidden: only the author or an admin can edit this note' }, { status: 403 });
+    }
+
+    const { data: updated, error: updateError } = await supabase
+      .from('crm_notes')
+      .update({ body: body.body.trim() })
+      .eq('id', id)
+      .eq('org_id', profile.organization_id)
+      .select()
+      .single();
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Error updating note:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

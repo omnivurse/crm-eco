@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { StickyNote, Plus, Pin, Trash2, Loader2, User } from 'lucide-react';
+import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import {
   Dialog,
@@ -20,7 +20,7 @@ interface NotesPanelProps {
   orgId: string;
 }
 
-function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: string) => void }) {
+function NoteCard({ note, onDelete, onEdit }: { note: CrmNoteWithAuthor; onDelete: (id: string) => void; onEdit: (note: CrmNoteWithAuthor) => void }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -75,6 +75,14 @@ function NoteCard({ note, onDelete }: { note: CrmNoteWithAuthor; onDelete: (id: 
           {note.is_pinned && (
             <Pin className="w-4 h-4 text-amber-400 fill-amber-400" />
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-slate-400 hover:text-teal-500 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-500/10"
+            onClick={() => onEdit(note)}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -160,6 +168,39 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingNote, setEditingNote] = useState<CrmNoteWithAuthor | null>(null);
+  const [editNoteBody, setEditNoteBody] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+
+  const handleEditSubmit = async () => {
+    if (!editingNote) return;
+    const textContent = editNoteBody.replace(/<[^>]*>/g, '').trim();
+    if (!textContent) return;
+
+    setIsEditSubmitting(true);
+    try {
+      const sanitizedBody = DOMPurify.sanitize(editNoteBody.trim());
+      const response = await fetch(`/api/crm/notes/${editingNote.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: sanitizedBody }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update note');
+      }
+
+      toast.success('Note updated successfully');
+      setEditingNote(null);
+      setEditNoteBody('');
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to update note:', error);
+      toast.error('Failed to update note');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     // Strip tags to check if there's actual content
@@ -258,11 +299,53 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Note Dialog */}
+      <Dialog open={!!editingNote} onOpenChange={(open) => { if (!open) { setEditingNote(null); setEditNoteBody(''); } }}>
+        <DialogContent className="max-w-3xl w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-[900px] max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
+            <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+              Edit Note
+            </DialogTitle>
+          </div>
+
+          <div className="flex-1 overflow-hidden py-4">
+            <RichNoteEditor key={editingNote?.id} value={editNoteBody} onChange={setEditNoteBody} />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setEditingNote(null);
+                setEditNoteBody('');
+              }}
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditSubmit}
+              disabled={isEditSubmitting || !editNoteBody.replace(/<[^>]*>/g, '').trim()}
+              className="bg-teal-600 hover:bg-teal-700 dark:bg-teal-500 dark:hover:bg-teal-400 text-white"
+            >
+              {isEditSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Notes List */}
       {sortedNotes.length > 0 ? (
         <div className="space-y-3">
           {sortedNotes.map((note) => (
-            <NoteCard key={note.id} note={note} onDelete={() => router.refresh()} />
+            <NoteCard key={note.id} note={note} onDelete={() => router.refresh()} onEdit={(n) => { setEditingNote(n); setEditNoteBody(n.body); }} />
           ))}
         </div>
       ) : (

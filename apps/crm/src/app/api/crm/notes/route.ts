@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       .gte('created_at', sixtySecondsAgo)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (existingNote) {
       return NextResponse.json(existingNote);

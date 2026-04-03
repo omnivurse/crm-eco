@@ -10,6 +10,7 @@ import {
 } from '@/lib/crm/queries';
 import { createRecord, type CreateRecordInput } from '@/lib/crm/mutations';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
+import { UnsavedFormGuard } from '@/components/crm/records/UnsavedFormGuard';
 
 interface PageProps {
   params: Promise<{ moduleKey: string }>;
@@ -80,32 +81,34 @@ async function NewRecordContent({ params }: PageProps) {
       </div>
 
       {/* Form */}
-      <form action={handleSubmit} className="space-y-6">
-        <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
-          <DynamicRecordForm
-            fields={fields}
-            layout={layout || undefined}
-            readOnly={false}
-            embedded={true}
-          />
-        </div>
+      <UnsavedFormGuard>
+        <form action={handleSubmit} className="space-y-6">
+          <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
+            <DynamicRecordForm
+              fields={fields}
+              layout={layout || undefined}
+              readOnly={false}
+              embedded={true}
+            />
+          </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-3">
-          <Link
-            href={`/crm/modules/${moduleKey}`}
-            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 rounded-lg transition-colors"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            className="px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors shadow-sm"
-          >
-            Create Record
-          </button>
-        </div>
-      </form>
+          {/* Actions */}
+          <div className="sticky bottom-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-white/10 z-10 py-4 flex items-center justify-end gap-3 -mx-6 px-6">
+            <Link
+              href={`/crm/modules/${moduleKey}`}
+              className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 rounded-lg transition-colors"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              className="px-6 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors shadow-sm"
+            >
+              Create Record
+            </button>
+          </div>
+        </form>
+      </UnsavedFormGuard>
     </div>
   );
 }
