@@ -16,8 +16,8 @@ const ALLOWED_STATUSES = [
   'Terminated', 'Converted', 'Deceased', 'Hold', 'Archived', 'Suspended',
   // Enrollment
   'Enrolled - 2016', 'Enrolled - 2017', 'Enrolled - 2018', 'Enrolled - 2019',
-  'Enrolled 2020', 'Enrolled - 2021', 'Enrolled - 2022', 'Enrolled - 2023',
-  'Enrolled - 2024', 'Enrolled - 2025', 'Enrolled - 2026', 'Enrolled 2026',
+  'Enrolled - 2020', 'Enrolled 2020', 'Enrolled - 2021', 'Enrolled - 2022', 'Enrolled - 2023',
+  'Enrolled - 2024', 'Enrolled - 2025', 'Enrolled - 2026',
   'Enrolled Member', 'Enrolled-2016',
   // Pipeline
   'Approved Pending', 'Application in Process', 'Application In Process',

@@ -66,8 +66,10 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
     setLoading(true);
     
     try {
-      // Search across ALL CRM records (contacts + leads + all modules) using full-text search
-      const { data: records } = await supabase
+      const phoneDigits = searchQuery.replace(/[^0-9]/g, '');
+      const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
+
+      let queryBuilder = supabase
         .from('crm_records')
         .select(`
           id,
@@ -78,9 +80,22 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
           module_id,
           data,
           crm_modules!inner(key, name)
-        `)
-        .textSearch('search', searchQuery, { type: 'websearch', config: 'english' })
-        .limit(25);
+        `);
+
+      if (isPhoneQuery) {
+        queryBuilder = queryBuilder.or(
+          `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`
+        );
+      } else {
+        const prefixQuery = searchQuery
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((w) => `${w}:*`)
+          .join(' & ');
+        queryBuilder = queryBuilder.textSearch('search', prefixQuery, { type: 'plain', config: 'english' });
+      }
+
+      const { data: records } = await queryBuilder.limit(25);
 
       const searchResults: SearchResult[] = (records || []).map((record: any) => ({
         id: record.id,

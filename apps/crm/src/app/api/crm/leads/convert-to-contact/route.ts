@@ -17,7 +17,7 @@ function createAdminClient() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { recordId } = await request.json();
+    const { recordId, mergeIntoContactId } = await request.json();
 
     if (!recordId) {
       return NextResponse.json(
@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     const { data, error } = await adminClient.rpc('convert_lead_to_contact', {
       p_lead_record_id: recordId,
       p_user_id: profile.id,
+      p_merge_into_contact_id: mergeIntoContactId || null,
     });
 
     if (error) {

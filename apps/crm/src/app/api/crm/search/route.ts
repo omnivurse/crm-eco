@@ -53,8 +53,9 @@ export async function GET(request: NextRequest) {
     }
 
     const searchQuery = query.trim();
+    const phoneDigits = searchQuery.replace(/[^0-9]/g, '');
+    const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
 
-    // Build the search query using the tsvector search column
     let searchQueryBuilder = supabase
       .from('crm_records')
       .select(`
@@ -72,12 +73,25 @@ export async function GET(request: NextRequest) {
           name_plural
         )
       `)
-      .eq('org_id', profile.organization_id)
-      .textSearch('search', searchQuery, {
-        type: 'websearch',
+      .eq('org_id', profile.organization_id);
+
+    if (isPhoneQuery) {
+      searchQueryBuilder = searchQueryBuilder.or(
+        `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`
+      );
+    } else {
+      const prefixQuery = searchQuery
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((w) => `${w}:*`)
+        .join(' & ');
+      searchQueryBuilder = searchQueryBuilder.textSearch('search', prefixQuery, {
+        type: 'plain',
         config: 'english',
-      })
-      .limit(limit);
+      });
+    }
+
+    searchQueryBuilder = searchQueryBuilder.limit(limit);
 
     // Apply module filter if specified
     if (moduleFilter) {

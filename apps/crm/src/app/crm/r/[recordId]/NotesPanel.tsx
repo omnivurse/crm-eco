@@ -100,8 +100,8 @@ function NoteCard({ note, onDelete, onEdit }: { note: CrmNoteWithAuthor; onDelet
       </div>
 
       <div
-        className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none dark:prose-invert [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_strong]:font-semibold [&_strong]:text-slate-800 dark:[&_strong]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_td]:text-sm [&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-700 [&_th]:px-2 [&_th]:py-1 [&_th]:text-sm [&_th]:font-semibold [&_th]:bg-slate-100 dark:[&_th]:bg-slate-800 [&_br]:block [&_p]:mb-1"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(note.body) }}
+        className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none dark:prose-invert [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_strong]:font-semibold [&_strong]:text-slate-800 dark:[&_strong]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_td]:text-sm [&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-700 [&_th]:px-2 [&_th]:py-1 [&_th]:text-sm [&_th]:font-semibold [&_th]:bg-slate-100 dark:[&_th]:bg-slate-800 [&_br]:block [&_p]:mb-1 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:my-2"
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(note.body, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'width', 'height'] }) }}
       />
     </div>
   );
@@ -132,17 +132,34 @@ function RichNoteEditor({ value, onChange }: { value: string; onChange: (html: s
     e.preventDefault();
     const clipboardData = e.clipboardData;
 
-    // Try HTML first (preserves formatting from emails, docs, enrollment forms)
+    // Handle image files from clipboard (e.g. Snipping Tool screenshots)
+    const items = clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            document.execCommand('insertHTML', false, `<img src="${dataUrl}" style="max-width:100%;height:auto;" />`);
+            handleInput();
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    }
+
+    // Try HTML (preserves structure from emails, docs, enrollment forms)
     const html = clipboardData.getData('text/html');
     if (html) {
       const sanitized = DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'br', 'p', 'div', 'span', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'a', 'blockquote', 'pre', 'code', 'hr', 'sub', 'sup'],
-        ALLOWED_ATTR: ['href', 'target', 'style'],
+        ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'br', 'p', 'div', 'span', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'a', 'blockquote', 'pre', 'code', 'hr', 'sub', 'sup', 'img'],
+        ALLOWED_ATTR: ['href', 'target', 'src', 'alt', 'width', 'height'],
         ALLOW_DATA_ATTR: false,
       });
       document.execCommand('insertHTML', false, sanitized);
     } else {
-      // Fall back to plain text
       const text = clipboardData.getData('text/plain');
       document.execCommand('insertText', false, text);
     }
@@ -264,7 +281,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
           </div>
 
           <div className="flex-1 overflow-hidden py-4">
-            <RichNoteEditor value={newNote} onChange={setNewNote} />
+            <RichNoteEditor key={isAdding ? 'adding' : 'closed'} value={newNote} onChange={setNewNote} />
             <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
               Paste formatted text from emails, documents, or enrollment forms — formatting will be preserved.
             </p>

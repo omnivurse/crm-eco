@@ -754,10 +754,22 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     }
   }
 
-  // Apply search — use 'websearch' mode so natural queries like
-  // "Anna Martin" or "spouse name" work without requiring tsquery operators
   if (search) {
-    query = query.textSearch('search', search, { type: 'websearch' });
+    const phoneDigits = search.replace(/[^0-9]/g, '');
+    const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
+
+    if (isPhoneQuery) {
+      query = query.or(
+        `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${search}%,title.ilike.%${search}%`
+      );
+    } else {
+      const prefixQuery = search
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((w) => `${w}:*`)
+        .join(' & ');
+      query = query.textSearch('search', prefixQuery, { type: 'plain', config: 'english' });
+    }
   }
 
   // Apply sorting — real columns on crm_records vs JSONB `data` paths

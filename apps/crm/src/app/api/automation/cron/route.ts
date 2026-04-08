@@ -99,8 +99,18 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // 5. Process SLA escalations (future implementation)
-    // results.sla = await processSlaEscalations();
+    // 5. Auto-cancel records whose cancellation_date has passed
+    try {
+      const supabase = createServiceClient();
+      const { data: cancelResult, error: cancelError } = await supabase
+        .rpc('auto_cancel_expired_records');
+      if (cancelError) throw cancelError;
+      results.autoCancelled = cancelResult;
+    } catch (error) {
+      results.autoCancelled = {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
 
     return NextResponse.json({
       success: true,

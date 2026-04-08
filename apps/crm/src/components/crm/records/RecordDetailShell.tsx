@@ -612,7 +612,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                         <DropdownMenuContent align="start" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[200px] max-h-80 overflow-y-auto">
                           {[
                             { label: 'Status', items: ['Active', 'Active HS Member', 'Active Member', 'Inactive', 'In-Active', 'Pending', 'Hold'] },
-                            { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled 2026', 'Enrolled Member', 'Approved Pending'] },
+                            { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled Member', 'Approved Pending'] },
                             { label: 'Close', items: ['Cancelled', 'Cancellation Pending', 'Terminated', 'Suspended', 'Archived', 'Converted'] },
                           ].map((group) => (
                             <div key={group.label}>

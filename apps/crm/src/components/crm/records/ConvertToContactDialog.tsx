@@ -13,7 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@crm-eco/ui/components/alert-dialog';
-import { UserCheck, Loader2, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { UserCheck, Loader2, CheckCircle, AlertCircle, ArrowRight, GitMerge } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 
 interface ConvertToContactDialogProps {
@@ -32,23 +32,29 @@ export function ConvertToContactDialog({
   recordData,
 }: ConvertToContactDialogProps) {
   const [isConverting, setIsConverting] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
   const [result, setResult] = useState<{
     success: boolean;
     message: string;
     contactId?: string;
     contactTitle?: string;
+    existingContactId?: string;
   } | null>(null);
   const router = useRouter();
 
-  const handleConvert = async () => {
-    setIsConverting(true);
+  const handleConvert = async (mergeIntoContactId?: string) => {
+    if (mergeIntoContactId) {
+      setIsMerging(true);
+    } else {
+      setIsConverting(true);
+    }
     setResult(null);
 
     try {
       const response = await fetch('/api/crm/leads/convert-to-contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recordId }),
+        body: JSON.stringify({ recordId, mergeIntoContactId }),
       });
 
       const data = await response.json();
@@ -65,6 +71,7 @@ export function ConvertToContactDialog({
         setResult({
           success: false,
           message: data.error || 'Failed to convert lead to contact',
+          existingContactId: data.existing_contact_id,
         });
       }
     } catch {
@@ -74,6 +81,7 @@ export function ConvertToContactDialog({
       });
     } finally {
       setIsConverting(false);
+      setIsMerging(false);
     }
   };
 
@@ -145,7 +153,7 @@ export function ConvertToContactDialog({
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleConvert}
+                onClick={() => handleConvert()}
                 disabled={isConverting}
                 className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white"
               >
@@ -181,14 +189,21 @@ export function ConvertToContactDialog({
                   </>
                 ) : (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-                      <AlertCircle className="w-8 h-8 text-red-500" />
+                    <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center mb-4">
+                      <AlertCircle className="w-8 h-8 text-amber-500" />
                     </div>
                     <AlertDialogTitle className="text-slate-900 dark:text-white">
-                      Conversion Failed
+                      {result.existingContactId ? 'Existing Contact Found' : 'Conversion Failed'}
                     </AlertDialogTitle>
-                    <AlertDialogDescription className="text-slate-500 mt-2">
-                      {result.message}
+                    <AlertDialogDescription asChild>
+                      <div className="text-slate-500 mt-2 space-y-2">
+                        <p>{result.message}</p>
+                        {result.existingContactId && (
+                          <p className="text-sm text-slate-400">
+                            You can merge this lead&apos;s data into the existing contact, or view the contact first.
+                          </p>
+                        )}
+                      </div>
                     </AlertDialogDescription>
                   </>
                 )}
@@ -202,6 +217,26 @@ export function ConvertToContactDialog({
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>
+              )}
+              {!result.success && result.existingContactId && (
+                <>
+                  <Button
+                    onClick={() => handleConvert(result.existingContactId)}
+                    disabled={isMerging}
+                    className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white"
+                  >
+                    {isMerging ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Merging...</>
+                    ) : (
+                      <><GitMerge className="w-4 h-4 mr-2" /> Merge into Contact</>
+                    )}
+                  </Button>
+                  <Button asChild variant="outline" className="border-slate-200 dark:border-white/10">
+                    <Link href={`/crm/r/${result.existingContactId}`}>
+                      View Contact
+                    </Link>
+                  </Button>
+                </>
               )}
               <AlertDialogCancel
                 onClick={handleClose}

@@ -89,14 +89,22 @@ export async function GET(request: NextRequest) {
       query = query.eq('contact_type', contactType);
     }
 
-    // Apply search — use full-text search column (includes spouse/child/full name)
-    // with fallback to ilike for short queries or special characters
     if (search) {
       const trimmed = search.trim();
-      if (trimmed.length >= 2) {
-        // Use websearch-style full-text search on the tsvector 'search' column
-        // This covers: full name, partial, spouse, child fields
-        query = query.textSearch('search', trimmed, { type: 'websearch', config: 'english' });
+      const phoneDigits = trimmed.replace(/[^0-9]/g, '');
+      const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
+
+      if (isPhoneQuery) {
+        query = query.or(
+          `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${trimmed}%,title.ilike.%${trimmed}%`
+        );
+      } else if (trimmed.length >= 2) {
+        const prefixQuery = trimmed
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((w) => `${w}:*`)
+          .join(' & ');
+        query = query.textSearch('search', prefixQuery, { type: 'plain', config: 'english' });
       } else {
         const safeSearch = trimmed.replace(/[%_,().\\]/g, '\\$&');
         query = query.or(`title.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);

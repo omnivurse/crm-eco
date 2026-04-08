@@ -12,10 +12,17 @@ import {
   ChevronUp,
   User,
   Loader2,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@crm-eco/ui/components/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
@@ -30,13 +37,29 @@ interface NotesOverviewCardProps {
 const PREVIEW_LIMIT = 5;
 const TRUNCATE_LENGTH = 200;
 
-function NotePreviewItem({ note }: { note: CrmNoteWithAuthor }) {
+function NotePreviewItem({ note, onEdit, onDelete }: { note: CrmNoteWithAuthor; onEdit: (note: CrmNoteWithAuthor) => void; onDelete: (id: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const isTruncated = note.body.length > TRUNCATE_LENGTH;
   const displayBody = expanded || !isTruncated ? note.body : note.body.slice(0, TRUNCATE_LENGTH) + '...';
 
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/crm/notes/${note.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete note');
+      toast.success('Note deleted');
+      onDelete(note.id);
+    } catch {
+      toast.error('Failed to delete note');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-colors">
+    <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-colors group">
       <div className="flex items-center gap-2 mb-1.5">
         <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
           {note.author?.avatar_url ? (
@@ -54,10 +77,29 @@ function NotePreviewItem({ note }: { note: CrmNoteWithAuthor }) {
         {note.is_pinned && (
           <Pin className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />
         )}
+        <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-slate-400 hover:text-teal-500 dark:hover:text-teal-400"
+            onClick={() => onEdit(note)}
+          >
+            <Pencil className="w-3 h-3" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-slate-400 hover:text-red-500 dark:hover:text-red-400"
+            disabled={isDeleting}
+            onClick={handleDelete}
+          >
+            {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+          </Button>
+        </div>
       </div>
       <div
         className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayBody) }}
+        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayBody, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'width', 'height'] }) }}
       />
       {isTruncated && (
         <button
@@ -81,6 +123,30 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingNote, setEditingNote] = useState<CrmNoteWithAuthor | null>(null);
+  const [editNoteBody, setEditNoteBody] = useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+
+  const handleEditSubmit = async () => {
+    if (!editingNote || !editNoteBody.trim()) return;
+    setIsEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/crm/notes/${editingNote.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: editNoteBody.trim() }),
+      });
+      if (!res.ok) throw new Error('Failed to update note');
+      toast.success('Note updated');
+      setEditingNote(null);
+      setEditNoteBody('');
+      router.refresh();
+    } catch {
+      toast.error('Failed to update note');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
 
   const sortedNotes = useMemo(() => {
     return [...notes].sort((a, b) => {
@@ -215,7 +281,12 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       {previewNotes.length > 0 ? (
         <div className="space-y-2">
           {previewNotes.map((note) => (
-            <NotePreviewItem key={note.id} note={note} />
+            <NotePreviewItem
+              key={note.id}
+              note={note}
+              onEdit={(n) => { setEditingNote(n); setEditNoteBody(n.body); }}
+              onDelete={() => router.refresh()}
+            />
           ))}
         </div>
       ) : notes.length > 0 && search ? (
@@ -250,6 +321,31 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
           <ChevronRight className="w-4 h-4" />
         </button>
       )}
+
+      {/* Edit Note Dialog */}
+      <Dialog open={!!editingNote} onOpenChange={(open) => { if (!open) { setEditingNote(null); setEditNoteBody(''); } }}>
+        <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+          <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">Edit Note</DialogTitle>
+          <Textarea
+            value={editNoteBody}
+            onChange={(e) => setEditNoteBody(e.target.value)}
+            rows={10}
+            className="min-h-[200px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-sm resize-y"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => { setEditingNote(null); setEditNoteBody(''); }}>Cancel</Button>
+            <Button
+              size="sm"
+              onClick={handleEditSubmit}
+              disabled={isEditSubmitting || !editNoteBody.trim()}
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              {isEditSubmitting ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Saving...</> : 'Save Changes'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
