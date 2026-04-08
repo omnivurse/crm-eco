@@ -29,7 +29,7 @@ export function Footer() {
             <Link href="/crm" className="flex items-center gap-2 flex-shrink-0">
               <Image
                 src="/logo.png"
-                alt="Pay It Forward Health"
+                alt="Double Helix Hub"
                 width={180}
                 height={48}
                 className="h-12 w-auto object-contain"
@@ -67,7 +67,7 @@ export function Footer() {
               <span className="hidden sm:inline">Help</span>
             </Link>
             <a
-              href="mailto:support@payitforwardhealth.com"
+              href="mailto:support@doublehelixhub.com"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
@@ -82,7 +82,7 @@ export function Footer() {
         {/* Copyright - Centered at Bottom */}
         <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-white/5">
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
-            &copy; {currentYear} Pay It Forward Health. All rights reserved.
+            &copy; {currentYear} Double Helix Hub. All rights reserved.
           </p>
         </div>
       </div>

@@ -51,7 +51,7 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
               </Button>
             </Link>
           ) : (
-            <a href="mailto:support@payitforwardhealth.com">
+            <a href="mailto:support@doublehelixhub.com">
               <Button className="gap-2 w-full sm:w-auto">
                 <Mail className="h-4 w-4" />
                 Contact Support

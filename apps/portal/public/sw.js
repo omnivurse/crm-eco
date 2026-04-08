@@ -1,10 +1,10 @@
 /**
- * Pay It Forward Health Portal Service Worker
+ * Double Helix Hub Portal Service Worker
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_NAME = 'pif-health-portal-v1';
-const STATIC_CACHE_NAME = 'pif-health-static-v1';
+const CACHE_NAME = 'dhh-portal-v1';
+const STATIC_CACHE_NAME = 'dhh-portal-static-v1';
 
 // Static assets to cache immediately on install
 const STATIC_ASSETS = [

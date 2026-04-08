@@ -7,7 +7,7 @@ import { Heart, Shield, Clock } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Enroll Now',
   description:
-    'Start your enrollment with Pay It Forward Health. Complete our simple 6-step process to join the health sharing community.',
+    'Start your enrollment with Double Helix Hub. Complete our simple 6-step process to join the health sharing community.',
 };
 
 interface PageProps {
@@ -101,7 +101,7 @@ export default async function EnrollPage({ searchParams }: PageProps) {
       <section className="bg-gradient-to-br from-teal-600 to-emerald-600 text-white py-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            Join Pay It Forward Health
+            Join Double Helix Hub
           </h1>
           <p className="text-teal-100 text-lg max-w-2xl mx-auto">
             Complete the enrollment process below. It only takes a few minutes to

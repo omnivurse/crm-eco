@@ -75,7 +75,7 @@ export default function UpdatePasswordPage() {
           <Link href="/crm-login">
             <Button className="gap-2">
               <ArrowRight className="h-4 w-4" />
-              Sign In to CRM
+              Sign In
             </Button>
           </Link>
         </div>
@@ -91,7 +91,7 @@ export default function UpdatePasswordPage() {
           <div className="flex justify-center mb-6">
             <Image
               src="/logo.png"
-              alt="Pay It Forward Health"
+              alt="Double Helix Hub"
               width={200}
               height={80}
               className="h-16 w-auto object-contain"
@@ -219,7 +219,7 @@ export default function UpdatePasswordPage() {
             </span>
           </div>
           <p className="text-slate-400 text-xs text-center">
-            &copy; 2026 Pay It Forward Health. All rights reserved.
+            &copy; 2026 Double Helix Hub. All rights reserved.
           </p>
         </div>
       </div>

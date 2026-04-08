@@ -67,7 +67,7 @@ export default function ResetPasswordPage() {
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
               <Heart className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-[#003560]">Pay It Forward Health</span>
+            <span className="text-2xl font-bold text-[#003560]">Double Helix Hub</span>
           </Link>
         </div>
 

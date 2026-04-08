@@ -37,7 +37,7 @@ function getDefaultFromEmail(): string {
   if (!email) throw new Error('RESEND_FROM_EMAIL environment variable is required');
   return email;
 }
-const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+const DEFAULT_FROM_NAME = process.env.RESEND_FROM_NAME || 'Double Helix Hub';
 function getAppUrl(): string {
   const url = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
   if (!url) throw new Error('NEXT_PUBLIC_APP_URL or NEXT_PUBLIC_SITE_URL is required for transactional emails');
@@ -140,7 +140,7 @@ function getTeamInviteEmailHtml(params: {
         </table>
 
         <p style="margin: 20px 0 0; font-size: 12px; color: #a1a1aa;">
-          &copy; ${new Date().getFullYear()} Pay It Forward. All rights reserved.
+          &copy; ${new Date().getFullYear()} Double Helix Hub. All rights reserved.
         </p>
       </td>
     </tr>
@@ -181,7 +181,7 @@ This invitation expires on ${expiryDate}.
 If you didn't expect this invitation, you can safely ignore this email.
 
 ---
-Pay It Forward
+Double Helix Hub
 `;
 }
 

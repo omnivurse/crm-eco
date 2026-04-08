@@ -165,7 +165,7 @@ export default function GettingStartedPage() {
             Quick Start Guide
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            Get up and running with CRM Eco in just 5 minutes. This guide will walk you
+            Get up and running with Double Helix Hub in just 5 minutes. This guide will walk you
             through the essentials.
           </p>
           <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
@@ -188,7 +188,7 @@ export default function GettingStartedPage() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            'Welcome to CRM Eco',
+            'Welcome to Double Helix Hub',
             'Navigating the Dashboard',
             'Creating Your First Record',
             'Next Steps',
@@ -210,12 +210,12 @@ export default function GettingStartedPage() {
       {/* Section 1: Welcome */}
       <section id="section-1" className="space-y-4">
         <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-          Welcome to CRM Eco
+          Welcome to Double Helix Hub
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          CRM Eco is a powerful customer relationship management platform designed to help
+          Double Helix Hub is a powerful customer relationship management platform designed to help
           you manage contacts, track leads, close deals, and automate your sales process.
-          Whether you're a solo entrepreneur or part of a sales team, CRM Eco adapts to
+          Whether you're a solo entrepreneur or part of a sales team, Double Helix Hub adapts to
           your workflow.
         </p>
 

@@ -221,7 +221,7 @@ export default function NachaPage() {
       '10' + // Blocking Factor
       '1' + // Format Code
       'DEST BANK NAME'.padEnd(23) + // Immediate Destination Name
-      'PAY IT FORWARD HS'.padEnd(23) + // Immediate Origin Name
+      'DOUBLE HELIX HUB'.padEnd(23) + // Immediate Origin Name
       '        ' // Reference Code
     );
 
@@ -230,7 +230,7 @@ export default function NachaPage() {
     lines.push(
       '5' + // Record Type Code
       '225' + // Service Class Code (debits and credits)
-      'PAY IT FORWARD HS'.padEnd(16) + // Company Name
+      'DOUBLE HELIX HUB'.padEnd(16) + // Company Name
       '                    ' + // Company Discretionary Data
       '1234567890'.padEnd(10) + // Company Identification
       'PPD' + // Standard Entry Class Code

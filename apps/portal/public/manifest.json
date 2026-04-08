@@ -1,6 +1,6 @@
 {
-  "name": "Pay It Forward Health Member Portal",
-  "short_name": "PIF Health",
+  "name": "Double Helix Hub Member Portal",
+  "short_name": "Double Helix Hub",
   "description": "Manage your health sharing membership, view benefits, and enroll in new plans.",
   "start_url": "/",
   "display": "standalone",

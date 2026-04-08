@@ -176,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 60000);
 
     window.addEventListener('storage', (e) => {
-      if (e.key === 'pifh-auth-token' && e.newValue === null) {
+      if (e.key === 'dhh-auth-token' && e.newValue === null) {
         setSession(null);
         setUser(null);
         setProfile(null);

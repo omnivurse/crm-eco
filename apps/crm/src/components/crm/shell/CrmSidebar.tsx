@@ -326,7 +326,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
           <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
             <Image
               src="/logo.png"
-              alt="Pay It Forward Health"
+              alt="Double Helix Hub"
               width={32}
               height={32}
               className="w-full h-full object-contain"
@@ -337,10 +337,10 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
           {!collapsed && (
             <div className="min-w-0" style={{ animationDuration: '0.2s' }}>
               <h1 className="text-sm font-bold text-slate-900 dark:text-white truncate tracking-tight">
-                {organizationName || 'Pay It Forward'}
+                {organizationName || 'Double Helix Hub'}
               </h1>
               <p className="text-[10px] font-medium text-teal-600 dark:text-teal-400 uppercase tracking-wider">
-                Health CRM
+                Management Platform
               </p>
             </div>
           )}
@@ -531,7 +531,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
         {/* Version */}
         {!collapsed && (
           <div className="px-2 py-2 text-center">
-            <p className="text-[10px] text-slate-400">CRM v2.0 • Phase 2</p>
+            <p className="text-[10px] text-slate-400">Double Helix Hub v2.0</p>
           </div>
         )}
       </div>

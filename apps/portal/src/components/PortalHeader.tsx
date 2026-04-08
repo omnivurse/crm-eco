@@ -94,7 +94,7 @@ export function PortalHeader() {
             <Link href="/" className="flex items-center gap-2.5">
               <Image
                 src="/logo.png"
-                alt="Pay It Forward Health"
+                alt="Double Helix Hub"
                 width={180}
                 height={48}
                 className="h-10 w-auto object-contain"

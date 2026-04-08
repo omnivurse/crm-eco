@@ -20,7 +20,7 @@ const rateConfig = seedConfig as unknown as RateConfig;
 export const metadata: Metadata = {
   title: 'Plans & Pricing',
   description:
-    'Compare Pay It Forward Health sharing plans. Affordable monthly contributions for individuals and families. Find the right plan for your needs.',
+    'Compare Double Helix Hub sharing plans. Affordable monthly contributions for individuals and families. Find the right plan for your needs.',
 };
 
 interface DbPlan {
@@ -438,7 +438,7 @@ export default async function PlansPage() {
             Ready to enroll?
           </h2>
           <p className="text-teal-100 mb-8 max-w-xl mx-auto">
-            Join thousands of families who trust Pay It Forward Health for their
+            Join thousands of families who trust Double Helix Hub for their
             healthcare sharing needs.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

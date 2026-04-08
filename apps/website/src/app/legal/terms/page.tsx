@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'Terms of Service for Pay It Forward Health health sharing ministry.',
+    'Terms of Service for Double Helix Hub health sharing ministry.',
 };
 
 export default function TermsOfServicePage() {
@@ -34,7 +34,7 @@ export default function TermsOfServicePage() {
               1. Acceptance of Terms
             </h2>
             <p className="mb-4">
-              By accessing or using the Pay It Forward Health website, services,
+              By accessing or using the Double Helix Hub website, services,
               and membership program, you agree to be bound by these Terms of
               Service. If you do not agree to these terms, please do not use our
               services or enroll as a member.
@@ -52,7 +52,7 @@ export default function TermsOfServicePage() {
               2. Description of Service
             </h2>
             <p className="mb-4">
-              Pay It Forward Health is a health cost sharing ministry. We
+              Double Helix Hub is a health cost sharing ministry. We
               facilitate voluntary sharing of medical expenses among our
               members. This is NOT insurance. Members contribute monthly amounts
               that are used to share eligible medical needs of other members.
@@ -70,7 +70,7 @@ export default function TermsOfServicePage() {
               3. Membership
             </h2>
             <p className="mb-4">
-              Membership in Pay It Forward Health is voluntary and subject to
+              Membership in Double Helix Hub is voluntary and subject to
               approval. Applicants must meet eligibility requirements as
               described in our enrollment materials. Membership begins on the
               first day of the month following approval and receipt of initial
@@ -117,7 +117,7 @@ export default function TermsOfServicePage() {
             <p className="mb-4">
               Submission of a need does not guarantee sharing. All needs are
               reviewed for eligibility. Sharing is voluntary and dependent on
-              available funds in the sharing pool. Pay It Forward Health does not
+              available funds in the sharing pool. Double Helix Hub does not
               guarantee payment of any medical expense.
             </p>
           </section>
@@ -127,7 +127,7 @@ export default function TermsOfServicePage() {
               6. Limitations
             </h2>
             <p className="mb-4">
-              Pay It Forward Health is NOT an insurance company. We do not
+              Double Helix Hub is NOT an insurance company. We do not
               provide insurance coverage, guarantee payment of medical
               expenses, or assume any insurance-like obligations. Our program
               is a voluntary sharing arrangement among members.
@@ -169,7 +169,7 @@ export default function TermsOfServicePage() {
               upon termination.
             </p>
             <p className="mb-4">
-              Pay It Forward Health reserves the right to suspend or terminate
+              Double Helix Hub reserves the right to suspend or terminate
               membership for violation of these terms, non-payment of
               contributions, fraud, or other conduct we deem harmful to the
               community. We will provide notice when reasonably practicable.
@@ -199,11 +199,11 @@ export default function TermsOfServicePage() {
             </h2>
             <p className="mb-4">
               If you have questions about these Terms of Service, please
-              contact us at legal@payitforwardhealth.com or through our Contact
+              contact us at legal@doublehelixhub.com or through our Contact
               page. We will respond to inquiries as promptly as possible.
             </p>
             <p>
-              Pay It Forward Health is committed to transparency and member
+              Double Helix Hub is committed to transparency and member
               support. We encourage you to reach out with any concerns or
               questions about your membership or these terms.
             </p>

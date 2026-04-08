@@ -124,8 +124,8 @@ export function Sidebar({ role }: SidebarProps) {
             <Link href="/dashboard" className="flex items-center group">
               <div className="bg-white rounded-lg p-1.5 shadow-sm">
                 <Image
-                  src="/logo-pif-full.png"
-                  alt="Pay It Forward Health"
+                  src="/logo.png"
+                  alt="Double Helix Hub"
                   width={160}
                   height={44}
                   className="object-contain h-9 w-auto"

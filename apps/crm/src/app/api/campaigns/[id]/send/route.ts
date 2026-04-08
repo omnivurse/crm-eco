@@ -295,7 +295,7 @@ async function sendCampaignEmail(
     console.error('RESEND_FROM_EMAIL environment variable is required');
     return false;
   }
-  const fromName = (campaign.from_name as string) || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+  const fromName = (campaign.from_name as string) || process.env.RESEND_FROM_NAME || 'Double Helix Hub';
 
   const { error } = await resend.emails.send({
     from: `${fromName} <${fromEmail}>`,

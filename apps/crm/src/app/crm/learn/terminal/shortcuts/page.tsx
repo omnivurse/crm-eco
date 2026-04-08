@@ -124,7 +124,7 @@ export default function TerminalShortcutsPage() {
       {/* Introduction */}
       <div className="prose prose-slate dark:prose-invert max-w-none mb-12">
         <p className="text-lg text-slate-600 dark:text-slate-300">
-          CRM Eco supports extensive keyboard shortcuts to help you work faster.
+          Double Helix Hub supports extensive keyboard shortcuts to help you work faster.
           These shortcuts work throughout the application and can significantly
           speed up your workflow.
         </p>

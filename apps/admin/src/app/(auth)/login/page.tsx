@@ -238,7 +238,7 @@ export default function LoginPage() {
                 type="button"
                 variant="outline"
                 className="w-full h-14 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 rounded-xl transition-all shadow-sm"
-                onClick={() => window.location.href = 'mailto:support@payitforwardhealth.com'}
+                onClick={() => window.location.href = 'mailto:support@doublehelixhub.com'}
               >
                 Contact Administrator
               </Button>
@@ -278,7 +278,7 @@ export default function LoginPage() {
               </div>
 
               <p className="text-slate-400 text-xs text-center">
-                © 2026 Pay It Forward Health. All rights reserved.
+                © 2026 Double Helix Hub. All rights reserved.
               </p>
             </div>
           </div>

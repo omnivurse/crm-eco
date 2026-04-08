@@ -117,7 +117,7 @@ export default function DashboardPage() {
           Dashboard Overview
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          The dashboard is your home base in CRM Eco. It provides a real-time snapshot of your
+          The dashboard is your home base in Double Helix Hub. It provides a real-time snapshot of your
           sales activities, upcoming tasks, and team performance. Everything you need to start
           your day is visible at a glance.
         </p>

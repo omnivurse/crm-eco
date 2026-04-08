@@ -44,7 +44,7 @@ export function SelfServeConfirmationStep({
         </h2>
         
         <p className="text-slate-600 mb-8 max-w-md mx-auto">
-          Thank you for enrolling in Pay It Forward Health. Your application has been submitted
+          Thank you for enrolling in Double Helix Hub. Your application has been submitted
           and is now being reviewed by our team.
         </p>
 
@@ -237,7 +237,7 @@ export function SelfServeConfirmationStep({
           <p className="text-sm text-slate-600">
             By clicking &quot;Submit Enrollment&quot;, you confirm that all information provided 
             is accurate and complete. You agree to the terms and conditions of the 
-            Pay It Forward Health program. Your application will be reviewed and you
+            Double Helix Hub program. Your application will be reviewed and you
             will be notified of approval within 1-2 business days.
           </p>
         </CardContent>

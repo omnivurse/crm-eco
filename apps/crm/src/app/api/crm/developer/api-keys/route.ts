@@ -21,7 +21,7 @@ const ENVIRONMENTS = ['production', 'staging', 'development', 'test'] as const;
 
 function generateApiKey(): { fullKey: string; prefix: string; hash: string } {
   const raw = randomBytes(32).toString('hex');
-  const fullKey = `pifh_k_${raw}`;
+  const fullKey = `dhh_k_${raw}`;
   const prefix = fullKey.slice(0, 12);
   const hash = createHash('sha256').update(fullKey).digest('hex');
   return { fullKey, prefix, hash };

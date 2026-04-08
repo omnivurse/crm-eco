@@ -19,8 +19,8 @@ const plusJakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Pay It Forward Health | Community Health Sharing',
-    template: '%s | Pay It Forward Health',
+    default: 'Double Helix Hub | Community Health Sharing',
+    template: '%s | Double Helix Hub',
   },
   description:
     'Join a community of members who share medical expenses together. Affordable health sharing plans starting at less than traditional insurance. Not insurance.',
@@ -33,17 +33,17 @@ export const metadata: Metadata = {
     'pay it forward health',
   ],
   openGraph: {
-    title: 'Pay It Forward Health | Community Health Sharing',
+    title: 'Double Helix Hub | Community Health Sharing',
     description:
       'Join a community of members who share medical expenses together. Affordable health sharing plans for individuals and families.',
-    url: 'https://payitforwardhealth.com',
-    siteName: 'Pay It Forward Health',
+    url: 'https://doublehelixhub.com',
+    siteName: 'Double Helix Hub',
     type: 'website',
     locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pay It Forward Health | Community Health Sharing',
+    title: 'Double Helix Hub | Community Health Sharing',
     description:
       'Affordable health sharing plans for individuals and families. Join our sharing community today.',
   },

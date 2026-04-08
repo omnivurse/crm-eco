@@ -38,8 +38,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
     process.env.NEXT_PUBLIC_WEBSITE_URL,
-    'https://payitforwardhealth.com',
-    'https://www.payitforwardhealth.com',
+    'https://doublehelixhub.com',
+    'https://www.doublehelixhub.com',
   ].filter(Boolean);
   const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0] || '';
   const corsHeaders = {
@@ -362,8 +362,8 @@ export async function OPTIONS(request: NextRequest) {
   const allowedOrigins = [
     process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL,
     process.env.NEXT_PUBLIC_WEBSITE_URL,
-    'https://payitforwardhealth.com',
-    'https://www.payitforwardhealth.com',
+    'https://doublehelixhub.com',
+    'https://www.doublehelixhub.com',
   ].filter(Boolean);
   const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0] || '';
 

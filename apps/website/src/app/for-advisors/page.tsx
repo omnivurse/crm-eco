@@ -21,12 +21,12 @@ import {
 
 const ADVISOR_PORTAL_URL =
   process.env.NEXT_PUBLIC_ADVISOR_PORTAL_URL ||
-  'https://advisors.payitforwardhealth.com';
+  'https://advisors.doublehelixhub.com';
 
 export const metadata: Metadata = {
   title: 'For Advisors',
   description:
-    'Partner with Pay It Forward Health. Earn competitive commissions while helping families find affordable health sharing. Join our growing network of advisors.',
+    'Partner with Double Helix Hub. Earn competitive commissions while helping families find affordable health sharing. Join our growing network of advisors.',
 };
 
 const benefits = [
@@ -89,7 +89,7 @@ const steps = [
 const testimonials = [
   {
     quote:
-      'Partnering with Pay It Forward Health has been a game-changer for my practice. The commissions are fair, the support is excellent, and I feel good helping families find affordable healthcare.',
+      'Partnering with Double Helix Hub has been a game-changer for my practice. The commissions are fair, the support is excellent, and I feel good helping families find affordable healthcare.',
     name: 'Jennifer R.',
     role: 'Independent Advisor, Texas',
     rating: 5,
@@ -127,7 +127,7 @@ export default function ForAdvisorsPage() {
             <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
               Partner with{' '}
               <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
-                Pay It Forward Health
+                Double Helix Hub
               </span>
             </h1>
             <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-8">
@@ -258,7 +258,7 @@ export default function ForAdvisorsPage() {
               How to become an advisor
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Three simple steps to start earning with Pay It Forward Health.
+              Three simple steps to start earning with Double Helix Hub.
             </p>
           </div>
 
@@ -303,7 +303,7 @@ export default function ForAdvisorsPage() {
               What advisors are saying
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Hear from advisors who have partnered with Pay It Forward Health.
+              Hear from advisors who have partnered with Double Helix Hub.
             </p>
           </div>
 

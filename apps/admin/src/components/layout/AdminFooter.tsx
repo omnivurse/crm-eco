@@ -26,8 +26,8 @@ export function AdminFooter() {
           <div className="flex items-center gap-3">
             <Link href="/dashboard" title="Go to Dashboard" className="flex items-center gap-2 flex-shrink-0">
               <Image
-                src="/logo-pif-full.png"
-                alt="Pay It Forward Health"
+                src="/logo.png"
+                alt="Double Helix Hub"
                 width={160}
                 height={42}
                 className="h-10 w-auto object-contain"
@@ -68,7 +68,7 @@ export function AdminFooter() {
               <span className="hidden sm:inline">Help</span>
             </Link>
             <a
-              href="mailto:support@payitforwardhealth.com"
+              href="mailto:support@doublehelixhub.com"
               title="Support — Contact the support team via email"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
@@ -87,7 +87,7 @@ export function AdminFooter() {
         {/* Copyright */}
         <div className="mt-3 pt-3 border-t border-slate-200/50 dark:border-white/5">
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
-            &copy; {currentYear} Pay It Forward Health. All rights reserved.
+            &copy; {currentYear} Double Helix Hub. All rights reserved.
           </p>
         </div>
       </div>

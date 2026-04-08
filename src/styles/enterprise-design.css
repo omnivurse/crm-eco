@@ -1,4 +1,4 @@
-/* Enterprise Design System - Pay It Forward Health Professional Grade */
+/* Enterprise Design System - Double Helix Hub Professional Grade */
 
 :root {
   /* Professional Elevation System */
@@ -28,7 +28,7 @@
   --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Enterprise Colors - Pay It Forward Health Brand */
+  /* Enterprise Colors - Double Helix Hub Brand */
   --color-primary: #0A4E8E;
   --color-primary-light: #147BC6;
   --color-primary-dark: #083D71;

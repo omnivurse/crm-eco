@@ -22,7 +22,7 @@ const utilityLinks = [
 
 const PORTAL_URL =
   process.env.NEXT_PUBLIC_PORTAL_URL ||
-  'https://members.payitforwardhealth.com';
+  'https://members.doublehelixhub.com';
 
 export function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -110,7 +110,7 @@ export function SiteHeader() {
             <Link href="/" className="flex-shrink-0 flex items-center">
               <Image
                 src="/logo.png"
-                alt="Pay It Forward Health"
+                alt="Double Helix Hub"
                 width={180}
                 height={48}
                 className="h-10 w-auto object-contain"

@@ -425,7 +425,7 @@ export default function ChannelsHubPage() {
             {newInbound && (
               <div>
                 <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Inbound Address</label>
-                <Input value={newInboundAddr} onChange={(e) => setNewInboundAddr(e.target.value)} placeholder="e.g. inbound@crm.pifh.com or +15551234567" className="mt-1 font-mono" />
+                <Input value={newInboundAddr} onChange={(e) => setNewInboundAddr(e.target.value)} placeholder="e.g. inbound@crm.doublehelixhub.com or +15551234567" className="mt-1 font-mono" />
               </div>
             )}
           </div>

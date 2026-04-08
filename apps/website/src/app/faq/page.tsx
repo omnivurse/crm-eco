@@ -18,7 +18,7 @@ const faqItems = [
   {
       question: 'What is health sharing?',
       answer:
-        'Health sharing is a community-based approach to managing healthcare costs. Members voluntarily contribute a monthly amount to a shared pool, and when a member has an eligible medical need, the community shares the cost. Pay It Forward Health is a health cost sharing ministry — we are not insurance, but we provide an affordable alternative for individuals and families who share similar values.',
+        'Health sharing is a community-based approach to managing healthcare costs. Members voluntarily contribute a monthly amount to a shared pool, and when a member has an eligible medical need, the community shares the cost. Double Helix Hub is a health cost sharing ministry — we are not insurance, but we provide an affordable alternative for individuals and families who share similar values.',
       category: 'General' as const,
     },
     {
@@ -142,7 +142,7 @@ export default function FAQPage() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Find answers to common questions about Pay It Forward Health, our plans,
+              Find answers to common questions about Double Helix Hub, our plans,
               and how health sharing works.
             </p>
           </div>

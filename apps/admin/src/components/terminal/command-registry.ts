@@ -1,4 +1,4 @@
-// Command Registry - Pay It Forward Command Center
+// Command Registry - Double Helix Hub Command Center
 // Real data search via Supabase + navigation for admin portal
 import type { Command, CommandContext, CommandResult, TableData } from './types';
 

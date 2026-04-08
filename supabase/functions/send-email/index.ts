@@ -110,7 +110,7 @@ serve(async (req) => {
     if (!defaultFromEmail) {
       return new Response(JSON.stringify({ error: 'No email_from_address in settings and FROM_EMAIL env var not set' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
-    const defaultFromName = settingsMap['email_from_name'] || 'Pay It Forward Health';
+    const defaultFromName = settingsMap['email_from_name'] || 'Double Helix Hub';
 
     let subject = body.subject || '';
     let html = body.html || '';

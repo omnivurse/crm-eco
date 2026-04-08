@@ -265,10 +265,10 @@ export default function ContactPage() {
                     <div>
                       <p className="font-medium text-slate-900">Email</p>
                       <a
-                        href="mailto:support@payitforwardhealth.com"
+                        href="mailto:support@doublehelixhub.com"
                         className="text-teal-600 hover:text-teal-700 hover:underline"
                       >
-                        support@payitforwardhealth.com
+                        support@doublehelixhub.com
                       </a>
                     </div>
                   </div>

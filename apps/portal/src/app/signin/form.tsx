@@ -203,7 +203,7 @@ export function SignInForm() {
                 <Heart className="w-5 h-5 text-white" />
               </div>
               <div>
-                <span className="font-bold text-white text-lg leading-tight block">Pay It Forward</span>
+                <span className="font-bold text-white text-lg leading-tight block">Double Helix Hub</span>
                 <span className="text-[#69d1d1] text-xs font-semibold tracking-wider uppercase">Health</span>
               </div>
             </Link>
@@ -238,7 +238,7 @@ export function SignInForm() {
 
           {/* Footer */}
           <p className="text-white/30 text-xs">
-            &copy; {new Date().getFullYear()} Pay It Forward Health. All rights reserved.
+            &copy; {new Date().getFullYear()} Double Helix Hub Health. All rights reserved.
           </p>
         </div>
       </div>
@@ -257,7 +257,7 @@ export function SignInForm() {
                 <Heart className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="font-bold text-[#003560] leading-tight">Pay It Forward</span>
+                <span className="font-bold text-[#003560] leading-tight">Double Helix Hub</span>
                 <span className="text-xs text-[#047474] font-semibold">Health</span>
               </div>
             </Link>

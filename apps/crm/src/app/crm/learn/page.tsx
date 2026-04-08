@@ -179,7 +179,7 @@ export default function LearnPage() {
             <span className="text-white/80 font-medium">Learning Center</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Master CRM Eco
+            Master Double Helix Hub
           </h1>
           <p className="text-lg text-white/80 max-w-2xl mb-8">
             Learn how to get the most out of your CRM with step-by-step tutorials,
@@ -216,7 +216,7 @@ export default function LearnPage() {
         </div>
         <div className="flex-1 text-center md:text-left">
           <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-            New to CRM Eco?
+            New to Double Helix Hub?
           </h2>
           <p className="text-slate-600 dark:text-slate-400">
             Start with our 5-minute quick start guide and learn the essentials to get up and running.

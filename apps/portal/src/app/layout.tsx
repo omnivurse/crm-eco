@@ -12,13 +12,13 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swa
  * PWA Metadata Configuration
  */
 export const metadata: Metadata = {
-  title: 'Member Portal | Pay It Forward Health',
+  title: 'Member Portal | Double Helix Hub',
   description: 'Manage your health sharing membership, view benefits, and enroll in new plans.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Pay It Forward Health',
+    title: 'Double Helix Hub',
   },
   formatDetection: {
     telephone: true,
@@ -67,7 +67,7 @@ export default function RootLayout({
           </main>
           <footer className="border-t bg-white py-6 mt-auto">
             <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 text-center text-sm text-slate-500">
-              <p>&copy; {new Date().getFullYear()} Pay It Forward Health. All rights reserved.</p>
+              <p>&copy; {new Date().getFullYear()} Double Helix Hub. All rights reserved.</p>
               <p className="mt-1">
                 This is not insurance. Health sharing programs facilitate member-to-member sharing of medical expenses.
               </p>

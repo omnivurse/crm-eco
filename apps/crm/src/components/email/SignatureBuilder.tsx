@@ -76,22 +76,22 @@ interface SignatureBuilderProps {
   };
 }
 
-// Preset Pay It Forward Health signature images
+// Preset Double Helix Hub signature images
 const PRESET_SIGNATURES = [
   {
-    id: 'pif-horizontal',
+    id: 'dhh-horizontal',
     name: 'Horizontal',
     description: 'Wide banner style with tagline',
     image: '/signatures/EmailSignature-01.jpg',
   },
   {
-    id: 'pif-gradient',
+    id: 'dhh-gradient',
     name: 'Gradient',
     description: 'Modern gradient background',
     image: '/signatures/EmailSignature-02.jpg',
   },
   {
-    id: 'pif-stacked',
+    id: 'dhh-stacked',
     name: 'Stacked',
     description: 'Vertical logo with tagline',
     image: '/signatures/EmailSignature-03.jpg',
@@ -230,7 +230,7 @@ export function SignatureBuilder({
       const html = `<table style="font-family: Arial, sans-serif;">
   <tr>
     <td>
-      <img src="${preset.image}" alt="Pay It Forward Health" style="max-width: 100%; height: auto; display: block;" />
+      <img src="${preset.image}" alt="Double Helix Hub" style="max-width: 100%; height: auto; display: block;" />
     </td>
   </tr>
 </table>`;
@@ -324,7 +324,7 @@ export function SignatureBuilder({
             <CardHeader className="py-3">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-teal-500" />
-                Pay It Forward Signatures
+                Double Helix Hub Signatures
               </CardTitle>
               <CardDescription className="text-xs">
                 Choose a pre-designed branded signature

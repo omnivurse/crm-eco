@@ -92,7 +92,7 @@ export default function WorkflowBasicsPage() {
             Workflow Basics
           </h1>
           <p className="text-lg text-slate-600 dark:text-slate-400">
-            Understand the fundamentals of workflow automation in CRM Eco.
+            Understand the fundamentals of workflow automation in Double Helix Hub.
           </p>
           <div className="flex items-center gap-4 mt-4 text-sm text-slate-500">
             <span className="flex items-center gap-1">

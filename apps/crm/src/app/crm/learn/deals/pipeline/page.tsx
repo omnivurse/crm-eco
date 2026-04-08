@@ -152,7 +152,7 @@ export default function PipelineOverviewPage() {
           Default Pipeline Stages
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          CRM Eco comes with a standard sales pipeline. Each stage has a probability percentage
+          Double Helix Hub comes with a standard sales pipeline. Each stage has a probability percentage
           used for weighted forecasting.
         </p>
         <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">

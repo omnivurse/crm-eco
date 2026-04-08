@@ -21,8 +21,8 @@ const FAQS = [
   },
   {
     category: 'Getting Started',
-    question: 'Can I use CRM Eco on mobile?',
-    answer: 'Yes! CRM Eco is fully responsive and works on any mobile browser. Simply visit the same URL on your phone or tablet. We also have native iOS and Android apps available in their respective app stores.',
+    question: 'Can I use Double Helix Hub on mobile?',
+    answer: 'Yes! Double Helix Hub is fully responsive and works on any mobile browser. Simply visit the same URL on your phone or tablet. We also have native iOS and Android apps available in their respective app stores.',
   },
   {
     category: 'Getting Started',
@@ -144,7 +144,7 @@ export default function FAQPage() {
           Frequently Asked Questions
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Find answers to common questions about CRM Eco. Can&apos;t find what you&apos;re looking for?
+          Find answers to common questions about Double Helix Hub. Can&apos;t find what you&apos;re looking for?
           Contact our support team.
         </p>
       </div>

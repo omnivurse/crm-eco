@@ -699,7 +699,7 @@ export default function ComposePage() {
         const now = new Date().toISOString();
         const messageId = result.message_id
           ? `<${result.message_id}>`
-          : `<${crypto.randomUUID()}@mail.payitforwardhealth.com>`;
+          : `<${crypto.randomUUID()}@mail.doublehelixhub.com>`;
 
         const plainPreview = resolvedBody
           .replace(/<[^>]*>/g, '')

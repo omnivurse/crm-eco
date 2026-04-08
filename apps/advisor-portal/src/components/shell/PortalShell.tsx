@@ -77,7 +77,7 @@ export function PortalShell({ profile, children }: PortalShellProps) {
                 <div className="h-16 flex items-center gap-3 px-4 border-b border-gray-200 dark:border-gray-700">
                     <Image
                         src="/logo.png"
-                        alt="Pay It Forward Health"
+                        alt="Double Helix Hub"
                         width={140}
                         height={36}
                         className="h-9 w-auto object-contain"

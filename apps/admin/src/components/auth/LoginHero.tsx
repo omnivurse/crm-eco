@@ -19,7 +19,7 @@ export default function LoginHero() {
 
         {/* Subtitle */}
         <p className="text-white/70 text-lg max-w-md mb-10 leading-relaxed">
-          Administration and management console for Pay It Forward Health.
+          Administration and management console for Double Helix Hub.
         </p>
 
         {/* Rotating healthcare quotes */}
@@ -29,7 +29,7 @@ export default function LoginHero() {
       {/* Bottom branding */}
       <div className="absolute bottom-12 left-12 xl:left-16 z-10">
         <p className="text-white/40 text-sm font-medium tracking-wider uppercase">
-          Admin Portal &bull; Pay It Forward Health
+          Admin Portal &bull; Double Helix Hub
         </p>
       </div>
     </div>

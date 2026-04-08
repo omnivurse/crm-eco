@@ -11,7 +11,7 @@ import {
 export const metadata: Metadata = {
   title: 'Blog & Resources',
   description:
-    'Health and wellness resources, community stories, and plan updates from Pay It Forward Health.',
+    'Health and wellness resources, community stories, and plan updates from Double Helix Hub.',
 };
 
 const CATEGORIES = [
@@ -36,7 +36,7 @@ const PLACEHOLDER_POSTS = [
     slug: 'family-surgery-story',
     title: 'How Our Community Supported Our Family Through Surgery',
     excerpt:
-      'When our son needed emergency surgery, the Pay It Forward Health community came through. Here\'s our story of gratitude and the power of shared support.',
+      'When our son needed emergency surgery, the Double Helix Hub community came through. Here\'s our story of gratitude and the power of shared support.',
     category: 'Community Stories',
     date: '2025-02-08',
     readTime: '4 min read',

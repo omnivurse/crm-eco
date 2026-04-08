@@ -1,7 +1,7 @@
-/* Championship Modern Design System - Pay It Forward Health Brand */
+/* Championship Modern Design System - Double Helix Hub Brand */
 
 :root {
-  /* Gradient color system - Pay It Forward Health Brand Colors */
+  /* Gradient color system - Double Helix Hub Brand Colors */
   --gradient-primary: linear-gradient(135deg, #0A4E8E 0%, #147BC6 100%);
   --gradient-success: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
   --gradient-warning: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
@@ -15,14 +15,14 @@
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(10, 78, 142, 0.37);
 
-  /* Neon effects - Pay It Forward Health Brand Colors */
+  /* Neon effects - Double Helix Hub Brand Colors */
   --neon-primary: #1991EB;
   --neon-accent: #DC2626;
   --neon-blue: #0A4E8E;
   --neon-success: #16A34A;
   --neon-light: #47A7EF;
 
-  /* Modern shadows - Pay It Forward Health Brand */
+  /* Modern shadows - Double Helix Hub Brand */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -50,7 +50,7 @@
 
 /* Modern Hero Gradient Backgrounds */
 
-/* Default hero - Pay It Forward Health Primary Blue gradient with depth */
+/* Default hero - Double Helix Hub Primary Blue gradient with depth */
 .gradient-bg {
   background: linear-gradient(135deg, #0A4E8E 0%, #147BC6 50%, #1991EB 100%);
   position: relative;
@@ -130,7 +130,7 @@
 }
 
 
-/* Progress Bar Modern - Pay It Forward Health Brand */
+/* Progress Bar Modern - Double Helix Hub Brand */
 .progress-modern {
   height: 8px;
   background: rgba(10, 78, 142, 0.1);
@@ -148,7 +148,7 @@
 }
 
 
-/* Championship Title - Pay It Forward Health Brand */
+/* Championship Title - Double Helix Hub Brand */
 .championship-title {
   font-size: 48px;
   font-weight: 800;
@@ -175,7 +175,7 @@
   opacity: 0.5;
 }
 
-/* Hero Sections - Pay It Forward Health Brand */
+/* Hero Sections - Double Helix Hub Brand */
 /* Shared hero base styles */
 .hero-dashboard,
 .hero-work,

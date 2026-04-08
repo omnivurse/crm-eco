@@ -181,7 +181,7 @@ export default function CrmLoginPage() {
         {/* Bottom branding */}
         <div className="absolute bottom-12 left-12 xl:left-16 z-10">
           <p className="text-white/40 text-sm font-medium tracking-wider uppercase">
-            Pay It Forward Health
+            Double Helix Hub
           </p>
         </div>
       </div>
@@ -294,7 +294,7 @@ export default function CrmLoginPage() {
                 </>
               ) : (
                 <>
-                  Sign in to CRM
+                  Sign in
                   <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                 </>
               )}
@@ -315,7 +315,7 @@ export default function CrmLoginPage() {
               type="button"
               variant="outline"
               className="w-full h-14 border-brand-navy-200 bg-white text-brand-navy-700 hover:bg-brand-navy-50 hover:text-brand-navy-900 hover:border-brand-navy-300 rounded-xl transition-all shadow-sm"
-              onClick={() => window.location.href = 'mailto:support@payitforwardhealth.com'}
+              onClick={() => window.location.href = 'mailto:support@doublehelixhub.com'}
             >
               Contact Administrator
             </Button>
@@ -355,7 +355,7 @@ export default function CrmLoginPage() {
             </div>
 
             <p className="text-brand-navy-400 text-xs text-center">
-              © 2026 Pay It Forward Health. All rights reserved.
+              © 2026 Double Helix Hub. All rights reserved.
             </p>
           </div>
         </div>

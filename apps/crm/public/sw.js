@@ -1,12 +1,12 @@
 /**
- * Pay It Forward CRM Service Worker
+ * Double Helix Hub Service Worker
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 2;
-const CACHE_NAME = `pif-crm-v${CACHE_VERSION}`;
-const STATIC_CACHE_NAME = `pif-crm-static-v${CACHE_VERSION}`;
-const API_CACHE_NAME = `pif-crm-api-v${CACHE_VERSION}`;
+const CACHE_VERSION = 3;
+const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
+const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
+const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
 
 // Static assets to cache on install (must be real files that return 200)
 const STATIC_ASSETS = [

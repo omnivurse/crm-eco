@@ -3,11 +3,11 @@ import Image from 'next/image';
 
 const PORTAL_URL =
   process.env.NEXT_PUBLIC_PORTAL_URL ||
-  'https://members.payitforwardhealth.com';
+  'https://members.doublehelixhub.com';
 
 const ADVISOR_PORTAL_URL =
   process.env.NEXT_PUBLIC_ADVISOR_PORTAL_URL ||
-  'https://advisors.payitforwardhealth.com';
+  'https://advisors.doublehelixhub.com';
 
 const footerColumns = {
   company: {
@@ -107,7 +107,7 @@ export function SiteFooter() {
             <Link href="/" className="inline-flex items-center mb-5">
               <Image
                 src="/logo.png"
-                alt="Pay It Forward Health"
+                alt="Double Helix Hub"
                 width={180}
                 height={48}
                 className="h-10 w-auto object-contain brightness-0 invert"
@@ -194,7 +194,7 @@ export function SiteFooter() {
               <strong className="text-slate-300 font-semibold">
                 Important Notice:
               </strong>{' '}
-              Pay It Forward Health is a health cost sharing ministry. It is NOT
+              Double Helix Hub is a health cost sharing ministry. It is NOT
               insurance. Members voluntarily share each other&apos;s medical
               expenses. This program does not guarantee payment of any medical
               expense. The ministry is not subject to state insurance regulation
@@ -213,7 +213,7 @@ export function SiteFooter() {
           {/* Copyright */}
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-xs text-slate-500">
             <p>
-              &copy; {new Date().getFullYear()} Pay It Forward Health. All
+              &copy; {new Date().getFullYear()} Double Helix Hub. All
               rights reserved.
             </p>
             <p>Built with care for our members.</p>

@@ -50,7 +50,7 @@ const timeline = [
     year: '2018',
     title: 'Founded with a Vision',
     description:
-      'Pay It Forward Health was born from a simple idea: what if healthcare could be affordable, transparent, and community-driven?',
+      'Double Helix Hub was born from a simple idea: what if healthcare could be affordable, transparent, and community-driven?',
     icon: Target,
   },
   {
@@ -107,7 +107,7 @@ export default function AboutPage() {
             </h1>
             <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
               We believe healthcare should be affordable, transparent, and built on
-              the power of community. Pay It Forward Health brings neighbors together
+              the power of community. Double Helix Hub brings neighbors together
               to share medical expenses — and hope.
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function AboutPage() {
               Our Core Values
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              The principles that guide everything we do at Pay It Forward Health.
+              The principles that guide everything we do at Double Helix Hub.
             </p>
           </div>
 
@@ -212,7 +212,7 @@ export default function AboutPage() {
               Meet Our Team
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              The people behind Pay It Forward Health — dedicated to serving our community.
+              The people behind Double Helix Hub — dedicated to serving our community.
             </p>
           </div>
 

@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Sharing Guidelines',
   description:
-    'Pay It Forward Health sharing guidelines: eligible medical needs, ineligible expenses, IUA, and member responsibilities.',
+    'Double Helix Hub sharing guidelines: eligible medical needs, ineligible expenses, IUA, and member responsibilities.',
 };
 
 export default function SharingGuidelinesPage() {
@@ -34,7 +34,7 @@ export default function SharingGuidelinesPage() {
               1. Overview
             </h2>
             <p className="mb-4">
-              Pay It Forward Health operates as a health cost sharing ministry.
+              Double Helix Hub operates as a health cost sharing ministry.
               Members voluntarily share each other&apos;s eligible medical
               expenses. These guidelines define what qualifies for sharing, how
               the process works, and member responsibilities.
@@ -42,7 +42,7 @@ export default function SharingGuidelinesPage() {
             <p className="mb-4">
               These guidelines are essential reading for all members. Sharing
               is subject to available funds in the sharing pool and compliance
-              with these guidelines. Pay It Forward Health is NOT insurance and
+              with these guidelines. Double Helix Hub is NOT insurance and
               does not guarantee payment of any medical expense.
             </p>
           </section>

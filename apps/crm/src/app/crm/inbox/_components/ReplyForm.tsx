@@ -117,7 +117,7 @@ export function ReplyForm({
       // Build threading headers
       const messageId = result.message_id
         ? `<${result.message_id}>`
-        : `<${crypto.randomUUID()}@mail.payitforwardhealth.com>`;
+        : `<${crypto.randomUUID()}@mail.doublehelixhub.com>`;
 
       const inReplyTo = lastMessage?.message_id || null;
       const existingRefs = lastMessage?.references_ids || [];

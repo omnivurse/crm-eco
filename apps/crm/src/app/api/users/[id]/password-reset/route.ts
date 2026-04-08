@@ -140,7 +140,7 @@ export async function POST(
     // Send the password reset email via Resend
     const resendApiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.RESEND_FROM_EMAIL;
-    const fromName = process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+    const fromName = process.env.RESEND_FROM_NAME || 'Double Helix Hub';
 
     if (!resendApiKey || !fromEmail) {
       console.error('[Users] Missing RESEND_API_KEY or RESEND_FROM_EMAIL');
@@ -156,7 +156,7 @@ export async function POST(
     const { error: emailError } = await resend.emails.send({
       from: `${fromName} <${fromEmail}>`,
       to: [email],
-      subject: 'Reset Your Password - Pay It Forward Health',
+      subject: 'Reset Your Password - Double Helix Hub',
       html: `<!doctype html>
 <html>
   <body style="font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;background:#f8fafc;padding:24px;">

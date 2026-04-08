@@ -140,11 +140,11 @@ export default function ChangelogPage() {
           <Sparkles className="w-10 h-10 text-white" />
         </div>
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">
-          What's New in CRM Eco
+          What's New in Double Helix Hub
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
           See the latest features, improvements, and fixes. We're always working
-          to make CRM Eco better for you.
+          to make Double Helix Hub better for you.
         </p>
       </div>
 

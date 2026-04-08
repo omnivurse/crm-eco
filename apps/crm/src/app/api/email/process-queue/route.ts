@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         if (!fromEmail) {
           throw new Error('RESEND_FROM_EMAIL environment variable is required');
         }
-        const fromName = meta.from_name || process.env.RESEND_FROM_NAME || 'Pay It Forward Health';
+        const fromName = meta.from_name || process.env.RESEND_FROM_NAME || 'Double Helix Hub';
         const toEmail = item.email_address;
 
         if (!toEmail) {

@@ -61,7 +61,7 @@ ${ticket.status === 'resolved' || ticket.status === 'closed'
 Thank you for your patience.
 
 Best regards,
-Pay It Forward Health Support Team`;
+Double Helix Hub Support Team`;
 
       setMessage(defaultMessage);
       setError(null);

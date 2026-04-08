@@ -234,8 +234,8 @@ export function AdminSidebar({
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
               <Image
-                src="/logo-pif-full.png"
-                alt="Pay It Forward Health"
+                src="/logo.png"
+                alt="Double Helix Hub"
                 width={180}
                 height={44}
                 className="object-contain h-9 w-auto"
@@ -261,7 +261,7 @@ export function AdminSidebar({
           <Link href="/dashboard" className="flex items-center" onClick={handleLinkClick}>
             <Image
               src="/logo-icon.png"
-              alt="PIF"
+              alt="DHH"
               width={32}
               height={32}
               className="object-contain"

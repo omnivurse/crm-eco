@@ -30,8 +30,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@mail.payitforwardhealth.com';
-    const fromName = Deno.env.get('RESEND_FROM_NAME') || 'Pay It Forward Health';
+    const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com';
+    const fromName = Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub';
 
     if (!resendApiKey) {
       return new Response(JSON.stringify({ error: 'RESEND_API_KEY not set' }), {
@@ -121,7 +121,7 @@ serve(async (req) => {
         const now = new Date().toISOString();
         const messageId = resendData.id
           ? `<${resendData.id}>`
-          : `<${crypto.randomUUID()}@mail.payitforwardhealth.com>`;
+          : `<${crypto.randomUUID()}@mail.doublehelixhub.com>`;
 
         // If this is a reply to an existing conversation, add to that thread
         if (draft.conversation_id) {

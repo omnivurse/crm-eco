@@ -17,7 +17,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'Admin Portal | Pay It Forward Health',
+  title: 'Admin Portal | Double Helix Hub',
   description: 'Manage members, agents, products, and enrollments.',
   icons: {
     icon: '/logo-icon.png',

@@ -115,7 +115,7 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
 
   // Use org's verified sending domain — never the user's personal email as FROM
   const integrationFromEmail = emailConnection?.settings?.from_email as string | undefined;
-  const fromEmail = integrationFromEmail || process.env.RESEND_FROM_EMAIL || 'hello@mail.payitforwardhealth.com';
+  const fromEmail = integrationFromEmail || process.env.RESEND_FROM_EMAIL || 'hello@mail.doublehelixhub.com';
   const replyTo = params.reply_to || profile.email;
 
   // Auto-generate plain text from HTML if not provided (improves deliverability)

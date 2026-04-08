@@ -95,7 +95,7 @@ function SampleArticleContent() {
     <div className="space-y-6 text-slate-600 leading-relaxed">
       <p>
         Maintaining good health is a journey that requires commitment, community
-        support, and the right resources. At Pay It Forward Health, we believe
+        support, and the right resources. At Double Helix Hub, we believe
         that when members come together to share medical expenses, everyone
         benefits from a more transparent and affordable approach to healthcare.
       </p>

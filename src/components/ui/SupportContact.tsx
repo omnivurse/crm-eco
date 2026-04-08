@@ -13,7 +13,7 @@ export function SupportContact({
 }: SupportContactProps) {
   const phoneNumber = '+1 561 203 6529';
   const extension = '1012';
-  const email = 'support@payitforwardhealth.com';
+  const email = 'support@doublehelixhub.com';
 
   if (variant === 'minimal') {
     return (

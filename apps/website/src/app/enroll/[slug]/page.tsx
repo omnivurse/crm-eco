@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: landingPage.headline || landingPage.name || 'Enroll Now',
     description:
       landingPage.subheadline ||
-      'Start your enrollment with Pay It Forward Health.',
+      'Start your enrollment with Double Helix Hub.',
   };
 }
 
@@ -206,7 +206,7 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
           )}
 
           <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            {landingPage.headline || 'Join Pay It Forward Health'}
+            {landingPage.headline || 'Join Double Helix Hub'}
           </h1>
 
           {landingPage.subheadline && (

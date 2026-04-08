@@ -115,7 +115,7 @@ export default function ForecastingPage() {
           How Forecasting Works
         </h2>
         <p className="text-slate-600 dark:text-slate-400">
-          CRM Eco uses weighted forecasting to predict your expected revenue. The formula is simple:
+          Double Helix Hub uses weighted forecasting to predict your expected revenue. The formula is simple:
         </p>
         <div className="p-6 rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-500/10 dark:to-purple-500/10 border border-violet-200 dark:border-violet-500/30">
           <div className="flex items-center justify-center gap-4 text-lg font-mono">

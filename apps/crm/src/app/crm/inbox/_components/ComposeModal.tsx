@@ -73,7 +73,7 @@ export function ComposeModal({
     const now = new Date().toISOString();
     const messageId = result.message_id
       ? `<${result.message_id}>`
-      : `<${crypto.randomUUID()}@mail.payitforwardhealth.com>`;
+      : `<${crypto.randomUUID()}@mail.doublehelixhub.com>`;
 
     const plainPreview = (data.body_text || data.body_html || '')
       .replace(/<[^>]*>/g, '')

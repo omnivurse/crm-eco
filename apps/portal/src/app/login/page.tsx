@@ -199,7 +199,7 @@ export default function LoginPage() {
         {/* Bottom branding */}
         <div className="absolute bottom-12 left-10 xl:left-12 z-10">
           <p className="text-white/40 text-sm font-medium tracking-wider uppercase">
-            Pay It Forward Health
+            Double Helix Hub
           </p>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function LoginPage() {
                 <Heart className="w-5 h-5 text-white" />
               </div>
               <div className="flex flex-col items-start">
-                <span className="font-bold text-[#003560] leading-tight">Pay It Forward</span>
+                <span className="font-bold text-[#003560] leading-tight">Double Helix Hub</span>
                 <span className="text-xs text-[#047474] font-semibold">Health</span>
               </div>
             </Link>

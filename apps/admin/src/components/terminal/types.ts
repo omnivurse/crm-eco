@@ -1,4 +1,4 @@
-// Terminal Types - Pay It Forward Command Center
+// Terminal Types - Double Helix Hub Command Center
 
 export type PanelType =
   | 'bridge'

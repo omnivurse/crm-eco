@@ -15,7 +15,7 @@ import {
 
 const VIDEOS = [
   {
-    title: 'Getting Started with CRM Eco',
+    title: 'Getting Started with Double Helix Hub',
     description: 'A complete walkthrough of setting up your account and navigating the CRM.',
     duration: '8 min',
     category: 'Getting Started',
@@ -93,7 +93,7 @@ export default function VideosPage() {
           Video Tutorials
         </h1>
         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-          Learn CRM Eco through step-by-step video guides. Watch at your own pace
+          Learn Double Helix Hub through step-by-step video guides. Watch at your own pace
           and follow along.
         </p>
       </div>

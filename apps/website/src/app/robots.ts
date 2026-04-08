@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/enroll/'],
       },
     ],
-    sitemap: 'https://payitforwardhealth.com/sitemap.xml',
+    sitemap: 'https://doublehelixhub.com/sitemap.xml',
   };
 }

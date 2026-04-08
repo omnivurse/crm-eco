@@ -74,7 +74,7 @@ export default function LoginPage() {
         <div className="flex justify-center lg:justify-start mb-6">
           <Image
             src="/logo.png"
-            alt="Pay It Forward Health"
+            alt="Double Helix Hub"
             width={200}
             height={80}
             className="h-16 w-auto object-contain"
@@ -218,7 +218,7 @@ export default function LoginPage() {
           <span>Secured with enterprise-grade encryption</span>
         </div>
         <p className="text-brand-navy-400 text-xs">
-          © 2026 Pay It Forward Health. All rights reserved.
+          © 2026 Double Helix Hub. All rights reserved.
         </p>
       </div>
     </div>

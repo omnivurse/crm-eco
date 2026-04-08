@@ -19,8 +19,8 @@ export function Logo({ size = 'medium', animated = false, className = '', onClic
 
   const logoElement = (
     <img
-      src="/assets/PIFH-Logo-No-background.png"
-      alt="Pay It Forward Health"
+      src="/assets/logo.png"
+      alt="Double Helix Hub"
       className={`${sizeClass} w-auto object-contain ${onClick ? 'cursor-pointer' : ''} ${className}`}
     />
   );

@@ -84,7 +84,7 @@ export function InstallPrompt() {
         {/* Content */}
         <div className="p-4">
           <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
-            Install PIF CRM on your device for faster access, offline support, and a native app experience.
+            Install Double Helix Hub on your device for faster access, offline support, and a native app experience.
           </p>
 
           {isIOS ? (

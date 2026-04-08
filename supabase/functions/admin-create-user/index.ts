@@ -135,7 +135,7 @@ async function sendInviteEmail(to: string, fullName: string, role: string, invit
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;">
       <tr>
         <td style="padding:24px 24px 8px 24px;">
-          <h1 style="margin:0;font-size:20px;">Welcome to Pay It Forward Health</h1>
+          <h1 style="margin:0;font-size:20px;">Welcome to Double Helix Hub</h1>
           <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">Hello ${fullName || 'there'}, you've been invited as <b>${role}</b>.</p>
         </td>
       </tr>
@@ -150,7 +150,7 @@ async function sendInviteEmail(to: string, fullName: string, role: string, invit
   </body>
 </html>`;
 
-  const text = `Welcome to Pay It Forward Health
+  const text = `Welcome to Double Helix Hub
 
 Hello ${fullName || 'there'}, you've been invited as ${role}.
 
@@ -167,9 +167,9 @@ If you did not expect this email, you can ignore it.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `Pay It Forward Health <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
+        from: `Double Helix Hub <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
         to: [to],
-        subject: 'You have been invited to Pay It Forward Health',
+        subject: 'You have been invited to Double Helix Hub',
         html,
         text
       })

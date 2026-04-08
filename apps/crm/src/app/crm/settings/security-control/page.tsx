@@ -553,7 +553,7 @@ export default function SecurityControlPage() {
               <Input
                 value={newDomain}
                 onChange={(e) => setNewDomain(e.target.value.toLowerCase())}
-                placeholder="e.g. payitforwardhealth.com"
+                placeholder="e.g. doublehelixhub.com"
                 className="mt-1 font-mono"
               />
             </div>

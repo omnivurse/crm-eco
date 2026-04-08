@@ -124,7 +124,7 @@ export default function HowItWorksPage() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Learn how Pay It Forward Health works — from choosing a plan to
+              Learn how Double Helix Hub works — from choosing a plan to
               submitting needs and receiving support from our community.
             </p>
           </div>
@@ -208,7 +208,7 @@ export default function HowItWorksPage() {
                 costs directly.
               </p>
               <p>
-                Pay It Forward Health is a health cost sharing ministry — not
+                Double Helix Hub is a health cost sharing ministry — not
                 insurance. We facilitate voluntary sharing among members who agree
                 to our guidelines. This model often results in significantly lower
                 monthly costs while maintaining transparency and a sense of
@@ -326,7 +326,7 @@ export default function HowItWorksPage() {
               </h2>
             </div>
             <p className="text-slate-600 mb-6 leading-relaxed">
-              Pay It Forward Health welcomes a wide range of members. Here&apos;s who
+              Double Helix Hub welcomes a wide range of members. Here&apos;s who
               typically joins our community:
             </p>
             <ul className="space-y-3">

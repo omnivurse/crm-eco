@@ -108,7 +108,7 @@ export function MemberDashboardShell({
             <div>
               <h4 className="font-medium text-amber-900 mb-1">Important Reminder</h4>
               <p className="text-sm text-amber-700">
-                Pay It Forward Health is a health sharing ministry, not insurance. Members share each other&apos;s 
+                Double Helix Hub is a health sharing ministry, not insurance. Members share each other&apos;s 
                 medical expenses according to program guidelines. Sharing is voluntary and not guaranteed. 
                 Please review your membership guidelines for complete details.
               </p>

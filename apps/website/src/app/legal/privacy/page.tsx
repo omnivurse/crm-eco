@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Privacy Policy',
   description:
-    'Privacy Policy for Pay It Forward Health. Learn how we collect, use, and protect your information.',
+    'Privacy Policy for Double Helix Hub. Learn how we collect, use, and protect your information.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -113,7 +113,7 @@ export default function PrivacyPolicyPage() {
               Depending on your location, you may have rights to access, correct,
               or delete your personal information. You may also have the right
               to restrict or object to certain processing. To exercise these
-              rights, contact us at privacy@payitforwardhealth.com.
+              rights, contact us at privacy@doublehelixhub.com.
             </p>
             <p className="mb-4">
               We will respond to your request within a reasonable timeframe. If
@@ -177,12 +177,12 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p className="mb-4">
               For questions about this Privacy Policy or our data practices,
-              please contact us at privacy@payitforwardhealth.com or through
+              please contact us at privacy@doublehelixhub.com or through
               our Contact page. Our privacy team will respond to your inquiry
               as promptly as possible.
             </p>
             <p>
-              Pay It Forward Health is committed to protecting your privacy and
+              Double Helix Hub is committed to protecting your privacy and
               being transparent about our practices. We welcome your questions
               and feedback.
             </p>

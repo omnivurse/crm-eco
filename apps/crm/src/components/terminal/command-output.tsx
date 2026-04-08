@@ -1,6 +1,6 @@
 'use client';
 
-// Command Output - Pay It Forward Command Center
+// Command Output - Double Helix Hub Command Center
 import React, { useRef, useEffect } from 'react';
 import { useTerminal } from './terminal-provider';
 import type { CommandResult, TableData } from './types';

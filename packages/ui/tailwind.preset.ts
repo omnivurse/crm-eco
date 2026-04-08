@@ -1,7 +1,7 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * Pay It Forward Health - Tailwind Preset
+ * Double Helix Hub - Tailwind Preset
  * Shared design tokens for all applications
  */
 const preset: Partial<Config> = {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Offline | PIF CRM</title>
+  <title>Offline | Double Helix Hub</title>
   <style>
     * {
       margin: 0;
@@ -273,7 +273,7 @@
     
     // Show cached pages if available
     if ('caches' in window) {
-      caches.open('pif-crm-v1').then(cache => {
+      caches.open('dhh-v1').then(cache => {
         cache.keys().then(keys => {
           const pages = keys
             .filter(req => req.url.includes(location.origin) && !req.url.includes('.'))

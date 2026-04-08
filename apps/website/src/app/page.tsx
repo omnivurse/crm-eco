@@ -154,7 +154,7 @@ export default function HomePage() {
             {[
               {
                 quote:
-                  'Switching to Pay It Forward Health was the best decision for our family. We save over $400 a month and the community support is unlike anything we have experienced before.',
+                  'Switching to Double Helix Hub was the best decision for our family. We save over $400 a month and the community support is unlike anything we have experienced before.',
                 name: 'Sarah Mitchell',
                 role: 'Member since 2023',
               },
@@ -225,7 +225,7 @@ export default function HomePage() {
                 ))}
               </ul>
               <p className="text-white/60 text-sm mt-8 leading-relaxed font-[family-name:var(--font-body)]">
-                Pay It Forward Health is a health cost sharing ministry, not an
+                Double Helix Hub is a health cost sharing ministry, not an
                 insurance company. Members voluntarily share each other&apos;s
                 medical expenses as an act of community and mutual aid.
               </p>

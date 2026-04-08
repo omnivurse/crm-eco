@@ -1,4 +1,4 @@
-Welcome to Pay It Forward Health
+Welcome to Double Helix Hub
 
 Hello {{full_name}}, you've been invited as {{role}}.
 

@@ -87,7 +87,7 @@ async function writeAudit(actorId: string, targetUserId: string, action: string,
 }
 
 async function generateRecoveryLink(email: string): Promise<string> {
-  const siteUrl = Deno.env.get('SITE_URL') || 'https://crm.payitforwardhealth.com';
+  const siteUrl = Deno.env.get('SITE_URL') || 'https://crm.doublehelixhub.com';
   const redirectTo = `${siteUrl}/update-password`;
 
   const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/generate_link`, {
@@ -136,7 +136,7 @@ async function sendPasswordResetEmail(to: string, recoveryLink: string): Promise
       <tr>
         <td style="padding:24px 24px 8px 24px;">
           <h1 style="margin:0;font-size:20px;">Reset Your Password</h1>
-          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has requested a password reset for your Pay It Forward Health account.</p>
+          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has requested a password reset for your Double Helix Hub account.</p>
         </td>
       </tr>
       <tr>
@@ -154,7 +154,7 @@ async function sendPasswordResetEmail(to: string, recoveryLink: string): Promise
 
   const text = `Reset Your Password
 
-An administrator has requested a password reset for your Pay It Forward Health account.
+An administrator has requested a password reset for your Double Helix Hub account.
 
 Click this link to set a new password: ${recoveryLink}
 
@@ -168,9 +168,9 @@ This link will expire in 1 hour. If you did not request this, you can safely ign
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `Pay It Forward Health <${fromEmail}>`,
+        from: `Double Helix Hub <${fromEmail}>`,
         to: [to],
-        subject: 'Reset Your Password - Pay It Forward Health',
+        subject: 'Reset Your Password - Double Helix Hub',
         html,
         text
       })

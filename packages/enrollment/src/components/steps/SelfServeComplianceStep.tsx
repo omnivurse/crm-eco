@@ -253,7 +253,7 @@ export function SelfServeComplianceStep({
           <strong>Summary:</strong> By completing this enrollment, you are joining a
           community of members who voluntarily share medical expenses according to
           established guidelines. Sharing is not guaranteed but is facilitated by the
-          Pay It Forward Health community.
+          Double Helix Hub community.
         </p>
       </div>
 
