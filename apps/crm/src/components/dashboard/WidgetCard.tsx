@@ -31,39 +31,40 @@ export function WidgetCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50',
-        'shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)]',
-        'transition-all duration-200',
-        isDragging && 'ring-2 ring-teal-500 ring-offset-2 shadow-2xl',
+        'relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50',
+        'shadow-[0_1px_2px_rgba(0,0,0,0.04),0_1px_6px_rgba(0,0,0,0.03)]',
+        'hover:shadow-[0_1px_3px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.05)]',
+        'transition-shadow duration-200',
+        isDragging && 'ring-2 ring-teal-500 ring-offset-1 shadow-lg',
         className
       )}
     >
       {/* Gradient accent bar */}
-      <div className={cn('absolute top-0 left-0 right-0 h-1', gradient)} />
+      <div className={cn('absolute top-0 left-0 right-0 h-[3px]', gradient)} />
 
       {/* Header */}
-      <div className="p-6 border-b border-slate-100 dark:border-slate-800">
+      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={cn('p-2.5 rounded-xl', gradient.replace('bg-gradient-to-r', 'bg-gradient-to-br'))}>
+          <div className="flex items-center gap-2.5">
+            <div className={cn('p-2 rounded-lg', gradient.replace('bg-gradient-to-r', 'bg-gradient-to-br'))}>
               {icon}
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white leading-tight">
                 {title}
               </h3>
               {subtitle && (
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   {subtitle}
                 </p>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {badge && (
               <span
                 className={cn(
-                  'text-sm font-semibold px-3 py-1.5 rounded-full',
+                  'text-xs font-semibold px-2 py-1 rounded-full',
                   badgeColor
                 )}
               >
@@ -76,11 +77,11 @@ export function WidgetCard({
       </div>
 
       {/* Content */}
-      <div className="p-4">{children}</div>
+      <div className="p-3">{children}</div>
 
       {/* Footer */}
       {footer && (
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800">
+        <div className="px-4 py-2.5 border-t border-slate-100 dark:border-slate-800">
           {footer}
         </div>
       )}

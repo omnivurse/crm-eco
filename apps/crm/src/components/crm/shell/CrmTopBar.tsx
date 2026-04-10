@@ -130,12 +130,12 @@ export const CrmTopBar = memo(function CrmTopBar({
   };
 
   return (
-    <header className="h-14 flex items-center px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10 glass border-b border-slate-200 dark:border-white/5">
+    <header className="h-12 flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-slate-200/80 dark:border-white/5 shrink-0">
       {/* Mobile Menu Toggle */}
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden h-10 w-10 mr-2 rounded-lg text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        className="lg:hidden h-8 w-8 mr-2 rounded-md text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
         onClick={onMobileMenuToggle}
         aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
       >
@@ -149,7 +149,7 @@ export const CrmTopBar = memo(function CrmTopBar({
           alt="Double Helix Hub"
           width={140}
           height={38}
-          className="h-8 lg:h-9 w-auto object-contain"
+          className="h-7 lg:h-8 w-auto object-contain"
           priority={false}
           loading="lazy"
           quality={80}
@@ -169,7 +169,7 @@ export const CrmTopBar = memo(function CrmTopBar({
         {/* Search Button — opens global search overlay */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="hidden sm:flex items-center gap-2 h-9 px-3 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-sm min-w-[180px] lg:min-w-[240px]"
+          className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
           <span className="truncate">Search all records...</span>
@@ -180,7 +180,7 @@ export const CrmTopBar = memo(function CrmTopBar({
         <Button
           variant="ghost"
           size="icon"
-          className="sm:hidden h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+          className="sm:hidden h-8 w-8 rounded-md text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
           onClick={() => setSearchOpen(true)}
           title="Search (⌘K)"
         >
@@ -204,7 +204,7 @@ export const CrmTopBar = memo(function CrmTopBar({
         <Button
           variant="ghost"
           size="icon"
-          className="hidden sm:flex h-9 w-9 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
+          className="hidden sm:flex h-8 w-8 rounded-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
           onClick={() => router.push('/crm/settings')}
         >
           <Settings className="w-4 h-4" />
@@ -215,7 +215,7 @@ export const CrmTopBar = memo(function CrmTopBar({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
+              className="flex items-center gap-1.5 h-8 px-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-white/10"
             >
               <Avatar className="w-7 h-7 border border-teal-500/50">
                 <AvatarImage src={profile.avatar_url || undefined} alt={profile.full_name} />

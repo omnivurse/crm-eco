@@ -66,11 +66,11 @@
   --brand-emerald-500: 155 97% 23%;   /* #027343 */
   --brand-gold-500: 45 82% 52%;       /* #E9B61F */
 
-  /* Border radius */
-  --radius: 0.75rem;                  /* 12px for buttons/inputs */
-  --radius-card: 1rem;                /* 16px for cards */
-  --radius-lg: 1.5rem;                /* 24px for large elements */
-  --radius-xl: 2rem;                  /* 32px for hero elements */
+  /* Border radius — tighter for Zoho-like crispness */
+  --radius: 0.5rem;                   /* 8px for buttons/inputs */
+  --radius-card: 0.75rem;             /* 12px for cards */
+  --radius-lg: 1rem;                  /* 16px for large elements */
+  --radius-xl: 1.25rem;              /* 20px for hero elements */
 
   /* Typography - CSS variables are set by next/font/google in layout.tsx */
   /* These serve as fallbacks if the font variables aren't injected */
@@ -186,13 +186,13 @@
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.07);
   box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    0 4px 16px rgba(0, 0, 0, 0.06);
+    0 1px 3px rgba(0, 0, 0, 0.03),
+    0 2px 8px rgba(0, 0, 0, 0.04);
   /* Only transition specific properties on hover, not on initial render */
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -440,7 +440,7 @@ button:focus-visible {
   background: white;
   border: 1px solid hsl(214 32% 91%);
   border-radius: var(--radius-card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .dark .card-clean {

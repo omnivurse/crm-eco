@@ -92,8 +92,8 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
                 onMobileClose={handleMobileClose}
               />
 
-              <main className="flex-1 min-w-0 overflow-auto px-2 py-2 sm:px-3 sm:py-2 lg:px-4 lg:py-3 scrollbar-thin">
-                <div className="w-full pb-12">
+              <main className="flex-1 min-w-0 overflow-auto px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-5 lg:py-2 scrollbar-thin">
+                <div className="w-full max-w-[1920px] mx-auto pb-10">
                   {children}
                 </div>
               </main>

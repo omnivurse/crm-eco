@@ -181,7 +181,7 @@ async function DashboardContent() {
 
   return (
     <DashboardLayoutProvider initialLayout={layout}>
-      <div className="space-y-5 pb-8">
+      <div className="space-y-3 pb-6">
         {/* Enterprise Hero — always visible, personalized greeting + quick actions + key stats */}
         <DashboardHero
           profile={profile}

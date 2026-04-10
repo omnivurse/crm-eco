@@ -80,11 +80,12 @@ function HeroCard({
   return (
     <div
       className={`
-        relative overflow-hidden rounded-2xl
+        relative overflow-hidden rounded-lg
         bg-white dark:bg-slate-800/60
-        border border-slate-200/80 dark:border-white/10
-        shadow-sm hover:shadow-md
-        transition-all duration-300 ease-out
+        border border-slate-200/70 dark:border-white/10
+        shadow-[0_1px_2px_rgba(0,0,0,0.04)]
+        hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)]
+        transition-shadow duration-200
         group
         animate-fadeSlideUp
         opacity-0
@@ -112,7 +113,7 @@ function QuickActionButton({
   return (
     <Link
       href={href}
-      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-400 transition-all duration-200 text-xs font-medium whitespace-nowrap shadow-sm hover:shadow"
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-400 transition-colors text-[11px] font-medium whitespace-nowrap"
     >
       <Icon className="w-3.5 h-3.5" />
       <span>{label}</span>
@@ -242,11 +243,11 @@ function StatItem({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center py-5 text-center">
-      <p className="text-3xl font-bold text-slate-800 dark:text-white">{value}</p>
-      <div className="flex items-center gap-1.5 mt-1.5">
-        <Icon className={`w-3.5 h-3.5 ${iconColorClasses[color]}`} />
-        <p className="text-xs text-slate-500 dark:text-white/50">{label}</p>
+    <div className="flex flex-col items-center justify-center py-3 text-center">
+      <p className="text-2xl font-bold text-slate-800 dark:text-white">{value}</p>
+      <div className="flex items-center gap-1 mt-1">
+        <Icon className={`w-3 h-3 ${iconColorClasses[color]}`} />
+        <p className="text-[11px] text-slate-500 dark:text-white/50">{label}</p>
       </div>
     </div>
   );
@@ -341,16 +342,16 @@ export function DashboardHero({
   const todaysMeetings = upcomingMeetings.slice(0, 3);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm">
+    <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-white/10 p-4 md:p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
 
       <div className="relative z-10">
         {/* ── Zone A: Header ── */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
           <div className="animate-fadeSlideUp">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800 dark:text-white tracking-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white tracking-tight">
               {dateInfo.greeting}, {firstName}!
             </h1>
-            <p className="text-sm text-slate-400 dark:text-white/40 mt-1.5">
+            <p className="text-xs text-slate-400 dark:text-white/40 mt-1">
               {mounted ? dateInfo.formattedDate : ''}
             </p>
           </div>
@@ -371,29 +372,29 @@ export function DashboardHero({
         {insightHref ? (
           <Link
             href={insightHref}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 dark:bg-white/[0.07] border border-slate-200 dark:border-white/[0.10] mb-5 hover:border-teal-300 dark:hover:border-white/[0.18] transition-all duration-300 cursor-pointer group animate-fadeSlideUp opacity-0"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/[0.10] mb-3 hover:border-teal-300 dark:hover:border-white/[0.18] transition-colors cursor-pointer group animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '100ms' }}
           >
             <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-blue-500/10 group-hover:bg-teal-100 dark:group-hover:bg-blue-500/15 transition-colors">
               <Sparkles className="w-4 h-4 text-teal-500 dark:text-blue-400 group-hover:animate-pulse" />
             </div>
-            <p className="text-sm text-slate-600 dark:text-white/80 flex-1">{displayInsight}</p>
+            <p className="text-xs text-slate-600 dark:text-white/80 flex-1">{displayInsight}</p>
             <ChevronRight className="w-4 h-4 text-slate-400 dark:text-white/40 group-hover:text-teal-500 dark:group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
           </Link>
         ) : (
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 dark:bg-white/[0.07] border border-slate-200 dark:border-white/[0.10] mb-5 animate-fadeSlideUp opacity-0"
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/[0.10] mb-3 animate-fadeSlideUp opacity-0"
             style={{ animationDelay: '100ms' }}
           >
             <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-blue-500/10">
               <Sparkles className="w-4 h-4 text-teal-500 dark:text-blue-400" />
             </div>
-            <p className="text-sm text-slate-600 dark:text-white/80 flex-1">{displayInsight}</p>
+            <p className="text-xs text-slate-600 dark:text-white/80 flex-1">{displayInsight}</p>
           </div>
         )}
 
         {/* ── Zone B: Metrics Strip ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
           <HeroCard delay={150}>
             <StatItem icon={Sun} value={todaysTaskCount} label="Tasks Today" color="amber" />
           </HeroCard>
@@ -409,16 +410,16 @@ export function DashboardHero({
         </div>
 
         {/* ── Zone C: Context Row ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
           {/* Left: Pipeline Health + Weekly Goal */}
-          <HeroCard className="p-5" delay={350}>
+          <HeroCard className="p-3.5" delay={350}>
             <PipelineBar health={displayPipelineHealth} />
-            <div className="border-t border-slate-100 dark:border-white/[0.10] my-4" />
+            <div className="border-t border-slate-100 dark:border-white/[0.10] my-3" />
             <GoalProgressBar goal={displayWeeklyGoal} />
           </HeroCard>
 
           {/* Right: Today's Schedule */}
-          <HeroCard className="p-5" delay={400}>
+          <HeroCard className="p-3.5" delay={400}>
             <div className="flex items-center gap-1.5 mb-3">
               <Calendar className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
               <span className="text-xs font-medium text-slate-500 dark:text-white/60 uppercase tracking-wide">Today&apos;s Schedule</span>

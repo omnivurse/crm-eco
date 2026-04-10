@@ -30,27 +30,27 @@ function PremiumStatCard({
   change?: number;
 }) {
   const content = (
-    <div className="group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/50 shadow-[0_1px_3px_rgba(0,0,0,0.05),0_20px_25px_-5px_rgba(0,0,0,0.05)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-shadow duration-200">
+    <div className="group relative overflow-hidden rounded-xl bg-white dark:bg-slate-900/60 border border-slate-200/70 dark:border-slate-700/50 shadow-[0_1px_2px_rgba(0,0,0,0.04)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-shadow duration-200">
       {/* Accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-700" />
+      <div className="absolute top-0 left-0 right-0 h-[2px] bg-slate-200 dark:bg-slate-700" />
 
-      <div className="relative p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="relative p-4">
+        <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-0.5">
               {title}
             </p>
-            <p className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+            <p className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {value}
             </p>
           </div>
-          <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800">
+          <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
             <div className="text-slate-600 dark:text-slate-300">{icon}</div>
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <p className="text-xs text-slate-400 dark:text-slate-500">
+          <div className="flex items-center gap-1.5">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500">
               {subtitle}
             </p>
             {change !== undefined && change > 0 && (
@@ -99,7 +99,7 @@ const statConfigs: Record<
 export function DashboardStats({ stats }: DashboardStatsProps) {
   if (stats.length === 0) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <PremiumStatCard
           title="Accounts"
           value="0"
@@ -139,7 +139,7 @@ export function DashboardStats({ stats }: DashboardStatsProps) {
   ).filter((s) => s.moduleKey !== 'members' && s.moduleKey !== 'advisors');
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
       {uniqueStats.map((stat) => {
         const config = statConfigs[stat.moduleKey] || statConfigs.contacts;
         return (

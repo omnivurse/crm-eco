@@ -52,7 +52,7 @@ export function ZohoModuleBar() {
     const currentActive = getActiveFromPath();
 
     return (
-        <nav className="flex items-center gap-0.5">
+        <nav className="flex items-center gap-px">
             {TOP_MODULES.map((module) => {
                 const Icon = getIcon(module.icon);
                 const isActive = currentActive === module.key;
@@ -63,18 +63,21 @@ export function ZohoModuleBar() {
                         href={module.href}
                         onClick={() => handleModuleClick(module.key)}
                         className={cn(
-                            'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap',
-                            'hover:bg-slate-100 dark:hover:bg-white/10',
+                            'relative flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors whitespace-nowrap',
+                            'hover:text-teal-700 dark:hover:text-teal-300',
                             isActive
-                                ? 'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                ? 'text-teal-700 dark:text-teal-300'
+                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white'
                         )}
                     >
                         <Icon className={cn(
                             'w-3.5 h-3.5',
-                            isActive && 'text-teal-600 dark:text-teal-400'
+                            isActive ? 'text-teal-600 dark:text-teal-400' : ''
                         )} />
                         <span className="hidden xl:inline">{module.label}</span>
+                        {isActive && (
+                            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-[2px] rounded-full bg-teal-500 dark:bg-teal-400" />
+                        )}
                     </Link>
                 );
             })}
