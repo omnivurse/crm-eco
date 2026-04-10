@@ -1,16 +1,40 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { format } from 'date-fns';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField } from '@/lib/crm/types';
-import { Mail, Phone, ExternalLink, Check, X } from 'lucide-react';
+import { Mail, Phone, ExternalLink, Check, X, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
 function sanitize(dirty: string): string {
   if (typeof window === 'undefined') return dirty;
   return DOMPurify.sanitize(dirty);
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center justify-center opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-all ml-1"
+      title="Copy"
+    >
+      {copied ? (
+        <Check className="w-3 h-3 text-emerald-500" />
+      ) : (
+        <Copy className="w-3 h-3 text-slate-400" />
+      )}
+    </button>
+  );
 }
 
 interface FieldRendererProps {
@@ -43,25 +67,31 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
 
     case 'email':
       return (
-        <a
-          href={`mailto:${value}`}
-          className={cn('inline-flex items-center gap-1 text-brand-teal-600 hover:underline', className)}
-        >
-          <Mail className="w-3 h-3" />
-          {String(value)}
-        </a>
+        <span className="group inline-flex items-center gap-0">
+          <a
+            href={`mailto:${value}`}
+            className={cn('inline-flex items-center gap-1 text-brand-teal-600 hover:underline', className)}
+          >
+            <Mail className="w-3 h-3" />
+            {String(value)}
+          </a>
+          <CopyButton value={String(value)} />
+        </span>
       );
 
     case 'phone':
       return (
         <span className="inline-flex flex-col">
-          <a
-            href={`tel:${String(value).replace(/[^\d+]/g, '')}`}
-            className={cn('inline-flex items-center gap-1 text-brand-teal-600 hover:underline', className)}
-          >
-            <Phone className="w-3 h-3" />
-            {String(value)}
-          </a>
+          <span className="group inline-flex items-center gap-0">
+            <a
+              href={`tel:${String(value).replace(/[^\d+]/g, '')}`}
+              className={cn('inline-flex items-center gap-1 text-brand-teal-600 hover:underline', className)}
+            >
+              <Phone className="w-3 h-3" />
+              {String(value)}
+            </a>
+            <CopyButton value={String(value)} />
+          </span>
           {field.tooltip && (
             <span className="text-[10px] text-slate-400 mt-0.5">{field.tooltip}</span>
           )}

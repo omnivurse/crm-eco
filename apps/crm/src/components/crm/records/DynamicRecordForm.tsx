@@ -327,6 +327,9 @@ export function DynamicRecordForm({
   readOnly = false,
   embedded = false,
 }: DynamicRecordFormProps) {
+  // notes_history is legacy imported HTML rendered by LegacyNotesCard on detail views
+  const visibleFields = useMemo(() => fields.filter(f => f.key !== 'notes_history'), [fields]);
+
   const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(
@@ -340,7 +343,7 @@ export function DynamicRecordForm({
   const schema = useMemo(() => {
     const schemaShape: Record<string, z.ZodType> = {};
 
-    for (const field of fields) {
+    for (const field of visibleFields) {
       let fieldSchema: z.ZodType;
 
       switch (field.type) {
@@ -413,12 +416,12 @@ export function DynamicRecordForm({
     }
 
     return z.object(schemaShape);
-  }, [fields]);
+  }, [visibleFields]);
 
   // Group fields by section
   const fieldsBySection = useMemo(() => {
     const grouped: Record<string, CrmField[]> = {};
-    for (const field of fields) {
+    for (const field of visibleFields) {
       const section = field.section || 'main';
       if (!grouped[section]) grouped[section] = [];
       grouped[section].push(field);
@@ -428,7 +431,7 @@ export function DynamicRecordForm({
       grouped[key].sort((a, b) => a.display_order - b.display_order);
     }
     return grouped;
-  }, [fields]);
+  }, [visibleFields]);
 
   const {
     register,

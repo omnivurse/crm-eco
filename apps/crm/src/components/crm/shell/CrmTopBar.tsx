@@ -26,6 +26,8 @@ import {
   ChevronDown,
   Menu,
   X,
+  BookOpen,
+  MessageCircle,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ThemeToggle } from './ThemeToggle';
@@ -259,9 +261,34 @@ export const CrmTopBar = memo(function CrmTopBar({
               <Settings className="w-4 h-4 mr-3" />
               Settings
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2">
+            <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+            <DropdownMenuItem
+              onClick={() => router.push('/crm/features')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
+              <Sparkles className="w-4 h-4 mr-3" />
+              Features
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push('/crm/learn')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
+              <BookOpen className="w-4 h-4 mr-3" />
+              Learn
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => router.push('/crm/learn/getting-started')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
               <HelpCircle className="w-4 h-4 mr-3" />
-              Help & Support
+              Help
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => window.open('mailto:support@payitforwardhealthshare.com', '_self')}
+              className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
+            >
+              <MessageCircle className="w-4 h-4 mr-3" />
+              Support
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
             <DropdownMenuItem

@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
@@ -66,10 +67,10 @@ export async function PATCH(
       );
     }
 
-    // Fetch current record
+    // Fetch current record with module key so we know which JSONB status field to sync
     const { data: record, error: fetchError } = await supabase
       .from('crm_records')
-      .select('id, org_id, status, title, module_id')
+      .select('id, org_id, status, title, module_id, data, crm_modules!inner(key)')
       .eq('id', recordId)
       .single();
 
@@ -82,12 +83,18 @@ export async function PATCH(
     }
 
     const previousStatus = record.status;
+    const moduleKey = (record as any).crm_modules?.key as string | undefined;
 
-    // Update status
+    // Sync both the row-level status column AND the JSONB status field
+    const currentData = (record.data || {}) as Record<string, unknown>;
+    const statusFieldKey = moduleKey === 'leads' ? 'lead_status' : 'contact_status';
+    const updatedData = { ...currentData, [statusFieldKey]: status };
+
     const { error: updateError } = await supabase
       .from('crm_records')
       .update({
         status,
+        data: updatedData,
         updated_at: new Date().toISOString(),
       })
       .eq('id', recordId);
@@ -117,6 +124,9 @@ export async function PATCH(
         status: { from: previousStatus, to: status },
       },
     });
+
+    revalidatePath('/crm');
+    revalidatePath(`/crm/r/${recordId}`);
 
     return NextResponse.json({
       success: true,

@@ -22,6 +22,9 @@ import { StickyNotesPanel } from './StickyNotesPanel';
 
 type PanelId = 'chat' | 'channels' | 'contacts' | 'commands' | 'notes' | null;
 
+const tooltipClass =
+  'pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-[10px] font-medium text-white bg-slate-800 dark:bg-slate-700 rounded shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50';
+
 interface BottomBarProps {
   modules: CrmModule[];
   profile: CrmProfile;
@@ -45,19 +48,21 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
         {/* Left Section: Chat, Channels, Contacts */}
         <div className="flex items-center gap-0.5">
           <Popover open={activePanel === 'chat'} onOpenChange={(o) => setActivePanel(o ? 'chat' : null)}>
-            <PopoverTrigger asChild>
-              <button
-                onClick={() => togglePanel('chat')}
-                className={cn(
-                  'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                  'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-                  activePanel === 'chat' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
-                )}
-                title="Chats"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </button>
-            </PopoverTrigger>
+            <div className="group relative">
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => togglePanel('chat')}
+                  className={cn(
+                    'relative flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                    'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                    activePanel === 'chat' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
+                  )}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <span className={tooltipClass}>Chats</span>
+            </div>
             <PopoverContent
               side="top"
               align="start"
@@ -69,19 +74,21 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
           </Popover>
 
           <Popover open={activePanel === 'channels'} onOpenChange={(o) => setActivePanel(o ? 'channels' : null)}>
-            <PopoverTrigger asChild>
-              <button
-                onClick={() => togglePanel('channels')}
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                  'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-                  activePanel === 'channels' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
-                )}
-                title="Channels"
-              >
-                <Radio className="w-4 h-4" />
-              </button>
-            </PopoverTrigger>
+            <div className="group relative">
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => togglePanel('channels')}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                    'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                    activePanel === 'channels' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
+                  )}
+                >
+                  <Radio className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <span className={tooltipClass}>Channels</span>
+            </div>
             <PopoverContent
               side="top"
               align="start"
@@ -93,19 +100,21 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
           </Popover>
 
           <Popover open={activePanel === 'contacts'} onOpenChange={(o) => setActivePanel(o ? 'contacts' : null)}>
-            <PopoverTrigger asChild>
-              <button
-                onClick={() => togglePanel('contacts')}
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                  'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-                  activePanel === 'contacts' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
-                )}
-                title="Contacts"
-              >
-                <Contact className="w-4 h-4" />
-              </button>
-            </PopoverTrigger>
+            <div className="group relative">
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => togglePanel('contacts')}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                    'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                    activePanel === 'contacts' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
+                  )}
+                >
+                  <Contact className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <span className={tooltipClass}>Contacts</span>
+            </div>
             <PopoverContent
               side="top"
               align="start"
@@ -125,19 +134,21 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
         {/* Right Section: Commands, Sticky Notes, Help */}
         <div className="flex items-center gap-0.5">
           <Popover open={activePanel === 'commands'} onOpenChange={(o) => setActivePanel(o ? 'commands' : null)}>
-            <PopoverTrigger asChild>
-              <button
-                onClick={() => togglePanel('commands')}
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                  'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-                  activePanel === 'commands' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
-                )}
-                title="Quick Actions"
-              >
-                <Blocks className="w-4 h-4" />
-              </button>
-            </PopoverTrigger>
+            <div className="group relative">
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => togglePanel('commands')}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                    'text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                    activePanel === 'commands' && 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-500/10'
+                  )}
+                >
+                  <Blocks className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <span className={tooltipClass}>Quick Actions</span>
+            </div>
             <PopoverContent
               side="top"
               align="end"
@@ -149,19 +160,21 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
           </Popover>
 
           <Popover open={activePanel === 'notes'} onOpenChange={(o) => setActivePanel(o ? 'notes' : null)}>
-            <PopoverTrigger asChild>
-              <button
-                onClick={() => togglePanel('notes')}
-                className={cn(
-                  'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
-                  'text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800',
-                  activePanel === 'notes' && 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10'
-                )}
-                title="Sticky Notes"
-              >
-                <StickyNote className="w-4 h-4" />
-              </button>
-            </PopoverTrigger>
+            <div className="group relative">
+              <PopoverTrigger asChild>
+                <button
+                  onClick={() => togglePanel('notes')}
+                  className={cn(
+                    'flex items-center justify-center w-8 h-8 rounded-md transition-colors',
+                    'text-slate-500 dark:text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800',
+                    activePanel === 'notes' && 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10'
+                  )}
+                >
+                  <StickyNote className="w-4 h-4" />
+                </button>
+              </PopoverTrigger>
+              <span className={tooltipClass}>Sticky Notes</span>
+            </div>
             <PopoverContent
               side="top"
               align="end"
@@ -172,13 +185,15 @@ export const BottomBar = memo(function BottomBar({ modules, profile }: BottomBar
             </PopoverContent>
           </Popover>
 
-          <button
-            onClick={() => router.push('/crm/learn/getting-started')}
-            className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            title="Help"
-          >
-            <HelpCircle className="w-4 h-4" />
-          </button>
+          <div className="group relative">
+            <button
+              onClick={() => router.push('/crm/learn/getting-started')}
+              className="flex items-center justify-center w-8 h-8 rounded-md transition-colors text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            >
+              <HelpCircle className="w-4 h-4" />
+            </button>
+            <span className={tooltipClass}>Help</span>
+          </div>
         </div>
       </div>
     </div>

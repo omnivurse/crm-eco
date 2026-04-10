@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo, type JSX } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -26,6 +26,8 @@ import {
   CheckCircle,
   Search,
   ArrowRight,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
@@ -123,6 +125,30 @@ interface InlineSearchResult {
   subtitle?: string;
   module: string;
   moduleName: string;
+}
+
+function HeaderCopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="inline-flex items-center justify-center opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+      title="Copy"
+    >
+      {copied ? (
+        <Check className="w-3 h-3 text-emerald-500" />
+      ) : (
+        <Copy className="w-3 h-3 text-slate-400" />
+      )}
+    </button>
+  );
 }
 
 function InlineRecordSearch({ currentRecordId }: { currentRecordId: string }) {
@@ -372,12 +398,21 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  const displayStatus = optimisticStatus || record.status;
 
   // Sort notes: most recent first
   const sortedNotes = [...notesProp].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
   const recentNotes = sortedNotes.slice(0, 3);
+
+  // Clear optimistic status once server data catches up
+  useEffect(() => {
+    if (optimisticStatus && record.status === optimisticStatus) {
+      setOptimisticStatus(null);
+    }
+  }, [record.status, optimisticStatus]);
 
   // Lead-to-Contact conversion flags
   const isLeads = module.key === 'leads';
@@ -573,39 +608,45 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   </h1>
                   <div className="flex items-center gap-3 mt-1">
                     {record.email && (
-                      <a 
-                        href={`mailto:${record.email}`}
-                        className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                        {record.email}
-                      </a>
+                      <span className="group flex items-center gap-1">
+                        <a 
+                          href={`mailto:${record.email}`}
+                          className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                          {record.email}
+                        </a>
+                        <HeaderCopyButton value={record.email} />
+                      </span>
                     )}
                     {record.phone && (
-                      <a 
-                        href={`tel:${record.phone}`}
-                        className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-                      >
-                        <Phone className="w-3.5 h-3.5" />
-                        {record.phone}
-                      </a>
+                      <span className="group flex items-center gap-1">
+                        <a 
+                          href={`tel:${record.phone}`}
+                          className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          {record.phone}
+                        </a>
+                        <HeaderCopyButton value={record.phone} />
+                      </span>
                     )}
-                    {record.status && (
+                    {displayStatus && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button className="inline-flex items-center gap-1 cursor-pointer hover:ring-2 hover:ring-teal-500/30 rounded-full transition-all">
                             <Badge
                               variant="outline"
                               className={cn(
-                                'border text-xs font-medium',
-                                record.status === 'Active'
+                                'border text-xs font-medium transition-colors',
+                                displayStatus === 'Active' || displayStatus === 'Active HS Member' || displayStatus === 'Active Member'
                                   ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
-                                  : record.status === 'Inactive' || record.status === 'Terminated' || record.status === 'Cancelled'
+                                  : displayStatus === 'Inactive' || displayStatus === 'Terminated' || displayStatus === 'Cancelled'
                                   ? 'bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-400'
                                   : 'bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
                               )}
                             >
-                              {record.status}
+                              {displayStatus}
                             </Badge>
                           </button>
                         </DropdownMenuTrigger>
@@ -620,14 +661,15 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                               {group.items.map((s) => (
                                 <DropdownMenuItem
                                   key={s}
-                                  disabled={s === record.status}
+                                  disabled={s === displayStatus}
                                   className={cn(
                                     'text-sm',
-                                    s === record.status && 'opacity-50',
+                                    s === displayStatus && 'opacity-50',
                                     (s.startsWith('Active') || s.startsWith('Enrolled')) && 'text-emerald-600 dark:text-emerald-400',
                                     (s === 'Inactive' || s === 'In-Active' || s === 'Terminated' || s === 'Cancelled' || s === 'Suspended') && 'text-red-600 dark:text-red-400',
                                   )}
-                                  onClick={async () => {
+                                  onSelect={async () => {
+                                    setOptimisticStatus(s);
                                     try {
                                       const res = await fetch(`/api/crm/records/${record.id}/status`, {
                                         method: 'PATCH',
@@ -641,6 +683,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                                       toast.success(`Status changed to ${s}`);
                                       router.refresh();
                                     } catch (err) {
+                                      setOptimisticStatus(null);
                                       toast.error(err instanceof Error ? err.message : 'Failed to update status');
                                     }
                                   }}

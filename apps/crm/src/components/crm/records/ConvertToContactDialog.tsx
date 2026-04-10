@@ -139,8 +139,8 @@ export function ConvertToContactDialog({
                   </div>
 
                   <p className="text-xs text-slate-400">
-                    All matching fields (name, email, phone, address, family, etc.) will be mapped to the contact record.
-                    The original lead will be preserved and linked.
+                    All matching fields (name, email, phone, address, family, etc.) and all notes
+                    will be moved to the contact record. The original lead will be preserved and linked.
                   </p>
                 </div>
               </AlertDialogDescription>
