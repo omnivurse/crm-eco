@@ -1,54 +1,48 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2, X } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
-import { Input } from '@crm-eco/ui/components/input';
-import { Textarea } from '@crm-eco/ui/components/textarea';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
 import { queryKeys } from '@/lib/query-keys';
-import { getFieldOptions } from '@/lib/crm/utils';
-import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
+import {
+  DynamicRecordForm,
+  type DynamicRecordFormHandle,
+} from '@/components/crm/records/DynamicRecordForm';
 
-interface Field {
-  id: string;
-  key: string;
-  label: string;
-  field_type: string;
-  is_required: boolean;
-  options?: string[];
-  placeholder?: string;
-}
+const AUTOSAVE_DELAY_MS = 8_000;
 
 export default function EditRecordPage() {
   const { recordId } = useParams<{ recordId: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Record<string, unknown>>({});
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const initialFormData = useRef<Record<string, unknown>>({});
 
-  // Use TanStack Query for cached data fetching
+  const formRef = useRef<DynamicRecordFormHandle>(null);
+  const latestValuesRef = useRef<Record<string, unknown>>({});
+  const initialValuesRef = useRef<Record<string, unknown>>({});
+
   const { data, isLoading, error } = useEditRecordData(recordId);
+  const record = data?.record;
+  const fields = useMemo(() => data?.fields ?? [], [data?.fields]);
+  const layout = data?.layout ?? null;
 
-  // Initialize form data when record loads — full row + merge indexed columns into `data` shape
-  useEffect(() => {
-    if (data?.record && !isInitialized) {
-      const initial = mergeCrmRecordRowIntoFormDefaults(
-        data.record as unknown as Parameters<typeof mergeCrmRecordRowIntoFormDefaults>[0]
-      );
-      setFormData(initial);
-      initialFormData.current = initial;
-      setIsInitialized(true);
-    }
-  }, [data?.record, isInitialized]);
+  const defaultValues = useMemo(() => {
+    if (!record) return {} as Record<string, unknown>;
+    const merged = mergeCrmRecordRowIntoFormDefaults(
+      record as unknown as Parameters<typeof mergeCrmRecordRowIntoFormDefaults>[0]
+    );
+    initialValuesRef.current = merged;
+    latestValuesRef.current = merged;
+    return merged;
+  }, [record]);
 
   // Show error toast if loading fails
   useEffect(() => {
@@ -57,17 +51,13 @@ export default function EditRecordPage() {
     }
   }, [error]);
 
-  const record = data?.record;
-  const fields = data?.fields || [];
+  // Track form values + dirty state from the shared form component
+  const handleValuesChange = useCallback((values: Record<string, unknown>) => {
+    latestValuesRef.current = values;
+  }, []);
 
-  const handleFieldChange = useCallback((key: string, value: unknown) => {
-    setFormData(prev => {
-      const updated = { ...prev, [key]: value };
-      // Check if form has diverged from initial values
-      const dirty = JSON.stringify(updated) !== JSON.stringify(initialFormData.current);
-      setIsDirty(dirty);
-      return updated;
-    });
+  const handleDirtyChange = useCallback((dirty: boolean) => {
+    setIsDirty(dirty);
   }, []);
 
   // Warn user before leaving with unsaved changes (browser close/refresh)
@@ -88,8 +78,9 @@ export default function EditRecordPage() {
       const anchor = (e.target as HTMLElement).closest('a');
       if (!anchor) return;
       const href = anchor.getAttribute('href');
-      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
-      // Internal link click while dirty — confirm before navigating
+      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+        return;
+      }
       const confirmed = window.confirm('You have unsaved changes. Leave without saving?');
       if (!confirmed) {
         e.preventDefault();
@@ -100,165 +91,94 @@ export default function EditRecordPage() {
     return () => document.removeEventListener('click', handler, true);
   }, [isDirty]);
 
-  // Auto-save: debounced save 8 seconds after last change
+  /**
+   * Persist via the shared `PATCH /api/crm/records/[id]` so workflows,
+   * scoring, normalization, and PHI logging always run.
+   */
+  const persist = useCallback(
+    async (values: Record<string, unknown>) => {
+      const response = await fetch(`/api/crm/records/${recordId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: values }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result?.id) {
+        throw new Error(result?.error || 'Failed to save record');
+      }
+      return result;
+    },
+    [recordId]
+  );
+
+  // Auto-save: debounced save after last change
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isDirty || !record) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/crm/records/${recordId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: formData }),
-        });
-        if (response.ok) {
-          initialFormData.current = { ...formData };
-          setIsDirty(false);
-          toast.success('Auto-saved', { duration: 2000 });
-        }
-      } catch { /* silent auto-save failure */ }
-    }, 8000);
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [isDirty, formData, record, recordId]);
+        await persist(latestValuesRef.current);
+        initialValuesRef.current = { ...latestValuesRef.current };
+        formRef.current?.reset(latestValuesRef.current);
+        setIsDirty(false);
+        toast.success('Auto-saved', { duration: 2000 });
+      } catch {
+        // silent — user will save manually
+      }
+    }, AUTOSAVE_DELAY_MS);
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
+  }, [isDirty, record, persist]);
 
-  const handleSave = async () => {
+  const invalidateCaches = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: ['edit-record', recordId] });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(recordId) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(recordId) });
+    await queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
+  }, [queryClient, recordId]);
+
+  const handleSave = useCallback(async () => {
     if (!record) return;
-
     setSaving(true);
     try {
-      const response = await fetch(`/api/crm/records/${recordId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: formData }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok || !result?.id) {
-        toast.error(result?.error || 'Failed to save record');
-        return;
-      }
-
-      // Invalidate all record caches so detail/list pages show fresh data
-      await queryClient.invalidateQueries({ queryKey: ['edit-record', recordId] });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.records.detail(recordId) });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(recordId) });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
-
+      // Pull the latest values straight from the form to avoid stale ref content
+      const values = formRef.current?.getValues() ?? latestValuesRef.current;
+      await persist(values);
+      await invalidateCaches();
       setIsDirty(false);
       toast.success('Record updated successfully');
       router.refresh();
       router.push(`/crm/r/${recordId}`);
-    } catch (error) {
-      console.error('Error saving record:', error);
-      toast.error('Failed to save record');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save record';
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
-  };
+  }, [record, persist, invalidateCaches, recordId, router]);
 
-  const renderField = (field: Field) => {
-    const value = formData[field.key] as string | undefined;
-
-    switch (field.field_type) {
-      case 'text':
-      case 'email':
-      case 'phone':
-      case 'url':
-        return (
-          <Input
-            type={field.field_type === 'email' ? 'email' : field.field_type === 'url' ? 'url' : 'text'}
-            value={value || ''}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
-          />
-        );
-
-      case 'number':
-      case 'currency':
-        return (
-          <Input
-            type="number"
-            value={value || ''}
-            onChange={(e) => handleFieldChange(field.key, e.target.value ? parseFloat(e.target.value) : '')}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
-          />
-        );
-
-      case 'textarea':
-        return (
-          <Textarea
-            value={value || ''}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
-            rows={3}
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
-          />
-        );
-
-      case 'select':
-      case 'picklist':
-        return (
-          <select
-            value={value || ''}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500"
-          >
-            <option value="">Select {field.label}...</option>
-            {getFieldOptions(field.options).map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        );
-
-      case 'date':
-        return (
-          <Input
-            type="date"
-            value={value || ''}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
-          />
-        );
-
-      case 'datetime':
-        return (
-          <Input
-            type="datetime-local"
-            value={toDatetimeLocalValue(value)}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
-          />
-        );
-
-      case 'checkbox':
-      case 'boolean':
-        return (
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={!!value}
-              onChange={(e) => handleFieldChange(field.key, e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-teal-500 focus:ring-teal-500"
-            />
-            <span className="text-sm text-slate-700 dark:text-slate-300">{field.label}</span>
-          </label>
-        );
-
-      default:
-        return (
-          <Input
-            value={value || ''}
-            onChange={(e) => handleFieldChange(field.key, e.target.value)}
-            placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}...`}
-            className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10"
-          />
-        );
-    }
-  };
+  const handleSubmitFromForm = useCallback(
+    async (values: Record<string, unknown>) => {
+      if (!record) return;
+      setSaving(true);
+      try {
+        await persist(values);
+        await invalidateCaches();
+        setIsDirty(false);
+        toast.success('Record updated successfully');
+        router.refresh();
+        router.push(`/crm/r/${recordId}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to save record';
+        toast.error(msg);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [record, persist, invalidateCaches, recordId, router]
+  );
 
   if (isLoading) {
     return (
@@ -296,9 +216,7 @@ export default function EditRecordPage() {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
               Edit {record.module.name}
             </h1>
-            <p className="text-slate-500 dark:text-slate-400">
-              Editing: {record.title}
-            </p>
+            <p className="text-slate-500 dark:text-slate-400">Editing: {record.title}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -331,29 +249,24 @@ export default function EditRecordPage() {
         </div>
       </div>
 
-      {/* Form */}
-      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/10 p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {fields.map((field) => (
-            <div
-              key={field.id}
-              className={field.field_type === 'textarea' ? 'md:col-span-2' : ''}
-            >
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                {field.label}
-                {field.is_required && <span className="text-red-500 ml-1">*</span>}
-              </label>
-              {renderField(field)}
-            </div>
-          ))}
-        </div>
-
-        {fields.length === 0 && (
-          <p className="text-center text-slate-500 dark:text-slate-400 py-8">
-            No editable fields found for this module.
-          </p>
-        )}
-      </div>
+      {/*
+        Render the SAME component used on the record detail view (`DynamicRecordForm`)
+        with the SAME default layout and field metadata. The result: identical section
+        order, labels, grouping, and field types — view and edit truly mirror each other.
+      */}
+      <DynamicRecordForm
+        ref={formRef}
+        fields={fields}
+        layout={layout}
+        defaultValues={defaultValues}
+        record={record}
+        mode="edit"
+        isLoading={saving}
+        onSubmit={handleSubmitFromForm}
+        onCancel={() => router.push(`/crm/r/${recordId}`)}
+        onDirtyChange={handleDirtyChange}
+        onValuesChange={handleValuesChange}
+      />
 
       {/* Footer Actions — sticky so save button is always reachable */}
       <div className="sticky bottom-0 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-white/10 z-10 py-3 px-6 -mx-6 mt-6 flex items-center justify-end gap-3">

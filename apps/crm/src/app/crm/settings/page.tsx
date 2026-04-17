@@ -97,6 +97,13 @@ const settingsCards: SettingCard[] = [
     highlight: true,
   },
   {
+    title: 'My Carriers',
+    description: 'Pick the insurance, health share, dental, vision, life, and other carriers you actively work with',
+    href: '/crm/settings/my-carriers',
+    icon: <Shield className="w-6 h-6" />,
+    highlight: true,
+  },
+  {
     title: 'Experience Center',
     description: 'Behavioral signals, dynamic segmentation, and analytics triggers',
     href: '/crm/settings/experience',

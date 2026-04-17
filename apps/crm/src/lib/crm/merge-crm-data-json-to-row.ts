@@ -17,10 +17,21 @@ export function mergeCrmDataJsonIntoRowColumns(
   if (d.email !== undefined) updates.email = d.email || null;
   if (d.phone !== undefined) updates.phone = d.phone || null;
 
-  if (d.first_name !== undefined || d.last_name !== undefined) {
+  // Title prefers `preferred_name` (nickname / commonly-used name) over the
+  // legal `first_name`. Legal first_name is preserved on the record for
+  // enrollment / carrier compliance, but the displayed title surfaces what
+  // the contact actually goes by.
+  if (
+    d.first_name !== undefined ||
+    d.last_name !== undefined ||
+    d.preferred_name !== undefined
+  ) {
+    const preferred = (d.preferred_name as string) || '';
     const first = (d.first_name as string) || '';
     const last = (d.last_name as string) || '';
-    updates.title = ([first, last].filter(Boolean).join(' ') || ctx.previousTitle) ?? null;
+    const displayFirst = preferred || first;
+    updates.title =
+      ([displayFirst, last].filter(Boolean).join(' ') || ctx.previousTitle) ?? null;
   }
 
   if (d.contact_status !== undefined) updates.status = d.contact_status || null;

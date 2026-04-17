@@ -77,6 +77,7 @@ export type FieldType =
   | 'date'
   | 'datetime'
   | 'select'
+  | 'picklist'
   | 'multiselect'
   | 'boolean'
   | 'email'
@@ -93,6 +94,34 @@ export interface FieldValidation {
   maxLength?: number;
   pattern?: string;
   message?: string;
+}
+
+/**
+ * Carrier categories used by the per-advisor carrier picker.
+ * Mirrors the CHECK constraint on `insurance_carriers.carrier_type`.
+ */
+export type FieldCarrierType =
+  | 'insurance'
+  | 'healthshare'
+  | 'dental'
+  | 'vision'
+  | 'life'
+  | 'other'
+  | 'medicaid'
+  | 'short_term';
+
+/**
+ * Free-form per-field metadata stored in `crm_fields.metadata` (jsonb).
+ * Keys are intentionally optional so the renderer can branch on presence.
+ */
+export interface CrmFieldMetadata {
+  /**
+   * When set, the field renders as an advisor-carrier dropdown that pulls
+   * options from `/api/crm/advisor-carriers?carrier_type=…` instead of
+   * `field.options`.
+   */
+  carrier_type?: FieldCarrierType;
+  [key: string]: unknown;
 }
 
 export interface CrmField {
@@ -114,6 +143,8 @@ export interface CrmField {
   display_order: number;
   section: string;
   width: 'full' | 'half';
+  /** Free-form per-field metadata (e.g. `{ carrier_type: 'insurance' }`). */
+  metadata?: CrmFieldMetadata;
   created_at: string;
   updated_at: string;
 }
@@ -122,11 +153,37 @@ export interface CrmField {
 // CRM Layouts
 // ============================================================================
 
+/**
+ * Tailwind-friendly accent palette applied to a section card (border + header
+ * background + title text). Light + dark mode classes are resolved in the
+ * `DynamicRecordForm` ACCENT_CLASSES map.
+ */
+export type LayoutSectionAccent =
+  | 'slate'
+  | 'emerald'
+  | 'blue'
+  | 'cyan'
+  | 'purple'
+  | 'amber'
+  | 'rose'
+  | 'pink'
+  | 'indigo';
+
+/**
+ * Section render variant. `hero` is the top "Name" card that surfaces the
+ * Health Share Name + Start Date in a right-hand summary column.
+ */
+export type LayoutSectionVariant = 'default' | 'hero';
+
 export interface LayoutSection {
   key: string;
   label: string;
   columns: 1 | 2;
   collapsed?: boolean;
+  /** Color theme applied to the section card. Defaults to `slate`. */
+  accent?: LayoutSectionAccent;
+  /** Special rendering mode (e.g. the hero "Name" card). Defaults to `default`. */
+  variant?: LayoutSectionVariant;
 }
 
 export interface LayoutConfig {
@@ -1458,7 +1515,15 @@ export interface ContactGroupWithCount extends CrmContactGroup {
 // Insurance Carriers & Plans (Carrier Database)
 // ============================================================================
 
-export type CarrierType = 'insurance' | 'healthshare' | 'medicaid' | 'short_term';
+export type CarrierType =
+  | 'insurance'
+  | 'healthshare'
+  | 'medicaid'
+  | 'short_term'
+  | 'dental'
+  | 'vision'
+  | 'life'
+  | 'other';
 export type MetalLevel = 'catastrophic' | 'bronze' | 'silver' | 'gold' | 'platinum';
 
 export interface InsuranceCarrier {
@@ -1475,6 +1540,30 @@ export interface InsuranceCarrier {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Per-advisor selection of carriers from the shared `insurance_carriers`
+ * directory. Backed by the `crm_advisor_carriers` table (RLS scoped to user).
+ */
+export interface CrmAdvisorCarrier {
+  id: string;
+  organization_id: string;
+  user_id: string;
+  carrier_id: string;
+  is_active: boolean;
+  sort_order: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Row returned by the advisor-carriers list endpoint (joined with carrier). */
+export interface AdvisorCarrierWithCarrier extends CrmAdvisorCarrier {
+  carrier: Pick<
+    InsuranceCarrier,
+    'id' | 'carrier_name' | 'carrier_type' | 'logo_url' | 'is_active'
+  >;
 }
 
 export interface InsurancePlan {

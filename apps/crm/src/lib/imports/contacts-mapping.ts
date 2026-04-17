@@ -55,7 +55,11 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Last Name', crmKey: 'last_name', type: 'text', section: 'core' },
   { csvColumn: 'Contact Name', crmKey: 'contact_name', type: 'text', section: 'core' },
   { csvColumn: 'Salutation', crmKey: 'salutation', type: 'text', section: 'core' },
-  { csvColumn: 'Middle Initial', crmKey: 'middle_initial', type: 'text', section: 'core' },
+  // Legacy Zoho "Middle Initial" CSV header → store under unified middle_name key.
+  { csvColumn: 'Middle Initial', crmKey: 'middle_name', type: 'text', section: 'core' },
+  { csvColumn: 'Middle Name', crmKey: 'middle_name', type: 'text', section: 'core' },
+  { csvColumn: 'Nickname', crmKey: 'preferred_name', type: 'text', section: 'core' },
+  { csvColumn: 'Preferred Name', crmKey: 'preferred_name', type: 'text', section: 'core' },
   { csvColumn: 'Title', crmKey: 'title', type: 'text', section: 'core' },
   { csvColumn: 'Email', crmKey: 'email', type: 'email', section: 'core' },
   { csvColumn: 'Secondary Email', crmKey: 'secondary_email', type: 'email', section: 'core' },

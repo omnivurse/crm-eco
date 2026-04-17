@@ -1,7 +1,22 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
-import { useForm, useWatch, type Control, type UseFormRegister } from 'react-hook-form';
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+  memo,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
+import {
+  useForm,
+  useWatch,
+  useFormState,
+  type Control,
+  type UseFormRegister,
+} from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@crm-eco/ui/components/button';
@@ -18,11 +33,93 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { CrmField, CrmLayout, CrmRecord, LayoutSection } from '@/lib/crm/types';
+import Link from 'next/link';
+import type {
+  AdvisorCarrierWithCarrier,
+  CrmField,
+  CrmLayout,
+  CrmRecord,
+  LayoutSection,
+  LayoutSectionAccent,
+} from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { FieldRenderer } from './FieldRenderer';
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react';
+
+// ---------------------------------------------------------------------------
+// Section accent palette
+// ---------------------------------------------------------------------------
+// Each entry maps a `LayoutSectionAccent` key to Tailwind classes for the card
+// border, the header background, and the title text. We deliberately use full
+// class strings (no template interpolation) so Tailwind's JIT picks them up.
+
+interface AccentClassSet {
+  border: string;
+  header: string;
+  title: string;
+  ring: string;
+}
+
+const ACCENT_CLASSES: Record<LayoutSectionAccent, AccentClassSet> = {
+  slate: {
+    border: 'border-slate-200 dark:border-slate-700',
+    header: 'bg-slate-50/70 dark:bg-slate-800/40',
+    title: 'text-slate-700 dark:text-slate-200',
+    ring: 'ring-slate-200/60 dark:ring-slate-700/60',
+  },
+  emerald: {
+    border: 'border-emerald-200 dark:border-emerald-700/40',
+    header: 'bg-emerald-50/70 dark:bg-emerald-500/10',
+    title: 'text-emerald-700 dark:text-emerald-300',
+    ring: 'ring-emerald-200/60 dark:ring-emerald-700/40',
+  },
+  blue: {
+    border: 'border-blue-200 dark:border-blue-700/40',
+    header: 'bg-blue-50/70 dark:bg-blue-500/10',
+    title: 'text-blue-700 dark:text-blue-300',
+    ring: 'ring-blue-200/60 dark:ring-blue-700/40',
+  },
+  cyan: {
+    border: 'border-cyan-200 dark:border-cyan-700/40',
+    header: 'bg-cyan-50/70 dark:bg-cyan-500/10',
+    title: 'text-cyan-700 dark:text-cyan-300',
+    ring: 'ring-cyan-200/60 dark:ring-cyan-700/40',
+  },
+  purple: {
+    border: 'border-purple-200 dark:border-purple-700/40',
+    header: 'bg-purple-50/70 dark:bg-purple-500/10',
+    title: 'text-purple-700 dark:text-purple-300',
+    ring: 'ring-purple-200/60 dark:ring-purple-700/40',
+  },
+  amber: {
+    border: 'border-amber-200 dark:border-amber-700/40',
+    header: 'bg-amber-50/70 dark:bg-amber-500/10',
+    title: 'text-amber-700 dark:text-amber-300',
+    ring: 'ring-amber-200/60 dark:ring-amber-700/40',
+  },
+  rose: {
+    border: 'border-rose-200 dark:border-rose-700/40',
+    header: 'bg-rose-50/70 dark:bg-rose-500/10',
+    title: 'text-rose-700 dark:text-rose-300',
+    ring: 'ring-rose-200/60 dark:ring-rose-700/40',
+  },
+  pink: {
+    border: 'border-pink-200 dark:border-pink-700/40',
+    header: 'bg-pink-50/70 dark:bg-pink-500/10',
+    title: 'text-pink-700 dark:text-pink-300',
+    ring: 'ring-pink-200/60 dark:ring-pink-700/40',
+  },
+  indigo: {
+    border: 'border-indigo-200 dark:border-indigo-700/40',
+    header: 'bg-indigo-50/70 dark:bg-indigo-500/10',
+    title: 'text-indigo-700 dark:text-indigo-300',
+    ring: 'ring-indigo-200/60 dark:ring-indigo-700/40',
+  },
+};
+
+const getAccent = (accent?: LayoutSectionAccent): AccentClassSet =>
+  ACCENT_CLASSES[accent ?? 'slate'];
 
 // Search dropdown for lookup/user fields
 function LookupSearchField({
@@ -126,6 +223,129 @@ function LookupSearchField({
   );
 }
 
+// ---------------------------------------------------------------------------
+// AdvisorCarrierField
+// ---------------------------------------------------------------------------
+// Renders a Select fed from the current advisor's personal carrier list (the
+// `crm_advisor_carriers` join table), filtered by `field.metadata.carrier_type`.
+// When the advisor has not added any carriers of that type yet, falls back to
+// a free-text input + a "set up my carriers" link.
+//
+// The stored value is the carrier UUID (the carrier_id on the carrier row),
+// so this is forward-compatible with `crm_records.carrier_id` lookups.
+
+function AdvisorCarrierField({
+  field,
+  value,
+  onChange,
+  error,
+}: {
+  field: CrmField;
+  value: string | undefined;
+  onChange: (val: string) => void;
+  error?: boolean;
+}) {
+  const carrierType = field.metadata?.carrier_type;
+  const [carriers, setCarriers] = useState<AdvisorCarrierWithCarrier[]>([]);
+  // Initial loading mirrors carrierType so we never need to call setLoading
+  // synchronously from inside the effect body (avoids cascading renders).
+  const [loading, setLoading] = useState<boolean>(!!carrierType);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!carrierType) return;
+    let cancelled = false;
+    fetch(`/api/crm/advisor-carriers?carrier_type=${encodeURIComponent(carrierType)}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((json) => {
+        if (cancelled) return;
+        setCarriers(json.data || []);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error('[AdvisorCarrierField] load failed', err);
+        setLoadError('Failed to load carriers');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [carrierType]);
+
+  // Whether the current value is a UUID we recognise. If an existing record
+  // already stores a free-text carrier name (legacy data), we surface it as a
+  // pseudo-option so the user doesn't lose context.
+  const knownIds = useMemo(() => new Set(carriers.map((c) => c.carrier_id)), [carriers]);
+  const isLegacyValue = !!value && !knownIds.has(value);
+
+  if (loading) {
+    return (
+      <div
+        className={cn(
+          'h-9 px-3 flex items-center text-sm text-muted-foreground rounded-md border',
+          error && 'border-destructive',
+        )}
+      >
+        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+        Loading carriers…
+      </div>
+    );
+  }
+
+  if (loadError || carriers.length === 0) {
+    // Empty state: keep accepting input as free text but nudge the advisor to
+    // populate their personal list.
+    return (
+      <div className="space-y-1">
+        <Input
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={`Enter ${field.label.toLowerCase()}`}
+          className={cn(error && 'border-destructive')}
+        />
+        <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+          <Sparkles className="w-3 h-3" />
+          {loadError ? (
+            <>{loadError}.</>
+          ) : (
+            <>No {carrierType ?? 'carrier'} carriers in your list.</>
+          )}{' '}
+          <Link
+            href="/crm/settings/my-carriers"
+            className="text-teal-600 hover:underline"
+          >
+            Set up my carriers
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <Select value={value as string} onValueChange={onChange}>
+      <SelectTrigger className={cn(error && 'border-destructive')}>
+        <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+      </SelectTrigger>
+      <SelectContent>
+        {isLegacyValue && (
+          <SelectItem value={value as string}>{value} (existing)</SelectItem>
+        )}
+        {carriers.map((row) => (
+          <SelectItem key={row.carrier_id} value={row.carrier_id}>
+            {row.carrier?.carrier_name ?? row.carrier_id}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 // Isolated per-field component — only re-renders when its own value changes
 const FormFieldRenderer = memo(function FormFieldRenderer({
   field,
@@ -151,6 +371,23 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
   };
 
   let input: React.ReactNode;
+
+  // Carrier-typed fields take precedence regardless of the underlying field
+  // type (`select`, `lookup`, etc.) — the advisor's personal carrier list is
+  // always the source of truth.
+  if (field.metadata?.carrier_type) {
+    return (
+      <>
+        <AdvisorCarrierField
+          field={field}
+          value={value as string | undefined}
+          onChange={(val) => setValue(field.key, val)}
+          error={!!error}
+        />
+        {error && <p className="text-sm text-destructive mt-1">{error}</p>}
+      </>
+    );
+  }
 
   switch (field.type) {
     case 'text':
@@ -227,6 +464,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       break;
 
     case 'select':
+    case 'picklist':
       input = (
         <>
           <Select
@@ -301,6 +539,11 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
   );
 });
 
+export interface DynamicRecordFormHandle {
+  getValues: () => Record<string, unknown>;
+  reset: (values?: Record<string, unknown>) => void;
+}
+
 interface DynamicRecordFormProps {
   fields: CrmField[];
   layout?: CrmLayout | null;
@@ -313,20 +556,30 @@ interface DynamicRecordFormProps {
   readOnly?: boolean;
   /** When true, renders fields without wrapping in a form element (for use inside server action forms) */
   embedded?: boolean;
+  /** Fires when dirty state changes (edit mode — e.g. unsaved banner / navigation guard) */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** All form values after each update (debounce in parent for auto-save) */
+  onValuesChange?: (values: Record<string, unknown>) => void;
 }
 
-export function DynamicRecordForm({
-  fields,
-  layout,
-  defaultValues = {},
-  record,
-  onSubmit,
-  onCancel,
-  isLoading = false,
-  mode = 'create',
-  readOnly = false,
-  embedded = false,
-}: DynamicRecordFormProps) {
+export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicRecordFormProps>(
+  function DynamicRecordForm(
+    {
+      fields,
+      layout,
+      defaultValues = {},
+      record,
+      onSubmit,
+      onCancel,
+      isLoading = false,
+      mode = 'create',
+      readOnly = false,
+      embedded = false,
+      onDirtyChange,
+      onValuesChange,
+    },
+    ref
+  ) {
   // notes_history is legacy imported HTML rendered by LegacyNotesCard on detail views
   const visibleFields = useMemo(() => fields.filter(f => f.key !== 'notes_history'), [fields]);
 
@@ -391,6 +644,7 @@ export function DynamicRecordForm({
           break;
 
         case 'select':
+        case 'picklist':
           fieldSchema = z.string();
           break;
 
@@ -439,10 +693,32 @@ export function DynamicRecordForm({
     formState: { errors },
     setValue,
     control,
+    reset,
+    getValues,
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as Record<string, unknown>,
   });
+
+  const { isDirty } = useFormState({ control });
+
+  useImperativeHandle(ref, () => ({
+    getValues: () => getValues() as Record<string, unknown>,
+    reset: (values?: Record<string, unknown>) => {
+      if (values) reset(values);
+      else reset();
+    },
+  }));
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  const watchedValues = useWatch({ control });
+  useEffect(() => {
+    if (!onValuesChange || readOnly) return;
+    onValuesChange((watchedValues || {}) as Record<string, unknown>);
+  }, [watchedValues, onValuesChange, readOnly]);
 
   const toggleSection = (key: string) => {
     const newCollapsed = new Set(collapsedSections);
@@ -477,14 +753,60 @@ export function DynamicRecordForm({
 
   const handleFormSubmit = onSubmit ? handleSubmit(onSubmit) : undefined;
 
+  // Helper: a single field cell (label + input or read-only renderer)
+  const renderFieldCell = useCallback(
+    (field: CrmField) => (
+      <div
+        key={field.key}
+        className={cn(field.width === 'full' && 'md:col-span-2')}
+      >
+        <Label
+          htmlFor={field.key}
+          className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider"
+        >
+          {field.label}
+          {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        {readOnly ? (
+          <div className="py-0.5 text-sm min-h-[24px]">
+            <FieldRenderer field={field} value={defaultValues[field.key]} />
+          </div>
+        ) : (
+          <FormFieldRenderer
+            field={field}
+            control={control}
+            register={register}
+            setValue={setValue}
+            error={errors[field.key]?.message as string | undefined}
+          />
+        )}
+      </div>
+    ),
+    [control, defaultValues, errors, readOnly, register, setValue],
+  );
+
+  // Find the "hero summary" fields anywhere in the field list — they don't
+  // need to live in the hero section to be surfaced there.
+  const heroSharingField = useMemo(
+    () => visibleFields.find((f) => f.key === 'sharing_entity'),
+    [visibleFields],
+  );
+  const heroStartDateField = useMemo(
+    () => visibleFields.find((f) => f.key === 'sharing_effective_date'),
+    [visibleFields],
+  );
+
   const renderSections = () => (
     <>
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
-        if (sectionFields.length === 0) return null;
+        const isHero = section.variant === 'hero';
+        // Hero is allowed to render even with zero fields (e.g. lean Members
+        // module) because it always shows the right-hand summary.
+        if (sectionFields.length === 0 && !isHero) return null;
 
         // In readOnly mode, skip sections where every field is empty
-        if (readOnly) {
+        if (readOnly && !isHero) {
           const hasAnyValue = sectionFields.some(
             (f) => defaultValues[f.key] !== null && defaultValues[f.key] !== undefined && defaultValues[f.key] !== ''
           );
@@ -492,64 +814,101 @@ export function DynamicRecordForm({
         }
 
         const isCollapsed = collapsedSections.has(section.key);
+        const accent = getAccent(section.accent);
 
         return (
-          <Card key={section.key} id={`section-${section.key}`} data-section={section.key} className="break-inside-avoid">
+          <Card
+            key={section.key}
+            id={`section-${section.key}`}
+            data-section={section.key}
+            className={cn('break-inside-avoid border', accent.border)}
+          >
             <CardHeader
               className={cn(
                 'cursor-pointer hover:bg-muted/50 transition-colors',
+                accent.header,
                 readOnly ? 'py-2 px-4' : 'py-3',
               )}
               onClick={() => toggleSection(section.key)}
             >
-              <CardTitle className={cn('font-medium flex items-center gap-2', readOnly ? 'text-sm' : 'text-base')}>
+              <CardTitle
+                className={cn(
+                  'font-medium flex items-center gap-2',
+                  accent.title,
+                  readOnly ? 'text-sm' : 'text-base',
+                )}
+              >
                 {isCollapsed ? (
                   <ChevronRight className="w-3.5 h-3.5" />
                 ) : (
                   <ChevronDown className="w-3.5 h-3.5" />
                 )}
                 {section.label}
-                <span className="text-muted-foreground font-normal text-xs">
-                  ({sectionFields.length})
-                </span>
+                {sectionFields.length > 0 && (
+                  <span className="text-muted-foreground font-normal text-xs">
+                    ({sectionFields.length})
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             {!isCollapsed && (
-              <CardContent className={readOnly ? 'pt-0 pb-3 px-4' : undefined}>
-                <div
-                  className={cn(
-                    'grid',
-                    readOnly
-                      ? 'grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-1.5'
-                      : 'gap-4',
-                    !readOnly && (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
-                  )}
-                >
-                  {sectionFields.map((field) => (
-                    <div
-                      key={field.key}
-                      className={cn(field.width === 'full' && 'md:col-span-2')}
-                    >
-                      <Label htmlFor={field.key} className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider">
-                        {field.label}
-                        {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
-                      </Label>
-                      {readOnly ? (
-                        <div className="py-0.5 text-sm min-h-[24px]">
-                          <FieldRenderer field={field} value={defaultValues[field.key]} />
-                        </div>
-                      ) : (
-                        <FormFieldRenderer
-                          field={field}
-                          control={control}
-                          register={register}
-                          setValue={setValue}
-                          error={errors[field.key]?.message as string | undefined}
-                        />
-                      )}
+              <CardContent className={readOnly ? 'pt-3 pb-3 px-4' : undefined}>
+                {isHero ? (
+                  // ──────────────────────────────────────────────────────────
+                  // HERO LAYOUT
+                  //   Left column  → the section's own fields (Name, etc.)
+                  //   Right column → Health Share Name + Start Date summary,
+                  //                  editable inline via the same form state.
+                  // ──────────────────────────────────────────────────────────
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+                        {sectionFields.map(renderFieldCell)}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="md:col-span-1">
+                      <div
+                        className={cn(
+                          'rounded-lg border p-4 h-full space-y-3 ring-1',
+                          getAccent('emerald').border,
+                          getAccent('emerald').header,
+                          getAccent('emerald').ring,
+                        )}
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                          Membership Snapshot
+                        </p>
+                        {heroSharingField ? (
+                          renderFieldCell(heroSharingField)
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            No Health Share field configured
+                          </p>
+                        )}
+                        {heroStartDateField ? (
+                          renderFieldCell(heroStartDateField)
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            No Start Date field configured
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className={cn(
+                      'grid',
+                      readOnly
+                        ? 'grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-1.5'
+                        : 'gap-4',
+                      !readOnly &&
+                        (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
+                    )}
+                  >
+                    {sectionFields.map(renderFieldCell)}
+                  </div>
+                )}
               </CardContent>
             )}
           </Card>
@@ -603,4 +962,7 @@ export function DynamicRecordForm({
       </div>
     </form>
   );
-}
+  }
+);
+
+DynamicRecordForm.displayName = 'DynamicRecordForm';

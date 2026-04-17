@@ -300,6 +300,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
       items: [
         { name: 'Automations', href: '/crm/settings/automations', icon: Workflow },
         { name: 'Playbooks', href: '/crm/playbooks', icon: BookOpen, isNew: true },
+        { name: 'My Carriers', href: '/crm/settings/my-carriers', icon: Shield, isNew: true },
         { name: 'Integrations', href: '/crm/integrations', icon: Link2 },
         { name: 'Users & Teams', href: '/crm/settings/users', icon: Users2 },
         { name: 'Settings', href: '/crm/settings', icon: Settings },

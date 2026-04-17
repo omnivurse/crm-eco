@@ -1,12 +1,92 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField } from '@/lib/crm/types';
 import { Mail, Phone, ExternalLink, Check, X, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
+
+// ---------------------------------------------------------------------------
+// Carrier-name resolution
+// ---------------------------------------------------------------------------
+// For carrier-typed fields, the underlying value is a UUID (carrier_id). The
+// detail view should render the carrier_name. We keep an in-memory module-level
+// cache so a record with multiple carrier fields only triggers one fetch per
+// (carrierType) and rows aren't re-resolved on every re-render.
+
+interface CarrierLite {
+  id: string;
+  carrier_name: string;
+}
+
+const carrierCache = new Map<string, Map<string, string>>(); // type -> id -> name
+const inFlight = new Map<string, Promise<Map<string, string>>>();
+
+function loadAdvisorCarriers(carrierType: string): Promise<Map<string, string>> {
+  const cached = carrierCache.get(carrierType);
+  if (cached) return Promise.resolve(cached);
+  const existing = inFlight.get(carrierType);
+  if (existing) return existing;
+
+  const p = fetch(`/api/crm/advisor-carriers?carrier_type=${encodeURIComponent(carrierType)}`)
+    .then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    })
+    .then((json: { data?: Array<{ carrier_id: string; carrier?: CarrierLite | null }> }) => {
+      const map = new Map<string, string>();
+      for (const row of json.data || []) {
+        const name = row.carrier?.carrier_name;
+        if (name) map.set(row.carrier_id, name);
+      }
+      carrierCache.set(carrierType, map);
+      inFlight.delete(carrierType);
+      return map;
+    })
+    .catch((err) => {
+      console.error('[FieldRenderer] carrier load failed', err);
+      inFlight.delete(carrierType);
+      return new Map<string, string>();
+    });
+
+  inFlight.set(carrierType, p);
+  return p;
+}
+
+/** Look up a carrier name from the advisor's personal list. */
+function CarrierName({ carrierType, value }: { carrierType: string; value: string }) {
+  const initial = carrierCache.get(carrierType)?.get(value);
+  const [name, setName] = useState<string | undefined>(initial);
+  const [loaded, setLoaded] = useState<boolean>(initial !== undefined);
+
+  useEffect(() => {
+    if (loaded) return;
+    let cancelled = false;
+    loadAdvisorCarriers(carrierType).then((map) => {
+      if (cancelled) return;
+      setName(map.get(value));
+      setLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [carrierType, value, loaded]);
+
+  // While loading we display the raw value. If it's a UUID we abbreviate so it
+  // doesn't blow up the layout; non-UUID values are legacy text we can show as-is.
+  const display =
+    name ?? (UUID_RE.test(value) ? (loaded ? value : `${value.slice(0, 8)}…`) : value);
+
+  return (
+    <Badge variant="secondary" className="font-normal">
+      {display}
+    </Badge>
+  );
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function sanitize(dirty: string): string {
   if (typeof window === 'undefined') return dirty;
@@ -47,6 +127,16 @@ interface FieldRendererProps {
 export const FieldRenderer = memo(function FieldRenderer({ field, value, className }: FieldRendererProps) {
   if (value === null || value === undefined || value === '') {
     return <span className={cn('text-muted-foreground', className)}>—</span>;
+  }
+
+  // Carrier-typed fields resolve their UUID value to the carrier_name from the
+  // advisor's personal list. Free-text legacy values are shown verbatim.
+  if (field.metadata?.carrier_type) {
+    return (
+      <span className={className}>
+        <CarrierName carrierType={field.metadata.carrier_type} value={String(value)} />
+      </span>
+    );
   }
 
   switch (field.type) {
@@ -162,6 +252,7 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
       );
 
     case 'select':
+    case 'picklist':
       return (
         <Badge variant="secondary" className={className}>
           {String(value)}
@@ -199,6 +290,16 @@ export function renderCellValue(field: CrmField, value: unknown): React.ReactNod
 export function getDisplayValue(field: CrmField, value: unknown): string {
   if (value === null || value === undefined || value === '') {
     return '';
+  }
+
+  // Carrier-typed fields: try the in-memory cache (populated when a record
+  // with the same carrier_type was viewed earlier in the session).
+  if (field.metadata?.carrier_type) {
+    const map = carrierCache.get(field.metadata.carrier_type);
+    const resolved = map?.get(String(value));
+    if (resolved) return resolved;
+    // Fall back to raw value (UUID or legacy text) when cache miss.
+    return String(value);
   }
 
   switch (field.type) {

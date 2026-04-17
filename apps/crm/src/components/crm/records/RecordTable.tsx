@@ -633,7 +633,7 @@ export const RecordTable = memo(function RecordTable({
 
   // Get visible columns from view or explicit columns
   // Allow any column that exists in the fieldMap (custom fields) or common system fields
-  const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'middle_initial', 'lead_status', 'contact_status', 'salutation', 'contact_name'];
+  const SYSTEM_COLUMNS = ['title', 'status', 'owner_id', 'created_at', 'updated_at', 'email', 'phone', 'first_name', 'last_name', 'middle_name', 'preferred_name', 'lead_status', 'contact_status', 'salutation', 'contact_name'];
   const visibleColumns = useMemo(() => {
     const columns = explicitColumns || view?.columns || fields.map(f => f.key);
     // Allow columns that exist in fieldMap or are known system columns
@@ -650,7 +650,7 @@ export const RecordTable = memo(function RecordTable({
       case 'contact_name':
       case 'title': return 180;
       case 'middle_name':
-      case 'middle_initial':
+      case 'preferred_name':
       case 'salutation': return 120;
       case 'status':
       case 'lead_status':
@@ -786,7 +786,7 @@ export const RecordTable = memo(function RecordTable({
     if (col === 'first_name') return 'First Name';
     if (col === 'last_name') return 'Last Name';
     if (col === 'middle_name') return 'Middle Name';
-    if (col === 'middle_initial') return 'Middle Initial';
+    if (col === 'preferred_name') return 'Preferred Name';
     if (col === 'salutation') return 'Salutation';
     if (col === 'contact_name') return 'Contact Name';
     if (col === 'record_id') return 'Record Id';
@@ -824,11 +824,15 @@ export const RecordTable = memo(function RecordTable({
       );
     }
 
-    // Build display name from first_name and last_name if available
+    // Build display name: prefer `preferred_name` over `first_name` so list/drawer
+    // surfaces what the contact actually goes by. Legal first_name is preserved
+    // on the record for enrollment / carrier compliance.
     if (col === 'title') {
-      const firstName = record.data?.first_name || '';
-      const lastName = record.data?.last_name || '';
-      const displayName = [firstName, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
+      const preferredName = (record.data?.preferred_name as string) || '';
+      const firstName = (record.data?.first_name as string) || '';
+      const lastName = (record.data?.last_name as string) || '';
+      const displayFirst = preferredName || firstName;
+      const displayName = [displayFirst, lastName].filter(Boolean).join(' ') || record.title || 'Untitled';
 
       return (
         <Link
@@ -843,7 +847,7 @@ export const RecordTable = memo(function RecordTable({
 
     // Handle text fields that come from record.data (with system column fallback for email/phone)
     if (col === 'first_name' || col === 'last_name' || col === 'email' || col === 'phone' ||
-      col === 'middle_name' || col === 'middle_initial' || col === 'salutation' || col === 'contact_name') {
+      col === 'middle_name' || col === 'preferred_name' || col === 'salutation' || col === 'contact_name') {
       const value = (col === 'email')
         ? ((record.email || record.data?.email) as string | undefined)
         : (col === 'phone')

@@ -21,6 +21,11 @@ export const queryKeys = {
     byModule: (moduleId: string) => [...queryKeys.fields.all, moduleId] as const,
   },
 
+  /** Default module layout (matches server `getDefaultLayout`) */
+  layouts: {
+    default: (moduleId: string) => ['crm-layouts', 'default', moduleId] as const,
+  },
+
   // Timeline & Notes
   timeline: {
     all: ['timeline'] as const,

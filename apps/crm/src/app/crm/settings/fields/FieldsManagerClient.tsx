@@ -76,6 +76,7 @@ const FIELD_TYPE_LABELS: Record<FieldType, string> = {
     datetime: 'Date & Time',
     boolean: 'Checkbox',
     select: 'Dropdown',
+    picklist: 'Picklist',
     multiselect: 'Multi-Select',
     email: 'Email',
     phone: 'Phone',

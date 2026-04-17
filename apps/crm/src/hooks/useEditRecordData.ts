@@ -3,7 +3,7 @@
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-client';
 import { queryKeys } from '@/lib/query-keys';
-import type { CrmRecord } from '@/lib/crm/types';
+import type { CrmRecord, CrmField, CrmLayout } from '@/lib/crm/types';
 
 /** Full `crm_records` row + module (must match server reads — use `select('*')`). */
 export type EditRecordRow = CrmRecord & {
@@ -15,21 +15,13 @@ export type EditRecordRow = CrmRecord & {
   };
 };
 
-interface Field {
-  id: string;
-  key: string;
-  label: string;
-  field_type: string;
-  is_required: boolean;
-  options?: string[];
-}
-
 export interface EditRecordData {
   record: EditRecordRow;
-  fields: Field[];
+  fields: CrmField[];
+  /** Same default layout as record detail / `getDefaultLayout` — drives section order & labels */
+  layout: CrmLayout | null;
 }
 
-// Fetch full row + module — same columns as getRecordWithModule / list queries
 async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | null> {
   const { data, error } = await supabase
     .from('crm_records')
@@ -43,9 +35,7 @@ async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | 
   if (error) throw error;
   if (!data) return null;
 
-  const moduleData = Array.isArray(data.module)
-    ? data.module[0]
-    : data.module;
+  const moduleData = Array.isArray(data.module) ? data.module[0] : data.module;
 
   return {
     ...data,
@@ -53,52 +43,74 @@ async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | 
   } as EditRecordRow;
 }
 
-// Fetch fields for module
-async function fetchEditFields(moduleId: string): Promise<Field[]> {
+async function fetchFieldsForModule(moduleId: string): Promise<CrmField[]> {
   const { data, error } = await supabase
     .from('crm_fields')
-    .select('id, key, label, field_type:type, is_required:required, options')
+    .select('*')
     .eq('module_id', moduleId)
     .order('display_order', { ascending: true });
 
   if (error) throw error;
-  return (data || []) as Field[];
+  return (data || []) as CrmField[];
+}
+
+async function fetchDefaultLayout(moduleId: string): Promise<CrmLayout | null> {
+  const { data, error } = await supabase
+    .from('crm_layouts')
+    .select('*')
+    .eq('module_id', moduleId)
+    .eq('is_default', true)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data as CrmLayout | null;
 }
 
 export function useEditRecordData(recordId: string | null) {
-  // First, fetch the record with module
   const recordQuery = useQuery({
     queryKey: ['edit-record', recordId],
     queryFn: () => fetchRecordWithModule(recordId!),
     enabled: !!recordId,
-    staleTime: 0, // Always refetch — edits must show latest data
+    staleTime: 0,
   });
 
   const moduleId = recordQuery.data?.module?.id;
 
-  // Then fetch fields (dependent on record having module)
-  const fieldsQuery = useQuery({
-    queryKey: queryKeys.fields.byModule(moduleId || ''),
-    queryFn: () => fetchEditFields(moduleId!),
-    enabled: !!moduleId,
-    staleTime: 5 * 60_000, // 5 minutes - fields rarely change
+  const dependentQueries = useQueries({
+    queries: [
+      {
+        queryKey: queryKeys.fields.byModule(moduleId || ''),
+        queryFn: () => fetchFieldsForModule(moduleId!),
+        enabled: !!moduleId,
+        staleTime: 5 * 60_000,
+      },
+      {
+        queryKey: queryKeys.layouts.default(moduleId || ''),
+        queryFn: () => fetchDefaultLayout(moduleId!),
+        enabled: !!moduleId,
+        staleTime: 5 * 60_000,
+      },
+    ],
   });
+
+  const [fieldsQuery, layoutQuery] = dependentQueries;
 
   const isLoading =
     recordQuery.isLoading ||
-    (recordQuery.data && fieldsQuery.isLoading);
+    (recordQuery.data && (fieldsQuery.isLoading || layoutQuery.isLoading));
 
   const data: EditRecordData | null =
-    recordQuery.data && fieldsQuery.data
+    recordQuery.data && fieldsQuery.data !== undefined && layoutQuery.data !== undefined
       ? {
           record: recordQuery.data,
           fields: fieldsQuery.data,
+          layout: layoutQuery.data,
         }
       : null;
 
   return {
     data,
     isLoading: !!isLoading,
-    error: recordQuery.error || fieldsQuery.error,
+    error: recordQuery.error || fieldsQuery.error || layoutQuery.error,
   };
 }

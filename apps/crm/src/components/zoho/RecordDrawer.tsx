@@ -126,12 +126,16 @@ export function RecordDrawer() {
     });
   }, [data?.record, localRecordData]);
 
-  // Build display name
+  // Build display name — prefer `preferred_name` (nickname) over legal first_name
+  // so the drawer header surfaces what the contact actually goes by. Legal
+  // first_name is kept on the record for enrollment / carrier compliance.
   const getDisplayName = () => {
     if (!data?.record) return 'Loading...';
-    const firstName = effectiveRecordData?.first_name || '';
-    const lastName = effectiveRecordData?.last_name || '';
-    return [firstName, lastName].filter(Boolean).join(' ') || data.record.title || 'Untitled';
+    const preferredName = (effectiveRecordData?.preferred_name as string) || '';
+    const firstName = (effectiveRecordData?.first_name as string) || '';
+    const lastName = (effectiveRecordData?.last_name as string) || '';
+    const displayFirst = preferredName || firstName;
+    return [displayFirst, lastName].filter(Boolean).join(' ') || data.record.title || 'Untitled';
   };
 
   const toggleSection = (sectionKey: string) => {
