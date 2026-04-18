@@ -141,12 +141,15 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public routes - no auth required
-  const publicRoutes = ['/', '/crm-login', '/crm-access-denied', '/login', '/reset-password', '/update-password', '/accept-invite'];
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
-    // If user is already authenticated on login pages, redirect to dashboard
-    // (but NOT for accept-invite — authenticated users still need to see it)
-    if (user && !pathname.startsWith('/accept-invite') && pathname !== '/') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+  const publicPrefixes = ['/crm-login', '/crm-access-denied', '/login', '/reset-password', '/update-password', '/accept-invite'];
+  const isPublicRoute = pathname === '/' || publicPrefixes.some(route => pathname.startsWith(route));
+
+  if (isPublicRoute) {
+    // If user is already authenticated on login pages, redirect to CRM
+    // (but NOT for accept-invite, root, reset-password, or update-password)
+    const isLoginPage = pathname.startsWith('/crm-login') || pathname.startsWith('/login');
+    if (user && isLoginPage) {
+      return NextResponse.redirect(new URL('/crm', request.url));
     }
     return supabaseResponse;
   }
