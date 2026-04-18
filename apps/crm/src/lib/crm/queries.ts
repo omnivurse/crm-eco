@@ -208,7 +208,7 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, user_id, organization_id, email, full_name, avatar_url, role, crm_role, is_active, created_at, updated_at, advisor_id')
+      .select('id, user_id, organization_id, email, full_name, avatar_url, role, crm_role, is_active, created_at, updated_at, advisor_id, ui_preferences')
       .eq('user_id', user.id)
       .single();
 

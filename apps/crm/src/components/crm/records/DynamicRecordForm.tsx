@@ -45,6 +45,7 @@ import type {
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { FieldRenderer } from './FieldRenderer';
+import { InlineFieldCell } from './v2/InlineFieldCell';
 import { ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -560,6 +561,14 @@ interface DynamicRecordFormProps {
   onDirtyChange?: (dirty: boolean) => void;
   /** All form values after each update (debounce in parent for auto-save) */
   onValuesChange?: (values: Record<string, unknown>) => void;
+  /**
+   * V2 opt-in: when true AND `readOnly` is true, each field cell becomes
+   * inline-editable (click to edit / blur to save). The parent must
+   * already be wrapped in a `<RecordFieldSaveProvider>` so saves can be
+   * dispatched. Non-supported field types (multiselect, user, lookup,
+   * carrier) fall back to the read-only renderer.
+   */
+  inlineEditable?: boolean;
 }
 
 export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicRecordFormProps>(
@@ -577,6 +586,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       embedded = false,
       onDirtyChange,
       onValuesChange,
+      inlineEditable = false,
     },
     ref
   ) {
@@ -769,7 +779,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         </Label>
         {readOnly ? (
           <div className="py-0.5 text-sm min-h-[24px]">
-            <FieldRenderer field={field} value={defaultValues[field.key]} />
+            {inlineEditable ? (
+              <InlineFieldCell
+                field={field}
+                value={defaultValues[field.key]}
+              />
+            ) : (
+              <FieldRenderer field={field} value={defaultValues[field.key]} />
+            )}
           </div>
         ) : (
           <FormFieldRenderer
@@ -782,7 +799,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         )}
       </div>
     ),
-    [control, defaultValues, errors, readOnly, register, setValue],
+    [control, defaultValues, errors, inlineEditable, readOnly, register, setValue],
   );
 
   // Find the "hero summary" fields anywhere in the field list — they don't

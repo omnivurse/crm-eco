@@ -1233,6 +1233,21 @@ export interface ModuleStats {
 
 export type CrmRole = 'crm_admin' | 'crm_manager' | 'crm_agent' | 'crm_viewer';
 
+/**
+ * Per-user UI preferences persisted in profiles.ui_preferences JSONB.
+ * Additive — unknown keys are preserved server-side so feature flags can grow
+ * without requiring schema changes.
+ */
+export interface CrmUiPreferences {
+  /** Opt into the new Zoho-style 3-column record detail layout. */
+  crm_layout_v2?: boolean;
+  /** Collapsed state of "Hide Details" sections, keyed by section id. */
+  collapsed_sections?: Record<string, boolean>;
+  /** Saved related-list ordering + visibility per module. */
+  related_list_order?: Record<string, string[]>;
+  [key: string]: unknown;
+}
+
 export interface CrmProfile {
   id: string;
   user_id: string;
@@ -1245,6 +1260,7 @@ export interface CrmProfile {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  ui_preferences?: CrmUiPreferences | null;
 }
 
 export interface CrmUserContext {

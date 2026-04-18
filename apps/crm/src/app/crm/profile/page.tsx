@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@crm-eco/ui/components/avatar';
+import { LayoutV2Toggle } from '@/components/crm/shell/LayoutV2Toggle';
 
 interface ProfileData {
     id: string;
@@ -355,19 +356,22 @@ export default function ProfilePage() {
                             <Palette className="w-4 h-4" />
                             Preferences
                         </h3>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                Theme
-                            </label>
-                            <select
-                                value={form.ui_theme}
-                                onChange={(e) => setForm({ ...form, ui_theme: e.target.value })}
-                                className="w-full md:w-64 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                            >
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                                <option value="system">System</option>
-                            </select>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                    Theme
+                                </label>
+                                <select
+                                    value={form.ui_theme}
+                                    onChange={(e) => setForm({ ...form, ui_theme: e.target.value })}
+                                    className="w-full md:w-64 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                                >
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="system">System</option>
+                                </select>
+                            </div>
+                            <LayoutV2Toggle />
                         </div>
                     </div>
 

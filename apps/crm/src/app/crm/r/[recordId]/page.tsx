@@ -12,6 +12,9 @@ import {
   getCachedCurrentProfile,
 } from '@/lib/crm/queries';
 import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
+import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV2';
+import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
+import { getRecordInsights, emptyRecordInsights } from '@/lib/crm/record-insights';
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
 import { RelatedRecordsPanel } from '@/components/crm/records/RelatedRecordsPanel';
@@ -83,18 +86,33 @@ async function RecordDetailContent({ params }: PageProps) {
 
   const { record, module } = result;
 
-  // Step 2: Fetch overview-critical data in parallel with safe error handling
-  const [fieldsResult, layoutResult, notesResult, stagesResult] = await Promise.allSettled([
+  // Step 2: Fetch overview-critical data in parallel with safe error handling.
+  // The layout-v2 feature flag is resolved in the same batch so there's no
+  // extra round-trip; it falls back to `false` on any error so the classic
+  // shell always renders when in doubt.
+  const [
+    fieldsResult,
+    layoutResult,
+    notesResult,
+    stagesResult,
+    layoutV2Result,
+    insightsResult,
+  ] = await Promise.allSettled([
     getFieldsForModule(module.id),
     getDefaultLayout(module.id),
     getNotesForRecord(recordId),
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
+    isLayoutV2Enabled(profile),
+    getRecordInsights(recordId),
   ]);
 
   const fields = fieldsResult.status === 'fulfilled' ? fieldsResult.value : [];
   const layout = layoutResult.status === 'fulfilled' ? layoutResult.value : null;
   const notes = notesResult.status === 'fulfilled' ? notesResult.value : [];
   const stages = stagesResult.status === 'fulfilled' ? stagesResult.value : [];
+  const useLayoutV2 = layoutV2Result.status === 'fulfilled' ? layoutV2Result.value : false;
+  const insights =
+    insightsResult.status === 'fulfilled' ? insightsResult.value : emptyRecordInsights();
 
   // Merge JSONB `data` with indexed `crm_records` columns (source of truth for lane/filters)
   const defaultValues = mergeCrmRecordRowIntoFormDefaults(
@@ -115,8 +133,10 @@ async function RecordDetailContent({ params }: PageProps) {
       ? (recordData.notes_history as string)
       : null;
 
+  const Shell = useLayoutV2 ? RecordDetailShellV2 : RecordDetailShell;
+
   return (
-    <RecordDetailShell
+    <Shell
       record={record}
       module={module}
       fields={fields}
@@ -124,6 +144,7 @@ async function RecordDetailContent({ params }: PageProps) {
       noteCount={notes.length}
       notes={notes}
       orgId={profile.organization_id}
+      insights={insights}
       className="h-[calc(100vh-64px)]"
     >
       {{
@@ -138,6 +159,7 @@ async function RecordDetailContent({ params }: PageProps) {
                   layout={layout}
                   defaultValues={defaultValues}
                   readOnly
+                  inlineEditable={useLayoutV2}
                 />
                 {/* Legacy Notes History (imported from Zoho) — below fields */}
                 {legacyNotes && (
@@ -176,7 +198,7 @@ async function RecordDetailContent({ params }: PageProps) {
           </Suspense>
         ),
       }}
-    </RecordDetailShell>
+    </Shell>
   );
 }
 

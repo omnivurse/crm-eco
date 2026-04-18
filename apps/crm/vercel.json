@@ -3,6 +3,14 @@
   "buildCommand": "cd ../.. && npm run build:crm",
   "outputDirectory": ".next",
   "framework": "nextjs",
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [{ "type": "host", "value": "crm.payitforwardhealth.com" }],
+      "destination": "https://crm.doublehelixhub.com/:path",
+      "permanent": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/email/process-queue",

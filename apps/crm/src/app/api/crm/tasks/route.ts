@@ -9,6 +9,12 @@ const createTaskSchema = z.object({
   due_at: z.string().nullable().optional(),
   priority: z.enum(['low', 'normal', 'medium', 'high', 'urgent']).optional(),
   activity_type: z.enum(['task', 'call', 'email', 'meeting']).optional(),
+  // Optional completion metadata so callers like SendEmailDialog can log a
+  // completed email activity in a single round-trip. Defaults to an open
+  // task to preserve existing behaviour.
+  status: z.enum(['open', 'in_progress', 'completed', 'cancelled']).optional(),
+  completed_at: z.string().nullable().optional(),
+  outcome: z.string().nullable().optional(),
 });
 
 // Map 'medium' to 'normal' for database compatibility
@@ -83,6 +89,15 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createCrmClient();
 
+    const status = parsed.data.status || 'open';
+    // Normalize completed_at: if caller said the task is completed but didn't
+    // stamp a time, set it to now so insight queries aggregating by hour
+    // still have a signal.
+    const completedAt =
+      status === 'completed'
+        ? parsed.data.completed_at || new Date().toISOString()
+        : parsed.data.completed_at || null;
+
     const { data: task, error } = await supabase
       .from('crm_tasks')
       .insert({
@@ -93,7 +108,9 @@ export async function POST(request: NextRequest) {
         due_at: parsed.data.due_at || null,
         priority: mapPriority(parsed.data.priority),
         activity_type: parsed.data.activity_type || 'task',
-        status: 'open',
+        status,
+        completed_at: completedAt,
+        outcome: parsed.data.outcome || null,
         assigned_to: profile.id,
         created_by: profile.id,
       })

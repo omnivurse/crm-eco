@@ -74,6 +74,12 @@ interface RecordDetailShellProps {
   noteCount?: number;
   notes?: CrmNoteWithAuthor[];
   orgId?: string;
+  /**
+   * Live insights (counts / best-time suggestions). V1 ignores these — they
+   * exist on the prop contract so callers can pass the same props to either
+   * shell while the layout-v2 feature flag rolls out.
+   */
+  insights?: unknown;
   children: {
     overview: React.ReactNode;
     related: React.ReactNode;
