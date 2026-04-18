@@ -16,16 +16,16 @@ BEGIN
   INSERT INTO organizations (id, name, slug, settings)
   VALUES (
     gen_random_uuid(),
-    'Double Helix Hub',
-    'double-helix-hub',
+    'Pay It Forward Health',
+    'pay-it-forward-health',
     '{"theme": "modern", "features": ["crm", "enrollment", "needs"]}'::jsonb
   )
   ON CONFLICT (slug) DO UPDATE SET updated_at = now()
   RETURNING id INTO v_org_id;
-  
+
   -- If org already existed, get its ID
   IF v_org_id IS NULL THEN
-    SELECT id INTO v_org_id FROM organizations WHERE slug = 'double-helix-hub';
+    SELECT id INTO v_org_id FROM organizations WHERE slug = 'pay-it-forward-health';
   END IF;
   
   RAISE NOTICE 'Organization ID: %', v_org_id;

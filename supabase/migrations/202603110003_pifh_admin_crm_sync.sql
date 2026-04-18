@@ -221,8 +221,8 @@ BEGIN
 
   FOR v_plan IN
     SELECT id, code, category FROM plans
-    WHERE code IN ('DHH-ESS-2025','DHH-DIR-2025','DHH-CP-2025','DHH-SHSA-2025','DHH-PREM-2025','DHH-PHSA-2025',
-                   'DHH-BRZ-5000','DHH-SLV-4000','DHH-GLD-2000','DHH-PLT-0')
+    WHERE code IN ('PIFH-ESS-2025','PIFH-DIR-2025','PIFH-CP-2025','PIFH-SHSA-2025','PIFH-PREM-2025','PIFH-PHSA-2025',
+                   'PIFH-BRZ-5000','PIFH-SLV-4000','PIFH-GLD-2000','PIFH-PLT-0')
   LOOP
     -- BASIC tier: 1.0x modifier (base rate)
     INSERT INTO plan_benefit_matrix (plan_id, benefit_tier_id, premium_modifier, fixed_adjustment, active)

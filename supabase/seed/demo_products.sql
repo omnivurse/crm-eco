@@ -43,7 +43,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Bronze',
-    'Double Helix Hub',
+    'Pay It Forward Health',
     149.00, 125.00, 2500.00, 2500.00, 100000.00,
     true, false
   )
@@ -70,7 +70,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Silver',
-    'Double Helix Hub',
+    'Pay It Forward Health',
     249.00, 125.00, 1500.00, 1500.00, 250000.00,
     true, false
   )
@@ -97,7 +97,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Gold',
-    'Double Helix Hub',
+    'Pay It Forward Health',
     349.00, 125.00, 500.00, 500.00, 500000.00,
     true, false
   )
@@ -189,10 +189,10 @@ BEGIN
     is_published, published_at
   ) VALUES (
     v_org_id,
-    'Double Helix Hub - Main',
-    'dhh-health',
+    'Pay It Forward Health - Main',
+    'pifh-health',
     'enrollment',
-    'Join Double Helix Hub',
+    'Join Pay It Forward Health',
     'Affordable, community-powered health sharing for individuals and families.',
     '#0d9488', '#1e3a5f', 'gradient',
     ARRAY[v_plan_essential_id, v_plan_premium_id, v_plan_complete_id],

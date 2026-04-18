@@ -34,7 +34,7 @@ BEGIN
   -- Remove demo landing pages (by slug)
   DELETE FROM landing_pages
   WHERE organization_id = v_org_id
-    AND slug IN ('dhh-health', 'test-advisor');
+    AND slug IN ('pifh-health', 'test-advisor');
 
   -- Remove all FK-dependent rows for demo plans
   IF v_plan_ids IS NOT NULL THEN
