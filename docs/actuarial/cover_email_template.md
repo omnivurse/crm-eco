@@ -1,12 +1,12 @@
 # Cover Email Template -- Actuarial Engagement
 
-**Subject:** Actuarial Funding Engagement -- Pay It Forward Health (Experience Data Enclosed)
+**Subject:** Actuarial Funding Engagement -- Double Helix Hub (Experience Data Enclosed)
 
 ---
 
 Dear [Actuarial Firm Name] Engagement Team,
 
-We are writing to formally engage your firm to perform an actuarial funding adequacy review for the Pay It Forward Health program, a health care sharing ministry program administered on the Pay It Forward Technologies EMS platform.
+We are writing to formally engage your firm to perform an actuarial funding adequacy review for the Double Helix Hub program, a health care sharing ministry program administered on the Double Helix Hub Technologies EMS platform.
 
 **What We Are Requesting:**
 
@@ -36,7 +36,7 @@ All data is **aggregated and de-identified** at the database level. No individua
 
 **About the Platform:**
 
-Pay It Forward Technologies EMS is a proprietary administration platform built on Supabase (PostgreSQL) with real-time actuarial data extraction capabilities. The data provided is generated programmatically via secured database functions and can be refreshed on demand for any lookback period up to 60 months.
+Double Helix Hub Technologies EMS is a proprietary administration platform built on Supabase (PostgreSQL) with real-time actuarial data extraction capabilities. The data provided is generated programmatically via secured database functions and can be refreshed on demand for any lookback period up to 60 months.
 
 We look forward to your engagement letter and are available to discuss data specifications or provide additional breakdowns at your convenience.
 
@@ -44,7 +44,7 @@ Respectfully,
 
 [Your Name]  
 [Your Title]  
-Pay It Forward Health  
+Double Helix Hub  
 [Phone] | [Email]
 
 ---

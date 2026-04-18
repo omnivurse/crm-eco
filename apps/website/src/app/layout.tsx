@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     'medical cost sharing',
     'affordable healthcare',
     'health sharing ministry',
-    'pay it forward health',
+    'double helix hub',
   ],
   openGraph: {
     title: 'Double Helix Hub | Community Health Sharing',

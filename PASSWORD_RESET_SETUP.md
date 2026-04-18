@@ -38,7 +38,7 @@ SMTP Port: 465 (SSL) or 587 (TLS)
 SMTP User: resend
 SMTP Password: re_2QSQ6AC2_2aRDK4Xz7SStprBp7R9Hzmy5
 Sender Email: noreply@yourdomain.com (must be verified in Resend)
-Sender Name: Pay It Forward Health
+Sender Name: Double Helix Hub
 ```
 
 ### Step 3: Verify Sender Email
@@ -61,11 +61,11 @@ Sender Name: Pay It Forward Health
 
 If you need to reset a password immediately without SMTP, use the database utility function:
 
-### For vrt@payitforwardhealth.com:
+### For vrt@doublehelixhub.com:
 
 ```sql
 -- Run this in Supabase SQL Editor
-SELECT reset_user_password('vrt@payitforwardhealth.com', 'NewPassword123!');
+SELECT reset_user_password('vrt@doublehelixhub.com', 'NewPassword123!');
 ```
 
 ### For any user:

@@ -1,11 +1,11 @@
 ═══════════════════════════════════════════════════════════════
-  PAY IT FORWARD HEALTH IT - A2 VPS DEPLOYMENT PACKAGE
+  DOUBLE HELIX HUB IT - A2 VPS DEPLOYMENT PACKAGE
 ═══════════════════════════════════════════════════════════════
 
 ✅ PACKAGE READY FOR DEPLOYMENT
 
 📦 Files Included:
-  - pifh-dist.tar.gz (375KB) - Production build archive
+  - dhh-dist.tar.gz (375KB) - Production build archive
   - dist/ folder - Complete production build
   - A2_DEPLOYMENT_GUIDE.md - Comprehensive deployment guide
 
@@ -29,14 +29,14 @@
 METHOD 1 - cPanel File Manager (Easiest):
   1. Login to A2 cPanel
   2. Navigate to File Manager → public_html
-  3. Upload pifh-dist.tar.gz
+  3. Upload dhh-dist.tar.gz
   4. Extract archive
   5. Done!
 
 METHOD 2 - SSH/Terminal:
-  scp pifh-dist.tar.gz user@server.com:~/
+  scp dhh-dist.tar.gz user@server.com:~/
   ssh user@server.com
-  cd public_html && tar -xzf ~/pifh-dist.tar.gz
+  cd public_html && tar -xzf ~/dhh-dist.tar.gz
 
 METHOD 3 - FTP:
   Upload entire dist/ folder contents to public_html

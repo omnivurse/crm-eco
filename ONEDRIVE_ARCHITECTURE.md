@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         Pay It Forward Health Platform                          │
+│                         Double Helix Hub Platform                          │
 │                                                                       │
 │  ┌────────────────┐         ┌──────────────────┐                   │
 │  │  User Browser  │────────▶│  React Frontend  │                   │

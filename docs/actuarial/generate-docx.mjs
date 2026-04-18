@@ -106,17 +106,17 @@ function buildSubmissionDoc() {
   // -- Title Page --
   sections.push(
     new Paragraph({ spacing: { before: 2400 }, children: [] }),
-    para(txt('Pay It Forward HealthShare', { bold: true, size: 48, color: BLUE }), { alignment: AlignmentType.CENTER }),
+    para(txt('Double Helix Hub', { bold: true, size: 48, color: BLUE }), { alignment: AlignmentType.CENTER }),
     para(txt('Actuarial Data Submission Package', { bold: true, size: 36, color: DARK }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 600 }, children: [] }),
     para(txt('Prepared for: Actuarial Review', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
-    para(txt('Organization: Pay It Forward HealthShare', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
-    para(txt('Platform: Pay It Forward Technologies EMS', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
+    para(txt('Organization: Double Helix Hub', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
+    para(txt('Platform: Double Helix Hub Technologies EMS', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     para(txt('Date: February 19, 2026', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     para(txt('Version 3.0', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 1200 }, children: [] }),
     para([
-      txt('This submission is intended to provide an actuarial firm with sufficient aggregated experience data to evaluate contribution adequacy, financial sustainability, reserve requirements, and stop-loss structuring for the Pay It Forward HealthShare program administered on the Pay It Forward Technologies EMS platform. The organization is seeking an independent actuarial review and funding opinion. '),
+      txt('This submission is intended to provide an actuarial firm with sufficient aggregated experience data to evaluate contribution adequacy, financial sustainability, reserve requirements, and stop-loss structuring for the Double Helix Hub program administered on the Double Helix Hub Technologies EMS platform. The organization is seeking an independent actuarial review and funding opinion. '),
       txt('The organization is requesting an actuarial funding adequacy opinion and recommended contribution ranges, including reserve guidance and stop-loss attachment recommendations based on the provided experience data.', { bold: true }),
     ], { alignment: AlignmentType.JUSTIFIED }),
     new Paragraph({ children: [new PageBreak()] }),
@@ -410,14 +410,14 @@ function buildSubmissionDoc() {
   );
 
   return new Document({
-    creator: 'Pay It Forward Technologies EMS',
+    creator: 'Double Helix Hub Technologies EMS',
     title: 'Actuarial Data Submission Package v3.0',
     description: 'De-identified actuarial experience data for funding review',
     sections: [{
       headers: {
         default: new Header({
           children: [para([
-            txt('Pay It Forward HealthShare', { size: 16, color: GRAY }),
+            txt('Double Helix Hub', { size: 16, color: GRAY }),
             txt('  |  Actuarial Submission Package v3.0', { size: 16, color: GRAY }),
           ])],
         }),
@@ -439,10 +439,10 @@ function buildCoverEmailDoc() {
   const children = [
     para(txt('COVER EMAIL — ACTUARIAL ENGAGEMENT', { bold: true, size: 28, color: BLUE }), { alignment: AlignmentType.CENTER }),
     para(txt(''), { spacing: { after: 200 } }),
-    para([txt('Subject: ', { bold: true }), txt('Actuarial Funding Engagement — Pay It Forward HealthShare (Experience Data Enclosed)')]),
+    para([txt('Subject: ', { bold: true }), txt('Actuarial Funding Engagement — Double Helix Hub (Experience Data Enclosed)')]),
     hr(),
     para(txt('Dear [Actuarial Firm Name] Engagement Team,')),
-    para(txt('We are writing to formally engage your firm to perform an actuarial funding adequacy review for the Pay It Forward HealthShare program, a health care sharing ministry program administered on the Pay It Forward Technologies EMS platform.')),
+    para(txt('We are writing to formally engage your firm to perform an actuarial funding adequacy review for the Double Helix Hub program, a health care sharing ministry program administered on the Double Helix Hub Technologies EMS platform.')),
     para(txt('What We Are Requesting:', { bold: true })),
     bullet('Actuarial funding adequacy opinion'),
     bullet('Recommended member contribution ranges by age band'),
@@ -460,21 +460,21 @@ function buildCoverEmailDoc() {
     para(txt('About the Data:', { bold: true })),
     para(txt('All data is aggregated and de-identified at the database level. No individually identifiable health information is included. Small-group suppression (n < 5) is enforced. The dataset includes true daily member-month exposure calculations, incurred claims attributed to service month, and report/payment lag data suitable for completion factor analysis.')),
     para(txt('About the Platform:', { bold: true })),
-    para(txt('Pay It Forward Technologies EMS is a proprietary administration platform built on Supabase (PostgreSQL) with real-time actuarial data extraction capabilities. The data provided is generated programmatically via secured database functions and can be refreshed on demand for any lookback period up to 60 months.')),
+    para(txt('Double Helix Hub Technologies EMS is a proprietary administration platform built on Supabase (PostgreSQL) with real-time actuarial data extraction capabilities. The data provided is generated programmatically via secured database functions and can be refreshed on demand for any lookback period up to 60 months.')),
     para(txt('We look forward to your engagement letter and are available to discuss data specifications or provide additional breakdowns at your convenience.')),
     para(txt('')),
     para(txt('Respectfully,')),
     para(txt('')),
     para(txt('[Your Name]', { bold: true })),
     para(txt('[Your Title]')),
-    para(txt('Pay It Forward HealthShare')),
+    para(txt('Double Helix Hub')),
     para(txt('[Phone] | [Email]')),
     hr(),
     para(txt('Note: Replace bracketed items with your actual contact details before sending.', { italics: true, color: GRAY, size: 18 })),
   ];
 
   return new Document({
-    creator: 'Pay It Forward Technologies EMS',
+    creator: 'Double Helix Hub Technologies EMS',
     title: 'Cover Email — Actuarial Engagement',
     sections: [{ children }],
   });
@@ -488,13 +488,13 @@ async function main() {
 
   const submissionDoc = buildSubmissionDoc();
   const submissionBuf = await Packer.toBuffer(submissionDoc);
-  const submissionPath = join(OUTPUT_DIR, 'PIF_Actuarial_Submission_Package_v3.docx');
+  const submissionPath = join(OUTPUT_DIR, 'DHH_Actuarial_Submission_Package_v3.docx');
   writeFileSync(submissionPath, submissionBuf);
   console.log(`  ✓ ${submissionPath}`);
 
   const coverDoc = buildCoverEmailDoc();
   const coverBuf = await Packer.toBuffer(coverDoc);
-  const coverPath = join(OUTPUT_DIR, 'PIF_Cover_Email_Actuarial_Engagement.docx');
+  const coverPath = join(OUTPUT_DIR, 'DHH_Cover_Email_Actuarial_Engagement.docx');
   writeFileSync(coverPath, coverBuf);
   console.log(`  ✓ ${coverPath}`);
 

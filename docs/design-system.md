@@ -1,4 +1,4 @@
-# Pay It Forward Health — Design System (v1)
+# Double Helix Hub — Design System (v1)
 
 ## Brand Principles
 

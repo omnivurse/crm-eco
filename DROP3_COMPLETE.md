@@ -429,6 +429,6 @@ Click button → Choose CSV or JSON → Download
 
 ---
 
-**Built with championship standards for Pay It Forward Health by Vinnie Champion! 🏆**
+**Built with championship standards for Double Helix Hub by Vinnie Champion! 🏆**
 
 *Every pixel is intentional. Every animation is smooth. Every feature is production-ready.*

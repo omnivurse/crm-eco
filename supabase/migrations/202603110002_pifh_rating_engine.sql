@@ -130,7 +130,7 @@ VALUES ('DEFAULT', 2025, 1.5000, 1.5000),
 ON CONFLICT (state, effective_year) DO NOTHING;
 
 -- ============================================================================
--- D.5  Seed sample plan_rates for PIF health share plans
+-- D.5  Seed sample plan_rates for DHH health share plans
 -- ============================================================================
 DO $$
 DECLARE
@@ -142,21 +142,21 @@ DECLARE
 BEGIN
   FOR v_plan IN
     SELECT p.id, p.code, p.category FROM plans p
-    WHERE p.code IN ('PIF-ESS-2025','PIF-DIR-2025','PIF-CP-2025','PIF-SHSA-2025','PIF-PREM-2025','PIF-PHSA-2025',
-                     'PIF-BRZ-5000','PIF-SLV-4000','PIF-GLD-2000','PIF-PLT-0')
+    WHERE p.code IN ('DHH-ESS-2025','DHH-DIR-2025','DHH-CP-2025','DHH-SHSA-2025','DHH-PREM-2025','DHH-PHSA-2025',
+                     'DHH-BRZ-5000','DHH-SLV-4000','DHH-GLD-2000','DHH-PLT-0')
   LOOP
     -- Set base rate per plan
     v_base_rate := CASE v_plan.code
-      WHEN 'PIF-ESS-2025'  THEN 189.00
-      WHEN 'PIF-DIR-2025'  THEN 229.00
-      WHEN 'PIF-CP-2025'   THEN 309.00
-      WHEN 'PIF-SHSA-2025' THEN 245.00
-      WHEN 'PIF-PREM-2025' THEN 449.00
-      WHEN 'PIF-PHSA-2025' THEN 389.00
-      WHEN 'PIF-BRZ-5000'  THEN 295.00
-      WHEN 'PIF-SLV-4000'  THEN 385.00
-      WHEN 'PIF-GLD-2000'  THEN 475.00
-      WHEN 'PIF-PLT-0'     THEN 595.00
+      WHEN 'DHH-ESS-2025'  THEN 189.00
+      WHEN 'DHH-DIR-2025'  THEN 229.00
+      WHEN 'DHH-CP-2025'   THEN 309.00
+      WHEN 'DHH-SHSA-2025' THEN 245.00
+      WHEN 'DHH-PREM-2025' THEN 449.00
+      WHEN 'DHH-PHSA-2025' THEN 389.00
+      WHEN 'DHH-BRZ-5000'  THEN 295.00
+      WHEN 'DHH-SLV-4000'  THEN 385.00
+      WHEN 'DHH-GLD-2000'  THEN 475.00
+      WHEN 'DHH-PLT-0'     THEN 595.00
       ELSE 300.00
     END;
 

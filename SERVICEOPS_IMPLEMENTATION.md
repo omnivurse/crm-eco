@@ -1,7 +1,7 @@
 # ServiceOps Core - Implementation Summary
 
 ## Overview
-Complete ServiceNow-style ITSM platform implementation for Pay It Forward Health with comprehensive service management, ITIL-aligned processes, and AI-powered agent assistance.
+Complete ServiceNow-style ITSM platform implementation for Double Helix Hub with comprehensive service management, ITIL-aligned processes, and AI-powered agent assistance.
 
 ---
 
@@ -596,7 +596,7 @@ assets → asset_assignments → profiles
 
 ---
 
-*Implementation completed by Claude Code for Pay It Forward Health*
+*Implementation completed by Claude Code for Double Helix Hub*
 *Total Development Time: ~3 hours*
 *Lines of Code: ~4,500+*
 *Database Objects: 24 tables, 40+ indexes, 80+ RLS policies*

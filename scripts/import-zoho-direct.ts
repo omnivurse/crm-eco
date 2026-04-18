@@ -29,7 +29,7 @@ function loadEnv(filePath: string): Record<string, string> {
   return env;
 }
 
-// Load from .env.vercel (production/correct database: PIF-ECO-V2 / sffisarikcreyyjzdjvb)
+// Load from .env.vercel (production/correct database: DHH-ECO-V2 / sffisarikcreyyjzdjvb)
 const envFile = loadEnv(resolve(__dirname, '..', '.env.vercel'));
 const SUPABASE_URL = envFile['NEXT_PUBLIC_SUPABASE_URL'] || envFile['SUPABASE_URL'] || envFile['VITE_SUPABASE_URL'];
 const SUPABASE_KEY = envFile['SUPABASE_SERVICE_ROLE_KEY'];

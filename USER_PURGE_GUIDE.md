@@ -97,19 +97,19 @@ DELETE /auth/v1/admin/users/{userId}?should_soft_delete=false
 ## Example Workflow
 
 ```
-1. Admin deletes user: daniel@payitforwardhealth.com
+1. Admin deletes user: daniel@doublehelixhub.com
    ❌ User deleted from profiles table
    ⚠️  Email still reserved in auth.users (soft-deleted)
 
-2. Admin tries to re-create daniel@payitforwardhealth.com
+2. Admin tries to re-create daniel@doublehelixhub.com
    ❌ Error: "Email already taken"
 
 3. Admin clicks "Purge Deleted" button
-   ✅ Enters: daniel@payitforwardhealth.com
+   ✅ Enters: daniel@doublehelixhub.com
    ✅ Clicks "Purge Now"
    ✅ Success: Deleted user purged
 
-4. Admin creates new user: daniel@payitforwardhealth.com
+4. Admin creates new user: daniel@doublehelixhub.com
    ✅ Success: User created with super_admin role
 ```
 

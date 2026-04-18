@@ -64,7 +64,7 @@ describe('resolveRateSetKey', () => {
 
 describe('quote — tiered_household', () => {
   const baseInput: QuoteInput = {
-    planId: 'pif-essential',
+    planId: 'dhh-essential',
     coverageTier: 'member',
     household: { memberAge: 35 },
     coverageStart: '2025-06-01',
@@ -144,7 +144,7 @@ describe('quote — tiered_household', () => {
 
 describe('quote — additive_person (banded)', () => {
   const baseInput: QuoteInput = {
-    planId: 'pif-premier',
+    planId: 'dhh-premier',
     coverageTier: 'member',
     household: { memberAge: 35 },
     coverageStart: '2025-06-01',
@@ -204,7 +204,7 @@ describe('quote — additive_person (banded)', () => {
 
 describe('quote — additive_person (flat adders)', () => {
   const baseInput: QuoteInput = {
-    planId: 'pif-value',
+    planId: 'dhh-value',
     coverageTier: 'member',
     household: { memberAge: 25 },
     coverageStart: '2025-06-01',
@@ -254,7 +254,7 @@ describe('quote — additive_person (flat adders)', () => {
 describe('quote — tobacco surcharge', () => {
   it('applies member tobacco surcharge to tiered_household', () => {
     const result = quote(config, {
-      planId: 'pif-essential',
+      planId: 'dhh-essential',
       coverageTier: 'member',
       household: { memberAge: 35 },
       tobacco: { member: true },
@@ -267,7 +267,7 @@ describe('quote — tobacco surcharge', () => {
 
   it('applies member tobacco surcharge to additive_person', () => {
     const result = quote(config, {
-      planId: 'pif-premier',
+      planId: 'dhh-premier',
       coverageTier: 'member',
       household: { memberAge: 35 },
       tobacco: { member: true },
@@ -280,7 +280,7 @@ describe('quote — tobacco surcharge', () => {
 
   it('applies spouse tobacco surcharge', () => {
     const result = quote(config, {
-      planId: 'pif-premier',
+      planId: 'dhh-premier',
       coverageTier: 'member_spouse',
       household: { memberAge: 35, spouseAge: 32 },
       tobacco: { spouse: true },
@@ -311,7 +311,7 @@ describe('quote — structured errors', () => {
 
   it('returns error for missing spouse age on member_spouse', () => {
     const result = quote(config, {
-      planId: 'pif-essential',
+      planId: 'dhh-essential',
       coverageTier: 'member_spouse',
       household: { memberAge: 35 },
       coverageStart: '2025-06-01',
@@ -322,7 +322,7 @@ describe('quote — structured errors', () => {
 
   it('returns error for missing dependents on member_children', () => {
     const result = quote(config, {
-      planId: 'pif-essential',
+      planId: 'dhh-essential',
       coverageTier: 'member_children',
       household: { memberAge: 35 },
       coverageStart: '2025-06-01',
@@ -333,7 +333,7 @@ describe('quote — structured errors', () => {
 
   it('returns error for age out of range', () => {
     const result = quote(config, {
-      planId: 'pif-essential',
+      planId: 'dhh-essential',
       coverageTier: 'member',
       household: { memberAge: 10 },
       coverageStart: '2025-06-01',
@@ -351,9 +351,9 @@ describe('getPlanOptions', () => {
   it('returns all plans from current set', () => {
     const options = getPlanOptions(config, 'current');
     expect(options).toHaveLength(3);
-    expect(options[0].planId).toBe('pif-essential');
+    expect(options[0].planId).toBe('dhh-essential');
     expect(options[0].ratingModel).toBe('tiered_household');
-    expect(options[1].planId).toBe('pif-premier');
+    expect(options[1].planId).toBe('dhh-premier');
     expect(options[1].ratingModel).toBe('additive_person');
   });
 });
@@ -364,7 +364,7 @@ describe('getPlanOptions', () => {
 
 describe('buildMatrixPreview', () => {
   it('builds tiered_household matrix directly', () => {
-    const preview = buildMatrixPreview(config, 'pif-essential', 'current');
+    const preview = buildMatrixPreview(config, 'dhh-essential', 'current');
     expect(preview).not.toBeNull();
     expect(preview!.ratingModel).toBe('tiered_household');
     expect(preview!.matrix.member['30-39']).toBe(275);
@@ -373,7 +373,7 @@ describe('buildMatrixPreview', () => {
   });
 
   it('builds additive_person derived matrix with footnotes', () => {
-    const preview = buildMatrixPreview(config, 'pif-premier', 'current');
+    const preview = buildMatrixPreview(config, 'dhh-premier', 'current');
     expect(preview).not.toBeNull();
     expect(preview!.ratingModel).toBe('additive_person');
     // member = subscriber only

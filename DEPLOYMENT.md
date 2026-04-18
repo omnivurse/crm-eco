@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers deploying your Pay It Forward Health IT ServiceOps application to production hosting platforms.
+This guide covers deploying your Double Helix Hub IT ServiceOps application to production hosting platforms.
 
 ## Prerequisites
 

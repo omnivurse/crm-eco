@@ -63,7 +63,7 @@ function buildDoc() {
 
   // Title
   s.push(
-    para(txt('Pay It Forward Health', { bold: true, size: 36, color: BLUE }), { alignment: AlignmentType.CENTER }),
+    para(txt('Double Helix Hub', { bold: true, size: 36, color: BLUE }), { alignment: AlignmentType.CENTER }),
     para(txt('Part 6: Program Structure Description \u2014 Worksheet', { bold: true, size: 28, color: DARK }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 200 }, children: [] }),
     para([
@@ -162,12 +162,12 @@ function buildDoc() {
   );
 
   return new Document({
-    creator: 'Pay It Forward Technologies EMS',
+    creator: 'Double Helix Hub Technologies EMS',
     title: 'Part 6: Program Structure Worksheet',
     sections: [{
       headers: {
         default: new Header({
-          children: [para([txt('Pay It Forward Health', { size: 16, color: GRAY }), txt('  |  Part 6 Worksheet', { size: 16, color: GRAY })])],
+          children: [para([txt('Double Helix Hub', { size: 16, color: GRAY }), txt('  |  Part 6 Worksheet', { size: 16, color: GRAY })])],
         }),
       },
       footers: {
@@ -184,7 +184,7 @@ async function main() {
   console.log('Generating Part 6 worksheet...\n');
   const doc = buildDoc();
   const buf = await Packer.toBuffer(doc);
-  const out = join(OUTPUT_DIR, 'PIF_Part6_Program_Structure_Worksheet.docx');
+  const out = join(OUTPUT_DIR, 'DHH_Part6_Program_Structure_Worksheet.docx');
   writeFileSync(out, buf);
   console.log(`  \u2713 ${out}`);
   console.log('\nDone.');

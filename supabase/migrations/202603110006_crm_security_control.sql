@@ -176,7 +176,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_sso_config_org
 COMMENT ON TABLE crm_sso_config IS 'SSO provider configuration per organization';
 
 -- ============================================================================
--- 8. SEED PIFH ROLES (global system roles, org_id NULL = template)
+-- 8. SEED DHH ROLES (global system roles, org_id NULL = template)
 -- ============================================================================
 INSERT INTO crm_roles (key, name, description, permissions, is_system, organization_id) VALUES
   ('ceo',     'CEO',       'Executive access — full visibility across all modules',

@@ -3,5 +3,29 @@
   "framework": "nextjs",
   "buildCommand": "npm run build:advisor-portal",
   "outputDirectory": "apps/advisor-portal/.next",
-  "installCommand": "npm install --legacy-peer-deps"
+  "installCommand": "npm install --legacy-peer-deps",
+  "redirects": [
+    {
+      "source": "/:path(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "crm.payitforwardhealth.com"
+        }
+      ],
+      "destination": "https://crm.doublehelixhub.com/:path",
+      "permanent": true
+    },
+    {
+      "source": "/:path(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "payitforwardhealth.com"
+        }
+      ],
+      "destination": "https://doublehelixhub.com/:path",
+      "permanent": true
+    }
+  ]
 }

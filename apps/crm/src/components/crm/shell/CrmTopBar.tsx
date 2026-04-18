@@ -284,7 +284,7 @@ export const CrmTopBar = memo(function CrmTopBar({
               Help
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={() => window.open('mailto:support@payitforwardhealthshare.com', '_self')}
+              onClick={() => window.open('mailto:support@doublehelixhub.com', '_self')}
               className="text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 cursor-pointer py-2"
             >
               <MessageCircle className="w-4 h-4 mr-3" />

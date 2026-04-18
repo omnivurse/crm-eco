@@ -43,7 +43,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Bronze',
-    'Pay It Forward Health',
+    'Double Helix Hub',
     149.00, 125.00, 2500.00, 2500.00, 100000.00,
     true, false
   )
@@ -70,7 +70,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Silver',
-    'Pay It Forward Health',
+    'Double Helix Hub',
     249.00, 125.00, 1500.00, 1500.00, 250000.00,
     true, false
   )
@@ -97,7 +97,7 @@ BEGIN
     'Health Share',
     'Primary Health',
     'Gold',
-    'Pay It Forward Health',
+    'Double Helix Hub',
     349.00, 125.00, 500.00, 500.00, 500000.00,
     true, false
   )
@@ -161,11 +161,11 @@ BEGIN
   ) VALUES (
     v_org_id,
     'Test', 'Advisor',
-    'test-advisor@pifhealth.com',
+    'test-advisor@doublehelixhub.com',
     '555-000-0001',
     'active',
     'standard',
-    'PIF Test Agency',
+    'DHH Test Agency',
     'Agent'
   )
   ON CONFLICT DO NOTHING
@@ -173,7 +173,7 @@ BEGIN
 
   IF v_test_advisor_id IS NULL THEN
     SELECT id INTO v_test_advisor_id
-    FROM advisors WHERE organization_id = v_org_id AND email = 'test-advisor@pifhealth.com';
+    FROM advisors WHERE organization_id = v_org_id AND email = 'test-advisor@doublehelixhub.com';
   END IF;
 
   -- ==========================================================================
@@ -189,10 +189,10 @@ BEGIN
     is_published, published_at
   ) VALUES (
     v_org_id,
-    'Pay It Forward Health - Main',
-    'pif-health',
+    'Double Helix Hub - Main',
+    'dhh-health',
     'enrollment',
-    'Join Pay It Forward Health',
+    'Join Double Helix Hub',
     'Affordable, community-powered health sharing for individuals and families.',
     '#0d9488', '#1e3a5f', 'gradient',
     ARRAY[v_plan_essential_id, v_plan_premium_id, v_plan_complete_id],

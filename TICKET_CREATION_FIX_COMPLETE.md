@@ -31,7 +31,7 @@ persistSession: true
 detectSessionInUrl: true
 flowType: 'pkce'
 storage: window.localStorage
-storageKey: 'pifh-auth-token'
+storageKey: 'dhh-auth-token'
 ```
 
 **Verification:** ✅ Authentication tokens now refresh automatically, preventing 400 errors.

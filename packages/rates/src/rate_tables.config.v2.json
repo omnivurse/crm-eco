@@ -10,7 +10,7 @@
       "effective_date": "2025-01-01",
       "plans": [
         {
-          "planId": "pif-essential",
+          "planId": "dhh-essential",
           "displayName": "DHH Essential",
           "rating_model": "tiered_household",
           "age_bands": [
@@ -48,7 +48,7 @@
           }
         },
         {
-          "planId": "pif-premier",
+          "planId": "dhh-premier",
           "displayName": "DHH Premier",
           "rating_model": "additive_person",
           "age_bands": [
@@ -86,7 +86,7 @@
           }
         },
         {
-          "planId": "pif-value",
+          "planId": "dhh-value",
           "displayName": "DHH Value",
           "rating_model": "additive_person",
           "age_bands": [
@@ -122,7 +122,7 @@
       "effective_date": "2026-01-01",
       "plans": [
         {
-          "planId": "pif-essential",
+          "planId": "dhh-essential",
           "displayName": "DHH Essential",
           "rating_model": "tiered_household",
           "age_bands": [
@@ -160,7 +160,7 @@
           }
         },
         {
-          "planId": "pif-premier",
+          "planId": "dhh-premier",
           "displayName": "DHH Premier",
           "rating_model": "additive_person",
           "age_bands": [
@@ -198,7 +198,7 @@
           }
         },
         {
-          "planId": "pif-value",
+          "planId": "dhh-value",
           "displayName": "DHH Value",
           "rating_model": "additive_person",
           "age_bands": [

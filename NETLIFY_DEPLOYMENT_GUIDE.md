@@ -1,4 +1,4 @@
-# Netlify Deployment Guide - Pay It Forward Health IT Portal
+# Netlify Deployment Guide - Double Helix Hub IT Portal
 
 ## Quick Fix Summary
 

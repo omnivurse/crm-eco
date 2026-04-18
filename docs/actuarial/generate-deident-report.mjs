@@ -74,17 +74,17 @@ function buildDoc() {
   // ── TITLE PAGE ──
   s.push(
     new Paragraph({ spacing: { before: 2400 }, children: [] }),
-    para(txt('Pay It Forward Health', { bold: true, size: 48, color: BLUE }), { alignment: AlignmentType.CENTER }),
+    para(txt('Double Helix Hub', { bold: true, size: 48, color: BLUE }), { alignment: AlignmentType.CENTER }),
     para(txt('De-Identified Group Demographics:', { bold: true, size: 36, color: DARK }), { alignment: AlignmentType.CENTER }),
     para(txt('Technical & Compliance Report', { bold: true, size: 36, color: DARK }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 600 }, children: [] }),
     para(txt('Prepared for: Compliance & Actuarial Review', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
-    para(txt('Platform: Pay It Forward Technologies EMS', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
+    para(txt('Platform: Double Helix Hub Technologies EMS', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     para(txt('Date: February 19, 2026', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     para(txt('Version 1.0', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 1200 }, children: [] }),
     para([
-      txt('This report presents de-identified, aggregate demographic and contribution data extracted from actual program enrollment records on the Pay It Forward Technologies EMS platform. All figures in this report are derived directly from program records. '),
+      txt('This report presents de-identified, aggregate demographic and contribution data extracted from actual program enrollment records on the Double Helix Hub Technologies EMS platform. All figures in this report are derived directly from program records. '),
       txt('No individually identifiable health information is contained in this report.', { bold: true }),
       txt(' The de-identification methodology enforced at the database layer ensures that only aggregated statistics are returned, consistent with HIPAA de-identification standards under 45 CFR 164.514.'),
     ], { alignment: AlignmentType.JUSTIFIED }),
@@ -94,7 +94,7 @@ function buildDoc() {
   // ── SECTION 1: EXECUTIVE SUMMARY ──
   s.push(
     heading('Section 1: Executive Summary'),
-    para(txt('This report provides a comprehensive view of the Pay It Forward HealthShare program\u2019s de-identified group demographics, financial experience, and utilization patterns. All data is produced by aggregation-only database functions that enforce de-identification at the query layer. No individual member records are ever returned or accessible through the reporting interface.')),
+    para(txt('This report provides a comprehensive view of the Double Helix HubShare program\u2019s de-identified group demographics, financial experience, and utilization patterns. All data is produced by aggregation-only database functions that enforce de-identification at the query layer. No individual member records are ever returned or accessible through the reporting interface.')),
     new Paragraph({ spacing: { before: 120 }, children: [] }),
     heading('Key Program Metrics', HeadingLevel.HEADING_2),
     buildTable(['Metric', 'Value'], [
@@ -112,7 +112,7 @@ function buildDoc() {
   // ── SECTION 2: DE-IDENTIFICATION METHODOLOGY ──
   s.push(
     heading('Section 2: De-Identification Methodology'),
-    para(txt('The Pay It Forward Technologies EMS platform enforces de-identification at the database layer using PostgreSQL SECURITY DEFINER functions. The application layer never has access to individual-level records. This architecture eliminates the risk of accidental PHI exposure in reporting, analytics, and actuarial data exports.')),
+    para(txt('The Double Helix Hub Technologies EMS platform enforces de-identification at the database layer using PostgreSQL SECURITY DEFINER functions. The application layer never has access to individual-level records. This architecture eliminates the risk of accidental PHI exposure in reporting, analytics, and actuarial data exports.')),
 
     heading('Database-Level Enforcement', HeadingLevel.HEADING_2),
     bullet('All reporting functions are declared as SECURITY DEFINER with SET search_path = public'),
@@ -302,7 +302,7 @@ function buildDoc() {
   // ── SECTION 5: HIPAA COMPLIANCE ATTESTATION ──
   s.push(
     heading('Section 5: HIPAA Compliance Attestation'),
-    para(txt('The following attestations apply to all data produced by the Pay It Forward Technologies EMS platform\u2019s actuarial and demographic reporting functions:')),
+    para(txt('The following attestations apply to all data produced by the Double Helix Hub Technologies EMS platform\u2019s actuarial and demographic reporting functions:')),
     new Paragraph({ spacing: { before: 80 }, children: [] }),
     bullet('This data extract contains zero Protected Health Information (PHI)'),
     bullet('All data uses aggregated COUNT(*), SUM(), AVG(), and PERCENTILE_CONT() functions \u2014 no individual rows are ever returned'),
@@ -348,13 +348,13 @@ function buildDoc() {
   );
 
   return new Document({
-    creator: 'Pay It Forward Technologies EMS',
-    title: 'De-Identified Group Demographics: Technical & Compliance Report — Pay It Forward Health',
+    creator: 'Double Helix Hub Technologies EMS',
+    title: 'De-Identified Group Demographics: Technical & Compliance Report — Double Helix Hub',
     description: 'De-identified aggregate demographics and financial experience for compliance and actuarial review',
     sections: [{
       headers: {
         default: new Header({
-          children: [para([txt('Pay It Forward Health', { size: 16, color: GRAY }), txt('  |  De-Identification Report', { size: 16, color: GRAY })])],
+          children: [para([txt('Double Helix Hub', { size: 16, color: GRAY }), txt('  |  De-Identification Report', { size: 16, color: GRAY })])],
         }),
       },
       footers: {
@@ -371,7 +371,7 @@ async function main() {
   console.log('Generating De-Identification Report...\n');
   const doc = buildDoc();
   const buf = await Packer.toBuffer(doc);
-  const out = join(OUTPUT_DIR, 'PIF_DeIdentification_Report.docx');
+  const out = join(OUTPUT_DIR, 'DHH_DeIdentification_Report.docx');
   writeFileSync(out, buf);
   console.log(`  ✓ ${out}`);
   console.log('\nDone.');

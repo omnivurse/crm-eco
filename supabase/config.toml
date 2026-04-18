@@ -22,14 +22,14 @@ pop3_port = 54326
 
 [auth]
 enabled = true
-site_url = "https://crm.payitforwardhealth.com"
+site_url = "https://crm.doublehelixhub.com"
 additional_redirect_urls = [
   # Production domains
-  "https://crm.payitforwardhealth.com/**",
-  "https://admin.payitforwardhealth.com/**",
-  "https://members.payitforwardhealth.com/**",
-  "https://advisors.payitforwardhealth.com/**",
-  "https://payitforwardhealth.com/**",
+  "https://crm.doublehelixhub.com/**",
+  "https://admin.doublehelixhub.com/**",
+  "https://members.doublehelixhub.com/**",
+  "https://advisors.doublehelixhub.com/**",
+  "https://doublehelixhub.com/**",
   # Local development
   "http://localhost:3000/**",
   "http://localhost:3001/**",
@@ -45,22 +45,21 @@ double_confirm_changes = true
 enable_confirmations = true
 
 [auth.email.template.confirmation]
-subject = "Confirm your email — Pay It Forward Health"
+subject = "Confirm your email — Double Helix Hub"
 content_path = "./supabase/templates/confirmation.html"
 
 [auth.email.template.recovery]
-subject = "Reset your password — Pay It Forward Health"
+subject = "Reset your password — Double Helix Hub"
 content_path = "./supabase/templates/recovery.html"
 
 [auth.email.template.invite]
-subject = "You've been invited to Pay It Forward Health"
+subject = "You've been invited to Double Helix Hub"
 content_path = "./supabase/templates/invite.html"
 
 [auth.email.template.magic_link]
-subject = "Your sign-in link — Pay It Forward Health"
+subject = "Your sign-in link — Double Helix Hub"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.email_change]
-subject = "Confirm your email change — Pay It Forward Health"
+subject = "Confirm your email change — Double Helix Hub"
 content_path = "./supabase/templates/email_change.html"
-

@@ -7,7 +7,7 @@ Progressive Web App (PWA) functionality has been implemented for both high-prior
 | App | Location | Status | Features |
 |-----|----------|--------|----------|
 | **Member Portal** | `apps/portal` | ✅ Complete | Installable, offline caching, iOS support |
-| **PIF CRM** | `apps/crm` | ✅ Complete | Installable, offline caching, update notifications, install prompt |
+| **DHH CRM** | `apps/crm` | ✅ Complete | Installable, offline caching, update notifications, install prompt |
 
 ---
 
@@ -167,8 +167,8 @@ To force cache refresh after deployments, update version in service workers:
 
 ```javascript
 // In sw.js
-const CACHE_NAME = 'pif-crm-v2';        // Increment version
-const STATIC_CACHE_NAME = 'pif-crm-static-v2';
+const CACHE_NAME = 'dhh-crm-v2';        // Increment version
+const STATIC_CACHE_NAME = 'dhh-crm-static-v2';
 ```
 
 ---

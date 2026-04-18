@@ -1,6 +1,6 @@
-# Pay It Forward Health Color Reference Guide
+# Double Helix Hub Color Reference Guide
 
-Quick reference for developers working with the Pay It Forward Health color palette in Tailwind CSS.
+Quick reference for developers working with the Double Helix Hub color palette in Tailwind CSS.
 
 ## Primary Blue (Brand Color)
 
@@ -217,5 +217,5 @@ className="shadow-[var(--shadow-glow)]"
 
 ---
 
-**Last Updated**: After Pay It Forward Health color palette migration
+**Last Updated**: After Double Helix Hub color palette migration
 **Maintainer**: Development Team

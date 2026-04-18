@@ -14,11 +14,11 @@ Successfully removed email confirmation restrictions and fixed super admin login
 
 ### 2. Super Admin Password Reset ✅
 **Migration**: `fix_super_admin_auth_and_disable_email_confirmation.sql`
-- Reset password for daniel@payitforwardhealth.com with proper bcrypt hashing
+- Reset password for daniel@doublehelixhub.com with proper bcrypt hashing
 - Confirmed email_confirmed_at timestamp is set
 - Cleared all confirmation tokens
 - **Credentials**:
-  - Email: `daniel@payitforwardhealth.com`
+  - Email: `daniel@doublehelixhub.com`
   - Password: `fjh#@!125#59`
 
 ### 3. Helper Function Created ✅
@@ -59,7 +59,7 @@ Successfully removed email confirmation restrictions and fixed super admin login
 
 ### Database Level ✅
 - Super admin password: Reset and working
-- Email confirmed: Set to now() for daniel@payitforwardhealth.com
+- Email confirmed: Set to now() for daniel@doublehelixhub.com
 - Helper function: Available for manual confirmations
 - Edge function: Auto-confirms all new users
 
@@ -73,7 +73,7 @@ Successfully removed email confirmation restrictions and fixed super admin login
 ### Test 1: Super Admin Login
 1. Go to login page: `/login`
 2. Enter credentials:
-   - Email: `daniel@payitforwardhealth.com`
+   - Email: `daniel@doublehelixhub.com`
    - Password: `fjh#@!125#59`
 3. Should login successfully immediately
 

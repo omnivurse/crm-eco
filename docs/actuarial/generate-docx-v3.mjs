@@ -1,6 +1,6 @@
 /**
  * @fileoverview Generates the final Word doc for the actuarial submission package.
- * Uses exact text provided by the user with "Pay It Forward Health" branding.
+ * Uses exact text provided by the user with "Double Helix Hub" branding.
  * Run: node docs/actuarial/generate-docx-v3.mjs
  */
 import {
@@ -71,17 +71,17 @@ function buildDoc() {
   // ── TITLE PAGE ──
   s.push(
     new Paragraph({ spacing: { before: 2400 }, children: [] }),
-    para(txt('Pay It Forward Health', { bold: true, size: 48, color: BLUE }), { alignment: AlignmentType.CENTER }),
+    para(txt('Double Helix Hub', { bold: true, size: 48, color: BLUE }), { alignment: AlignmentType.CENTER }),
     para(txt('Actuarial Data Submission Package', { bold: true, size: 36, color: DARK }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 600 }, children: [] }),
     para(txt('Prepared for: Actuarial Review', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
-    para(txt('Organization: Pay It Forward Health', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
-    para(txt('Platform: Pay It Forward Technologies EMS', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
+    para(txt('Organization: Double Helix Hub', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
+    para(txt('Platform: Double Helix Hub Technologies EMS', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     para(txt('Date: February 19, 2026', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     para(txt('Version 3.0', { size: 24, color: GRAY }), { alignment: AlignmentType.CENTER }),
     new Paragraph({ spacing: { before: 1200 }, children: [] }),
     para([
-      txt('This submission is intended to provide an actuarial firm with sufficient aggregated experience data to evaluate contribution adequacy, financial sustainability, reserve requirements, and stop-loss structuring for the Pay It Forward HealthShare program administered on the Pay It Forward Technologies EMS platform. The organization is seeking an independent actuarial review and funding opinion. '),
+      txt('This submission is intended to provide an actuarial firm with sufficient aggregated experience data to evaluate contribution adequacy, financial sustainability, reserve requirements, and stop-loss structuring for the Double Helix HubShare program administered on the Double Helix Hub Technologies EMS platform. The organization is seeking an independent actuarial review and funding opinion. '),
       txt('The organization is requesting an actuarial funding adequacy opinion and recommended contribution ranges, including reserve guidance and stop-loss attachment recommendations based on the provided experience data.', { bold: true }),
     ], { alignment: AlignmentType.JUSTIFIED }),
     new Paragraph({ children: [new PageBreak()] }),
@@ -348,13 +348,13 @@ function buildDoc() {
   );
 
   return new Document({
-    creator: 'Pay It Forward Technologies EMS',
-    title: 'Actuarial Data Submission Package v3.0 \u2014 Pay It Forward Health',
+    creator: 'Double Helix Hub Technologies EMS',
+    title: 'Actuarial Data Submission Package v3.0 \u2014 Double Helix Hub',
     description: 'De-identified actuarial experience data for funding review',
     sections: [{
       headers: {
         default: new Header({
-          children: [para([txt('Pay It Forward Health', { size: 16, color: GRAY }), txt('  |  Actuarial Submission Package v3.0', { size: 16, color: GRAY })])],
+          children: [para([txt('Double Helix Hub', { size: 16, color: GRAY }), txt('  |  Actuarial Submission Package v3.0', { size: 16, color: GRAY })])],
         }),
       },
       footers: {
@@ -371,7 +371,7 @@ async function main() {
   console.log('Generating Word document...\n');
   const doc = buildDoc();
   const buf = await Packer.toBuffer(doc);
-  const out = join(OUTPUT_DIR, 'PIF_Actuarial_Submission_Package_v3.docx');
+  const out = join(OUTPUT_DIR, 'DHH_Actuarial_Submission_Package_v3.docx');
   writeFileSync(out, buf);
   console.log(`  \u2713 ${out}`);
   console.log('\nDone.');

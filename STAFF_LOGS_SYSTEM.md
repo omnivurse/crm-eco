@@ -369,9 +369,9 @@ All operations go through Supabase client:
 
 ## Credits
 
-Built by Claude Code for Championship IT / Pay It Forward Health
+Built by Claude Code for Championship IT / Double Helix Hub
 Architecture: Vinnie Champion, CTO
 
 ## License
 
-Proprietary - Championship IT / Pay It Forward Health
+Proprietary - Championship IT / Double Helix Hub

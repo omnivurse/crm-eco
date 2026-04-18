@@ -1,4 +1,4 @@
-# A2 VPS Deployment Guide - Pay It Forward Health IT
+# A2 VPS Deployment Guide - Double Helix Hub IT
 
 ## 📦 What's Included
 
@@ -7,7 +7,7 @@ Your deployment package includes:
 - **.htaccess** with Apache configuration for SPA routing
 - **Security headers** and caching rules
 - **HTTPS redirect** configuration
-- **pifh-dist.tar.gz** - Ready to upload archive (375KB)
+- **dhh-dist.tar.gz** - Ready to upload archive (375KB)
 
 ## 🚀 Deployment Steps
 
@@ -24,7 +24,7 @@ Your deployment package includes:
    ```
 
 3. **Upload Archive**
-   - Upload `pifh-dist.tar.gz`
+   - Upload `dhh-dist.tar.gz`
    - Right-click and select "Extract"
    - Verify files extracted correctly
 
@@ -37,7 +37,7 @@ Your deployment package includes:
 
 1. **Upload via SCP**
    ```bash
-   scp pifh-dist.tar.gz username@your-server.com:~/
+   scp dhh-dist.tar.gz username@your-server.com:~/
    ```
 
 2. **SSH into Server**
@@ -53,7 +53,7 @@ Your deployment package includes:
    mv * ../backup/
 
    # Extract new build
-   tar -xzf ~/pifh-dist.tar.gz -C ./
+   tar -xzf ~/dhh-dist.tar.gz -C ./
 
    # Verify
    ls -la
@@ -230,7 +230,7 @@ apachectl configtest
 ## 🎯 Quick Checklist
 
 - [ ] Backup existing site
-- [ ] Upload `pifh-dist.tar.gz`
+- [ ] Upload `dhh-dist.tar.gz`
 - [ ] Extract to public_html
 - [ ] Verify `.htaccess` present
 - [ ] Check file permissions
@@ -250,7 +250,7 @@ If you encounter issues:
 
 ---
 
-**Deployment Package:** pifh-dist.tar.gz (375KB)
+**Deployment Package:** dhh-dist.tar.gz (375KB)
 **Build Date:** 2025-11-12
 **Vite Version:** 5.4.21
 **Production Ready:** ✅

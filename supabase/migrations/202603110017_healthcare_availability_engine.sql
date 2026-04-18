@@ -429,17 +429,17 @@ BEGIN
   -- Seed a few sample locations
   INSERT INTO healthcare_locations (organization_id, name, location_type, address_line1, city, state, zip, latitude, longitude, phone, telehealth_capable, accepting_new_patients)
   VALUES
-    (v_org_id, 'PIF Health Center - Tampa',       'clinic',    '4200 W Kennedy Blvd',  'Tampa',         'FL', '33609', 27.9475, -82.5084, '(813) 555-0100', true, true),
-    (v_org_id, 'PIF Health Center - Orlando',      'clinic',    '1200 S Orange Ave',    'Orlando',       'FL', '32806', 28.5255, -81.3790, '(407) 555-0200', true, true),
-    (v_org_id, 'PIF Health Center - Miami',        'clinic',    '1611 NW 12th Ave',     'Miami',         'FL', '33136', 25.7907, -80.2103, '(305) 555-0300', true, true),
-    (v_org_id, 'PIF Health Center - Jacksonville', 'clinic',    '655 W 8th St',         'Jacksonville',  'FL', '32209', 30.3521, -81.6723, '(904) 555-0400', true, true),
-    (v_org_id, 'PIF Telehealth Hub',               'virtual',   NULL,                    'Nationwide',    'FL', '00000', NULL,    NULL,     '(800) 555-0500', true, true)
+    (v_org_id, 'DHH Health Center - Tampa',       'clinic',    '4200 W Kennedy Blvd',  'Tampa',         'FL', '33609', 27.9475, -82.5084, '(813) 555-0100', true, true),
+    (v_org_id, 'DHH Health Center - Orlando',      'clinic',    '1200 S Orange Ave',    'Orlando',       'FL', '32806', 28.5255, -81.3790, '(407) 555-0200', true, true),
+    (v_org_id, 'DHH Health Center - Miami',        'clinic',    '1611 NW 12th Ave',     'Miami',         'FL', '33136', 25.7907, -80.2103, '(305) 555-0300', true, true),
+    (v_org_id, 'DHH Health Center - Jacksonville', 'clinic',    '655 W 8th St',         'Jacksonville',  'FL', '32209', 30.3521, -81.6723, '(904) 555-0400', true, true),
+    (v_org_id, 'DHH Telehealth Hub',               'virtual',   NULL,                    'Nationwide',    'FL', '00000', NULL,    NULL,     '(800) 555-0500', true, true)
   ON CONFLICT DO NOTHING;
 
   -- Link all services to telehealth hub
   FOR v_svc IN SELECT id FROM healthcare_services WHERE organization_id = v_org_id AND service_category IN ('telehealth', 'pharmacy', 'wellness')
   LOOP
-    SELECT id INTO v_loc_id FROM healthcare_locations WHERE organization_id = v_org_id AND name = 'PIF Telehealth Hub' LIMIT 1;
+    SELECT id INTO v_loc_id FROM healthcare_locations WHERE organization_id = v_org_id AND name = 'DHH Telehealth Hub' LIMIT 1;
     IF v_loc_id IS NOT NULL THEN
       INSERT INTO healthcare_location_services (location_id, service_id, is_primary)
       VALUES (v_loc_id, v_svc.id, true)

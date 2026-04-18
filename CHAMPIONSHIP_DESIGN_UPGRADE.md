@@ -299,4 +299,4 @@ Your platform now features:
 
 ---
 
-Built with ❤️ for Pay It Forward Health by Vinnie Champion's standards.
+Built with care for Double Helix Hub by Vinnie Champion's standards.

@@ -106,7 +106,7 @@ className="btn-enterprise-secondary"
    - Improved line heights and spacing
 
 4. **Enterprise Color Palette**
-   - Pay It Forward Health brand blues maintained
+   - Double Helix Hub brand blues maintained
    - Neutral grays for professional feel
    - Subtle accent colors
    - High contrast for accessibility

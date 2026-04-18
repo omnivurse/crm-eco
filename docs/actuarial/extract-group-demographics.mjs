@@ -193,7 +193,7 @@ groupsSorted.forEach(([producer, members]) => {
 });
 
 const csvContent = csvHeaders.join(',') + '\n' + csvRows.join('\n');
-const csvPath = join(OUTPUT_DIR, 'PIF_Group_Demographics_By_Producer.csv');
+const csvPath = join(OUTPUT_DIR, 'DHH_Group_Demographics_By_Producer.csv');
 writeFileSync(csvPath, csvContent);
 console.log(`\n\nCSV written to: ${csvPath}`);
 console.log(`Total rows: ${csvRows.length}`);

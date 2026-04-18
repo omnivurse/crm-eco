@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS crm_api_keys (
   name            text         NOT NULL,
   description     text,
   -- Key material (prefix is stored in clear; hash for lookup)
-  key_prefix      text         NOT NULL,  -- First 8 chars for display (e.g., "pifh_k_ab")
+  key_prefix      text         NOT NULL,  -- First 8 chars for display (e.g., "dhh_k_ab")
   key_hash        text         NOT NULL,  -- SHA-256 hash of full key for authentication
   -- Scoping
   scopes          text[]       NOT NULL DEFAULT '{crm.read}' CHECK (
@@ -72,7 +72,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_api_keys_env
   ON crm_api_keys(organization_id, environment);
 
 COMMENT ON TABLE crm_api_keys IS 'Developer API keys with scoped permissions for programmatic CRM access';
-COMMENT ON COLUMN crm_api_keys.key_prefix IS 'First 8 chars of key for safe display (e.g., "pifh_k_ab")';
+COMMENT ON COLUMN crm_api_keys.key_prefix IS 'First 8 chars of key for safe display (e.g., "dhh_k_ab")';
 COMMENT ON COLUMN crm_api_keys.key_hash IS 'SHA-256 hash of full API key for authentication lookup';
 COMMENT ON COLUMN crm_api_keys.scopes IS 'Permission scopes: crm.read, crm.write, crm.admin, records.*, pipelines.*, etc.';
 COMMENT ON COLUMN crm_api_keys.allowed_ips IS 'IP whitelist — empty array means all IPs allowed';

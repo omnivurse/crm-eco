@@ -1,15 +1,15 @@
-# Pay It Forward Health
+# Double Helix Hub
 # Actuarial Data Submission Package
 
 **Prepared for:** Actuarial Review  
-**Organization:** Pay It Forward Health  
-**Platform:** Pay It Forward Technologies EMS  
+**Organization:** Double Helix Hub  
+**Platform:** Double Helix Hub Technologies EMS  
 **Date:** February 19, 2026  
 **Version:** 3.0
 
 ---
 
-This submission is intended to provide an actuarial firm with sufficient aggregated experience data to evaluate contribution adequacy, financial sustainability, reserve requirements, and stop-loss structuring for the Pay It Forward Health program administered on the Pay It Forward Technologies EMS platform. The organization is seeking an independent actuarial review and funding opinion. The organization is requesting an actuarial funding adequacy opinion and recommended contribution ranges, including reserve guidance and stop-loss attachment recommendations based on the provided experience data.
+This submission is intended to provide an actuarial firm with sufficient aggregated experience data to evaluate contribution adequacy, financial sustainability, reserve requirements, and stop-loss structuring for the Double Helix Hub program administered on the Double Helix Hub Technologies EMS platform. The organization is seeking an independent actuarial review and funding opinion. The organization is requesting an actuarial funding adequacy opinion and recommended contribution ranges, including reserve guidance and stop-loss attachment recommendations based on the provided experience data.
 
 ---
 

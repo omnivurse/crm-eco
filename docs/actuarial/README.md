@@ -14,8 +14,8 @@ docs/actuarial/
 ├── apply-migration.mjs                     ← Direct SQL migration runner
 ├── push-fix-migration.mjs                  ← Migration pusher via Supabase API
 └── output/                                 ← Generated files (gitignored)
-    ├── PIF_Actuarial_Submission_Package_v3.docx
-    ├── PIF_Cover_Email_Actuarial_Engagement.docx
+    ├── DHH_Actuarial_Submission_Package_v3.docx
+    ├── DHH_Cover_Email_Actuarial_Engagement.docx
     └── csv/
         ├── Dataset_0_Portfolio_Summary.csv
         ├── Dataset_1_Monthly_Experience_Summary.csv
@@ -46,8 +46,8 @@ node docs/actuarial/generate-docx.mjs
 ```
 
 Output:
-- `output/PIF_Actuarial_Submission_Package_v3.docx`
-- `output/PIF_Cover_Email_Actuarial_Engagement.docx`
+- `output/DHH_Actuarial_Submission_Package_v3.docx`
+- `output/DHH_Cover_Email_Actuarial_Engagement.docx`
 
 ### Step 3: Export CSV Data
 
@@ -77,13 +77,13 @@ Open the Word document and fill in the red-highlighted bracketed items in Part 6
 ```bash
 # Zip the CSV files
 cd docs/actuarial/output
-zip -j PIF_Actuarial_Data_CSVs.zip csv/*.csv
+zip -j DHH_Actuarial_Data_CSVs.zip csv/*.csv
 ```
 
 **Final package to send:**
-1. `PIF_Actuarial_Submission_Package_v3.docx` (convert to PDF recommended)
-2. `PIF_Actuarial_Data_CSVs.zip`
-3. Cover email text from `PIF_Cover_Email_Actuarial_Engagement.docx`
+1. `DHH_Actuarial_Submission_Package_v3.docx` (convert to PDF recommended)
+2. `DHH_Actuarial_Data_CSVs.zip`
+3. Cover email text from `DHH_Cover_Email_Actuarial_Engagement.docx`
 
 ## Regenerating Data
 

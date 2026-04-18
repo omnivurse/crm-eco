@@ -833,20 +833,20 @@ BEGIN
   -- Create sample networks
   INSERT INTO provider_networks (organization_id, network_code, network_name, network_type, description, coverage_states)
   VALUES
-    (v_org_id, 'PIFH-PPO-FL', 'PIF Health PPO Network - Florida', 'ppo',
+    (v_org_id, 'DHH-PPO-FL', 'Double Helix Hub PPO Network - Florida', 'ppo',
      'Broad PPO network covering major Florida metros', ARRAY['FL']),
-    (v_org_id, 'PIFH-HMO-FL', 'PIF Health HMO Network - Florida', 'hmo',
+    (v_org_id, 'DHH-HMO-FL', 'Double Helix Hub HMO Network - Florida', 'hmo',
      'Managed care HMO network in Tampa Bay and Orlando', ARRAY['FL']),
-    (v_org_id, 'PIFH-PREF-FL', 'PIF Preferred Provider Network', 'preferred',
+    (v_org_id, 'DHH-PREF-FL', 'Double Helix Hub Preferred Provider Network', 'preferred',
      'Exclusive preferred providers with deepest discounts', ARRAY['FL'])
   ON CONFLICT (organization_id, network_code) DO NOTHING;
 
   SELECT id INTO v_network_ppo FROM provider_networks
-    WHERE organization_id = v_org_id AND network_code = 'PIFH-PPO-FL';
+    WHERE organization_id = v_org_id AND network_code = 'DHH-PPO-FL';
   SELECT id INTO v_network_hmo FROM provider_networks
-    WHERE organization_id = v_org_id AND network_code = 'PIFH-HMO-FL';
+    WHERE organization_id = v_org_id AND network_code = 'DHH-HMO-FL';
   SELECT id INTO v_network_preferred FROM provider_networks
-    WHERE organization_id = v_org_id AND network_code = 'PIFH-PREF-FL';
+    WHERE organization_id = v_org_id AND network_code = 'DHH-PREF-FL';
 
   -- Add all healthcare_locations to PPO as in_network
   IF v_network_ppo IS NOT NULL THEN

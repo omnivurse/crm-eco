@@ -640,8 +640,8 @@ BEGIN
   INSERT INTO system_settings (organization_id, setting_key, setting_value, setting_type, category, label, description)
   VALUES
     (p_organization_id, 'email_provider', 'resend', 'string', 'email', 'Email Provider', 'Email service provider'),
-    (p_organization_id, 'email_from_address', 'noreply@mail.payitforwardhealth.com', 'string', 'email', 'From Email', 'Default sender email address'),
-    (p_organization_id, 'email_from_name', 'Pay It Forward Health', 'string', 'email', 'From Name', 'Default sender name'),
+    (p_organization_id, 'email_from_address', 'noreply@mail.doublehelixhub.com', 'string', 'email', 'From Email', 'Default sender email address'),
+    (p_organization_id, 'email_from_name', 'Double Helix Hub', 'string', 'email', 'From Name', 'Default sender name'),
     (p_organization_id, 'email_admin_recipients', '[]', 'json', 'email', 'Admin Email Recipients', 'Emails to receive admin notifications')
   ON CONFLICT DO NOTHING;
 

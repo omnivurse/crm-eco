@@ -34,7 +34,7 @@ BEGIN
   -- Remove demo landing pages (by slug)
   DELETE FROM landing_pages
   WHERE organization_id = v_org_id
-    AND slug IN ('pif-health', 'test-advisor');
+    AND slug IN ('dhh-health', 'test-advisor');
 
   -- Remove all FK-dependent rows for demo plans
   IF v_plan_ids IS NOT NULL THEN
@@ -57,7 +57,7 @@ BEGIN
   SELECT id INTO v_advisor_id
   FROM advisors
   WHERE organization_id = v_org_id
-    AND email = 'test-advisor@pifhealth.com';
+    AND email = 'test-advisor@doublehelixhub.com';
 
   IF v_advisor_id IS NOT NULL THEN
     -- Clean up any CRM records synced from this advisor

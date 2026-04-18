@@ -13,13 +13,13 @@ CREATE TABLE IF NOT EXISTS crm_extensions (
   id              uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Identity
   name            text         NOT NULL,
-  key             text         NOT NULL UNIQUE,  -- Globally unique extension key (e.g. "pifh.email-sync")
+  key             text         NOT NULL UNIQUE,  -- Globally unique extension key (e.g. "dhh.email-sync")
   slug            text         NOT NULL UNIQUE,  -- URL-safe slug
   description     text,
   long_description text,       -- Markdown-formatted detailed description
   -- Provider / author
-  provider        text         NOT NULL DEFAULT 'pifh',  -- Publisher ID
-  provider_name   text         NOT NULL DEFAULT 'PIFH',  -- Display name of publisher
+  provider        text         NOT NULL DEFAULT 'dhh',  -- Publisher ID
+  provider_name   text         NOT NULL DEFAULT 'DHH',  -- Display name of publisher
   provider_url    text,        -- Publisher website
   -- Categorization
   category        text         NOT NULL DEFAULT 'utility' CHECK (category IN (
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS crm_extensions (
                     'draft', 'review', 'published', 'deprecated', 'archived'
                   )),
   is_featured     boolean      NOT NULL DEFAULT false,
-  is_verified     boolean      NOT NULL DEFAULT false,  -- Verified by PIFH team
+  is_verified     boolean      NOT NULL DEFAULT false,  -- Verified by DHH team
   is_free         boolean      NOT NULL DEFAULT true,
   -- Pricing (for paid extensions)
   price_monthly   numeric(10,2),
@@ -97,7 +97,7 @@ CREATE INDEX IF NOT EXISTS idx_crm_extensions_provider
   ON crm_extensions(provider);
 
 COMMENT ON TABLE crm_extensions IS 'Extension catalog — defines available marketplace extensions with versioning, configuration schemas, and pricing';
-COMMENT ON COLUMN crm_extensions.key IS 'Globally unique extension identifier (e.g., "pifh.email-sync")';
+COMMENT ON COLUMN crm_extensions.key IS 'Globally unique extension identifier (e.g., "dhh.email-sync")';
 COMMENT ON COLUMN crm_extensions.config_schema IS 'JSON Schema defining the extension settings form';
 COMMENT ON COLUMN crm_extensions.required_scopes IS 'Permissions the extension needs: records:read, records:write, webhooks:manage, etc.';
 COMMENT ON COLUMN crm_extensions.entry_points IS 'Extension entry points: {settings_url, widget_url, webhook_path, api_prefix}';
@@ -325,7 +325,7 @@ CREATE TRIGGER trg_update_extension_rating
 CREATE OR REPLACE FUNCTION seed_default_extensions()
 RETURNS void AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM crm_extensions WHERE provider = 'pifh') THEN
+  IF EXISTS (SELECT 1 FROM crm_extensions WHERE provider = 'dhh') THEN
     RETURN;
   END IF;
 
@@ -334,44 +334,44 @@ BEGIN
     category, extension_type, icon, color, version,
     is_featured, is_verified, is_free, required_scopes, status
   ) VALUES
-    ('Email Sync',         'pifh.email-sync',         'email-sync',
+    ('Email Sync',         'dhh.email-sync',         'email-sync',
      'Two-way email synchronization with Gmail and Outlook',
-     'pifh', 'PIFH', 'communication', 'integration', 'mail', '#3b82f6', '1.0.0',
+     'dhh', 'DHH', 'communication', 'integration', 'mail', '#3b82f6', '1.0.0',
      true, true, true, ARRAY['records:read', 'email:send', 'email:read'], 'published'),
 
-    ('Advanced Analytics',  'pifh.advanced-analytics',  'advanced-analytics',
+    ('Advanced Analytics',  'dhh.advanced-analytics',  'advanced-analytics',
      'Custom dashboards, cohort analysis, and predictive scoring',
-     'pifh', 'PIFH', 'analytics', 'report', 'bar-chart-3', '#8b5cf6', '1.0.0',
+     'dhh', 'DHH', 'analytics', 'report', 'bar-chart-3', '#8b5cf6', '1.0.0',
      true, true, true, ARRAY['records:read', 'analytics:read'], 'published'),
 
-    ('Bulk SMS',           'pifh.bulk-sms',            'bulk-sms',
+    ('Bulk SMS',           'dhh.bulk-sms',            'bulk-sms',
      'Send bulk SMS campaigns to contacts and advisors',
-     'pifh', 'PIFH', 'communication', 'plugin', 'message-square', '#22c55e', '1.0.0',
+     'dhh', 'DHH', 'communication', 'plugin', 'message-square', '#22c55e', '1.0.0',
      false, true, true, ARRAY['records:read', 'sms:send'], 'published'),
 
-    ('Document Signing',   'pifh.document-signing',    'document-signing',
+    ('Document Signing',   'dhh.document-signing',    'document-signing',
      'DocuSign and HelloSign integration for e-signatures',
-     'pifh', 'PIFH', 'productivity', 'integration', 'file-signature', '#f59e0b', '1.0.0',
+     'dhh', 'DHH', 'productivity', 'integration', 'file-signature', '#f59e0b', '1.0.0',
      true, true, true, ARRAY['records:read', 'documents:manage'], 'published'),
 
-    ('Compliance Monitor', 'pifh.compliance-monitor',  'compliance-monitor',
+    ('Compliance Monitor', 'dhh.compliance-monitor',  'compliance-monitor',
      'Automated compliance checks, license tracking, and audit preparation',
-     'pifh', 'PIFH', 'compliance', 'automation', 'shield-check', '#ef4444', '1.0.0',
+     'dhh', 'DHH', 'compliance', 'automation', 'shield-check', '#ef4444', '1.0.0',
      true, true, true, ARRAY['records:read', 'compliance:manage'], 'published'),
 
-    ('Stripe Payments',    'pifh.stripe-payments',     'stripe-payments',
+    ('Stripe Payments',    'dhh.stripe-payments',     'stripe-payments',
      'Process payments, manage subscriptions, and sync invoices via Stripe',
-     'pifh', 'PIFH', 'finance', 'integration', 'credit-card', '#6366f1', '1.0.0',
+     'dhh', 'DHH', 'finance', 'integration', 'credit-card', '#6366f1', '1.0.0',
      true, true, true, ARRAY['payments:manage', 'records:read'], 'published'),
 
-    ('Zoom Meetings',      'pifh.zoom-meetings',       'zoom-meetings',
+    ('Zoom Meetings',      'dhh.zoom-meetings',       'zoom-meetings',
      'Schedule and track Zoom meetings linked to CRM records',
-     'pifh', 'PIFH', 'productivity', 'integration', 'video', '#2563eb', '1.0.0',
+     'dhh', 'DHH', 'productivity', 'integration', 'video', '#2563eb', '1.0.0',
      false, true, true, ARRAY['calendar:manage', 'records:read'], 'published'),
 
-    ('Slack Notifications','pifh.slack-notifications',  'slack-notifications',
+    ('Slack Notifications','dhh.slack-notifications',  'slack-notifications',
      'Push CRM notifications and alerts to Slack channels',
-     'pifh', 'PIFH', 'communication', 'plugin', 'hash', '#e11d48', '1.0.0',
+     'dhh', 'DHH', 'communication', 'plugin', 'hash', '#e11d48', '1.0.0',
      false, true, true, ARRAY['notifications:send'], 'published');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
