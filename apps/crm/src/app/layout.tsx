@@ -5,22 +5,20 @@ import { ServiceWorkerRegistration } from '@/components/pwa';
 import { PinLockOverlay } from '@crm-eco/ui';
 import './globals.css';
 
-// Optimize font loading - reduce weights and preload critical subset
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-body',
   display: 'swap',
-  preload: true,
+  preload: false,
   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
-// Reduce font weights for faster loading - only load what's needed
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   variable: '--font-heading',
-  weight: ['600', '700'], // Reduced from 4 weights to 2
+  weight: ['600', '700'],
   display: 'swap',
-  preload: true,
+  preload: false,
   fallback: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
 });
 
@@ -97,15 +95,8 @@ export default function RootLayout({
         {/* Theme script MUST be first to prevent any flash */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         
-        {/* Preconnect to external resources for faster loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        
         {/* DNS prefetch for Supabase */}
-        <link rel="dns-prefetch" href="https://supabase.co" />
-        
-        {/* Optimize mobile viewport */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <link rel="dns-prefetch" href="https://sffisarikcreyyjzdjvb.supabase.co" />
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
         <PinLockOverlay pin="012049" appName="Secure Access" />
