@@ -3,17 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
-import { Button, Input, Label } from '@crm-eco/ui';
+import Link from 'next/link';
 import {
-  Shield,
   Loader2,
   Lock,
   Eye,
   EyeOff,
   Mail,
+  Shield,
   Square,
 } from 'lucide-react';
-import Image from 'next/image';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,41 +69,48 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-8">
+      {/* Brand */}
       <div className="text-center lg:text-left">
-        <div className="flex justify-center lg:justify-start mb-6">
-          <Image
-            src="/logo.png"
-            alt="Double Helix Hub"
-            width={200}
-            height={80}
-            className="h-16 w-auto object-contain"
-            priority
-          />
-        </div>
-        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-brand-navy-800 to-brand-teal-700 bg-clip-text text-transparent">
+        <Link href="/" className="inline-flex items-center gap-3 mb-6 group">
+          <svg viewBox="0 0 40 40" fill="none" className="w-10 h-10">
+            <path d="M20 2 C12 8, 12 16, 20 20 C28 24, 28 32, 20 38" stroke="url(#loginG1)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+            <path d="M20 2 C28 8, 28 16, 20 20 C12 24, 12 32, 20 38" stroke="url(#loginG2)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+            <circle cx="14" cy="10" r="2.5" fill="#06b6d4"/><circle cx="26" cy="10" r="2.5" fill="#8b5cf6"/>
+            <circle cx="26" cy="20" r="2.5" fill="#06b6d4"/><circle cx="14" cy="20" r="2.5" fill="#8b5cf6"/>
+            <circle cx="14" cy="30" r="2.5" fill="#06b6d4"/><circle cx="26" cy="30" r="2.5" fill="#8b5cf6"/>
+            <defs>
+              <linearGradient id="loginG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
+              <linearGradient id="loginG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
+            </defs>
+          </svg>
+          <span className="text-lg font-bold text-white tracking-tight">Double Helix Hub</span>
+        </Link>
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
           Welcome Back
         </h2>
-        <p className="mt-2 text-brand-navy-500">
+        <p className="mt-2 text-slate-400">
           Sign in to continue your journey
         </p>
       </div>
 
+      {/* Form */}
       <form onSubmit={handleLogin} className="space-y-6">
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl">
+          <div className="p-3 text-sm text-red-300 bg-red-500/10 border border-red-500/20 rounded-xl">
             {error}
           </div>
         )}
 
         <div className="space-y-4">
+          {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-brand-navy-700 text-sm font-medium">
+            <label htmlFor="email" className="text-slate-300 text-sm font-medium block">
               Email Address
-            </Label>
+            </label>
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-600 transition-colors z-10" />
-              <Input
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors z-10" />
+              <input
                 id="email"
                 type="email"
                 placeholder="you@example.com"
@@ -112,40 +118,41 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="relative pl-12 h-14 bg-white border-brand-navy-200 text-brand-navy-900 placeholder:text-brand-navy-400 focus:border-brand-teal-500 focus:ring-brand-teal-500/20 rounded-xl transition-all shadow-sm"
+                className="relative w-full pl-12 h-14 bg-slate-800/50 border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 rounded-xl transition-all outline-none"
               />
             </div>
           </div>
 
+          {/* Password */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-brand-navy-700 text-sm font-medium">
+              <label htmlFor="password" className="text-slate-300 text-sm font-medium">
                 Password
-              </Label>
-              <button
-                type="button"
-                className="text-sm text-brand-teal-600 hover:text-brand-teal-700 transition-colors"
+              </label>
+              <Link
+                href="/reset-password"
+                className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
               >
                 Forgot password?
-              </button>
+              </Link>
             </div>
             <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-brand-teal-500/20 to-brand-emerald-500/20 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-brand-navy-400 group-focus-within:text-brand-teal-600 transition-colors z-10" />
-              <Input
+              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors z-10" />
+              <input
                 id="password"
-                type={showPassword ? "text" : "password"}
-                placeholder="•••••••••••••"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="relative pl-12 pr-12 h-14 bg-white border-brand-navy-200 text-brand-navy-900 placeholder:text-brand-navy-400 focus:border-brand-teal-500 focus:ring-brand-teal-500/20 rounded-xl transition-all shadow-sm"
+                className="relative w-full pl-12 pr-12 h-14 bg-slate-800/50 border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 rounded-xl transition-all outline-none"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-navy-400 hover:text-brand-navy-600 z-10"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 z-10"
               >
                 {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
               </button>
@@ -153,72 +160,77 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Remember Me */}
         <div className="flex items-center space-x-3">
           <button
             type="button"
             onClick={() => setRememberMe(!rememberMe)}
-            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${rememberMe
-                ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,155,154,0.3)]'
-                : 'border-brand-navy-300 bg-white hover:border-brand-navy-400'
-              }`}
+            className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+              rememberMe
+                ? 'bg-cyan-500 border-cyan-500 shadow-[0_0_10px_2px_rgba(6,182,212,0.3)]'
+                : 'border-slate-600 bg-transparent hover:border-slate-500'
+            }`}
           >
             {rememberMe && <Square className="w-2.5 h-2.5 text-white fill-current" />}
           </button>
           <label
             onClick={() => setRememberMe(!rememberMe)}
-            className="text-sm text-brand-navy-600 cursor-pointer select-none"
+            className="text-sm text-slate-400 cursor-pointer select-none"
           >
             Remember me for 30 days
           </label>
         </div>
 
-        <Button
+        {/* Sign In Button */}
+        <button
           type="submit"
-          className="relative w-full h-14 text-base font-semibold bg-gradient-to-r from-brand-teal-500 to-brand-emerald-500 hover:from-brand-teal-400 hover:to-brand-emerald-400 text-white border-0 rounded-xl transition-all overflow-hidden group"
+          className="relative w-full h-14 text-base font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white border-0 rounded-xl transition-all overflow-hidden group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_20px_rgba(6,182,212,0.25)] hover:shadow-[0_8px_30px_rgba(6,182,212,0.35)]"
           disabled={loading}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000" />
           {loading ? (
-            <>
+            <span className="flex items-center justify-center">
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
               Signing in...
-            </>
+            </span>
           ) : (
-            <>
+            <span className="flex items-center justify-center">
               Sign in
-              <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-            </>
+              <span className="ml-2 group-hover:translate-x-1 transition-transform inline-block">&rarr;</span>
+            </span>
           )}
-        </Button>
+        </button>
 
+        {/* Divider */}
         <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-brand-navy-200" />
+            <div className="w-full border-t border-slate-700" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-white px-4 text-brand-navy-400 text-xs uppercase tracking-widest">
+            <span className="bg-[#0a1628] px-4 text-slate-500 text-xs uppercase tracking-widest">
               New Member?
             </span>
           </div>
         </div>
 
-        <Button
+        {/* Enrollment CTA */}
+        <button
           type="button"
-          variant="outline"
-          className="w-full h-14 border-brand-navy-200 bg-white text-brand-navy-700 hover:bg-brand-navy-50 hover:text-brand-navy-900 hover:border-brand-navy-300 rounded-xl transition-all shadow-sm"
+          className="w-full h-14 border border-slate-700 bg-slate-800/30 text-slate-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-600 rounded-xl transition-all cursor-pointer font-semibold"
           onClick={() => router.push('/crm/enrollment')}
         >
           Start your enrollment
-        </Button>
+        </button>
       </form>
 
+      {/* Footer */}
       <div className="mt-8 text-center space-y-4">
-        <div className="flex items-center justify-center gap-2 text-brand-teal-600 text-xs font-medium">
+        <div className="flex items-center justify-center gap-2 text-cyan-400 text-xs font-medium">
           <Shield className="w-3.5 h-3.5" />
           <span>Secured with enterprise-grade encryption</span>
         </div>
-        <p className="text-brand-navy-400 text-xs">
-          © 2026 Double Helix Hub. All rights reserved.
+        <p className="text-slate-600 text-xs">
+          &copy; 2026 Double Helix Hub. All rights reserved.
         </p>
       </div>
     </div>

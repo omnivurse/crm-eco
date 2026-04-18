@@ -1,12 +1,13 @@
 /* Double Helix Hub Theme Tokens
    Works with shadcn/ui (HSL variables) + Tailwind.
-   
+
    Brand Colors (HEX reference):
-   - Navy: #003560
-   - Teal (accessible): #047474
-   - Teal (support): #069B9A
-   - Emerald: #027343
-   - Gold: #E9B61F
+   - Navy: #0f172a
+   - Cyan (primary): #06b6d4
+   - Blue (secondary): #3b82f6
+   - Purple (accent): #8b5cf6
+   - Emerald (success): #10b981
+   - Gold (warning): #f59e0b
    - Ink: #0B1220
    - Background: #F8FAFC
 
@@ -26,16 +27,16 @@
   --popover: 0 0% 100%;               /* #FFFFFF */
   --popover-foreground: 220 49% 8%;   /* #0B1220 */
 
-  /* Semantic - Primary (Teal - accessible) */
-  --primary: 180 93% 24%;             /* #047474 */
+  /* Semantic - Primary (Cyan) */
+  --primary: 187 94% 43%;             /* #06b6d4 */
   --primary-foreground: 210 40% 98%;  /* #F8FAFC */
 
-  /* Semantic - Secondary (Navy) */
-  --secondary: 207 100% 19%;          /* #003560 */
+  /* Semantic - Secondary (Deep Blue) */
+  --secondary: 217 91% 60%;           /* #3b82f6 */
   --secondary-foreground: 210 40% 98%; /* #F8FAFC */
 
-  /* Semantic - Accent (Emerald) */
-  --accent: 155 97% 23%;              /* #027343 */
+  /* Semantic - Accent (Purple) */
+  --accent: 263 70% 66%;              /* #8b5cf6 */
   --accent-foreground: 210 40% 98%;   /* #F8FAFC */
 
   /* Semantic - Destructive */
@@ -43,12 +44,12 @@
   --destructive-foreground: 210 40% 98%;
 
   /* Semantic - Success (Emerald) */
-  --success: 155 97% 23%;             /* #027343 */
+  --success: 160 84% 39%;             /* #10b981 */
   --success-foreground: 210 40% 98%;
 
-  /* Semantic - Warning (Gold-based) */
-  --warning: 45 82% 52%;              /* #E9B61F */
-  --warning-foreground: 220 49% 8%;   /* Dark text on gold */
+  /* Semantic - Warning (Amber) */
+  --warning: 38 92% 50%;              /* #f59e0b */
+  --warning-foreground: 220 49% 8%;   /* Dark text on amber */
 
   /* Muted */
   --muted: 210 40% 96%;
@@ -57,14 +58,14 @@
   /* Form elements */
   --border: 214 32% 91%;              /* #E2E8F0 slate-200-ish */
   --input: 214 32% 91%;
-  --ring: 180 93% 24%;                /* Teal focus ring */
+  --ring: 187 94% 43%;                /* Cyan focus ring */
 
   /* Brand tokens (HEX via HSL reference) */
-  --brand-navy-500: 207 100% 19%;     /* #003560 */
-  --brand-teal-500: 180 93% 31%;      /* #069B9A */
-  --brand-teal-700: 180 93% 24%;      /* #047474 */
-  --brand-emerald-500: 155 97% 23%;   /* #027343 */
-  --brand-gold-500: 45 82% 52%;       /* #E9B61F */
+  --brand-navy-500: 222 47% 11%;      /* #0f172a */
+  --brand-teal-500: 187 94% 43%;      /* #06b6d4 - now cyan */
+  --brand-teal-700: 192 91% 36%;      /* #0891b2 - darker cyan */
+  --brand-emerald-500: 160 84% 39%;   /* #10b981 */
+  --brand-gold-500: 38 92% 50%;       /* #f59e0b */
 
   /* Border radius — tighter for Zoho-like crispness */
   --radius: 0.5rem;                   /* 8px for buttons/inputs */
@@ -81,40 +82,40 @@
   /* Glassmorphism - Light Mode */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.3);
-  --glass-shadow: 0 8px 32px rgba(0, 53, 96, 0.1);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
   --glass-blur: 16px;
 
-  /* Sidebar - Premium Navy Theme */
-  --sidebar-bg: #003560;
-  --sidebar-bg-dark: #002848;
-  --sidebar-active: #047474;
-  --sidebar-hover: #002848;
+  /* Sidebar - Premium Dark Theme */
+  --sidebar-bg: #0f172a;
+  --sidebar-bg-dark: #0a1120;
+  --sidebar-active: #06b6d4;
+  --sidebar-hover: #0a1120;
   --sidebar-text: rgba(255, 255, 255, 0.7);
   --sidebar-text-active: #ffffff;
-  --sidebar-accent: #E9B61F;
-  --sidebar-gradient: linear-gradient(135deg, #003560 0%, #002848 100%);
-  --accent-gradient: linear-gradient(135deg, #047474 0%, #069B9A 50%, #027343 100%);
+  --sidebar-accent: #f59e0b;
+  --sidebar-gradient: linear-gradient(135deg, #0f172a 0%, #0a1120 100%);
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
 }
 
 .dark {
   /* Surfaces - Deep navy gradient base */
-  --background: 220 50% 6%;           /* Deep navy-black */
+  --background: 222 47% 4%;           /* Deep navy-black */
   --foreground: 210 40% 98%;          /* #F8FAFC */
-  --card: 220 45% 8%;
+  --card: 222 45% 7%;
   --card-foreground: 210 40% 98%;
-  --popover: 220 45% 10%;
+  --popover: 222 45% 9%;
   --popover-foreground: 210 40% 98%;
 
-  /* Semantic - Primary (Teal - vibrant in dark mode) */
-  --primary: 174 100% 40%;            /* Brighter teal */
+  /* Semantic - Primary (Cyan - vibrant in dark mode) */
+  --primary: 187 94% 50%;             /* Brighter cyan */
   --primary-foreground: 220 49% 8%;
 
-  /* Semantic - Secondary (Navy lifts slightly) */
-  --secondary: 207 80% 35%;
+  /* Semantic - Secondary (Blue - lifts in dark mode) */
+  --secondary: 217 91% 65%;
   --secondary-foreground: 210 40% 98%;
 
-  /* Semantic - Accent (Emerald - brighter) */
-  --accent: 155 100% 40%;
+  /* Semantic - Accent (Purple - brighter) */
+  --accent: 263 70% 72%;
   --accent-foreground: 220 49% 8%;
 
   /* Semantic - Destructive */
@@ -122,11 +123,11 @@
   --destructive-foreground: 210 40% 98%;
 
   /* Semantic - Success */
-  --success: 155 100% 40%;
+  --success: 160 84% 45%;
   --success-foreground: 220 49% 8%;
 
   /* Semantic - Warning */
-  --warning: 48 100% 55%;
+  --warning: 38 100% 55%;
   --warning-foreground: 220 49% 8%;
 
   /* Muted */
@@ -136,7 +137,7 @@
   /* Form elements */
   --border: 220 30% 16%;
   --input: 220 30% 14%;
-  --ring: 174 100% 40%;
+  --ring: 187 94% 50%;
 
   /* Glassmorphism - Dark Mode */
   --glass-bg: rgba(15, 23, 42, 0.6);
@@ -206,16 +207,16 @@
 }
 
 .glass-card:hover {
-  border-color: rgba(4, 116, 116, 0.3);
+  border-color: rgba(6, 182, 212, 0.3);
   box-shadow:
-    0 4px 20px rgba(4, 116, 116, 0.1),
+    0 4px 20px rgba(6, 182, 212, 0.1),
     0 8px 32px rgba(0, 0, 0, 0.08);
   /* Removed transform: translateY(-2px) to eliminate zoom effect */
 }
 
 .dark .glass-card:hover {
   box-shadow:
-    0 8px 32px rgba(4, 116, 116, 0.15),
+    0 8px 32px rgba(6, 182, 212, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
@@ -233,19 +234,19 @@
 }
 
 .gradient-primary {
-  background: linear-gradient(135deg, #047474 0%, #069B9A 50%, #027343 100%);
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
 }
 
 .gradient-secondary {
-  background: linear-gradient(135deg, #003560 0%, #047474 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #06b6d4 100%);
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #027343 0%, #069B9A 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #069B9A 0%, #027343 100%);
+  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -260,7 +261,7 @@
   position: absolute;
   inset: 0;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(4, 116, 116, 0.5) 0%, rgba(2, 115, 67, 0.5) 100%);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.5) 0%, rgba(59, 130, 246, 0.5) 100%);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -281,8 +282,8 @@
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(4, 116, 116, 0.2); }
-  50% { box-shadow: 0 0 40px rgba(4, 116, 116, 0.4); }
+  0%, 100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.2); }
+  50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.4); }
 }
 
 @keyframes shimmer {
@@ -339,44 +340,44 @@
 
 /* Light mode - subtle, professional glows */
 .glow-sm {
-  box-shadow: 0 0 10px rgba(4, 116, 116, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .glow-md {
-  box-shadow: 0 0 15px rgba(4, 116, 116, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .glow-lg {
-  box-shadow: 0 0 20px rgba(4, 116, 116, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
 .glow-primary {
-  box-shadow: 0 2px 12px rgba(4, 116, 116, 0.15), 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(6, 182, 212, 0.15), 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 .glow-accent {
-  box-shadow: 0 2px 12px rgba(2, 115, 67, 0.15), 0 4px 16px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15), 0 4px 16px rgba(0, 0, 0, 0.06);
 }
 
 /* Dark mode - vibrant, neon-like glows */
 .dark .glow-sm {
-  box-shadow: 0 0 15px rgba(4, 116, 116, 0.3);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
 }
 
 .dark .glow-md {
-  box-shadow: 0 0 25px rgba(4, 116, 116, 0.4);
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
 }
 
 .dark .glow-lg {
-  box-shadow: 0 0 40px rgba(4, 116, 116, 0.5);
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.5);
 }
 
 .dark .glow-primary {
-  box-shadow: 0 0 20px rgba(4, 116, 116, 0.4), 0 0 40px rgba(4, 116, 116, 0.2);
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(6, 182, 212, 0.2);
 }
 
 .dark .glow-accent {
-  box-shadow: 0 0 20px rgba(2, 115, 67, 0.4), 0 0 40px rgba(2, 115, 67, 0.2);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4), 0 0 40px rgba(59, 130, 246, 0.2);
 }
 
 /* ============================================================
@@ -392,7 +393,7 @@
 }
 
 .text-shadow-glow {
-  text-shadow: 0 0 20px rgba(4, 116, 116, 0.6);
+  text-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
 }
 
 /* ============================================================
@@ -427,12 +428,12 @@ select:focus-visible {
 
 /* Light mode button refinements */
 button:focus-visible {
-  outline: 2px solid hsl(180 93% 24% / 0.4);
+  outline: 2px solid hsl(187 94% 24% / 0.4);
   outline-offset: 2px;
 }
 
 .dark button:focus-visible {
-  outline: 2px solid hsl(174 100% 40% / 0.5);
+  outline: 2px solid hsl(187 94% 40% / 0.5);
 }
 
 /* Clean card shadows for light mode */
@@ -499,13 +500,13 @@ button:focus-visible {
 
 /* Selection highlight */
 .selection-highlight {
-  background: hsl(180 93% 95%);
-  border-color: hsl(180 93% 80%);
+  background: hsl(187 94% 95%);
+  border-color: hsl(187 94% 80%);
 }
 
 .dark .selection-highlight {
-  background: hsl(174 100% 40% / 0.1);
-  border-color: hsl(174 100% 40% / 0.3);
+  background: hsl(187 94% 40% / 0.1);
+  border-color: hsl(187 94% 40% / 0.3);
 }
 
 /* Avatar with status indicator */

@@ -1,8 +1,5 @@
-import { redirect } from 'next/navigation';
-
-export const dynamic = 'force-dynamic';
+import CrmLandingPage from '@/components/landing/CrmLandingPage';
 
 export default function Home() {
-  redirect('/crm');
+  return <CrmLandingPage />;
 }
-
