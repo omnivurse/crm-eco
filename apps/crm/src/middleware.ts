@@ -145,11 +145,29 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = pathname === '/' || publicPrefixes.some(route => pathname.startsWith(route));
 
   if (isPublicRoute) {
-    // If user is already authenticated on login pages, redirect to CRM
-    // (but NOT for accept-invite, root, reset-password, or update-password)
+    // If user is already authenticated on login pages, only redirect to CRM
+    // if they actually have a valid profile. Otherwise let them stay on
+    // the login page (avoids redirect loop when session exists but profile doesn't).
     const isLoginPage = pathname.startsWith('/crm-login') || pathname.startsWith('/login');
     if (user && isLoginPage) {
-      return NextResponse.redirect(new URL('/crm', request.url));
+      const cached = await getCachedProfile(request, user.id);
+      if (cached) {
+        return NextResponse.redirect(new URL('/crm', request.url));
+      }
+      // No cached profile — check DB before redirecting
+      const { data: dbProfile } = await supabase
+        .from('profiles')
+        .select('id, crm_role, organization_id, is_active')
+        .eq('user_id', user.id)
+        .single();
+
+      if (dbProfile?.crm_role) {
+        // Valid profile with CRM access — cache it and redirect to CRM
+        await setCachedProfile(supabaseResponse, dbProfile, user.id);
+        return NextResponse.redirect(new URL('/crm', request.url));
+      }
+      // No profile or no CRM role — stay on login page
+      return supabaseResponse;
     }
     return supabaseResponse;
   }
