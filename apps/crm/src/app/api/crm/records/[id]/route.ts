@@ -7,6 +7,7 @@ import {
 } from '@/lib/approvals';
 import { logPHIAccess } from '@/lib/security';
 import { executeCrmRecordPatch } from '@/lib/crm/record-patch-service';
+import { withIdempotency } from '@/lib/server/idempotency';
 
 /**
  * GET /api/crm/records/[id]
@@ -64,21 +65,55 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
+    // Read the raw body text once so we can (a) pass it to the
+    // idempotency wrapper for hashing and (b) re-parse as JSON inside
+    // the handler closure. Reading `request.json()` more than once
+    // throws in Next's runtime.
+    const rawBody = await request.text();
     const ifMatch = request.headers.get('if-match') || null;
-    const result = await executeCrmRecordPatch({
-      supabase,
-      profile,
-      id,
-      body,
-      ifMatchUpdatedAt: ifMatch,
-    });
 
-    if (!result.ok) {
-      return NextResponse.json(result.body, { status: result.status });
-    }
+    const { response } = await withIdempotency(
+      {
+        organizationId: profile.organization_id,
+        method: 'PATCH',
+        path: `/api/crm/records/${id}`,
+        rawBody,
+      },
+      request,
+      async () => {
+        let body: Record<string, unknown>;
+        try {
+          const parsed = rawBody ? JSON.parse(rawBody) : {};
+          if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return NextResponse.json(
+              { error: 'Body must be a JSON object' },
+              { status: 400 },
+            );
+          }
+          body = parsed as Record<string, unknown>;
+        } catch {
+          return NextResponse.json(
+            { error: 'Invalid JSON body' },
+            { status: 400 },
+          );
+        }
+        const result = await executeCrmRecordPatch({
+          supabase,
+          profile,
+          id,
+          body,
+          ifMatchUpdatedAt: ifMatch,
+        });
 
-    return NextResponse.json(result.record);
+        if (!result.ok) {
+          return NextResponse.json(result.body, { status: result.status });
+        }
+
+        return NextResponse.json(result.record);
+      },
+    );
+
+    return response;
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

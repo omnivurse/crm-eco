@@ -264,7 +264,11 @@ export const PendingChangesPill = memo(function PendingChangesPill({
         mutation={reviewMutation}
         onClose={() => setReviewId(null)}
         onRetry={(id) => {
-          retry(id);
+          // Force-retry strips any stale If-Match/version precondition
+          // so the replay bypasses the optimistic concurrency check that
+          // originally surfaced the 409. User's explicit decision to
+          // "keep my change" upgrades CAS to last-write-wins.
+          retry(id, { force: true });
           setReviewId(null);
         }}
         onDiscard={(id) => {

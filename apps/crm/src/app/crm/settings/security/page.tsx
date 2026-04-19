@@ -35,6 +35,7 @@ import {
     DialogTitle,
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
+import { clearOfflineState } from '@/lib/offline/reset';
 
 interface Session {
     id: string;
@@ -216,6 +217,11 @@ export default function SecuritySettingsPage() {
 
     async function handleRevokeAllSessions() {
         try {
+            try {
+                await clearOfflineState();
+            } catch (err) {
+                console.error('Failed to clear offline state:', err);
+            }
             await supabase.auth.signOut({ scope: 'global' });
             router.push('/crm-login');
         } catch (error) {

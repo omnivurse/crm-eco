@@ -25,6 +25,8 @@
  * first one for the same slot.
  */
 
+import { recordOfflineEvent } from './instrumentation';
+
 const STORAGE_KEY = 'crm.mutationQueue.v1';
 const MAX_RETRIES = 5;
 const BASE_BACKOFF_MS = 1_500;
@@ -186,11 +188,13 @@ class MutationQueue {
   }
 
   private handleOnline = () => {
+    recordOfflineEvent({ type: 'connection', online: true });
     this.emit();
     this.scheduleDrain(250);
   };
 
   private handleOffline = () => {
+    recordOfflineEvent({ type: 'connection', online: false });
     this.emit();
   };
 
@@ -319,6 +323,16 @@ class MutationQueue {
     this.mutations.push(mutation);
     this.persist();
     this.emit();
+    recordOfflineEvent({
+      type: 'enqueue',
+      mutationId: mutation.id,
+      method: mutation.method,
+      url: mutation.url,
+      label: mutation.label,
+      recordId: mutation.recordId,
+      moduleKey: mutation.moduleKey,
+      queueDepth: this.mutations.filter((m) => m.status !== 'succeeded').length,
+    });
     this.scheduleDrain(0);
     return mutation;
   }
@@ -343,18 +357,62 @@ class MutationQueue {
     }
   }
 
-  /** Reset a failed mutation back to queued so it retries again. */
-  retry(id: string): void {
+  /**
+   * Reset a failed mutation back to queued so it retries again.
+   *
+   * When `force` is true (e.g. the user picks "Keep my change" on the
+   * conflict review dialog), we strip any `If-Match` / `If-Unmodified-
+   * Since` preconditions and the stored `version` field in the body so
+   * the replay bypasses the optimistic-concurrency check that caused
+   * the 409 in the first place. The explicit user decision upgrades the
+   * default CAS semantics to last-write-wins.
+   */
+  retry(id: string, options: { force?: boolean } = {}): void {
     const target = this.mutations.find((m) => m.id === id);
     if (!target) return;
+    if (options.force) {
+      if (target.headers) {
+        const { 'If-Match': _ifMatch, 'If-Unmodified-Since': _ius, ...rest } =
+          target.headers;
+        target.headers = rest;
+      }
+      if (target.body) {
+        try {
+          const parsed = JSON.parse(target.body) as Record<string, unknown>;
+          if (parsed && typeof parsed === 'object') {
+            delete parsed.version;
+            delete parsed.etag;
+            if (parsed.data && typeof parsed.data === 'object') {
+              const data = parsed.data as Record<string, unknown>;
+              delete data.version;
+              delete data.etag;
+            }
+            target.body = JSON.stringify(parsed);
+          }
+        } catch {
+          /* body wasn't JSON — nothing to strip */
+        }
+      }
+    }
     target.status = 'queued';
     target.attempts = 0;
     target.lastError = undefined;
+    target.failureKind = undefined;
     target.nextAttemptAt = undefined;
     target.updatedAt = nowIso();
     this.persist();
     this.emit();
     this.scheduleDrain(0);
+  }
+
+  /** Drop every queued/failed mutation. Used by sign-out and the
+   *  dev-only "wipe offline state" command. Emits once so subscribers
+   *  can collapse the UI. */
+  clearAll(): void {
+    if (this.mutations.length === 0) return;
+    this.mutations = [];
+    this.persist();
+    this.emit();
   }
 
   /** Force a drain attempt now. No-op when already running. */
@@ -385,6 +443,7 @@ class MutationQueue {
     if (!next) return;
 
     this.running = true;
+    const startedAt = Date.now();
     next.status = 'syncing';
     this.emit();
 
@@ -399,20 +458,35 @@ class MutationQueue {
       if (res.ok) {
         next.status = 'succeeded';
         this.lastSyncedAt = nowIso();
-        // Succeeded mutations are dropped from the queue — they no
-        // longer need to be replayed.
         this.mutations = this.mutations.filter((m) => m.id !== next.id);
-        // Fan out to success listeners so consumers (toast notifier,
-        // analytics) can react without polling the snapshot.
         for (const fn of this.successListeners) {
           try { fn(next); } catch { /* listener errors are non-fatal */ }
         }
+        // Server-issued sync receipt — correlates this drain with the
+        // row in `crm_idempotency_keys`. Absent on routes that don't
+        // use the wrapper yet; harmless when missing.
+        const receiptId = res.headers.get('x-sync-receipt') ?? undefined;
+        const replayed = res.headers.get('x-sync-replayed') === '1';
+        recordOfflineEvent({
+          type: 'drain.success',
+          mutationId: next.id,
+          attempts: next.attempts + 1,
+          latencyMs: Date.now() - startedAt,
+          receiptId,
+          replayed,
+        });
       } else if (isRetryableStatus(res.status) && next.attempts + 1 < MAX_RETRIES) {
         next.attempts += 1;
         next.status = 'queued';
         next.nextAttemptAt = Date.now() + backoffDelay(next.attempts);
         next.lastError = `HTTP ${res.status}`;
         next.updatedAt = nowIso();
+        recordOfflineEvent({
+          type: 'drain.retry',
+          mutationId: next.id,
+          attempts: next.attempts,
+          reason: `HTTP ${res.status}`,
+        });
       } else {
         next.status = 'failed';
         let message = `HTTP ${res.status}`;
@@ -422,10 +496,6 @@ class MutationQueue {
         } catch {
           /* ignore */
         }
-        // 409 is a frequent replay outcome: the user edited a field
-        // while offline, someone else edited the same record in the
-        // meantime, and the `If-Match` token is now stale. Tag it
-        // explicitly so the inspector can open a review dialog.
         if (res.status === 409) {
           message =
             'Record was updated on the server — review to reapply your change';
@@ -435,6 +505,13 @@ class MutationQueue {
         }
         next.lastError = message;
         next.updatedAt = nowIso();
+        recordOfflineEvent({
+          type: 'drain.failure',
+          mutationId: next.id,
+          attempts: next.attempts + 1,
+          failureKind: next.failureKind,
+          reason: message,
+        });
       }
     } catch (err) {
       // Network error — offline, DNS, TLS, etc. Always retry with
@@ -446,11 +523,24 @@ class MutationQueue {
         next.nextAttemptAt = Date.now() + backoffDelay(next.attempts);
         next.lastError = message;
         next.updatedAt = nowIso();
+        recordOfflineEvent({
+          type: 'drain.retry',
+          mutationId: next.id,
+          attempts: next.attempts,
+          reason: message,
+        });
       } else {
         next.status = 'failed';
         next.failureKind = 'retry-exhausted';
         next.lastError = message;
         next.updatedAt = nowIso();
+        recordOfflineEvent({
+          type: 'drain.failure',
+          mutationId: next.id,
+          attempts: next.attempts + 1,
+          failureKind: 'retry-exhausted',
+          reason: message,
+        });
       }
     } finally {
       this.persist();

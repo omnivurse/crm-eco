@@ -20,6 +20,10 @@
 import { openOfflineDb, RECENT_STORE } from './idb';
 
 const MAX_ENTRIES = 20;
+/** Entries older than this are treated as abandoned and evicted on
+ *  the next read. Keeps stale records from squatting in IDB indefinitely
+ *  when a user rotates devices or doesn't revisit a record. */
+const MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 export interface RecentRecord {
   id: string;
@@ -61,10 +65,19 @@ async function enforceCap(): Promise<void> {
       req.onsuccess = () => resolve(req.result ?? []);
       req.onerror = () => reject(req.error);
     });
-    if (all.length <= MAX_ENTRIES) return;
 
-    const sorted = [...all].sort((a, b) => b.viewedAt - a.viewedAt);
-    const toEvict = sorted.slice(MAX_ENTRIES);
+    const now = Date.now();
+    // Two-phase eviction:
+    //   1. Expire anything past MAX_AGE_MS outright.
+    //   2. If we're still over MAX_ENTRIES, LRU-evict the tail.
+    const fresh = all.filter((r) => now - r.viewedAt <= MAX_AGE_MS);
+    const expired = all.filter((r) => now - r.viewedAt > MAX_AGE_MS);
+
+    const sorted = [...fresh].sort((a, b) => b.viewedAt - a.viewedAt);
+    const overflow = sorted.slice(MAX_ENTRIES);
+    const toEvict = [...expired, ...overflow];
+    if (toEvict.length === 0) return;
+
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(RECENT_STORE, 'readwrite');
       const store = tx.objectStore(RECENT_STORE);
@@ -88,8 +101,27 @@ export async function listRecentRecords(): Promise<RecentRecord[]> {
       req.onsuccess = () => resolve(req.result ?? []);
       req.onerror = () => reject(req.error);
     });
-    return [...all].sort((a, b) => b.viewedAt - a.viewedAt);
+    const now = Date.now();
+    return [...all]
+      .filter((r) => now - r.viewedAt <= MAX_AGE_MS)
+      .sort((a, b) => b.viewedAt - a.viewedAt);
   } catch {
     return [];
+  }
+}
+
+/** Nuke the recent-records index. Called from `clearOfflineState`
+ *  on sign-out so the next user doesn't inherit this user's trail. */
+export async function clearRecentRecords(): Promise<void> {
+  try {
+    const db = await openOfflineDb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(RECENT_STORE, 'readwrite');
+      tx.objectStore(RECENT_STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    /* noop */
   }
 }

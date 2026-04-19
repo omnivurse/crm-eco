@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import type { CrmProfile } from '@/lib/crm/types';
+import { clearOfflineState } from '@/lib/offline/reset';
 
 interface CrmHeaderProps {
   profile: CrmProfile;
@@ -49,6 +50,11 @@ export function CrmHeader({ profile, onOpenCommandPalette }: CrmHeaderProps) {
       });
     } catch (err) {
       console.error('Failed to log logout:', err);
+    }
+    try {
+      await clearOfflineState();
+    } catch (err) {
+      console.error('Failed to clear offline state on sign-out:', err);
     }
     await supabase.auth.signOut();
     router.push('/crm-login');

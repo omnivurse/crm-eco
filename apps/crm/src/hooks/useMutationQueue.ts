@@ -26,11 +26,19 @@ export function useMutationQueue() {
 
   const flush = useCallback(() => mutationQueue.flush(), []);
   const remove = useCallback((id: string) => mutationQueue.remove(id), []);
-  const retry = useCallback((id: string) => mutationQueue.retry(id), []);
+  // `retry` forwards the options bag so callers (notably the conflict
+  // review dialog) can opt into `{ force: true }` which drops the
+  // If-Match precondition before the replay.
+  const retry = useCallback(
+    (id: string, options?: { force?: boolean }) =>
+      mutationQueue.retry(id, options),
+    [],
+  );
   const clearFailed = useCallback(() => mutationQueue.clearFailed(), []);
+  const clearAll = useCallback(() => mutationQueue.clearAll(), []);
 
   return useMemo(
-    () => ({ ...snapshot, flush, remove, retry, clearFailed }),
-    [snapshot, flush, remove, retry, clearFailed],
+    () => ({ ...snapshot, flush, remove, retry, clearFailed, clearAll }),
+    [snapshot, flush, remove, retry, clearFailed, clearAll],
   );
 }

@@ -27,6 +27,24 @@ import {
   type MutationMethod,
 } from '@/lib/offline/mutation-queue';
 
+const IDEMPOTENCY_HEADER = 'Idempotency-Key';
+
+/**
+ * Generate a UUID v4. Uses `crypto.randomUUID()` where available and
+ * falls back to a cryptographically-weak string for ancient browsers.
+ * The weak fallback is acceptable because collisions would only cause
+ * a duplicate replay to be deduped against an unrelated request —
+ * which means the duplicate still runs as a fresh write, just without
+ * idempotency. Never worse than the pre-PR status quo.
+ */
+function generateIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  const rand = () => Math.random().toString(36).slice(2, 10);
+  return `${Date.now().toString(36)}-${rand()}-${rand()}`;
+}
+
 export interface QueuedSendInput {
   method: MutationMethod;
   url: string;
@@ -60,11 +78,20 @@ function isOnline(): boolean {
 export async function queuedSend(
   input: QueuedSendInput,
 ): Promise<QueuedSendResult> {
-  const headers = input.headers
+  const headers: Record<string, string> = input.headers
     ? { ...input.headers }
     : input.body !== undefined
       ? { 'Content-Type': 'application/json' }
-      : undefined;
+      : {};
+
+  // Stamp a stable idempotency key. Identical header value is reused
+  // across live + queued + retry replays so the server can dedupe
+  // duplicate writes through `withIdempotency`. Caller-supplied keys
+  // always win (see inline composers that already manage their own
+  // correlation ids).
+  if (!headers[IDEMPOTENCY_HEADER]) {
+    headers[IDEMPOTENCY_HEADER] = generateIdempotencyKey();
+  }
 
   // Short-circuit: if offline and caller opted in, skip the doomed
   // fetch and go straight to the queue so the user gets instant

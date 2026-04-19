@@ -34,6 +34,7 @@ import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
 import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill';
+import { clearOfflineState } from '@/lib/offline/reset';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 // Lazy load heavy components - only loaded when user interacts
@@ -92,6 +93,13 @@ export const CrmTopBar = memo(function CrmTopBar({
       });
     } catch (err) {
       console.error('Failed to log logout:', err);
+    }
+    // Wipe the offline cache/queue BEFORE sign-out so no user-scoped
+    // PII is left behind on the device for the next sign-in.
+    try {
+      await clearOfflineState();
+    } catch (err) {
+      console.error('Failed to clear offline state on sign-out:', err);
     }
     await supabase.auth.signOut();
     router.push('/crm-login');
