@@ -23,7 +23,6 @@
 import {
   memo,
   useCallback,
-  useEffect,
   useId,
   useRef,
   useState,
@@ -36,6 +35,13 @@ import {
   useRecordFieldSave,
   type FieldSaveTarget,
 } from '@/hooks/useRecordFieldSave';
+import {
+  useRecordFieldLocks,
+  useFieldLockOwner,
+} from '@/hooks/useRecordFieldLocks';
+import { LockedFieldBadge } from './LockedFieldBadge';
+import { AiSuggestChip } from './AiSuggestChip';
+import { useRecordAiContext } from './RecordAiContext';
 
 export type InlineFieldType =
   | 'text'
@@ -92,7 +98,14 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
 }: InlineFieldEditorProps) {
   const { save, fields } = useRecordFieldSave();
   const fieldState = fields[field];
+  const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
+  const lockOwner = useFieldLockOwner(field);
+  const aiCtx = useRecordAiContext();
   const uid = useId();
+
+  const aiSupported = type === 'text' || type === 'textarea' || type === 'email';
+  const showAiChip =
+    aiSupported && !!aiCtx && aiCtx.enabled && !readOnly;
 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string>(stringify(value));
@@ -101,25 +114,31 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   const isTextarea = type === 'textarea';
 
   // Keep local draft in sync when the parent value changes (e.g. after
-  // a realtime update from another user).
-  useEffect(() => {
-    if (!editing) setDraft(stringify(value));
-  }, [value, editing]);
+  // a realtime update from another user). Uses React's recommended
+  // "storing information from previous renders" pattern instead of an
+  // effect, so we never trigger a follow-up render after commit.
+  const [lastSyncedValue, setLastSyncedValue] = useState(value);
+  if (!editing && value !== lastSyncedValue) {
+    setLastSyncedValue(value);
+    setDraft(stringify(value));
+  }
 
   const enterEdit = useCallback(() => {
-    if (readOnly) return;
+    if (readOnly || lockOwner) return;
     setDraft(stringify(value));
     setLocalError(null);
     setEditing(true);
     onEditStart?.();
-  }, [readOnly, value, onEditStart]);
+    void acquireFieldLock(field);
+  }, [readOnly, lockOwner, value, onEditStart, acquireFieldLock, field]);
 
   const cancelEdit = useCallback(() => {
     setEditing(false);
     setLocalError(null);
     setDraft(stringify(value));
     onEditEnd?.();
-  }, [value, onEditEnd]);
+    void releaseFieldLock(field);
+  }, [value, onEditEnd, releaseFieldLock, field]);
 
   const commit = useCallback(async () => {
     const trimmed = draft.trim();
@@ -146,8 +165,9 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
 
     setEditing(false);
     onEditEnd?.();
+    void releaseFieldLock(field);
     await save(field, payload, target ? { target } : undefined);
-  }, [draft, value, validate, type, save, field, onEditEnd, target]);
+  }, [draft, value, validate, type, save, field, onEditEnd, target, releaseFieldLock]);
 
   const onKey = (
     e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -176,6 +196,24 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
     return (
       <span className={cn('inline-flex items-center', className)}>
         {display ? display(value) : <DisplayValue value={value} placeholder={placeholder} />}
+      </span>
+    );
+  }
+
+  if (lockOwner) {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 rounded-md px-1 -mx-1 cursor-not-allowed',
+          'bg-amber-50/40 dark:bg-amber-500/5',
+          className,
+        )}
+        data-field={field}
+        data-locked-by={lockOwner.userId}
+        title={`${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`}
+      >
+        {display ? display(value) : <DisplayValue value={value} placeholder={placeholder} />}
+        <LockedFieldBadge owner={lockOwner} />
       </span>
     );
   }
@@ -286,6 +324,20 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
           )}
         />
       )}
+      {showAiChip && aiCtx ? (
+        <AiSuggestChip
+          recordId={aiCtx.recordId}
+          fieldKey={field}
+          fieldLabel={ariaLabel ?? field}
+          fieldType={type}
+          currentValue={draft}
+          onSuggest={(suggestion) => {
+            setDraft(suggestion);
+            setLocalError(null);
+            queueMicrotask(() => inputRef.current?.focus());
+          }}
+        />
+      ) : null}
       <button
         type="button"
         onMouseDown={(e) => {

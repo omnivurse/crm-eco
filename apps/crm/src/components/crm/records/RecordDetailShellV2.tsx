@@ -95,6 +95,10 @@ import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
 import { CollapsibleSection } from './v2/CollapsibleSection';
 import { InlineRecordSearch } from './v2/InlineRecordSearch';
 import { SendEmailDialog } from './v2/SendEmailDialog';
+import {
+  AiFollowUpEmailButton,
+  type AiFollowUpEmailDraft,
+} from './v2/AiFollowUpEmailButton';
 import { NoteTemplatePicker } from './v2/NoteTemplatePicker';
 import { CustomizeRelatedListsDialog, type CustomizeRelatedListsItem } from './v2/CustomizeRelatedListsDialog';
 import { DataPrivacyPanel } from './v2/DataPrivacyPanel';
@@ -104,6 +108,8 @@ import { PresenceStack } from './v2/PresenceStack';
 import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
 import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
+import { RecordFieldLocksProvider } from '@/hooks/useRecordFieldLocks';
+import { RecordAiContextProvider } from './v2/RecordAiContext';
 import { useUiPreferences } from '@/hooks/useUiPreferences';
 import { useRecordHotkeys } from '@/hooks/useRecordHotkeys';
 import { useRecordPresence } from '@/hooks/useRecordPresence';
@@ -267,6 +273,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showSendEmailDialog, setShowSendEmailDialog] = useState(false);
+  const [aiEmailDraft, setAiEmailDraft] = useState<AiFollowUpEmailDraft | null>(
+    null,
+  );
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -511,8 +520,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // task / attachment. Toasts intentionally only fire for events from
   // *other* users, via `useLiveRecord`'s `isSelf` flag.
   const { user: clientUser, profile: clientProfile } = useClientAuth();
-  const { participants: presenceParticipants, setIntent: setPresenceIntent } =
-    useRecordPresence(record.id);
+  const {
+    participants: presenceParticipants,
+    setIntent: setPresenceIntent,
+    fieldLocks,
+    acquireFieldLock,
+    releaseFieldLock,
+  } = useRecordPresence(record.id);
 
   const handleLiveEvent = useCallback(
     (event: LiveRecordEvent) => {
@@ -737,11 +751,27 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   return (
     <RecordFieldSaveProvider
       recordId={record.id}
+      initialUpdatedAt={record.updated_at ?? null}
       onSaved={() => {
         router.refresh();
         void refreshInsights();
       }}
+      onConflict={({ field }) => {
+        toast.error('This record was updated by someone else', {
+          description: `Your change to "${field}" wasn't saved. Reload to see the latest.`,
+          action: {
+            label: 'Reload',
+            onClick: () => router.refresh(),
+          },
+        });
+      }}
     >
+    <RecordFieldLocksProvider
+      fieldLocks={fieldLocks}
+      acquireFieldLock={acquireFieldLock}
+      releaseFieldLock={releaseFieldLock}
+    >
+    <RecordAiContextProvider recordId={record.id} enabled>
     <div className={cn('flex h-full', className)}>
       <main className="flex-1 overflow-y-auto">
         {/* Sticky header ---------------------------------------------------- */}
@@ -1329,15 +1359,25 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     : []),
                 ]}
                 extras={
-                  <button
-                    type="button"
-                    onClick={() => setInsightsCollapsed(true)}
-                    className="w-full flex items-center justify-center gap-1 py-1.5 text-[11px] text-slate-400 hover:text-teal-600 transition-colors"
-                    aria-label="Collapse insights panel"
-                  >
-                    <ChevronDown className="w-3 h-3 -rotate-90" />
-                    Hide insights
-                  </button>
+                  <>
+                    <AiFollowUpEmailButton
+                      recordId={record.id}
+                      hasRecipient={Boolean(record.email)}
+                      onDraft={(draft) => {
+                        setAiEmailDraft(draft);
+                        setShowSendEmailDialog(true);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setInsightsCollapsed(true)}
+                      className="w-full flex items-center justify-center gap-1 py-1.5 text-[11px] text-slate-400 hover:text-teal-600 transition-colors"
+                      aria-label="Collapse insights panel"
+                    >
+                      <ChevronDown className="w-3 h-3 -rotate-90" />
+                      Hide insights
+                    </button>
+                  </>
                 }
               />
               )}
@@ -1593,12 +1633,20 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
       <SendEmailDialog
         open={showSendEmailDialog}
-        onOpenChange={setShowSendEmailDialog}
+        onOpenChange={(open) => {
+          setShowSendEmailDialog(open);
+          // Drop the AI draft once the dialog closes so the next manual
+          // open starts clean.
+          if (!open) setAiEmailDraft(null);
+        }}
         record={{ id: record.id, email: record.email, title: record.title }}
+        initialSubject={aiEmailDraft?.subject}
+        initialBody={aiEmailDraft?.body}
         onSent={() => {
           router.refresh();
           void refreshInsights();
           if (children.communications) setOverviewPane('emails');
+          setAiEmailDraft(null);
         }}
       />
 
@@ -1627,6 +1675,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         onOpenChange={setShowShortcutsDialog}
       />
     </div>
+    </RecordAiContextProvider>
+    </RecordFieldLocksProvider>
     </RecordFieldSaveProvider>
   );
 });

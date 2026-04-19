@@ -8,6 +8,45 @@ import {
 import { logPHIAccess } from '@/lib/security';
 import { executeCrmRecordPatch } from '@/lib/crm/record-patch-service';
 
+/**
+ * GET /api/crm/records/[id]
+ *
+ * Lightweight single-record fetch scoped to the caller's org. Used by
+ * inline lookup editors to resolve UUID → title without pulling full
+ * module data. RLS already enforces org membership on `crm_records`.
+ */
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await params;
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+    const { data: record, error } = await supabase
+      .from('crm_records')
+      .select('id, title, module_id, data, updated_at')
+      .eq('id', id)
+      .eq('org_id', profile.organization_id)
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!record) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(record);
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,11 +65,13 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    const ifMatch = request.headers.get('if-match') || null;
     const result = await executeCrmRecordPatch({
       supabase,
       profile,
       id,
       body,
+      ifMatchUpdatedAt: ifMatch,
     });
 
     if (!result.ok) {

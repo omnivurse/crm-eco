@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 3;
+const CACHE_VERSION = 5;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
@@ -84,7 +84,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Skip auth-related requests entirely — never cache, never intercept
-  if (url.pathname.includes('/auth/') || url.pathname.includes('/login')) {
+  if (
+    url.pathname.includes('/auth/') ||
+    url.pathname.includes('/login') ||
+    url.pathname.includes('/crm-login')
+  ) {
     return;
   }
 
@@ -117,7 +121,6 @@ function isStaticAsset(pathname) {
     '.woff',
     '.woff2',
     '.css',
-    '.js',
   ];
   return staticPatterns.some((pattern) => pathname.includes(pattern));
 }
@@ -171,9 +174,11 @@ async function networkFirst(request, cacheName) {
     safeCachePut(cacheName, request, networkResponse);
     return networkResponse;
   } catch (error) {
-    console.log('[CRM-SW] Network failed, trying cache');
     const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
+    if (cachedResponse) {
+      console.info('[CRM-SW] Serving cached API response (offline):', request.url);
+      return cachedResponse;
+    }
 
     return new Response(JSON.stringify({ error: 'Offline', cached: false }), {
       status: 503,
@@ -188,14 +193,19 @@ async function networkFirst(request, cacheName) {
 async function networkFirstWithOfflineFallback(request) {
   try {
     const networkResponse = await fetch(request);
-    safeCachePut(CACHE_NAME, request, networkResponse);
+    // Only cache successful HTML responses, not redirects (3xx) which
+    // cause cross-origin errors when replayed from cache.
+    if (networkResponse.status < 300) {
+      safeCachePut(CACHE_NAME, request, networkResponse);
+    }
     return networkResponse;
   } catch (error) {
-    console.log('[CRM-SW] Navigation failed, trying cache');
     const cachedResponse = await caches.match(request);
-    if (cachedResponse) return cachedResponse;
+    if (cachedResponse) {
+      console.info('[CRM-SW] Serving cached navigation (offline):', request.url);
+      return cachedResponse;
+    }
 
-    // Return offline page for navigation requests
     const offlinePage = await caches.match('/offline');
     if (offlinePage) return offlinePage;
 

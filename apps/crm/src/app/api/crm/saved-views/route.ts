@@ -45,9 +45,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// `filters` is a free-form JSONB blob — we accept either the legacy
+// `Record<string, unknown>` shape or the newer "view state" object
+// ({ filters: ViewFilter[], sort?, columns?, scope?, viewMode?, search? })
+// used by the V2 saved-views menu. Either way the storage is JSONB so
+// we only need to validate the outer type.
 const createViewSchema = z.object({
   name: z.string().min(1).max(100),
-  filters: z.record(z.unknown()),
+  filters: z.union([z.record(z.unknown()), z.array(z.unknown())]),
   page_key: z.string().default('contacts'),
   is_default: z.boolean().default(false),
 });

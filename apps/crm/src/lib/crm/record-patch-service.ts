@@ -52,8 +52,15 @@ export async function executeCrmRecordPatch(params: {
   profile: CrmPatchAuthProfile;
   id: string;
   body: Record<string, unknown>;
+  /**
+   * Optional optimistic-concurrency token. When provided, the PATCH
+   * fails with HTTP 409 if the stored `updated_at` no longer matches —
+   * i.e. someone else modified the record since the client last saw it.
+   * Used by the V2 inline editors via an `If-Match` header.
+   */
+  ifMatchUpdatedAt?: string | null;
 }): Promise<CrmRecordPatchResult> {
-  const { supabase, profile, id, body } = params;
+  const { supabase, profile, id, body, ifMatchUpdatedAt } = params;
 
   const { data: previousRecord, error: fetchError } = await supabase
     .from('crm_records')
@@ -64,6 +71,23 @@ export async function executeCrmRecordPatch(params: {
 
   if (fetchError || !previousRecord) {
     return { ok: false, status: 404, body: { error: 'Record not found' } };
+  }
+
+  if (
+    ifMatchUpdatedAt &&
+    previousRecord.updated_at &&
+    new Date(previousRecord.updated_at).getTime() !==
+      new Date(ifMatchUpdatedAt).getTime()
+  ) {
+    return {
+      ok: false,
+      status: 409,
+      body: {
+        error: 'Record was updated by someone else',
+        code: 'CONFLICT',
+        currentUpdatedAt: previousRecord.updated_at,
+      },
+    };
   }
 
   const updates: Record<string, unknown> = {};

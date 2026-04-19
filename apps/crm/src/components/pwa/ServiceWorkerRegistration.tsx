@@ -10,8 +10,13 @@ export function ServiceWorkerRegistration() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
 
   useEffect(() => {
-    // Gate behind env var — set NEXT_PUBLIC_ENABLE_SW=false in Vercel to disable
-    const swEnabled = process.env.NEXT_PUBLIC_ENABLE_SW !== 'false';
+    // Only register in production builds. Next.js dev server + HMR produces
+    // transient fetch failures that the SW otherwise logs and caches stale
+    // chunks. Opt back in locally with NEXT_PUBLIC_ENABLE_SW=true.
+    const isProd = process.env.NODE_ENV === 'production';
+    const forceEnable = process.env.NEXT_PUBLIC_ENABLE_SW === 'true';
+    const forceDisable = process.env.NEXT_PUBLIC_ENABLE_SW === 'false';
+    const swEnabled = !forceDisable && (isProd || forceEnable);
 
     if (swEnabled && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       registerServiceWorker();
@@ -19,6 +24,16 @@ export function ServiceWorkerRegistration() {
       // Listen for update events
       window.addEventListener('sw-update-available', () => {
         setUpdateAvailable(true);
+      });
+    } else if (!swEnabled && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      // If a previous build registered a SW, unregister it in dev so stale
+      // caches don't interfere with HMR.
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => {
+          if (reg.active?.scriptURL.endsWith('/sw.js')) {
+            reg.unregister();
+          }
+        });
       });
     }
   }, []);

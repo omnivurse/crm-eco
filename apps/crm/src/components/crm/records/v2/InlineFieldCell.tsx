@@ -21,6 +21,9 @@ import { InlineFieldEditor } from './InlineFieldEditor';
 import { InlineSelectField } from './InlineSelectField';
 import { InlineDateField } from './InlineDateField';
 import { InlineBooleanField } from './InlineBooleanField';
+import { InlineMultiSelectField } from './InlineMultiSelectField';
+import { InlineLookupField } from './InlineLookupField';
+import { InlineCarrierField } from './InlineCarrierField';
 
 export interface InlineFieldCellProps {
   field: CrmField;
@@ -48,17 +51,8 @@ export const InlineFieldCell = memo(function InlineFieldCell({
     return raw.map((v) => ({ value: v, label: v }));
   }, [field]);
 
-  // Fields with custom resolvers (carriers, lookups, users, rich text)
-  // aren't safe to round-trip through a simple inline editor yet. Render
-  // read-only with the existing FieldRenderer so the UI stays accurate.
-  const hasCustomRenderer =
-    !!field.metadata?.carrier_type ||
-    field.type === 'user' ||
-    field.type === 'lookup' ||
-    field.type === 'multiselect' ||
-    (field.type === 'text' && field.key === 'notes_history');
-
-  if (hasCustomRenderer) {
+  // Legacy imported HTML rendered elsewhere — keep read-only.
+  if (field.type === 'text' && field.key === 'notes_history') {
     return (
       <span className={className}>
         <FieldRenderer field={field} value={value} />
@@ -75,6 +69,20 @@ export const InlineFieldCell = memo(function InlineFieldCell({
     ariaLabel: field.label,
     className,
   };
+
+  // Carrier-typed fields (metadata.carrier_type) override their base
+  // type and render as an advisor-carrier picker regardless of whether
+  // the base type is 'text' or 'select'.
+  if (field.metadata?.carrier_type) {
+    return (
+      <InlineCarrierField
+        {...common}
+        value={value == null ? null : String(value)}
+        carrierType={field.metadata.carrier_type}
+        placeholder={`Select ${field.label.toLowerCase()}`}
+      />
+    );
+  }
 
   switch (field.type) {
     case 'boolean':
@@ -124,6 +132,43 @@ export const InlineFieldCell = memo(function InlineFieldCell({
           value={value == null ? '' : String(value)}
           type="textarea"
           placeholder={`Add ${field.label.toLowerCase()}`}
+        />
+      );
+
+    case 'multiselect':
+      return (
+        <InlineMultiSelectField
+          {...common}
+          value={Array.isArray(value) ? (value as string[]) : value == null ? [] : [String(value)]}
+          options={getFieldOptions(field.options)}
+          placeholder={`Add ${field.label.toLowerCase()}`}
+        />
+      );
+
+    case 'user':
+      return (
+        <InlineLookupField
+          {...common}
+          value={value == null ? null : String(value)}
+          kind="user"
+          placeholder={`Search ${field.label.toLowerCase()}`}
+        />
+      );
+
+    case 'lookup':
+      return (
+        <InlineLookupField
+          {...common}
+          value={value == null ? null : String(value)}
+          kind="lookup"
+          targetModuleKey={
+            Array.isArray(field.options) && field.options.length > 0
+              ? String(field.options[0])
+              : typeof field.options === 'string'
+                ? (field.options as string)
+                : null
+          }
+          placeholder={`Search ${field.label.toLowerCase()}`}
         />
       );
 

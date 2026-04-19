@@ -121,6 +121,22 @@ export interface RecordFieldSaveProviderProps {
   onSaved?: (field: string, value: unknown) => void;
   /** Debounce window for typed edits. Defaults to 250ms. */
   debounceMs?: number;
+  /**
+   * Seed value for the optimistic-concurrency token. Usually
+   * `record.updated_at` from the server. Sent as `If-Match` on every
+   * PATCH and updated in place after each successful save.
+   */
+  initialUpdatedAt?: string | null;
+  /**
+   * Called when a save returns HTTP 409 (record was modified by another
+   * user). Parent usually triggers `router.refresh()` and/or a toast so
+   * the user can retry against the new server state.
+   */
+  onConflict?: (info: {
+    field: string;
+    currentUpdatedAt: string | null;
+    value: unknown;
+  }) => void;
   children: ReactNode;
 }
 
@@ -136,11 +152,21 @@ export function RecordFieldSaveProvider({
   recordId,
   onSaved,
   debounceMs = 250,
+  initialUpdatedAt = null,
+  onConflict,
   children,
 }: RecordFieldSaveProviderProps) {
   const [fields, setFields] = useState<Record<string, FieldSaveState>>({});
   const pendingRef = useRef<Map<string, PendingEntry>>(new Map());
   const controllersRef = useRef<Map<string, AbortController>>(new Map());
+  // Optimistic-concurrency token, updated after each successful save.
+  // Refs (not state) so closures in debounced timers always read the
+  // freshest value without re-creating the debounce timer.
+  const updatedAtRef = useRef<string | null>(initialUpdatedAt);
+
+  useEffect(() => {
+    updatedAtRef.current = initialUpdatedAt ?? updatedAtRef.current;
+  }, [initialUpdatedAt]);
 
   const updateField = useCallback(
     (field: string, patch: Partial<FieldSaveState>) => {
@@ -166,9 +192,15 @@ export function RecordFieldSaveProvider({
           target === 'data'
             ? { data: { [field]: value } }
             : { [field]: value };
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (updatedAtRef.current) {
+          headers['If-Match'] = updatedAtRef.current;
+        }
         const res = await fetch(`/api/crm/records/${recordId}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           credentials: 'same-origin',
           signal: controller.signal,
           body: JSON.stringify(payload),
@@ -176,14 +208,34 @@ export function RecordFieldSaveProvider({
 
         if (!res.ok) {
           let message = `Save failed (${res.status})`;
+          let currentUpdatedAt: string | null = null;
           try {
             const body = await res.json();
             if (body?.error) message = body.error as string;
+            if (typeof body?.currentUpdatedAt === 'string') {
+              currentUpdatedAt = body.currentUpdatedAt;
+            }
           } catch {
             /* ignore */
           }
+          if (res.status === 409) {
+            message = 'Record was updated elsewhere — reload to retry';
+            // Advance our token so the *next* save (for a different
+            // field) doesn't also trip the conflict check on stale data.
+            if (currentUpdatedAt) updatedAtRef.current = currentUpdatedAt;
+            onConflict?.({ field, currentUpdatedAt, value });
+          }
           updateField(field, { status: 'error', error: message });
           return;
+        }
+
+        try {
+          const body = (await res.clone().json()) as {
+            updated_at?: string | null;
+          };
+          if (body?.updated_at) updatedAtRef.current = body.updated_at;
+        } catch {
+          /* response not JSON — ignore */
         }
 
         updateField(field, {
@@ -200,7 +252,7 @@ export function RecordFieldSaveProvider({
         controllersRef.current.delete(field);
       }
     },
-    [recordId, onSaved, updateField],
+    [recordId, onSaved, onConflict, updateField],
   );
 
   const save = useCallback<RecordFieldSaveContextValue['save']>(

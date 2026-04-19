@@ -13,6 +13,11 @@ import {
   useRecordFieldSave,
   type FieldSaveTarget,
 } from '@/hooks/useRecordFieldSave';
+import {
+  useRecordFieldLocks,
+  useFieldLockOwner,
+} from '@/hooks/useRecordFieldLocks';
+import { LockedFieldBadge } from './LockedFieldBadge';
 
 export interface InlineBooleanFieldProps {
   field: string;
@@ -39,6 +44,8 @@ export const InlineBooleanField = memo(function InlineBooleanField({
 }: InlineBooleanFieldProps) {
   const { save, fields } = useRecordFieldSave();
   const state = fields[field];
+  const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
+  const lockOwner = useFieldLockOwner(field);
   const [local, setLocal] = useState<boolean>(!!value);
 
   useEffect(() => {
@@ -46,17 +53,27 @@ export const InlineBooleanField = memo(function InlineBooleanField({
   }, [value]);
 
   const onToggle = useCallback(async () => {
-    if (readOnly) return;
+    if (readOnly || lockOwner) return;
     const next = !local;
     setLocal(next);
     onEditStart?.();
+    void acquireFieldLock(field);
     await save(field, next, target ? { target } : undefined);
     onEditEnd?.();
-  }, [local, readOnly, save, field, target, onEditStart, onEditEnd]);
+    void releaseFieldLock(field);
+  }, [local, readOnly, lockOwner, save, field, target, onEditStart, onEditEnd, acquireFieldLock, releaseFieldLock]);
 
-  if (readOnly) {
+  if (readOnly || lockOwner) {
     return (
-      <span className={cn('inline-flex items-center gap-1', className)}>
+      <span
+        className={cn('inline-flex items-center gap-1.5', className)}
+        data-field={field}
+        title={
+          lockOwner
+            ? `${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`
+            : undefined
+        }
+      >
         <span
           className={cn(
             'inline-flex items-center justify-center rounded-full w-2 h-2',
@@ -66,6 +83,7 @@ export const InlineBooleanField = memo(function InlineBooleanField({
         <span className="text-sm text-slate-700 dark:text-slate-200">
           {local ? labels.on : labels.off}
         </span>
+        {lockOwner ? <LockedFieldBadge owner={lockOwner} /> : null}
       </span>
     );
   }

@@ -17,6 +17,11 @@ import {
   useRecordFieldSave,
   type FieldSaveTarget,
 } from '@/hooks/useRecordFieldSave';
+import {
+  useRecordFieldLocks,
+  useFieldLockOwner,
+} from '@/hooks/useRecordFieldLocks';
+import { LockedFieldBadge } from './LockedFieldBadge';
 
 export interface InlineSelectOption {
   value: string;
@@ -51,6 +56,8 @@ export const InlineSelectField = memo(function InlineSelectField({
 }: InlineSelectFieldProps) {
   const { save, fields } = useRecordFieldSave();
   const state = fields[field];
+  const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
+  const lockOwner = useFieldLockOwner(field);
   const currentLabel = useMemo(() => {
     const found = options.find((o) => o.value === value);
     return found?.label ?? (value ? String(value) : null);
@@ -61,14 +68,23 @@ export const InlineSelectField = memo(function InlineSelectField({
       const next = e.target.value || null;
       if (next === (value ?? '')) return;
       onEditEnd?.();
+      void releaseFieldLock(field);
       await save(field, next, target ? { target } : undefined);
     },
-    [save, field, target, value, onEditEnd],
+    [save, field, target, value, onEditEnd, releaseFieldLock],
   );
 
-  if (readOnly) {
+  if (readOnly || lockOwner) {
     return (
-      <span className={cn('inline-flex items-center', className)}>
+      <span
+        className={cn('inline-flex items-center gap-1.5', className)}
+        data-field={field}
+        title={
+          lockOwner
+            ? `${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`
+            : undefined
+        }
+      >
         {currentLabel ? (
           <Badge variant="secondary" className="font-normal">
             {currentLabel}
@@ -76,6 +92,7 @@ export const InlineSelectField = memo(function InlineSelectField({
         ) : (
           <span className="text-sm text-slate-400 italic">{placeholder}</span>
         )}
+        {lockOwner ? <LockedFieldBadge owner={lockOwner} /> : null}
       </span>
     );
   }
@@ -106,8 +123,14 @@ export const InlineSelectField = memo(function InlineSelectField({
         className="absolute inset-0 opacity-0 cursor-pointer"
         value={value ?? ''}
         onChange={handleChange}
-        onFocus={onEditStart}
-        onBlur={onEditEnd}
+        onFocus={() => {
+          onEditStart?.();
+          void acquireFieldLock(field);
+        }}
+        onBlur={() => {
+          onEditEnd?.();
+          void releaseFieldLock(field);
+        }}
         aria-label={ariaLabel ?? field}
       >
         <option value="">{placeholder}</option>

@@ -15,6 +15,11 @@ import {
   useRecordFieldSave,
   type FieldSaveTarget,
 } from '@/hooks/useRecordFieldSave';
+import {
+  useRecordFieldLocks,
+  useFieldLockOwner,
+} from '@/hooks/useRecordFieldLocks';
+import { LockedFieldBadge } from './LockedFieldBadge';
 
 export interface InlineDateFieldProps {
   field: string;
@@ -70,6 +75,8 @@ export const InlineDateField = memo(function InlineDateField({
 }: InlineDateFieldProps) {
   const { save, fields } = useRecordFieldSave();
   const state = fields[field];
+  const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
+  const lockOwner = useFieldLockOwner(field);
   const [draft, setDraft] = useState<string>(toInputValue(value, mode));
 
   const commit = useCallback(
@@ -79,20 +86,30 @@ export const InlineDateField = memo(function InlineDateField({
       // value be the canonical ISO-like form (Postgres accepts it).
       const payload = normalized ? normalized : null;
       onEditEnd?.();
+      void releaseFieldLock(field);
       await save(field, payload, target ? { target } : undefined);
     },
-    [save, field, target, onEditEnd],
+    [save, field, target, onEditEnd, releaseFieldLock],
   );
 
-  if (readOnly) {
+  if (readOnly || lockOwner) {
     const display = toDisplay(value, mode);
     return (
-      <span className={cn('inline-flex items-center gap-1', className)}>
+      <span
+        className={cn('inline-flex items-center gap-1.5', className)}
+        data-field={field}
+        title={
+          lockOwner
+            ? `${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`
+            : undefined
+        }
+      >
         {display ? (
           <span className="text-sm text-slate-700 dark:text-slate-200">{display}</span>
         ) : (
           <span className="text-sm text-slate-400 italic">{placeholder}</span>
         )}
+        {lockOwner ? <LockedFieldBadge owner={lockOwner} /> : null}
       </span>
     );
   }
@@ -129,8 +146,14 @@ export const InlineDateField = memo(function InlineDateField({
           setDraft(e.target.value);
           void commit(e.target.value);
         }}
-        onFocus={onEditStart}
-        onBlur={onEditEnd}
+        onFocus={() => {
+          onEditStart?.();
+          void acquireFieldLock(field);
+        }}
+        onBlur={() => {
+          onEditEnd?.();
+          void releaseFieldLock(field);
+        }}
         aria-label={ariaLabel ?? field}
       />
       {state?.status === 'saving' || state?.status === 'pending' ? (

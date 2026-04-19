@@ -33,6 +33,8 @@ export interface RecordPresenceEntry {
   /** Avatar URL if set in user_metadata. */
   avatarUrl: string | null;
   intent: PresenceIntent;
+  /** Field keys this participant currently holds a soft lock on. */
+  lockedFields: string[];
   /** When this session joined — used to sort by arrival. */
   joinedAt: string;
   /** Internal presence_ref (unique per tab). Helpful for keys. */
@@ -43,6 +45,17 @@ export interface UseRecordPresenceResult {
   participants: RecordPresenceEntry[];
   myIntent: PresenceIntent;
   setIntent: (intent: PresenceIntent) => Promise<void>;
+  /**
+   * Map of field key -> participant holding the lock (*other* users only).
+   * When two tabs from different users race the same field we take the
+   * latest joiner as the lock owner; either way the UI shows "someone
+   * else is editing".
+   */
+  fieldLocks: Record<string, RecordPresenceEntry>;
+  /** Announce we've started editing a field; disconnects auto-release. */
+  acquireFieldLock: (field: string) => Promise<void>;
+  /** Announce we've released a field lock. */
+  releaseFieldLock: (field: string) => Promise<void>;
   connected: boolean;
 }
 
@@ -52,6 +65,7 @@ interface TrackPayload {
   email: string | null;
   avatar_url: string | null;
   intent: PresenceIntent;
+  locked_fields: string[];
   joined_at: string;
 }
 
@@ -66,6 +80,10 @@ export function useRecordPresence(
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const joinedAtRef = useRef<string>(new Date().toISOString());
+  // Mutable sources of truth for the current tab's payload so repeated
+  // track() calls don't drop previously-set state (intent vs locks).
+  const intentRef = useRef<PresenceIntent>('viewing');
+  const lockedFieldsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!enabled || !recordId || !user || !profile) return;
@@ -80,7 +98,7 @@ export function useRecordPresence(
       },
     });
 
-    const buildPayload = (intent: PresenceIntent): TrackPayload => ({
+    const buildPayload = (): TrackPayload => ({
       user_id: profile.id,
       full_name: profile.full_name,
       email: user.email ?? null,
@@ -89,7 +107,8 @@ export function useRecordPresence(
           | string
           | undefined
           ?? null,
-      intent,
+      intent: intentRef.current,
+      locked_fields: Array.from(lockedFieldsRef.current),
       joined_at: joinedAtRef.current,
     });
 
@@ -109,6 +128,7 @@ export function useRecordPresence(
           email: latest.email,
           avatarUrl: latest.avatar_url,
           intent: latest.intent,
+          lockedFields: Array.isArray(latest.locked_fields) ? latest.locked_fields : [],
           joinedAt: latest.joined_at,
           presenceRef: key,
         });
@@ -125,7 +145,8 @@ export function useRecordPresence(
         if (status === 'SUBSCRIBED') {
           setConnected(true);
           try {
-            await channel.track(buildPayload('viewing'));
+            intentRef.current = 'viewing';
+            await channel.track(buildPayload());
           } catch (err) {
             console.warn('[useRecordPresence] initial track failed:', err);
           }
@@ -149,30 +170,75 @@ export function useRecordPresence(
     };
   }, [recordId, enabled, user, profile]);
 
+  const trackCurrent = useCallback(async () => {
+    const ch = channelRef.current;
+    if (!ch || !user || !profile) return;
+    try {
+      await ch.track({
+        user_id: profile.id,
+        full_name: profile.full_name,
+        email: user.email ?? null,
+        avatar_url:
+          (user.user_metadata as Record<string, unknown> | undefined)?.avatar_url as
+            | string
+            | undefined
+            ?? null,
+        intent: intentRef.current,
+        locked_fields: Array.from(lockedFieldsRef.current),
+        joined_at: joinedAtRef.current,
+      } satisfies TrackPayload);
+    } catch (err) {
+      console.warn('[useRecordPresence] track failed:', err);
+    }
+  }, [user, profile]);
+
   const setIntent = useCallback(
     async (intent: PresenceIntent) => {
+      intentRef.current = intent;
       setMyIntentState(intent);
-      const ch = channelRef.current;
-      if (!ch || !user || !profile) return;
-      try {
-        await ch.track({
-          user_id: profile.id,
-          full_name: profile.full_name,
-          email: user.email ?? null,
-          avatar_url:
-            (user.user_metadata as Record<string, unknown> | undefined)?.avatar_url as
-              | string
-              | undefined
-              ?? null,
-          intent,
-          joined_at: joinedAtRef.current,
-        } satisfies TrackPayload);
-      } catch (err) {
-        console.warn('[useRecordPresence] setIntent track failed:', err);
-      }
+      await trackCurrent();
     },
-    [user, profile],
+    [trackCurrent],
   );
 
-  return { participants, myIntent, setIntent, connected };
+  const acquireFieldLock = useCallback(
+    async (field: string) => {
+      if (lockedFieldsRef.current.has(field)) return;
+      lockedFieldsRef.current.add(field);
+      await trackCurrent();
+    },
+    [trackCurrent],
+  );
+
+  const releaseFieldLock = useCallback(
+    async (field: string) => {
+      if (!lockedFieldsRef.current.has(field)) return;
+      lockedFieldsRef.current.delete(field);
+      await trackCurrent();
+    },
+    [trackCurrent],
+  );
+
+  // Derive field -> owner map from participants (self is already excluded).
+  // If multiple users claim the same field we keep the latest joiner so the
+  // UI has a single deterministic owner to display.
+  const fieldLocks: Record<string, RecordPresenceEntry> = {};
+  for (const p of participants) {
+    for (const f of p.lockedFields) {
+      const existing = fieldLocks[f];
+      if (!existing || p.joinedAt > existing.joinedAt) {
+        fieldLocks[f] = p;
+      }
+    }
+  }
+
+  return {
+    participants,
+    myIntent,
+    setIntent,
+    fieldLocks,
+    acquireFieldLock,
+    releaseFieldLock,
+    connected,
+  };
 }
