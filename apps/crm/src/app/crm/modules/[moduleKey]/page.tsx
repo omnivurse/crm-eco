@@ -14,10 +14,11 @@ import {
   getCachedTerritories,
   getAdvisorsForTree,
   getAgentTreeData,
+  getDealStages,
 } from '@/lib/crm/queries';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
-import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy } from '@/lib/crm/types';
+import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 
 /* ---------- Contacts tab components (lazy-loaded) ---------- */
 const ContactGroups = dynamic(() => import('@/components/contacts/ContactGroups'));
@@ -249,6 +250,18 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     }
   }
 
+  // Deal stages power the kanban pipeline columns for the deals module. We
+  // fetch them server-side so the first paint of the board has real stage
+  // order / probability / color instead of inferring from record values.
+  let dealStages: CrmDealStage[] = [];
+  if (crmModule.key === 'deals') {
+    try {
+      dealStages = await getDealStages(profile.organization_id);
+    } catch (err) {
+      console.error('[ModulePage] Failed to fetch deal stages:', err);
+    }
+  }
+
   const totalPages = Math.ceil(total / pageSize);
 
   const buildPageUrl = (p: number) => {
@@ -279,6 +292,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         advisorTreeData={advisorTreeData}
         agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}
+        dealStages={dealStages}
       />
 
       {/* Pagination */}

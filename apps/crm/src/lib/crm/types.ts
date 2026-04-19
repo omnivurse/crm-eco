@@ -502,6 +502,8 @@ export interface CrmDealStage {
   is_lost: boolean;
   display_order: number;
   is_active: boolean;
+  /** Optional WIP (work-in-progress) cap surfaced on the kanban. NULL = no cap. */
+  wip_limit?: number | null;
   created_at: string;
   updated_at: string;
 }

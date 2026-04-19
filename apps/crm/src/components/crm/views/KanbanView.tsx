@@ -44,6 +44,10 @@ import {
   MoreHorizontal,
   Eye,
   Trash2,
+  Trophy,
+  XCircle,
+  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -53,7 +57,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import { toast } from 'sonner';
-import type { CrmRecord, CrmField } from '@/lib/crm/types';
+import type { CrmRecord, CrmField, CrmDealStage } from '@/lib/crm/types';
 
 interface KanbanViewProps {
   records: CrmRecord[];
@@ -61,12 +65,34 @@ interface KanbanViewProps {
   moduleKey: string;
   onRowClick?: (recordId: string) => void;
   onBulkDelete?: (ids: string[]) => void;
+  /**
+   * Optional authoritative deal-stage catalog. When provided AND the user is
+   * grouping by `stage`, the kanban renders real pipeline columns with
+   * probability / WIP limits / won-lost styling instead of inferring columns
+   * from record values.
+   */
+  stages?: CrmDealStage[];
 }
 
 interface KanbanColumn {
   key: string;
   label: string;
   color: string;
+  /** Win probability 0-100, sourced from `crm_deal_stages.probability`. */
+  probability?: number;
+  isWon?: boolean;
+  isLost?: boolean;
+  wipLimit?: number | null;
+}
+
+const USD = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
+
+function formatMoney(n: number): string {
+  return USD.format(n);
 }
 
 const COLUMN_COLORS = [
@@ -109,11 +135,14 @@ const KanbanCard = memo(function KanbanCard({
   isDragOverlay,
   onRowClick,
   onDelete,
+  columnProbability,
 }: {
   record: CrmRecord;
   isDragOverlay?: boolean;
   onRowClick?: (id: string) => void;
   onDelete?: () => void;
+  /** If > 0 and the card shows an amount, we also render `amount × p%` weighted. */
+  columnProbability?: number;
 }) {
   const {
     attributes,
@@ -168,11 +197,18 @@ const KanbanCard = memo(function KanbanCard({
 
           <div className="mt-2 space-y-1.5">
             {amount > 0 && (
-              <div className="flex items-center gap-1.5">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 self-center" />
                 <span className="text-sm font-bold text-slate-900 dark:text-white">
-                  ${amount.toLocaleString()}
+                  {formatMoney(amount)}
                 </span>
+                {columnProbability !== undefined &&
+                columnProbability > 0 &&
+                columnProbability < 100 ? (
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    · {formatMoney((amount * columnProbability) / 100)} weighted
+                  </span>
+                ) : null}
               </div>
             )}
 
@@ -230,46 +266,102 @@ const KanbanCard = memo(function KanbanCard({
 const Column = memo(function Column({
   column,
   records,
-  index,
   onRowClick,
   onDelete,
 }: {
   column: KanbanColumn;
   records: CrmRecord[];
-  index: number;
   onRowClick?: (id: string) => void;
   onDelete?: (id: string) => void;
 }) {
-  const totalAmount = records.reduce((sum, r) => sum + (Number(r.data?.amount) || 0), 0);
+  const totalAmount = records.reduce(
+    (sum, r) => sum + (Number(r.data?.amount) || 0),
+    0,
+  );
+  const weighted =
+    column.probability !== undefined && column.probability > 0
+      ? (totalAmount * column.probability) / 100
+      : null;
+  const wipExceeded =
+    column.wipLimit != null && records.length > column.wipLimit;
+
+  // Body tints for terminal stages so sales reps can scan the board fast.
+  const bodyTint = column.isWon
+    ? 'bg-emerald-50/60 dark:bg-emerald-500/10 border-emerald-200/70 dark:border-emerald-500/20'
+    : column.isLost
+      ? 'bg-rose-50/60 dark:bg-rose-500/10 border-rose-200/70 dark:border-rose-500/20'
+      : 'bg-slate-50/50 dark:bg-slate-800/20 border-slate-200 dark:border-white/5';
 
   return (
     <div className="flex flex-col w-[300px] min-w-[300px] flex-shrink-0">
       {/* Column Header */}
-      <div className="flex items-center gap-2 mb-3 px-1">
+      <div className="flex items-center gap-2 mb-2 px-1">
         <div
           className="w-2.5 h-2.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: column.color }}
         />
+        {column.isWon ? (
+          <Trophy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+        ) : column.isLost ? (
+          <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 flex-shrink-0" />
+        ) : null}
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white truncate">
           {column.label || 'No Value'}
         </h3>
-        <Badge variant="secondary" className="text-[11px] px-1.5 py-0 h-5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-          {records.length}
+        <Badge
+          variant="secondary"
+          className={cn(
+            'text-[11px] px-1.5 py-0 h-5 text-slate-600 dark:text-slate-400',
+            wipExceeded
+              ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300'
+              : 'bg-slate-100 dark:bg-slate-800',
+          )}
+          title={
+            wipExceeded
+              ? `Exceeds WIP limit of ${column.wipLimit}`
+              : undefined
+          }
+        >
+          {column.wipLimit != null
+            ? `${records.length}/${column.wipLimit}`
+            : records.length}
+          {wipExceeded ? (
+            <AlertTriangle className="w-3 h-3 ml-1 -mr-0.5" />
+          ) : null}
         </Badge>
-        {totalAmount > 0 && (
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 ml-auto font-medium">
-            ${totalAmount.toLocaleString()}
+        {column.probability !== undefined &&
+        column.probability > 0 &&
+        column.probability < 100 ? (
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide ml-auto">
+            {column.probability}%
           </span>
-        )}
+        ) : null}
       </div>
+
+      {/* Column subtotals */}
+      {totalAmount > 0 && (
+        <div className="flex items-center gap-2 mb-2 px-1 text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="font-medium text-slate-700 dark:text-slate-300">
+            {formatMoney(totalAmount)}
+          </span>
+          {weighted !== null ? (
+            <span>· {formatMoney(weighted)} weighted</span>
+          ) : null}
+        </div>
+      )}
 
       {/* Column Body */}
       <SortableContext
         id={column.key}
-        items={records.map(r => r.id)}
+        items={records.map((r) => r.id)}
         strategy={verticalListSortingStrategy}
       >
-        <div className="flex-1 space-y-2 min-h-[100px] p-2 rounded-xl bg-slate-50/50 dark:bg-slate-800/20 border border-dashed border-slate-200 dark:border-white/5">
+        <div
+          className={cn(
+            'flex-1 space-y-2 min-h-[100px] p-2 rounded-xl border border-dashed',
+            bodyTint,
+          )}
+        >
           {records.length === 0 ? (
             <div className="flex items-center justify-center h-24 text-xs text-slate-400 dark:text-slate-600">
               No records
@@ -281,6 +373,7 @@ const Column = memo(function Column({
                 record={record}
                 onRowClick={onRowClick}
                 onDelete={() => onDelete?.(record.id)}
+                columnProbability={column.probability}
               />
             ))
           )}
@@ -296,6 +389,7 @@ export const KanbanView = memo(function KanbanView({
   moduleKey,
   onRowClick,
   onBulkDelete,
+  stages,
 }: KanbanViewProps) {
   const router = useRouter();
 
@@ -303,7 +397,32 @@ export const KanbanView = memo(function KanbanView({
   const groupableFields = useMemo(() => {
     const selectFields = getGroupableFields(fields);
     const systemFields: CrmField[] = [];
-    if (!selectFields.find(f => f.key === 'status')) {
+    const hasStages = (stages?.length ?? 0) > 0;
+    if (hasStages && !selectFields.find((f) => f.key === 'stage')) {
+      systemFields.push({
+        id: '_stage',
+        org_id: '',
+        module_id: '',
+        key: 'stage',
+        label: 'Stage',
+        type: 'select',
+        required: false,
+        is_system: true,
+        is_indexed: false,
+        is_title_field: false,
+        is_pinned: false,
+        options: [],
+        validation: {},
+        default_value: null,
+        tooltip: null,
+        display_order: 0,
+        section: '',
+        width: 'full',
+        created_at: '',
+        updated_at: '',
+      });
+    }
+    if (!selectFields.find((f) => f.key === 'status')) {
       systemFields.push({
         id: '_status',
         org_id: '',
@@ -328,35 +447,53 @@ export const KanbanView = memo(function KanbanView({
       });
     }
     return [...systemFields, ...selectFields];
-  }, [fields]);
+  }, [fields, stages]);
 
+  // Default grouping: stage when available (deals), otherwise status.
   const [groupByField, setGroupByField] = useState<string>(
-    groupableFields[0]?.key || 'status'
+    (stages?.length ?? 0) > 0 ? 'stage' : groupableFields[0]?.key || 'status',
   );
   const [records, setRecords] = useState(initialRecords);
   const [activeDragRecord, setActiveDragRecord] = useState<CrmRecord | null>(null);
 
-  // Build columns from unique values
+  // Build columns from unique values. When grouping by `stage` and we have an
+  // authoritative stage catalog, we use it — this gives us real ordering,
+  // probability, color, WIP limits, and won/lost semantics.
   const columns = useMemo((): KanbanColumn[] => {
-    const field = fields.find(f => f.key === groupByField);
-    const uniqueValues = new Set<string>();
-
-    // First add field options (if select type)
-    if (field?.options) {
-      const opts = Array.isArray(field.options) ? field.options : [];
-      opts.forEach(o => uniqueValues.add(o));
+    if (groupByField === 'stage' && stages && stages.length > 0) {
+      const cols: KanbanColumn[] = stages
+        .slice()
+        .sort((a, b) => a.display_order - b.display_order)
+        .map((s) => ({
+          key: s.key,
+          label: s.name,
+          color: s.color || '#6366f1',
+          probability: s.probability,
+          isWon: s.is_won,
+          isLost: s.is_lost,
+          wipLimit: s.wip_limit ?? null,
+        }));
+      const hasUnassigned = records.some((r) => !getFieldValue(r, 'stage'));
+      if (hasUnassigned) {
+        cols.push({ key: '__none__', label: 'No stage', color: '#94A3B8' });
+      }
+      return cols;
     }
 
-    // Then add actual values from records
-    records.forEach(r => {
+    const field = fields.find((f) => f.key === groupByField);
+    const uniqueValues = new Set<string>();
+    if (field?.options) {
+      const opts = Array.isArray(field.options) ? field.options : [];
+      opts.forEach((o) => uniqueValues.add(o));
+    }
+    records.forEach((r) => {
       const val = getFieldValue(r, groupByField);
       if (val) uniqueValues.add(val);
     });
 
-    // Always add an empty column for records without a value
     const cols: KanbanColumn[] = [];
     let idx = 0;
-    uniqueValues.forEach(val => {
+    uniqueValues.forEach((val) => {
       cols.push({
         key: val,
         label: val,
@@ -365,18 +502,13 @@ export const KanbanView = memo(function KanbanView({
       idx++;
     });
 
-    // Add "No Value" column if any records lack the field
-    const hasUnassigned = records.some(r => !getFieldValue(r, groupByField));
+    const hasUnassigned = records.some((r) => !getFieldValue(r, groupByField));
     if (hasUnassigned) {
-      cols.push({
-        key: '__none__',
-        label: 'No Value',
-        color: '#94A3B8',
-      });
+      cols.push({ key: '__none__', label: 'No Value', color: '#94A3B8' });
     }
 
     return cols;
-  }, [records, fields, groupByField]);
+  }, [records, fields, groupByField, stages]);
 
   // Group records by column
   const recordsByColumn = useMemo(() => {
@@ -491,6 +623,52 @@ export const KanbanView = memo(function KanbanView({
     }
   }, [onRowClick, router]);
 
+  /**
+   * Pipeline summary shown as a sticky footer beneath the board. Only
+   * meaningful when we're grouping by an authoritative `stage` catalog and
+   * records carry a numeric `amount`; otherwise it stays hidden.
+   */
+  const pipelineSummary = useMemo(() => {
+    if (groupByField !== 'stage' || !stages || stages.length === 0) {
+      return null;
+    }
+    const stageByKey = new Map<string, CrmDealStage>(
+      stages.map((s) => [s.key, s]),
+    );
+    let totalPipeline = 0;
+    let weightedPipeline = 0;
+    let wonTotal = 0;
+    let lostTotal = 0;
+    let openCount = 0;
+    let wonCount = 0;
+    let lostCount = 0;
+    for (const r of records) {
+      const amount = Number(r.data?.amount) || 0;
+      const stageKey = getFieldValue(r, 'stage');
+      const stage = stageByKey.get(stageKey);
+      if (stage?.is_won) {
+        wonTotal += amount;
+        wonCount += 1;
+      } else if (stage?.is_lost) {
+        lostTotal += amount;
+        lostCount += 1;
+      } else {
+        totalPipeline += amount;
+        weightedPipeline += (amount * (stage?.probability ?? 0)) / 100;
+        openCount += 1;
+      }
+    }
+    return {
+      totalPipeline,
+      weightedPipeline,
+      wonTotal,
+      lostTotal,
+      openCount,
+      wonCount,
+      lostCount,
+    };
+  }, [groupByField, stages, records]);
+
   if (initialRecords.length === 0) {
     return (
       <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 p-12 text-center">
@@ -540,12 +718,11 @@ export const KanbanView = memo(function KanbanView({
       >
         <div className="overflow-x-auto pb-4 scrollbar-thin">
           <div className="flex gap-4 min-w-max">
-            {columns.map((column, index) => (
+            {columns.map((column) => (
               <Column
                 key={column.key}
                 column={column}
                 records={recordsByColumn[column.key] || []}
-                index={index}
                 onRowClick={handleRowClick}
                 onDelete={(id) => onBulkDelete?.([id])}
               />
@@ -565,6 +742,75 @@ export const KanbanView = memo(function KanbanView({
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {pipelineSummary ? (
+        <div className="sticky bottom-2 z-10">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 backdrop-blur px-4 py-2.5 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-500 dark:text-slate-400">
+                Pipeline
+              </span>
+            </div>
+            <PipelineStat
+              label="Open"
+              value={formatMoney(pipelineSummary.totalPipeline)}
+              sub={`${pipelineSummary.openCount} deals`}
+            />
+            <PipelineStat
+              label="Weighted"
+              value={formatMoney(pipelineSummary.weightedPipeline)}
+              sub="open × probability"
+              accent="text-teal-600 dark:text-teal-400"
+            />
+            <PipelineStat
+              label="Won"
+              value={formatMoney(pipelineSummary.wonTotal)}
+              sub={`${pipelineSummary.wonCount} deals`}
+              accent="text-emerald-600 dark:text-emerald-400"
+            />
+            <PipelineStat
+              label="Lost"
+              value={formatMoney(pipelineSummary.lostTotal)}
+              sub={`${pipelineSummary.lostCount} deals`}
+              accent="text-rose-600 dark:text-rose-400"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 });
+
+function PipelineStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: string;
+}) {
+  return (
+    <div className="flex flex-col leading-tight">
+      <span className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-500">
+        {label}
+      </span>
+      <span
+        className={cn(
+          'text-sm font-bold text-slate-900 dark:text-white',
+          accent,
+        )}
+      >
+        {value}
+      </span>
+      {sub ? (
+        <span className="text-[10px] text-slate-400 dark:text-slate-500">
+          {sub}
+        </span>
+      ) : null}
+    </div>
+  );
+}

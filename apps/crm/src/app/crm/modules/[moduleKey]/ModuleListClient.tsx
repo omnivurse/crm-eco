@@ -11,7 +11,7 @@ import { KanbanView } from '@/components/crm/views/KanbanView';
 import { TimelineView } from '@/components/crm/views/TimelineView';
 import { SplitView } from '@/components/crm/views/SplitView';
 import { TreeView } from '@/components/crm/views/TreeView';
-import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, TreeGroupBy } from '@/lib/crm/types';
+import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 
 // Lazy-load ChartView (~150KB recharts) only when user switches to chart mode
@@ -36,6 +36,8 @@ interface ModuleListClientProps {
   agentTreeData?: AgentTreeData | null;
   /** Which field the tree groups by */
   treeGroupBy?: TreeGroupBy;
+  /** Deal stages — only provided for the deals module, powers kanban columns. */
+  dealStages?: CrmDealStage[];
 }
 
 // Inner component that consumes the ModuleShell context and renders the active view
@@ -48,6 +50,7 @@ function ModuleViewContent({
   advisorTreeData,
   agentTreeData,
   treeGroupBy,
+  dealStages,
 }: {
   records: CrmRecord[];
   fields: CrmField[];
@@ -57,6 +60,7 @@ function ModuleViewContent({
   advisorTreeData?: AdvisorTreeData | null;
   agentTreeData?: AgentTreeData | null;
   treeGroupBy?: TreeGroupBy;
+  dealStages?: CrmDealStage[];
 }) {
   const router = useRouter();
   const shellContext = useModuleShellOptional();
@@ -103,6 +107,7 @@ function ModuleViewContent({
           fields={fields}
           moduleKey={moduleKey}
           onRowClick={handleRowClick}
+          stages={dealStages}
         />
       );
 
@@ -181,6 +186,7 @@ function ModuleListContent({
   advisorTreeData,
   agentTreeData,
   treeGroupBy,
+  dealStages,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -202,6 +208,7 @@ function ModuleListContent({
         advisorTreeData={advisorTreeData}
         agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}
+        dealStages={dealStages}
       />
     </ModuleShell>
   );
