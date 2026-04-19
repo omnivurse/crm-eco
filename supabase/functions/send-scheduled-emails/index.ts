@@ -18,6 +18,23 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+async function getOrgEmailConfig(supabaseClient: any, organizationId: string) {
+  const { data: settings } = await supabaseClient
+    .from('system_settings')
+    .select('setting_key, setting_value')
+    .eq('organization_id', organizationId)
+    .eq('category', 'email')
+    .in('setting_key', ['email_from_address', 'email_from_name']);
+
+  const config: Record<string, string> = {};
+  (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
+
+  return {
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
+  };
+}
+
 serve(async (req) => {
   // Only allow POST
   if (req.method === 'OPTIONS') {
@@ -30,8 +47,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    const fromEmail = Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com';
-    const fromName = Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub';
 
     if (!resendApiKey) {
       return new Response(JSON.stringify({ error: 'RESEND_API_KEY not set' }), {
@@ -76,6 +91,11 @@ serve(async (req) => {
           continue;
         }
 
+        // Get per-org email config
+        const orgConfig = draft.org_id
+          ? await getOrgEmailConfig(supabase, draft.org_id)
+          : { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub' };
+
         // Get author info
         const { data: author } = await supabase
           .from('profiles')
@@ -85,12 +105,12 @@ serve(async (req) => {
 
         // Get author email from auth.users
         const { data: authUser } = await supabase.auth.admin.getUserById(draft.author_id);
-        const authorEmail = authUser?.user?.email || fromEmail;
-        const authorName = author?.full_name || fromName;
+        const authorEmail = authUser?.user?.email || orgConfig.fromEmail;
+        const authorName = author?.full_name || orgConfig.fromName;
 
         // Send via Resend
         const resendPayload: Record<string, unknown> = {
-          from: `${authorName} <${fromEmail}>`,
+          from: `${authorName} <${orgConfig.fromEmail}>`,
           to: toAddresses.map(r => r.name ? `${r.name} <${r.email}>` : r.email),
           subject: draft.subject || '(no subject)',
           html: draft.body_html || draft.body_text || '',

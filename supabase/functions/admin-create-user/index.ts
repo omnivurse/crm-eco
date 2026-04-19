@@ -16,6 +16,30 @@ function getCorsHeaders(req: Request): Record<string, string> {
   };
 }
 
+async function getOrgEmailConfig(organizationId: string) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/system_settings?organization_id=eq.${organizationId}&category=eq.email&setting_key=in.(%22email_from_address%22,%22email_from_name%22)&select=setting_key,setting_value`,
+    {
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        apikey: SERVICE_ROLE,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  const config: Record<string, string> = {};
+  if (res.ok) {
+    const settings = await res.json();
+    (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
+  }
+
+  return {
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
+  };
+}
+
 interface CreateUserBody {
   email: string;
   password?: string;
@@ -126,7 +150,7 @@ async function generateInviteLink(email: string): Promise<string> {
   return result?.properties?.action_link as string;
 }
 
-async function sendInviteEmail(to: string, fullName: string, role: string, inviteUrl: string): Promise<boolean> {
+async function sendInviteEmail(to: string, fullName: string, role: string, inviteUrl: string, orgConfig: { fromEmail: string; fromName: string }): Promise<boolean> {
   if (!RESEND_API_KEY) return false;
 
   const html = `<!doctype html>
@@ -135,7 +159,7 @@ async function sendInviteEmail(to: string, fullName: string, role: string, invit
     <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;border:1px solid #e2e8f0;">
       <tr>
         <td style="padding:24px 24px 8px 24px;">
-          <h1 style="margin:0;font-size:20px;">Welcome to Double Helix Hub</h1>
+          <h1 style="margin:0;font-size:20px;">Welcome to ${orgConfig.fromName}</h1>
           <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">Hello ${fullName || 'there'}, you've been invited as <b>${role}</b>.</p>
         </td>
       </tr>
@@ -150,7 +174,7 @@ async function sendInviteEmail(to: string, fullName: string, role: string, invit
   </body>
 </html>`;
 
-  const text = `Welcome to Double Helix Hub
+  const text = `Welcome to ${orgConfig.fromName}
 
 Hello ${fullName || 'there'}, you've been invited as ${role}.
 
@@ -167,9 +191,9 @@ If you did not expect this email, you can ignore it.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `Double Helix Hub <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
+        from: `${orgConfig.fromName} <${orgConfig.fromEmail}>`,
         to: [to],
-        subject: 'You have been invited to Double Helix Hub',
+        subject: `You have been invited to ${orgConfig.fromName}`,
         html,
         text
       })
@@ -316,15 +340,21 @@ Deno.serve(async (req) => {
       invited_by: adminProfile.role,
     });
 
+    // Get per-org email config
+    const orgConfig = adminProfile.organization_id
+      ? await getOrgEmailConfig(adminProfile.organization_id)
+      : { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: 'Double Helix Hub' };
+
     // Generate invite link
     const inviteUrl = await generateInviteLink(body.email);
-    
+
     // Send invite email (optional)
     const emailSent = await sendInviteEmail(
-      body.email, 
-      body.full_name ?? '', 
-      body.role, 
-      inviteUrl
+      body.email,
+      body.full_name ?? '',
+      body.role,
+      inviteUrl,
+      orgConfig
     );
 
     return new Response(

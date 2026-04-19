@@ -13,6 +13,49 @@ function getCorsHeaders(req: Request): Record<string, string> {
   };
 }
 
+async function getOrgEmailConfig(supabaseUrl: string, supabaseServiceKey: string, organizationId: string) {
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/system_settings?organization_id=eq.${organizationId}&category=eq.email&setting_key=in.(%22email_from_address%22,%22email_from_name%22)&select=setting_key,setting_value`,
+    {
+      headers: {
+        Authorization: `Bearer ${supabaseServiceKey}`,
+        apikey: supabaseServiceKey,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  const config: Record<string, string> = {};
+  if (res.ok) {
+    const settings = await res.json();
+    (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
+  }
+
+  return {
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'reports@mail.doublehelixhub.com',
+    fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
+  };
+}
+
+async function getOrgIdForUser(supabaseUrl: string, supabaseServiceKey: string, userId: string): Promise<string | null> {
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=organization_id`,
+    {
+      headers: {
+        Authorization: `Bearer ${supabaseServiceKey}`,
+        apikey: supabaseServiceKey,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (res.ok) {
+    const rows = await res.json();
+    return rows?.[0]?.organization_id ?? null;
+  }
+  return null;
+}
+
 interface DailyLogEntry {
   id: string;
   entry_type: string;
@@ -25,6 +68,7 @@ interface DailyLogReportPayload {
   reportId?: string;
   dailyLogId: string;
   userId: string;
+  organizationId?: string;
   workDate: string;
   startedAt: string;
   endedAt: string;
@@ -49,7 +93,6 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("FROM_EMAIL") || "reports@mail.doublehelixhub.com";
     const recipientEmail = Deno.env.get("REPORT_RECIPIENT_EMAIL") || "reports@mail.doublehelixhub.com";
 
     if (!resendApiKey) {
@@ -75,6 +118,7 @@ Deno.serve(async (req: Request) => {
       reportId,
       dailyLogId,
       userId,
+      organizationId: payloadOrgId,
       workDate,
       startedAt,
       endedAt,
@@ -102,15 +146,21 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Get per-org email config
+    const orgId = payloadOrgId || await getOrgIdForUser(supabaseUrl, supabaseServiceKey, userId);
+    const orgConfig = orgId
+      ? await getOrgEmailConfig(supabaseUrl, supabaseServiceKey, orgId)
+      : { fromEmail: Deno.env.get('FROM_EMAIL') || 'reports@mail.doublehelixhub.com', fromName: Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub' };
+
     const workDuration = calculateWorkDuration(startedAt, endedAt);
     const entryStats = calculateEntryStats(entries);
 
     const subject = `Daily Work Log - ${userName} - ${formatDate(workDate)}`;
-    const bodyText = generateTextReport(payload, workDuration, entryStats);
-    const bodyHtml = generateHtmlReport(payload, workDuration, entryStats);
+    const bodyText = generateTextReport(payload, workDuration, entryStats, orgConfig.fromName);
+    const bodyHtml = generateHtmlReport(payload, workDuration, entryStats, orgConfig.fromName);
 
     const emailRequest = {
-      from: `Double Helix Hub <${fromEmail}>`,
+      from: `${orgConfig.fromName} <${orgConfig.fromEmail}>`,
       to: recipientEmail,
       subject: subject,
       text: bodyText,
@@ -238,7 +288,8 @@ function formatTime(timeStr: string): string {
 function generateTextReport(
   payload: DailyLogReportPayload,
   workDuration: string,
-  entryStats: Record<string, number>
+  entryStats: Record<string, number>,
+  orgName: string = 'Double Helix Hub'
 ): string {
   const { userName, userEmail, workDate, startedAt, endedAt, highlights, blockers, entries } = payload;
 
@@ -286,7 +337,7 @@ function generateTextReport(
   }
 
   text += `\n${"=".repeat(60)}\n`;
-  text += `Report generated automatically by Double Helix Hub\n`;
+  text += `Report generated automatically by ${orgName}\n`;
 
   return text;
 }
@@ -294,7 +345,8 @@ function generateTextReport(
 function generateHtmlReport(
   payload: DailyLogReportPayload,
   workDuration: string,
-  entryStats: Record<string, number>
+  entryStats: Record<string, number>,
+  orgName: string = 'Double Helix Hub'
 ): string {
   const { userName, userEmail, workDate, startedAt, endedAt, highlights, blockers, entries } = payload;
 
@@ -465,11 +517,11 @@ function generateHtmlReport(
           <tr>
             <td style="background-color: #f9fafb; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #6b7280; font-size: 13px; text-align: center; line-height: 1.6;">
-                This report was automatically generated by Double Helix Hub.<br>
+                This report was automatically generated by ${orgName}.<br>
                 For questions or concerns, please contact the management team.
               </p>
               <p style="margin: 12px 0 0 0; color: #9ca3af; font-size: 12px; text-align: center;">
-                &copy; ${new Date().getFullYear()} Double Helix Hub. All rights reserved.
+                &copy; ${new Date().getFullYear()} ${orgName}. All rights reserved.
               </p>
             </td>
           </tr>

@@ -11,6 +11,30 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 3600_000;
 
+async function getOrgEmailConfig(organizationId: string) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/system_settings?organization_id=eq.${organizationId}&category=eq.email&setting_key=in.(%22email_from_address%22,%22email_from_name%22)&select=setting_key,setting_value`,
+    {
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        apikey: SERVICE_ROLE,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  const config: Record<string, string> = {};
+  if (res.ok) {
+    const settings = await res.json();
+    (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
+  }
+
+  return {
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
+  };
+}
+
 function checkRateLimit(key: string): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(key);
@@ -38,16 +62,16 @@ interface ResendConfirmationBody {
   email: string;
 }
 
-async function getProfileRole(accessToken: string): Promise<string | null> {
+async function getProfileRole(accessToken: string): Promise<{ role: string | null; organizationId: string | null }> {
   try {
     const tokenParts = accessToken.split('.');
-    if (tokenParts.length !== 3) return null;
+    if (tokenParts.length !== 3) return { role: null, organizationId: null };
 
     const payload = JSON.parse(atob(tokenParts[1]));
     const userId = payload?.sub;
-    if (!userId) return null;
+    if (!userId) return { role: null, organizationId: null };
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role&id=eq.${userId}`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role,organization_id&id=eq.${userId}`, {
       headers: {
         Authorization: `Bearer ${SERVICE_ROLE}`,
         apikey: SERVICE_ROLE,
@@ -55,13 +79,13 @@ async function getProfileRole(accessToken: string): Promise<string | null> {
       },
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) return { role: null, organizationId: null };
 
     const rows = await res.json();
-    return rows?.[0]?.role ?? null;
+    return { role: rows?.[0]?.role ?? null, organizationId: rows?.[0]?.organization_id ?? null };
   } catch (error) {
     console.error('Error fetching profile role:', error);
-    return null;
+    return { role: null, organizationId: null };
   }
 }
 
@@ -126,7 +150,7 @@ async function confirmUserEmail(userId: string): Promise<boolean> {
   return true;
 }
 
-async function sendConfirmationEmail(to: string): Promise<boolean> {
+async function sendConfirmationEmail(to: string, orgConfig: { fromEmail: string; fromName: string }): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY not configured - skipping email send');
     return false;
@@ -147,7 +171,7 @@ async function sendConfirmationEmail(to: string): Promise<boolean> {
           <div style="background:#f0fdf4;padding:16px;border-radius:10px;margin:16px 0;border:1px solid #86efac;">
             <p style="margin:0;font-size:14px;color:#166534;font-weight:600;">✓ Your account is now active</p>
           </div>
-          <p style="font-size:12px;color:#64748b;margin-top:16px;">You can now access all features of Double Helix Hub.</p>
+          <p style="font-size:12px;color:#64748b;margin-top:16px;">You can now access all features of ${orgConfig.fromName}.</p>
         </td>
       </tr>
     </table>
@@ -160,7 +184,7 @@ Your email address has been confirmed by an administrator.
 
 ✓ Your account is now active
 
-You can now access all features of Double Helix Hub.`;
+You can now access all features of ${orgConfig.fromName}.`;
 
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -170,9 +194,9 @@ You can now access all features of Double Helix Hub.`;
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `Double Helix Hub <${Deno.env.get('FROM_EMAIL') || (() => { throw new Error('FROM_EMAIL not configured') })()}>`,
+        from: `${orgConfig.fromName} <${orgConfig.fromEmail}>`,
         to: [to],
-        subject: 'Email Confirmed - Double Helix Hub',
+        subject: `Email Confirmed - ${orgConfig.fromName}`,
         html,
         text
       })
@@ -218,7 +242,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const requesterRole = await getProfileRole(token);
+    const { role: requesterRole, organizationId } = await getProfileRole(token);
     if (!requesterRole) {
       return new Response(JSON.stringify({ error: 'Unauthorized - invalid token' }), {
         status: 401,
@@ -261,7 +285,12 @@ Deno.serve(async (req) => {
 
     await confirmUserEmail(body.user_id);
 
-    const emailSent = await sendConfirmationEmail(body.email);
+    // Get per-org email config
+    const orgConfig = organizationId
+      ? await getOrgEmailConfig(organizationId)
+      : { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: 'Double Helix Hub' };
+
+    const emailSent = await sendConfirmationEmail(body.email, orgConfig);
 
     const tokenParts = token.split('.');
     let actorId = 'system';

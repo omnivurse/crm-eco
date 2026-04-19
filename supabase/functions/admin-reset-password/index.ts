@@ -11,6 +11,30 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT = 5;
 const RATE_WINDOW_MS = 3600_000; // 1 hour
 
+async function getOrgEmailConfig(organizationId: string) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/system_settings?organization_id=eq.${organizationId}&category=eq.email&setting_key=in.(%22email_from_address%22,%22email_from_name%22)&select=setting_key,setting_value`,
+    {
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+        apikey: SERVICE_ROLE,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  const config: Record<string, string> = {};
+  if (res.ok) {
+    const settings = await res.json();
+    (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
+  }
+
+  return {
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
+  };
+}
+
 function checkRateLimit(key: string): boolean {
   const now = Date.now();
   const entry = rateLimitMap.get(key);
@@ -38,16 +62,16 @@ interface ResetPasswordBody {
   email: string;
 }
 
-async function getProfileRole(accessToken: string): Promise<{ role: string | null; userId: string | null }> {
+async function getProfileRole(accessToken: string): Promise<{ role: string | null; userId: string | null; organizationId: string | null }> {
   try {
     const tokenParts = accessToken.split('.');
-    if (tokenParts.length !== 3) return { role: null, userId: null };
+    if (tokenParts.length !== 3) return { role: null, userId: null, organizationId: null };
 
     const payload = JSON.parse(atob(tokenParts[1]));
     const userId = payload?.sub;
-    if (!userId) return { role: null, userId: null };
+    if (!userId) return { role: null, userId: null, organizationId: null };
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role&id=eq.${userId}`, {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=role,organization_id&id=eq.${userId}`, {
       headers: {
         Authorization: `Bearer ${SERVICE_ROLE}`,
         apikey: SERVICE_ROLE,
@@ -55,13 +79,13 @@ async function getProfileRole(accessToken: string): Promise<{ role: string | nul
       },
     });
 
-    if (!res.ok) return { role: null, userId: null };
+    if (!res.ok) return { role: null, userId: null, organizationId: null };
 
     const rows = await res.json();
-    return { role: rows?.[0]?.role ?? null, userId };
+    return { role: rows?.[0]?.role ?? null, userId, organizationId: rows?.[0]?.organization_id ?? null };
   } catch (error) {
     console.error('Error fetching profile role:', error);
-    return { role: null, userId: null };
+    return { role: null, userId: null, organizationId: null };
   }
 }
 
@@ -117,15 +141,9 @@ async function generateRecoveryLink(email: string): Promise<string> {
   return actionLink;
 }
 
-async function sendPasswordResetEmail(to: string, recoveryLink: string): Promise<boolean> {
+async function sendPasswordResetEmail(to: string, recoveryLink: string, orgConfig: { fromEmail: string; fromName: string }): Promise<boolean> {
   if (!RESEND_API_KEY) {
     console.warn('RESEND_API_KEY not configured - skipping email send');
-    return false;
-  }
-
-  const fromEmail = Deno.env.get('FROM_EMAIL');
-  if (!fromEmail) {
-    console.error('FROM_EMAIL not configured');
     return false;
   }
 
@@ -136,7 +154,7 @@ async function sendPasswordResetEmail(to: string, recoveryLink: string): Promise
       <tr>
         <td style="padding:24px 24px 8px 24px;">
           <h1 style="margin:0;font-size:20px;">Reset Your Password</h1>
-          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has requested a password reset for your Double Helix Hub account.</p>
+          <p style="margin:8px 0 0 0;font-size:14px;color:#475569;">An administrator has requested a password reset for your ${orgConfig.fromName} account.</p>
         </td>
       </tr>
       <tr>
@@ -154,7 +172,7 @@ async function sendPasswordResetEmail(to: string, recoveryLink: string): Promise
 
   const text = `Reset Your Password
 
-An administrator has requested a password reset for your Double Helix Hub account.
+An administrator has requested a password reset for your ${orgConfig.fromName} account.
 
 Click this link to set a new password: ${recoveryLink}
 
@@ -168,9 +186,9 @@ This link will expire in 1 hour. If you did not request this, you can safely ign
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: `Double Helix Hub <${fromEmail}>`,
+        from: `${orgConfig.fromName} <${orgConfig.fromEmail}>`,
         to: [to],
-        subject: 'Reset Your Password - Double Helix Hub',
+        subject: `Reset Your Password - ${orgConfig.fromName}`,
         html,
         text
       })
@@ -224,7 +242,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { role: requesterRole, userId: actorId } = await getProfileRole(token);
+    const { role: requesterRole, userId: actorId, organizationId } = await getProfileRole(token);
     if (!requesterRole) {
       return new Response(JSON.stringify({ error: 'Unauthorized - invalid token' }), {
         status: 401,
@@ -242,11 +260,16 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Get per-org email config
+    const orgConfig = organizationId
+      ? await getOrgEmailConfig(organizationId)
+      : { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: 'Double Helix Hub' };
+
     // Generate a recovery link (does NOT change the user's password)
     const recoveryLink = await generateRecoveryLink(body.email);
 
     // Send the recovery email via Resend
-    const emailSent = await sendPasswordResetEmail(body.email, recoveryLink);
+    const emailSent = await sendPasswordResetEmail(body.email, recoveryLink, orgConfig);
 
     await writeAudit(actorId || 'system', body.user_id, 'password_reset_sent', {
       email: body.email,

@@ -11,6 +11,30 @@ function getCorsHeaders(req: Request): Record<string, string> {
   };
 }
 
+async function getOrgEmailConfig(supabaseUrl: string, supabaseServiceKey: string, organizationId: string) {
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/system_settings?organization_id=eq.${organizationId}&category=eq.email&setting_key=in.(%22email_from_address%22,%22email_from_name%22)&select=setting_key,setting_value`,
+    {
+      headers: {
+        Authorization: `Bearer ${supabaseServiceKey}`,
+        apikey: supabaseServiceKey,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  const config: Record<string, string> = {};
+  if (res.ok) {
+    const settings = await res.json();
+    (settings || []).forEach((s: any) => { config[s.setting_key] = s.setting_value; });
+  }
+
+  return {
+    fromEmail: config.email_from_address || Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com',
+    fromName: config.email_from_name || Deno.env.get('RESEND_FROM_NAME') || 'Double Helix Hub',
+  };
+}
+
 interface EmailPayload {
   notificationId?: string;
   ticketId: string;
@@ -36,10 +60,6 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("FROM_EMAIL");
-    if (!fromEmail) {
-      return new Response(JSON.stringify({ error: "FROM_EMAIL environment variable is required" }), { status: 500, headers: { "Content-Type": "application/json" } });
-    }
 
     const payload: EmailPayload = await req.json();
 
@@ -53,6 +73,27 @@ Deno.serve(async (req: Request) => {
       bodyHtml,
       notificationType = "manual",
     } = payload;
+
+    // Look up the ticket's organization_id for per-org email config
+    let orgEmailConfig = { fromEmail: Deno.env.get('FROM_EMAIL') || 'noreply@mail.doublehelixhub.com', fromName: 'Double Helix Hub' };
+    if (ticketId) {
+      const ticketRes = await fetch(
+        `${supabaseUrl}/rest/v1/tickets?id=eq.${ticketId}&select=organization_id`,
+        {
+          headers: {
+            Authorization: `Bearer ${supabaseServiceKey}`,
+            apikey: supabaseServiceKey,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      if (ticketRes.ok) {
+        const tickets = await ticketRes.json();
+        if (tickets?.[0]?.organization_id) {
+          orgEmailConfig = await getOrgEmailConfig(supabaseUrl, supabaseServiceKey, tickets[0].organization_id);
+        }
+      }
+    }
 
     if (!recipientEmail || !subject || !bodyText) {
       return new Response(
@@ -79,7 +120,7 @@ Deno.serve(async (req: Request) => {
 ---
 View your ticket: ${ticketUrl}
 
-This is an automated message from Double Helix Hub. Please do not reply directly to this email.`;
+This is an automated message from ${orgEmailConfig.fromName}. Please do not reply directly to this email.`;
 
     const enhancedBodyHtml = bodyHtml
       ? `${bodyHtml}
@@ -88,9 +129,9 @@ This is an automated message from Double Helix Hub. Please do not reply directly
   <a href="${ticketUrl}" style="color: #1e40af; text-decoration: none;">View your ticket</a>
 </p>
 <p style="color: #9ca3af; font-size: 12px; margin-top: 20px;">
-  This is an automated message from Double Helix Hub. Please do not reply directly to this email.
+  This is an automated message from ${orgEmailConfig.fromName}. Please do not reply directly to this email.
 </p>`
-      : generateDefaultHtml(recipientName || "Valued Customer", bodyText, ticketUrl);
+      : generateDefaultHtml(recipientName || "Valued Customer", bodyText, ticketUrl, orgEmailConfig.fromName);
 
     let emailSent = false;
     let emailProvider = "";
@@ -103,7 +144,8 @@ This is an automated message from Double Helix Hub. Please do not reply directly
         try {
           const resendResponse = await sendViaResend(
             resendApiKey,
-            fromEmail,
+            orgEmailConfig.fromEmail,
+            orgEmailConfig.fromName,
             recipientEmail,
             subject,
             enhancedBodyText,
@@ -238,6 +280,7 @@ This is an automated message from Double Helix Hub. Please do not reply directly
 async function sendViaResend(
   apiKey: string,
   from: string,
+  fromName: string,
   to: string,
   subject: string,
   text: string,
@@ -250,7 +293,7 @@ async function sendViaResend(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: `Double Helix Hub <${from}>`,
+      from: `${fromName} <${from}>`,
       to: to,
       subject: subject,
       text: text,
@@ -340,7 +383,8 @@ async function getRetryCount(
 function generateDefaultHtml(
   recipientName: string,
   bodyText: string,
-  ticketUrl: string
+  ticketUrl: string,
+  orgName: string = 'Double Helix Hub'
 ): string {
   const paragraphs = bodyText
     .split("\n\n")
@@ -353,7 +397,7 @@ function generateDefaultHtml(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Double Helix Hub</title>
+  <title>${orgName}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -362,7 +406,7 @@ function generateDefaultHtml(
         <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <tr>
             <td style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">Double Helix Hub</h1>
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">${orgName}</h1>
             </td>
           </tr>
           <tr>
@@ -378,10 +422,10 @@ function generateDefaultHtml(
           <tr>
             <td style="background-color: #f3f4f6; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center;">
-                This is an automated message from Double Helix Hub. Please do not reply directly to this email.
+                This is an automated message from ${orgName}. Please do not reply directly to this email.
               </p>
               <p style="margin: 8px 0 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
-                &copy; ${new Date().getFullYear()} Double Helix Hub. All rights reserved.
+                &copy; ${new Date().getFullYear()} ${orgName}. All rights reserved.
               </p>
             </td>
           </tr>
