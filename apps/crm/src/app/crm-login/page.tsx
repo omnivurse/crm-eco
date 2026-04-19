@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
@@ -71,8 +70,6 @@ export default function CrmLoginPage() {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-
   // Log authentication events
   const logAuthEvent = async (action: string, details?: Record<string, unknown>) => {
     try {
@@ -130,8 +127,11 @@ export default function CrmLoginPage() {
       // Log successful login
       await logAuthEvent('login_success', { role: profile.crm_role });
 
-      router.push('/crm');
-      router.refresh();
+      // Full page navigation (not client-side router.push) so the browser
+      // sends the fresh auth cookies with the request and the middleware
+      // can verify the session. router.push would trigger a fetch via the
+      // service worker before cookies have fully propagated, causing a 503.
+      window.location.href = '/crm';
     } catch (err) {
       await logAuthEvent('login_failed', { reason: 'Unexpected error' });
       setError('An unexpected error occurred');
