@@ -1,7 +1,7 @@
 import IntegrationsPageClient from '@/components/integrations/IntegrationsPageClient';
 
 export const metadata = {
-  title: 'Integrations | OmnialForce CRM',
+  title: 'Integrations | Double Helix Hub',
   description: 'Manage your connected integrations',
 };
 

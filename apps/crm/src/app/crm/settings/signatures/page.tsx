@@ -159,7 +159,7 @@ export default function SignaturesSettingsPage() {
   // Show editor view
   if (editingSignature || isCreating) {
     return (
-      <div className="w-full max-w-7xl mx-auto py-8 px-4">
+      <div className="w-full py-8 px-4">
         <SignatureBuilder
           signature={editingSignature || undefined}
           onSave={handleSaveSignature}
@@ -173,7 +173,7 @@ export default function SignaturesSettingsPage() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto py-8 px-4 space-y-6">
+    <div className="w-full py-8 px-4 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

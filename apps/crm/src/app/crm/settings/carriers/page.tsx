@@ -192,7 +192,7 @@ export default function CarrierManagementPage() {
   const typeConfig = (type: string) => CARRIER_TYPES.find(t => t.value === type) || CARRIER_TYPES[0];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
