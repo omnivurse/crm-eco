@@ -38,7 +38,7 @@ BEGIN
      'Sent to new members upon enrollment',
      'Welcome to {{organization_name}}!',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #003560, #069B9A); padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: linear-gradient(135deg, #0f172a, #06b6d4); padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Welcome, {{member_name}}!</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -57,7 +57,7 @@ BEGIN
      'Sent after a successful payment is processed',
      'Payment Receipt - {{amount}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #003560; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #0f172a; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Payment Confirmation</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -98,7 +98,7 @@ BEGIN
      'Monthly billing summary sent to members',
      'Your Monthly Statement - {{statement_month}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #003560; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #0f172a; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Monthly Statement</h1>
     <p style="color: #9bd7d7; margin: 5px 0 0; font-size: 14px;">{{statement_month}}</p>
   </div>
@@ -121,7 +121,7 @@ BEGIN
      'Sent when a member enrollment is confirmed',
      'Enrollment Confirmed - {{plan_name}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #003560, #069B9A); padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: linear-gradient(135deg, #0f172a, #06b6d4); padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Enrollment Confirmed!</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -162,7 +162,7 @@ BEGIN
      'Sent before annual coverage renewal',
      'Your Coverage Renewal is Coming Up',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #003560, #069B9A); padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: linear-gradient(135deg, #0f172a, #06b6d4); padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Renewal Reminder</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -183,14 +183,14 @@ BEGIN
      'Sent to invite a new advisor to the organization',
      'You''re Invited to Join {{organization_name}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #003560, #069B9A); padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: linear-gradient(135deg, #0f172a, #06b6d4); padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Join Our Team!</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hi {{advisor_name}},</p>
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">{{inviter_name}} has invited you to join <strong>{{organization_name}}</strong> as an advisor.</p>
     <div style="text-align: center; margin: 25px 0;">
-      <a href="{{signup_url}}" style="background: #069B9A; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Accept Invitation</a>
+      <a href="{{signup_url}}" style="background: #06b6d4; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Accept Invitation</a>
     </div>
     <p style="color: #6b7280; font-size: 14px;">This invitation link will expire in 7 days.</p>
   </div>
@@ -202,14 +202,14 @@ BEGIN
      'Sent to invite a new team member to the platform',
      'You''ve Been Invited to {{organization_name}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #003560; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #0f172a; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">You''re Invited!</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hi there,</p>
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">{{inviter_name}} has invited you to join <strong>{{organization_name}}</strong> as a <strong>{{role}}</strong>.</p>
     <div style="text-align: center; margin: 25px 0;">
-      <a href="{{signup_url}}" style="background: #003560; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Accept Invitation</a>
+      <a href="{{signup_url}}" style="background: #0f172a; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Accept Invitation</a>
     </div>
     <p style="color: #6b7280; font-size: 14px;">This invitation expires in 7 days. If you didn''t expect this invitation, you can safely ignore this email.</p>
   </div>
@@ -222,7 +222,7 @@ BEGIN
      'Sent to remind members of upcoming appointments',
      'Appointment Reminder - {{appointment_date}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #069B9A; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #06b6d4; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Appointment Reminder</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -243,7 +243,7 @@ BEGIN
      'Summary of member benefits and coverage details',
      'Your Benefits Summary - {{plan_name}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #003560, #069B9A); padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: linear-gradient(135deg, #0f172a, #06b6d4); padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Your Benefits Summary</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -265,14 +265,14 @@ BEGIN
      'Sent when a user requests a password reset',
      'Reset Your Password',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #003560; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #0f172a; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Password Reset Request</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">Hi {{member_name}},</p>
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">We received a request to reset your password. Click the button below to set a new password:</p>
     <div style="text-align: center; margin: 25px 0;">
-      <a href="{{reset_url}}" style="background: #003560; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
+      <a href="{{reset_url}}" style="background: #0f172a; color: #fff; padding: 12px 30px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">Reset Password</a>
     </div>
     <p style="color: #6b7280; font-size: 14px;">This link expires in 1 hour. If you didn''t request this, you can safely ignore this email.</p>
   </div>
@@ -284,7 +284,7 @@ BEGIN
      'Sent to thank members for referring others',
      'Thank You for Your Referral!',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #069B9A, #027343); padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: linear-gradient(135deg, #06b6d4, #059669); padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Thank You!</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -302,7 +302,7 @@ BEGIN
      'General purpose announcement template',
      '{{subject_line}}',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #003560; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #0f172a; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">{{heading}}</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
@@ -319,7 +319,7 @@ BEGIN
      'Sent when a member updates their account information',
      'Your Account Has Been Updated',
      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #003560; padding: 30px; border-radius: 8px 8px 0 0;">
+  <div style="background: #0f172a; padding: 30px; border-radius: 8px 8px 0 0;">
     <h1 style="color: #fff; margin: 0; font-size: 24px;">Account Updated</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
