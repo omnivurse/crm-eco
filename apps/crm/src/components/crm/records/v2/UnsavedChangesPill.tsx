@@ -13,10 +13,11 @@
  * every inline editor on the page.
  */
 
-import { useEffect, useState } from 'react';
-import { AlertTriangle, Check, Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Check, CloudOff, Loader2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
+import { useMutationQueue } from '@/hooks/useMutationQueue';
 
 export interface UnsavedChangesPillProps {
   className?: string;
@@ -25,22 +26,43 @@ export interface UnsavedChangesPillProps {
    * save. Defaults to 6s.
    */
   savedLingerMs?: number;
+  /**
+   * The record this pill belongs to. When provided, the pill can
+   * detect queued-but-not-yet-synced mutations scoped to this record
+   * and surface a "X queued" state — critical in weak-network
+   * scenarios where the local save succeeded but the server replay
+   * is still pending.
+   */
+  recordId?: string;
 }
 
 export function UnsavedChangesPill({
   className,
   savedLingerMs = 6000,
+  recordId,
 }: UnsavedChangesPillProps) {
   const ctx = useRecordFieldSaveOptional();
-  const [, forceTick] = useState(0);
+  const queue = useMutationQueue();
+  // `now` is advanced on an interval instead of being read directly
+  // from `Date.now()` during render — that's the react-hooks/purity
+  // rule, and it keeps the "Saved Xs ago" label fresh without making
+  // the component non-deterministic.
+  const [now, setNow] = useState<number>(() => Date.now());
 
   // Re-render every second while showing "Saved Xs ago" so the label
   // stays fresh without pulling a heavy relative-time library.
   useEffect(() => {
     if (!ctx?.lastSavedAt) return;
-    const interval = setInterval(() => forceTick((v) => v + 1), 1000);
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [ctx?.lastSavedAt]);
+
+  // Narrow the queue to mutations that belong to *this* record so a
+  // busy teammate editing another deal doesn't make this pill flash.
+  const recordQueued = useMemo(() => {
+    if (!recordId) return 0;
+    return queue.pending.filter((m) => m.recordId === recordId).length;
+  }, [queue.pending, recordId]);
 
   if (!ctx) return null;
   const { pendingCount, lastError, lastSavedAt } = ctx;
@@ -81,8 +103,34 @@ export function UnsavedChangesPill({
     );
   }
 
-  if (lastSavedAt && Date.now() - lastSavedAt <= savedLingerMs) {
-    const seconds = Math.max(1, Math.round((Date.now() - lastSavedAt) / 1000));
+  // Queued state — local save succeeded but the server replay hasn't
+  // landed yet. Renders between the in-flight and "saved" states so
+  // the rep knows the edit is safe but not yet remote.
+  if (recordQueued > 0) {
+    return (
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[11px] font-medium',
+          'bg-sky-50 dark:bg-sky-500/10 border-sky-200 dark:border-sky-500/30 text-sky-700 dark:text-sky-300',
+          className,
+        )}
+        role="status"
+        title={
+          queue.isOnline
+            ? 'Saved locally · syncing to server'
+            : 'Saved locally · will sync when back online'
+        }
+      >
+        <CloudOff className="w-3 h-3" />
+        <span>
+          Queued · {recordQueued} change{recordQueued === 1 ? '' : 's'}
+        </span>
+      </span>
+    );
+  }
+
+  if (lastSavedAt && now - lastSavedAt <= savedLingerMs) {
+    const seconds = Math.max(1, Math.round((now - lastSavedAt) / 1000));
     return (
       <span
         className={cn(

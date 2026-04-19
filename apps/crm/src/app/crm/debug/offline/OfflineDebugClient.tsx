@@ -55,6 +55,7 @@ import {
   subscribeOfflineEventBuffer,
   type RecordedOfflineEvent,
 } from '@/lib/offline/instrumentation';
+import { useSyncReceiptRealtime } from '@/hooks/useSyncReceiptRealtime';
 
 interface CachedEntryRow {
   key: string;
@@ -90,7 +91,15 @@ interface ReconciliationRow {
   serverEntry?: ServerReceipt;
 }
 
-export default function OfflineDebugClient() {
+export interface OfflineDebugClientProps {
+  /** Caller's organization id, plumbed from the server component so
+   *  the realtime subscription is scoped correctly. */
+  organizationId: string | null;
+}
+
+export default function OfflineDebugClient({
+  organizationId,
+}: OfflineDebugClientProps) {
   const router = useRouter();
   const queue = useMutationQueue();
   const [cacheRows, setCacheRows] = useState<CachedEntryRow[]>([]);
@@ -112,6 +121,11 @@ export default function OfflineDebugClient() {
   // queue. The buffer is populated by `recordOfflineEvent` in every
   // stage of the drain lifecycle.
   useEffect(() => subscribeOfflineEventBuffer(setEventBuffer), []);
+
+  // Count of cross-device receipts observed since mount — useful
+  // when support is verifying that the realtime channel is actually
+  // wired up end to end.
+  const [realtimeReceiptCount, setRealtimeReceiptCount] = useState(0);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -180,6 +194,18 @@ export default function OfflineDebugClient() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // Cross-device realtime: any device in this org landing a mutation
+  // streams a new `crm_idempotency_keys` row, which lets us bump the
+  // counter and reload the server-side reconciliation view without
+  // forcing the operator to click Refresh.
+  useSyncReceiptRealtime({
+    organizationId,
+    onReceipt: () => {
+      setRealtimeReceiptCount((c) => c + 1);
+      void reload();
+    },
+  });
 
   const totalBytes = useMemo(
     () => cacheRows.reduce((acc, r) => acc + r.sizeBytes, 0),
@@ -355,6 +381,24 @@ export default function OfflineDebugClient() {
               Last drain{' '}
               <span className="text-slate-700 dark:text-slate-200">
                 {formatAge(renderedAt - queue.lastSyncedAt)} ago
+              </span>
+            </span>
+          </>
+        ) : null}
+        {organizationId ? (
+          <>
+            <span>•</span>
+            <span>
+              Realtime{' '}
+              <span
+                className={
+                  realtimeReceiptCount > 0
+                    ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                    : 'text-slate-700 dark:text-slate-200'
+                }
+              >
+                {realtimeReceiptCount} receipt
+                {realtimeReceiptCount === 1 ? '' : 's'}
               </span>
             </span>
           </>

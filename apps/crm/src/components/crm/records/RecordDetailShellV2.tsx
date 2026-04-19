@@ -112,6 +112,7 @@ import { KeyboardShortcutsDialog } from './v2/KeyboardShortcutsDialog';
 import { PresenceStack } from './v2/PresenceStack';
 import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
+import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
 import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
 import { RecordFieldLocksProvider } from '@/hooks/useRecordFieldLocks';
 import { RecordAiContextProvider } from './v2/RecordAiContext';
@@ -246,6 +247,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   const [topTab, setTopTab] = useState<TopTab>('overview');
   const [overviewPane, setOverviewPane] = useState<OverviewPane>('details');
+
+  // Refresh this tab when a sibling tab on the same device drains a
+  // mutation tied to this record. Scoped by recordId so unrelated
+  // deal edits don't cause pointless refreshes. Replays are skipped
+  // by default — the remote already had the write.
+  useSyncBroadcast(
+    () => {
+      if (onRefresh) onRefresh();
+      else router.refresh();
+    },
+    { recordId: record.id },
+  );
 
   // Listen for cross-cutting tab-switch events from child components.
   useEffect(() => {
@@ -925,7 +938,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       }
                       inputClassName="text-2xl font-bold"
                     />
-                    <UnsavedChangesPill className="font-normal text-[11px]" />
+                    <UnsavedChangesPill
+                      className="font-normal text-[11px]"
+                      recordId={record.id}
+                    />
                   </h1>
                   <RecordTagsRow
                     recordId={record.id}

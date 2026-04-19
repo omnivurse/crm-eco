@@ -12,9 +12,17 @@
  */
 
 import OfflineDebugClient from './OfflineDebugClient';
+import { getCurrentProfile } from '@/lib/crm/queries';
 
 export const dynamic = 'force-dynamic';
 
-export default function OfflineDebugPage() {
-  return <OfflineDebugClient />;
+export default async function OfflineDebugPage() {
+  /* Pass the org id down so the client component can open a
+   * Supabase Realtime subscription scoped to this tenant. Without
+   * it, cross-device receipts would need to poll the reconciliation
+   * endpoint — which is exactly what realtime is meant to avoid. */
+  const profile = await getCurrentProfile();
+  return (
+    <OfflineDebugClient organizationId={profile?.organization_id ?? null} />
+  );
 }

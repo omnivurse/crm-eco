@@ -27,6 +27,7 @@
 
 import { recordOfflineEvent } from './instrumentation';
 import { logReceipt } from './receipt-log';
+import { emitSyncReceipt } from './sync-broadcast';
 
 const STORAGE_KEY = 'crm.mutationQueue.v1';
 const MAX_RETRIES = 5;
@@ -495,6 +496,20 @@ class MutationQueue {
             url: next.url,
             replayed,
             traceId,
+          });
+          // Fan out to sibling tabs on the same device. Consumers
+          // subscribe via `subscribeSyncReceipts` to reactively
+          // refresh affected views instead of waiting for the next
+          // poll cycle.
+          emitSyncReceipt({
+            receiptId,
+            recordId: next.recordId,
+            moduleKey: next.moduleKey,
+            method: next.method,
+            url: next.url,
+            replayed,
+            traceId,
+            emittedAt: Date.now(),
           });
         }
       } else if (isRetryableStatus(res.status) && next.attempts + 1 < MAX_RETRIES) {

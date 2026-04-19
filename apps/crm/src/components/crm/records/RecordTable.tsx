@@ -41,6 +41,7 @@ import {
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { FieldRenderer } from './FieldRenderer';
+import { RecordQueuedBadge } from '@/components/crm/offline/RecordQueuedBadge';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { ResizeHandle } from './ResizeHandle';
 import { useColumnResize } from '@/hooks/useColumnResize';
@@ -365,6 +366,7 @@ const RecordCard = memo(function RecordCard({
             )}
             <MarketTypeBadge marketType={(record as any).market_type} size="sm" />
             <NormalizationBadge status={(record as any).normalization_status} size="sm" />
+            <RecordQueuedBadge recordId={record.id} />
           </div>
         </div>
         {/* More Actions */}
@@ -1253,7 +1255,20 @@ export const RecordTable = memo(function RecordTable({
                         ...(colIndex === 0 ? { left: stickyFirstColLeft } : {}),
                       }}
                     >
-                      {renderCellValue(record, col)}
+                      {/* Surface a compact dirty-dot inside the first
+                        * (sticky) cell so the rep sees at a glance that
+                        * *this* record has pending syncs without
+                        * crowding out the label. */}
+                      {colIndex === 0 ? (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <RecordQueuedBadge recordId={record.id} compact />
+                          <div className="min-w-0 flex-1 truncate">
+                            {renderCellValue(record, col)}
+                          </div>
+                        </div>
+                      ) : (
+                        renderCellValue(record, col)
+                      )}
                     </TableCell>
                   ))}
                   <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
