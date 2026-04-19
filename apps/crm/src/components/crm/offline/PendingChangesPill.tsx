@@ -8,7 +8,7 @@
  * Hidden entirely when the queue is empty so the topbar stays clean.
  */
 
-import { memo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CloudOff,
@@ -20,7 +20,9 @@ import {
   WifiOff,
   ChevronRight,
   ExternalLink,
+  GitCompareArrows,
 } from 'lucide-react';
+import type { QueuedMutation } from '@/lib/offline/mutation-queue';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +41,7 @@ export const PendingChangesPill = memo(function PendingChangesPill({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const router = useRouter();
   const {
     pending,
@@ -50,6 +53,12 @@ export const PendingChangesPill = memo(function PendingChangesPill({
     remove,
     clearFailed,
   } = useMutationQueue();
+  // Hoisted out of JSX so the hook call order stays stable across
+  // renders. Returns null when no conflict is being reviewed.
+  const reviewMutation = useMemo(
+    () => failed.find((m) => m.id === reviewId) ?? null,
+    [failed, reviewId],
+  );
 
   const total = pending.length + failed.length;
   if (total === 0) return null;
@@ -147,54 +156,73 @@ export const PendingChangesPill = memo(function PendingChangesPill({
                   </div>
                 ))}
 
-                {failed.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center gap-3 rounded-lg border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-2"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm text-rose-900 dark:text-rose-100 truncate">
-                        {m.label}
+                {failed.map((m) => {
+                  const isConflict = m.failureKind === 'conflict';
+                  return (
+                    <div
+                      key={m.id}
+                      className="flex items-center gap-3 rounded-lg border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/10 px-3 py-2"
+                    >
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm text-rose-900 dark:text-rose-100 truncate">
+                          {m.label}
+                          {isConflict ? (
+                            <span className="ml-2 inline-flex items-center rounded-full bg-rose-200/70 dark:bg-rose-500/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                              Conflict
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-[11px] text-rose-700 dark:text-rose-300 truncate">
+                          {m.lastError ?? 'Failed after max retries'}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-rose-700 dark:text-rose-300 truncate">
-                        {m.lastError ?? 'Failed after max retries'}
-                      </div>
-                    </div>
-                    {m.recordId ? (
+                      {isConflict ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-rose-700 hover:text-rose-900 dark:text-rose-300 dark:hover:text-rose-100"
+                          onClick={() => setReviewId(m.id)}
+                          title="Review conflict"
+                        >
+                          <GitCompareArrows className="w-3.5 h-3.5" />
+                        </Button>
+                      ) : null}
+                      {m.recordId ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-rose-700 hover:text-rose-900 dark:text-rose-300 dark:hover:text-rose-100"
+                          onClick={() => {
+                            setOpen(false);
+                            router.push(`/crm/r/${m.recordId}`);
+                          }}
+                          title="Open record"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Button>
+                      ) : null}
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7 text-rose-700 hover:text-rose-900 dark:text-rose-300 dark:hover:text-rose-100"
-                        onClick={() => {
-                          setOpen(false);
-                          router.push(`/crm/r/${m.recordId}`);
-                        }}
-                        title="Open record"
+                        onClick={() => retry(m.id)}
+                        title="Retry"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <RefreshCcw className="w-3.5 h-3.5" />
                       </Button>
-                    ) : null}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-rose-700 hover:text-rose-900 dark:text-rose-300 dark:hover:text-rose-100"
-                      onClick={() => retry(m.id)}
-                      title="Retry"
-                    >
-                      <RefreshCcw className="w-3.5 h-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-slate-400 hover:text-rose-600"
-                      onClick={() => remove(m.id)}
-                      title="Discard"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                ))}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-slate-400 hover:text-rose-600"
+                        onClick={() => remove(m.id)}
+                        title="Discard"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
               </>
             )}
           </div>
@@ -231,6 +259,180 @@ export const PendingChangesPill = memo(function PendingChangesPill({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConflictReviewDialog
+        mutation={reviewMutation}
+        onClose={() => setReviewId(null)}
+        onRetry={(id) => {
+          retry(id);
+          setReviewId(null);
+        }}
+        onDiscard={(id) => {
+          remove(id);
+          setReviewId(null);
+        }}
+        onOpenRecord={(id) => {
+          setReviewId(null);
+          setOpen(false);
+          router.push(`/crm/r/${id}`);
+        }}
+      />
     </>
   );
 });
+
+/**
+ * ConflictReviewDialog — shows the queued mutation's payload so the
+ * user can decide whether to reapply (retry) against fresh server
+ * state or drop the local change. Rather than try to fetch the live
+ * server value (which requires network anyway), we render the fields
+ * the user tried to change and link them to the record page where
+ * they can see the current value and re-edit with full context.
+ */
+function ConflictReviewDialog({
+  mutation,
+  onClose,
+  onRetry,
+  onDiscard,
+  onOpenRecord,
+}: {
+  mutation: QueuedMutation | null;
+  onClose: () => void;
+  onRetry: (id: string) => void;
+  onDiscard: (id: string) => void;
+  onOpenRecord: (recordId: string) => void;
+}) {
+  const payloadFields = mutation ? parsePayloadFields(mutation) : [];
+
+  return (
+    <Dialog open={!!mutation} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+            <GitCompareArrows className="w-4 h-4 text-rose-500" />
+            Review conflict
+          </DialogTitle>
+          <DialogDescription className="text-slate-500 dark:text-slate-400">
+            This record was updated on the server while you were offline.
+            Choose whether to reapply your pending change over the new
+            server value.
+          </DialogDescription>
+        </DialogHeader>
+
+        {mutation ? (
+          <div className="mt-3 space-y-3">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {mutation.label}
+            </div>
+
+            <div className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800/40 px-3 py-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                Your pending change
+              </div>
+              {payloadFields.length === 0 ? (
+                <div className="text-sm text-slate-500 italic">
+                  (no field preview available)
+                </div>
+              ) : (
+                <dl className="space-y-1 text-sm">
+                  {payloadFields.map(([field, value]) => (
+                    <div key={field} className="flex gap-2">
+                      <dt className="text-slate-500 dark:text-slate-400 min-w-[100px]">
+                        {field}
+                      </dt>
+                      <dd className="text-slate-900 dark:text-slate-100 break-words min-w-0">
+                        {formatValue(value)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              )}
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              The server&apos;s current value isn&apos;t available offline —
+              open the record to compare before reapplying.
+            </p>
+          </div>
+        ) : null}
+
+        <DialogFooter className="mt-3 gap-2 flex-wrap">
+          {mutation?.recordId ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenRecord(mutation.recordId!)}
+              className="border-slate-200 dark:border-white/10"
+            >
+              <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+              Open record
+            </Button>
+          ) : null}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => mutation && onDiscard(mutation.id)}
+            className="border-rose-200 text-rose-700 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
+          >
+            Discard my change
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => mutation && onRetry(mutation.id)}
+            className="bg-teal-500 hover:bg-teal-600 text-white"
+          >
+            <RefreshCcw className="w-3.5 h-3.5 mr-1.5" />
+            Keep my change (retry)
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/**
+ * Extract `[field, value]` pairs from a queued mutation's JSON body.
+ * Handles both top-level column writes (`{ title: 'x' }`) and JSONB
+ * data writes (`{ data: { tags: [...] } }`) so the review dialog
+ * shows something meaningful regardless of the field target.
+ */
+function parsePayloadFields(mutation: QueuedMutation): Array<[string, unknown]> {
+  if (!mutation.body) return [];
+  try {
+    const parsed = JSON.parse(mutation.body) as Record<string, unknown>;
+    const pairs: Array<[string, unknown]> = [];
+    for (const [k, v] of Object.entries(parsed)) {
+      if (k === 'data' && v && typeof v === 'object') {
+        for (const [dk, dv] of Object.entries(v as Record<string, unknown>)) {
+          pairs.push([dk, dv]);
+        }
+        continue;
+      }
+      if (k === 'record_ids' || k === 'updates') {
+        // Bulk mutation shape — summarise the updates.
+        if (k === 'updates' && v && typeof v === 'object') {
+          for (const [uk, uv] of Object.entries(v as Record<string, unknown>)) {
+            pairs.push([uk, uv]);
+          }
+        }
+        continue;
+      }
+      pairs.push([k, v]);
+    }
+    return pairs;
+  } catch {
+    return [];
+  }
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return value.map((v) => formatValue(v)).join(', ');
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}

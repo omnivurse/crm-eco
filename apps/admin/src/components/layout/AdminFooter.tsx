@@ -26,7 +26,7 @@ export function AdminFooter() {
           <div className="flex items-center gap-3">
             <Link href="/dashboard" title="Go to Dashboard" className="flex items-center gap-2 flex-shrink-0">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Double Helix Hub"
                 width={160}
                 height={42}

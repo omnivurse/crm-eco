@@ -28,7 +28,7 @@ export function Footer() {
           <div className="flex items-center gap-3">
             <Link href="/crm" className="flex items-center gap-2 flex-shrink-0">
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Double Helix Hub"
                 width={180}
                 height={48}

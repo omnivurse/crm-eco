@@ -326,7 +326,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
         <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
           <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
             <Image
-              src="/logo.png"
+              src="/logo.svg"
               alt="Double Helix Hub"
               width={32}
               height={32}

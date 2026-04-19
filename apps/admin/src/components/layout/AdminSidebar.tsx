@@ -234,7 +234,7 @@ export function AdminSidebar({
           <div className="flex items-center justify-between">
             <Link href="/dashboard" className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Double Helix Hub"
                 width={180}
                 height={44}
@@ -260,7 +260,7 @@ export function AdminSidebar({
         <div className="flex justify-center py-3 border-b border-slate-200 dark:border-white/5">
           <Link href="/dashboard" className="flex items-center" onClick={handleLinkClick}>
             <Image
-              src="/logo-icon.png"
+              src="/favicon.svg"
               alt="DHH"
               width={32}
               height={32}

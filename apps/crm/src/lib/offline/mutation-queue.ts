@@ -38,6 +38,17 @@ export type MutationStatus =
   | 'failed'
   | 'succeeded';
 
+/**
+ * Classification of *why* a mutation ended up in `failed`. Drives the
+ * inspector UI: conflicts get a "Review" affordance, retry-exhausted
+ * entries get a plain "Retry" button, and terminal server errors get
+ * a "Discard" hint because they'll never succeed.
+ */
+export type MutationFailureKind =
+  | 'conflict'
+  | 'server-error'
+  | 'retry-exhausted';
+
 export interface QueuedMutation {
   /** Client-generated UUID so retries are idempotent. */
   id: string;
@@ -58,6 +69,9 @@ export interface QueuedMutation {
   recordId?: string;
   /** Status + tracking. */
   status: MutationStatus;
+  /** Populated when `status === 'failed'` so the inspector can branch
+   *  on the cause without parsing the error string. */
+  failureKind?: MutationFailureKind;
   attempts: number;
   lastError?: string;
   nextAttemptAt?: number;
@@ -76,6 +90,7 @@ export interface QueueSnapshot {
 }
 
 type Subscriber = (snapshot: QueueSnapshot) => void;
+type SuccessListener = (mutation: QueuedMutation) => void;
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
@@ -143,6 +158,7 @@ function isRetryableStatus(status: number): boolean {
 class MutationQueue {
   private mutations: QueuedMutation[] = [];
   private subscribers = new Set<Subscriber>();
+  private successListeners = new Set<SuccessListener>();
   private running = false;
   private drainScheduled = false;
   private drainTimer: ReturnType<typeof setTimeout> | null = null;
@@ -191,6 +207,20 @@ class MutationQueue {
     fn(this.snapshot());
     return () => {
       this.subscribers.delete(fn);
+    };
+  }
+
+  /**
+   * Subscribe to "mutation succeeded" events. Used by the sync-toast
+   * notifier to count drained mutations across a reconnection window
+   * and emit a single "Synced N changes" toast rather than one per
+   * mutation. Deliberately separate from `subscribe` so the toast UI
+   * doesn't re-render on every snapshot flip.
+   */
+  onSuccess(fn: SuccessListener): () => void {
+    this.successListeners.add(fn);
+    return () => {
+      this.successListeners.delete(fn);
     };
   }
 
@@ -372,6 +402,11 @@ class MutationQueue {
         // Succeeded mutations are dropped from the queue — they no
         // longer need to be replayed.
         this.mutations = this.mutations.filter((m) => m.id !== next.id);
+        // Fan out to success listeners so consumers (toast notifier,
+        // analytics) can react without polling the snapshot.
+        for (const fn of this.successListeners) {
+          try { fn(next); } catch { /* listener errors are non-fatal */ }
+        }
       } else if (isRetryableStatus(res.status) && next.attempts + 1 < MAX_RETRIES) {
         next.attempts += 1;
         next.status = 'queued';
@@ -389,11 +424,14 @@ class MutationQueue {
         }
         // 409 is a frequent replay outcome: the user edited a field
         // while offline, someone else edited the same record in the
-        // meantime, and the `If-Match` token is now stale. Rewrite
-        // the error to a user-friendly action prompt.
+        // meantime, and the `If-Match` token is now stale. Tag it
+        // explicitly so the inspector can open a review dialog.
         if (res.status === 409) {
           message =
-            'Record was updated on the server — open it to reapply your change';
+            'Record was updated on the server — review to reapply your change';
+          next.failureKind = 'conflict';
+        } else {
+          next.failureKind = 'server-error';
         }
         next.lastError = message;
         next.updatedAt = nowIso();
@@ -410,6 +448,7 @@ class MutationQueue {
         next.updatedAt = nowIso();
       } else {
         next.status = 'failed';
+        next.failureKind = 'retry-exhausted';
         next.lastError = message;
         next.updatedAt = nowIso();
       }

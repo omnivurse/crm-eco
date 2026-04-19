@@ -96,7 +96,7 @@ export default function UpdatePasswordPage() {
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <Image
-              src="/logo.png"
+              src="/logo.svg"
               alt="Double Helix Hub"
               width={200}
               height={80}

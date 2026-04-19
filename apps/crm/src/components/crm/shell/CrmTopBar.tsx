@@ -146,7 +146,7 @@ export const CrmTopBar = memo(function CrmTopBar({
       {/* Left Section: Logo */}
       <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
         <Image
-          src="/logo.png"
+          src="/logo.svg"
           alt="Double Helix Hub"
           width={140}
           height={38}

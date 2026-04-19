@@ -7,6 +7,7 @@ import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
 import { CommandPalette } from './CommandPalette';
 import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
+import { SyncToastNotifier } from '@/components/crm/offline/SyncToastNotifier';
 import { ModuleProvider } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
@@ -71,6 +72,11 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
                 null when navigator.onLine is true, so there's zero
                 visual cost on a healthy connection. */}
             <OfflineBanner />
+
+            {/* Sync toast bridge — silently listens to the mutation
+                queue and emits consolidated "Synced N changes" /
+                "Back online" / "Couldn't sync" toasts. */}
+            <SyncToastNotifier />
 
             {/* Top Bar */}
             <CrmTopBar

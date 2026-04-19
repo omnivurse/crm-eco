@@ -124,7 +124,7 @@ export function Sidebar({ role }: SidebarProps) {
             <Link href="/dashboard" className="flex items-center group">
               <div className="bg-white rounded-lg p-1.5 shadow-sm">
                 <Image
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt="Double Helix Hub"
                   width={160}
                   height={44}
