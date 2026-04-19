@@ -8,7 +8,7 @@
  * Hidden entirely when the queue is empty so the topbar stays clean.
  */
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   CloudOff,
@@ -42,12 +42,21 @@ export const PendingChangesPill = memo(function PendingChangesPill({
 }) {
   const [open, setOpen] = useState(false);
   const [reviewId, setReviewId] = useState<string | null>(null);
+  // `now` is refreshed every 30s so the tooltip's "Xm ago" text stays
+  // fresh without us calling the impure `Date.now()` during render
+  // (which react-hooks/purity rightly forbids).
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   const router = useRouter();
   const {
     pending,
     failed,
     isOnline,
     isSyncing,
+    lastSyncedAt,
     flush,
     retry,
     remove,
@@ -70,6 +79,19 @@ export const PendingChangesPill = memo(function PendingChangesPill({
 
   const Icon = hasFailures ? AlertCircle : isSyncing ? Loader2 : CloudOff;
 
+  // Hover tooltip summarises the whole sync state in one line so the
+  // rep doesn't have to click through to the dialog just to check
+  // if anything actually made it to the server today.
+  const statusParts: string[] = [label];
+  if (isSyncing) statusParts.push('syncing now');
+  else if (!isOnline) statusParts.push('offline');
+  if (lastSyncedAt) {
+    statusParts.push(`last synced ${formatRelativeAge(now - lastSyncedAt)} ago`);
+  } else {
+    statusParts.push('not synced yet');
+  }
+  const tooltip = `${statusParts.join(' · ')} — click to inspect`;
+
   return (
     <>
       <button
@@ -83,7 +105,7 @@ export const PendingChangesPill = memo(function PendingChangesPill({
           className,
         )}
         aria-label={`${label} — open sync inspector`}
-        title={`${label} — click to inspect`}
+        title={tooltip}
       >
         <Icon className={cn('w-3.5 h-3.5', isSyncing && 'animate-spin')} />
         <span>{label}</span>
@@ -439,4 +461,18 @@ function formatValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+/**
+ * Compact relative-age formatter for the sync tooltip. Intentionally
+ * shorter than `Intl.RelativeTimeFormat` output so it fits inside a
+ * small native `title` attribute without wrapping.
+ */
+function formatRelativeAge(ms: number): string {
+  if (ms < 0 || !Number.isFinite(ms)) return 'just now';
+  if (ms < 5_000) return 'just now';
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 60 * 60_000) return `${Math.round(ms / 60_000)}m`;
+  if (ms < 24 * 60 * 60_000) return `${Math.round(ms / (60 * 60_000))}h`;
+  return `${Math.round(ms / (24 * 60 * 60_000))}d`;
 }

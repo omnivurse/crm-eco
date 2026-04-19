@@ -40,6 +40,10 @@ export interface SyncReceipt {
   /** True when the server indicated the response was replayed from a
    *  prior request (same idempotency key). */
   replayed: boolean;
+  /** Trace id echoed back from the server (`x-trace-id`). Logged so
+   *  support can jump straight from a user's device to the matching
+   *  platform trace without re-deriving the id. */
+  traceId?: string;
 }
 
 export async function logReceipt(entry: SyncReceipt): Promise<void> {

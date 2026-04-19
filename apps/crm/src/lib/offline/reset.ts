@@ -19,10 +19,16 @@ import { mutationQueue } from './mutation-queue';
 import { cacheClear } from './response-cache';
 import { clearRecentRecords } from './recent-records';
 import { clearReceipts } from './receipt-log';
+import { clearOfflineEventBuffer } from './instrumentation';
 
 export async function clearOfflineState(): Promise<void> {
   try {
     mutationQueue.clearAll();
+  } catch {
+    /* noop */
+  }
+  try {
+    clearOfflineEventBuffer();
   } catch {
     /* noop */
   }

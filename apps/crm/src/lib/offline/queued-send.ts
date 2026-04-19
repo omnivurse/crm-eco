@@ -28,6 +28,7 @@ import {
 } from '@/lib/offline/mutation-queue';
 
 const IDEMPOTENCY_HEADER = 'Idempotency-Key';
+const TRACE_HEADER = 'X-Request-Id';
 
 /**
  * Generate a UUID v4. Uses `crypto.randomUUID()` where available and
@@ -95,6 +96,13 @@ export async function queuedSend(
   // correlation ids).
   if (!headers[IDEMPOTENCY_HEADER]) {
     headers[IDEMPOTENCY_HEADER] = makeIdempotencyKey();
+  }
+  // Client-side trace id — survives enqueue + retry so the server's
+  // `withIdempotency` wrapper echoes the *same* id back on both live
+  // sends and replays. This keeps client-side instrumentation and the
+  // `crm_idempotency_keys.trace_id` column in lockstep.
+  if (!headers[TRACE_HEADER]) {
+    headers[TRACE_HEADER] = makeIdempotencyKey();
   }
 
   // Short-circuit: if offline and caller opted in, skip the doomed

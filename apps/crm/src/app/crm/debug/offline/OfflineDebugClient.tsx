@@ -51,6 +51,10 @@ import {
   listReceipts,
   type SyncReceipt,
 } from '@/lib/offline/receipt-log';
+import {
+  subscribeOfflineEventBuffer,
+  type RecordedOfflineEvent,
+} from '@/lib/offline/instrumentation';
 
 interface CachedEntryRow {
   key: string;
@@ -101,6 +105,13 @@ export default function OfflineDebugClient() {
   // without calling `Date.now()` during render (which would violate
   // the react-hooks/purity rule).
   const [renderedAt, setRenderedAt] = useState<number>(() => Date.now());
+  const [eventBuffer, setEventBuffer] = useState<RecordedOfflineEvent[]>([]);
+
+  // Subscribe to the offline-event ring buffer so the timeline
+  // updates live while support is watching a device replay its
+  // queue. The buffer is populated by `recordOfflineEvent` in every
+  // stage of the drain lifecycle.
+  useEffect(() => subscribeOfflineEventBuffer(setEventBuffer), []);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -223,6 +234,25 @@ export default function OfflineDebugClient() {
     [reconciliation],
   );
 
+  /** Ring-buffer stats used by the summary grid + timeline. */
+  const eventStats = useMemo(() => {
+    let drainSuccess = 0;
+    let drainReplayed = 0;
+    for (const { event } of eventBuffer) {
+      if (event.type === 'drain.success') {
+        drainSuccess += 1;
+        if (event.replayed) drainReplayed += 1;
+      }
+    }
+    return { drainSuccess, drainReplayed };
+  }, [eventBuffer]);
+
+  /** Reversed so the newest event sits at the top of the table. */
+  const timelineRows = useMemo(
+    () => [...eventBuffer].reverse().slice(0, 50),
+    [eventBuffer],
+  );
+
   const handleWipe = async () => {
     if (
       !window.confirm(
@@ -309,6 +339,28 @@ export default function OfflineDebugClient() {
         }
       />
 
+      <div className="mb-3 flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
+        <span>
+          Snapshot taken{' '}
+          <span className="text-slate-700 dark:text-slate-200">
+            {formatAge(renderedAt - renderedAt) === '<1s'
+              ? 'just now'
+              : `${formatAge(renderedAt - renderedAt)} ago`}
+          </span>
+        </span>
+        {queue.lastSyncedAt ? (
+          <>
+            <span>•</span>
+            <span>
+              Last drain{' '}
+              <span className="text-slate-700 dark:text-slate-200">
+                {formatAge(renderedAt - queue.lastSyncedAt)} ago
+              </span>
+            </span>
+          </>
+        ) : null}
+      </div>
+
       <SummaryGrid
         online={queue.isOnline}
         pending={queue.pending.length}
@@ -316,6 +368,8 @@ export default function OfflineDebugClient() {
         cacheCount={cacheRows.length}
         cacheBytes={totalBytes}
         recentCount={recents.length}
+        drainSuccess={eventStats.drainSuccess}
+        drainReplayed={eventStats.drainReplayed}
       />
 
       <Section
@@ -391,6 +445,34 @@ export default function OfflineDebugClient() {
         )}
       </Section>
 
+      <Section title="Event timeline" count={timelineRows.length}>
+        {timelineRows.length === 0 ? (
+          <Empty label="No offline events recorded yet." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs">
+              <thead>
+                <tr className="text-left text-slate-500 dark:text-slate-400">
+                  <th className="pb-2 pr-4">When</th>
+                  <th className="pb-2 pr-4">Event</th>
+                  <th className="pb-2 pr-4">Mutation / url</th>
+                  <th className="pb-2">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {timelineRows.map((entry, idx) => (
+                  <TimelineRow
+                    key={`${entry.recordedAt}-${idx}`}
+                    entry={entry}
+                    now={renderedAt}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Section>
+
       <Section title="Sync reconciliation" count={reconciliation.length}>
         {receiptsError ? (
           <Empty label={receiptsError} />
@@ -425,7 +507,8 @@ export default function OfflineDebugClient() {
                     <th className="pb-2 pr-4">Receipt</th>
                     <th className="pb-2 pr-4">Method + path</th>
                     <th className="pb-2 pr-4">Client</th>
-                    <th className="pb-2">Server</th>
+                    <th className="pb-2 pr-4">Server</th>
+                    <th className="pb-2">Trace</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -464,6 +547,11 @@ function ReconciliationTableRow({
     : '—';
   const method = row.clientEntry?.method ?? row.serverEntry?.method ?? '—';
   const path = row.clientEntry?.url ?? row.serverEntry?.path ?? '—';
+  // Prefer the server-side trace because it's the authoritative one
+  // (stored in `crm_idempotency_keys.trace_id`). Fall back to what
+  // the client logged when the row is client-only.
+  const traceId =
+    row.serverEntry?.trace_id ?? row.clientEntry?.traceId ?? null;
   return (
     <tr className="border-t border-slate-100 dark:border-white/5 align-top">
       <td className="py-1.5 pr-4">
@@ -484,11 +572,81 @@ function ReconciliationTableRow({
       <td className="py-1.5 pr-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
         {clientTime}
       </td>
-      <td className="py-1.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+      <td className="py-1.5 pr-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
         {serverTime}
         {row.serverEntry ? (
           <span className="ml-1 text-slate-400">({row.serverEntry.status_code})</span>
         ) : null}
+      </td>
+      <td className="py-1.5 font-mono text-[10px] text-slate-500 dark:text-slate-400 break-all">
+        {traceId ? traceId : '—'}
+      </td>
+    </tr>
+  );
+}
+
+function TimelineRow({
+  entry,
+  now,
+}: {
+  entry: RecordedOfflineEvent;
+  now: number;
+}) {
+  const { event, recordedAt } = entry;
+  const age = formatAge(now - recordedAt);
+  const tone =
+    event.type === 'drain.failure'
+      ? 'text-rose-600 dark:text-rose-400'
+      : event.type === 'drain.retry'
+        ? 'text-amber-600 dark:text-amber-400'
+        : event.type === 'drain.success'
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : event.type === 'connection'
+            ? 'text-sky-600 dark:text-sky-400'
+            : 'text-slate-700 dark:text-slate-200';
+
+  // `detail` is a compact right-side summary chosen per event type.
+  // Kept as a string so the table stays dense and copy-pasteable.
+  let mutationRef = '—';
+  let detail = '';
+  switch (event.type) {
+    case 'enqueue':
+      mutationRef = `${event.method} ${event.url}`;
+      detail = `queue depth ${event.queueDepth} — ${event.label}`;
+      break;
+    case 'drain.success':
+      mutationRef = event.mutationId;
+      detail = `${event.latencyMs}ms · attempt ${event.attempts}${
+        event.replayed ? ' · replayed' : ''
+      }${event.receiptId ? ` · receipt ${event.receiptId.slice(0, 8)}…` : ''}`;
+      break;
+    case 'drain.retry':
+      mutationRef = event.mutationId;
+      detail = `attempt ${event.attempts} — ${event.reason}`;
+      break;
+    case 'drain.failure':
+      mutationRef = event.mutationId;
+      detail = `${event.failureKind} after ${event.attempts} · ${event.reason}`;
+      break;
+    case 'connection':
+      mutationRef = event.online ? 'online' : 'offline';
+      detail = event.online ? 'network returned' : 'network lost';
+      break;
+  }
+
+  return (
+    <tr className="border-t border-slate-100 dark:border-white/5 align-top">
+      <td className="py-1.5 pr-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+        {age}
+      </td>
+      <td className={`py-1.5 pr-4 font-medium whitespace-nowrap ${tone}`}>
+        {event.type}
+      </td>
+      <td className="py-1.5 pr-4 font-mono text-[10px] text-slate-700 dark:text-slate-200 break-all">
+        {mutationRef}
+      </td>
+      <td className="py-1.5 text-slate-600 dark:text-slate-300 break-all">
+        {detail}
       </td>
     </tr>
   );
@@ -523,6 +681,8 @@ function SummaryGrid({
   cacheCount,
   cacheBytes,
   recentCount,
+  drainSuccess,
+  drainReplayed,
 }: {
   online: boolean;
   pending: number;
@@ -530,9 +690,20 @@ function SummaryGrid({
   cacheCount: number;
   cacheBytes: number;
   recentCount: number;
+  /** Count of `drain.success` events in the current ring buffer. */
+  drainSuccess: number;
+  /** Count of those successes that were server-side replays. */
+  drainReplayed: number;
 }) {
+  // Replay-suppression rate: high values mean the idempotency wrapper
+  // is actually earning its keep. Low or zero means the client isn't
+  // retrying (maybe no network events in the window) or the key
+  // stamping is broken — both worth investigating.
+  const replayPct = drainSuccess > 0
+    ? Math.round((drainReplayed / drainSuccess) * 100)
+    : 0;
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+    <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
       <Metric
         label="Connection"
         value={online ? 'Online' : 'Offline'}
@@ -542,6 +713,11 @@ function SummaryGrid({
       <Metric label="Failed" value={String(failed)} tone={failed > 0 ? 'bad' : 'neutral'} />
       <Metric label="Cached reads" value={String(cacheCount)} tone="neutral" />
       <Metric label="Cache size" value={formatBytes(cacheBytes)} tone="neutral" />
+      <Metric
+        label="Replay suppressed"
+        value={drainSuccess === 0 ? '—' : `${replayPct}%`}
+        tone={replayPct > 0 ? 'ok' : 'neutral'}
+      />
     </div>
   );
 }

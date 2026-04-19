@@ -37,6 +37,16 @@ import { createClient as createServiceClient } from '@supabase/supabase-js';
 
 const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 const RECEIPT_HEADER = 'x-sync-receipt';
+const TRACE_RESPONSE_HEADER = 'x-trace-id';
+/** Request headers we accept as a client-supplied trace id, in priority
+ *  order. The client stamps `X-Request-Id` via `queuedSend`, while
+ *  Vercel's edge network appends `x-vercel-id` which is useful for
+ *  cross-referencing with platform logs. */
+const TRACE_REQUEST_HEADERS = [
+  'x-request-id',
+  'x-trace-id',
+  'x-vercel-id',
+] as const;
 
 export interface IdempotencyContext {
   /** Always set. Clients can log this and cross-reference with the
@@ -44,6 +54,10 @@ export interface IdempotencyContext {
   receiptId: string;
   /** True if the current response is a replay of a prior mutation. */
   replayed: boolean;
+  /** Trace id that ties this mutation to platform logs (Vercel /
+   *  Datadog / Cloudflare). Either echoed from the request or freshly
+   *  minted when the caller didn't supply one. */
+  traceId: string;
 }
 
 export interface WithIdempotencyOptions {
@@ -110,10 +124,32 @@ export function attachReceipt(
   ctx: IdempotencyContext,
 ): NextResponse {
   response.headers.set(RECEIPT_HEADER, ctx.receiptId);
+  response.headers.set(TRACE_RESPONSE_HEADER, ctx.traceId);
   if (ctx.replayed) {
     response.headers.set('x-sync-replayed', '1');
   }
   return response;
+}
+
+/**
+ * Resolve a trace id for the incoming request. Priority:
+ *   1. Explicit `options.traceId` supplied by the caller.
+ *   2. First non-empty value in `TRACE_REQUEST_HEADERS`.
+ *   3. Freshly-minted UUID so every mutation is traceable.
+ *
+ * Kept exported so tests and specialised routes can reuse the exact
+ * same resolution order without copy-pasting.
+ */
+export function resolveTraceId(
+  request: NextRequest | Request,
+  override?: string | null,
+): string {
+  if (override && override.trim()) return override.trim().slice(0, 128);
+  for (const header of TRACE_REQUEST_HEADERS) {
+    const raw = request.headers.get(header);
+    if (raw && raw.trim()) return raw.trim().slice(0, 128);
+  }
+  return randomUUID();
 }
 
 /**
@@ -139,9 +175,11 @@ export async function withIdempotency(
   handler: () => Promise<NextResponse>,
 ): Promise<{ response: NextResponse; context: IdempotencyContext }> {
   const key = readIdempotencyKey(request);
+  const traceId = resolveTraceId(request, options.traceId);
   const context: IdempotencyContext = {
     receiptId: randomUUID(),
     replayed: false,
+    traceId,
   };
 
   // Fast path: no key supplied. Run the handler directly and still
@@ -241,7 +279,7 @@ export async function withIdempotency(
           request_hash: requestHash,
           response_body: responseBody as object,
           status_code: response.status,
-          trace_id: options.traceId ?? null,
+          trace_id: traceId,
         },
         { onConflict: 'organization_id,key' },
       )

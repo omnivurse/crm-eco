@@ -8,6 +8,7 @@ import { BottomBar } from './bottom-bar';
 import { CommandPalette } from './CommandPalette';
 import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
 import { SyncToastNotifier } from '@/components/crm/offline/SyncToastNotifier';
+import { OfflineAnalyticsBoot } from '@/components/crm/offline/OfflineAnalyticsBoot';
 import { ModuleProvider } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
@@ -77,6 +78,7 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
                 queue and emits consolidated "Synced N changes" /
                 "Back online" / "Couldn't sync" toasts. */}
             <SyncToastNotifier />
+            <OfflineAnalyticsBoot />
 
             {/* Top Bar */}
             <CrmTopBar

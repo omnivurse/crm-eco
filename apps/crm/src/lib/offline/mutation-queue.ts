@@ -468,6 +468,11 @@ class MutationQueue {
         // use the wrapper yet; harmless when missing.
         const receiptId = res.headers.get('x-sync-receipt') ?? undefined;
         const replayed = res.headers.get('x-sync-replayed') === '1';
+        // Trace id the server echoed back (client-supplied via
+        // `X-Request-Id` or server-minted when absent). Pairing this
+        // with `receiptId` lets us jump directly from a client log
+        // line to the matching Datadog / Vercel trace.
+        const traceId = res.headers.get('x-trace-id') ?? undefined;
         recordOfflineEvent({
           type: 'drain.success',
           mutationId: next.id,
@@ -475,6 +480,7 @@ class MutationQueue {
           latencyMs: Date.now() - startedAt,
           receiptId,
           replayed,
+          traceId,
         });
         // Persist the receipt locally so the reconciliation view can
         // cross-reference it against the server-side ledger. Fire and
@@ -488,6 +494,7 @@ class MutationQueue {
             method: next.method,
             url: next.url,
             replayed,
+            traceId,
           });
         }
       } else if (isRetryableStatus(res.status) && next.attempts + 1 < MAX_RETRIES) {
