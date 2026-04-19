@@ -265,7 +265,7 @@ export function RateQuoteCalculator({ defaultPlanId, rateSetOverride }: RateQuot
             {/* Summary */}
             {(!result.errors || result.errors.length === 0) && (
               <>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-[#003560] to-[#002848] text-white">
+                <div className="p-4 rounded-xl bg-gradient-to-br from-[#0f172a] to-[#002848] text-white">
                   <p className="text-xs uppercase tracking-wider text-white/60 mb-1">Total Monthly</p>
                   <p className="text-3xl font-bold">{formatCurrency(result.totalMonthly)}</p>
                   <div className="flex items-center gap-3 mt-2 text-sm text-white/70">

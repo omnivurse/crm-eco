@@ -142,25 +142,25 @@ export default function CrmLoginPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left Side - Animated Gradient Mesh Hero */}
-      <div className="hidden lg:flex relative overflow-hidden bg-[#003560]">
+      <div className="hidden lg:flex relative overflow-hidden bg-[#0f172a]">
         {/* Animated gradient mesh background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#003560] via-[#047474] to-[#027343]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-[#0891b2] to-[#059669]" />
           <div
             className="login-blob login-blob-drift-1"
-            style={{ width: 500, height: 500, top: '-10%', left: '-5%', background: 'radial-gradient(circle, rgba(6,155,154,0.4) 0%, rgba(6,155,154,0.1) 50%, transparent 70%)' }}
+            style={{ width: 500, height: 500, top: '-10%', left: '-5%', background: 'radial-gradient(circle, rgba(6,182,212,0.4) 0%, rgba(6,182,212,0.1) 50%, transparent 70%)' }}
           />
           <div
             className="login-blob login-blob-drift-2"
-            style={{ width: 450, height: 450, top: '30%', right: '-10%', background: 'radial-gradient(circle, rgba(2,115,67,0.35) 0%, rgba(2,115,67,0.08) 50%, transparent 70%)' }}
+            style={{ width: 450, height: 450, top: '30%', right: '-10%', background: 'radial-gradient(circle, rgba(5,150,105,0.35) 0%, rgba(5,150,105,0.08) 50%, transparent 70%)' }}
           />
           <div
             className="login-blob login-blob-drift-3"
-            style={{ width: 380, height: 380, bottom: '-5%', left: '20%', background: 'radial-gradient(circle, rgba(233,182,31,0.2) 0%, rgba(233,182,31,0.05) 50%, transparent 70%)' }}
+            style={{ width: 380, height: 380, bottom: '-5%', left: '20%', background: 'radial-gradient(circle, rgba(245,158,11,0.2) 0%, rgba(245,158,11,0.05) 50%, transparent 70%)' }}
           />
           <div
             className="login-blob login-blob-drift-4"
-            style={{ width: 320, height: 320, top: '60%', right: '25%', background: 'radial-gradient(circle, rgba(4,116,116,0.3) 0%, rgba(4,116,116,0.08) 50%, transparent 70%)' }}
+            style={{ width: 320, height: 320, top: '60%', right: '25%', background: 'radial-gradient(circle, rgba(8,145,178,0.3) 0%, rgba(8,145,178,0.08) 50%, transparent 70%)' }}
           />
         </div>
 
@@ -168,7 +168,7 @@ export default function CrmLoginPage() {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 w-full">
           <h1 className="text-5xl xl:text-6xl font-bold text-white mb-4 tracking-tight leading-[1.1] font-heading">
             <span className="block">Empowering</span>
-            <span className="block bg-gradient-to-r from-[#6ac3c2] to-[#9bd7d7] bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
               Healthier Lives
             </span>
           </h1>
@@ -267,7 +267,7 @@ export default function CrmLoginPage() {
                 type="button"
                 onClick={() => setRememberMe(!rememberMe)}
                 className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${rememberMe
-                  ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,155,154,0.3)]'
+                  ? 'bg-brand-teal-500 border-brand-teal-500 shadow-[0_0_10px_2px_rgba(6,182,212,0.3)]'
                   : 'border-brand-navy-300 bg-white hover:border-brand-navy-400'
                   }`}
               >

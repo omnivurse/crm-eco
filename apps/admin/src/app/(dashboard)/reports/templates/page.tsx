@@ -43,7 +43,7 @@ const categoryColors: Record<string, string> = {
   marketing: 'from-violet-500 to-purple-600',
   team: 'from-blue-500 to-cyan-600',
   operations: 'from-amber-500 to-orange-600',
-  finance: 'from-[#047474] to-[#069B9A]',
+  finance: 'from-[#0891b2] to-[#06b6d4]',
   productivity: 'from-orange-500 to-red-500',
 };
 
@@ -95,15 +95,15 @@ function ReportTemplateCard({
   return (
     <Link
       href={`/reports/templates/${id}`}
-      className="bg-white rounded-xl p-5 border border-slate-200 hover:border-[#047474]/30 hover:shadow-lg transition-all group"
+      className="bg-white rounded-xl p-5 border border-slate-200 hover:border-[#0891b2]/30 hover:shadow-lg transition-all group"
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2.5 rounded-xl bg-gradient-to-br ${gradient}`}>
           <IconComponent className="w-5 h-5 text-white" />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#047474] transition-colors" />
+        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#0891b2] transition-colors" />
       </div>
-      <h3 className="text-slate-900 font-semibold mb-1 group-hover:text-[#047474] transition-colors">
+      <h3 className="text-slate-900 font-semibold mb-1 group-hover:text-[#0891b2] transition-colors">
         {name}
       </h3>
       <p className="text-slate-500 text-sm line-clamp-2 mb-3">{description}</p>
@@ -111,7 +111,7 @@ function ReportTemplateCard({
         <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
           {categoryLabel}
         </span>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-[#047474]/10 text-[#047474]">
+        <span className="text-xs px-2 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2]">
           {dataSource}
         </span>
       </div>

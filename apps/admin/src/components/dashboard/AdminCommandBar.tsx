@@ -76,7 +76,7 @@ export function AdminCommandBar({ adminName, orgName, stats }: AdminCommandBarPr
   const commissionSeverity = getSeverity(commissionStats.pendingPayouts, 1, 5);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] px-5 py-4 shadow-lg shadow-[#003560]/20 ring-1 ring-white/10">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0f172a] via-[#004a7c] to-[#0891b2] px-5 py-4 shadow-lg shadow-[#0f172a]/20 ring-1 ring-white/10">
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Left: Identity */}
         <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export function AdminCommandBar({ adminName, orgName, stats }: AdminCommandBarPr
             <span className="text-sm text-white/80">
               {adminName}
             </span>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-[#E9B61F]/20 text-[#E9B61F] border border-[#E9B61F]/30">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-[#f59e0b]/20 text-[#f59e0b] border border-[#f59e0b]/30">
               <Shield className="w-2.5 h-2.5" />
               Admin
             </span>

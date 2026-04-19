@@ -133,7 +133,7 @@ export default function AdminSavedReportsPage() {
 
         <div className="flex items-center gap-3">
           <Link href="/reports/new">
-            <Button className="bg-[#047474] hover:bg-[#035f5f] text-white">
+            <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
               <Plus className="w-4 h-4 mr-2" />
               New Report
             </Button>
@@ -203,14 +203,14 @@ export default function AdminSavedReportsPage() {
           {filteredReports.map((report) => (
             <div
               key={report.id}
-              className="bg-white rounded-xl p-4 border border-slate-200 hover:border-[#047474]/20 hover:shadow-lg transition-all"
+              className="bg-white rounded-xl p-4 border border-slate-200 hover:border-[#0891b2]/20 hover:shadow-lg transition-all"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <Link
                       href={`/reports/saved/${report.id}`}
-                      className="text-lg font-semibold text-slate-900 hover:text-[#047474] transition-colors truncate"
+                      className="text-lg font-semibold text-slate-900 hover:text-[#0891b2] transition-colors truncate"
                     >
                       {report.name}
                     </Link>
@@ -258,7 +258,7 @@ export default function AdminSavedReportsPage() {
                     <Star className={`w-4 h-4 ${report.is_favorite ? 'fill-current' : ''}`} />
                   </Button>
                   <Link href={`/reports/saved/${report.id}?run=true`}>
-                    <Button size="sm" className="bg-[#047474] hover:bg-[#035f5f] text-white">
+                    <Button size="sm" className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
                       <Play className="w-4 h-4 mr-1" />
                       Run
                     </Button>
@@ -309,7 +309,7 @@ export default function AdminSavedReportsPage() {
               <Button variant="outline">Browse Templates</Button>
             </Link>
             <Link href="/reports/new">
-              <Button className="bg-[#047474] hover:bg-[#035f5f] text-white">
+              <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Report
               </Button>

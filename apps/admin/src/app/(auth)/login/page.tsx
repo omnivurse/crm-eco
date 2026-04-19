@@ -105,7 +105,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       {/* Left Side - Hero Image */}
-      <div className="hidden lg:flex relative overflow-hidden bg-[#003560]">
+      <div className="hidden lg:flex relative overflow-hidden bg-[#0f172a]">
         <LoginHero />
       </div>
 

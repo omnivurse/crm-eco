@@ -12,7 +12,7 @@ export default function LoginHero() {
         {/* Large bold headline */}
         <h1 className="text-5xl xl:text-6xl font-bold text-white mb-4 tracking-tight leading-[1.1] font-heading">
           <span className="block">Empowering</span>
-          <span className="block bg-gradient-to-r from-[#6ac3c2] to-[#9bd7d7] bg-clip-text text-transparent">
+          <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
             Healthier Lives
           </span>
         </h1>

@@ -49,7 +49,7 @@ function QuickStatCard({
   href?: string;
 }) {
   const colorClasses = {
-    teal: { bg: 'bg-[#047474]/10', text: 'text-[#047474]', border: 'border-[#047474]/20' },
+    teal: { bg: 'bg-[#0891b2]/10', text: 'text-[#0891b2]', border: 'border-[#0891b2]/20' },
     violet: { bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
     emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', border: 'border-emerald-500/20' },
     amber: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
@@ -101,7 +101,7 @@ function ReportTemplateCard({
     marketing: 'from-violet-500 to-purple-600',
     team: 'from-blue-500 to-cyan-600',
     operations: 'from-amber-500 to-orange-600',
-    finance: 'from-[#047474] to-[#069B9A]',
+    finance: 'from-[#0891b2] to-[#06b6d4]',
     productivity: 'from-orange-500 to-red-500',
   };
 
@@ -124,15 +124,15 @@ function ReportTemplateCard({
   return (
     <Link
       href={`/reports/templates/${id}`}
-      className="bg-white rounded-xl p-5 border border-slate-200 hover:border-[#047474]/30 hover:shadow-lg transition-all group"
+      className="bg-white rounded-xl p-5 border border-slate-200 hover:border-[#0891b2]/30 hover:shadow-lg transition-all group"
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`p-2.5 rounded-xl bg-gradient-to-br ${gradient}`}>
           <IconComponent className="w-5 h-5 text-white" />
         </div>
-        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#047474] transition-colors" />
+        <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-[#0891b2] transition-colors" />
       </div>
-      <h3 className="text-slate-900 font-semibold mb-1 group-hover:text-[#047474] transition-colors">
+      <h3 className="text-slate-900 font-semibold mb-1 group-hover:text-[#0891b2] transition-colors">
         {name}
       </h3>
       <p className="text-slate-500 text-sm line-clamp-2">{description}</p>
@@ -158,12 +158,12 @@ function SavedReportCard({
   onToggleFavorite?: () => void;
 }) {
   return (
-    <div className="bg-white rounded-xl p-4 border border-slate-200 hover:border-[#047474]/20 hover:shadow-lg transition-all group">
+    <div className="bg-white rounded-xl p-4 border border-slate-200 hover:border-[#0891b2]/20 hover:shadow-lg transition-all group">
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
           <Link
             href={`/reports/saved/${id}`}
-            className="text-slate-900 font-semibold hover:text-[#047474] transition-colors truncate block"
+            className="text-slate-900 font-semibold hover:text-[#0891b2] transition-colors truncate block"
           >
             {name}
           </Link>
@@ -297,7 +297,7 @@ export default function AdminReportsPage() {
 
         <div className="flex items-center gap-3">
           <Link href="/reports/new">
-            <Button className="bg-[#047474] hover:bg-[#035f5f] text-white">
+            <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
               <Plus className="w-4 h-4 mr-2" />
               Create Report
             </Button>
@@ -452,7 +452,7 @@ export default function AdminReportsPage() {
                 <Button variant="outline">Browse Templates</Button>
               </Link>
               <Link href="/reports/new">
-                <Button className="bg-[#047474] hover:bg-[#035f5f] text-white">
+                <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Create Report
                 </Button>

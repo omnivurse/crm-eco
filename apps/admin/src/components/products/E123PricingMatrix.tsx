@@ -112,7 +112,7 @@ export function E123PricingMatrix({ productId, productCode, organizationId }: E1
               onClick={() => setActiveRateSet(key)}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeRateSet === key
-                  ? 'bg-[#003560] text-white'
+                  ? 'bg-[#0f172a] text-white'
                   : 'bg-white text-slate-600 hover:bg-slate-50'
               }`}
             >

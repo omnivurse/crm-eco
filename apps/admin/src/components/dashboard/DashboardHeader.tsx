@@ -47,7 +47,7 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#003560] p-4 sm:p-8 shadow-lg">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-[#0f172a] p-4 sm:p-8 shadow-lg">
       {/* Grid pattern overlay */}
       <div className="absolute inset-0 opacity-[0.03]">
         <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -90,9 +90,9 @@ export function DashboardHeader({ greeting, onRefresh, isRefreshing = false }: D
               </div>
               
               {/* Admin Access badge */}
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#E9B61F]/20 backdrop-blur-sm border border-[#E9B61F]/30">
-                <Shield className="w-3.5 h-3.5 text-[#E9B61F]" />
-                <span className="text-xs font-medium text-[#E9B61F]">Admin Access</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f59e0b]/20 backdrop-blur-sm border border-[#f59e0b]/30">
+                <Shield className="w-3.5 h-3.5 text-[#f59e0b]" />
+                <span className="text-xs font-medium text-[#f59e0b]">Admin Access</span>
               </div>
             </div>
 

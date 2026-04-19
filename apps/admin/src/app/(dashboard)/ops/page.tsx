@@ -300,7 +300,7 @@ export default function OpsPage() {
                 <CardTitle>Recent Job Runs</CardTitle>
                 <Link
                   href="/ops/jobs"
-                  className="text-sm text-[#047474] hover:underline flex items-center gap-1"
+                  className="text-sm text-[#0891b2] hover:underline flex items-center gap-1"
                 >
                   View all <ChevronRight className="w-4 h-4" />
                 </Link>
@@ -363,7 +363,7 @@ export default function OpsPage() {
                 href={link.href}
                 className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 transition-colors group"
               >
-                <div className="p-2 rounded-lg bg-slate-100 group-hover:bg-[#047474] group-hover:text-white transition-colors">
+                <div className="p-2 rounded-lg bg-slate-100 group-hover:bg-[#0891b2] group-hover:text-white transition-colors">
                   <link.icon className="w-4 h-4" />
                 </div>
                 <div>

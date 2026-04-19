@@ -241,8 +241,8 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
         <AppSwitcher currentApp="admin" />
         <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden sm:block" />
         <div className="hidden md:flex items-center gap-2">
-          <Shield className="w-4 h-4 text-[#047474] dark:text-teal-400" />
-          <span className="text-sm font-semibold text-[#003560] dark:text-white">System Administration</span>
+          <Shield className="w-4 h-4 text-[#0891b2] dark:text-teal-400" />
+          <span className="text-sm font-semibold text-[#0f172a] dark:text-white">System Administration</span>
         </div>
         
         {/* Live Status Indicator */}
@@ -304,7 +304,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
             <Button variant="ghost" size="icon" title="Notifications" className="relative h-9 w-9 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#047474] rounded-full ring-2 ring-white dark:ring-slate-900 text-[10px] font-bold text-white px-1">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-[#0891b2] rounded-full ring-2 ring-white dark:ring-slate-900 text-[10px] font-bold text-white px-1">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
@@ -317,7 +317,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-auto py-1 px-2 text-xs text-[#047474] hover:text-[#047474] hover:bg-[#e1f3f3] dark:hover:bg-teal-500/10"
+                  className="h-auto py-1 px-2 text-xs text-[#0891b2] hover:text-[#0891b2] hover:bg-cyan-50 dark:hover:bg-teal-500/10"
                   onClick={handleMarkAllAsRead}
                 >
                   <Check className="w-3 h-3 mr-1" />
@@ -372,7 +372,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
               <>
                 <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                 <DropdownMenuItem
-                  className="px-4 py-2.5 cursor-pointer text-center text-sm text-[#047474] dark:text-teal-400 font-medium hover:bg-teal-50 dark:hover:bg-teal-500/10 justify-center"
+                  className="px-4 py-2.5 cursor-pointer text-center text-sm text-[#0891b2] dark:text-teal-400 font-medium hover:bg-teal-50 dark:hover:bg-teal-500/10 justify-center"
                   onClick={() => {
                     router.push('/notifications');
                     setIsOpen(false);
@@ -404,7 +404,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
               className="flex items-center gap-2 h-9 px-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/10"
             >
               <div className="relative">
-                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-xs font-semibold text-white border border-teal-500/50">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0891b2] to-[#06b6d4] flex items-center justify-center text-xs font-semibold text-white border border-teal-500/50">
                   {profile.avatarUrl ? (
                     <img
                       src={profile.avatarUrl}
@@ -426,7 +426,7 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
           <DropdownMenuContent align="end" className="w-64 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
             <DropdownMenuLabel className="pb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-sm font-semibold text-white border-2 border-teal-500/50 flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0891b2] to-[#06b6d4] flex items-center justify-center text-sm font-semibold text-white border-2 border-teal-500/50 flex-shrink-0">
                   {profile.avatarUrl ? (
                     <img
                       src={profile.avatarUrl}

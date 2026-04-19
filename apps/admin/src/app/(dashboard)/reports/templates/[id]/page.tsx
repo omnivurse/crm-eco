@@ -190,7 +190,7 @@ export default function AdminTemplateDetailPage() {
             <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
               {template.category}
             </span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-[#047474]/10 text-[#047474]">
+            <span className="text-xs px-2 py-0.5 rounded-full bg-[#0891b2]/10 text-[#0891b2]">
               {template.dataSource}
             </span>
           </div>
@@ -200,7 +200,7 @@ export default function AdminTemplateDetailPage() {
           <Button
             onClick={handleRunReport}
             disabled={isRunning}
-            className="bg-[#047474] hover:bg-[#035f5f] text-white"
+            className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
           >
             {isRunning ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -295,7 +295,7 @@ export default function AdminTemplateDetailPage() {
                 <Table className="w-4 h-4" />
                 Results
                 {results.length > 0 && (
-                  <span className="ml-1 text-xs bg-[#047474]/10 text-[#047474] px-1.5 py-0.5 rounded">
+                  <span className="ml-1 text-xs bg-[#0891b2]/10 text-[#0891b2] px-1.5 py-0.5 rounded">
                     {totalRows}
                   </span>
                 )}
@@ -312,7 +312,7 @@ export default function AdminTemplateDetailPage() {
                 <Button
                   onClick={handleRunReport}
                   disabled={isRunning}
-                  className="bg-[#047474] hover:bg-[#035f5f] text-white"
+                  className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
                 >
                   {isRunning ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

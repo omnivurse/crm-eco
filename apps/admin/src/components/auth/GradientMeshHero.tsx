@@ -2,7 +2,7 @@ export default function GradientMeshHero() {
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* Base gradient — navy to purple to blue */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#003560] via-purple-800 to-blue-700" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#0f172a] via-purple-800 to-blue-700" />
 
       {/* Animated mesh blobs — purple/blue palette */}
       <div

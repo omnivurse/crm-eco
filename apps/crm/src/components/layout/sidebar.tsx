@@ -109,16 +109,16 @@ export function Sidebar({ role }: SidebarProps) {
     .filter((section) => section.items.length > 0); // Remove empty sections
 
   return (
-    <aside className="w-64 bg-[#003560] text-white flex flex-col relative overflow-hidden">
+    <aside className="w-64 bg-[#0f172a] text-white flex flex-col relative overflow-hidden">
       {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#003560] via-[#003560] to-[#002848] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a] via-[#0f172a] to-[#0c1322] pointer-events-none" />
       
       {/* Content wrapper */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Logo with gradient accent stripe */}
         <div className="relative">
           {/* Gradient top stripe */}
-          <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
+          <div className="h-1 bg-gradient-to-r from-[#0891b2] via-[#06b6d4] to-[#059669]" />
 
           <div className="h-16 flex items-center px-3 border-b border-white/10">
             <Link href="/dashboard" className="flex items-center group">
@@ -156,8 +156,8 @@ export function Sidebar({ role }: SidebarProps) {
                       className={cn(
                         'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                         isActive
-                          ? 'bg-[#047474] text-white shadow-lg shadow-teal-900/20'
-                          : 'text-white/70 hover:bg-[#002848] hover:text-white'
+                          ? 'bg-[#0891b2] text-white shadow-lg shadow-teal-900/20'
+                          : 'text-white/70 hover:bg-[#0c1322] hover:text-white'
                       )}
                     >
                       <item.icon className={cn(
@@ -166,7 +166,7 @@ export function Sidebar({ role }: SidebarProps) {
                       )} />
                       {item.name}
                       {isActive && (
-                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#E9B61F]" />
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#f59e0b]" />
                       )}
                     </Link>
                   );
@@ -178,12 +178,12 @@ export function Sidebar({ role }: SidebarProps) {
         
         {/* Footer */}
         <div className="p-4 border-t border-white/10">
-          <div className="px-3 py-3 bg-[#002848] rounded-xl border border-white/5">
+          <div className="px-3 py-3 bg-[#0c1322] rounded-xl border border-white/5">
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-3.5 h-3.5 text-[#E9B61F]" />
+              <Sparkles className="w-3.5 h-3.5 text-[#f59e0b]" />
               <p className="text-[10px] font-semibold text-white/50 uppercase tracking-wider">Platform</p>
             </div>
-            <p className="text-sm font-bold text-white">Phase 1 <span className="text-[#069B9A]">· v1.0.0</span></p>
+            <p className="text-sm font-bold text-white">Phase 1 <span className="text-[#06b6d4]">· v1.0.0</span></p>
           </div>
         </div>
       </div>

@@ -241,7 +241,7 @@ export function MergeMembersModal({
                       key={member.id}
                       className={`flex items-center gap-3 p-3 rounded-lg border ${
                         member.id === primaryMemberId
-                          ? 'border-[#047474] bg-[#047474]/5'
+                          ? 'border-[#0891b2] bg-[#0891b2]/5'
                           : 'border-slate-200'
                       }`}
                     >
@@ -255,7 +255,7 @@ export function MergeMembersModal({
                         <p className="text-xs text-slate-500 truncate">{member.email}</p>
                       </div>
                       {member.id === primaryMemberId && (
-                        <Badge className="bg-[#047474]">Primary</Badge>
+                        <Badge className="bg-[#0891b2]">Primary</Badge>
                       )}
                       <Button
                         variant="ghost"
@@ -337,7 +337,7 @@ export function MergeMembersModal({
                   key={member.id}
                   className={`cursor-pointer transition-colors ${
                     member.id === primaryMemberId
-                      ? 'border-[#047474] ring-2 ring-[#047474]/20'
+                      ? 'border-[#0891b2] ring-2 ring-[#0891b2]/20'
                       : 'hover:border-slate-300'
                   }`}
                   onClick={() => setPrimaryMemberId(member.id)}
@@ -346,7 +346,7 @@ export function MergeMembersModal({
                     <div className="flex items-start gap-3">
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                         member.id === primaryMemberId
-                          ? 'border-[#047474] bg-[#047474]'
+                          ? 'border-[#0891b2] bg-[#0891b2]'
                           : 'border-slate-300'
                       }`}>
                         {member.id === primaryMemberId && (
@@ -409,7 +409,7 @@ export function MergeMembersModal({
 
               <div className="text-center">
                 <p className="text-xs text-slate-500 mb-2">Primary record</p>
-                <div className="w-10 h-10 rounded-full bg-[#047474] flex items-center justify-center text-white font-medium">
+                <div className="w-10 h-10 rounded-full bg-[#0891b2] flex items-center justify-center text-white font-medium">
                   {primaryMember.first_name[0]}{primaryMember.last_name[0]}
                 </div>
               </div>

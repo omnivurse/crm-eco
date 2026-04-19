@@ -75,7 +75,7 @@ export function CommandBar({ profile, orgName, stats }: CommandBarProps) {
   const atRiskSeverity = getSeverity(stats.atRiskCount, 1, 3);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#003560] via-[#004a7c] to-[#047474] px-5 py-4 shadow-lg shadow-[#003560]/20 ring-1 ring-white/10">
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0891b2] px-5 py-4 shadow-lg shadow-[#0f172a]/20 ring-1 ring-white/10">
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Left: Identity */}
         <div className="flex items-center gap-3">

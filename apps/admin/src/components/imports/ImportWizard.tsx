@@ -418,7 +418,7 @@ export function ImportWizard({
               i < currentStepIndex
                 ? 'bg-emerald-500 text-white'
                 : i === currentStepIndex
-                ? 'bg-[#047474] text-white'
+                ? 'bg-[#0891b2] text-white'
                 : 'bg-slate-200 text-slate-500'
             }`}>
               {i < currentStepIndex ? <Check className="w-4 h-4" /> : i + 1}
@@ -450,7 +450,7 @@ export function ImportWizard({
                 <p className="text-slate-500">Upload a CSV file with your data</p>
               </div>
 
-              <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-[#047474] transition-colors">
+              <div className="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-[#0891b2] transition-colors">
                 <input
                   type="file"
                   accept=".csv"
@@ -679,7 +679,7 @@ export function ImportWizard({
               </div>
 
               {processingStatus === 'processing' && (
-                <Loader2 className="w-8 h-8 animate-spin text-[#047474] mx-auto" />
+                <Loader2 className="w-8 h-8 animate-spin text-[#0891b2] mx-auto" />
               )}
             </div>
           )}

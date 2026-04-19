@@ -61,7 +61,7 @@ function AgentNode({ agent, level, onToggle, expandedIds, selectedId, onSelect }
       <div
         className={`flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors ${
           isSelected
-            ? 'bg-[#047474]/10 border border-[#047474]'
+            ? 'bg-[#0891b2]/10 border border-[#0891b2]'
             : 'hover:bg-slate-50'
         }`}
         style={{ marginLeft: `${level * 24}px` }}
@@ -85,7 +85,7 @@ function AgentNode({ agent, level, onToggle, expandedIds, selectedId, onSelect }
 
         {/* Avatar */}
         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${
-          agent.status === 'active' ? 'bg-[#047474]' : 'bg-slate-400'
+          agent.status === 'active' ? 'bg-[#0891b2]' : 'bg-slate-400'
         }`}>
           {agent.first_name[0]}{agent.last_name[0]}
         </div>
@@ -388,7 +388,7 @@ export default function AgentTreePage() {
                   {/* Avatar and Name */}
                   <div className="flex items-center gap-3">
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-semibold ${
-                      selectedAgent.status === 'active' ? 'bg-[#047474]' : 'bg-slate-400'
+                      selectedAgent.status === 'active' ? 'bg-[#0891b2]' : 'bg-slate-400'
                     }`}>
                       {selectedAgent.first_name[0]}{selectedAgent.last_name[0]}
                     </div>
@@ -406,14 +406,14 @@ export default function AgentTreePage() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-slate-600">
                       <Mail className="w-4 h-4 text-slate-400" />
-                      <a href={`mailto:${selectedAgent.email}`} className="hover:text-[#047474]">
+                      <a href={`mailto:${selectedAgent.email}`} className="hover:text-[#0891b2]">
                         {selectedAgent.email}
                       </a>
                     </div>
                     {selectedAgent.phone && (
                       <div className="flex items-center gap-2 text-slate-600">
                         <Phone className="w-4 h-4 text-slate-400" />
-                        <a href={`tel:${selectedAgent.phone}`} className="hover:text-[#047474]">
+                        <a href={`tel:${selectedAgent.phone}`} className="hover:text-[#0891b2]">
                           {selectedAgent.phone}
                         </a>
                       </div>

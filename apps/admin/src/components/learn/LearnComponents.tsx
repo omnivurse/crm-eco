@@ -74,7 +74,7 @@ export function StepList({ steps }: { steps: Step[] }) {
     <div className="space-y-4">
       {steps.map((step, index) => (
         <div key={index} className="flex gap-4">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#047474] to-[#027343] flex items-center justify-center text-white font-semibold text-sm">
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-[#0891b2] to-[#059669] flex items-center justify-center text-white font-semibold text-sm">
             {index + 1}
           </div>
           <div className="flex-1 pb-4 border-b border-slate-200 last:border-0">

@@ -168,7 +168,7 @@ export default function LearnPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#047474] via-[#069B9A] to-[#027343] p-8 md:p-12">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0891b2] via-[#06b6d4] to-[#059669] p-8 md:p-12">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-20 -right-20 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
           <div className="absolute -bottom-20 -left-20 w-48 h-48 bg-white/10 rounded-full blur-2xl" />
@@ -204,12 +204,12 @@ export default function LearnPage() {
           <Link
             key={link.title}
             href={link.href}
-            className="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 hover:border-[#047474]/50 hover:shadow-md transition-all group"
+            className="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 hover:border-[#0891b2]/50 hover:shadow-md transition-all group"
           >
-            <div className="p-2 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-[#047474]/10 group-hover:text-[#047474] transition-colors">
+            <div className="p-2 rounded-lg bg-slate-100 text-slate-600 group-hover:bg-[#0891b2]/10 group-hover:text-[#0891b2] transition-colors">
               {link.icon}
             </div>
-            <span className="font-medium text-slate-900 group-hover:text-[#047474] transition-colors">
+            <span className="font-medium text-slate-900 group-hover:text-[#0891b2] transition-colors">
               {link.title}
             </span>
           </Link>
@@ -217,8 +217,8 @@ export default function LearnPage() {
       </div>
 
       {/* Getting Started Banner */}
-      <div className="bg-gradient-to-r from-[#047474]/10 to-[#027343]/10 border border-[#047474]/20 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
-        <div className="flex-shrink-0 p-4 rounded-2xl bg-gradient-to-br from-[#047474] to-[#027343]">
+      <div className="bg-gradient-to-r from-[#0891b2]/10 to-[#059669]/10 border border-[#0891b2]/20 rounded-2xl p-6 flex flex-col md:flex-row items-center gap-6">
+        <div className="flex-shrink-0 p-4 rounded-2xl bg-gradient-to-br from-[#0891b2] to-[#059669]">
           <Rocket className="w-10 h-10 text-white" />
         </div>
         <div className="flex-1 text-center md:text-left">
@@ -229,7 +229,7 @@ export default function LearnPage() {
             Start with our 5-minute quick start guide and learn the essentials to get up and running.
           </p>
         </div>
-        <Button size="lg" className="gap-2 bg-[#047474] hover:bg-[#035f5f]" asChild>
+        <Button size="lg" className="gap-2 bg-[#0891b2] hover:bg-[#0e7490]" asChild>
           <Link href="/learn/getting-started">
             Get Started
             <ArrowRight className="w-4 h-4" />
@@ -252,7 +252,7 @@ export default function LearnPage() {
               className={cn(
                 'text-left p-5 rounded-2xl border transition-all',
                 selectedCategory === category.id
-                  ? 'bg-[#047474]/5 border-[#047474]'
+                  ? 'bg-[#0891b2]/5 border-[#0891b2]'
                   : 'bg-white border-slate-200 hover:border-slate-300'
               )}
             >
@@ -319,8 +319,8 @@ export default function LearnPage() {
                   className="flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 transition-colors group"
                 >
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-slate-300 group-hover:text-[#047474] transition-colors" />
-                    <span className="font-medium text-slate-900 group-hover:text-[#047474] transition-colors">
+                    <CheckCircle className="w-5 h-5 text-slate-300 group-hover:text-[#0891b2] transition-colors" />
+                    <span className="font-medium text-slate-900 group-hover:text-[#0891b2] transition-colors">
                       {article.title}
                     </span>
                   </div>
@@ -368,7 +368,7 @@ export default function LearnPage() {
             <Link
               key={article.href}
               href={article.href}
-              className="group p-5 rounded-2xl bg-white border border-slate-200 hover:border-[#047474]/50 hover:shadow-md transition-all"
+              className="group p-5 rounded-2xl bg-white border border-slate-200 hover:border-[#0891b2]/50 hover:shadow-md transition-all"
             >
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 rounded-lg bg-slate-100 text-slate-600">
@@ -378,7 +378,7 @@ export default function LearnPage() {
                   {article.category}
                 </span>
               </div>
-              <h3 className="font-semibold text-slate-900 mb-2 group-hover:text-[#047474] transition-colors">
+              <h3 className="font-semibold text-slate-900 mb-2 group-hover:text-[#0891b2] transition-colors">
                 {article.title}
               </h3>
               <div className="flex items-center gap-1 text-sm text-slate-500">
@@ -405,7 +405,7 @@ export default function LearnPage() {
               Email Support
             </Button>
           </a>
-          <Button className="bg-[#047474] hover:bg-[#035f5f]" asChild>
+          <Button className="bg-[#0891b2] hover:bg-[#0e7490]" asChild>
             <Link href="/learn/faq">
               <HelpCircle className="w-4 h-4 mr-2" />
               Browse FAQs

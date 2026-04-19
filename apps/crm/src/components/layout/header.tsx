@@ -37,9 +37,9 @@ const pageTitles: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
-  owner: 'bg-[#e0e7ec] text-[#003560]',
-  admin: 'bg-[#e1f3f3] text-[#047474]',
-  advisor: 'bg-[#e0f1ea] text-[#027343]',
+  owner: 'bg-[#e0e7ec] text-[#0f172a]',
+  admin: 'bg-[#e1f3f3] text-[#0891b2]',
+  advisor: 'bg-[#e0f1ea] text-[#059669]',
   staff: 'bg-slate-100 text-slate-700',
 };
 
@@ -81,7 +81,7 @@ export function Header({ profile }: HeaderProps) {
       <div className="flex items-center gap-4">
         <AppSwitcher currentApp="crm" />
         <div className="h-6 w-px bg-slate-200 hidden sm:block" />
-        <h1 className="text-xl font-bold text-[#003560] hidden sm:block">{getPageTitle()}</h1>
+        <h1 className="text-xl font-bold text-[#0f172a] hidden sm:block">{getPageTitle()}</h1>
       </div>
 
       {/* Right side - Notifications + User Menu */}
@@ -89,22 +89,22 @@ export function Header({ profile }: HeaderProps) {
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative hover:bg-slate-100 rounded-xl">
           <Bell className="h-5 w-5 text-slate-500" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-[#047474] rounded-full ring-2 ring-white" />
+          <span className="absolute top-2 right-2 w-2 h-2 bg-[#0891b2] rounded-full ring-2 ring-white" />
         </Button>
 
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-3 h-auto py-2 px-3 hover:bg-slate-50 rounded-xl">
-              <Avatar className="h-9 w-9 ring-2 ring-[#047474]/20">
+              <Avatar className="h-9 w-9 ring-2 ring-[#0891b2]/20">
                 <AvatarImage src={profile.avatarUrl || undefined} alt={profile.fullName} />
-                <AvatarFallback className="bg-gradient-to-br from-[#047474] to-[#069B9A] text-white text-sm font-semibold">
+                <AvatarFallback className="bg-gradient-to-br from-[#0891b2] to-[#06b6d4] text-white text-sm font-semibold">
                   {getInitials(profile.fullName)}
                 </AvatarFallback>
               </Avatar>
               <div className="text-left hidden sm:block">
-                <p className="text-sm font-semibold text-[#003560]">{profile.fullName}</p>
-                <p className="text-xs text-[#047474] capitalize font-medium">{profile.role}</p>
+                <p className="text-sm font-semibold text-[#0f172a]">{profile.fullName}</p>
+                <p className="text-xs text-[#0891b2] capitalize font-medium">{profile.role}</p>
               </div>
               <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
             </Button>
@@ -113,7 +113,7 @@ export function Header({ profile }: HeaderProps) {
             <DropdownMenuLabel className="font-normal px-4 py-3">
               <div className="flex flex-col space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[#003560]">{profile.fullName}</p>
+                  <p className="text-sm font-semibold text-[#0f172a]">{profile.fullName}</p>
                   <Badge className={`${roleColors[profile.role] || roleColors.staff} font-semibold`} variant="secondary">
                     {profile.role}
                   </Badge>
@@ -123,11 +123,11 @@ export function Header({ profile }: HeaderProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => router.push('/profile')} className="cursor-pointer px-4 py-2.5 hover:bg-slate-50">
-              <User className="mr-3 h-4 w-4 text-[#047474]" />
+              <User className="mr-3 h-4 w-4 text-[#0891b2]" />
               <span className="font-medium">My Profile</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/settings')} className="cursor-pointer px-4 py-2.5 hover:bg-slate-50">
-              <Settings className="mr-3 h-4 w-4 text-[#047474]" />
+              <Settings className="mr-3 h-4 w-4 text-[#0891b2]" />
               <span className="font-medium">Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

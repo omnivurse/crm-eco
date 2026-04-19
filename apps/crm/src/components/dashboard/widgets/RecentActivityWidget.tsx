@@ -29,7 +29,7 @@ export default function RecentActivityWidget({
       title="Recent Activity"
       subtitle="Latest actions"
       icon={<Activity className="w-5 h-5 text-white" />}
-      gradient="bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]"
+      gradient="bg-gradient-to-r from-[#0891b2] via-[#06b6d4] to-[#059669]"
       headerAction={
         <Link
           href="/crm/activities"

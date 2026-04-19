@@ -232,7 +232,7 @@ export default function AdminSavedReportDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-8 h-8 animate-spin text-[#047474]" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#0891b2]" />
       </div>
     );
   }
@@ -307,7 +307,7 @@ export default function AdminSavedReportDetailPage() {
           <Button
             onClick={handleRunReport}
             disabled={isRunning}
-            className="bg-[#047474] hover:bg-[#035f5f] text-white"
+            className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
           >
             {isRunning ? (
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -345,7 +345,7 @@ export default function AdminSavedReportDetailPage() {
             <Table className="w-4 h-4" />
             Data
             {results.length > 0 && (
-              <span className="ml-1 text-xs bg-[#047474]/10 text-[#047474] px-1.5 py-0.5 rounded">
+              <span className="ml-1 text-xs bg-[#0891b2]/10 text-[#0891b2] px-1.5 py-0.5 rounded">
                 {totalRows}
               </span>
             )}
@@ -406,7 +406,7 @@ export default function AdminSavedReportDetailPage() {
                 <h3 className="font-semibold text-slate-900 mb-3">Quick Actions</h3>
                 <div className="space-y-2">
                   <Button
-                    className="w-full bg-[#047474] hover:bg-[#035f5f] text-white"
+                    className="w-full bg-[#0891b2] hover:bg-[#0e7490] text-white"
                     onClick={handleRunReport}
                     disabled={isRunning}
                   >
@@ -466,7 +466,7 @@ export default function AdminSavedReportDetailPage() {
               <Button
                 onClick={handleRunReport}
                 disabled={isRunning}
-                className="bg-[#047474] hover:bg-[#035f5f] text-white"
+                className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Run Report
@@ -507,7 +507,7 @@ export default function AdminSavedReportDetailPage() {
               <Button
                 onClick={handleSaveChanges}
                 disabled={isSaving}
-                className="bg-[#047474] hover:bg-[#035f5f] text-white"
+                className="bg-[#0891b2] hover:bg-[#0e7490] text-white"
               >
                 {isSaving ? (
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />

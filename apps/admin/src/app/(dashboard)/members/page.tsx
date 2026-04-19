@@ -113,7 +113,7 @@ export default async function MembersPage({ searchParams }: PageProps) {
         title="Members"
         description="Manage member accounts and information"
         icon={<Users className="w-6 h-6" />}
-        gradient="from-[#047474] to-[#069B9A]"
+        gradient="from-[#0891b2] to-[#06b6d4]"
         actions={
           <div className="flex items-center gap-2">
             <Link href="/members/import">

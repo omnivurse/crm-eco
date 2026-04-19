@@ -67,7 +67,7 @@ export default async function AgentsPage({ searchParams }: PageProps) {
         title="Agents"
         description="Manage agent accounts and commissions"
         icon={<UserCog className="w-6 h-6" />}
-        gradient="from-[#027343] to-[#34d399]"
+        gradient="from-[#059669] to-[#34d399]"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/agents/bill-groups">

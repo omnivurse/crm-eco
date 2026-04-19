@@ -5,28 +5,28 @@ type AccentColor = 'teal' | 'emerald' | 'gold' | 'navy' | 'rose' | 'amber' | 'bl
 
 const accentStyles: Record<AccentColor, { gradient: string; iconBg: string; iconColor: string; borderColor: string }> = {
   teal: {
-    gradient: 'from-[#047474] to-[#069B9A]',
-    iconBg: 'bg-[#e1f3f3]',
-    iconColor: 'text-[#047474]',
-    borderColor: 'border-l-[#047474]',
+    gradient: 'from-[#0891b2] to-[#06b6d4]',
+    iconBg: 'bg-cyan-50',
+    iconColor: 'text-cyan-700',
+    borderColor: 'border-l-cyan-600',
   },
   emerald: {
-    gradient: 'from-[#027343] to-[#358f69]',
-    iconBg: 'bg-[#e0f1ea]',
-    iconColor: 'text-[#027343]',
-    borderColor: 'border-l-[#027343]',
+    gradient: 'from-[#059669] to-[#10b981]',
+    iconBg: 'bg-emerald-50',
+    iconColor: 'text-emerald-700',
+    borderColor: 'border-l-emerald-600',
   },
   gold: {
-    gradient: 'from-[#cda01b] to-[#E9B61F]',
-    iconBg: 'bg-[#fcf6e4]',
-    iconColor: 'text-[#907113]',
-    borderColor: 'border-l-[#E9B61F]',
+    gradient: 'from-[#d97706] to-[#f59e0b]',
+    iconBg: 'bg-amber-50',
+    iconColor: 'text-amber-800',
+    borderColor: 'border-l-amber-500',
   },
   navy: {
-    gradient: 'from-[#003560] to-[#335d80]',
-    iconBg: 'bg-[#e0e7ec]',
-    iconColor: 'text-[#003560]',
-    borderColor: 'border-l-[#003560]',
+    gradient: 'from-[#0f172a] to-[#334155]',
+    iconBg: 'bg-slate-100',
+    iconColor: 'text-slate-800',
+    borderColor: 'border-l-slate-800',
   },
   rose: {
     gradient: 'from-rose-600 to-rose-500',
@@ -110,7 +110,7 @@ export function StatCard({
         
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-3xl font-bold text-[#003560] tracking-tight">
+            <p className="text-3xl font-bold text-slate-900 tracking-tight">
               {typeof value === 'number' ? value.toLocaleString() : value}
             </p>
             {subtitle && (
@@ -121,7 +121,7 @@ export function StatCard({
           {trend && (
             <div className={cn(
               'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold',
-              trend.value >= 0 ? 'bg-[#e0f1ea] text-[#027343]' : 'bg-rose-50 text-rose-600'
+              trend.value >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'
             )}>
               <span>{trend.value >= 0 ? '↑' : '↓'}</span>
               <span>{Math.abs(trend.value)}%</span>

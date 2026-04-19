@@ -57,9 +57,9 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description, features, href, isNew }: FeatureCardProps) {
   return (
-    <div className="group relative bg-white rounded-2xl border border-slate-200 p-6 hover:border-[#047474]/50 hover:shadow-lg transition-all duration-300">
+    <div className="group relative bg-white rounded-2xl border border-slate-200 p-6 hover:border-[#0891b2]/50 hover:shadow-lg transition-all duration-300">
       <div className="flex items-start justify-between mb-4">
-        <div className="p-3 rounded-xl bg-gradient-to-br from-[#047474]/10 to-[#027343]/10 text-[#047474]">
+        <div className="p-3 rounded-xl bg-gradient-to-br from-[#0891b2]/10 to-[#059669]/10 text-[#0891b2]">
           {icon}
         </div>
         {isNew && (
@@ -71,13 +71,13 @@ function FeatureCard({ icon, title, description, features, href, isNew }: Featur
       <ul className="space-y-2 mb-4">
         {features.map((feature, index) => (
           <li key={index} className="flex items-center gap-2 text-sm text-slate-600">
-            <CheckCircle2 className="w-4 h-4 text-[#047474] flex-shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-[#0891b2] flex-shrink-0" />
             {feature}
           </li>
         ))}
       </ul>
       {href && (
-        <Button variant="ghost" size="sm" className="gap-1 text-[#047474] hover:text-[#035f5f] p-0" asChild>
+        <Button variant="ghost" size="sm" className="gap-1 text-[#0891b2] hover:text-[#0e7490] p-0" asChild>
           <Link href={href}>
             Explore <ChevronRight className="w-4 h-4" />
           </Link>
@@ -94,7 +94,7 @@ interface FeatureSectionProps {
   gradient?: string;
 }
 
-function FeatureSection({ title, subtitle, children, gradient = 'from-[#047474] to-[#027343]' }: FeatureSectionProps) {
+function FeatureSection({ title, subtitle, children, gradient = 'from-[#0891b2] to-[#059669]' }: FeatureSectionProps) {
   return (
     <section className="py-12">
       <div className="text-center mb-10">
@@ -117,15 +117,15 @@ export default function FeaturesPage() {
     <div className="max-w-7xl mx-auto">
       {/* Hero Section */}
       <div className="text-center py-12 px-4">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#047474]/10 to-[#027343]/10 border border-[#047474]/20 mb-6">
-          <Sparkles className="w-4 h-4 text-[#047474]" />
-          <span className="text-sm font-medium text-[#047474]">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#0891b2]/10 to-[#059669]/10 border border-[#0891b2]/20 mb-6">
+          <Sparkles className="w-4 h-4 text-[#0891b2]" />
+          <span className="text-sm font-medium text-[#0891b2]">
             Admin Portal Feature Suite
           </span>
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">
           Everything You Need to{' '}
-          <span className="bg-gradient-to-r from-[#047474] to-[#027343] bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#0891b2] to-[#059669] bg-clip-text text-transparent">
             Manage Your Organization
           </span>
         </h1>
@@ -134,7 +134,7 @@ export default function FeaturesPage() {
           Manage members, agents, enrollments, billing, commissions, and communications — all from one powerful dashboard.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
-          <Button size="lg" className="gap-2 bg-gradient-to-r from-[#047474] to-[#027343] hover:from-[#035f5f] hover:to-[#025a35]" asChild>
+          <Button size="lg" className="gap-2 bg-gradient-to-r from-[#0891b2] to-[#059669] hover:from-[#0e7490] hover:to-[#047857]" asChild>
             <Link href="/dashboard">
               Go to Dashboard <ArrowRight className="w-4 h-4" />
             </Link>
@@ -156,7 +156,7 @@ export default function FeaturesPage() {
           { label: 'Learn Articles', value: '25+' },
         ].map((stat, index) => (
           <div key={index} className="text-center p-6 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
-            <div className="text-3xl font-bold bg-gradient-to-r from-[#047474] to-[#027343] bg-clip-text text-transparent">
+            <div className="text-3xl font-bold bg-gradient-to-r from-[#0891b2] to-[#059669] bg-clip-text text-transparent">
               {stat.value}
             </div>
             <div className="text-sm text-slate-500">{stat.label}</div>
@@ -724,7 +724,7 @@ export default function FeaturesPage() {
 
       {/* CTA Section */}
       <div className="py-12 text-center">
-        <div className="max-w-3xl mx-auto bg-gradient-to-r from-[#047474] to-[#027343] rounded-3xl p-12 text-white">
+        <div className="max-w-3xl mx-auto bg-gradient-to-r from-[#0891b2] to-[#059669] rounded-3xl p-12 text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to Get Started?</h2>
           <p className="text-lg text-teal-100 mb-8">
             Explore the full power of the Admin Portal and manage your organization more efficiently than ever.

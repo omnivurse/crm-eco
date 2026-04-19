@@ -21,12 +21,12 @@ const actions = [
     icon: Users,
     label: 'New Contact',
     description: 'Add a contact',
-    hoverBorder: 'hover:border-[#047474]/20',
-    hoverBg: 'hover:from-[#047474]/5',
-    iconBg: 'bg-[#047474]/10',
-    iconBgHover: 'group-hover:bg-[#047474]',
-    iconColor: 'text-[#047474]',
-    chevronColor: 'group-hover:text-[#047474]',
+    hoverBorder: 'hover:border-[#0891b2]/20',
+    hoverBg: 'hover:from-[#0891b2]/5',
+    iconBg: 'bg-[#0891b2]/10',
+    iconBgHover: 'group-hover:bg-[#0891b2]',
+    iconColor: 'text-[#0891b2]',
+    chevronColor: 'group-hover:text-[#0891b2]',
   },
   {
     href: '/crm/modules/deals/new',
@@ -74,7 +74,7 @@ export default function QuickActionsWidget({ size }: QuickActionsWidgetProps) {
       title="Quick Actions"
       subtitle="Common tasks"
       icon={<Zap className="w-5 h-5 text-white" />}
-      gradient="bg-gradient-to-r from-[#003560] via-[#047474] to-[#E9B61F]"
+      gradient="bg-gradient-to-r from-[#0f172a] via-[#0891b2] to-[#f59e0b]"
     >
       <div className="space-y-2">
         {actions.slice(0, displayCount).map((action) => {
