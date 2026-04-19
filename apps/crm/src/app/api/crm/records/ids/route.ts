@@ -110,8 +110,10 @@ export async function GET(request: NextRequest) {
         phoneDigits.length >= 4 && phoneDigits.length <= 15;
 
       if (isPhoneQuery) {
+        const safePhone = phoneDigits.slice(-10);
+        const safeTrimmed = trimmed.replace(/[%_,().\\]/g, '\\$&');
         query = query.or(
-          `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${trimmed}%,title.ilike.%${trimmed}%`,
+          `phone.ilike.%${safePhone}%,phone.ilike.%${safeTrimmed}%,title.ilike.%${safeTrimmed}%`,
         );
       } else if (trimmed.length >= 2) {
         const prefixQuery = trimmed
