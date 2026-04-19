@@ -11,6 +11,7 @@ import { KanbanView } from '@/components/crm/views/KanbanView';
 import { TimelineView } from '@/components/crm/views/TimelineView';
 import { SplitView } from '@/components/crm/views/SplitView';
 import { TreeView } from '@/components/crm/views/TreeView';
+import { CalendarView } from '@/components/crm/views/CalendarView';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 
@@ -127,6 +128,17 @@ function ModuleViewContent({
           fields={fields}
           moduleKey={moduleKey}
           onRowClick={handleRowClick}
+        />
+      );
+
+    case 'calendar':
+      return (
+        <CalendarView
+          records={records}
+          fields={fields}
+          moduleKey={moduleKey}
+          onRowClick={handleRowClick}
+          stages={dealStages}
         />
       );
 

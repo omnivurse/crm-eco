@@ -33,6 +33,7 @@ import dynamic from 'next/dynamic';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
+import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
 
 // Lazy load heavy components - only loaded when user interacts
@@ -196,6 +197,11 @@ export const CrmTopBar = memo(function CrmTopBar({
         <div className="hidden xs:block">
           <ThemeToggle variant="icon" />
         </div>
+
+        {/* Pending changes pill — auto-hides when the mutation queue
+            is empty, so it only appears when the user actually has
+            offline/retrying work to review. */}
+        <PendingChangesPill />
 
         {/* Notifications */}
         <NotificationsPanel />

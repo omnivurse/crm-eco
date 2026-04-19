@@ -6,6 +6,7 @@ import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
 import { CommandPalette } from './CommandPalette';
+import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
 import { ModuleProvider } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
@@ -65,6 +66,12 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
         <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
           {/* Content Container */}
           <div className="relative flex flex-col w-full h-full">
+            {/* Offline banner — sits above the topbar so the user
+                notices it immediately when connectivity drops. Returns
+                null when navigator.onLine is true, so there's zero
+                visual cost on a healthy connection. */}
+            <OfflineBanner />
+
             {/* Top Bar */}
             <CrmTopBar
               modules={modules}

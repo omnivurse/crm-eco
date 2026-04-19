@@ -21,6 +21,9 @@
  */
 
 import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { queuedSend } from '@/lib/offline/queued-send';
+import { cachedFetch } from '@/lib/offline/cached-fetch';
+import { trackRecentRecord } from '@/lib/offline/recent-records';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
@@ -91,6 +94,8 @@ import {
   type RelatedListNavItem,
   type RecordRelatedListLink,
 } from './v2/RecordRelatedListNav';
+import { RecordRelatedListChips } from './v2/RecordRelatedListChips';
+import { MobileActionBar } from './v2/MobileActionBar';
 import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
 import { CollapsibleSection } from './v2/CollapsibleSection';
 import { InlineRecordSearch } from './v2/InlineRecordSearch';
@@ -349,6 +354,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // Right rail can be collapsed when the screen is tight or the user wants
   // the main panel to take the full width.
   const [insightsCollapsed, setInsightsCollapsed] = useState(false);
+  // Mobile-only: insights panel opens in a bottom sheet from the action bar.
+  const [insightsSheetOpen, setInsightsSheetOpen] = useState(false);
 
   // Per-user layout preferences (for pinned / ordered related lists).
   const { preferences: uiPrefs } = useUiPreferences();
@@ -375,15 +382,34 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     setInsights(insightsProp);
   }, [insightsProp]);
 
+  // Remember this record in the offline index so it appears as a
+  // clickable entry on /offline.html if the user lands there after
+  // losing connectivity. Best-effort — IDB failures are swallowed.
+  useEffect(() => {
+    void trackRecentRecord({
+      id: record.id,
+      moduleKey: module.key,
+      title: record.title ?? 'Untitled',
+      subtitle: record.status ?? record.stage ?? undefined,
+    });
+  }, [record.id, record.title, record.status, record.stage, module.key]);
+
   const refreshInsights = useCallback(async () => {
     try {
-      const res = await fetch(`/api/crm/records/${record.id}/insights`, {
-        cache: 'no-store',
-        credentials: 'same-origin',
+      // SWR-style: resolve immediately from cache (if any) so the
+      // panel paints, then update again when the fresh response
+      // lands. Offline users see the last-known insights instead of
+      // an empty panel.
+      const result = await cachedFetch<RecordInsights>({
+        key: `record:${record.id}:insights`,
+        url: `/api/crm/records/${record.id}/insights`,
+        // 5 min soft TTL — insights change frequently enough that we
+        // want revalidation on most repeat visits, but not so often
+        // that we thrash the API on every tab click.
+        ttlMs: 1000 * 60 * 5,
+        onFresh: (next) => setInsights(next),
       });
-      if (!res.ok) return;
-      const next = (await res.json()) as RecordInsights;
-      setInsights(next);
+      setInsights(result.value);
     } catch {
       // Swallow — insights are best-effort.
     }
@@ -426,34 +452,43 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       return;
     }
     setIsSubmitting(true);
-    try {
-      const response = await fetch('/api/crm/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          record_id: record.id,
-          title: taskTitle,
-          description: taskDescription,
-          due_at: taskDueDate || null,
-          priority: 'medium',
-          activity_type: 'task',
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to create task');
+    const result = await queuedSend({
+      method: 'POST',
+      url: '/api/crm/tasks',
+      body: {
+        record_id: record.id,
+        title: taskTitle,
+        description: taskDescription,
+        due_at: taskDueDate || null,
+        priority: 'medium',
+        activity_type: 'task',
+      },
+      queue: {
+        label: `New task: ${taskTitle.slice(0, 48)}`,
+        recordId: record.id,
+      },
+    });
+    setIsSubmitting(false);
+
+    if (result.ok) {
       toast.success('Task created successfully');
-      setShowTaskModal(false);
-      setTaskTitle('');
-      setTaskDescription('');
-      setTaskDueDate('');
+    } else if (result.queued) {
+      toast.info('Task saved offline — will sync when reconnected');
+    } else {
+      toast.error(result.error || 'Failed to create task');
+      return;
+    }
+    setShowTaskModal(false);
+    setTaskTitle('');
+    setTaskDescription('');
+    setTaskDueDate('');
+    // No router.refresh() on queued — there's nothing new on the
+    // server yet. We refresh on replay success via the queue.
+    if (result.ok) {
       router.refresh();
       void refreshInsights();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to create task');
-    } finally {
-      setIsSubmitting(false);
     }
-  }, [record.id, router, taskTitle, taskDescription, taskDueDate]);
+  }, [record.id, router, taskTitle, taskDescription, taskDueDate, refreshInsights]);
 
   const submitNote = useCallback(async () => {
     if (!noteContent.trim()) {
@@ -461,26 +496,33 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       return;
     }
     setIsSubmitting(true);
-    try {
-      const response = await fetch('/api/crm/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ record_id: record.id, body: noteContent }),
-      });
-      if (!response.ok) throw new Error('Failed to create note');
+    const result = await queuedSend({
+      method: 'POST',
+      url: '/api/crm/notes',
+      body: { record_id: record.id, body: noteContent },
+      queue: {
+        label: `New note (${noteContent.trim().slice(0, 48)}${noteContent.length > 48 ? '…' : ''})`,
+        recordId: record.id,
+      },
+    });
+    setIsSubmitting(false);
+
+    if (result.ok) {
       toast.success('Note added successfully');
-      setShowNoteModal(false);
-      setNoteContent('');
-      if (children.notes) setOverviewPane('notes');
+    } else if (result.queued) {
+      toast.info('Note saved offline — will sync when reconnected');
+    } else {
+      toast.error(result.error || 'Failed to add note');
+      return;
+    }
+    setShowNoteModal(false);
+    setNoteContent('');
+    if (children.notes) setOverviewPane('notes');
+    if (result.ok) {
       router.refresh();
       void refreshInsights();
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to add note');
-    } finally {
-      setIsSubmitting(false);
     }
-  }, [record.id, router, noteContent, children.notes]);
+  }, [record.id, router, noteContent, children.notes, refreshInsights]);
 
   const submitFile = useCallback(async () => {
     if (!selectedFile) {
@@ -860,7 +902,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   {record.title || 'Untitled'}
                 </span>
               </div>
-              <InlineRecordSearch currentRecordId={record.id} />
+              <div className="hidden md:block">
+                <InlineRecordSearch currentRecordId={record.id} />
+              </div>
             </div>
 
             {/* Title row */}
@@ -1033,7 +1077,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   <Button
                     size="sm"
                     onClick={handleSendEmail}
-                    className="bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
+                    className="hidden sm:inline-flex bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
                   >
                     <Mail className="w-4 h-4 mr-1.5" />
                     Send Email
@@ -1045,7 +1089,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     size="sm"
                     variant="outline"
                     onClick={() => setShowConvertDialog(true)}
-                    className="border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                    className="hidden md:inline-flex border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
                   >
                     <UserCheck className="w-4 h-4 mr-1.5" />
                     Convert
@@ -1058,13 +1102,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   onClick={handleEditRecord}
                 >
-                  <Edit className="w-4 h-4 mr-1.5" />
-                  Edit
+                  <Edit className="w-4 h-4 md:mr-1.5" />
+                  <span className="hidden md:inline">Edit</span>
                 </Button>
 
-                {/* Note Template split button — left half = open picker,
-                    right chevron = quick-pick menu for the most-used three. */}
-                <div className="flex items-stretch">
+                {/* Note Template split button — hidden on mobile (the ⋯
+                    menu picks up Note-related actions via Add Note). */}
+                <div className="hidden md:flex items-stretch">
                   <Button
                     variant="outline"
                     size="sm"
@@ -1296,10 +1340,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           </div>
         </div>
 
+        {/* Mobile-only horizontal related-list chip rail. Sits directly
+            under the sticky header and scrolls the active chip into view
+            when the pane changes. Hidden at lg where the vertical nav
+            takes over. */}
+        <RecordRelatedListChips
+          items={navItems}
+          activeId={overviewPane}
+          onSelect={(id) => setOverviewPane(id as OverviewPane)}
+          onMore={() => setShowCustomizeDialog(true)}
+          className="lg:hidden sticky top-[64px] z-[5]"
+        />
+
         {/* Body -------------------------------------------------------------- */}
         <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
           <TabsContent value="overview" className="mt-0">
-            <div className="flex gap-4 xl:gap-6 px-4 xl:px-6 py-4">
+            <div className="flex gap-4 xl:gap-6 px-4 xl:px-6 py-4 pb-24 lg:pb-4">
               <RecordRelatedListNav
                 items={navItems}
                 links={links}
@@ -1453,7 +1509,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           </TabsContent>
 
           <TabsContent value="timeline" className="mt-0">
-            <div className="w-full px-4 xl:px-6 py-4 space-y-4">
+            <div className="w-full px-4 xl:px-6 py-4 pb-24 lg:pb-4 space-y-4">
               <ComposerBar
                 recordId={record.id}
                 onNoteCreated={() => {
@@ -1474,7 +1530,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           </TabsContent>
 
           <TabsContent value="privacy" className="mt-0">
-            <div className="w-full px-4 xl:px-6 py-6">
+            <div className="w-full px-4 xl:px-6 py-6 pb-24 lg:pb-6">
               <DataPrivacyPanel
                 record={record}
                 onUpdated={() => router.refresh()}
@@ -1742,6 +1798,140 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         open={showShortcutsDialog}
         onOpenChange={setShowShortcutsDialog}
       />
+
+      {/* Mobile bottom action bar — lg:hidden, renders only on narrow
+          viewports. Call / Email / Note / Insights. The Insights slot
+          opens the right-rail panel in a bottom Sheet since the rail
+          itself is hidden below xl. */}
+      <MobileActionBar
+        hasPhone={Boolean(record.phone)}
+        hasEmail={Boolean(record.email)}
+        onCall={() => {
+          if (record.phone) {
+            window.location.href = `tel:${record.phone}`;
+          } else {
+            setShowTaskModal(true);
+          }
+        }}
+        onEmail={handleSendEmail}
+        onNote={handleAddNote}
+        onMore={() => setInsightsSheetOpen(true)}
+      />
+
+      {/* Insights sheet (mobile/tablet) — mirrors the right rail content
+          so reps can still see "Best time to call", quick actions, and
+          record info without a desktop viewport. */}
+      <Sheet open={insightsSheetOpen} onOpenChange={setInsightsSheetOpen}>
+        <SheetContent
+          side="bottom"
+          className="xl:hidden bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-h-[85vh] overflow-y-auto"
+        >
+          <SheetHeader>
+            <SheetTitle className="text-slate-900 dark:text-white">Insights</SheetTitle>
+            <SheetDescription className="text-slate-500 dark:text-slate-400">
+              Best time to reach out, quick actions, and record info.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4">
+            <RecordInsightsPanel
+              className="w-full"
+              lastUpdatedAt={insights?.lastInteractionAt ?? record.updated_at}
+              bestTime={bestTimeSlots}
+              quickActions={
+                <div className="space-y-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5"
+                    onClick={() => {
+                      setInsightsSheetOpen(false);
+                      handleEditRecord();
+                    }}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Record
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5"
+                    onClick={() => {
+                      setInsightsSheetOpen(false);
+                      handleAddTask();
+                    }}
+                  >
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Add Task
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5"
+                    onClick={() => {
+                      setInsightsSheetOpen(false);
+                      handleUploadFile();
+                    }}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload File
+                  </Button>
+                  {canConvertToContact && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                      onClick={() => {
+                        setInsightsSheetOpen(false);
+                        setShowConvertDialog(true);
+                      }}
+                    >
+                      <UserCheck className="w-4 h-4 mr-2" />
+                      Convert to Contact
+                    </Button>
+                  )}
+                </div>
+              }
+              infoRows={[
+                {
+                  label: 'Market',
+                  value: <MarketTypeBadge marketType={(record as any).market_type} size="sm" />,
+                },
+                {
+                  label: getOwnerLabel((record as any).market_type),
+                  value: <OwnershipDisplay record={record as any} size="sm" showLabel={false} />,
+                },
+                {
+                  label: 'Created',
+                  value: (
+                    <span suppressHydrationWarning>
+                      {new Date(record.created_at).toLocaleDateString()}
+                    </span>
+                  ),
+                },
+                {
+                  label: 'Updated',
+                  value: (
+                    <span suppressHydrationWarning>
+                      {new Date(record.updated_at).toLocaleDateString()}
+                    </span>
+                  ),
+                },
+              ]}
+              extras={
+                <AiFollowUpEmailButton
+                  recordId={record.id}
+                  hasRecipient={Boolean(record.email)}
+                  onDraft={(draft) => {
+                    setAiEmailDraft(draft);
+                    setInsightsSheetOpen(false);
+                    setShowSendEmailDialog(true);
+                  }}
+                />
+              }
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
     </RecordAiContextProvider>
     </RecordFieldLocksProvider>

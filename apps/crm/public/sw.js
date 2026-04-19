@@ -3,13 +3,18 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
+const OFFLINE_URL = '/offline.html';
 
-// Static assets to cache on install (must be real files that return 200)
+// Static assets to cache on install (must be real files that return 200).
+// OFFLINE_URL is intentionally first — it's the one asset we *must* have
+// cached before the fetch handler starts intercepting navigation requests,
+// otherwise the offline-fallback branch degrades to a bare 503.
 const STATIC_ASSETS = [
+  OFFLINE_URL,
   '/manifest.json',
   '/favicon.svg',
 ];
@@ -211,7 +216,11 @@ async function networkFirstWithOfflineFallback(request) {
       return cachedResponse;
     }
 
-    const offlinePage = await caches.match('/offline');
+    // Navigation fallback: serve the precached offline shell. The shell
+    // reads the recent-records index from IndexedDB so the user lands
+    // on something actionable rather than a bare error page.
+    const offlinePage =
+      (await caches.match(OFFLINE_URL)) || (await caches.match('/offline'));
     if (offlinePage) return offlinePage;
 
     return new Response('Offline', { status: 503 });

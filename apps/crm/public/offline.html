@@ -192,19 +192,22 @@
     .cached-pages ul {
       list-style: none;
       display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
+      flex-direction: column;
+      gap: 6px;
     }
-    
+
     .cached-pages a {
-      display: inline-block;
-      padding: 6px 12px;
+      display: block;
+      padding: 8px 12px;
       background: #f1f5f9;
       color: var(--text-light);
       text-decoration: none;
       border-radius: 6px;
       font-size: 13px;
       transition: background 0.2s;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     
     body.dark .cached-pages a {
@@ -260,41 +263,94 @@
         }
       } catch (e) {}
     })();
-    
-    // Check if we're back online
+
+    // Auto-reload the moment we come back online so the user lands
+    // on their intended page instead of the offline shell.
     window.addEventListener('online', () => {
       window.location.reload();
     });
-    
-    // Go to dashboard (may be cached)
+
     function goToDashboard() {
-      window.location.href = '/dashboard';
+      window.location.href = '/crm';
     }
-    
-    // Show cached pages if available
-    if ('caches' in window) {
-      caches.open('dhh-v1').then(cache => {
-        cache.keys().then(keys => {
-          const pages = keys
-            .filter(req => req.url.includes(location.origin) && !req.url.includes('.'))
-            .map(req => new URL(req.url).pathname)
-            .filter((v, i, a) => a.indexOf(v) === i);
-          
-          if (pages.length > 0) {
-            document.getElementById('cachedPages').style.display = 'block';
-            const list = document.getElementById('cachedList');
-            pages.forEach(page => {
-              const li = document.createElement('li');
-              const a = document.createElement('a');
-              a.href = page;
-              a.textContent = page === '/' ? 'Home' : page.replace(/^\//, '').replace(/-/g, ' ');
+
+    // ------------------------------------------------------------
+    // Pending-writes surface: read the mutation queue out of
+    // localStorage (same storage key as lib/offline/mutation-queue.ts)
+    // so the user sees the count of edits waiting to sync even from
+    // the offline shell.
+    // ------------------------------------------------------------
+    (function renderPendingCount() {
+      try {
+        var raw = localStorage.getItem('crm.mutationQueue.v1');
+        if (!raw) return;
+        var list = JSON.parse(raw);
+        if (!Array.isArray(list)) return;
+        var pending = list.filter(function (m) {
+          return m && m.status !== 'succeeded';
+        }).length;
+        if (pending === 0) return;
+        var status = document.querySelector('.status');
+        if (!status) return;
+        status.innerHTML =
+          '<span class="status-dot"></span>' + pending +
+          ' change' + (pending === 1 ? '' : 's') +
+          ' waiting to sync when you reconnect';
+      } catch (e) {
+        /* best-effort */
+      }
+    })();
+
+    // ------------------------------------------------------------
+    // Recent-records list: read the `recentRecords` object store from
+    // the same IDB database (`crm.responseCache`) that the in-app
+    // code writes to on every record visit. Shape contract must stay
+    // in sync with lib/offline/recent-records.ts — this script is
+    // intentionally vanilla so it works before Next.js hydrates.
+    // ------------------------------------------------------------
+    (function renderRecentRecords() {
+      if (!('indexedDB' in window)) return;
+      try {
+        var req = indexedDB.open('crm.responseCache', 2);
+        req.onsuccess = function () {
+          var db = req.result;
+          if (!db.objectStoreNames.contains('recentRecords')) return;
+          var tx = db.transaction('recentRecords', 'readonly');
+          var store = tx.objectStore('recentRecords');
+          var all = store.getAll();
+          all.onsuccess = function () {
+            var rows = (all.result || []).slice();
+            rows.sort(function (a, b) { return (b.viewedAt || 0) - (a.viewedAt || 0); });
+            if (rows.length === 0) return;
+            var panel = document.getElementById('cachedPages');
+            var list = document.getElementById('cachedList');
+            if (!panel || !list) return;
+            panel.style.display = 'block';
+            var header = panel.querySelector('h3');
+            if (header) header.textContent = 'Recent records (available offline):';
+            rows.slice(0, 10).forEach(function (r) {
+              var li = document.createElement('li');
+              var a = document.createElement('a');
+              a.href = '/crm/r/' + r.id;
+              a.textContent = r.title || 'Untitled record';
+              if (r.subtitle) {
+                var span = document.createElement('span');
+                span.style.marginLeft = '6px';
+                span.style.opacity = '0.65';
+                span.style.fontSize = '12px';
+                span.textContent = '· ' + r.subtitle;
+                a.appendChild(span);
+              }
               li.appendChild(a);
               list.appendChild(li);
             });
-          }
-        });
-      });
-    }
+          };
+        };
+        req.onerror = function () { /* swallow */ };
+      } catch (e) {
+        /* swallow */
+      }
+    })();
   </script>
 </body>
 </html>

@@ -4,3 +4,4 @@ export { KanbanView } from './KanbanView';
 export { ChartView } from './ChartView';
 export { TimelineView } from './TimelineView';
 export { SplitView } from './SplitView';
+export { CalendarView } from './CalendarView';

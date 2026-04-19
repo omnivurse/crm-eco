@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 're
 import { X, Plus, Tag, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { queuedSend } from '@/lib/offline/queued-send';
 
 export interface RecordTagsRowProps {
   recordId: string;
@@ -57,25 +58,35 @@ export function RecordTagsRow({
   const persist = useCallback(
     async (next: string[], previous: string[]) => {
       setSaving(true);
-      try {
-        const res = await fetch(`/api/crm/records/${recordId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            data: { ...(recordData || {}), tags: next },
-          }),
-        });
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          throw new Error(body?.error || 'Failed to save tags');
-        }
+      const result = await queuedSend({
+        method: 'PATCH',
+        url: `/api/crm/records/${recordId}`,
+        body: { data: { ...(recordData || {}), tags: next } },
+        queue: {
+          label: 'Update tags',
+          // Collapse rapid tag toggles into one queued mutation — the
+          // final tag array is last-write-wins.
+          dedupeKey: `record:${recordId}:tags`,
+          recordId,
+        },
+      });
+      setSaving(false);
+
+      if (result.ok) {
         onChange?.(next);
-      } catch (err) {
-        setTags(previous);
-        toast.error(err instanceof Error ? err.message : 'Failed to save tags');
-      } finally {
-        setSaving(false);
+        return;
       }
+      if (result.queued) {
+        // Keep the optimistic state — the topbar pill surfaces the
+        // pending sync. Parent gets the new tags so the rest of the
+        // page stays consistent.
+        onChange?.(next);
+        toast.info('Tags saved offline — will sync when reconnected');
+        return;
+      }
+      // Terminal server error — rollback.
+      setTags(previous);
+      toast.error(result.error || 'Failed to save tags');
     },
     [recordId, recordData, onChange],
   );

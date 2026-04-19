@@ -6,9 +6,9 @@
 // CRM View Modes
 // ============================================================================
 
-export type ViewMode = 'table' | 'list' | 'kanban' | 'chart' | 'timeline' | 'split' | 'tree';
+export type ViewMode = 'table' | 'list' | 'kanban' | 'chart' | 'timeline' | 'split' | 'tree' | 'calendar';
 
-export const VIEW_MODES: ViewMode[] = ['table', 'list', 'kanban', 'chart', 'timeline', 'split'];
+export const VIEW_MODES: ViewMode[] = ['table', 'list', 'kanban', 'chart', 'timeline', 'split', 'calendar'];
 
 // ============================================================================
 // Tree View Types

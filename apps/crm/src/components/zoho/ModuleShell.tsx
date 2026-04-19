@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useCallback, useMemo, useEffect, useRef, memo } from 'react';
+import { queuedSend } from '@/lib/offline/queued-send';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
 import type { ComboboxOption } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Search, Loader2, Users } from 'lucide-react';
+import { Search, Loader2, Users, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
@@ -21,6 +22,8 @@ import { RecentlyViewedRail } from '@/components/crm/records/v2/RecentlyViewedRa
 import { QuickFilterChips } from '@/components/crm/records/v2/QuickFilterChips';
 import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
+import { MobileToolbarDrawer } from './MobileToolbarDrawer';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Density } from './ViewPreferencesContext';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 
@@ -108,6 +111,15 @@ export const ModuleShell = memo(function ModuleShell({
 
   // Derived state
   const selectedCount = selectedIds.size;
+
+  // Mobile: collapse the right-side toolbar cluster into a bottom sheet
+  // and auto-swap the `table` view for `list` since tables are effectively
+  // unreadable on phones.
+  const isMobile = useIsMobile();
+  const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
+  const effectiveViewMode: ViewMode = isMobile && viewMode === 'table' ? 'list' : viewMode;
+  const mobileActiveCount =
+    filters.length + (scope !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
 
   // Track if initial mount to avoid triggering search on page load
   const isInitialMount = useRef(true);
@@ -412,22 +424,26 @@ export const ModuleShell = memo(function ModuleShell({
     }
 
     setIsProcessing(true);
-    try {
-      const response = await fetch('/api/crm/records/bulk', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          record_ids: Array.from(selectedIds),
-          updates: { owner_id: selectedOwnerId === '__unassigned__' ? null : selectedOwnerId },
-        }),
-      });
+    const count = selectedIds.size;
+    const sendResult = await queuedSend({
+      method: 'PATCH',
+      url: '/api/crm/records/bulk',
+      body: {
+        record_ids: Array.from(selectedIds),
+        updates: { owner_id: selectedOwnerId === '__unassigned__' ? null : selectedOwnerId },
+      },
+      queue: {
+        label:
+          selectedOwnerId === '__unassigned__'
+            ? `Clear owner on ${count} record${count === 1 ? '' : 's'}`
+            : `Assign owner to ${count} record${count === 1 ? '' : 's'}`,
+        moduleKey: module.key,
+      },
+    });
+    setIsProcessing(false);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to assign owner');
-      }
-
-      const result = await response.json();
+    if (sendResult.ok) {
+      const result = await sendResult.response.json();
       reportBulkResult(
         result,
         selectedOwnerId === '__unassigned__' ? 'Owner cleared' : 'Owner assigned',
@@ -435,12 +451,16 @@ export const ModuleShell = memo(function ModuleShell({
       setShowAssignOwnerDialog(false);
       setSelectedIds(new Set());
       router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to assign owner');
-    } finally {
-      setIsProcessing(false);
+    } else if (sendResult.queued) {
+      toast.info(
+        `Queued for ${count} record${count === 1 ? '' : 's'} — will sync when reconnected`,
+      );
+      setShowAssignOwnerDialog(false);
+      setSelectedIds(new Set());
+    } else {
+      toast.error(sendResult.error || 'Failed to assign owner');
     }
-  }, [selectedOwnerId, selectedIds, router, reportBulkResult]);
+  }, [selectedOwnerId, selectedIds, router, reportBulkResult, module.key]);
 
   const handleChangeStatus = useCallback(() => {
     setSelectedStatus('');
@@ -454,32 +474,37 @@ export const ModuleShell = memo(function ModuleShell({
     }
 
     setIsProcessing(true);
-    try {
-      const response = await fetch('/api/crm/records/bulk', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          record_ids: Array.from(selectedIds),
-          updates: { status: selectedStatus },
-        }),
-      });
+    const count = selectedIds.size;
+    const sendResult = await queuedSend({
+      method: 'PATCH',
+      url: '/api/crm/records/bulk',
+      body: {
+        record_ids: Array.from(selectedIds),
+        updates: { status: selectedStatus },
+      },
+      queue: {
+        label: `Status → "${selectedStatus}" on ${count} record${count === 1 ? '' : 's'}`,
+        moduleKey: module.key,
+      },
+    });
+    setIsProcessing(false);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update status');
-      }
-
-      const result = await response.json();
+    if (sendResult.ok) {
+      const result = await sendResult.response.json();
       reportBulkResult(result, `Status → "${selectedStatus}"`);
       setShowStatusDialog(false);
       setSelectedIds(new Set());
       router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update status');
-    } finally {
-      setIsProcessing(false);
+    } else if (sendResult.queued) {
+      toast.info(
+        `Queued for ${count} record${count === 1 ? '' : 's'} — will sync when reconnected`,
+      );
+      setShowStatusDialog(false);
+      setSelectedIds(new Set());
+    } else {
+      toast.error(sendResult.error || 'Failed to update status');
     }
-  }, [selectedStatus, selectedIds, router, reportBulkResult]);
+  }, [selectedStatus, selectedIds, router, reportBulkResult, module.key]);
 
   const handleChangeStage = useCallback(() => {
     setSelectedStage('');
@@ -493,32 +518,37 @@ export const ModuleShell = memo(function ModuleShell({
     }
 
     setIsProcessing(true);
-    try {
-      const response = await fetch('/api/crm/records/bulk', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          record_ids: Array.from(selectedIds),
-          updates: { stage: selectedStage },
-        }),
-      });
+    const count = selectedIds.size;
+    const sendResult = await queuedSend({
+      method: 'PATCH',
+      url: '/api/crm/records/bulk',
+      body: {
+        record_ids: Array.from(selectedIds),
+        updates: { stage: selectedStage },
+      },
+      queue: {
+        label: `Stage → "${selectedStage}" on ${count} deal${count === 1 ? '' : 's'}`,
+        moduleKey: module.key,
+      },
+    });
+    setIsProcessing(false);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update stage');
-      }
-
-      const result = await response.json();
+    if (sendResult.ok) {
+      const result = await sendResult.response.json();
       reportBulkResult(result, `Stage → "${selectedStage}"`, 'deal');
       setShowStageDialog(false);
       setSelectedIds(new Set());
       router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update stage');
-    } finally {
-      setIsProcessing(false);
+    } else if (sendResult.queued) {
+      toast.info(
+        `Queued for ${count} deal${count === 1 ? '' : 's'} — will sync when reconnected`,
+      );
+      setShowStageDialog(false);
+      setSelectedIds(new Set());
+    } else {
+      toast.error(sendResult.error || 'Failed to update stage');
     }
-  }, [selectedStage, selectedIds, router, reportBulkResult]);
+  }, [selectedStage, selectedIds, router, reportBulkResult, module.key]);
 
   const handleAddTag = useCallback(() => {
     setSelectedTagIds([]);
@@ -599,31 +629,34 @@ export const ModuleShell = memo(function ModuleShell({
 
   const handleConfirmDelete = useCallback(async () => {
     setIsProcessing(true);
-    try {
-      const response = await fetch('/api/crm/records/bulk', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          record_ids: Array.from(selectedIds),
-        }),
-      });
+    const count = selectedIds.size;
+    const sendResult = await queuedSend({
+      method: 'DELETE',
+      url: '/api/crm/records/bulk',
+      body: { record_ids: Array.from(selectedIds) },
+      queue: {
+        label: `Delete ${count} record${count === 1 ? '' : 's'}`,
+        moduleKey: module.key,
+      },
+    });
+    setIsProcessing(false);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete records');
-      }
-
-      const result = await response.json();
+    if (sendResult.ok) {
+      const result = await sendResult.response.json();
       reportBulkResult(result, 'Records deleted');
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
       router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete records');
-    } finally {
-      setIsProcessing(false);
+    } else if (sendResult.queued) {
+      toast.info(
+        `Queued delete for ${count} record${count === 1 ? '' : 's'} — will sync when reconnected`,
+      );
+      setShowDeleteDialog(false);
+      setSelectedIds(new Set());
+    } else {
+      toast.error(sendResult.error || 'Failed to delete records');
     }
-  }, [selectedIds, router, reportBulkResult]);
+  }, [selectedIds, router, reportBulkResult, module.key]);
 
   const handleExport = useCallback(() => {
     const recordsToExport = selectedCount > 0
@@ -710,7 +743,10 @@ export const ModuleShell = memo(function ModuleShell({
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
   }, [router, module.key]);
 
-  // Context for child components
+  // Context for child components — expose the *effective* view mode so
+  // children render the list card view on phones even when the user's
+  // saved preference is `table`. The user's choice is preserved in URL
+  // state and restored when they resize back to desktop.
   const shellContext = useMemo(() => ({
     selectedIds,
     setSelectedIds,
@@ -721,9 +757,9 @@ export const ModuleShell = memo(function ModuleShell({
     sortDirection,
     handleSortChange,
     moduleKey: module.key,
-    viewMode,
+    viewMode: effectiveViewMode,
     setViewMode: handleViewModeChange,
-  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, viewMode, handleViewModeChange]);
+  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, effectiveViewMode, handleViewModeChange]);
 
   return (
     <div className={cn('w-full space-y-4', className)}>
@@ -771,8 +807,8 @@ export const ModuleShell = memo(function ModuleShell({
             </form>
           </div>
 
-          {/* Scope + Territory Filters */}
-          <div className="flex items-center gap-2">
+          {/* Scope + Territory Filters (hidden on mobile — lives in the sheet) */}
+          <div className="hidden md:flex items-center gap-2">
             <Select value={scope} onValueChange={(v) => handleScopeChange(v as RecordScope)}>
               <SelectTrigger className="h-9 w-[150px] text-sm rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
                 <Users className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
@@ -792,8 +828,10 @@ export const ModuleShell = memo(function ModuleShell({
             )}
           </div>
 
-          {/* Right: View Mode + Filters + Columns + Density */}
-          <div className="flex items-center gap-2">
+          {/* Right: View Mode + Filters + Columns + Density — collapsed
+              behind a single "Filters & View" button on mobile, which
+              opens MobileToolbarDrawer. */}
+          <div className="hidden md:flex items-center gap-2">
             <ViewModeSwitcher
               value={viewMode}
               onChange={handleViewModeChange}
@@ -825,6 +863,25 @@ export const ModuleShell = memo(function ModuleShell({
               </>
             )}
           </div>
+
+          {/* Mobile-only single "Filters & View" trigger. Active count
+              pill mirrors the badge inside the sheet so users can see
+              at a glance whether filters are applied. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setMobileToolbarOpen(true)}
+            className="md:hidden h-9 px-3 gap-1.5 rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="text-sm">Filters & View</span>
+            {mobileActiveCount > 0 && (
+              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-teal-500 text-white text-[10px] font-bold">
+                {mobileActiveCount}
+              </span>
+            )}
+          </Button>
         </div>
 
         {/* Saved Views Bar + Quick Preset Chips */}
@@ -1096,6 +1153,93 @@ export const ModuleShell = memo(function ModuleShell({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Mobile-only "Filters & View" bottom sheet — re-uses every
+          control from the desktop toolbar so there's exactly one source
+          of state, just a different presentation. Opens via the compact
+          trigger rendered above. */}
+      <MobileToolbarDrawer
+        open={mobileToolbarOpen}
+        onOpenChange={setMobileToolbarOpen}
+        activeCount={mobileActiveCount}
+        sections={[
+          {
+            id: 'viewmode',
+            label: 'View mode',
+            content: (
+              <ViewModeSwitcher
+                value={viewMode}
+                onChange={(m) => {
+                  handleViewModeChange(m);
+                  setMobileToolbarOpen(false);
+                }}
+              />
+            ),
+          },
+          {
+            id: 'scope',
+            label: 'Record scope',
+            content: (
+              <Select value={scope} onValueChange={(v) => handleScopeChange(v as RecordScope)}>
+                <SelectTrigger className="h-10 w-full rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10">
+                  <Users className="w-4 h-4 mr-1.5 text-slate-400" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {isAdminOrOwner && <SelectItem value="all">All Records</SelectItem>}
+                  <SelectItem value="mine">My Records</SelectItem>
+                  <SelectItem value="downline">My Downline</SelectItem>
+                </SelectContent>
+              </Select>
+            ),
+          },
+          ...(territories.length > 0
+            ? [
+                {
+                  id: 'territory',
+                  label: 'Territory',
+                  content: (
+                    <TerritoryFilter territories={territories} moduleKey={module.key} />
+                  ),
+                },
+              ]
+            : []),
+          {
+            id: 'filters',
+            label: 'Advanced filters',
+            content: (
+              <FilterSidebarTrigger
+                fields={fields}
+                filters={filters}
+                onFiltersChange={(newFilters) => {
+                  setFilters(newFilters);
+                  pushFiltersToUrl(newFilters);
+                }}
+              />
+            ),
+          },
+          ...(viewMode === 'table' || viewMode === 'split'
+            ? [
+                {
+                  id: 'columns',
+                  label: 'Columns',
+                  content: (
+                    <ColumnsButton
+                      fields={fields}
+                      visibleColumns={visibleColumns}
+                      onColumnsChange={setVisibleColumns}
+                    />
+                  ),
+                },
+                {
+                  id: 'density',
+                  label: 'Row density',
+                  content: <DensityToggle value={density} onChange={setDensity} />,
+                },
+              ]
+            : []),
+        ]}
+      />
 
       {/* Add Tag Dialog */}
       <Dialog open={showAddTagDialog} onOpenChange={setShowAddTagDialog}>

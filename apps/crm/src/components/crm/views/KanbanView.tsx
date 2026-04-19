@@ -1,6 +1,14 @@
 'use client';
 
-import { useState, useCallback, useMemo, memo } from 'react';
+import {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+  memo,
+  type KeyboardEvent,
+} from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -48,6 +56,8 @@ import {
   XCircle,
   AlertTriangle,
   Sparkles,
+  History,
+  Pencil,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -58,6 +68,7 @@ import {
 } from '@crm-eco/ui/components/dropdown-menu';
 import { toast } from 'sonner';
 import type { CrmRecord, CrmField, CrmDealStage } from '@/lib/crm/types';
+import { StageHistoryDrawer } from './StageHistoryDrawer';
 
 interface KanbanViewProps {
   records: CrmRecord[];
@@ -129,6 +140,128 @@ function getDisplayName(record: CrmRecord): string {
   return fullName || record.data?.account_name as string || record.data?.name as string || record.title || 'Untitled';
 }
 
+/**
+ * QuickEditChip — inline click-to-edit control used inside kanban cards.
+ *
+ * Designed for the two highest-value deal fields (amount + expected-close
+ * date) where reps need rapid edits without opening the record detail. We
+ * intentionally skip the full `InlineFieldCell` plumbing here because:
+ *
+ *   - Each kanban card is a distinct record, so a shared
+ *     `RecordFieldSaveProvider` would be awkward.
+ *   - We don't need the full optimistic-concurrency / presence lock
+ *     machinery on a surface where a rep is just re-pricing a deal.
+ *
+ * The chip is keyboard-accessible (Enter commits, Escape aborts) and the
+ * caller receives an `onCommit` callback that should PATCH the API and
+ * update the record in local state.
+ */
+function QuickEditChip({
+  icon,
+  display,
+  value,
+  inputType,
+  placeholder,
+  onCommit,
+  ariaLabel,
+}: {
+  icon: React.ReactNode;
+  display: string;
+  /** Current raw value to seed the input (string for both number/date). */
+  value: string;
+  inputType: 'number' | 'date';
+  placeholder?: string;
+  onCommit: (next: string) => Promise<void>;
+  ariaLabel: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [busy, setBusy] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [value, editing]);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select?.();
+    }
+  }, [editing]);
+
+  const commit = useCallback(async () => {
+    if (busy) return;
+    if (draft === value) {
+      setEditing(false);
+      return;
+    }
+    setBusy(true);
+    try {
+      await onCommit(draft);
+      setEditing(false);
+    } catch {
+      // Parent shows the toast; revert the draft so the chip doesn't lie.
+      setDraft(value);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, draft, value, onCommit]);
+
+  const handleKey = useCallback(
+    (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void commit();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setDraft(value);
+        setEditing(false);
+      }
+    },
+    [commit, value],
+  );
+
+  if (editing) {
+    return (
+      <div
+        className="flex items-center gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {icon}
+        <input
+          ref={inputRef}
+          type={inputType}
+          value={draft}
+          disabled={busy}
+          placeholder={placeholder}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => void commit()}
+          onKeyDown={handleKey}
+          aria-label={ariaLabel}
+          className="w-full h-6 px-1.5 text-xs rounded border border-teal-400 dark:border-teal-500/60 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-teal-500"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setEditing(true);
+      }}
+      className="group/chip flex items-center gap-1.5 min-w-0 text-left rounded px-0.5 -mx-0.5 hover:bg-teal-500/5 dark:hover:bg-teal-500/10 focus:outline-none focus:ring-1 focus:ring-teal-400/50"
+      aria-label={`${ariaLabel}. Click to edit.`}
+    >
+      {icon}
+      <span className="truncate">{display}</span>
+      <Pencil className="w-3 h-3 text-slate-300 dark:text-slate-600 opacity-0 group-hover/chip:opacity-100 transition-opacity" />
+    </button>
+  );
+}
+
 // Sortable Kanban Card
 const KanbanCard = memo(function KanbanCard({
   record,
@@ -136,6 +269,9 @@ const KanbanCard = memo(function KanbanCard({
   onRowClick,
   onDelete,
   columnProbability,
+  onQuickEdit,
+  onOpenHistory,
+  showHistory,
 }: {
   record: CrmRecord;
   isDragOverlay?: boolean;
@@ -143,6 +279,17 @@ const KanbanCard = memo(function KanbanCard({
   onDelete?: () => void;
   /** If > 0 and the card shows an amount, we also render `amount × p%` weighted. */
   columnProbability?: number;
+  /** Commit a single field update. Resolves on success, rejects on failure
+   *  so inline chips can revert their draft. */
+  onQuickEdit?: (
+    id: string,
+    updates: { amount?: number | null; expected_close_date?: string | null },
+  ) => Promise<void>;
+  /** Open the StageHistoryDrawer for this record. */
+  onOpenHistory?: (id: string, title: string) => void;
+  /** Whether the history option should appear in the card's menu. Enabled
+   *  by the parent only when the kanban has a real deal-stage catalog. */
+  showHistory?: boolean;
 }) {
   const {
     attributes,
@@ -196,20 +343,50 @@ const KanbanCard = memo(function KanbanCard({
           </Link>
 
           <div className="mt-2 space-y-1.5">
-            {amount > 0 && (
-              <div className="flex items-baseline gap-1.5 flex-wrap">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 self-center" />
-                <span className="text-sm font-bold text-slate-900 dark:text-white">
-                  {formatMoney(amount)}
-                </span>
+            {onQuickEdit ? (
+              <div className="flex items-baseline gap-1.5 flex-wrap text-sm font-bold text-slate-900 dark:text-white">
+                <QuickEditChip
+                  icon={
+                    <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                  }
+                  display={amount > 0 ? formatMoney(amount) : 'Set amount'}
+                  value={amount > 0 ? String(amount) : ''}
+                  inputType="number"
+                  placeholder="0"
+                  ariaLabel="Deal amount"
+                  onCommit={async (next) => {
+                    const parsed = next === '' ? null : Number(next);
+                    if (parsed !== null && Number.isNaN(parsed)) {
+                      throw new Error('Invalid number');
+                    }
+                    await onQuickEdit(record.id, { amount: parsed });
+                  }}
+                />
                 {columnProbability !== undefined &&
                 columnProbability > 0 &&
-                columnProbability < 100 ? (
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                columnProbability < 100 &&
+                amount > 0 ? (
+                  <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
                     · {formatMoney((amount * columnProbability) / 100)} weighted
                   </span>
                 ) : null}
               </div>
+            ) : (
+              amount > 0 && (
+                <div className="flex items-baseline gap-1.5 flex-wrap">
+                  <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 self-center" />
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">
+                    {formatMoney(amount)}
+                  </span>
+                  {columnProbability !== undefined &&
+                  columnProbability > 0 &&
+                  columnProbability < 100 ? (
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      · {formatMoney((amount * columnProbability) / 100)} weighted
+                    </span>
+                  ) : null}
+                </div>
+              )
             )}
 
             {email && (
@@ -219,11 +396,32 @@ const KanbanCard = memo(function KanbanCard({
               </div>
             )}
 
-            {expectedClose && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <Calendar className="w-3 h-3 flex-shrink-0" />
-                <span suppressHydrationWarning>{new Date(expectedClose).toLocaleDateString()}</span>
+            {onQuickEdit ? (
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                <QuickEditChip
+                  icon={<Calendar className="w-3 h-3 flex-shrink-0" />}
+                  display={
+                    expectedClose
+                      ? new Date(expectedClose).toLocaleDateString()
+                      : 'Set close date'
+                  }
+                  value={expectedClose ? expectedClose.slice(0, 10) : ''}
+                  inputType="date"
+                  ariaLabel="Expected close date"
+                  onCommit={async (next) => {
+                    await onQuickEdit(record.id, {
+                      expected_close_date: next || null,
+                    });
+                  }}
+                />
               </div>
+            ) : (
+              expectedClose && (
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  <Calendar className="w-3 h-3 flex-shrink-0" />
+                  <span suppressHydrationWarning>{new Date(expectedClose).toLocaleDateString()}</span>
+                </div>
+              )
             )}
           </div>
 
@@ -244,11 +442,20 @@ const KanbanCard = memo(function KanbanCard({
                 <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-36 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+            <DropdownMenuContent align="end" className="w-44 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
               <DropdownMenuItem onClick={() => onRowClick?.(record.id)} className="cursor-pointer text-sm">
                 <Eye className="w-3.5 h-3.5 mr-2" />
                 View
               </DropdownMenuItem>
+              {showHistory ? (
+                <DropdownMenuItem
+                  onClick={() => onOpenHistory?.(record.id, displayName)}
+                  className="cursor-pointer text-sm"
+                >
+                  <History className="w-3.5 h-3.5 mr-2" />
+                  Stage history
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
               <DropdownMenuItem onClick={() => onDelete?.()} className="text-red-600 dark:text-red-400 cursor-pointer text-sm">
                 <Trash2 className="w-3.5 h-3.5 mr-2" />
@@ -268,11 +475,20 @@ const Column = memo(function Column({
   records,
   onRowClick,
   onDelete,
+  onQuickEdit,
+  onOpenHistory,
+  showHistory,
 }: {
   column: KanbanColumn;
   records: CrmRecord[];
   onRowClick?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onQuickEdit?: (
+    id: string,
+    updates: { amount?: number | null; expected_close_date?: string | null },
+  ) => Promise<void>;
+  onOpenHistory?: (id: string, title: string) => void;
+  showHistory?: boolean;
 }) {
   const totalAmount = records.reduce(
     (sum, r) => sum + (Number(r.data?.amount) || 0),
@@ -374,6 +590,9 @@ const Column = memo(function Column({
                 onRowClick={onRowClick}
                 onDelete={() => onDelete?.(record.id)}
                 columnProbability={column.probability}
+                onQuickEdit={onQuickEdit}
+                onOpenHistory={onOpenHistory}
+                showHistory={showHistory}
               />
             ))
           )}
@@ -455,6 +674,75 @@ export const KanbanView = memo(function KanbanView({
   );
   const [records, setRecords] = useState(initialRecords);
   const [activeDragRecord, setActiveDragRecord] = useState<CrmRecord | null>(null);
+
+  // Stage history drawer — only rendered when we have a real stage catalog,
+  // since without `crm_deal_stages` the `from_stage`/`to_stage` text would
+  // be opaque to the user.
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyRecord, setHistoryRecord] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+
+  const handleOpenHistory = useCallback((id: string, title: string) => {
+    setHistoryRecord({ id, title });
+    setHistoryOpen(true);
+  }, []);
+
+  // Keep local cards in sync when parent re-fetches (e.g., after pagination
+  // or a filter change). Without this, parent updates wouldn't reach us
+  // once we've mutated `records` via a quick edit.
+  useEffect(() => {
+    setRecords(initialRecords);
+  }, [initialRecords]);
+
+  /**
+   * Commit a quick edit from a kanban card. All updates here live inside
+   * `crm_records.data` (JSONB), so a single PATCH with `{ data: {...} }`
+   * is sufficient. We optimistically update local state first and revert
+   * on failure so the chip snaps back cleanly.
+   */
+  const handleQuickEdit = useCallback(
+    async (
+      id: string,
+      updates: {
+        amount?: number | null;
+        expected_close_date?: string | null;
+      },
+    ) => {
+      const prev = records.find((r) => r.id === id);
+      if (!prev) return;
+
+      setRecords((current) =>
+        current.map((r) =>
+          r.id === id ? { ...r, data: { ...r.data, ...updates } } : r,
+        ),
+      );
+
+      try {
+        const res = await fetch(`/api/crm/records/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ data: updates }),
+        });
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        toast.success('Saved');
+      } catch (err) {
+        setRecords((current) =>
+          current.map((r) => (r.id === id ? prev : r)),
+        );
+        toast.error('Failed to save', {
+          description:
+            err instanceof Error ? err.message : 'Please try again.',
+        });
+        throw err;
+      }
+    },
+    [records],
+  );
 
   // Build columns from unique values. When grouping by `stage` and we have an
   // authoritative stage catalog, we use it — this gives us real ordering,
@@ -725,6 +1013,9 @@ export const KanbanView = memo(function KanbanView({
                 records={recordsByColumn[column.key] || []}
                 onRowClick={handleRowClick}
                 onDelete={(id) => onBulkDelete?.([id])}
+                onQuickEdit={handleQuickEdit}
+                onOpenHistory={handleOpenHistory}
+                showHistory={(stages?.length ?? 0) > 0}
               />
             ))}
           </div>
@@ -742,6 +1033,14 @@ export const KanbanView = memo(function KanbanView({
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <StageHistoryDrawer
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        recordId={historyRecord?.id ?? null}
+        recordTitle={historyRecord?.title}
+        stages={stages}
+      />
 
       {pipelineSummary ? (
         <div className="sticky bottom-2 z-10">

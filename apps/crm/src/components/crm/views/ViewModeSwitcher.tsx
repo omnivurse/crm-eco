@@ -8,6 +8,7 @@ import {
   BarChart3,
   Clock,
   PanelLeftClose,
+  CalendarDays,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { ViewMode } from '@/lib/crm/types';
@@ -24,6 +25,7 @@ const VIEW_MODE_OPTIONS: { mode: ViewMode; icon: typeof Table2; label: string; s
   { mode: 'kanban', icon: Kanban, label: 'Kanban Board', shortLabel: 'Kanban' },
   { mode: 'chart', icon: BarChart3, label: 'Chart View', shortLabel: 'Chart' },
   { mode: 'timeline', icon: Clock, label: 'Timeline View', shortLabel: 'Timeline' },
+  { mode: 'calendar', icon: CalendarDays, label: 'Calendar View', shortLabel: 'Calendar' },
   { mode: 'split', icon: PanelLeftClose, label: 'Split View', shortLabel: 'Split' },
 ];
 

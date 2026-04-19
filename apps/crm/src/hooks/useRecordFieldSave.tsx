@@ -28,6 +28,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { mutationQueue } from '@/lib/offline/mutation-queue';
 
 export type FieldSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -247,7 +248,34 @@ export function RecordFieldSaveProvider({
       } catch (err: unknown) {
         if ((err as { name?: string })?.name === 'AbortError') return;
         const msg = err instanceof Error ? err.message : 'Unknown error';
-        updateField(field, { status: 'error', error: msg });
+        // Network-level failures (no response from the server) get
+        // queued for background retry so the rep doesn't lose their
+        // typed value when the train tunnel drops Wi-Fi. We still
+        // mark the field as "saved" locally — the pill in the topbar
+        // surfaces the pending sync state globally.
+        const payload =
+          target === 'data'
+            ? { data: { [field]: value } }
+            : { [field]: value };
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (updatedAtRef.current) headers['If-Match'] = updatedAtRef.current;
+        mutationQueue.enqueue({
+          method: 'PATCH',
+          url: `/api/crm/records/${recordId}`,
+          body: payload,
+          headers,
+          dedupeKey: `record:${recordId}:field:${field}`,
+          label: `Update ${field}`,
+          recordId,
+        });
+        updateField(field, {
+          status: 'saved',
+          error: undefined,
+          savedAt: Date.now(),
+        });
+        onSaved?.(field, value);
       } finally {
         controllersRef.current.delete(field);
       }

@@ -37,6 +37,13 @@ export async function GET(request: NextRequest) {
     const supabase = await createCrmClient();
     const { searchParams } = new URL(request.url);
     const recordId = searchParams.get('recordId');
+    // Optional date range — used by the calendar view to pull only tasks
+    // whose `due_at` lands in the visible month. Both are ISO timestamps.
+    const start = searchParams.get('start');
+    const end = searchParams.get('end');
+    // Optional status filter; calendar view wants "open"/"in_progress" only
+    // so completed tasks don't clutter the month grid.
+    const statusCsv = searchParams.get('status');
 
     let query = supabase
       .from('crm_tasks')
@@ -46,6 +53,20 @@ export async function GET(request: NextRequest) {
 
     if (recordId) {
       query = query.eq('record_id', recordId);
+    }
+    if (start) {
+      query = query.gte('due_at', start);
+    }
+    if (end) {
+      query = query.lte('due_at', end);
+    }
+    if (statusCsv) {
+      const statuses = statusCsv.split(',').map((s) => s.trim()).filter(Boolean);
+      if (statuses.length === 1) {
+        query = query.eq('status', statuses[0]);
+      } else if (statuses.length > 1) {
+        query = query.in('status', statuses);
+      }
     }
 
     const { data, error } = await query;
