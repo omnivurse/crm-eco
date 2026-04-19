@@ -83,11 +83,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip auth-related requests entirely — never cache, never intercept
+  // Skip auth-related requests entirely — never cache, never intercept.
+  // Must stay in sync with the public auth routes in middleware.ts.
   if (
     url.pathname.includes('/auth/') ||
     url.pathname.includes('/login') ||
-    url.pathname.includes('/crm-login')
+    url.pathname.includes('/crm-login') ||
+    url.pathname.includes('/crm-access-denied') ||
+    url.pathname.includes('/reset-password') ||
+    url.pathname.includes('/update-password') ||
+    url.pathname.includes('/accept-invite')
   ) {
     return;
   }
