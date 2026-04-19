@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 import { z } from 'zod';
+import { withIdempotency } from '@/lib/server/idempotency';
 
 const createTaskSchema = z.object({
   record_id: z.string().uuid(),
@@ -101,49 +102,75 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const parsed = createTaskSchema.safeParse(body);
+    const rawBody = await request.text();
 
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
-    }
+    const { response } = await withIdempotency(
+      {
+        organizationId: profile.organization_id,
+        method: 'POST',
+        path: '/api/crm/tasks',
+        rawBody,
+      },
+      request,
+      async () => {
+        let body: unknown;
+        try {
+          body = rawBody ? JSON.parse(rawBody) : {};
+        } catch {
+          return NextResponse.json(
+            { error: 'Invalid JSON body' },
+            { status: 400 },
+          );
+        }
+        const parsed = createTaskSchema.safeParse(body);
 
-    const supabase = await createCrmClient();
+        if (!parsed.success) {
+          return NextResponse.json(
+            { error: parsed.error.errors },
+            { status: 400 },
+          );
+        }
 
-    const status = parsed.data.status || 'open';
-    // Normalize completed_at: if caller said the task is completed but didn't
-    // stamp a time, set it to now so insight queries aggregating by hour
-    // still have a signal.
-    const completedAt =
-      status === 'completed'
-        ? parsed.data.completed_at || new Date().toISOString()
-        : parsed.data.completed_at || null;
+        const supabase = await createCrmClient();
 
-    const { data: task, error } = await supabase
-      .from('crm_tasks')
-      .insert({
-        org_id: profile.organization_id,
-        record_id: parsed.data.record_id,
-        title: parsed.data.title,
-        description: parsed.data.description || null,
-        due_at: parsed.data.due_at || null,
-        priority: mapPriority(parsed.data.priority),
-        activity_type: parsed.data.activity_type || 'task',
-        status,
-        completed_at: completedAt,
-        outcome: parsed.data.outcome || null,
-        assigned_to: profile.id,
-        created_by: profile.id,
-      })
-      .select()
-      .single();
+        const status = parsed.data.status || 'open';
+        // Normalize completed_at: if caller said the task is completed
+        // but didn't stamp a time, set it to now so insight queries
+        // aggregating by hour still have a signal.
+        const completedAt =
+          status === 'completed'
+            ? parsed.data.completed_at || new Date().toISOString()
+            : parsed.data.completed_at || null;
 
-    if (error) {
-      console.error('Error creating task:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+        const { data: task, error } = await supabase
+          .from('crm_tasks')
+          .insert({
+            org_id: profile.organization_id,
+            record_id: parsed.data.record_id,
+            title: parsed.data.title,
+            description: parsed.data.description || null,
+            due_at: parsed.data.due_at || null,
+            priority: mapPriority(parsed.data.priority),
+            activity_type: parsed.data.activity_type || 'task',
+            status,
+            completed_at: completedAt,
+            outcome: parsed.data.outcome || null,
+            assigned_to: profile.id,
+            created_by: profile.id,
+          })
+          .select()
+          .single();
 
-    return NextResponse.json(task, { status: 201 });
+        if (error) {
+          console.error('Error creating task:', error);
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json(task, { status: 201 });
+      },
+    );
+
+    return response;
   } catch (error) {
     console.error('Error in POST /api/crm/tasks:', error);
     return NextResponse.json(

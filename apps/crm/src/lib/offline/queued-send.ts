@@ -36,8 +36,12 @@ const IDEMPOTENCY_HEADER = 'Idempotency-Key';
  * a duplicate replay to be deduped against an unrelated request —
  * which means the duplicate still runs as a fresh write, just without
  * idempotency. Never worse than the pre-PR status quo.
+ *
+ * Exported so call sites that do their own fetch + enqueue-fallback
+ * pattern (e.g. `useRecordFieldSave`) can stamp the same key on both
+ * paths, which is what makes the server-side dedupe actually work.
  */
-function generateIdempotencyKey(): string {
+export function makeIdempotencyKey(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
   }
@@ -90,7 +94,7 @@ export async function queuedSend(
   // always win (see inline composers that already manage their own
   // correlation ids).
   if (!headers[IDEMPOTENCY_HEADER]) {
-    headers[IDEMPOTENCY_HEADER] = generateIdempotencyKey();
+    headers[IDEMPOTENCY_HEADER] = makeIdempotencyKey();
   }
 
   // Short-circuit: if offline and caller opted in, skip the doomed

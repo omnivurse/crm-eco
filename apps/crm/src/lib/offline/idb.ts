@@ -14,9 +14,14 @@
  */
 
 export const DB_NAME = 'crm.responseCache';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 export const RESPONSE_STORE = 'responses';
 export const RECENT_STORE = 'recentRecords';
+/** Append-only log of server-issued `x-sync-receipt` ids seen by the
+ *  client after a successful drain. Used by the reconciliation view to
+ *  flag mutations we thought were synced but the server can no longer
+ *  find, and vice versa. */
+export const RECEIPT_STORE = 'syncReceipts';
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -38,6 +43,12 @@ export function openOfflineDb(): Promise<IDBDatabase> {
       if (oldVersion < 2 || !db.objectStoreNames.contains(RECENT_STORE)) {
         const store = db.createObjectStore(RECENT_STORE, { keyPath: 'id' });
         store.createIndex('viewedAt', 'viewedAt');
+      }
+      if (oldVersion < 3 || !db.objectStoreNames.contains(RECEIPT_STORE)) {
+        const store = db.createObjectStore(RECEIPT_STORE, {
+          keyPath: 'receiptId',
+        });
+        store.createIndex('recordedAt', 'recordedAt');
       }
     };
     req.onsuccess = () => resolve(req.result);

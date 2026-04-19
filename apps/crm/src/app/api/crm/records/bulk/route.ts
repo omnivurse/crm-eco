@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 import { z } from 'zod';
+import { withIdempotency } from '@/lib/server/idempotency';
 
 /**
  * Bulk record endpoint.
@@ -86,7 +87,41 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const body = await request.json().catch(() => null);
+    const rawBody = await request.text();
+    const { response } = await withIdempotency(
+      {
+        organizationId: profile.organization_id,
+        method: 'PATCH',
+        path: '/api/crm/records/bulk',
+        rawBody,
+      },
+      request,
+      () => runBulkPatch({ profile, rawBody }),
+    );
+    return response;
+  } catch (error) {
+    console.error('[bulk PATCH] unhandled error:', error);
+    return NextResponse.json(
+      { error: 'Failed to bulk update records' },
+      { status: 500 },
+    );
+  }
+}
+
+async function runBulkPatch({
+  profile,
+  rawBody,
+}: {
+  profile: NonNullable<Awaited<ReturnType<typeof getCurrentProfile>>>;
+  rawBody: string;
+}): Promise<NextResponse> {
+  try {
+    let body: unknown = null;
+    try {
+      body = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      body = null;
+    }
     const parsed = bulkUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -302,7 +337,41 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const body = await request.json().catch(() => null);
+    const rawBody = await request.text();
+    const { response } = await withIdempotency(
+      {
+        organizationId: profile.organization_id,
+        method: 'DELETE',
+        path: '/api/crm/records/bulk',
+        rawBody,
+      },
+      request,
+      () => runBulkDelete({ profile, rawBody }),
+    );
+    return response;
+  } catch (error) {
+    console.error('[bulk DELETE] unhandled error:', error);
+    return NextResponse.json(
+      { error: 'Failed to bulk delete records' },
+      { status: 500 },
+    );
+  }
+}
+
+async function runBulkDelete({
+  profile,
+  rawBody,
+}: {
+  profile: NonNullable<Awaited<ReturnType<typeof getCurrentProfile>>>;
+  rawBody: string;
+}): Promise<NextResponse> {
+  try {
+    let body: unknown = null;
+    try {
+      body = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      body = null;
+    }
     const parsed = bulkDeleteSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(

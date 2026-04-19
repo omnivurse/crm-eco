@@ -33,6 +33,8 @@ import {
   Zap,
   AlertTriangle,
   ArrowLeft,
+  CheckCircle2,
+  GitCompareArrows,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout';
@@ -45,6 +47,10 @@ import {
   type RecentRecord,
 } from '@/lib/offline/recent-records';
 import { clearOfflineState } from '@/lib/offline/reset';
+import {
+  listReceipts,
+  type SyncReceipt,
+} from '@/lib/offline/receipt-log';
 
 interface CachedEntryRow {
   key: string;
@@ -53,20 +59,57 @@ interface CachedEntryRow {
   sizeBytes: number;
 }
 
+/** A row from the server-side idempotency ledger. Shape matches
+ *  `GET /api/crm/debug/idempotency-receipts`. */
+interface ServerReceipt {
+  id: string;
+  key: string;
+  method: string;
+  path: string;
+  status_code: number;
+  created_at: string;
+  expires_at: string;
+  trace_id: string | null;
+}
+
+/** One row of the reconciliation table. `status` summarises the
+ *  agreement between client and server for a single receipt id. */
+type ReconciliationStatus =
+  | 'both' /* Client + server both have it. */
+  | 'client-only' /* Client logged it, server can't find it (possible loss). */
+  | 'server-only'; /* Server has it, client never logged it (orphaned ack). */
+
+interface ReconciliationRow {
+  receiptId: string;
+  status: ReconciliationStatus;
+  clientEntry?: SyncReceipt;
+  serverEntry?: ServerReceipt;
+}
+
 export default function OfflineDebugClient() {
   const router = useRouter();
   const queue = useMutationQueue();
   const [cacheRows, setCacheRows] = useState<CachedEntryRow[]>([]);
   const [recents, setRecents] = useState<RecentRecord[]>([]);
+  const [clientReceipts, setClientReceipts] = useState<SyncReceipt[]>([]);
+  const [serverReceipts, setServerReceipts] = useState<ServerReceipt[]>([]);
+  const [receiptsError, setReceiptsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [wiping, setWiping] = useState(false);
+  // "Now" snapshot used to compute ages in the render. Refreshed on
+  // every reload so the Refresh button visibly re-times every entry
+  // without calling `Date.now()` during render (which would violate
+  // the react-hooks/purity rule).
+  const [renderedAt, setRenderedAt] = useState<number>(() => Date.now());
 
   const reload = useCallback(async () => {
     setLoading(true);
+    setRenderedAt(Date.now());
     try {
-      const [keys, recentList] = await Promise.all([
+      const [keys, recentList, receiptList] = await Promise.all([
         cacheKeys(),
         listRecentRecords(),
+        listReceipts(),
       ]);
       const rows: CachedEntryRow[] = [];
       // Fetching each entry just to read metadata is wasteful at
@@ -85,6 +128,39 @@ export default function OfflineDebugClient() {
       rows.sort((a, b) => b.storedAt - a.storedAt);
       setCacheRows(rows);
       setRecents(recentList);
+      setClientReceipts(receiptList);
+
+      // Server-side receipts are fetched in a separate branch because
+      // the endpoint is permission-gated to admin/manager — a plain
+      // agent on the device will get 403 and we want to degrade
+      // gracefully rather than blow up the whole page.
+      try {
+        // Narrow to the last 24h (matches the server ledger's TTL) so
+        // we never compare against rows that have already been GC'd.
+        const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const res = await fetch(
+          `/api/crm/debug/idempotency-receipts?since=${encodeURIComponent(since)}`,
+          { credentials: 'same-origin' },
+        );
+        if (res.ok) {
+          const payload = (await res.json()) as { receipts: ServerReceipt[] };
+          setServerReceipts(payload.receipts ?? []);
+          setReceiptsError(null);
+        } else if (res.status === 403) {
+          setServerReceipts([]);
+          setReceiptsError(
+            'Server reconciliation requires admin or manager role.',
+          );
+        } else {
+          setServerReceipts([]);
+          setReceiptsError(`Failed to load server receipts (${res.status})`);
+        }
+      } catch (err) {
+        setServerReceipts([]);
+        setReceiptsError(
+          err instanceof Error ? err.message : 'Network error loading receipts',
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -97,6 +173,54 @@ export default function OfflineDebugClient() {
   const totalBytes = useMemo(
     () => cacheRows.reduce((acc, r) => acc + r.sizeBytes, 0),
     [cacheRows],
+  );
+
+  /**
+   * Left-right joined view of client receipts against the server
+   * ledger. Rows are keyed by receipt id and tagged `both`,
+   * `client-only`, or `server-only` so the UI can render a traffic
+   * light at a glance.
+   */
+  const reconciliation = useMemo<ReconciliationRow[]>(() => {
+    const byClient = new Map<string, SyncReceipt>();
+    for (const c of clientReceipts) byClient.set(c.receiptId, c);
+    const byServer = new Map<string, ServerReceipt>();
+    for (const s of serverReceipts) byServer.set(s.id, s);
+
+    const ids = new Set<string>([...byClient.keys(), ...byServer.keys()]);
+    const rows: ReconciliationRow[] = [];
+    for (const id of ids) {
+      const client = byClient.get(id);
+      const server = byServer.get(id);
+      const status: ReconciliationStatus = client && server
+        ? 'both'
+        : client
+          ? 'client-only'
+          : 'server-only';
+      rows.push({ receiptId: id, status, clientEntry: client, serverEntry: server });
+    }
+    // Surface mismatches first so support eyes don't get lost in the
+    // matched rows.
+    const order: Record<ReconciliationStatus, number> = {
+      'client-only': 0,
+      'server-only': 1,
+      both: 2,
+    };
+    rows.sort((a, b) => {
+      const diff = order[a.status] - order[b.status];
+      if (diff !== 0) return diff;
+      const tA = a.clientEntry?.recordedAt
+        ?? (a.serverEntry ? new Date(a.serverEntry.created_at).getTime() : 0);
+      const tB = b.clientEntry?.recordedAt
+        ?? (b.serverEntry ? new Date(b.serverEntry.created_at).getTime() : 0);
+      return tB - tA;
+    });
+    return rows;
+  }, [clientReceipts, serverReceipts]);
+
+  const mismatchCount = useMemo(
+    () => reconciliation.filter((r) => r.status !== 'both').length,
+    [reconciliation],
   );
 
   const handleWipe = async () => {
@@ -266,7 +390,129 @@ export default function OfflineDebugClient() {
           </pre>
         )}
       </Section>
+
+      <Section title="Sync reconciliation" count={reconciliation.length}>
+        {receiptsError ? (
+          <Empty label={receiptsError} />
+        ) : reconciliation.length === 0 ? (
+          <Empty label="No receipts recorded yet." />
+        ) : (
+          <>
+            <div className="mb-3 flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+              <span>
+                Client: <strong>{clientReceipts.length}</strong>
+              </span>
+              <span>•</span>
+              <span>
+                Server: <strong>{serverReceipts.length}</strong>
+              </span>
+              <span>•</span>
+              <span
+                className={
+                  mismatchCount === 0
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-amber-600 dark:text-amber-400'
+                }
+              >
+                Mismatches: <strong>{mismatchCount}</strong>
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-xs">
+                <thead>
+                  <tr className="text-left text-slate-500 dark:text-slate-400">
+                    <th className="pb-2 pr-4">Status</th>
+                    <th className="pb-2 pr-4">Receipt</th>
+                    <th className="pb-2 pr-4">Method + path</th>
+                    <th className="pb-2 pr-4">Client</th>
+                    <th className="pb-2">Server</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reconciliation.map((row) => (
+                    <ReconciliationTableRow
+                      key={row.receiptId}
+                      row={row}
+                      /* Pass a single "now" for every row in this
+                       * render pass so `formatAge` stays pure —
+                       * required by react-hooks/purity. */
+                      now={renderedAt}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </Section>
     </div>
+  );
+}
+
+function ReconciliationTableRow({
+  row,
+  now,
+}: {
+  row: ReconciliationRow;
+  now: number;
+}) {
+  const clientTime = row.clientEntry
+    ? formatAge(now - row.clientEntry.recordedAt)
+    : '—';
+  const serverTime = row.serverEntry
+    ? formatAge(now - new Date(row.serverEntry.created_at).getTime())
+    : '—';
+  const method = row.clientEntry?.method ?? row.serverEntry?.method ?? '—';
+  const path = row.clientEntry?.url ?? row.serverEntry?.path ?? '—';
+  return (
+    <tr className="border-t border-slate-100 dark:border-white/5 align-top">
+      <td className="py-1.5 pr-4">
+        <ReconciliationBadge status={row.status} />
+      </td>
+      <td className="py-1.5 pr-4 font-mono text-slate-900 dark:text-slate-100 break-all">
+        {row.receiptId}
+        {row.clientEntry?.replayed ? (
+          <span className="ml-1 text-[10px] uppercase text-slate-400">
+            replay
+          </span>
+        ) : null}
+      </td>
+      <td className="py-1.5 pr-4 text-slate-600 dark:text-slate-300 break-all">
+        <span className="font-semibold mr-1">{method}</span>
+        <span className="font-mono">{path}</span>
+      </td>
+      <td className="py-1.5 pr-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+        {clientTime}
+      </td>
+      <td className="py-1.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">
+        {serverTime}
+        {row.serverEntry ? (
+          <span className="ml-1 text-slate-400">({row.serverEntry.status_code})</span>
+        ) : null}
+      </td>
+    </tr>
+  );
+}
+
+function ReconciliationBadge({ status }: { status: ReconciliationStatus }) {
+  if (status === 'both') {
+    return (
+      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+        <CheckCircle2 className="w-3 h-3" /> synced
+      </span>
+    );
+  }
+  if (status === 'client-only') {
+    return (
+      <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+        <GitCompareArrows className="w-3 h-3" /> client only
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-sky-600 dark:text-sky-400">
+      <GitCompareArrows className="w-3 h-3" /> server only
+    </span>
   );
 }
 

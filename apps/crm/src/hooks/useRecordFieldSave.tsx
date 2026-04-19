@@ -29,6 +29,7 @@ import {
   type ReactNode,
 } from 'react';
 import { mutationQueue } from '@/lib/offline/mutation-queue';
+import { makeIdempotencyKey } from '@/lib/offline/queued-send';
 
 export type FieldSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -188,6 +189,11 @@ export function RecordFieldSaveProvider({
       controllersRef.current.set(field, controller);
 
       updateField(field, { status: 'saving', error: undefined });
+      // Declared outside the try/catch so the network-failure branch
+      // below can reuse the *same* key when it enqueues the fallback
+      // mutation. Matching keys across live + queued replays is what
+      // makes the end-to-end idempotency guarantee work.
+      const idempotencyKey = makeIdempotencyKey();
       try {
         const payload =
           target === 'data'
@@ -195,6 +201,7 @@ export function RecordFieldSaveProvider({
             : { [field]: value };
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
         };
         if (updatedAtRef.current) {
           headers['If-Match'] = updatedAtRef.current;
@@ -257,8 +264,14 @@ export function RecordFieldSaveProvider({
           target === 'data'
             ? { data: { [field]: value } }
             : { [field]: value };
+        // Reuse the same Idempotency-Key the live fetch generated —
+        // see the sibling branch above for the rationale. If the
+        // network blip happened *after* the server persisted, the
+        // queue drain will replay the cached response and the
+        // optimistic local state stays consistent.
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey,
         };
         if (updatedAtRef.current) headers['If-Match'] = updatedAtRef.current;
         mutationQueue.enqueue({

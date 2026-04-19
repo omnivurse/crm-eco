@@ -18,16 +18,19 @@
 import { mutationQueue } from './mutation-queue';
 import { cacheClear } from './response-cache';
 import { clearRecentRecords } from './recent-records';
+import { clearReceipts } from './receipt-log';
 
 export async function clearOfflineState(): Promise<void> {
-  // Synchronous pieces first so the UI immediately collapses the
-  // pending-changes pill even if IDB is slow to respond.
   try {
     mutationQueue.clearAll();
   } catch {
     /* noop */
   }
 
-  // IDB pieces happen in parallel — neither depends on the other.
-  await Promise.allSettled([cacheClear(), clearRecentRecords()]);
+  // IDB pieces happen in parallel — none depends on the others.
+  await Promise.allSettled([
+    cacheClear(),
+    clearRecentRecords(),
+    clearReceipts(),
+  ]);
 }

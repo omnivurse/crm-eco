@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 import { z } from 'zod';
+import { withIdempotency } from '@/lib/server/idempotency';
 
 const createNoteSchema = z.object({
   record_id: z.string().uuid(),
@@ -19,32 +20,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const parsed = createNoteSchema.safeParse(body);
+    // Read the raw body once so the idempotency wrapper can hash it
+    // and the handler closure can still parse the JSON. A replayed
+    // request with a missing body still has `rawBody === ''`, which
+    // hashes deterministically.
+    const rawBody = await request.text();
 
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
-    }
+    const { response } = await withIdempotency(
+      {
+        organizationId: profile.organization_id,
+        method: 'POST',
+        path: '/api/crm/notes',
+        rawBody,
+      },
+      request,
+      async () => {
+        let body: unknown;
+        try {
+          body = rawBody ? JSON.parse(rawBody) : {};
+        } catch {
+          return NextResponse.json(
+            { error: 'Invalid JSON body' },
+            { status: 400 },
+          );
+        }
+        const parsed = createNoteSchema.safeParse(body);
 
-    const supabase = await createCrmClient();
+        if (!parsed.success) {
+          return NextResponse.json(
+            { error: parsed.error.errors },
+            { status: 400 },
+          );
+        }
 
-    const { data: note, error } = await supabase
-      .from('crm_notes')
-      .insert({
-        org_id: profile.organization_id,
-        record_id: parsed.data.record_id,
-        body: parsed.data.body,
-        is_pinned: parsed.data.is_pinned || false,
-        created_by: profile.id,
-      })
-      .select()
-      .single();
+        const supabase = await createCrmClient();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+        const { data: note, error } = await supabase
+          .from('crm_notes')
+          .insert({
+            org_id: profile.organization_id,
+            record_id: parsed.data.record_id,
+            body: parsed.data.body,
+            is_pinned: parsed.data.is_pinned || false,
+            created_by: profile.id,
+          })
+          .select()
+          .single();
 
-    return NextResponse.json(note);
+        if (error) {
+          return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+
+        return NextResponse.json(note);
+      },
+    );
+
+    return response;
   } catch (error) {
     console.error('Error creating note:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

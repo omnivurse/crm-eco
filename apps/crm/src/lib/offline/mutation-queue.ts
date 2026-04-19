@@ -26,6 +26,7 @@
  */
 
 import { recordOfflineEvent } from './instrumentation';
+import { logReceipt } from './receipt-log';
 
 const STORAGE_KEY = 'crm.mutationQueue.v1';
 const MAX_RETRIES = 5;
@@ -475,6 +476,20 @@ class MutationQueue {
           receiptId,
           replayed,
         });
+        // Persist the receipt locally so the reconciliation view can
+        // cross-reference it against the server-side ledger. Fire and
+        // forget — the log module is best-effort and never throws.
+        if (receiptId) {
+          void logReceipt({
+            receiptId,
+            recordedAt: Date.now(),
+            mutationId: next.id,
+            label: next.label,
+            method: next.method,
+            url: next.url,
+            replayed,
+          });
+        }
       } else if (isRetryableStatus(res.status) && next.attempts + 1 < MAX_RETRIES) {
         next.attempts += 1;
         next.status = 'queued';
