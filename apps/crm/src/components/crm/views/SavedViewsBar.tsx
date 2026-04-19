@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 interface SavedView {
   id: string;
   name: string;
-  filters: Record<string, unknown>;
+  filters: Record<string, unknown> | unknown[];
   page_key: string;
   is_default: boolean;
   created_at: string;
@@ -42,22 +42,46 @@ interface ViewFilter {
   value: string | number | boolean | string[] | null;
 }
 
+/**
+ * Captured view-state shape used when saving the FULL list UI state
+ * (not just filters). Detected on apply via `kind === 'view_state_v2'`.
+ */
+export interface SavedViewState {
+  kind: 'view_state_v2';
+  filters: ViewFilter[];
+  sort?: { field: string | null; direction: 'asc' | 'desc' } | null;
+  columns?: string[] | null;
+  scope?: 'all' | 'mine' | 'downline' | null;
+  viewMode?: string | null;
+  search?: string | null;
+}
+
 interface SavedViewsBarProps {
   pageKey: string;
   currentFilters: ViewFilter[];
   onApplyView: (filters: ViewFilter[]) => void;
+  /** Additional UI state, only used when saving/applying a full view. */
+  currentViewState?: Omit<SavedViewState, 'kind' | 'filters'>;
+  /** Called when a `view_state_v2` saved view is applied. */
+  onApplyViewState?: (state: SavedViewState) => void;
 }
 
 export function SavedViewsBar({
   pageKey,
   currentFilters,
   onApplyView,
+  currentViewState,
+  onApplyViewState,
 }: SavedViewsBarProps) {
   const [views, setViews] = useState<SavedView[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newViewName, setNewViewName] = useState('');
+  // When true the save dialog persists the full view state (filters + sort
+  // + columns + scope + viewMode + search). Only available when the
+  // caller passes `currentViewState`.
+  const [saveFullState, setSaveFullState] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const fetchViews = useCallback(async () => {
@@ -82,12 +106,28 @@ export function SavedViewsBar({
     if (!newViewName.trim()) return;
     setSaving(true);
     try {
+      // Shape the payload based on the toggle. Full-state saves store a
+      // self-describing `view_state_v2` object in the `filters` JSONB,
+      // while legacy saves continue to store the raw filter array.
+      const payloadFilters: unknown =
+        saveFullState && currentViewState
+          ? ({
+              kind: 'view_state_v2',
+              filters: currentFilters,
+              sort: currentViewState.sort ?? null,
+              columns: currentViewState.columns ?? null,
+              scope: currentViewState.scope ?? null,
+              viewMode: currentViewState.viewMode ?? null,
+              search: currentViewState.search ?? null,
+            } satisfies SavedViewState)
+          : currentFilters;
+
       const res = await fetch('/api/crm/saved-views', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: newViewName.trim(),
-          filters: currentFilters,
+          filters: payloadFilters,
           page_key: pageKey,
         }),
       });
@@ -95,6 +135,7 @@ export function SavedViewsBar({
       toast.success(`View "${newViewName.trim()}" saved`);
       setNewViewName('');
       setShowSaveDialog(false);
+      setSaveFullState(false);
       fetchViews();
     } catch {
       toast.error('Failed to save view');
@@ -120,7 +161,23 @@ export function SavedViewsBar({
 
   const handleApply = (view: SavedView) => {
     setActiveViewId(view.id);
-    // Saved view filters are stored as JSONB — cast to ViewFilter[]
+    // Full view-state blob (v2): hand it to the caller whole so it can
+    // rehydrate sort / columns / scope / viewMode / search alongside
+    // filters.
+    if (
+      !Array.isArray(view.filters) &&
+      view.filters &&
+      (view.filters as Record<string, unknown>).kind === 'view_state_v2'
+    ) {
+      const state = view.filters as unknown as SavedViewState;
+      if (onApplyViewState) {
+        onApplyViewState(state);
+      } else {
+        onApplyView(state.filters ?? []);
+      }
+      return;
+    }
+    // Legacy: either a filter array or a plain key→value record.
     const viewFilters = Array.isArray(view.filters)
       ? (view.filters as unknown as ViewFilter[])
       : Object.entries(view.filters).map(([field, value]) => ({
@@ -282,7 +339,7 @@ export function SavedViewsBar({
               Save Current View
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 space-y-3">
             <Input
               placeholder="View name (e.g. My HealthShare Members)"
               value={newViewName}
@@ -291,9 +348,25 @@ export function SavedViewsBar({
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             />
-            <p className="text-xs text-slate-500 mt-2">
-              This will save your current filters so you can quickly return to
-              this view later.
+            {currentViewState && (
+              <label className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={saveFullState}
+                  onChange={(e) => setSaveFullState(e.target.checked)}
+                  className="mt-0.5 h-3.5 w-3.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                />
+                <span>
+                  Save the full layout — filters, sort, columns, scope, view
+                  mode, and search — so applying this view restores everything
+                  at once.
+                </span>
+              </label>
+            )}
+            <p className="text-xs text-slate-500">
+              {saveFullState
+                ? 'Applying this view will rehydrate the entire list UI.'
+                : 'This will save your current filters so you can quickly return to this view later.'}
             </p>
           </div>
           <DialogFooter>

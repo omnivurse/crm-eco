@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { CrmTopBar } from './CrmTopBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
+import { CommandPalette } from './CommandPalette';
 import { ModuleProvider } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
@@ -26,6 +27,7 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -44,9 +46,8 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
     };
   }, [mobileMenuOpen]);
 
-  // Stable callbacks for memoized children
   const handleOpenCommandPalette = useCallback(() => {
-    // Smart Chat input in BottomBar handles Ctrl+K now
+    setCommandPaletteOpen(true);
   }, []);
   const handleMobileMenuToggle = useCallback(() => {
     setMobileMenuOpen((prev) => !prev);
@@ -105,6 +106,13 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
             {/* Bottom Action Bar - Zoho-style */}
             <BottomBar modules={modules} profile={profile} />
           </div>
+
+          {/* Global Command Palette (⌘K / Ctrl+K) */}
+          <CommandPalette
+            open={commandPaletteOpen}
+            onOpenChange={setCommandPaletteOpen}
+            modules={modules}
+          />
         </div>
       </GizmoProvider>
     </ModuleProvider>

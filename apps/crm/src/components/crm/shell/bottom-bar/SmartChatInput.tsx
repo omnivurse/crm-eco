@@ -303,16 +303,10 @@ export function SmartChatInput({ modules }: SmartChatInputProps) {
     setSelectedIndex(0);
   }, [query]);
 
-  // Global Ctrl+Space shortcut
+  // Global Ctrl+Space shortcut — Ctrl+K is owned by CommandPalette now.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
-        e.preventDefault();
-        inputRef.current?.focus();
-        setIsOpen(true);
-      }
-      // Also capture Ctrl+K for backwards compat with CommandPalette
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
         setIsOpen(true);

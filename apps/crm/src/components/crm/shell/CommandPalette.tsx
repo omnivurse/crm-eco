@@ -1,6 +1,22 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+/**
+ * Global Command Palette (⌘K / Ctrl+K).
+ *
+ * Categories (in order of usefulness):
+ *   1. Live terminal command match (if the query is a known shortcut)
+ *   2. Record search results (cross-module, /api/crm/search)
+ *   3. Recent records (/api/crm/recently-viewed)
+ *   4. Navigation (dashboard, modules, settings)
+ *   5. Quick Actions (create per-module, import)
+ *   6. Terminal command hints (unfiltered state only)
+ *
+ * Every record result exposes two actions: "Open" and "✨ Draft AI email" (the
+ * latter navigates with `?ai=email` which `RecordDetailShellV2` detects and
+ * auto-triggers the follow-up draft flow).
+ */
+
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -27,8 +43,9 @@ import {
   AlertTriangle,
   Eye,
   ArrowRightLeft,
-  Filter,
-  Hash,
+  Sparkles,
+  Clock,
+  Loader2,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -45,18 +62,40 @@ interface CommandItem {
   action: () => void;
   category: string;
   keywords?: string[];
-  syntax?: string;
+  /** Optional secondary action shown as a small sparkle chip. */
+  secondary?: {
+    label: string;
+    action: () => void;
+    icon: React.ReactNode;
+  };
+}
+
+interface RecordSearchResult {
+  id: string;
+  title: string;
+  subtitle?: string;
+  module: string;
+  moduleKey: string;
+  url: string;
+}
+
+interface RecentlyViewedApiItem {
+  recordId: string;
+  moduleId: string;
+  moduleKey: string | null;
+  moduleName: string | null;
+  title: string | null;
+  lastViewedAt: string;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
-  'user': <Users className="w-4 h-4" />,
+  user: <Users className="w-4 h-4" />,
   'user-plus': <UserPlus className="w-4 h-4" />,
   'dollar-sign': <DollarSign className="w-4 h-4" />,
-  'building': <Building className="w-4 h-4" />,
-  'file': <FileText className="w-4 h-4" />,
+  building: <Building className="w-4 h-4" />,
+  file: <FileText className="w-4 h-4" />,
 };
 
-// Terminal command patterns
 interface TerminalCommand {
   pattern: RegExp;
   syntax: string;
@@ -88,11 +127,9 @@ const terminalCommands: TerminalCommand[] = [
     description: 'Open a record',
     execute: (match, navigate) => {
       const [, module, identifier] = match;
-      // If it looks like a UUID, go directly to the record
       if (identifier.match(/^[0-9a-f-]{36}$/i)) {
         navigate(`/crm/r/${identifier}`);
       } else {
-        // Otherwise search for it
         navigate(`/crm/modules/${module.toLowerCase()}s?search=${encodeURIComponent(identifier)}`);
       }
     },
@@ -103,7 +140,6 @@ const terminalCommands: TerminalCommand[] = [
     description: 'Change deal stage',
     execute: (match, navigate) => {
       const [, dealId, stageName] = match;
-      // Navigate to deal with stage change intent
       navigate(`/crm/r/${dealId}?changeStage=${encodeURIComponent(stageName)}`);
     },
   },
@@ -129,7 +165,9 @@ const terminalCommands: TerminalCommand[] = [
     description: 'Filter by status',
     execute: (match, navigate) => {
       const [, status, module] = match;
-      const moduleKey = module.toLowerCase().endsWith('s') ? module.toLowerCase() : `${module.toLowerCase()}s`;
+      const moduleKey = module.toLowerCase().endsWith('s')
+        ? module.toLowerCase()
+        : `${module.toLowerCase()}s`;
       navigate(`/crm/modules/${moduleKey}?filter=status:${status.toLowerCase()}`);
     },
   },
@@ -138,31 +176,140 @@ const terminalCommands: TerminalCommand[] = [
 export function CommandPalette({ open, onOpenChange, modules }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [searchResults, setSearchResults] = useState<RecordSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [recents, setRecents] = useState<RecordSearchResult[]>([]);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const router = useRouter();
 
-  const navigate = useCallback((path: string) => {
-    router.push(path);
-    onOpenChange(false);
-    setQuery('');
-  }, [router, onOpenChange]);
+  const navigate = useCallback(
+    (path: string) => {
+      router.push(path);
+      onOpenChange(false);
+      setQuery('');
+    },
+    [router, onOpenChange],
+  );
 
-  // Check if query matches a terminal command
-  // eslint-disable-next-line react-hooks/preserve-manual-memoization -- terminalCommands is a stable module-level constant
-  const terminalMatch = useMemo(() => {
-    if (!query.trim()) return null;
-    for (const cmd of terminalCommands) {
-      const match = query.trim().match(cmd.pattern);
-      if (match) {
-        return { command: cmd, match };
+  // Load recent records on open (once per open cycle).
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/crm/recently-viewed?limit=5', {
+          credentials: 'same-origin',
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as { data?: RecentlyViewedApiItem[] };
+        if (cancelled) return;
+        const items: RecordSearchResult[] = (body.data ?? []).map((it) => ({
+          id: it.recordId,
+          title: it.title || 'Untitled',
+          subtitle: it.moduleName ?? undefined,
+          module: it.moduleName ?? '',
+          moduleKey: it.moduleKey ?? '',
+          url: `/crm/r/${it.recordId}`,
+        }));
+        setRecents(items);
+      } catch {
+        /* network failure is non-fatal */
       }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  // Debounced live record search.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!open || trimmed.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    searchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    searchAbortRef.current = ctrl;
+    setSearchLoading(true);
+    const handle = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=8`,
+          { credentials: 'same-origin', signal: ctrl.signal },
+        );
+        if (!res.ok) {
+          if (!ctrl.signal.aborted) setSearchResults([]);
+          return;
+        }
+        const body = (await res.json()) as { results?: RecordSearchResult[] };
+        if (!ctrl.signal.aborted) {
+          setSearchResults(body.results ?? []);
+        }
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+        if (!ctrl.signal.aborted) setSearchResults([]);
+      } finally {
+        if (!ctrl.signal.aborted) setSearchLoading(false);
+      }
+    }, 180);
+    return () => {
+      window.clearTimeout(handle);
+      ctrl.abort();
+    };
+  }, [query, open]);
+
+  // Terminal command match.
+  const terminalMatch = useMemo(() => {
+    const trimmed = query.trim();
+    if (!trimmed) return null;
+    for (const cmd of terminalCommands) {
+      const match = trimmed.match(cmd.pattern);
+      if (match) return { command: cmd, match };
     }
     return null;
   }, [query]);
 
-  // Build command list
-  const commands: CommandItem[] = useMemo(() => {
-    const baseCommands: CommandItem[] = [
-      // Navigation
+  const recordCommands: CommandItem[] = useMemo(() => {
+    const fromSearch: CommandItem[] = searchResults.map((r) => ({
+      id: `record-${r.id}`,
+      label: r.title,
+      description: r.subtitle ? `${r.module} · ${r.subtitle}` : r.module,
+      icon: <FileText className="w-4 h-4" />,
+      action: () => navigate(r.url),
+      category: 'Records',
+      keywords: [r.title.toLowerCase(), r.module.toLowerCase(), r.moduleKey],
+      secondary: {
+        label: 'Draft AI email',
+        icon: <Sparkles className="w-3.5 h-3.5" />,
+        action: () => navigate(`${r.url}?ai=email`),
+      },
+    }));
+    return fromSearch;
+  }, [searchResults, navigate]);
+
+  const recentCommands: CommandItem[] = useMemo(() => {
+    // Hide recents once the user starts typing — searchResults take over.
+    if (query.trim().length >= 2) return [];
+    return recents.map((r) => ({
+      id: `recent-${r.id}`,
+      label: r.title,
+      description: r.module || undefined,
+      icon: <Clock className="w-4 h-4" />,
+      action: () => navigate(r.url),
+      category: 'Recently viewed',
+      keywords: [r.title.toLowerCase(), r.module.toLowerCase()],
+      secondary: {
+        label: 'Draft AI email',
+        icon: <Sparkles className="w-3.5 h-3.5" />,
+        action: () => navigate(`${r.url}?ai=email`),
+      },
+    }));
+  }, [recents, query, navigate]);
+
+  const baseCommands: CommandItem[] = useMemo(() => {
+    const commands: CommandItem[] = [
       {
         id: 'nav-dashboard',
         label: 'Go to CRM Dashboard',
@@ -187,8 +334,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         category: 'Navigation',
         keywords: ['config', 'preferences', 'modules', 'fields'],
       },
-
-      // Quick Actions
       ...modules.map((module) => ({
         id: `create-${module.key}`,
         label: `Create New ${module.name}`,
@@ -207,8 +352,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         category: 'Quick Actions',
         keywords: ['csv', 'upload', 'bulk'],
       },
-
-      // Terminal Commands (show as hints when no query)
       {
         id: 'terminal-view',
         label: 'leads view <name>',
@@ -217,7 +360,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         action: () => setQuery('leads view '),
         category: 'Terminal Commands',
         keywords: ['view', 'filter', 'list'],
-        syntax: '<module> view <name>',
       },
       {
         id: 'terminal-atrisk',
@@ -225,7 +367,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         description: 'Show at-risk deals that need attention',
         icon: <AlertTriangle className="w-4 h-4" />,
         action: () => {
-          terminalCommands[1].execute(['deals at-risk'], navigate);
+          terminalCommands[1].execute(['deals at-risk'] as unknown as RegExpMatchArray, navigate);
         },
         category: 'Terminal Commands',
         keywords: ['risk', 'danger', 'closing'],
@@ -238,7 +380,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         action: () => setQuery('open '),
         category: 'Terminal Commands',
         keywords: ['open', 'view', 'record'],
-        syntax: 'open lead|contact|deal <identifier>',
       },
       {
         id: 'terminal-stage',
@@ -248,7 +389,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         action: () => setQuery('stage '),
         category: 'Terminal Commands',
         keywords: ['stage', 'transition', 'move', 'pipeline'],
-        syntax: 'stage <dealId> <stageName>',
       },
       {
         id: 'terminal-new',
@@ -258,44 +398,59 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         action: () => setQuery('new '),
         category: 'Terminal Commands',
         keywords: ['create', 'add', 'new'],
-        syntax: 'new lead|contact|deal|task',
       },
     ];
-
-    return baseCommands;
+    return commands;
   }, [modules, navigate]);
 
-  // Filter commands based on query
-  const filteredCommands = query.trim()
-    ? commands.filter((cmd) => {
-        const searchText = query.toLowerCase();
-        return (
-          cmd.label.toLowerCase().includes(searchText) ||
-          cmd.description?.toLowerCase().includes(searchText) ||
-          cmd.keywords?.some((k) => k.includes(searchText))
-        );
-      })
-    : commands;
+  // Filter "base" commands by the free-text query.
+  const filteredBase = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return baseCommands;
+    return baseCommands.filter(
+      (cmd) =>
+        cmd.label.toLowerCase().includes(q) ||
+        cmd.description?.toLowerCase().includes(q) ||
+        cmd.keywords?.some((k) => k.includes(q)),
+    );
+  }, [baseCommands, query]);
 
-  // Group by category
-  const groupedCommands = filteredCommands.reduce((acc, cmd) => {
-    if (!acc[cmd.category]) acc[cmd.category] = [];
-    acc[cmd.category].push(cmd);
-    return acc;
-  }, {} as Record<string, CommandItem[]>);
+  // Assemble the final ordered list by category. Live record results win when
+  // the user has typed, recents when idle.
+  const orderedCategories = useMemo(() => {
+    const buckets: Array<{ category: string; items: CommandItem[] }> = [];
+    if (recordCommands.length > 0) {
+      buckets.push({ category: 'Records', items: recordCommands });
+    }
+    if (recentCommands.length > 0) {
+      buckets.push({ category: 'Recently viewed', items: recentCommands });
+    }
+    const byCat = new Map<string, CommandItem[]>();
+    for (const cmd of filteredBase) {
+      const arr = byCat.get(cmd.category) ?? [];
+      arr.push(cmd);
+      byCat.set(cmd.category, arr);
+    }
+    for (const cat of ['Navigation', 'Quick Actions', 'Terminal Commands']) {
+      const items = byCat.get(cat);
+      if (items && items.length > 0) buckets.push({ category: cat, items });
+    }
+    return buckets;
+  }, [recordCommands, recentCommands, filteredBase]);
 
-  const categories = Object.keys(groupedCommands);
-  const flatCommands = categories.flatMap((cat) => groupedCommands[cat]);
+  const flatCommands = useMemo(
+    () => orderedCategories.flatMap((b) => b.items),
+    [orderedCategories],
+  );
 
-  // Keyboard navigation
+  // Keyboard navigation.
   useEffect(() => {
     if (!open) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((i) => Math.min(i + 1, flatCommands.length - 1));
+          setSelectedIndex((i) => Math.min(i + 1, Math.max(flatCommands.length - 1, 0)));
           break;
         case 'ArrowUp':
           e.preventDefault();
@@ -303,12 +458,10 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           break;
         case 'Enter':
           e.preventDefault();
-          // If we have a terminal command match, execute it
           if (terminalMatch) {
             terminalMatch.command.execute(terminalMatch.match, navigate);
             return;
           }
-          // Otherwise execute the selected command
           if (flatCommands[selectedIndex]) {
             flatCommands[selectedIndex].action();
           }
@@ -320,53 +473,52 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           break;
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, selectedIndex, flatCommands, onOpenChange, terminalMatch, navigate]);
 
-  // Reset selection when query changes
+  // Reset selection as the list changes.
   useEffect(() => {
     queueMicrotask(() => setSelectedIndex(0));
-  }, [query]);
+  }, [query, searchResults.length, recents.length]);
 
-  // Global keyboard shortcut
+  // Global ⌘K / Ctrl+K toggle.
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         onOpenChange(!open);
       }
     };
-
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [open, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 max-w-lg overflow-hidden">
+      <DialogContent className="p-0 max-w-xl overflow-hidden">
         <VisuallyHidden>
           <DialogTitle>Command Palette</DialogTitle>
         </VisuallyHidden>
-        {/* Search Input */}
+
         <div className="flex items-center border-b px-3">
           <Search className="w-4 h-4 text-muted-foreground mr-2" />
           <Input
-            placeholder="Type a command or search..."
+            placeholder="Search records, run commands…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 border-0 focus-visible:ring-0 h-12 placeholder:text-muted-foreground"
             autoFocus
           />
+          {searchLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin text-muted-foreground mr-2" />
+          ) : null}
           <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
             ESC
           </kbd>
         </div>
 
-        {/* Command List */}
-        <div className="max-h-80 overflow-y-auto py-2">
-          {/* Terminal Command Match */}
+        <div className="max-h-[420px] overflow-y-auto py-2">
           {terminalMatch && (
             <div className="mb-2">
               <div className="px-3 py-1.5 text-xs font-medium text-teal-600 dark:text-teal-400 flex items-center gap-1">
@@ -397,23 +549,26 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
 
           {flatCommands.length === 0 && !terminalMatch ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              No commands found. Try typing a terminal command like "leads view All"
+              {query.trim().length >= 2
+                ? 'No matches. Try a different query or a terminal command like "leads view All"'
+                : 'Start typing to search records or run a command…'}
             </div>
           ) : (
-            categories.map((category) => (
+            orderedCategories.map(({ category, items }) => (
               <div key={category}>
                 <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
                   {category}
                 </div>
-                {groupedCommands[category].map((cmd) => {
+                {items.map((cmd) => {
                   const index = flatCommands.indexOf(cmd);
+                  const isSelected = index === selectedIndex;
                   return (
                     <button
                       key={cmd.id}
                       onClick={() => cmd.action()}
                       className={cn(
                         'w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-muted/50 transition-colors',
-                        index === selectedIndex && 'bg-muted'
+                        isSelected && 'bg-muted',
                       )}
                       onMouseEnter={() => setSelectedIndex(index)}
                     >
@@ -428,7 +583,26 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                           </p>
                         )}
                       </div>
-                      {index === selectedIndex && (
+                      {cmd.secondary ? (
+                        <span
+                          role="button"
+                          tabIndex={-1}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            cmd.secondary!.action();
+                          }}
+                          onMouseDown={(e) => e.preventDefault()}
+                          className={cn(
+                            'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium',
+                            'border-violet-200 text-violet-700 hover:bg-violet-50',
+                            'dark:border-violet-500/30 dark:text-violet-300 dark:hover:bg-violet-500/10',
+                          )}
+                        >
+                          {cmd.secondary.icon}
+                          {cmd.secondary.label}
+                        </span>
+                      ) : null}
+                      {isSelected && !cmd.secondary && (
                         <ArrowRight className="w-4 h-4 text-muted-foreground" />
                       )}
                     </button>
@@ -439,7 +613,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           )}
         </div>
 
-        {/* Footer */}
         <div className="border-t px-3 py-2 flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
@@ -449,6 +622,10 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono">↵</kbd>
               select
+            </span>
+            <span className="hidden sm:flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono">⌘K</kbd>
+              toggle
             </span>
           </div>
           <span className="flex items-center gap-1">

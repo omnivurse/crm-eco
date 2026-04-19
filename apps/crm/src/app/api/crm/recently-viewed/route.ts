@@ -14,7 +14,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import {
+  createClient,
+  getAuthProfile,
+  getAuthUser,
+} from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,9 +68,7 @@ export async function GET(request: NextRequest) {
     moduleId = moduleRow.id;
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -133,9 +135,7 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { user } = await getAuthUser();
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

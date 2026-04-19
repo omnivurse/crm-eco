@@ -20,9 +20,9 @@
  *   └────────────┴──────────────────────────────┴──────────────────────┘
  */
 
-import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   ArrowLeft,
   Edit,
@@ -113,6 +113,7 @@ import { RecordAiContextProvider } from './v2/RecordAiContext';
 import { useUiPreferences } from '@/hooks/useUiPreferences';
 import { useRecordHotkeys } from '@/hooks/useRecordHotkeys';
 import { useRecordPresence } from '@/hooks/useRecordPresence';
+import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
 import { useLiveRecord, type LiveRecordEvent } from '@/hooks/useLiveRecord';
 import { useClientAuth } from '@/hooks/useClientAuth';
 
@@ -235,6 +236,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   className,
 }: RecordDetailShellV2Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
   const [topTab, setTopTab] = useState<TopTab>('overview');
   const [overviewPane, setOverviewPane] = useState<OverviewPane>('details');
@@ -276,6 +279,69 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const [aiEmailDraft, setAiEmailDraft] = useState<AiFollowUpEmailDraft | null>(
     null,
   );
+  const [aiEmailLoading, setAiEmailLoading] = useState(false);
+  // Guard so the palette-driven `?ai=email` trigger only fires once per visit.
+  const aiEmailAutoTriggeredRef = useRef(false);
+
+  // When the Command Palette lands here with `?ai=email`, request a fresh AI
+  // follow-up draft and open SendEmailDialog pre-filled, then scrub the query
+  // param so reloads don't re-fire.
+  useEffect(() => {
+    if (aiEmailAutoTriggeredRef.current) return;
+    if (searchParams?.get('ai') !== 'email') return;
+    aiEmailAutoTriggeredRef.current = true;
+
+    if (!record.email) {
+      toast.warning('No email on file', {
+        description: 'Add an email address before drafting a follow-up.',
+      });
+      router.replace(pathname ?? `/crm/r/${record.id}`);
+      return;
+    }
+
+    setAiEmailLoading(true);
+    (async () => {
+      try {
+        const res = await fetch('/api/crm/ai/email-draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ recordId: record.id, tone: 'friendly' }),
+        });
+        if (!res.ok) {
+          let code: string | undefined;
+          let message = `AI request failed (${res.status})`;
+          try {
+            const body = await res.json();
+            if (body?.error) message = body.error as string;
+            if (body?.code) code = body.code as string;
+          } catch {
+            /* ignore */
+          }
+          if (code === 'AI_NOT_CONFIGURED') {
+            toast.warning('AI assistant not configured', {
+              description: 'Set OPENAI_API_KEY on the server to enable drafts.',
+            });
+          } else {
+            toast.error(message);
+          }
+          return;
+        }
+        const body = (await res.json()) as { subject?: string; body?: string };
+        setAiEmailDraft({
+          subject: (body.subject ?? '').trim(),
+          body: (body.body ?? '').trim(),
+        });
+        setShowSendEmailDialog(true);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        toast.error('AI request failed', { description: message });
+      } finally {
+        setAiEmailLoading(false);
+        router.replace(pathname ?? `/crm/r/${record.id}`);
+      }
+    })();
+  }, [searchParams, record.id, record.email, router, pathname]);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
@@ -527,6 +593,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     acquireFieldLock,
     releaseFieldLock,
   } = useRecordPresence(record.id);
+
+  useRecentlyViewedTracker(record.id);
 
   const handleLiveEvent = useCallback(
     (event: LiveRecordEvent) => {

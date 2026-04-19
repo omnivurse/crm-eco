@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import {
+  createClient,
+  getAuthProfile,
+  getAuthUser,
+} from '@/lib/supabase-server';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -78,9 +82,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { user } = await getAuthUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -116,6 +118,88 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ data }, { status: 201 });
   } catch (error) {
     console.error('[SavedViews POST]', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
+  }
+}
+
+const patchViewSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string().min(1).max(100).optional(),
+  filters: z.union([z.record(z.unknown()), z.array(z.unknown())]).optional(),
+  is_default: z.boolean().optional(),
+});
+
+/**
+ * PATCH /api/crm/saved-views
+ * Rename, overwrite state, or toggle is_default on a saved view.
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const profile = await getAuthProfile();
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const parsed = patchViewSchema.safeParse(await request.json());
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.errors },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+    const { user } = await getAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id, ...patch } = parsed.data;
+
+    // Look up the view first so we know its page_key when swapping defaults.
+    const { data: existing, error: loadError } = await supabase
+      .from('saved_views' as any)
+      .select('id, page_key, user_id')
+      .eq('id', id)
+      .eq('organization_id', profile.organization_id)
+      .maybeSingle();
+
+    if (loadError || !existing) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
+    // Clear prior defaults within the same page_key when marking this as default.
+    if (patch.is_default === true) {
+      await supabase
+        .from('saved_views' as any)
+        .update({ is_default: false })
+        .eq('organization_id', profile.organization_id)
+        .eq('user_id', user.id)
+        .eq('page_key', existing.page_key);
+    }
+
+    const { data, error } = await supabase
+      .from('saved_views' as any)
+      .update(patch)
+      .eq('id', id)
+      .eq('organization_id', profile.organization_id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[SavedViews PATCH]', error);
+      return NextResponse.json(
+        { error: 'Failed to update view' },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error('[SavedViews PATCH]', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

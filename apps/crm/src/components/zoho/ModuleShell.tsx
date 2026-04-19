@@ -17,6 +17,8 @@ import { ColumnsButton } from './ColumnsButton';
 import { DensityToggle } from './DensityToggle';
 import { MassActionsBar } from './MassActionsBar';
 import { ModuleShellProvider } from './ModuleShellContext';
+import { RecentlyViewedRail } from '@/components/crm/records/v2/RecentlyViewedRail';
+import { QuickFilterChips } from '@/components/crm/records/v2/QuickFilterChips';
 import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
 import type { Density } from './ViewPreferencesContext';
@@ -202,6 +204,46 @@ export const ModuleShell = memo(function ModuleShell({
     });
   }, [pushFiltersToUrl]);
 
+  // Toggle a quick-filter preset: merges/removes its filters and (if set)
+  // updates the URL scope so the state survives a page reload.
+  const handleQuickPreset = useCallback(
+    (
+      preset: {
+        filters: ViewFilter[];
+        scope?: RecordScope;
+      },
+      active: boolean,
+    ) => {
+      setFilters((prev) => {
+        let next: ViewFilter[];
+        if (active) {
+          // Remove this preset's filters (matched by field+operator).
+          next = prev.filter(
+            (f) =>
+              !preset.filters.some(
+                (p) => p.field === f.field && p.operator === f.operator,
+              ),
+          );
+        } else {
+          // Replace any matching filters, then append the missing ones.
+          const withoutOverlap = prev.filter(
+            (f) =>
+              !preset.filters.some(
+                (p) => p.field === f.field && p.operator === f.operator,
+              ),
+          );
+          next = [...withoutOverlap, ...preset.filters];
+        }
+        pushFiltersToUrl(next);
+        return next;
+      });
+      if (preset.scope) {
+        handleScopeChange(active ? 'all' : preset.scope);
+      }
+    },
+    [pushFiltersToUrl, handleScopeChange],
+  );
+
   const handleClearFilters = useCallback(() => {
     setFilters([]);
     pushFiltersToUrl([]);
@@ -219,9 +261,60 @@ export const ModuleShell = memo(function ModuleShell({
     router.push(`/crm/modules/${module.key}?${params.toString()}`);
   }, [router, module.key]);
 
-  const handleSelectAll = useCallback(() => {
-    setSelectedIds(new Set(records.map(r => r.id)));
-  }, [records]);
+  /**
+   * Select every record matching the current list-page filter state, across
+   * pagination boundaries. Uses the dedicated IDs-only endpoint so we don't
+   * pull full rows; capped at 5k by the server.
+   */
+  const handleSelectAll = useCallback(async () => {
+    // Fast path — if everything the user could see is already loaded (single
+    // page), just select them client-side without a round trip.
+    if (records.length >= totalCount) {
+      setSelectedIds(new Set(records.map((r) => r.id)));
+      return;
+    }
+
+    const params = new URLSearchParams();
+    params.set('module_key', module.key);
+    const search = searchParamsRef.current.get('search');
+    if (search) params.set('search', search);
+    const advisorId = searchParamsRef.current.get('advisor_id');
+    if (advisorId) params.set('advisor_id', advisorId);
+    const includeDownline = searchParamsRef.current.get('include_downline');
+    if (includeDownline) params.set('include_downline', includeDownline);
+    const contactType = searchParamsRef.current.get('contact_type');
+    if (contactType) params.set('contact_type', contactType);
+    const groupId = searchParamsRef.current.get('group_id');
+    if (groupId) params.set('group_id', groupId);
+
+    try {
+      const res = await fetch(`/api/crm/records/ids?${params.toString()}`, {
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        toast.error('Failed to select all records');
+        return;
+      }
+      const body = (await res.json()) as {
+        ids: string[];
+        total: number;
+        capped: boolean;
+      };
+      setSelectedIds(new Set(body.ids));
+      if (body.capped) {
+        toast.warning(
+          `Selected first ${body.ids.length.toLocaleString()} of ${body.total.toLocaleString()} matches`,
+          { description: 'Narrow your filters to act on all rows.' },
+        );
+      } else {
+        toast.success(`Selected ${body.ids.length.toLocaleString()} records`);
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to select all records',
+      );
+    }
+  }, [records, totalCount, module.key]);
 
   const handleClearSelection = useCallback(() => {
     setSelectedIds(new Set());
@@ -266,6 +359,45 @@ export const ModuleShell = memo(function ModuleShell({
     }
   }, [module.key]);
 
+  /**
+   * Render a toast that honors the partial-failure shape returned by
+   * `/api/crm/records/bulk`. If every requested row came back in
+   * `updated_ids`, this looks like a normal success toast. If some were
+   * skipped (RLS / wrong org / deleted) or failed, we surface the counts
+   * and escalate to `warning` / `error` accordingly.
+   */
+  const reportBulkResult = useCallback(
+    (
+      result: {
+        updated_ids?: string[];
+        deleted_ids?: string[];
+        skipped_ids?: string[];
+        failed?: Array<{ id: string; reason: string }>;
+      },
+      successTitle: string,
+      unit = 'record',
+    ) => {
+      const changed = (result.updated_ids ?? result.deleted_ids ?? []).length;
+      const skipped = (result.skipped_ids ?? []).length;
+      const failed = (result.failed ?? []).length;
+      const unitPlural = changed === 1 ? unit : `${unit}s`;
+      const parts: string[] = [`${changed} ${unitPlural}`];
+      if (skipped > 0) parts.push(`${skipped} skipped`);
+      if (failed > 0) parts.push(`${failed} failed`);
+      const desc = parts.join(' · ');
+      if (failed > 0) {
+        toast.error(successTitle, { description: desc });
+      } else if (skipped > 0) {
+        toast.warning(successTitle, {
+          description: `${desc} — skipped rows may be in another org or deleted.`,
+        });
+      } else {
+        toast.success(successTitle, { description: desc });
+      }
+    },
+    [],
+  );
+
   // Bulk action handlers
   const handleAssignOwner = useCallback(() => {
     setSelectedOwnerId('');
@@ -296,9 +428,10 @@ export const ModuleShell = memo(function ModuleShell({
       }
 
       const result = await response.json();
-      toast.success(selectedOwnerId === '__unassigned__' ? 'Owner cleared' : 'Owner assigned', {
-        description: `Updated ${result.updated_count} records`,
-      });
+      reportBulkResult(
+        result,
+        selectedOwnerId === '__unassigned__' ? 'Owner cleared' : 'Owner assigned',
+      );
       setShowAssignOwnerDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -307,7 +440,7 @@ export const ModuleShell = memo(function ModuleShell({
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedOwnerId, selectedIds, router]);
+  }, [selectedOwnerId, selectedIds, router, reportBulkResult]);
 
   const handleChangeStatus = useCallback(() => {
     setSelectedStatus('');
@@ -337,9 +470,7 @@ export const ModuleShell = memo(function ModuleShell({
       }
 
       const result = await response.json();
-      toast.success(`Status updated to "${selectedStatus}"`, {
-        description: `Updated ${result.updated_count} records`,
-      });
+      reportBulkResult(result, `Status → "${selectedStatus}"`);
       setShowStatusDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -348,7 +479,7 @@ export const ModuleShell = memo(function ModuleShell({
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedStatus, selectedIds, router]);
+  }, [selectedStatus, selectedIds, router, reportBulkResult]);
 
   const handleChangeStage = useCallback(() => {
     setSelectedStage('');
@@ -378,9 +509,7 @@ export const ModuleShell = memo(function ModuleShell({
       }
 
       const result = await response.json();
-      toast.success(`Stage updated to "${selectedStage}"`, {
-        description: `Updated ${result.updated_count} deals`,
-      });
+      reportBulkResult(result, `Stage → "${selectedStage}"`, 'deal');
       setShowStageDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -389,7 +518,7 @@ export const ModuleShell = memo(function ModuleShell({
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedStage, selectedIds, router]);
+  }, [selectedStage, selectedIds, router, reportBulkResult]);
 
   const handleAddTag = useCallback(() => {
     setSelectedTagIds([]);
@@ -485,7 +614,7 @@ export const ModuleShell = memo(function ModuleShell({
       }
 
       const result = await response.json();
-      toast.success(`Deleted ${result.deleted_count} records`);
+      reportBulkResult(result, 'Records deleted');
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -494,7 +623,7 @@ export const ModuleShell = memo(function ModuleShell({
     } finally {
       setIsProcessing(false);
     }
-  }, [selectedIds, router]);
+  }, [selectedIds, router, reportBulkResult]);
 
   const handleExport = useCallback(() => {
     const recordsToExport = selectedCount > 0
@@ -605,6 +734,9 @@ export const ModuleShell = memo(function ModuleShell({
         onExport={handleExport}
       />
 
+      {/* Recently viewed rail — auto-hides when the user has no history */}
+      <RecentlyViewedRail moduleKey={module.key} />
+
       {/* Toolbar */}
       <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 p-3">
         <div className="flex flex-col lg:flex-row gap-3">
@@ -695,15 +827,72 @@ export const ModuleShell = memo(function ModuleShell({
           </div>
         </div>
 
-        {/* Saved Views Bar */}
-        <div className="px-1">
+        {/* Saved Views Bar + Quick Preset Chips */}
+        <div className="px-1 flex items-center gap-3 flex-wrap">
           <SavedViewsBar
             pageKey={module.key}
             currentFilters={filters}
+            currentViewState={{
+              sort: { field: sortField, direction: sortDirection },
+              columns: visibleColumns,
+              scope,
+              viewMode,
+              search: searchQuery,
+            }}
             onApplyView={(newFilters) => {
               setFilters(newFilters as ViewFilter[]);
               pushFiltersToUrl(newFilters as ViewFilter[]);
             }}
+            onApplyViewState={(state) => {
+              // Rehydrate every piece of list UI from the saved blob. We
+              // push one combined URL update so the history entry reflects
+              // the applied view as a single step. SavedViewsBar declares
+              // a loose ViewFilter with `operator: string`; cast back to
+              // the module's narrower FilterOperator-backed type.
+              const next = (state.filters ?? []) as ViewFilter[];
+              setFilters(next);
+              if (state.columns) setVisibleColumns(state.columns);
+              if (state.sort?.field) {
+                setSortField(state.sort.field);
+                setSortDirection(state.sort.direction ?? 'asc');
+              }
+              if (state.viewMode) {
+                setViewMode(state.viewMode as ViewMode);
+              }
+              if (state.scope) setScope(state.scope);
+              if (typeof state.search === 'string') setSearchQuery(state.search);
+
+              const params = new URLSearchParams(
+                searchParamsRef.current.toString(),
+              );
+              if (next.length > 0) params.set('filters', JSON.stringify(next));
+              else params.delete('filters');
+              if (state.sort?.field) {
+                params.set('sortField', state.sort.field);
+                params.set('sortDirection', state.sort.direction ?? 'asc');
+              } else {
+                params.delete('sortField');
+                params.delete('sortDirection');
+              }
+              if (state.scope && state.scope !== 'all') params.set('scope', state.scope);
+              else params.delete('scope');
+              if (state.viewMode) params.set('viewMode', state.viewMode);
+              else params.delete('viewMode');
+              if (state.search) params.set('search', state.search);
+              else params.delete('search');
+              params.delete('page');
+              router.push(`/crm/modules/${module.key}?${params.toString()}`);
+            }}
+          />
+          <QuickFilterChips
+            currentFilters={filters}
+            currentScope={scope}
+            onApplyPreset={(preset, active) =>
+              handleQuickPreset(
+                { filters: preset.filters, scope: preset.scope },
+                active,
+              )
+            }
           />
         </div>
 
