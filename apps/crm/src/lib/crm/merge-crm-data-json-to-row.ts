@@ -6,6 +6,26 @@ export interface MergeCrmDataJsonContext {
 }
 
 /**
+ * The indexed columns these keys map to are typed (UUID, DATE, enum,
+ * boolean). Postgres rejects empty strings for those types with
+ * `invalid input syntax for type …`, so any blank-like value coming
+ * out of the form must land as `null` instead. Text columns are
+ * included too — `""` and `null` are equivalent there and coercing
+ * yields cleaner reads downstream.
+ */
+export function normalizeRowColumnValue(value: unknown): unknown {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined') {
+      return null;
+    }
+    return value;
+  }
+  return value;
+}
+
+/**
  * Maps JSONB `data` onto indexed `crm_records` columns (shared by POST and PATCH).
  */
 export function mergeCrmDataJsonIntoRowColumns(
@@ -40,7 +60,7 @@ export function mergeCrmDataJsonIntoRowColumns(
 
   for (const key of CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH) {
     if (d[key] !== undefined) {
-      updates[key] = d[key];
+      updates[key] = normalizeRowColumnValue(d[key]);
     }
   }
 

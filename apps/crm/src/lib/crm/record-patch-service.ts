@@ -5,7 +5,10 @@ import { getModuleBlueprint } from '@/lib/blueprints';
 import { getRecordPendingApproval } from '@/lib/approvals';
 import { logPHIAccess, identifyPHIFields } from '@/lib/security';
 import type { CrmRecord } from '@/lib/crm/types';
-import { mergeCrmDataJsonIntoRowColumns } from '@/lib/crm/merge-crm-data-json-to-row';
+import {
+  mergeCrmDataJsonIntoRowColumns,
+  normalizeRowColumnValue,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 
 /** Matches `getAuthProfile()` shape used by CRM API routes */
 /** Profile fields required by CRM record create/patch (matches `getAuthProfile()`). */
@@ -102,13 +105,14 @@ export async function executeCrmRecordPatch(params: {
   }
 
   if (body.owner_id !== undefined) {
-    updates.owner_id = body.owner_id;
+    const ownerId = normalizeRowColumnValue(body.owner_id) as string | null;
+    updates.owner_id = ownerId;
 
-    if (body.owner_id) {
+    if (ownerId) {
       const { data: ownerProfile } = await supabase
         .from('profiles')
         .select('id, full_name, advisor_id')
-        .eq('id', body.owner_id)
+        .eq('id', ownerId)
         .single();
 
       if (ownerProfile) {
@@ -154,7 +158,7 @@ export async function executeCrmRecordPatch(params: {
 
   for (const key of CANONICAL_TOP_LEVEL_KEYS) {
     if (body[key] !== undefined) {
-      (updates as Record<string, unknown>)[key] = body[key];
+      (updates as Record<string, unknown>)[key] = normalizeRowColumnValue(body[key]);
     }
   }
 
