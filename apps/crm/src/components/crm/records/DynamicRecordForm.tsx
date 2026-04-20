@@ -671,9 +671,26 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           fieldSchema = z.unknown();
       }
 
-      // Make optional if not required
+      // Make optional if not required.
+      //
+      // For UUID fields (`lookup` / `user`), empty strings come in from
+      // legacy data and cleared inputs, and would otherwise fail the
+      // `.uuid()` check — blocking the inner form submit with a
+      // confusing "Invalid uuid" inline error. Preprocess `""` into
+      // `null` so optional lookups accept "no selection" gracefully.
       if (!field.required) {
-        fieldSchema = fieldSchema.optional().nullable();
+        if (field.type === 'lookup' || field.type === 'user') {
+          fieldSchema = z.preprocess(
+            (v) => {
+              if (v === undefined || v === null) return null;
+              if (typeof v === 'string' && v.trim() === '') return null;
+              return v;
+            },
+            z.string().uuid().nullable(),
+          );
+        } else {
+          fieldSchema = fieldSchema.optional().nullable();
+        }
       }
 
       schemaShape[field.key] = fieldSchema;

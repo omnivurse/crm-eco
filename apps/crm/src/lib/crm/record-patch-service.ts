@@ -273,8 +273,16 @@ export async function executeCrmRecordPatch(params: {
     console.error('PHI audit logging error:', err);
   }
 
-  revalidatePath('/crm');
-  revalidatePath(`/crm/r/${id}`);
+  // Best-effort cache revalidation. Must never surface as a failure:
+  // the DB UPDATE already committed, so a thrown `revalidatePath` would
+  // make the client show "Failed to save" while the change is actually
+  // persisted — the worst possible UX.
+  try {
+    revalidatePath('/crm');
+    revalidatePath(`/crm/r/${id}`);
+  } catch (err) {
+    console.error('[Records] revalidatePath error (record already saved):', err);
+  }
 
   return { ok: true, record: typedRecord, previousRecord: previousRecord as CrmRecord };
 }
