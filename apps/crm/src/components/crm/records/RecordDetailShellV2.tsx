@@ -77,6 +77,7 @@ import { supabase } from '@/lib/supabase-client';
 import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
+import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
   MarketTypeBadge,
   NormalizationBadge,
@@ -292,6 +293,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const [noteContent, setNoteContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showSendEmailDialog, setShowSendEmailDialog] = useState(false);
   const [aiEmailDraft, setAiEmailDraft] = useState<AiFollowUpEmailDraft | null>(
@@ -1256,6 +1258,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     >
                       Clone Record
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowMergeDialog(true)}>
+                      Merge Duplicate…
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => window.print()}>Print</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowShortcutsDialog(true)}>
                       Keyboard shortcuts
@@ -1770,6 +1775,22 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           recordData={(record.data || {}) as Record<string, unknown>}
         />
       )}
+
+      <MergeRecordDialog
+        open={showMergeDialog}
+        onOpenChange={setShowMergeDialog}
+        moduleKey={module.key}
+        moduleName={module.name}
+        keeper={{
+          id: record.id,
+          title: record.title,
+          email: record.email,
+          phone: record.phone,
+          status: record.status,
+          owner_id: (record as { owner_id?: string | null }).owner_id ?? null,
+          created_at: record.created_at,
+        }}
+      />
 
       <SendEmailDialog
         open={showSendEmailDialog}

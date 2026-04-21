@@ -64,6 +64,7 @@ import { formatDistanceToNow } from 'date-fns';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
 import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisplay, getOwnerLabel } from '@/components/shared/crm-lane-badges';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
+import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 
 interface RecordDetailShellProps {
@@ -403,6 +404,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const [noteContent, setNoteContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
   const displayStatus = optimisticStatus || record.status;
@@ -769,6 +771,12 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       }}
                     >
                       Clone Record
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
+                      onClick={() => setShowMergeDialog(true)}
+                    >
+                      Merge Duplicate…
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
@@ -1338,6 +1346,22 @@ export const RecordDetailShell = memo(function RecordDetailShell({
           recordData={(record.data || {}) as Record<string, unknown>}
         />
       )}
+
+      <MergeRecordDialog
+        open={showMergeDialog}
+        onOpenChange={setShowMergeDialog}
+        moduleKey={module.key}
+        moduleName={module.name}
+        keeper={{
+          id: record.id,
+          title: record.title,
+          email: record.email,
+          phone: record.phone,
+          status: record.status,
+          owner_id: (record as { owner_id?: string | null }).owner_id ?? null,
+          created_at: record.created_at,
+        }}
+      />
     </div>
   );
 });
