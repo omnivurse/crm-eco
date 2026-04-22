@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import {
   getRecordWithModule,
   getFieldsForModule,
@@ -11,6 +11,7 @@ import {
   getDealStages,
   getCachedCurrentProfile,
 } from '@/lib/crm/queries';
+import { resolveRecordOrMergeDestination } from '@/lib/crm/resolve-record';
 import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
 import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV2';
 import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
@@ -24,6 +25,7 @@ import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-default
 import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
 import { NotesPanel } from './NotesPanel';
 import { LegacyNotesCard } from './LegacyNotesCard';
+import { MergedFromToast } from '@/components/crm/records/MergedFromToast';
 
 interface PageProps {
   params: Promise<{ recordId: string }>;
@@ -81,6 +83,15 @@ async function RecordDetailContent({ params }: PageProps) {
     if (recordResult.status === 'rejected') {
       console.error('[RecordDetail] Failed to get record:', recordResult.reason);
     }
+
+    // Stale-URL recovery: if this record was merged into another record
+    // (forensic trail in crm_audit_log), silently forward the user to the
+    // surviving keeper with a `merged_from=` hint so the destination page
+    // can surface a one-time toast.
+    const resolution = await resolveRecordOrMergeDestination(recordId);
+    if (resolution.kind === 'merged') {
+      redirect(`/crm/r/${resolution.keeperId}?merged_from=${recordId}`);
+    }
     return notFound();
   }
 
@@ -136,7 +147,9 @@ async function RecordDetailContent({ params }: PageProps) {
   const Shell = useLayoutV2 ? RecordDetailShellV2 : RecordDetailShell;
 
   return (
-    <Shell
+    <>
+      <MergedFromToast recordTitle={record.title} />
+      <Shell
       record={record}
       module={module}
       fields={fields}
@@ -198,7 +211,8 @@ async function RecordDetailContent({ params }: PageProps) {
           </Suspense>
         ),
       }}
-    </Shell>
+      </Shell>
+    </>
   );
 }
 

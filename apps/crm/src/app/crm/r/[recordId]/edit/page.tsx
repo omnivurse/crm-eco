@@ -34,6 +34,46 @@ export default function EditRecordPage() {
   const fields = useMemo(() => data?.fields ?? [], [data?.fields]);
   const layout = data?.layout ?? null;
 
+  // Stale-URL recovery: when the fetch finishes with no record, check the
+  // server whether this id was merged into another. If so, forward to the
+  // keeper's edit page rather than rendering "Record not found".
+  const [resolving, setResolving] = useState(false);
+  useEffect(() => {
+    if (isLoading) return;
+    if (record) return;
+    if (!recordId) return;
+    let cancelled = false;
+    setResolving(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/crm/records/${recordId}/resolve`);
+        if (!res.ok) return;
+        const body = (await res.json()) as {
+          kind: 'found' | 'merged' | 'missing';
+          keeperId?: string;
+          keeperTitle?: string | null;
+        };
+        if (cancelled) return;
+        if (body.kind === 'merged' && body.keeperId && body.keeperId !== recordId) {
+          const label = body.keeperTitle ? ` into "${body.keeperTitle}"` : '';
+          toast.info(`This record was merged${label}. Opening the current version.`, {
+            duration: 4000,
+          });
+          router.replace(
+            `/crm/r/${body.keeperId}/edit?merged_from=${encodeURIComponent(recordId)}`
+          );
+        }
+      } catch {
+        // Fall through to not-found UI.
+      } finally {
+        if (!cancelled) setResolving(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoading, record, recordId, router]);
+
   const defaultValues = useMemo(() => {
     if (!record) return {} as Record<string, unknown>;
     const merged = mergeCrmRecordRowIntoFormDefaults(
@@ -180,7 +220,7 @@ export default function EditRecordPage() {
     [record, persist, invalidateCaches, recordId, router]
   );
 
-  if (isLoading) {
+  if (isLoading || resolving) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
