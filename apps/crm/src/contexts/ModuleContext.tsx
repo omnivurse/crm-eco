@@ -119,6 +119,9 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'reports', label: 'Reports', icon: 'pie-chart', href: '/crm/reports' },
     { key: 'documents', label: 'Documents', icon: 'file-text', href: '/crm/documents' },
     { key: 'import', label: 'Import Data', icon: 'upload', href: '/crm/import' },
+
+    { key: 'sec-data-quality', separator: true, sectionTitle: 'Data Quality' },
+    { key: 'duplicates', label: 'Review Duplicates', icon: 'git-merge', href: '/crm/duplicates' },
 ];
 
 // ---------------------------------------------------------------------------

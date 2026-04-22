@@ -78,6 +78,15 @@ interface MergeRecordDialogProps {
   moduleKey: string;
   moduleName: string;
   keeper: RecordSnapshot;
+  /**
+   * Pre-selected candidate — used by the Review Duplicates page so the
+   * operator doesn't have to re-search for a pair we already know about.
+   * When present the dialog skips the auto-suggest fetch; the user can
+   * still switch to a different candidate via search if they want to.
+   */
+  initialCandidate?: CandidateRecord | null;
+  /** Called after a successful merge, in addition to the default refresh. */
+  onMerged?: (payload: { keeperId: string; duplicateId: string }) => void;
 }
 
 export function MergeRecordDialog({
@@ -86,6 +95,8 @@ export function MergeRecordDialog({
   moduleKey,
   moduleName,
   keeper,
+  initialCandidate = null,
+  onMerged,
 }: MergeRecordDialogProps) {
   const router = useRouter();
   const [suggested, setSuggested] = useState<CandidateRecord[]>([]);
@@ -99,19 +110,31 @@ export function MergeRecordDialog({
 
   // Reset state every time the dialog is opened — avoids carrying stale
   // selections across two different "merge" clicks on the same page.
+  // When invoked from the duplicate-review page with a pre-selected
+  // candidate, seed both `suggested` and `selected` so it renders
+  // immediately, without waiting for a network round-trip.
   useEffect(() => {
     if (!open) return;
-    setSelected(null);
+    if (initialCandidate) {
+      setSelected(initialCandidate);
+      setSuggested([initialCandidate]);
+    } else {
+      setSelected(null);
+      setSuggested([]);
+    }
     setSearchQuery('');
     setSearchResults([]);
     setAdvanced(false);
     setStatusOverride('auto');
-  }, [open]);
+  }, [open, initialCandidate]);
 
   // Auto-suggest candidates: anything with matching email/phone is almost
   // certainly a duplicate (that's exactly what check-duplicate is for).
+  // Skip this when a caller hands us a pre-selected duplicate — we
+  // already know which record is being merged.
   useEffect(() => {
     if (!open) return;
+    if (initialCandidate) return;
     if (!keeper.email && !keeper.phone) return;
 
     let cancelled = false;
@@ -133,7 +156,7 @@ export function MergeRecordDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, moduleKey, keeper.id, keeper.email, keeper.phone]);
+  }, [open, moduleKey, keeper.id, keeper.email, keeper.phone, initialCandidate]);
 
   // Debounced title/email search when there are no auto-matches (or the
   // user wants to pick a different record than we suggested).
@@ -212,13 +235,14 @@ export function MergeRecordDialog({
         }`,
       );
       onOpenChange(false);
+      onMerged?.({ keeperId: keeper.id, duplicateId: selected.id });
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to merge records');
     } finally {
       setIsMerging(false);
     }
-  }, [selected, advanced, statusOverride, keeper.id, onOpenChange, router]);
+  }, [selected, advanced, statusOverride, keeper.id, onOpenChange, onMerged, router]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !isMerging && onOpenChange(v)}>
