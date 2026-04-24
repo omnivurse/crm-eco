@@ -33,9 +33,7 @@ import {
 } from '@crm-eco/ui/components/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { cn } from '@crm-eco/ui/lib/utils';
-import Link from 'next/link';
 import type {
-  AdvisorCarrierWithCarrier,
   CrmField,
   CrmLayout,
   CrmRecord,
@@ -46,7 +44,8 @@ import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
-import { ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react';
+import { AdvisorCarrierField } from './AdvisorCarrierField';
+import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Section accent palette
@@ -221,129 +220,6 @@ function LookupSearchField({
         </div>
       )}
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// AdvisorCarrierField
-// ---------------------------------------------------------------------------
-// Renders a Select fed from the current advisor's personal carrier list (the
-// `crm_advisor_carriers` join table), filtered by `field.metadata.carrier_type`.
-// When the advisor has not added any carriers of that type yet, falls back to
-// a free-text input + a "set up my carriers" link.
-//
-// The stored value is the carrier UUID (the carrier_id on the carrier row),
-// so this is forward-compatible with `crm_records.carrier_id` lookups.
-
-function AdvisorCarrierField({
-  field,
-  value,
-  onChange,
-  error,
-}: {
-  field: CrmField;
-  value: string | undefined;
-  onChange: (val: string) => void;
-  error?: boolean;
-}) {
-  const carrierType = field.metadata?.carrier_type;
-  const [carriers, setCarriers] = useState<AdvisorCarrierWithCarrier[]>([]);
-  // Initial loading mirrors carrierType so we never need to call setLoading
-  // synchronously from inside the effect body (avoids cascading renders).
-  const [loading, setLoading] = useState<boolean>(!!carrierType);
-  const [loadError, setLoadError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!carrierType) return;
-    let cancelled = false;
-    fetch(`/api/crm/advisor-carriers?carrier_type=${encodeURIComponent(carrierType)}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((json) => {
-        if (cancelled) return;
-        setCarriers(json.data || []);
-        setLoadError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        console.error('[AdvisorCarrierField] load failed', err);
-        setLoadError('Failed to load carriers');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [carrierType]);
-
-  // Whether the current value is a UUID we recognise. If an existing record
-  // already stores a free-text carrier name (legacy data), we surface it as a
-  // pseudo-option so the user doesn't lose context.
-  const knownIds = useMemo(() => new Set(carriers.map((c) => c.carrier_id)), [carriers]);
-  const isLegacyValue = !!value && !knownIds.has(value);
-
-  if (loading) {
-    return (
-      <div
-        className={cn(
-          'h-9 px-3 flex items-center text-sm text-muted-foreground rounded-md border',
-          error && 'border-destructive',
-        )}
-      >
-        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-        Loading carriers…
-      </div>
-    );
-  }
-
-  if (loadError || carriers.length === 0) {
-    // Empty state: keep accepting input as free text but nudge the advisor to
-    // populate their personal list.
-    return (
-      <div className="space-y-1">
-        <Input
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={`Enter ${field.label.toLowerCase()}`}
-          className={cn(error && 'border-destructive')}
-        />
-        <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
-          <Sparkles className="w-3 h-3" />
-          {loadError ? (
-            <>{loadError}.</>
-          ) : (
-            <>No {carrierType ?? 'carrier'} carriers in your list.</>
-          )}{' '}
-          <Link
-            href="/crm/settings/my-carriers"
-            className="text-teal-600 hover:underline"
-          >
-            Set up my carriers
-          </Link>
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <Select value={value as string} onValueChange={onChange}>
-      <SelectTrigger className={cn(error && 'border-destructive')}>
-        <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
-      </SelectTrigger>
-      <SelectContent>
-        {isLegacyValue && (
-          <SelectItem value={value as string}>{value} (existing)</SelectItem>
-        )}
-        {carriers.map((row) => (
-          <SelectItem key={row.carrier_id} value={row.carrier_id}>
-            {row.carrier?.carrier_name ?? row.carrier_id}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
   );
 }
 

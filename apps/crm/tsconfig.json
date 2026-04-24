@@ -17,14 +17,22 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "preserveSymlinks": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "zod": [
+        "./node_modules/zod"
+      ],
+      "zod/*": [
+        "./node_modules/zod/*"
       ]
     }
   },

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase-client';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +27,8 @@ interface SearchResult {
   subtitle?: string;
   module: string;
   moduleName: string;
+  /** 'exact' = FTS hit, 'fuzzy' = trigram (typo-tolerant) hit */
+  matchType?: 'exact' | 'fuzzy';
 }
 
 interface GlobalSearchOverlayProps {
@@ -56,65 +57,71 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Search function
+  /**
+   * Hybrid global search.
+   *
+   * Calls the unified `/api/crm/search` endpoint which runs the
+   * `crm_smart_search` Postgres RPC under the hood — combining FTS
+   * prefix matching with `pg_trgm` similarity for typo tolerance.
+   * That way "Bollman" still surfaces "Bollmann", just like Zoho.
+   *
+   * The endpoint already handles phone-number normalisation, RLS
+   * scoping, and the ilike fallback if the RPC isn't available.
+   */
   const search = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
       setResults([]);
       return;
     }
 
     setLoading(true);
-    
+    const controller = new AbortController();
+
     try {
-      const phoneDigits = searchQuery.replace(/[^0-9]/g, '');
-      const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
+      const res = await fetch(
+        `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=25`,
+        { signal: controller.signal, credentials: 'same-origin' },
+      );
 
-      let queryBuilder = supabase
-        .from('crm_records')
-        .select(`
-          id,
-          title,
-          email,
-          phone,
-          status,
-          module_id,
-          data,
-          crm_modules!inner(key, name)
-        `);
-
-      if (isPhoneQuery) {
-        queryBuilder = queryBuilder.or(
-          `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%`
-        );
-      } else {
-        const prefixQuery = searchQuery
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((w) => `${w}:*`)
-          .join(' & ');
-        queryBuilder = queryBuilder.textSearch('search', prefixQuery, { type: 'plain', config: 'english' });
+      if (!res.ok) {
+        console.error('Search error:', res.status, await res.text());
+        setResults([]);
+        return;
       }
 
-      const { data: records } = await queryBuilder.limit(25);
+      const payload = (await res.json()) as {
+        results?: Array<{
+          id: string;
+          title: string;
+          subtitle?: string;
+          module: string;
+          moduleKey: string;
+          matchType?: 'exact' | 'fuzzy';
+        }>;
+      };
 
-      const searchResults: SearchResult[] = (records || []).map((record: any) => ({
-        id: record.id,
-        title: record.title ||
-          [record.data?.first_name, record.data?.last_name].filter(Boolean).join(' ') ||
-          'Untitled',
-        subtitle: [record.email, record.phone, record.status].filter(Boolean).join(' · ') || undefined,
-        module: record.crm_modules?.key || 'unknown',
-        moduleName: record.crm_modules?.name || 'Record',
+      const searchResults: SearchResult[] = (payload.results || []).map((r) => ({
+        id: r.id,
+        title: r.title || 'Untitled',
+        subtitle: r.subtitle,
+        module: r.moduleKey || 'unknown',
+        moduleName: r.module || 'Record',
+        matchType: r.matchType,
       }));
 
       setResults(searchResults);
       setSelectedIndex(0);
     } catch (error) {
-      console.error('Search error:', error);
+      if ((error as { name?: string }).name !== 'AbortError') {
+        console.error('Search error:', error);
+      }
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+
+    return () => controller.abort();
+  }, []);
 
   // Debounced search
   useEffect(() => {
@@ -240,9 +247,19 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
                           {MODULE_ICONS[module] || <Users className="w-4 h-4" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                            {result.title}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                              {result.title}
+                            </p>
+                            {result.matchType === 'fuzzy' && (
+                              <span
+                                title={`Closest match for "${query}"`}
+                                className="shrink-0 text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+                              >
+                                Did you mean?
+                              </span>
+                            )}
+                          </div>
                           {result.subtitle && (
                             <p className="text-xs text-slate-500 truncate">
                               {result.subtitle}

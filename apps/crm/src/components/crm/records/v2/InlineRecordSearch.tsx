@@ -3,8 +3,9 @@
 /**
  * InlineRecordSearch — a drop-in copy of V1's header search, extracted so the
  * V2 shell can embed it without coupling to the V1 file. Behaviour is
- * intentionally identical (debounced search against `crm_records` grouped by
- * module, keyboard navigable).
+ * intentionally identical (debounced search grouped by module, keyboard
+ * navigable). Uses the typo-tolerant `/api/crm/search` endpoint (backed by
+ * the `crm_smart_search` RPC) so misspellings still surface the right record.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -19,7 +20,6 @@ import {
   Building2,
   DollarSign,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase-client';
 import { cn } from '@crm-eco/ui/lib/utils';
 
 const MODULE_ICONS: Record<string, React.ReactNode> = {
@@ -42,6 +42,8 @@ interface Result {
   subtitle?: string;
   module: string;
   moduleName: string;
+  /** 'exact' = FTS hit, 'fuzzy' = trigram (typo-tolerant) hit */
+  matchType?: 'exact' | 'fuzzy';
 }
 
 export function InlineRecordSearch({ currentRecordId }: { currentRecordId: string }) {
@@ -56,30 +58,45 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
 
   const doSearch = useCallback(
     async (q: string) => {
-      if (!q.trim()) {
+      const trimmed = q.trim();
+      if (!trimmed) {
         setResults([]);
         return;
       }
       setLoading(true);
       try {
-        const { data } = await supabase
-          .from('crm_records')
-          .select('id, title, email, phone, data, crm_modules!inner(key, name)')
-          .or(`title.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`)
-          .neq('id', currentRecordId)
-          .limit(12);
-        setResults(
-          (data || []).map((r: any) => ({
-            id: r.id,
-            title:
-              r.title ||
-              [r.data?.first_name, r.data?.last_name].filter(Boolean).join(' ') ||
-              'Untitled',
-            subtitle: r.email || r.phone || undefined,
-            module: r.crm_modules?.key || 'unknown',
-            moduleName: r.crm_modules?.name || 'Record',
-          })),
+        // Pull a slightly larger candidate set so excluding the current
+        // record doesn't drop the visible result count.
+        const res = await fetch(
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=15`,
+          { credentials: 'same-origin' },
         );
+        if (!res.ok) {
+          setResults([]);
+          return;
+        }
+        const payload = (await res.json()) as {
+          results?: Array<{
+            id: string;
+            title: string;
+            subtitle?: string;
+            module: string;
+            moduleKey: string;
+            matchType?: 'exact' | 'fuzzy';
+          }>;
+        };
+        const filtered = (payload.results || [])
+          .filter((r) => r.id !== currentRecordId)
+          .slice(0, 12)
+          .map<Result>((r) => ({
+            id: r.id,
+            title: r.title || 'Untitled',
+            subtitle: r.subtitle,
+            module: r.moduleKey || 'unknown',
+            moduleName: r.module || 'Record',
+            matchType: r.matchType,
+          }));
+        setResults(filtered);
         setSelectedIndex(0);
       } catch {
         /* silent */
@@ -202,9 +219,19 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
                           {MODULE_ICONS[mod] || <Users className="w-3.5 h-3.5" />}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                            {r.title}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                              {r.title}
+                            </p>
+                            {r.matchType === 'fuzzy' && (
+                              <span
+                                title={`Closest match for "${query}"`}
+                                className="shrink-0 text-[9px] uppercase tracking-wide font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+                              >
+                                Did you mean?
+                              </span>
+                            )}
+                          </div>
                           {r.subtitle && (
                             <p className="text-xs text-slate-500 truncate">{r.subtitle}</p>
                           )}

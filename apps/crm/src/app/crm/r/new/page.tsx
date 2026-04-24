@@ -10,7 +10,7 @@ import {
   getDefaultLayout,
 } from '@/lib/crm/queries';
 import { createRecord, type CreateRecordInput } from '@/lib/crm/mutations';
-import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
+import { RecordDraftAutosave } from '@/components/crm/records/RecordDraftAutosave';
 import { UnsavedFormGuard } from '@/components/crm/records/UnsavedFormGuard';
 import { ModuleSelector } from './client';
 
@@ -132,11 +132,11 @@ async function RecordFormView({
       <UnsavedFormGuard>
         <form action={handleSubmit} className="space-y-6">
           <div className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-sm">
-            <DynamicRecordForm
+            <RecordDraftAutosave
+              moduleKey={moduleKey}
               fields={fields}
-              layout={layout || undefined}
-              readOnly={false}
-              embedded
+              layout={layout}
+              storageScope={orgId}
             />
           </div>
 
