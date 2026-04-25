@@ -15,7 +15,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@olyron/migrate-contract": "file:../../../Olyron/packages/migrate-contract",
     "@crm-eco/lib": "*",
     "@crm-eco/shared": "*",
     "@crm-eco/ui": "*",

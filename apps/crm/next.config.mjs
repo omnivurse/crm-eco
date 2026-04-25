@@ -6,7 +6,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared', '@olyron/migrate-contract'],
+  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared'],
 
   experimental: {
     serverActions: {
