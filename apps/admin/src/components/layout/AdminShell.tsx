@@ -6,6 +6,7 @@ import { AdminSidebar } from './AdminSidebar';
 import { AdminTopNav } from './AdminTopNav';
 import { AdminFooter } from './AdminFooter';
 import { Breadcrumbs } from './Breadcrumbs';
+import type { SwitcherTenant } from './OrganizationSwitcher';
 
 interface AdminShellProps {
   children: React.ReactNode;
@@ -17,13 +18,23 @@ interface AdminShellProps {
     organizationId: string;
   };
   userId: string;
+  /** Tenant memberships for the OrganizationSwitcher (server-resolved). */
+  tenants?: SwitcherTenant[];
+  /** Currently active tenant id (server-resolved). */
+  activeTenantId?: string;
 }
 
 /**
  * Client-side shell component that manages mobile navigation state.
  * Wraps the sidebar, top nav, and main content area.
  */
-export function AdminShell({ children, profile, userId }: AdminShellProps) {
+export function AdminShell({
+  children,
+  profile,
+  userId,
+  tenants,
+  activeTenantId,
+}: AdminShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
@@ -68,6 +79,8 @@ export function AdminShell({ children, profile, userId }: AdminShellProps) {
           userId={userId}
           mobileMenuOpen={mobileMenuOpen}
           onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+          tenants={tenants}
+          activeTenantId={activeTenantId}
         />
 
         {/* Mobile Menu Overlay */}

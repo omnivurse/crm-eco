@@ -2,30 +2,17 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AuditLogsClient } from './client';
+import { getActiveTenant } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
 async function getAuditData() {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const tenant = await getActiveTenant();
+  if (!tenant) {
     redirect('/login');
   }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, organization_id, role, full_name, email')
-    .eq('user_id', user.id)
-    .single() as { data: { id: string; organization_id: string; role: string | null; full_name: string; email: string } | null };
-
-  if (!profile) {
-    redirect('/login');
-  }
-
   // Only owner and admin can view audit logs
   if (!['owner', 'admin'].includes(profile.role || '')) {
     redirect('/dashboard');
@@ -35,7 +22,7 @@ async function getAuditData() {
   const { data: initialLogs } = await supabase
     .from('unified_audit_logs')
     .select('*')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -43,7 +30,7 @@ async function getAuditData() {
   const { data: users } = await supabase
     .from('profiles')
     .select('id, full_name, email')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .eq('is_active', true)
     .order('full_name') as { data: { id: string; full_name: string; email: string }[] | null };
 

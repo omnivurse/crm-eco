@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService } from '@crm-eco/lib/billing';
 import { z } from 'zod';
+import { getActiveTenant } from '@/lib/tenant';
 
 const chargeSchema = z.object({
   memberId: z.string().uuid(),
@@ -26,12 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's organization
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string; role: string } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -63,7 +59,7 @@ export async function POST(request: NextRequest) {
       .from('members')
       .select('id')
       .eq('id', memberId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single() as { data: { id: string } | null };
 
     if (!member) {
@@ -71,10 +67,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Process payment
-    const billingService = createBillingService(supabase, profile.organization_id);
+    const billingService = createBillingService(supabase, tenant.organizationId);
     const result = await billingService.processPayment({
       memberId,
-      organizationId: profile.organization_id,
+      organizationId: tenant.organizationId,
       paymentProfileId,
       amount,
       description,
@@ -88,7 +84,7 @@ export async function POST(request: NextRequest) {
     if (result.success) {
       // Log activity
       await (supabase as any).rpc('log_admin_activity', {
-        p_organization_id: profile.organization_id,
+        p_organization_id: tenant.organizationId,
         p_actor_profile_id: profile.id,
         p_entity_type: 'billing_transaction',
         p_entity_id: result.transactionId,

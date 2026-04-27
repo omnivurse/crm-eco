@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createCommissionService } from '@crm-eco/lib/commissions';
 import type { Database } from '@crm-eco/lib/types';
+import { getActiveTenant } from '@/lib/tenant';
 
 /**
  * GET /api/commissions/stats
@@ -18,18 +19,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's organization
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; role: string | null } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !profile.role || !['owner', 'admin', 'staff'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Get stats
-    const commissionService = createCommissionService(supabase as any, profile.organization_id);
+    const commissionService = createCommissionService(supabase as any, tenant.organizationId);
     const stats = await commissionService.getCommissionStats();
 
     return NextResponse.json(stats);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createCommissionService } from '@crm-eco/lib/commissions';
 import type { Database } from '@crm-eco/lib/types';
+import { getActiveTenant } from '@/lib/tenant';
 
 /**
  * POST /api/commissions/generate-payouts
@@ -18,12 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's organization - only admin/owner can generate payouts
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string; role: string | null } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !profile.role || !['owner', 'admin'].includes(profile.role)) {
       return NextResponse.json(
         { error: 'Only admins and owners can generate payouts' },
@@ -44,12 +40,12 @@ export async function POST(request: NextRequest) {
       : new Date(now.getFullYear(), now.getMonth(), 0);
 
     // Generate payouts
-    const commissionService = createCommissionService(supabase as any, profile.organization_id);
+    const commissionService = createCommissionService(supabase as any, tenant.organizationId);
     const createdCount = await commissionService.generatePayouts(start, end);
 
     // Log activity
     await (supabase as any).rpc('log_admin_activity', {
-      p_organization_id: profile.organization_id,
+      p_organization_id: tenant.organizationId,
       p_actor_profile_id: profile.id,
       p_entity_type: 'commission_payout',
       p_entity_id: 'batch',

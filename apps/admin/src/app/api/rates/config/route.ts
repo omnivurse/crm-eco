@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireAdminRole } from '@/lib/auth';
+import { getActiveTenant } from '@/lib/tenant';
 import type {
   RateConfig,
   RateSet,
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
         entries:plan_rate_entries(*),
         fees:plan_fees(*)
       `)
-      .eq('plan.organization_id', profile.organization_id);
+      .eq('plan.organization_id', tenant.organizationId);
 
     if (planIdFilter) {
       rateSetsQuery = rateSetsQuery.eq('plan_id', planIdFilter);
@@ -69,17 +70,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; role: string | null } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -107,7 +98,7 @@ export async function POST(request: NextRequest) {
       .from('plans')
       .select('id, organization_id')
       .eq('id', planId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single();
 
     if (!plan) {

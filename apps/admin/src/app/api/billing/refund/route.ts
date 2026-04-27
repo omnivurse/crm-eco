@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService } from '@crm-eco/lib/billing';
 import { z } from 'zod';
+import { getActiveTenant } from '@/lib/tenant';
 
 const refundSchema = z.object({
   transactionId: z.string().uuid(),
@@ -20,12 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's organization - only admin/owner can process refunds
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string; role: string } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin'].includes(profile.role)) {
       return NextResponse.json(
         { error: 'Only admins and owners can process refunds' },
@@ -50,7 +46,7 @@ export async function POST(request: NextRequest) {
       .from('billing_transactions')
       .select('*')
       .eq('id', transactionId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .eq('status', 'success')
       .single() as { data: { id: string; amount: number } | null };
 
@@ -69,13 +65,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Process refund
-    const billingService = createBillingService(supabase, profile.organization_id);
+    const billingService = createBillingService(supabase, tenant.organizationId);
     const result = await billingService.processRefund(transactionId, amount, reason);
 
     if (result.success) {
       // Log activity
       await (supabase as any).rpc('log_admin_activity', {
-        p_organization_id: profile.organization_id,
+        p_organization_id: tenant.organizationId,
         p_actor_profile_id: profile.id,
         p_entity_type: 'billing_transaction',
         p_entity_id: result.transactionId,

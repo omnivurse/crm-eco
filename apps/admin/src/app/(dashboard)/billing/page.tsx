@@ -13,6 +13,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { formatDistanceToNow, format } from 'date-fns';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { getActiveTenant } from '@/lib/tenant';
 
 interface BillingStats {
   totalCollected: number;
@@ -38,18 +39,9 @@ interface RecentTransaction {
 async function getBillingStats(): Promise<BillingStats | null> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
-  const orgId = profile.organization_id;
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
+  const orgId = tenant.organizationId;
 
   // Get billing statistics
   const db = supabase as any;
@@ -108,17 +100,8 @@ async function getBillingStats(): Promise<BillingStats | null> {
 async function getRecentTransactions(): Promise<RecentTransaction[]> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return [];
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return [];
   const { data: transactions, error } = await (supabase as any)
     .from('billing_transactions')
     .select(`
@@ -131,7 +114,7 @@ async function getRecentTransactions(): Promise<RecentTransaction[]> {
       description,
       member:members(first_name, last_name)
     `)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('created_at', { ascending: false })
     .limit(10);
 

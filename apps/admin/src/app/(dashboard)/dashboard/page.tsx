@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getActiveTenant } from '@/lib/tenant';
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import {
@@ -62,25 +63,22 @@ async function getAdminContext() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
+
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, full_name, organization_id, role')
+    .select('id, full_name')
     .eq('user_id', user.id)
-    .single() as { data: { id: string; full_name: string; organization_id: string; role: string } | null };
+    .single() as { data: { id: string; full_name: string | null } | null };
 
   if (!profile) return null;
-
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('name')
-    .eq('id', profile.organization_id)
-    .single() as { data: { name: string } | null };
 
   return {
     profileId: profile.id,
     fullName: profile.full_name || 'Admin',
-    orgId: profile.organization_id,
-    orgName: org?.name || 'Organization',
+    orgId: tenant.organizationId,
+    orgName: tenant.organizationName,
   };
 }
 

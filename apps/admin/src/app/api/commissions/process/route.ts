@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createCommissionService } from '@crm-eco/lib/commissions';
 import type { Database } from '@crm-eco/lib/types';
+import { getActiveTenant } from '@/lib/tenant';
 
 /**
  * POST /api/commissions/process
@@ -18,12 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's organization
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string; role: string | null } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !profile.role || !['owner', 'admin'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -43,7 +39,7 @@ export async function POST(request: NextRequest) {
       .from('enrollments')
       .select('id, organization_id')
       .eq('id', enrollmentId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single();
 
     if (!enrollment) {
@@ -51,12 +47,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Process commissions
-    const commissionService = createCommissionService(supabase as any, profile.organization_id);
+    const commissionService = createCommissionService(supabase as any, tenant.organizationId);
     const transactions = await commissionService.processEnrollmentCommissions(enrollmentId);
 
     // Log activity
     await (supabase as any).rpc('log_admin_activity', {
-      p_organization_id: profile.organization_id,
+      p_organization_id: tenant.organizationId,
       p_actor_profile_id: profile.id,
       p_entity_type: 'commission_transaction',
       p_entity_id: enrollmentId,

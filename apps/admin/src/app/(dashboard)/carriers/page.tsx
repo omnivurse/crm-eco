@@ -2,27 +2,23 @@ import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { CarrierManagement } from '@/components/carriers/CarrierManagement';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getCarriers() {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single();
-
+  const tenant = await getActiveTenant();
   if (!profile) redirect('/login');
 
   const { data: carriers } = await supabase
     .from('insurance_carriers')
     .select('*')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('carrier_name');
 
-  return { carriers: carriers || [], orgId: profile.organization_id };
+  return { carriers: carriers || [], orgId: tenant.organizationId };
 }
 
 export default async function CarriersPage() {

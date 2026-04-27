@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { requireAdminRole } from '@/lib/auth';
+import { getActiveTenant } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,7 @@ export async function GET() {
     const { data: setting } = await (supabase as any)
       .from('system_settings')
       .select('setting_value, last_changed_at, last_changed_by')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .eq('setting_key', 'active_rate_set')
       .single();
 
@@ -48,12 +49,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, role, display_name')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; role: string | null; display_name: string | null } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
       return NextResponse.json({ error: 'Forbidden — admin role required' }, { status: 403 });
     }
@@ -72,7 +68,7 @@ export async function PUT(request: NextRequest) {
     const { data: currentSetting } = await (supabase as any)
       .from('system_settings')
       .select('setting_value')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .eq('setting_key', 'active_rate_set')
       .single();
 
@@ -87,7 +83,7 @@ export async function PUT(request: NextRequest) {
         last_changed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .eq('setting_key', 'active_rate_set');
 
     if (updateErr) {
@@ -97,7 +93,7 @@ export async function PUT(request: NextRequest) {
     // Write audit log (requires service role — audit table is not writable by authenticated users)
     const serviceClient = createServiceRoleClient();
     await (serviceClient as any).from('unified_audit_logs').insert({
-      organization_id: profile.organization_id,
+      organization_id: tenant.organizationId,
       actor_id: user.id,
       actor_email: user.email,
       actor_name: profile.display_name,

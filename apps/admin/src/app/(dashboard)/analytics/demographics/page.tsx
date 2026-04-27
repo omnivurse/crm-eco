@@ -1,35 +1,21 @@
 import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { GroupDemographicsViewLazy } from '@/components/analytics/GroupDemographicsViewLazy';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function DemographicsContent() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-lg font-semibold text-slate-700">Please sign in to access demographics.</p>
-      </div>
-    );
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) {
+  const tenant = await getActiveTenant();
+  if (!tenant) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <p className="text-lg font-semibold text-slate-700">Profile not found.</p>
       </div>
     );
   }
-
   const { data, error } = await (supabase as any).rpc('get_group_demographics', {
-    p_org_id: profile.organization_id,
+    p_org_id: tenant.organizationId,
   });
 
   if (error) {

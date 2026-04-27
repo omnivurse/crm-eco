@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -37,13 +38,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!profile || !profile.organization_id) {
+    const tenant = await getActiveTenant();
+    if (!profile || !tenant.organizationId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -82,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Change not found' }, { status: 404 });
     }
 
-    if (existingChange.org_id !== profile.organization_id) {
+    if (existingChange.org_id !== tenant.organizationId) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

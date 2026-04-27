@@ -32,6 +32,42 @@
   font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
   text-decoration: none; color: #f1f5f9 !important;
 }
+.lp-nav-wordmark {
+  display: inline-flex; align-items: baseline; gap: 8px;
+}
+.lp-nav-wordmark-sub {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #3DD6FF; font-weight: 600;
+  padding: 3px 7px; border-radius: 4px;
+  background: rgba(61, 214, 255, 0.08);
+  border: 1px solid rgba(61, 214, 255, 0.2);
+}
+.lp-nav-platform {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+  font-size: 11px !important; letter-spacing: 0.18em !important;
+  text-transform: uppercase;
+  color: #94a3b8 !important;
+  padding: 6px 10px; border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  transition: all 0.2s;
+}
+.lp-nav-platform:hover {
+  color: #3DD6FF !important;
+  border-color: rgba(61, 214, 255, 0.4);
+  background: rgba(61, 214, 255, 0.04);
+}
+.lp-inline-link {
+  color: #3DD6FF !important;
+  text-decoration: none;
+  border-bottom: 1px dotted rgba(61, 214, 255, 0.4);
+  transition: color 0.2s, border-color 0.2s;
+}
+.lp-inline-link:hover {
+  color: #fff !important;
+  border-bottom-color: #fff;
+}
 
 .lp-nav-links { display: flex; align-items: center; gap: 32px; }
 .lp-nav-links a {

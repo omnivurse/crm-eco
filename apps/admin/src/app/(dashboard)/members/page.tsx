@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } fro
 import { Plus, Upload, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getActiveTenant } from '@/lib/tenant';
 import { MemberTable } from '@/components/members/MemberTable';
 import { MemberFilters } from '@/components/members/MemberFilters';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -10,19 +11,8 @@ const PAGE_SIZE = 25;
 
 async function getMembers(page: number, filters: { search?: string; advisor?: string; status?: string; market_type?: string }) {
   const supabase = await createServerSupabaseClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { members: [], total: 0, orgId: '' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return { members: [], total: 0, orgId: '' };
+  const tenant = await getActiveTenant();
+  if (!tenant) return { members: [], total: 0, orgId: '' };
 
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -46,9 +36,8 @@ async function getMembers(page: number, filters: { search?: string; advisor?: st
       is_smoker,
       advisor:advisors(id, first_name, last_name)
     `, { count: 'exact' })
-    .eq('organization_id', profile.organization_id);
+    .eq('organization_id', tenant.organizationId);
 
-  // Apply filters
   if (filters.advisor) {
     query = query.eq('advisor_id', filters.advisor);
   }
@@ -56,15 +45,14 @@ async function getMembers(page: number, filters: { search?: string; advisor?: st
     query = query.eq('status', filters.status);
   }
   if (filters.search) {
-    // Use RPC to search primary member names AND dependent/spouse/child names
+    // RPC searches primary + dependent/spouse/child names.
     const { data: matchedIds } = await supabase.rpc(
       'search_members_with_dependents' as any,
-      { p_org_id: profile.organization_id, p_search: filters.search }
+      { p_org_id: tenant.organizationId, p_search: filters.search }
     );
     if (matchedIds && matchedIds.length > 0) {
       query = query.in('id', matchedIds);
     } else {
-      // No matches — return empty result
       query = query.eq('id', '00000000-0000-0000-0000-000000000000');
     }
   }
@@ -76,7 +64,7 @@ async function getMembers(page: number, filters: { search?: string; advisor?: st
     .order('created_at', { ascending: false })
     .range(from, to) as any);
 
-  return { members: members ?? [], total: count ?? 0, orgId: profile.organization_id };
+  return { members: members ?? [], total: count ?? 0, orgId: tenant.organizationId };
 }
 
 interface PageProps {

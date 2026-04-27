@@ -3,6 +3,7 @@ import { Plus, Building2, TrendingUp, RefreshCw, Activity } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { VendorTable } from '@/components/vendors/VendorTable';
+import { getActiveTenant } from '@/lib/tenant';
 
 interface VendorStats {
   totalVendors: number;
@@ -14,19 +15,8 @@ interface VendorStats {
 async function getVendorsAndStats(): Promise<{ vendors: any[]; stats: VendorStats }> {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { vendors: [], stats: { totalVendors: 0, activeVendors: 0, filesInProgress: 0, changesLast7Days: 0 } };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return { vendors: [], stats: { totalVendors: 0, activeVendors: 0, filesInProgress: 0, changesLast7Days: 0 } };
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return { vendors: [], stats: { totalVendors: 0, activeVendors: 0, filesInProgress: 0, changesLast7Days: 0 } };
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -34,22 +24,22 @@ async function getVendorsAndStats(): Promise<{ vendors: any[]; stats: VendorStat
     supabase
       .from('vendors')
       .select('*')
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .order('created_at', { ascending: false }),
     supabase
       .from('vendors')
       .select('id', { count: 'exact', head: true })
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .eq('status', 'active'),
     supabase
       .from('vendor_files')
       .select('id', { count: 'exact', head: true })
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .in('status', ['pending', 'validating', 'processing']),
     supabase
       .from('vendor_changes')
       .select('id', { count: 'exact', head: true })
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .gte('detected_at', sevenDaysAgo.toISOString()),
   ]);
   const vendorsResult = vendorsSettled.status === 'fulfilled' ? vendorsSettled.value : { data: null };

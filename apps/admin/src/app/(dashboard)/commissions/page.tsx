@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { getActiveTenant } from '@/lib/tenant';
 // Commission transaction type (tables may not be in generated types yet)
 interface CommissionTransaction {
   id: string;
@@ -35,18 +36,9 @@ interface RecentCommission extends CommissionTransaction {
 async function getCommissionStats() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
-  const orgId = profile.organization_id;
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
+  const orgId = tenant.organizationId;
 
   const [tiersSettled, pendingSettled, paidThisMonthSettled, payoutsSettled] = await Promise.allSettled([
     // Active commission tiers
@@ -97,17 +89,8 @@ async function getCommissionStats() {
 async function getRecentCommissions(): Promise<RecentCommission[]> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return [];
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return [];
   const { data: transactions, error } = await (supabase
     .from('commission_transactions') as any)
     .select(`
@@ -120,7 +103,7 @@ async function getRecentCommissions(): Promise<RecentCommission[]> {
       created_at,
       advisor:advisors(first_name, last_name)
     `)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('created_at', { ascending: false })
     .limit(10);
 

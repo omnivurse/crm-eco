@@ -9,23 +9,13 @@ import { AgentEnrollmentTab } from '@/components/enrollment-links/AgentEnrollmen
 import { AgentLicensingTab } from '@/components/agents/AgentLicensingTab';
 import { ProducerInfoCard } from '@/components/agents/ProducerInfoCard';
 import { DownlineSearch } from '@/components/agents/DownlineSearch';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getAgent(id: string) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const { data: agent } = await (supabase
     .from('advisors') as any)
     .select(`
@@ -36,10 +26,10 @@ async function getAgent(id: string) {
       commission_tier:commission_tiers(id, name, code, base_rate_pct, bonus_rate_pct, override_rate_pct)
     `)
     .eq('id', id)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .single();
 
-  return { agent, organizationId: profile.organization_id };
+  return { agent, organizationId: tenant.organizationId };
 }
 
 async function getAgentMembers(agentId: string) {

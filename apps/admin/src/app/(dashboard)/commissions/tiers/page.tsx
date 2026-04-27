@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badg
 import { Plus, Layers, Users, Percent } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getActiveTenant } from '@/lib/tenant';
 // Commission tier type (tables may not be in generated types yet)
 interface CommissionTier {
   id: string;
@@ -24,21 +25,12 @@ interface CommissionTier {
 async function getCommissionTiers(): Promise<CommissionTier[]> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return [];
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return [];
   const { data: tiers, error } = await (supabase
     .from('commission_tiers') as any)
     .select('*')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('level', { ascending: true });
 
   if (error) {

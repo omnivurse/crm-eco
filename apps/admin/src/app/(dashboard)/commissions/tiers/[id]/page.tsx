@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import { CommissionTierForm } from '@/components/commissions/CommissionTierForm';
+import { getActiveTenant } from '@/lib/tenant';
 // Commission tier type (tables may not be in generated types yet)
 interface CommissionTier {
   id: string;
@@ -27,27 +28,18 @@ interface PageProps {
 async function getTier(id: string): Promise<{ tier: CommissionTier; organizationId: string } | null> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const { data: tier, error } = await (supabase
     .from('commission_tiers') as any)
     .select('*')
     .eq('id', id)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .single();
 
   if (error || !tier) return null;
 
-  return { tier, organizationId: profile.organization_id };
+  return { tier, organizationId: tenant.organizationId };
 }
 
 export default async function EditCommissionTierPage({ params }: PageProps) {

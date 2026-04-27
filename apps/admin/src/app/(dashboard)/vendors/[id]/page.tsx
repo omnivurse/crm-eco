@@ -37,24 +37,14 @@ import {
 } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { formatDistanceToNow, format } from 'date-fns';
+import { getActiveTenant } from '@/lib/tenant';
 
 // Fetch vendor with related data
 async function getVendorWithData(id: string) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const sb = supabase as any;
 
   const [vendorSettled, filesSettled, changesSettled, connectorsSettled] = await Promise.allSettled([
@@ -62,27 +52,27 @@ async function getVendorWithData(id: string) {
       .from('vendors')
       .select('*')
       .eq('id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .single(),
     sb
       .from('vendor_files')
       .select('*')
       .eq('vendor_id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .order('created_at', { ascending: false })
       .limit(20),
     sb
       .from('vendor_changes')
       .select('*')
       .eq('vendor_id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .order('detected_at', { ascending: false })
       .limit(20),
     sb
       .from('vendor_connectors')
       .select('*')
       .eq('vendor_id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('org_id', tenant.organizationId)
       .order('created_at', { ascending: false }),
   ]);
   const vendorResult = vendorSettled.status === 'fulfilled' ? vendorSettled.value : { data: null, error: { message: 'Query failed' } };

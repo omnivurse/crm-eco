@@ -5,23 +5,13 @@ import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
 import { EnrollmentActions } from '@/components/enrollments/EnrollmentActions';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getEnrollment(id: string) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const { data: enrollment } = await (supabase
     .from('enrollments')
     .select(`
@@ -34,7 +24,7 @@ async function getEnrollment(id: string) {
       advisor:advisors(id, first_name, last_name, email)
     `)
     .eq('id', id)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .single() as any);
 
   return enrollment;

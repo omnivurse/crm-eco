@@ -8,31 +8,21 @@ import { format } from 'date-fns';
 import { buildMatrixPreview } from '@crm-eco/rates';
 import type { RateConfig } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getProduct(id: string) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const { data: product } = await (supabase
     .from('plans')
     .select('*, rating_model')
     .eq('id', id)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .single() as any);
 
-  return { product, organizationId: profile.organization_id };
+  return { product, organizationId: tenant.organizationId };
 }
 
 async function getProductIuaLevels(productId: string) {

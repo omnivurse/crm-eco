@@ -3,27 +3,17 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { MemberForm } from '@/components/members/MemberForm';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getAgents() {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return [];
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return [];
   const { data: agents } = await (supabase
     .from('advisors')
     .select('id, first_name, last_name, email')
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .eq('status', 'active')
     .order('first_name', { ascending: true }) as any);
 

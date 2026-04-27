@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createAuthorizeNetService } from '@crm-eco/lib/billing/authorize-net';
+import { getActiveTenant } from '@/lib/tenant';
 
 interface RetryPaymentResult {
   success: boolean;
@@ -19,16 +20,10 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, id')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; id: string } | null };
-
-    if (!profile) {
+    const tenant = await getActiveTenant();
+    if (!tenant) {
       return { success: false, error: 'Profile not found' };
     }
-
     // Get the failure record with related data
     interface BillingFailureData {
       id: string;
@@ -76,7 +71,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
         )
       `)
       .eq('id', failureId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single() as { data: BillingFailureData | null; error: Error | null };
 
     if (failureError || !failure) {
@@ -116,7 +111,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       await (supabase
         .from('billing_transactions') as any)
         .insert({
-          organization_id: profile.organization_id,
+          organization_id: tenant.organizationId,
           member_id: failure.member_id,
           billing_schedule_id: failure.billing_schedule_id,
           payment_profile_id: paymentProfile.id,
@@ -173,7 +168,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       await (supabase
         .from('billing_transactions') as any)
         .insert({
-          organization_id: profile.organization_id,
+          organization_id: tenant.organizationId,
           member_id: failure.member_id,
           billing_schedule_id: failure.billing_schedule_id,
           payment_profile_id: paymentProfile.id,
@@ -210,16 +205,10 @@ export async function sendFailureNotification(failureId: string): Promise<{ succ
       return { success: false, error: 'Unauthorized' };
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string } | null };
-
-    if (!profile) {
+    const tenant = await getActiveTenant();
+    if (!tenant) {
       return { success: false, error: 'Profile not found' };
     }
-
     // Get the failure with member details
     interface FailureWithMember {
       id: string;
@@ -233,7 +222,7 @@ export async function sendFailureNotification(failureId: string): Promise<{ succ
         member:members(first_name, last_name, email)
       `)
       .eq('id', failureId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single() as { data: FailureWithMember | null };
 
     if (!failure) {

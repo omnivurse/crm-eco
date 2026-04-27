@@ -5,31 +5,21 @@ import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { E123PricingMatrix } from '@/components/products/E123PricingMatrix';
 import { RateQuoteCalculator } from '@/components/products/RateQuoteCalculator';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getProduct(id: string) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const { data: product } = await (supabase
     .from('plans')
     .select('id, name, code, rating_model')
     .eq('id', id)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .single() as any);
 
-  return { product, organizationId: profile.organization_id };
+  return { product, organizationId: tenant.organizationId };
 }
 
 export default async function ProductPricingPage({ params }: { params: Promise<{ id: string }> }) {

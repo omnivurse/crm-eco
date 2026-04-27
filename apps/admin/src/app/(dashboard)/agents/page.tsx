@@ -4,25 +4,15 @@ import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AgentTable } from '@/components/agents/AgentTable';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { getActiveTenant } from '@/lib/tenant';
 
 const PAGE_SIZE = 25;
 
 async function getAgents(page: number) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { agents: [], total: 0 };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return { agents: [], total: 0 };
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return { agents: [], total: 0 };
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
@@ -41,7 +31,7 @@ async function getAgents(page: number) {
       created_at,
       parent_advisor:advisors!advisors_parent_advisor_id_fkey(id, first_name, last_name)
     `, { count: 'exact' })
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('created_at', { ascending: false })
     .range(from, to) as any);
 

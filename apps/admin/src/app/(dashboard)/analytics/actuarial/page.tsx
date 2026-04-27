@@ -1,25 +1,12 @@
 import { Suspense } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { ActuarialExperienceViewLazy } from '@/components/analytics/ActuarialExperienceViewLazy';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function ActuarialContent() {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-lg font-semibold text-slate-700">Please sign in to access actuarial data.</p>
-      </div>
-    );
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id, role')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string; role: string } | null };
-
+  const tenant = await getActiveTenant();
   if (!profile || !['owner', 'admin'].includes(profile.role)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -32,7 +19,7 @@ async function ActuarialContent() {
   }
 
   const { data, error } = await (supabase as any).rpc('get_actuarial_experience', {
-    p_org_id: profile.organization_id,
+    p_org_id: tenant.organizationId,
     p_months: 24,
   });
 

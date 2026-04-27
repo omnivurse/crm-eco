@@ -291,13 +291,25 @@ export default function CrmLandingPage() {
       <nav id="lp-navbar" className="lp-nav">
         <Link href="/" className="lp-nav-brand">
           <HelixLogo />
-          Double Helix Hub
+          <span className="lp-nav-wordmark">
+            Double Helix
+            <span className="lp-nav-wordmark-sub">CRM</span>
+          </span>
         </Link>
         <div className="lp-nav-links">
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#demo">Platform</a>
           <a href="#testimonials">Testimonials</a>
+          <a
+            href="https://doublehelix.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lp-nav-platform"
+            aria-label="Visit the Double Helix platform site"
+          >
+            Platform <span aria-hidden="true">↗</span>
+          </a>
           <Link href="/login" className="lp-nav-link-login">Log In</Link>
           <Link href="/login" className="lp-nav-cta">Get Started</Link>
         </div>
@@ -318,7 +330,20 @@ export default function CrmLandingPage() {
             Now in Beta — Early Access Open
           </div>
           <h1>The CRM Built for<br/><span className="lp-gradient">Health Benefits</span></h1>
-          <p>Double Helix Hub unifies contacts, enrollments, commissions, and compliance into one intelligent platform — purpose-built for benefits advisors and agencies.</p>
+          <p>
+            Double Helix CRM unifies contacts, enrollments, commissions, and
+            compliance into one intelligent platform — purpose-built for
+            benefits advisors and agencies, and engineered alongside{' '}
+            <a
+              href="https://doublehelix.com/admin"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-inline-link"
+            >
+              Double Helix Admin
+            </a>{' '}
+            for end-to-end member operations.
+          </p>
           <div className="lp-hero-actions">
             <Link href="/login" className="lp-btn-primary"><ArrowIcon /> Start Free Trial</Link>
             <a href="#demo" className="lp-btn-secondary"><PlayIcon /> Watch Demo</a>
@@ -331,7 +356,7 @@ export default function CrmLandingPage() {
         <div className="lp-dashboard-frame">
           <div className="lp-dashboard-topbar">
             <span className="lp-dot-r" /><span className="lp-dot-y" /><span className="lp-dot-g" />
-            <span className="lp-dashboard-url">crm.doublehelixhub.com/dashboard</span>
+            <span className="lp-dashboard-url">crm.doublehelix.com/dashboard</span>
           </div>
           <div className="lp-dashboard-body">
             <div className="lp-dash-sidebar">
@@ -442,7 +467,7 @@ export default function CrmLandingPage() {
         <div className="lp-section-header lp-reveal">
           <div className="lp-section-badge">How It Works</div>
           <h2>Three Steps to<br/><span className="lp-gradient">Operational Excellence</span></h2>
-          <p>Get your agency running on Double Helix Hub in days, not months.</p>
+          <p>Get your agency running on Double Helix CRM in days, not months.</p>
         </div>
         <div className="lp-workflow-steps">
           {[
@@ -530,7 +555,7 @@ export default function CrmLandingPage() {
       <section className="lp-cta-section">
         <div className="lp-reveal">
           <h2>Ready to <span className="lp-gradient">Transform</span><br/>Your Agency?</h2>
-          <p>Join the agencies already running their entire operation on Double Helix Hub.</p>
+          <p>Join the agencies already running their entire operation on Double Helix CRM.</p>
           <div className="lp-hero-actions">
             <Link href="/login" className="lp-btn-primary">Start Free Trial <ArrowIcon /></Link>
             <a href="#" className="lp-btn-secondary">Schedule a Demo</a>
@@ -542,25 +567,63 @@ export default function CrmLandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-grid">
           <div>
-            <div className="lp-footer-brand">Double Helix Hub</div>
-            <div className="lp-footer-desc">The CRM platform purpose-built for health benefits advisors, agencies, and enrollment organizations.</div>
+            <div className="lp-footer-brand">Double Helix CRM</div>
+            <div className="lp-footer-desc">
+              Part of the{' '}
+              <a
+                href="https://doublehelix.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-inline-link"
+              >
+                Double Helix Software
+              </a>{' '}
+              platform — the CRM strand that pairs with{' '}
+              <a
+                href="https://admin.doublehelix.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-inline-link"
+              >
+                Admin
+              </a>{' '}
+              for end-to-end member, advisor, and enrollment operations.
+            </div>
           </div>
           <div className="lp-footer-col">
             <h4>Platform</h4>
-            <a href="#">CRM</a><a href="#">Enrollment</a><a href="#">Commissions</a><a href="#">AI Assistant</a>
+            <a href="https://doublehelix.com/crm" target="_blank" rel="noopener noreferrer">CRM Overview</a>
+            <a href="https://doublehelix.com/admin" target="_blank" rel="noopener noreferrer">Admin</a>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
           </div>
           <div className="lp-footer-col">
             <h4>Resources</h4>
-            <a href="#">Documentation</a><a href="#">API Reference</a><a href="#">Learning Center</a><a href="#">Changelog</a>
+            <a href="https://doublehelix.com/security" target="_blank" rel="noopener noreferrer">Security</a>
+            <a href="https://doublehelix.com/integrations" target="_blank" rel="noopener noreferrer">Integrations</a>
+            <a href="https://doublehelix.com/customers" target="_blank" rel="noopener noreferrer">Customers</a>
+            <a href="#testimonials">Testimonials</a>
           </div>
           <div className="lp-footer-col">
             <h4>Company</h4>
-            <a href="#">About</a><a href="#">Contact</a><a href="#">Privacy Policy</a><a href="#">Terms of Service</a>
+            <a href="https://doublehelix.com" target="_blank" rel="noopener noreferrer">About</a>
+            <a href="https://doublehelix.com/contact" target="_blank" rel="noopener noreferrer">Contact sales</a>
+            <a href="https://doublehelix.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            <a href="https://doublehelix.com/legal/terms" target="_blank" rel="noopener noreferrer">Terms</a>
           </div>
         </div>
         <div className="lp-footer-bottom">
-          <span>&copy; 2026 Double Helix Hub. All rights reserved.</span>
-          <span>doublehelixhub.com</span>
+          <span>&copy; 2026 Double Helix Software. All rights reserved.</span>
+          <span>
+            <a
+              href="https://doublehelix.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-inline-link"
+            >
+              doublehelix.com
+            </a>
+          </span>
         </div>
       </footer>
     </div>

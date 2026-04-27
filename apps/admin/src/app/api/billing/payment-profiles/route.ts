@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService, type PaymentMethod, type BillingAddress } from '@crm-eco/lib/billing';
+import { getActiveTenant } from '@/lib/tenant';
 
 /**
  * GET /api/billing/payment-profiles?memberId=xxx
@@ -17,12 +18,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's organization
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; role: string } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -42,7 +38,7 @@ export async function GET(request: NextRequest) {
       .from('members')
       .select('id')
       .eq('id', memberId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single() as { data: { id: string } | null };
 
     if (!member) {
@@ -50,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get payment profiles
-    const billingService = createBillingService(supabase, profile.organization_id);
+    const billingService = createBillingService(supabase, tenant.organizationId);
     const profiles = await billingService.getPaymentProfiles(memberId);
 
     return NextResponse.json({ profiles });
@@ -78,12 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's organization
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string; role: string } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -116,7 +107,7 @@ export async function POST(request: NextRequest) {
       .from('members')
       .select('id')
       .eq('id', memberId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single() as { data: { id: string } | null };
 
     if (!member) {
@@ -124,10 +115,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payment profile
-    const billingService = createBillingService(supabase, profile.organization_id);
+    const billingService = createBillingService(supabase, tenant.organizationId);
     const newProfile = await billingService.createPaymentProfile({
       memberId,
-      organizationId: profile.organization_id,
+      organizationId: tenant.organizationId,
       paymentMethod,
       billingAddress,
       setAsDefault,
@@ -136,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     // Log activity
     await (supabase as any).rpc('log_admin_activity', {
-      p_organization_id: profile.organization_id,
+      p_organization_id: tenant.organizationId,
       p_actor_profile_id: profile.id,
       p_entity_type: 'payment_profile',
       p_entity_id: newProfile.id,
@@ -170,12 +161,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Get user's organization
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('id, organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { id: string; organization_id: string; role: string } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -195,7 +181,7 @@ export async function DELETE(request: NextRequest) {
       .from('payment_profiles')
       .select('id, member_id')
       .eq('id', profileId)
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .single() as { data: { id: string; member_id: string } | null };
 
     if (!paymentProfile) {
@@ -203,12 +189,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete payment profile
-    const billingService = createBillingService(supabase, profile.organization_id);
+    const billingService = createBillingService(supabase, tenant.organizationId);
     await billingService.deletePaymentProfile(profileId);
 
     // Log activity
     await (supabase as any).rpc('log_admin_activity', {
-      p_organization_id: profile.organization_id,
+      p_organization_id: tenant.organizationId,
       p_actor_profile_id: profile.id,
       p_entity_type: 'payment_profile',
       p_entity_id: profileId,

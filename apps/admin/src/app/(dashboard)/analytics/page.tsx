@@ -17,6 +17,7 @@ import {
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import Link from 'next/link';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { getActiveTenant } from '@/lib/tenant';
 
 interface EnrollmentStats {
   total: number;
@@ -42,18 +43,9 @@ interface RevenueStats {
 async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
-  const orgId = profile.organization_id;
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
+  const orgId = tenant.organizationId;
 
   // Get enrollment counts by status
   const [totalSettled, pendingSettled, approvedSettled, rejectedSettled, cancelledSettled] = await Promise.allSettled([
@@ -168,18 +160,9 @@ async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
 async function getRevenueStats(): Promise<RevenueStats | null> {
   const supabase = await createServerSupabaseClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
-  const orgId = profile.organization_id;
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
+  const orgId = tenant.organizationId;
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
   const lastMonthStart = startOfMonth(subDays(thisMonthStart, 1));

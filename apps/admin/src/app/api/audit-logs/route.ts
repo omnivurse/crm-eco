@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getActiveTenant } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,34 +9,33 @@ export async function GET(request: NextRequest) {
     const supabase = await createServerSupabaseClient();
     const { searchParams } = request.nextUrl;
 
-    // Verify authentication
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get profile and verify permissions
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; role: string | null } | null };
+    // Resolve the active tenant. This already verifies membership
+    // and respects the user's current org switcher selection.
+    const tenant = await getActiveTenant();
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'No active tenant in scope' },
+        { status: 403 },
+      );
+    }
 
-    if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
+    if (!['owner', 'super_admin', 'admin'].includes(tenant.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Build query with filters
     let query = supabase
       .from('unified_audit_logs')
       .select('*')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .order('created_at', { ascending: false });
 
-    // Apply filters
     const userId = searchParams.get('userId');
     const action = searchParams.get('action');
     const riskLevel = searchParams.get('riskLevel');
@@ -69,14 +69,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (searchQuery) {
-      // Sanitize search input to prevent PostgREST filter injection
+      // Sanitize input to prevent PostgREST filter injection.
       const safeQuery = searchQuery.replace(/[,().\\]/g, '\\$&');
       query = query.or(
-        `description.ilike.%${safeQuery}%,action.ilike.%${safeQuery}%,actor_email.ilike.%${safeQuery}%`
+        `description.ilike.%${safeQuery}%,action.ilike.%${safeQuery}%,actor_email.ilike.%${safeQuery}%`,
       );
     }
 
-    // Pagination
     const limit = Math.min(parseInt(searchParams.get('limit') || '100'), 500);
     const offset = parseInt(searchParams.get('offset') || '0');
     query = query.range(offset, offset + limit - 1);

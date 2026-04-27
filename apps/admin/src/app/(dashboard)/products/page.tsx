@@ -3,23 +3,13 @@ import { Plus, Package, DollarSign, Tag, Activity, Sparkles } from 'lucide-react
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { ProductsClient } from '@/components/products/ProductsClient';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getProducts() {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { products: [], organizationId: '' };
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return { products: [], organizationId: '' };
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return { products: [], organizationId: '' };
   const { data: products } = await (supabase
     .from('plans')
     .select(`
@@ -37,10 +27,10 @@ async function getProducts() {
       created_at,
       rating_model
     `)
-    .eq('organization_id', profile.organization_id)
+    .eq('organization_id', tenant.organizationId)
     .order('name', { ascending: true }) as any);
 
-  return { products: products ?? [], organizationId: profile.organization_id };
+  return { products: products ?? [], organizationId: tenant.organizationId };
 }
 
 export default async function ProductsPage() {

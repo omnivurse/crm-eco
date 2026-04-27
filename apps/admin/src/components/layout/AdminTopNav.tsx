@@ -20,6 +20,7 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { OrganizationSwitcher, type SwitcherTenant } from './OrganizationSwitcher';
 
 interface Notification {
   id: string;
@@ -43,6 +44,10 @@ interface AdminTopNavProps {
   userId: string;
   mobileMenuOpen?: boolean;
   onMobileMenuToggle?: () => void;
+  /** Optional list of tenants the user belongs to (drives the OrganizationSwitcher). */
+  tenants?: SwitcherTenant[];
+  /** Active organization id for the switcher. Defaults to profile.organizationId. */
+  activeTenantId?: string;
 }
 
 const roleColors: Record<string, string> = {
@@ -68,7 +73,14 @@ function getNotificationIcon(type?: string, icon?: string) {
   return <Bell className="w-4 h-4 text-slate-500" />;
 }
 
-export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggle }: AdminTopNavProps) {
+export function AdminTopNav({
+  profile,
+  userId,
+  mobileMenuOpen,
+  onMobileMenuToggle,
+  tenants,
+  activeTenantId,
+}: AdminTopNavProps) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -240,6 +252,17 @@ export function AdminTopNav({ profile, userId, mobileMenuOpen, onMobileMenuToggl
 
         <AppSwitcher currentApp="admin" />
         <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden sm:block" />
+
+        {tenants && tenants.length > 1 ? (
+          <>
+            <OrganizationSwitcher
+              tenants={tenants}
+              activeTenantId={activeTenantId ?? profile.organizationId}
+              compact
+            />
+            <div className="h-6 w-px bg-slate-200 dark:bg-white/10 hidden sm:block" />
+          </>
+        ) : null}
         <div className="hidden md:flex items-center gap-2">
           <Shield className="w-4 h-4 text-[#0891b2] dark:text-teal-400" />
           <span className="text-sm font-semibold text-[#0f172a] dark:text-white">System Administration</span>

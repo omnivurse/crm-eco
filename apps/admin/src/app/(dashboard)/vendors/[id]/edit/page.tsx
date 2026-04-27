@@ -4,28 +4,18 @@ import { Button } from '@crm-eco/ui';
 import { ArrowLeft } from 'lucide-react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { VendorForm } from '@/components/vendors/VendorForm';
+import { getActiveTenant } from '@/lib/tenant';
 
 async function getVendor(id: string) {
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .single() as { data: { organization_id: string } | null };
-
-  if (!profile) return null;
-
+  const tenant = await getActiveTenant();
+  if (!tenant) return null;
   const { data: vendor } = await (supabase as any)
     .from('vendors')
     .select('*')
     .eq('id', id)
-    .eq('org_id', profile.organization_id)
+    .eq('org_id', tenant.organizationId)
     .single();
 
   return vendor;

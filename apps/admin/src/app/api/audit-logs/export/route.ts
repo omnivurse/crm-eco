@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { getActiveTenant } from '@/lib/tenant';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,21 +45,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = request.nextUrl;
 
     // Verify authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     // Get profile and verify permissions
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('organization_id, role')
-      .eq('user_id', user.id)
-      .single() as { data: { organization_id: string; role: string | null } | null };
-
+    const tenant = await getActiveTenant();
     if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -67,7 +55,7 @@ export async function GET(request: NextRequest) {
     let query = supabase
       .from('unified_audit_logs')
       .select('*')
-      .eq('organization_id', profile.organization_id)
+      .eq('organization_id', tenant.organizationId)
       .order('created_at', { ascending: false });
 
     // Apply filters

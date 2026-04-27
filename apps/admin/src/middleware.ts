@@ -3,28 +3,66 @@ import { createServerClient } from '@supabase/ssr';
 
 /**
  * Admin Portal Middleware
- * 
- * Provides hard edge-level enforcement of admin role requirements.
- * This runs BEFORE any page renders, preventing unauthorized access.
- * 
- * Security layers:
- * 1. Middleware (this file) - Edge-level check
- * 2. Layout server component - Server-side verification
- * 3. RLS policies - Database-level enforcement
+ *
+ * Edge-level enforcement. Runs BEFORE any page renders.
+ *
+ * Layered security model:
+ *   1. Middleware (this file)        — Edge auth + tenant resolution
+ *   2. Layout server component       — Profile + role re-verification
+ *   3. lib/tenant.ts (server only)   — Active tenant resolver per request
+ *   4. Postgres RLS                  — Final enforcement at the data layer
  */
 
 const ADMIN_ROLES = ['owner', 'super_admin', 'admin', 'staff'];
 
-// Routes that don't require authentication
 const PUBLIC_ROUTES = ['/login', '/access-denied', '/reset-password', '/update-password'];
-
-// Routes that require authentication but not admin role
 const AUTH_ONLY_ROUTES: string[] = [];
 
+const ACTIVE_ORG_COOKIE = 'dh_active_org';
+const ACTIVE_ORG_HEADER = 'x-active-org';
+const RESOLVED_TENANT_HEADER = 'x-tenant-id';
+
+/**
+ * Extract the tenant subdomain candidate from a host header.
+ * Returns null when host is the bare admin/root host or localhost.
+ */
+function extractSubdomain(host: string | null): string | null {
+  if (!host) return null;
+  const lower = host.toLowerCase().split(':')[0];
+
+  // Keep in sync with ROOT_DOMAINS in src/lib/tenant.ts. Both lists include
+  // the legacy doublehelixhub.com hosts so the PIFH production deploy keeps
+  // resolving through `is_default` membership instead of being treated as a
+  // subdomain tenant lookup that would no-op against an empty subdomain map.
+  const roots = [
+    'doublehelix.com',
+    'admin.doublehelix.com',
+    'doublehelixhub.com',
+    'admin.doublehelixhub.com',
+    'crm.doublehelixhub.com',
+    'members.doublehelixhub.com',
+    'localhost',
+  ];
+  if (roots.includes(lower)) return null;
+
+  for (const root of roots) {
+    if (lower.endsWith(`.${root}`)) {
+      const sub = lower.slice(0, lower.length - root.length - 1);
+      if (sub === 'admin') return null;
+      if (sub.endsWith('.admin')) return sub.slice(0, sub.length - '.admin'.length);
+      return sub || null;
+    }
+  }
+
+  const firstDot = lower.indexOf('.');
+  if (firstDot < 0) return null;
+  const label = lower.slice(0, firstDot);
+  if (['www', 'admin', 'api', 'app'].includes(label)) return null;
+  return label;
+}
+
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+  let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,28 +72,28 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        setAll(
+          cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[],
+        ) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+          supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   const pathname = request.nextUrl.pathname;
 
-  // Check if this is a public route
-  if (PUBLIC_ROUTES.some(route => pathname.startsWith(route))) {
-    // If user is already authenticated, check if they should be redirected
+  // ──────────────────────────────────────────────────────────────────
+  //  Public routes
+  // ──────────────────────────────────────────────────────────────────
+  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (user && pathname === '/login') {
-      // Check if user has admin access before redirecting to dashboard
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, is_active')
@@ -66,67 +104,103 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
       }
     }
-    
     return supabaseResponse;
   }
 
-  // Get the current user
+  // ──────────────────────────────────────────────────────────────────
+  //  Authenticated routes
+  // ──────────────────────────────────────────────────────────────────
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-  // If no user, redirect to login
   if (!user || userError) {
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Check if this is an auth-only route (doesn't need admin role)
-  if (AUTH_ONLY_ROUTES.some(route => pathname.startsWith(route))) {
+  if (AUTH_ONLY_ROUTES.some((route) => pathname.startsWith(route))) {
     return supabaseResponse;
   }
 
-  // For all other routes, verify admin role
+  // ──────────────────────────────────────────────────────────────────
+  //  Profile / role check
+  // ──────────────────────────────────────────────────────────────────
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('id, role, is_active, organization_id')
     .eq('user_id', user.id)
     .single();
 
-  // No profile found - user needs to complete setup or doesn't have access
   if (profileError || !profile) {
-    // Sign out and redirect to login
     await supabase.auth.signOut();
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Check if account is active
   if (profile.is_active === false) {
     await supabase.auth.signOut();
-    const accessDeniedUrl = new URL('/access-denied', request.url);
-    accessDeniedUrl.searchParams.set('reason', 'inactive');
-    return NextResponse.redirect(accessDeniedUrl);
+    const url = new URL('/access-denied', request.url);
+    url.searchParams.set('reason', 'inactive');
+    return NextResponse.redirect(url);
   }
 
-  // Check if user has admin role
   if (!ADMIN_ROLES.includes(profile.role)) {
-    const accessDeniedUrl = new URL('/access-denied', request.url);
-    accessDeniedUrl.searchParams.set('reason', 'role');
-    return NextResponse.redirect(accessDeniedUrl);
+    const url = new URL('/access-denied', request.url);
+    url.searchParams.set('reason', 'role');
+    return NextResponse.redirect(url);
   }
 
-  // User is authenticated and has admin role - allow access
+  // ──────────────────────────────────────────────────────────────────
+  //  Tenant resolution (subdomain validation only at edge —
+  //  the authoritative resolver lives in src/lib/tenant.ts)
+  // ──────────────────────────────────────────────────────────────────
+  const subdomain = extractSubdomain(request.headers.get('host'));
+  const cookieOrg = request.cookies.get(ACTIVE_ORG_COOKIE)?.value ?? null;
+  const headerOrg = request.headers.get(ACTIVE_ORG_HEADER);
+
+  // If the host carries a tenant subdomain, verify the user belongs to that org.
+  // We don't refuse access here on mismatch (the server-side resolver handles
+  // the precise selection); we just expose the resolved tenant in a header for
+  // downstream server components & request logging.
+  if (subdomain) {
+    const { data: orgRow } = await supabase
+      .from('organizations')
+      .select('id')
+      .eq('subdomain', subdomain)
+      .maybeSingle();
+
+    if (orgRow) {
+      const { data: membership } = await supabase
+        .from('organization_members')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('organization_id', orgRow.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (!membership) {
+        const url = new URL('/access-denied', request.url);
+        url.searchParams.set('reason', 'tenant');
+        return NextResponse.redirect(url);
+      }
+
+      supabaseResponse.headers.set(RESOLVED_TENANT_HEADER, orgRow.id);
+    }
+  }
+
+  // Pass the cookie / header tenant choice through unchanged
+  if (headerOrg) supabaseResponse.headers.set(RESOLVED_TENANT_HEADER, headerOrg);
+  else if (cookieOrg) supabaseResponse.headers.set(RESOLVED_TENANT_HEADER, cookieOrg);
+
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder assets
-     * - api routes (they handle their own auth)
+     * Match all request paths except for:
+     *   - _next/static, _next/image
+     *   - favicon, public folder assets
+     *   - api routes (handle their own auth + tenancy)
      */
     '/((?!_next/static|_next/image|favicon.ico|api|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
