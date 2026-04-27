@@ -167,7 +167,13 @@ export type LayoutSectionAccent =
   | 'amber'
   | 'rose'
   | 'pink'
-  | 'indigo';
+  | 'indigo'
+  | 'teal'
+  | 'sky'
+  | 'violet'
+  | 'orange'
+  | 'fuchsia'
+  | 'lime';
 
 /**
  * Section render variant. `hero` is the top "Name" card that surfaces the

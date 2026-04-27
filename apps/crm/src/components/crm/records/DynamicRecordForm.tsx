@@ -116,6 +116,42 @@ const ACCENT_CLASSES: Record<LayoutSectionAccent, AccentClassSet> = {
     title: 'text-indigo-700 dark:text-indigo-300',
     ring: 'ring-indigo-200/60 dark:ring-indigo-700/40',
   },
+  teal: {
+    border: 'border-teal-200 dark:border-teal-700/40',
+    header: 'bg-teal-50/70 dark:bg-teal-500/10',
+    title: 'text-teal-700 dark:text-teal-300',
+    ring: 'ring-teal-200/60 dark:ring-teal-700/40',
+  },
+  sky: {
+    border: 'border-sky-200 dark:border-sky-700/40',
+    header: 'bg-sky-50/70 dark:bg-sky-500/10',
+    title: 'text-sky-700 dark:text-sky-300',
+    ring: 'ring-sky-200/60 dark:ring-sky-700/40',
+  },
+  violet: {
+    border: 'border-violet-200 dark:border-violet-700/40',
+    header: 'bg-violet-50/70 dark:bg-violet-500/10',
+    title: 'text-violet-700 dark:text-violet-300',
+    ring: 'ring-violet-200/60 dark:ring-violet-700/40',
+  },
+  orange: {
+    border: 'border-orange-200 dark:border-orange-700/40',
+    header: 'bg-orange-50/70 dark:bg-orange-500/10',
+    title: 'text-orange-700 dark:text-orange-300',
+    ring: 'ring-orange-200/60 dark:ring-orange-700/40',
+  },
+  fuchsia: {
+    border: 'border-fuchsia-200 dark:border-fuchsia-700/40',
+    header: 'bg-fuchsia-50/70 dark:bg-fuchsia-500/10',
+    title: 'text-fuchsia-700 dark:text-fuchsia-300',
+    ring: 'ring-fuchsia-200/60 dark:ring-fuchsia-700/40',
+  },
+  lime: {
+    border: 'border-lime-200 dark:border-lime-700/40',
+    header: 'bg-lime-50/70 dark:bg-lime-500/10',
+    title: 'text-lime-700 dark:text-lime-300',
+    ring: 'ring-lime-200/60 dark:ring-lime-700/40',
+  },
 };
 
 const getAccent = (accent?: LayoutSectionAccent): AccentClassSet =>

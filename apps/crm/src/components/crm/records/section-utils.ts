@@ -2,12 +2,19 @@
  * Shared section utilities — safe for both server and client components.
  */
 
-import type { CrmField, CrmLayout, LayoutSection, LayoutConfig } from '@/lib/crm/types';
+import type {
+  CrmField,
+  CrmLayout,
+  LayoutSection,
+  LayoutConfig,
+  LayoutSectionAccent,
+} from '@/lib/crm/types';
 
 export interface SectionMeta {
   key: string;
   label: string;
   fieldCount: number;
+  accent?: LayoutSectionAccent;
 }
 
 /**
@@ -49,5 +56,6 @@ export function getSectionMeta(
       key: s.key,
       label: s.label,
       fieldCount: grouped[s.key]?.length ?? 0,
+      accent: s.accent,
     }));
 }
