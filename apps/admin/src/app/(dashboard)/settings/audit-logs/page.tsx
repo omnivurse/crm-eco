@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { AuditLogsClient } from './client';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,12 @@ async function getAuditData() {
   if (!tenant) {
     redirect('/login');
   }
+  const profile = await getAdminProfile();
+  if (!profile) {
+    redirect('/login');
+  }
   // Only owner and admin can view audit logs
-  if (!['owner', 'admin'].includes(profile.role || '')) {
+  if (!['owner', 'admin'].includes(tenant.role || '')) {
     redirect('/dashboard');
   }
 

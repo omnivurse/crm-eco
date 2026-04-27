@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createCommissionService } from '@crm-eco/lib/commissions';
 import type { Database } from '@crm-eco/lib/types';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 /**
  * POST /api/commissions/process
@@ -20,7 +21,11 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization
     const tenant = await getActiveTenant();
-    if (!profile || !profile.role || !['owner', 'admin'].includes(profile.role)) {
+    if (!tenant || !tenant.role || !['owner', 'admin'].includes(tenant.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

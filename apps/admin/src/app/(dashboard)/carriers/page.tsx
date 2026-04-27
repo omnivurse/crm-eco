@@ -10,7 +10,7 @@ async function getCarriers() {
   if (!user) redirect('/login');
 
   const tenant = await getActiveTenant();
-  if (!profile) redirect('/login');
+  if (!tenant) redirect('/login');
 
   const { data: carriers } = await supabase
     .from('insurance_carriers')

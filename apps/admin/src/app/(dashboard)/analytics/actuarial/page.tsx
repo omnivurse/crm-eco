@@ -7,7 +7,7 @@ async function ActuarialContent() {
   const supabase = await createServerSupabaseClient();
 
   const tenant = await getActiveTenant();
-  if (!profile || !['owner', 'admin'].includes(profile.role)) {
+  if (!tenant || !['owner', 'admin'].includes(tenant.role)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">

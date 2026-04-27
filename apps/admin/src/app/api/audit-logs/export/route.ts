@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Verify authentication
     // Get profile and verify permissions
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
+    if (!tenant || !['owner', 'admin'].includes(tenant.role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

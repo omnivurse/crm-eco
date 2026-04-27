@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService } from '@crm-eco/lib/billing';
 import { z } from 'zod';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 const chargeSchema = z.object({
   memberId: z.string().uuid(),
@@ -28,7 +29,11 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin', 'staff'].includes(tenant.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

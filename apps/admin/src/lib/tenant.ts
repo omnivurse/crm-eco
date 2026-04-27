@@ -128,17 +128,30 @@ export const getActiveTenant = cache(
 
     // Fetch every membership the user has — RLS guarantees they only
     // see their own rows.
-    const { data: memberships, error } = await supabase
+    type MembershipRow = {
+      id: string;
+      name: string;
+      slug: string;
+      subdomain: string | null;
+      plan: string;
+      branding: Record<string, unknown> | null;
+      role: string;
+      is_default: boolean;
+    };
+
+    const { data: memberships, error } = (await (supabase as any)
       .from('my_organizations')
       .select(
         'id, name, slug, subdomain, plan, branding, role, is_default',
-      );
+      )) as { data: MembershipRow[] | null; error: unknown };
 
     if (error || !memberships || memberships.length === 0) return null;
 
-    const byId = new Map(memberships.map((m) => [m.id, m]));
-    const bySubdomain = new Map(
-      memberships.filter((m) => m.subdomain).map((m) => [m.subdomain as string, m]),
+    const byId = new Map<string, MembershipRow>(memberships.map((m) => [m.id, m]));
+    const bySubdomain = new Map<string, MembershipRow>(
+      memberships
+        .filter((m): m is MembershipRow & { subdomain: string } => Boolean(m.subdomain))
+        .map((m) => [m.subdomain, m]),
     );
 
     // Resolution priority chain
@@ -148,13 +161,12 @@ export const getActiveTenant = cache(
       subdomain ? bySubdomain.get(subdomain)?.id : undefined,
     ];
 
-    let chosen = candidates
-      .map((id) => (id ? byId.get(id) : null))
-      .find((m): m is NonNullable<typeof m> => Boolean(m));
-
-    if (!chosen) {
-      chosen = memberships.find((m) => m.is_default) ?? memberships[0];
-    }
+    const chosen: MembershipRow =
+      candidates
+        .map((id) => (id ? byId.get(id) : undefined))
+        .find((m): m is MembershipRow => Boolean(m)) ??
+      memberships.find((m) => m.is_default) ??
+      memberships[0];
 
     return {
       organizationId: chosen.id,
@@ -188,11 +200,21 @@ export async function requireActiveTenant(): Promise<ResolvedTenant> {
  */
 export async function listMyTenants(): Promise<TenantMembership[]> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await supabase
+  type MembershipRow = {
+    id: string;
+    name: string;
+    slug: string;
+    subdomain: string | null;
+    plan: string;
+    branding: Record<string, unknown> | null;
+    role: string;
+    is_default: boolean;
+  };
+  const { data, error } = (await (supabase as any)
     .from('my_organizations')
     .select('id, name, slug, subdomain, plan, branding, role, is_default')
     .order('is_default', { ascending: false })
-    .order('name', { ascending: true });
+    .order('name', { ascending: true })) as { data: MembershipRow[] | null; error: unknown };
 
   if (error || !data) return [];
 

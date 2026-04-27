@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createAuthorizeNetService } from '@crm-eco/lib/billing/authorize-net';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 interface RetryPaymentResult {
   success: boolean;
@@ -22,6 +23,10 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
 
     const tenant = await getActiveTenant();
     if (!tenant) {
+      return { success: false, error: 'Profile not found' };
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return { success: false, error: 'Profile not found' };
     }
     // Get the failure record with related data

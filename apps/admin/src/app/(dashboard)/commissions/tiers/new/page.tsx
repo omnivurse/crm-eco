@@ -7,7 +7,7 @@ async function getOrganizationId() {
   const supabase = await createServerSupabaseClient();
 
   const tenant = await getActiveTenant();
-  return tenant.organizationId ?? null;
+  return tenant?.organizationId ?? null;
 }
 
 export default async function NewCommissionTierPage() {

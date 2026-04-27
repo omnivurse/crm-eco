@@ -9,7 +9,7 @@ export async function GET() {
     const supabase = await createServerSupabaseClient();
 
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin', 'staff'].includes(tenant.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

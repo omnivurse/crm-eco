@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 async function createClient() {
   const cookieStore = await cookies();
@@ -39,13 +40,17 @@ export async function POST(request: NextRequest) {
     }
 
     const tenant = await getActiveTenant();
-    if (!profile || !tenant.organizationId) {
+    if (!tenant) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     // Check if user has admin role
     const adminRoles = ['super_admin', 'admin', 'manager', 'owner'];
-    if (!profile.role || !adminRoles.includes(profile.role)) {
+    if (!tenant.role || !adminRoles.includes(tenant.role)) {
       return NextResponse.json({ error: 'Forbidden - Admin role required' }, { status: 403 });
     }
 

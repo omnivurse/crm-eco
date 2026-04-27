@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService, type PaymentMethod, type BillingAddress } from '@crm-eco/lib/billing';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 /**
  * GET /api/billing/payment-profiles?memberId=xxx
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin', 'staff'].includes(tenant.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -75,7 +76,11 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin', 'staff'].includes(tenant.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -162,7 +167,11 @@ export async function DELETE(request: NextRequest) {
 
     // Get user's organization
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin', 'staff'].includes(tenant.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

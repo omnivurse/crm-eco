@@ -3,6 +3,7 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createBillingService } from '@crm-eco/lib/billing';
 import { z } from 'zod';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 const refundSchema = z.object({
   transactionId: z.string().uuid(),
@@ -22,7 +23,14 @@ export async function POST(request: NextRequest) {
 
     // Get user's organization - only admin/owner can process refunds
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin'].includes(tenant.role)) {
+      return NextResponse.json(
+        { error: 'Only admins and owners can process refunds' },
+        { status: 403 }
+      );
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json(
         { error: 'Only admins and owners can process refunds' },
         { status: 403 }
