@@ -23,14 +23,18 @@ export async function switchTenant(organizationId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Defence-in-depth membership check
-  const { data: membership, error } = await supabase
+  // Defence-in-depth membership check.
+  // NOTE: `organization_members` is not yet in the generated Database types
+  // (see apps/admin/MULTITENANCY.md). The `as any` cast is intentional and
+  // mirrors the pattern in `src/lib/tenant.ts` until types are regenerated.
+  const db = supabase as any;
+  const { data: membership, error } = (await db
     .from('organization_members')
     .select('id')
     .eq('user_id', user.id)
     .eq('organization_id', organizationId)
     .eq('is_active', true)
-    .maybeSingle();
+    .maybeSingle()) as { data: { id: string } | null; error: unknown };
 
   if (error || !membership) {
     throw new Error('switchTenant: you are not an active member of this organization.');
@@ -39,7 +43,7 @@ export async function switchTenant(organizationId: string) {
   await setActiveTenantCookie(organizationId);
 
   // Update last_active_at so the switcher can sort by recency
-  await supabase
+  await db
     .from('organization_members')
     .update({ last_active_at: new Date().toISOString() })
     .eq('id', membership.id);
