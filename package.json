@@ -24,6 +24,8 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "db:generate-types": "supabase gen types typescript --project-id sffisarikcreyyjzdjvb > packages/lib/src/types/database.ts",
+    "pifh:gate": "node scripts/pifh-deploy-gate.mjs",
+    "resend:setup": "node scripts/resend-domain-setup.mjs",
     "migrate:zoho-contacts": "tsx scripts/migrate-zoho-contacts.ts",
     "typecheck:crm": "npm run typecheck --workspace=@crm-eco/crm",
     "lint:crm": "npm run lint --workspace=@crm-eco/crm",

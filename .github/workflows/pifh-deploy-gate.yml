@@ -1,0 +1,55 @@
+name: PIFH deploy gate
+
+# Runs the live data-safety probe against the PIFH Supabase project on
+# every PR targeting `main` and on every push to `main`. A failure
+# blocks the merge / fails the workflow so the Vercel deploy never
+# starts with a broken multi-tenancy invariant.
+#
+# Required secrets (Settings → Secrets and variables → Actions):
+#   • PIFH_SUPABASE_DB_URL  — Postgres connection string with read
+#                              access to project sffisarikcreyyjzdjvb.
+#                              The Session-Pooler URL works fine and
+#                              is the recommended choice (avoids
+#                              hitting the IPv4-only limit on free
+#                              tier).
+#
+# The gate uses `pg` over a pooled connection, not the supabase CLI,
+# so it does not need `supabase login` and runs in seconds.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: pifh-deploy-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install pg (gate-only dependency)
+        run: npm install --no-save pg@^8.11.0
+
+      - name: Run PIFH deploy gate
+        env:
+          SUPABASE_DB_URL: ${{ secrets.PIFH_SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::PIFH_SUPABASE_DB_URL secret is not configured. Add it under Settings → Secrets → Actions."
+            exit 1
+          fi
+          node scripts/pifh-deploy-gate.mjs

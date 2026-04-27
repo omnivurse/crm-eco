@@ -226,13 +226,76 @@ The `organizations` table additive columns are harmless to leave in place.
 
 ---
 
-## 8. Sign-off
+## 8. Automated deploy gate
 
-- [ ] Migration `202604270001_org_members_autosync.sql` pushed
-- [ ] Live-data probe matches expected counts
-- [ ] Impersonation smoke test passes for both PIFH owners
+`scripts/pifh-deploy-gate.mjs` runs the §1 invariants live and exits
+non-zero if anything drifts. Wire it into every layer of your pipeline:
+
+| Layer | How |
+|---|---|
+| **Manual** | `npm run pifh:gate` |
+| **GitHub Actions** | `.github/workflows/pifh-deploy-gate.yml` runs on every PR + push to `main`. Add `PIFH_SUPABASE_DB_URL` (Session-Pooler URL) under repo Settings → Secrets → Actions. |
+| **Vercel** | In each project (admin / marketing / crm) → Settings → Git → Ignored Build Step, set `bash scripts/vercel-ignore-pifh-gate.sh` and add `SUPABASE_DB_URL` to the project env. The wrapper inverts the exit code so the deploy is skipped when the gate fails. |
+
+Last gate run (Apr 27 2026):
+
+```
+✓ counts.members ≥ 1062 — actual=1062
+✓ counts.advisors ≥ 692 — actual=692
+✓ counts.enrollments ≥ 1098 — actual=1098
+✓ profiles ↔ org_members count match — profiles=2 org_members=2
+✓ every PIFH profile has an active org_members row — matched=2/2
+✓ profiles_sync_to_org_members trigger exists
+✓ _sync_profile_to_org_member function exists
+✓ PIFH owner 411d27b9… — role=owner active=true default=true
+✓ PIFH owner 46be4d37… — role=owner active=true default=true
+✓ migrations 202604260001 → 202604270001 all applied
+✓ All 17 checks passed — deploy is safe.
+```
+
+## 9. Resend setup for `doublehelix.com`
+
+The marketing site's `/api/contact` endpoint sends through Resend. Use
+the turnkey script:
+
+```bash
+RESEND_API_KEY=re_xxx npm run resend:setup
+# or with a live deliverability check:
+RESEND_API_KEY=re_xxx node scripts/resend-domain-setup.mjs --to you@yourdomain.com
+```
+
+The script:
+
+1. Looks up `doublehelix.com` in the Resend account.
+2. Creates it (us-east-1) if missing.
+3. Prints the SPF / DKIM / DMARC / return-path DNS records to publish.
+4. Polls verification every 10s for ~5 min once you confirm DNS is live.
+5. Optionally fires a test email to `--to <email>`.
+
+**Manual fallback** (if you'd rather click through):
+
+1. https://resend.com/domains → "Add Domain" → `doublehelix.com`
+2. Copy the SPF, DKIM, DMARC records into your DNS provider.
+3. Click "Verify DNS Records".
+4. Once verified, set on the **`apps/marketing` Vercel project** (Production scope):
+   - `RESEND_API_KEY` — the production API key
+   - `SALES_FROM_EMAIL` — `Double Helix <noreply@doublehelix.com>`
+   - `SALES_INBOX_EMAIL` — the inbox you actually monitor
+5. Redeploy `apps/marketing` and submit a test through `/contact`.
+
+## 10. Sign-off
+
+- [x] Migration `202604270001_org_members_autosync.sql` pushed
+- [x] Live-data probe matches expected counts
+- [x] Impersonation smoke test passes for both PIFH owners
+- [x] `npm run pifh:gate` returns exit 0 (17/17 checks)
+- [x] GitHub Action `pifh-deploy-gate.yml` committed
+- [x] Vercel ignored-build wrapper committed
+- [ ] `PIFH_SUPABASE_DB_URL` secret added in GitHub
+- [ ] `SUPABASE_DB_URL` env added in each Vercel project
 - [ ] `pnpm -w build` succeeds locally
+- [ ] `doublehelix.com` verified in Resend (`npm run resend:setup`)
+- [ ] `RESEND_API_KEY` / `SALES_FROM_EMAIL` / `SALES_INBOX_EMAIL` set on marketing Vercel project
 - [ ] Admin / marketing / CRM Vercel deploys queued in order
 - [ ] Post-deploy smoke tests passed for owner #1
 - [ ] Post-deploy smoke tests passed for owner #2
-- [ ] Resend domain verified for `doublehelix.com` (so `/contact` form sends)
