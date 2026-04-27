@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { requireAdminRole } from '@/lib/auth';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ export async function GET() {
     const { data: setting } = await (supabase as any)
       .from('system_settings')
       .select('setting_value, last_changed_at, last_changed_by')
-      .eq('organization_id', tenant.organizationId)
+      .eq('organization_id', profile.organization_id)
       .eq('setting_key', 'active_rate_set')
       .single();
 
@@ -50,7 +51,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
+    if (!tenant || !['owner', 'admin'].includes(tenant.role || '')) {
+      return NextResponse.json({ error: 'Forbidden — admin role required' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden — admin role required' }, { status: 403 });
     }
 
@@ -96,7 +101,7 @@ export async function PUT(request: NextRequest) {
       organization_id: tenant.organizationId,
       actor_id: user.id,
       actor_email: user.email,
-      actor_name: profile.display_name,
+      actor_name: profile.full_name,
       action: 'rate_set_override_changed',
       action_category: 'configuration',
       app_source: 'admin',
