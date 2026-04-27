@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     // Get user's organization
     const tenant = await getActiveTenant();
-    if (!profile || !profile.role || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !tenant.role || !['owner', 'admin', 'staff'].includes(tenant.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

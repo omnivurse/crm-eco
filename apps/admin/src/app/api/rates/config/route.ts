@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         entries:plan_rate_entries(*),
         fees:plan_fees(*)
       `)
-      .eq('plan.organization_id', tenant.organizationId);
+      .eq('plan.organization_id', profile.organization_id);
 
     if (planIdFilter) {
       rateSetsQuery = rateSetsQuery.eq('plan_id', planIdFilter);
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin'].includes(profile.role || '')) {
+    if (!tenant || !['owner', 'admin'].includes(tenant.role || '')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

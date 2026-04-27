@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createEmailService } from '@crm-eco/lib/email';
 import { getActiveTenant } from '@/lib/tenant';
+import { getAdminProfile } from '@/lib/profile';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +11,11 @@ export async function POST(request: NextRequest) {
     // Verify authentication
     // Get profile and verify role
     const tenant = await getActiveTenant();
-    if (!profile || !['owner', 'admin', 'staff'].includes(profile.role)) {
+    if (!tenant || !['owner', 'admin', 'staff'].includes(tenant.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const profile = await getAdminProfile();
+    if (!profile) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
