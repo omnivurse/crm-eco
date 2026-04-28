@@ -1,14 +1,12 @@
 'use client';
 
 /**
- * InlineRecordSearch — a drop-in copy of V1's header search, extracted so the
- * V2 shell can embed it without coupling to the V1 file. Behaviour is
- * intentionally identical (debounced search grouped by module, keyboard
- * navigable). Uses the typo-tolerant `/api/crm/search` endpoint (backed by
- * the `crm_smart_search` RPC) so misspellings still surface the right record.
+ * InlineRecordSearch — record shell header search. Debounces `/api/crm/search`
+ * (crm_smart_search + fallbacks). Aborts superseded requests so stale
+ * responses cannot clear or overwrite fresher queries.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -55,26 +53,34 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
-  const doSearch = useCallback(
-    async (q: string) => {
-      const trimmed = q.trim();
-      if (!trimmed) {
-        setResults([]);
-        return;
-      }
-      setLoading(true);
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      searchAbortRef.current?.abort();
+      setResults([]);
+      setLoading(false);
+      return;
+    }
+
+    searchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    searchAbortRef.current = ctrl;
+    setLoading(true);
+
+    const handle = window.setTimeout(async () => {
       try {
-        // Pull a slightly larger candidate set so excluding the current
-        // record doesn't drop the visible result count.
         const res = await fetch(
           `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=15`,
-          { credentials: 'same-origin' },
+          { credentials: 'same-origin', signal: ctrl.signal },
         );
+
         if (!res.ok) {
-          setResults([]);
+          if (!ctrl.signal.aborted) setResults([]);
           return;
         }
+
         const payload = (await res.json()) as {
           results?: Array<{
             id: string;
@@ -85,6 +91,9 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
             matchType?: 'exact' | 'fuzzy';
           }>;
         };
+
+        if (ctrl.signal.aborted) return;
+
         const filtered = (payload.results || [])
           .filter((r) => r.id !== currentRecordId)
           .slice(0, 12)
@@ -98,19 +107,20 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
           }));
         setResults(filtered);
         setSelectedIndex(0);
-      } catch {
-        /* silent */
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') {
+          if (!ctrl.signal.aborted) setResults([]);
+        }
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
-    },
-    [currentRecordId],
-  );
+    }, 250);
 
-  useEffect(() => {
-    const t = setTimeout(() => doSearch(query), 250);
-    return () => clearTimeout(t);
-  }, [query, doSearch]);
+    return () => {
+      window.clearTimeout(handle);
+      ctrl.abort();
+    };
+  }, [query, currentRecordId]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

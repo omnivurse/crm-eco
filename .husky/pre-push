@@ -1,7 +1,28 @@
-case "$(uname -s)" in
-  MINGW*|MSYS*|CYGWIN*) export PATH="/c/Program Files/Git/bin:$PATH" ;;
-  Darwin) export PATH="/opt/homebrew/bin:$PATH" ;;
+#!/usr/bin/env sh
+
+PATH="/usr/local/bin:/opt/homebrew/bin:${PATH}"
+case ":${PATH:-}:" in *":${HOME}/.volta/bin:"*) ;;
+  *) [ -d "${HOME}/.volta/bin" ] && PATH="${HOME}/.volta/bin:${PATH}" ;;
 esac
+
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) PATH="/c/Program Files/Git/bin:${PATH}" ;;
+esac
+
+export PATH
+
+if ! command -v npm >/dev/null 2>&1 && [ -s "${HOME}/.nvm/nvm.sh" ]; then
+  NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+  export NVM_DIR
+  # shellcheck disable=SC1090
+  . "${HOME}/.nvm/nvm.sh" 2>/dev/null || true
+fi
+
+if ! command -v npm >/dev/null 2>&1; then
+  echo >&2 "husky: npm not found in PATH. Install Node or fix GUI Git PATH."
+  exit 127
+fi
+
 echo "Running type check before push..."
 npm run typecheck:crm || exit 1
 echo "Type check passed - safe to push"

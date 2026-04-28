@@ -1,5 +1,32 @@
-case "$(uname -s)" in
-  MINGW*|MSYS*|CYGWIN*) export PATH="/c/Program Files/Git/bin:$PATH" ;;
-  Darwin) export PATH="/opt/homebrew/bin:$PATH" ;;
+#!/usr/bin/env sh
+
+# Normalize PATH — GUI apps (GitHub Desktop, SourceTree, etc.) invoke git with a
+# minimal PATH (~ /usr/bin only), so npm/npx from Homebrew, Volta, or fnm vanish.
+# Prepend common prefixes so lint-staged can run reliably.
+PATH="/usr/local/bin:/opt/homebrew/bin:${PATH}"
+
+# Volta (Node version manager often used dev machines)
+case ":${PATH:-}:" in *":${HOME}/.volta/bin:"*) ;;
+  *) [ -d "${HOME}/.volta/bin" ] && PATH="${HOME}/.volta/bin:${PATH}" ;;
 esac
+
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*) PATH="/c/Program Files/Git/bin:${PATH}" ;;
+esac
+
+export PATH
+
+if ! command -v npx >/dev/null 2>&1 && [ -s "${HOME}/.nvm/nvm.sh" ]; then
+  NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+  export NVM_DIR
+  # shellcheck disable=SC1090
+  . "${HOME}/.nvm/nvm.sh" 2>/dev/null || true
+fi
+
+if ! command -v npx >/dev/null 2>&1; then
+  echo >&2 "husky: npx not found in PATH (${PATH})."
+  echo >&2 "Install Node (https://nodejs.org) or ensure Homebrew's bin dirs are reachable."
+  exit 127
+fi
+
 npx lint-staged

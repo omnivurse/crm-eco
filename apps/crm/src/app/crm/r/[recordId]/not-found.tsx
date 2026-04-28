@@ -31,36 +31,50 @@ export default function RecordNotFound() {
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = query.trim();
     if (trimmed.length < 2) {
+      searchAbortRef.current?.abort();
       setResults([]);
       setHasSearched(false);
+      setIsSearching(false);
       return;
     }
+
+    searchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    searchAbortRef.current = ctrl;
+
     debounceRef.current = setTimeout(async () => {
       setIsSearching(true);
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=10`
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=10`,
+          { credentials: 'same-origin', signal: ctrl.signal },
         );
         if (!res.ok) {
-          setResults([]);
+          if (!ctrl.signal.aborted) setResults([]);
           return;
         }
         const body = (await res.json()) as { results?: SearchResult[] };
-        setResults(body.results ?? []);
-      } catch {
-        setResults([]);
+        if (!ctrl.signal.aborted) setResults(body.results ?? []);
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError' && !ctrl.signal.aborted) {
+          setResults([]);
+        }
       } finally {
-        setIsSearching(false);
-        setHasSearched(true);
+        if (!ctrl.signal.aborted) {
+          setIsSearching(false);
+          setHasSearched(true);
+        }
       }
     }, 250);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      ctrl.abort();
     };
   }, [query]);
 

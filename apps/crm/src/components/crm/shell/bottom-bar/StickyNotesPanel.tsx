@@ -93,6 +93,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
   const [saving, setSaving] = useState(false);
 
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
   // Fetch notes
   const fetchNotes = useCallback(async () => {
@@ -113,37 +114,53 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
     fetchNotes();
   }, [fetchNotes]);
 
-  // Search records for destination picker
-  const searchRecords = useCallback(async (q: string, moduleKey: string) => {
-    if (!q.trim()) {
+  useEffect(() => {
+    const trimmed = recordSearch.trim();
+    const needsSearch =
+      trimmed &&
+      (formDest === 'contact' || formDest === 'lead');
+
+    if (!needsSearch) {
+      searchAbortRef.current?.abort();
       setSearchResults([]);
+      setSearching(false);
       return;
     }
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/crm/search?q=${encodeURIComponent(q)}&module=${moduleKey}&limit=8`);
-      if (res.ok) {
-        const data = await res.json();
-        setSearchResults(data.results || []);
-      }
-    } catch {
-      toast.error('Failed to search records');
-    } finally {
-      setSearching(false);
-    }
-  }, []);
 
-  useEffect(() => {
-    if (recordSearch.trim() && (formDest === 'contact' || formDest === 'lead')) {
-      clearTimeout(searchTimeout.current);
-      searchTimeout.current = setTimeout(() => {
-        searchRecords(recordSearch, formDest === 'contact' ? 'contacts' : 'leads');
-      }, 300);
-    } else {
-      setSearchResults([]);
-    }
-    return () => clearTimeout(searchTimeout.current);
-  }, [recordSearch, formDest, searchRecords]);
+    searchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    searchAbortRef.current = ctrl;
+    const modKey = formDest === 'contact' ? 'contacts' : 'leads';
+
+    searchTimeout.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&module=${modKey}&limit=8`,
+          { credentials: 'same-origin', signal: ctrl.signal },
+        );
+        if (!res.ok) {
+          if (!ctrl.signal.aborted) setSearchResults([]);
+          return;
+        }
+        const data = await res.json();
+        if (!ctrl.signal.aborted) setSearchResults(data.results || []);
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') {
+          if (!ctrl.signal.aborted) {
+            toast.error('Failed to search records');
+          }
+        }
+      } finally {
+        if (!ctrl.signal.aborted) setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+      ctrl.abort();
+    };
+  }, [recordSearch, formDest]);
 
   const resetForm = () => {
     setFormTitle('');

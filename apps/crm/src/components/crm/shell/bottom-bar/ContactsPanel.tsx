@@ -33,6 +33,7 @@ export function ContactsPanel({ onClose }: ContactsPanelProps) {
   const [loading, setLoading] = useState(false);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const router = useRouter();
+  const searchAbortRef = useRef<AbortController | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Fetch recent contacts on mount (true recents — not the old `q=a` search hack).
@@ -90,30 +91,47 @@ export function ContactsPanel({ onClose }: ContactsPanelProps) {
     fetchRecent();
   }, [fetchRecent]);
 
-  // Search contacts
+  // Search contacts — same engine as Cmd+K (`/api/crm/search`); aborted on query change so
+  // slower responses can't flash stale hits (e.g. mid-typing partial queries).
   useEffect(() => {
-    if (!search.trim()) {
+    const q = search.trim();
+    if (!q) {
+      searchAbortRef.current?.abort();
       setResults([]);
+      setLoading(false);
       return;
     }
 
-    clearTimeout(searchTimeout.current);
+    searchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    searchAbortRef.current = ctrl;
+    setLoading(true);
+
     searchTimeout.current = setTimeout(async () => {
-      setLoading(true);
       try {
-        const res = await fetch(`/api/crm/search?q=${encodeURIComponent(search)}&module=contacts&limit=15`);
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data.results || []);
+        const res = await fetch(
+          `/api/crm/search?q=${encodeURIComponent(search)}&module=contacts&limit=15`,
+          { credentials: 'same-origin', signal: ctrl.signal },
+        );
+        if (!res.ok) {
+          if (!ctrl.signal.aborted) setResults([]);
+          return;
         }
-      } catch {
-        // silently fail
+        const data = (await res.json()) as { results?: SearchResult[] };
+        if (!ctrl.signal.aborted) setResults(data.results ?? []);
+      } catch (e) {
+        if ((e as Error).name !== 'AbortError') {
+          if (!ctrl.signal.aborted) setResults([]);
+        }
       } finally {
-        setLoading(false);
+        if (!ctrl.signal.aborted) setLoading(false);
       }
     }, 300);
 
-    return () => clearTimeout(searchTimeout.current);
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+      ctrl.abort();
+    };
   }, [search]);
 
   const displayResults = search.trim() ? results : recentContacts;
