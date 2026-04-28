@@ -99,7 +99,7 @@ import { RecordRelatedListChips } from './v2/RecordRelatedListChips';
 import { MobileActionBar } from './v2/MobileActionBar';
 import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
 import { CollapsibleSection } from './v2/CollapsibleSection';
-import { InlineRecordSearch } from './v2/InlineRecordSearch';
+import { InlineRecordSearch, type NavigateToMatchArgs } from './v2/InlineRecordSearch';
 import { SendEmailDialog } from './v2/SendEmailDialog';
 import {
   AiFollowUpEmailButton,
@@ -302,6 +302,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const [aiEmailLoading, setAiEmailLoading] = useState(false);
   // Guard so the palette-driven `?ai=email` trigger only fires once per visit.
   const aiEmailAutoTriggeredRef = useRef(false);
+  /** Scroll container for scrolling `[data-field]` / notes pane into view after find */
+  const recordMainScrollRef = useRef<HTMLElement | null>(null);
 
   // When the Command Palette lands here with `?ai=email`, request a fresh AI
   // follow-up draft and open SendEmailDialog pre-filled, then scrub the query
@@ -437,6 +439,32 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const canConvertToContact = isLeads && !isAlreadyConverted;
 
   const backUrl = `/crm/modules/${module.key}`;
+
+  const handleNavigateToMatch = useCallback((args: NavigateToMatchArgs) => {
+    setTopTab('overview');
+    if (args.type === 'notes') {
+      setOverviewPane('notes');
+      window.setTimeout(() => {
+        recordMainScrollRef.current
+          ?.querySelector('[data-record-notes-pane]')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+      return;
+    }
+
+    setOverviewPane('details');
+    window.setTimeout(() => {
+      const fk =
+        typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+          ? CSS.escape(args.fieldKey)
+          : args.fieldKey.replace(/"/g, '\\"');
+      const selector = `[data-field="${fk}"]`;
+      const el =
+        recordMainScrollRef.current?.querySelector(selector) ??
+        document.querySelector(selector);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+  }, []);
 
   // -------------------------------------------------------------------------
   // Action handlers (preserve V1 behaviour)
@@ -610,7 +638,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       email: handleSendEmail,
       upload: handleUploadFile,
       search: () => {
-        // Focus the global search input inside the header.
+        // Focus the inline "find in this record" header input (not global CRM search).
         const el = document.querySelector<HTMLInputElement>(
           'input[data-inline-record-search]',
         );
@@ -861,7 +889,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           </CollapsibleSection>
         );
       case 'notes':
-        return children.notes ?? <ComingSoon label="Notes" hint="Notes are available in the classic view." />;
+        return (
+          <div data-record-notes-pane>
+            {children.notes ?? <ComingSoon label="Notes" hint="Notes are available in the classic view." />}
+          </div>
+        );
       case 'emails':
         return children.communications ?? <ComingSoon label="Emails" hint="Email history is not enabled for this record." />;
       case 'attachments':
@@ -898,7 +930,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     >
     <RecordAiContextProvider recordId={record.id} enabled>
     <div className={cn('flex h-full', className)}>
-      <main className="flex-1 overflow-y-auto">
+      <main ref={recordMainScrollRef} className="flex-1 overflow-y-auto" data-record-find-root>
         {/* Sticky header ---------------------------------------------------- */}
         <div className="sticky top-0 z-10 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
           <div className="w-full px-4 xl:px-6 py-3">
@@ -918,7 +950,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 </span>
               </div>
               <div className="hidden md:block">
-                <InlineRecordSearch currentRecordId={record.id} />
+                <InlineRecordSearch
+                  record={record}
+                  fields={_fields}
+                  noteBodies={notesProp.map((n) => n.body)}
+                  onNavigateToMatch={handleNavigateToMatch}
+                />
               </div>
             </div>
 
@@ -2019,7 +2056,6 @@ function labelFromPane(pane: OverviewPane): string {
   return map[pane] ?? 'Related list';
 }
 
-// Ensure the `supabase` client import is not tree-shaken in case bundlers try
-// (this V2 shell uses it via InlineRecordSearch). Referencing via void keeps
-// side-effects if any module init ran. No-op at runtime.
+// Ensure the `supabase` client import is not tree-shaken in case bundlers strip
+// side-effect-free imports — `void supabase` is a deliberate no-op at runtime.
 void supabase;

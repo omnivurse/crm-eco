@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 
 interface SearchResult {
   id: string;
@@ -110,7 +111,7 @@ export function ContactsPanel({ onClose }: ContactsPanelProps) {
     searchTimeout.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(search)}&module=contacts&limit=15`,
+          `/api/crm/search?q=${encodeURIComponent(search)}&module=contacts&limit=${CRM_SPOTLIGHT_SEARCH_LIMIT}`,
           { credentials: 'same-origin', signal: ctrl.signal },
         );
         if (!res.ok) {

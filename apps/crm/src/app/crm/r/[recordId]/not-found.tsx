@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { FileQuestion, ArrowLeft, Search, Loader2 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
+import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 
 interface SearchResult {
   id: string;
@@ -52,7 +53,7 @@ export default function RecordNotFound() {
       setIsSearching(true);
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=10`,
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=${CRM_SPOTLIGHT_SEARCH_LIMIT}`,
           { credentials: 'same-origin', signal: ctrl.signal },
         );
         if (!res.ok) {

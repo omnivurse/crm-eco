@@ -10,6 +10,7 @@ import {
 import { VisuallyHidden } from '@crm-eco/ui';
 import { Input } from '@crm-eco/ui/components/input';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 import {
   Search,
   Users,
@@ -78,7 +79,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
     const handle = window.setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=50`,
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=${CRM_SPOTLIGHT_SEARCH_LIMIT}`,
           { signal: ctrl.signal, credentials: 'same-origin' },
         );
 

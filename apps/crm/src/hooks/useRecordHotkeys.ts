@@ -19,7 +19,7 @@
  *   c    Log call
  *   m    Send email
  *   u    Upload file
- *   /    Focus global record search
+ *   /    Focus inline find-in-this-record search
  *   ?    Open shortcut cheat-sheet
  *
  * The hook accepts a partial handler map so callers can wire only the
@@ -55,7 +55,7 @@ export const RECORD_HOTKEY_BINDINGS: RecordHotkeyBinding[] = [
   { key: 'c', action: 'call', label: 'Log a call' },
   { key: 'm', action: 'email', label: 'Send email' },
   { key: 'u', action: 'upload', label: 'Upload file' },
-  { key: '/', action: 'search', label: 'Focus record search' },
+  { key: '/', action: 'search', label: 'Focus find-in-record search' },
   { key: '?', action: 'help', label: 'Show keyboard shortcuts' },
 ];
 

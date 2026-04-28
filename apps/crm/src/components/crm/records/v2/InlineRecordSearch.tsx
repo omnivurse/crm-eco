@@ -1,126 +1,186 @@
 'use client';
 
 /**
- * InlineRecordSearch — record shell header search. Debounces `/api/crm/search`
- * (crm_smart_search + fallbacks). Aborts superseded requests so stale
- * responses cannot clear or overwrite fresher queries.
+ * InlineRecordSearch — find text on the *current* record detail page only.
+ * Client-side substring match across schema fields (+ optional note bodies).
+ * Picking a result switches to the right Overview sub-pane and scrolls the hit
+ * into view (never calls global CRM search or navigates to other records).
  */
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import {
-  Search,
-  Loader2,
-  X,
-  ArrowRight,
-  Users,
-  UserPlus,
-  Building2,
-  DollarSign,
-} from 'lucide-react';
+  useState,
+  useMemo,
+  useRef,
+  useEffect,
+  type KeyboardEvent as ReactKB,
+} from 'react';
+import { Search, X, ArrowRight, StickyNote, LayoutList } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import type { CrmRecord, CrmField } from '@/lib/crm/types';
 
-const MODULE_ICONS: Record<string, React.ReactNode> = {
-  contacts: <Users className="w-3.5 h-3.5" />,
-  leads: <UserPlus className="w-3.5 h-3.5" />,
-  deals: <DollarSign className="w-3.5 h-3.5" />,
-  accounts: <Building2 className="w-3.5 h-3.5" />,
-};
+export type NavigateToMatchArgs =
+  | { type: 'field'; fieldKey: string }
+  | { type: 'notes' };
 
-const MODULE_COLORS: Record<string, string> = {
-  contacts: 'bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400',
-  leads: 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-  deals: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400',
-  accounts: 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
-};
-
-interface Result {
+export interface InlineRecordSearchHit {
   id: string;
-  title: string;
-  subtitle?: string;
-  module: string;
-  moduleName: string;
-  /** 'exact' = FTS hit, 'fuzzy' = trigram (typo-tolerant) hit */
-  matchType?: 'exact' | 'fuzzy';
+  navigate: NavigateToMatchArgs;
+  label: string;
+  snippet: string;
 }
 
-export function InlineRecordSearch({ currentRecordId }: { currentRecordId: string }) {
-  const router = useRouter();
+interface InlineRecordSearchProps {
+  record: CrmRecord;
+  fields: CrmField[];
+  /** Note bodies searched when the user loads note content on this shell */
+  noteBodies?: string[];
+  /** Switch tabs/panes and scroll targets — implemented by RecordDetailShellV2 */
+  onNavigateToMatch: (args: NavigateToMatchArgs) => void;
+}
+
+function stringifyValue(val: unknown): string {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (Array.isArray(val)) return val.map(stringifyValue).filter(Boolean).join(', ');
+  if (typeof val === 'object') {
+    try {
+      return JSON.stringify(val);
+    } catch {
+      return '';
+    }
+  }
+  return String(val);
+}
+
+/** Core columns mirrored on CrmRecord; custom fields usually live under `data` only */
+function valueFor(record: CrmRecord, key: string): unknown {
+  switch (key) {
+    case 'title':
+      return record.title;
+    case 'email':
+      return record.email;
+    case 'phone':
+      return record.phone;
+    case 'status':
+      return record.status;
+    case 'stage':
+      return record.stage;
+    default:
+      return record.data?.[key];
+  }
+}
+
+function snippetAround(text: string, queryLower: string, maxLen = 96): string {
+  const raw = text.trim().replace(/\s+/g, ' ');
+  if (!raw) return '';
+  const lower = raw.toLowerCase();
+  let i = lower.indexOf(queryLower);
+  if (i === -1) i = 0;
+  const half = Math.floor((maxLen - queryLower.length) / 2);
+  const start = Math.max(0, i - Math.max(half, 0));
+  const slice = raw.slice(start, start + maxLen);
+  const prefix = start > 0 ? '…' : '';
+  const suffix = start + maxLen < raw.length ? '…' : '';
+  return `${prefix}${slice}${suffix}`;
+}
+
+function buildHits(
+  rows: Array<{ fieldKey: string; label: string; text: string }>,
+  noteText: string,
+  rawQuery: string,
+): InlineRecordSearchHit[] {
+  const queryLower = rawQuery.trim().toLowerCase();
+  if (!queryLower) return [];
+
+  const hits: InlineRecordSearchHit[] = [];
+  let id = 0;
+
+  for (const row of rows) {
+    const hay = `${row.label} ${row.text}`.toLowerCase();
+    if (!hay.includes(queryLower)) continue;
+    hits.push({
+      id: `f-${row.fieldKey}-${id++}`,
+      navigate: { type: 'field', fieldKey: row.fieldKey },
+      label: row.label,
+      snippet: snippetAround(row.text, queryLower),
+    });
+  }
+
+  const nt = noteText.trim();
+  if (nt && nt.toLowerCase().includes(queryLower)) {
+    hits.push({
+      id: `notes-${id++}`,
+      navigate: { type: 'notes' },
+      label: 'Notes',
+      snippet: snippetAround(nt, queryLower),
+    });
+  }
+
+  return hits.slice(0, 30);
+}
+
+export function InlineRecordSearch({
+  record,
+  fields,
+  noteBodies = [],
+  onNavigateToMatch,
+}: InlineRecordSearchProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Result[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const searchAbortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      searchAbortRef.current?.abort();
-      setResults([]);
-      setLoading(false);
-      return;
+  const sortedFields = useMemo(
+    () => [...fields].sort((a, b) => a.display_order - b.display_order),
+    [fields],
+  );
+
+  const noteText = useMemo(
+    () => noteBodies.map((b) => (typeof b === 'string' ? b : '')).join('\n'),
+    [noteBodies],
+  );
+
+  const searchableRows = useMemo(() => {
+    const rows: Array<{ fieldKey: string; label: string; text: string }> = [];
+    const seen = new Set<string>();
+
+    for (const f of sortedFields) {
+      if (seen.has(f.key)) continue;
+      seen.add(f.key);
+      const text = stringifyValue(valueFor(record, f.key));
+      if (text.trim()) {
+        rows.push({ fieldKey: f.key, label: f.label, text });
+      }
     }
 
-    searchAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    searchAbortRef.current = ctrl;
-    setLoading(true);
-
-    const handle = window.setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=15`,
-          { credentials: 'same-origin', signal: ctrl.signal },
-        );
-
-        if (!res.ok) {
-          if (!ctrl.signal.aborted) setResults([]);
-          return;
-        }
-
-        const payload = (await res.json()) as {
-          results?: Array<{
-            id: string;
-            title: string;
-            subtitle?: string;
-            module: string;
-            moduleKey: string;
-            matchType?: 'exact' | 'fuzzy';
-          }>;
-        };
-
-        if (ctrl.signal.aborted) return;
-
-        const filtered = (payload.results || [])
-          .filter((r) => r.id !== currentRecordId)
-          .slice(0, 12)
-          .map<Result>((r) => ({
-            id: r.id,
-            title: r.title || 'Untitled',
-            subtitle: r.subtitle,
-            module: r.moduleKey || 'unknown',
-            moduleName: r.module || 'Record',
-            matchType: r.matchType,
-          }));
-        setResults(filtered);
-        setSelectedIndex(0);
-      } catch (e) {
-        if ((e as Error).name !== 'AbortError') {
-          if (!ctrl.signal.aborted) setResults([]);
-        }
-      } finally {
-        if (!ctrl.signal.aborted) setLoading(false);
+    const standard: Array<{ key: string; label: string }> = [
+      { key: 'title', label: 'Title' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'status', label: 'Status' },
+      { key: 'stage', label: 'Stage' },
+    ];
+    for (const s of standard) {
+      if (seen.has(s.key)) continue;
+      const text = stringifyValue(valueFor(record, s.key));
+      if (text.trim()) {
+        seen.add(s.key);
+        rows.push({ fieldKey: s.key, label: s.label, text });
       }
-    }, 250);
+    }
 
-    return () => {
-      window.clearTimeout(handle);
-      ctrl.abort();
-    };
-  }, [query, currentRecordId]);
+    return rows;
+  }, [record, sortedFields]);
+
+  const results = useMemo(
+    () => buildHits(searchableRows, noteText, query),
+    [searchableRows, noteText, query],
+  );
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query, results.length]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -132,33 +192,27 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const navigateTo = (r: Result) => {
-    router.push(`/crm/r/${r.id}`);
+  const commitHit = (hit: InlineRecordSearchHit) => {
+    onNavigateToMatch(hit.navigate);
     setQuery('');
-    setResults([]);
     setIsOpen(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: ReactKB) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, results.length - 1));
+      setSelectedIndex((i) => Math.min(i + 1, Math.max(results.length - 1, 0)));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === 'Enter' && results[selectedIndex]) {
       e.preventDefault();
-      navigateTo(results[selectedIndex]);
+      commitHit(results[selectedIndex]);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
       inputRef.current?.blur();
     }
   };
-
-  const grouped = results.reduce<Record<string, Result[]>>((acc, r) => {
-    (acc[r.module] = acc[r.module] || []).push(r);
-    return acc;
-  }, {});
 
   return (
     <div ref={containerRef} className="relative">
@@ -177,15 +231,15 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
             if (query.trim()) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Search records… (press /)"
+          placeholder="Find in this record… (press /)"
           className="flex-1 bg-transparent text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none"
         />
-        {loading && <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400 shrink-0" />}
-        {query && !loading && (
+        {query && (
           <button
+            type="button"
+            aria-label="Clear search"
             onClick={() => {
               setQuery('');
-              setResults([]);
               setIsOpen(false);
             }}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
@@ -195,23 +249,22 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
         )}
       </div>
 
-      {isOpen && query.trim() && (
+      {isOpen && query.trim() !== '' && (
         <div className="absolute top-full right-0 mt-1.5 w-80 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-white/10 z-50 overflow-hidden">
-          {results.length === 0 && !loading ? (
-            <div className="py-6 text-center text-sm text-slate-500">No records found</div>
+          {results.length === 0 ? (
+            <div className="py-6 text-center text-sm text-slate-500">
+              No matches in this record
+            </div>
           ) : (
             <div className="max-h-72 overflow-y-auto py-1">
-              {Object.entries(grouped).map(([mod, rs]) => (
-                <div key={mod}>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    {rs[0]?.moduleName || mod}
-                  </div>
-                  {rs.map((r) => {
-                    const gi = results.indexOf(r);
-                    return (
+              <ul aria-label="Matches on this record" className="text-sm">
+                {results.map((r, gi) => {
+                  const Icon = r.navigate.type === 'notes' ? StickyNote : LayoutList;
+                  return (
+                    <li key={r.id}>
                       <button
-                        key={r.id}
-                        onClick={() => navigateTo(r)}
+                        type="button"
+                        onClick={() => commitHit(r)}
                         onMouseEnter={() => setSelectedIndex(gi)}
                         className={cn(
                           'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors',
@@ -220,40 +273,25 @@ export function InlineRecordSearch({ currentRecordId }: { currentRecordId: strin
                             : 'hover:bg-slate-50 dark:hover:bg-white/5',
                         )}
                       >
-                        <div
-                          className={cn(
-                            'flex items-center justify-center w-6 h-6 rounded-md shrink-0',
-                            MODULE_COLORS[mod] || MODULE_COLORS.contacts,
-                          )}
-                        >
-                          {MODULE_ICONS[mod] || <Users className="w-3.5 h-3.5" />}
+                        <div className="flex items-center justify-center w-6 h-6 rounded-md shrink-0 bg-teal-100 text-teal-600 dark:bg-teal-500/20 dark:text-teal-400">
+                          <Icon className="w-3.5 h-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                              {r.title}
-                            </p>
-                            {r.matchType === 'fuzzy' && (
-                              <span
-                                title={`Closest match for "${query}"`}
-                                className="shrink-0 text-[9px] uppercase tracking-wide font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
-                              >
-                                Did you mean?
-                              </span>
-                            )}
-                          </div>
-                          {r.subtitle && (
-                            <p className="text-xs text-slate-500 truncate">{r.subtitle}</p>
-                          )}
+                          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            {r.label}
+                          </p>
+                          <p className="text-sm text-slate-900 dark:text-white truncate">
+                            {r.snippet}
+                          </p>
                         </div>
                         {gi === selectedIndex && (
                           <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         )}
                       </button>
-                    );
-                  })}
-                </div>
-              ))}
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
         </div>

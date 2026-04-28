@@ -52,7 +52,7 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@crm-eco/ui/components/sheet';
-import { InlineRecordSearch } from './v2/InlineRecordSearch';
+import { RecordToolbarGlobalSearch } from '@/components/crm/records/RecordToolbarGlobalSearch';
 import { ActionRail } from '@/components/layout/ActionRail';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { StageSelector } from '@/components/crm/blueprints';
@@ -408,7 +408,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   {record.title || 'Untitled'}
                 </span>
               </div>
-              <InlineRecordSearch currentRecordId={record.id} />
+              <RecordToolbarGlobalSearch currentRecordId={record.id} />
             </div>
 
             {/* Title Row */}

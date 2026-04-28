@@ -57,7 +57,7 @@ interface SmartSearchRow {
  * Query params:
  *   - q: search query (required)
  *   - module: filter by module key (optional)
- *   - limit: max results (default 20, max 100)
+ *   - limit: max results (default 50, max 100)
  *   - threshold: trigram similarity threshold 0..1 (default 0.2; lower = more hits)
  *
  * Phone-heavy queries use digit-normalized matching; mixed queries (e.g. name + number)
