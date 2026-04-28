@@ -41,7 +41,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch groups' }, { status: 500 });
     }
 
-    return NextResponse.json({ data: data || [] });
+    // Normalize shape for clients: view historically used `group_id` only; UI expects `id`.
+    const rows = data || [];
+    const normalized = rows.map((row: Record<string, unknown>) => {
+      const id = (row.id ?? row.group_id) as string;
+      return { ...row, id, group_id: (row.group_id ?? row.id) as string };
+    });
+
+    return NextResponse.json({ data: normalized });
   } catch (error) {
     console.error('[ContactGroups GET]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -75,7 +82,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = createGroupSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
+      return NextResponse.json(
+        { error: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
     }
 
     const supabase = await createClient();

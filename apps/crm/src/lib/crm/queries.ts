@@ -453,6 +453,8 @@ export async function getDefaultView(moduleId: string): Promise<CrmView | null> 
 
 export interface RecordQueryOptions {
   moduleId: string;
+  /** Always pass the module's `org_id` so lists cannot cross organizations if `module_id` is ever wrong. */
+  orgId?: string;
   page?: number;
   pageSize?: number;
   filters?: ViewFilter[];
@@ -461,6 +463,11 @@ export interface RecordQueryOptions {
   scope?: 'all' | 'mine' | 'downline';
   /** Optional territory ID to filter records by */
   territoryId?: string;
+  /**
+   * When false, the query does not request an exact row count (cheaper for paged export).
+   * Returned `total` will be 0.
+   */
+  includeCount?: boolean;
 }
 
 export interface RecordQueryResult {
@@ -473,12 +480,29 @@ export interface RecordQueryResult {
 
 export async function getRecords(options: RecordQueryOptions): Promise<RecordQueryResult> {
   const supabase = await createCrmClient();
-  const { moduleId, page = 1, pageSize = 25, filters = [], sort = [], search, scope = 'all', territoryId } = options;
+  const {
+    moduleId,
+    orgId,
+    page = 1,
+    pageSize = 25,
+    filters = [],
+    sort = [],
+    search,
+    scope = 'all',
+    territoryId,
+    includeCount = true,
+  } = options;
 
-  let query = supabase
-    .from('crm_records')
-    .select('*', { count: 'exact' })
-    .eq('module_id', moduleId);
+  let query = includeCount
+    ? supabase
+        .from('crm_records')
+        .select('*', { count: 'exact' })
+        .eq('module_id', moduleId)
+    : supabase.from('crm_records').select('*').eq('module_id', moduleId);
+
+  if (orgId) {
+    query = query.eq('org_id', orgId);
+  }
 
   // Apply territory filter
   if (territoryId) {
@@ -814,10 +838,10 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   return {
     records: (data || []) as CrmRecord[],
-    total: count || 0,
+    total: includeCount ? count || 0 : 0,
     page,
     pageSize,
-    totalPages: Math.ceil((count || 0) / pageSize),
+    totalPages: includeCount ? Math.ceil((count || 0) / pageSize) : 0,
   };
 }
 

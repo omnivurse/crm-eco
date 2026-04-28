@@ -77,7 +77,7 @@ export async function PUT(
     const body = await request.json();
     const parsed = updateGroupSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
+      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const supabase = await createClient();

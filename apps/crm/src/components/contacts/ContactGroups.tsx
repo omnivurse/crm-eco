@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Users,
   Plus,
@@ -8,13 +9,15 @@ import {
   RefreshCw,
   Tag,
   Hash,
+  ChevronRight,
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
 
 interface ContactGroup {
   id: string;
+  group_id?: string;
   group_name: string;
   group_type: string;
   description: string | null;
@@ -33,7 +36,12 @@ const GROUP_TYPE_COLORS: Record<string, string> = {
   custom: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
 };
 
-export default function ContactGroups() {
+export interface ContactGroupsProps {
+  /** When false, hide create actions (crm_agent). Server still enforces on POST. */
+  canManageGroups?: boolean;
+}
+
+export default function ContactGroups({ canManageGroups = true }: ContactGroupsProps) {
   const [groups, setGroups] = useState<ContactGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -42,12 +50,18 @@ export default function ContactGroups() {
   const [formType, setFormType] = useState<string>('custom');
   const [formDescription, setFormDescription] = useState('');
 
-  async function fetchGroups() {
+  const fetchGroups = useCallback(async () => {
     try {
-      const res = await fetch('/api/crm/contact-groups');
+      const res = await fetch('/api/crm/contact-groups', { credentials: 'same-origin' });
       if (res.ok) {
         const json = await res.json();
-        setGroups(json.data || []);
+        const raw = json.data || [];
+        setGroups(
+          raw.map((g: ContactGroup) => ({
+            ...g,
+            id: g.id || g.group_id || '',
+          }))
+        );
       } else {
         toast.error('Failed to load contact groups');
       }
@@ -56,11 +70,11 @@ export default function ContactGroups() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
     fetchGroups();
-  }, []);
+  }, [fetchGroups]);
 
   async function handleCreate() {
     if (!formName.trim()) {
@@ -72,6 +86,7 @@ export default function ContactGroups() {
       const res = await fetch('/api/crm/contact-groups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           group_name: formName.trim(),
           group_type: formType,
@@ -85,10 +100,10 @@ export default function ContactGroups() {
         setFormDescription('');
         setShowForm(false);
         setLoading(true);
-        fetchGroups();
+        await fetchGroups();
       } else {
-        const json = await res.json();
-        toast.error(json.error || 'Failed to create group');
+        const json = await res.json().catch(() => ({}));
+        toast.error(typeof json.error === 'string' ? json.error : 'Failed to create group');
       }
     } catch {
       toast.error('Failed to create group');
@@ -108,7 +123,7 @@ export default function ContactGroups() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Contact Groups</h2>
           <p className="text-slate-600 dark:text-slate-400">
@@ -117,20 +132,25 @@ export default function ContactGroups() {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            onClick={() => { setLoading(true); fetchGroups(); }}
+            onClick={() => {
+              setLoading(true);
+              fetchGroups();
+            }}
             variant="outline"
             size="sm"
           >
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
           </Button>
-          <Button onClick={() => setShowForm(!showForm)} size="sm">
-            <Plus className="w-4 h-4 mr-2" /> New Group
-          </Button>
+          {canManageGroups && (
+            <Button onClick={() => setShowForm(!showForm)} size="sm">
+              <Plus className="w-4 h-4 mr-2" /> New Group
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Create Form */}
-      {showForm && (
+      {canManageGroups && showForm && (
         <Card className="glass-card border-slate-200 dark:border-white/10">
           <CardHeader>
             <CardTitle className="text-slate-900 dark:text-white">Create New Group</CardTitle>
@@ -156,6 +176,7 @@ export default function ContactGroups() {
                 <select
                   value={formType}
                   onChange={(e) => setFormType(e.target.value)}
+                  aria-label="Group type"
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                 >
                   <option value="custom">Custom</option>
@@ -195,57 +216,76 @@ export default function ContactGroups() {
         <div className="text-center py-20 text-slate-500">
           <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
           <p>No contact groups yet</p>
-          <Button onClick={() => setShowForm(true)} variant="outline" className="mt-4">
-            Create Your First Group
-          </Button>
+          {canManageGroups ? (
+            <Button onClick={() => setShowForm(true)} variant="outline" className="mt-4">
+              Create Your First Group
+            </Button>
+          ) : (
+            <p className="text-sm mt-3 text-slate-400">Ask an admin to create groups for your organization.</p>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {groups.map((group) => (
-            <Card
-              key={group.id}
-              className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 transition-colors"
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`p-2.5 rounded-xl ${GROUP_TYPE_COLORS[group.group_type] || GROUP_TYPE_COLORS.custom}`}
-                    >
-                      <Tag className="w-5 h-5" />
+          {groups.map((group) => {
+            const gid = group.id || group.group_id || '';
+            const listHref =
+              gid && group.organization_id
+                ? `/crm/modules/contacts?group_id=${encodeURIComponent(gid)}&page=1`
+                : '/crm/modules/contacts';
+            return (
+              <Card
+                key={gid || group.group_name}
+                className="glass-card border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 transition-colors"
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`p-2.5 rounded-xl shrink-0 ${GROUP_TYPE_COLORS[group.group_type] || GROUP_TYPE_COLORS.custom}`}
+                      >
+                        <Tag className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-slate-900 dark:text-white truncate">
+                          {group.group_name}
+                        </h3>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                          {group.group_type}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900 dark:text-white">
-                        {group.group_name}
-                      </h3>
-                      <span className="text-xs text-slate-500 dark:text-slate-400 capitalize">
-                        {group.group_type}
+                    {!group.is_active && (
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 shrink-0">
+                        Inactive
                       </span>
-                    </div>
+                    )}
                   </div>
-                  {!group.is_active && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                      Inactive
-                    </span>
+
+                  {group.description && (
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">
+                      {group.description}
+                    </p>
                   )}
-                </div>
 
-                {group.description && (
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mb-3 line-clamp-2">
-                    {group.description}
-                  </p>
-                )}
-
-                <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
-                  <Hash className="w-4 h-4" />
-                  <span className="font-medium text-slate-900 dark:text-white">
-                    {(group.member_count ?? 0).toLocaleString()}
-                  </span>{' '}
-                  members
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
+                      <Hash className="w-4 h-4" />
+                      <span className="font-medium text-slate-900 dark:text-white">
+                        {(group.member_count ?? 0).toLocaleString()}
+                      </span>{' '}
+                      members
+                    </div>
+                    <Button variant="ghost" size="sm" className="text-teal-600 dark:text-teal-400" asChild>
+                      <Link href={listHref}>
+                        View in Contacts
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

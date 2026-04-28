@@ -42,12 +42,13 @@ export async function GET(
       return NextResponse.json({ data: [], records: [], total: 0 });
     }
 
-    // Fetch the actual records for these member IDs
+    // Fetch the actual records for these member IDs (org-scoped; RLS also applies)
     const recordIds = members.map((m) => m.record_id);
     const { data: records, error: recError } = await supabase
       .from('crm_records')
       .select('id, title, email, phone, status, contact_type, advisor_id, created_at')
-      .in('id', recordIds);
+      .in('id', recordIds)
+      .eq('org_id', profile.organization_id);
 
     if (recError) {
       console.error('[GroupMembers GET records]', recError);
@@ -90,7 +91,7 @@ export async function POST(
     const body = await request.json();
     const parsed = addMembersSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
+      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -105,6 +106,36 @@ export async function POST(
 
     if (!group) {
       return NextResponse.json({ error: 'Group not found' }, { status: 404 });
+    }
+
+    const { data: contactModules } = await supabase
+      .from('crm_modules')
+      .select('id')
+      .eq('org_id', profile.organization_id)
+      .in('key', ['contacts', 'members']);
+
+    const contactModuleIds = (contactModules || []).map((m) => m.id).filter(Boolean);
+    if (contactModuleIds.length === 0) {
+      return NextResponse.json({ error: 'Contacts module not found' }, { status: 400 });
+    }
+
+    const { data: validRecords } = await supabase
+      .from('crm_records')
+      .select('id')
+      .in('id', parsed.data.record_ids)
+      .eq('org_id', profile.organization_id)
+      .in('module_id', contactModuleIds);
+
+    const allowed = new Set((validRecords || []).map((r) => r.id));
+    const rejected = parsed.data.record_ids.filter((rid) => !allowed.has(rid));
+    if (rejected.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Records must be contacts in your organization',
+          invalid_record_ids: rejected,
+        },
+        { status: 400 }
+      );
     }
 
     const rows = parsed.data.record_ids.map((record_id) => ({
@@ -157,7 +188,7 @@ export async function DELETE(
     const body = await request.json();
     const parsed = removeMembersSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
+      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
 
     const supabase = await createClient();

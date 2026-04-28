@@ -29744,9 +29744,11 @@ export type Database = {
       }
       group_contact_counts: {
         Row: {
-          color: string | null
-          display_order: number | null
+          id: string | null
           group_id: string | null
+          color: string | null
+          description: string | null
+          display_order: number | null
           group_name: string | null
           group_type: string | null
           icon: string | null

@@ -31,7 +31,6 @@ const CarrierPlans = dynamic(() => import('@/components/contacts/CarrierPlans'))
 const PremiumCompare = dynamic(() => import('@/components/contacts/PremiumCompare'));
 
 const contactsTabComponents: Record<string, ComponentType> = {
-  groups: ContactGroups,
   segments: ContactSegments,
   lifecycle: ContactLifecycle,
   medicaid: ContactMedicaid,
@@ -128,6 +127,24 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   if (!crmModule) return notFound();
 
   // ---- Contacts sub-tab: render dedicated component and skip record queries ----
+  if (moduleKey === 'contacts' && tab === 'groups') {
+    const canManageContactGroups = ['crm_admin', 'crm_manager'].includes(
+      ((profile as { crm_role?: string | null }).crm_role || '')
+    );
+    return (
+      <div className="w-full space-y-3">
+        <Link
+          href="/crm/modules/contacts"
+          className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back to Contacts
+        </Link>
+        <ContactGroups canManageGroups={canManageContactGroups} />
+      </div>
+    );
+  }
+
   if (moduleKey === 'contacts' && tab) {
     const TabComponent = contactsTabComponents[tab];
     if (TabComponent) {
