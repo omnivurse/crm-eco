@@ -26,6 +26,7 @@ import { MobileToolbarDrawer } from './MobileToolbarDrawer';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Density } from './ViewPreferencesContext';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
+import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 
 export type RecordScope = 'all' | 'mine' | 'downline';
 
@@ -89,7 +90,6 @@ export const ModuleShell = memo(function ModuleShell({
   const [scope, setScope] = useState<RecordScope>(
     (searchParams.get('scope') as RecordScope) || 'all'
   );
-  const [searchFocused, setSearchFocused] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<ViewFilter[]>(() => {
     const filtersParam = searchParams.get('filters');
@@ -213,7 +213,7 @@ export const ModuleShell = memo(function ModuleShell({
     const timer = window.setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&module=${encodeURIComponent(module.key)}&limit=20`,
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&module=${encodeURIComponent(module.key)}&limit=${CRM_SPOTLIGHT_SEARCH_LIMIT}`,
           { signal: ctrl.signal, credentials: 'same-origin' },
         );
         if (!res.ok) {
@@ -945,11 +945,12 @@ export const ModuleShell = memo(function ModuleShell({
 
             <form
               onSubmit={handleSearch}
-              className="relative flex-1 min-w-[12rem] max-w-md"
+              className="relative flex-1 min-w-[12rem] max-w-md group"
             >
               <Search className={cn(
-                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none',
-                searchFocused ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'
+                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none z-[1]',
+                'text-slate-500 dark:text-slate-400',
+                'group-focus-within:text-teal-600 dark:group-focus-within:text-teal-400',
               )} />
               <Input
                 type="search"
@@ -960,11 +961,9 @@ export const ModuleShell = memo(function ModuleShell({
                   setLiveOpen(true);
                 }}
                 onFocus={() => {
-                  setSearchFocused(true);
                   setLiveOpen(true);
                 }}
                 onBlur={() => {
-                  setSearchFocused(false);
                   // Delay close so click on a dropdown item registers first.
                   window.setTimeout(() => setLiveOpen(false), 150);
                 }}
@@ -991,7 +990,8 @@ export const ModuleShell = memo(function ModuleShell({
                   'border-slate-300 dark:border-slate-700',
                   'hover:border-slate-400 dark:hover:border-slate-600',
                   'text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400',
-                  searchFocused && 'border-teal-500 ring-2 ring-teal-500/20'
+                  // Tie accent ring to real focus — avoids stale teal border when React state desyncs from :focus
+                  'focus-visible:border-teal-500 focus-visible:ring-teal-500/25 focus-visible:ring-offset-0',
                 )}
                 autoComplete="off"
                 spellCheck={false}
