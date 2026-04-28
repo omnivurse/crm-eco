@@ -78,7 +78,10 @@ export async function GET(request: NextRequest) {
     // Empty string must not reach the SQL `m.key = p_module_key` branch (would match nothing).
     const moduleFilter =
       rawModule && rawModule.trim().length > 0 ? rawModule.trim() : null;
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
+    // Default 50 (was 20). Common-name searches (e.g. "Johnson" — 104 records
+    // in PIFH) need a deeper bucket so a specific person isn't randomly cut
+    // off when they share rank with dozens of homonyms. Hard cap stays 100.
+    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
     const threshold = clamp01(
       parseFloat(searchParams.get('threshold') || '0.2'),
       0.2,

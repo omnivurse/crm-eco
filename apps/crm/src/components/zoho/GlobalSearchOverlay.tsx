@@ -78,7 +78,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
     const handle = window.setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=35`,
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=50`,
           { signal: ctrl.signal, credentials: 'same-origin' },
         );
 
