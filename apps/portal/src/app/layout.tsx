@@ -6,7 +6,12 @@ import { BottomNav } from '@/components/BottomNav';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { PinLockOverlay } from '@crm-eco/ui';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+  preload: false,
+});
 
 /**
  * PWA Metadata Configuration

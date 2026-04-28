@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 6;
+const CACHE_VERSION = 7;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
@@ -103,7 +103,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Handle different request types
-  if (isStaticAsset(url.pathname)) {
+  // `/_next/static/*` must NOT be cache-first: after a deploy, cached webpack
+  // chunks + fresh HTML (or vice versa) yields mismatched module factories and
+  // runtime errors like "Cannot read properties of undefined (reading 'call')".
+  // Network-first still caches successful responses for offline replay.
+  if (url.pathname.includes('/_next/static/')) {
+    event.respondWith(networkFirst(request, STATIC_CACHE_NAME));
+  } else if (isStaticAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE_NAME));
   } else if (isApiRequest(url)) {
     event.respondWith(networkFirst(request, API_CACHE_NAME));
@@ -119,7 +125,6 @@ self.addEventListener('fetch', (event) => {
  */
 function isStaticAsset(pathname) {
   const staticPatterns = [
-    '/_next/static/',
     '/icons/',
     '/images/',
     '/signatures/',

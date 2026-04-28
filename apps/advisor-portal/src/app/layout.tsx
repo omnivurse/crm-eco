@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from 'sonner';
 import { PinLockOverlay } from '@crm-eco/ui';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false });
 
 export const metadata: Metadata = {
     title: 'Advisor Portal | Double Helix Hub',
