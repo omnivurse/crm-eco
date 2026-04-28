@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Filter,
   Settings2,
+  Info,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { getCurrentProfile, getModuleByKey, getRecords, getDealStages } from '@/lib/crm/queries';
@@ -111,6 +112,9 @@ async function PipelineContent() {
   const { dealsByStage, totalPipelineValue, wonValue, activeDeals, wonDeals } = stats;
   const negotiationDeals = dealsByStage['negotiation']?.length || 0;
   const winRate = totalDeals > 0 ? Math.round((wonDeals / totalDeals) * 100) : 0;
+  const canEditStages =
+    profile.crm_role === 'crm_admin' || profile.crm_role === 'crm_manager';
+  const hasAnyLimit = stages.some((s) => s.wip_limit != null);
 
   return (
     <div className="h-full flex flex-col">
@@ -189,9 +193,41 @@ async function PipelineContent() {
         </div>
       </div>
 
+      {/* How it works — plain-English */}
+      <div className="mb-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-4">
+        <div className="flex gap-3">
+          <Info className="w-5 h-5 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-slate-600 dark:text-slate-300 space-y-1">
+            <p>
+              Each column below is a step in your sales process. Drag a deal
+              card from one column to the next as it moves forward.
+            </p>
+            <p>
+              {canEditStages ? (
+                <>
+                  Want a reminder when a column gets too full? Click the gear
+                  icon on any column header and set an optional <em>limit</em>.
+                  When the column reaches the limit the count turns
+                  <span className="mx-1 px-1.5 py-0.5 rounded text-amber-700 bg-amber-100 dark:bg-amber-500/20 dark:text-amber-400 text-xs font-medium">amber</span>
+                  ; if it goes over, it turns
+                  <span className="mx-1 px-1.5 py-0.5 rounded text-red-700 bg-red-100 dark:bg-red-500/20 dark:text-red-400 text-xs font-medium">red</span>
+                  . Limits are off by default — set one on a column only if you want it. Use the gear&rsquo;s &ldquo;Turn off&rdquo; button to remove a limit.
+                </>
+              ) : (
+                <>
+                  {hasAnyLimit
+                    ? 'A column count turns amber when it reaches its limit and red if it goes over — that’s a cue that the team has too many deals in that stage.'
+                    : 'Stage limits (the cap on how many deals a column should hold at once) can be set by an admin.'}
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Pipeline Board with Drag & Drop */}
       <div className="flex-1 overflow-x-auto pb-4">
-        <PipelineClient deals={deals} stages={stages} />
+        <PipelineClient deals={deals} stages={stages} canEditStages={canEditStages} />
       </div>
     </div>
   );

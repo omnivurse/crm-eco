@@ -20,8 +20,9 @@
  * missing on staging envs that haven't run every migration.
  */
 
-import { createCrmClient } from './queries';
-import type { ActivityType } from './types';
+import { createCrmClient, resolveNoteSourceRecordIds } from './queries';
+import { moduleKeyFromJoinedRelation } from './note-aggregate';
+import type { ActivityType, CrmRecord } from './types';
 
 export interface InsightBestTime {
   /** Channel the suggestion applies to. */
@@ -80,6 +81,22 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
   try {
     const supabase = await createCrmClient();
 
+    let noteSourceIds: string[] = [recordId];
+    try {
+      const { data: row } = await supabase
+        .from('crm_records')
+        .select('id, data, module:crm_modules!crm_records_module_id_fkey(key)')
+        .eq('id', recordId)
+        .maybeSingle();
+      if (row?.id) {
+        const moduleKey = moduleKeyFromJoinedRelation(row.module);
+        const record = { id: row.id, data: row.data } as CrmRecord;
+        noteSourceIds = await resolveNoteSourceRecordIds(record, moduleKey);
+      }
+    } catch {
+      noteSourceIds = [recordId];
+    }
+
     const [
       notesCount,
       emailsCount,
@@ -92,7 +109,7 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
       emailSignal,
       recentInteractions,
     ] = await Promise.allSettled([
-      headCount(supabase, 'crm_notes', { record_id: recordId }),
+      headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds),
       headCount(supabase, 'crm_tasks', { record_id: recordId, activity_type: 'email' }),
       // Anything not completed / cancelled counts as "open"
       headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['open', 'in_progress']),
@@ -102,7 +119,7 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
       headCount(supabase, 'crm_record_links', { target_record_id: recordId }),
       bestTimeForChannel(supabase, recordId, 'call'),
       bestTimeForChannel(supabase, recordId, 'email'),
-      lastInteractionFor(supabase, recordId),
+      lastInteractionFor(supabase, recordId, noteSourceIds),
     ]);
 
     const notes = settleOrZero(notesCount);
@@ -180,6 +197,7 @@ async function headCountIn(
   field: string,
   values: string[],
 ): Promise<number> {
+  if (values.length === 0) return 0;
   try {
     let q = supabase.from(table).select('*', { count: 'exact', head: true });
     for (const [k, v] of Object.entries(eqs)) q = q.eq(k, v);
@@ -254,8 +272,13 @@ async function bestTimeForChannel(
   }
 }
 
-async function lastInteractionFor(supabase: Client, recordId: string): Promise<string | null> {
+async function lastInteractionFor(
+  supabase: Client,
+  recordId: string,
+  noteRecordIds: string[],
+): Promise<string | null> {
   try {
+    const noteIds = noteRecordIds.length > 0 ? noteRecordIds : [recordId];
     const [tasks, notes, attachments] = await Promise.allSettled([
       supabase
         .from('crm_tasks')
@@ -266,7 +289,7 @@ async function lastInteractionFor(supabase: Client, recordId: string): Promise<s
       supabase
         .from('crm_notes')
         .select('created_at')
-        .eq('record_id', recordId)
+        .in('record_id', noteIds)
         .order('created_at', { ascending: false })
         .limit(1),
       supabase

@@ -35,16 +35,52 @@ export function ContactsPanel({ onClose }: ContactsPanelProps) {
   const router = useRouter();
   const searchTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Fetch recent contacts on mount
+  // Fetch recent contacts on mount (true recents — not the old `q=a` search hack).
   const fetchRecent = useCallback(async () => {
     try {
-      const res = await fetch('/api/crm/search?q=a&module=contacts&limit=10');
-      if (res.ok) {
-        const data = await res.json();
-        setRecentContacts(data.results || []);
+      const res = await fetch(
+        '/api/crm/recently-viewed?module_key=contacts&limit=10',
+        { credentials: 'same-origin' },
+      );
+      if (!res.ok) {
+        setRecentContacts([]);
+        return;
       }
+      const body = (await res.json()) as {
+        data?: Array<{
+          recordId: string;
+          moduleKey: string | null;
+          moduleName: string | null;
+          title: string | null;
+          data: Record<string, unknown> | null;
+        }>;
+      };
+      const rows = body.data ?? [];
+      const mapped: SearchResult[] = rows.map((r) => {
+        const data = r.data || {};
+        const first = String((data as Record<string, unknown>).first_name || '');
+        const last = String((data as Record<string, unknown>).last_name || '');
+        const display =
+          [first, last].filter(Boolean).join(' ').trim() ||
+          (r.title && r.title.trim()) ||
+          'Untitled';
+        const email = (data as Record<string, unknown>).email;
+        const phone = (data as Record<string, unknown>).phone;
+        const subtitleParts: string[] = [];
+        if (email) subtitleParts.push(String(email));
+        if (phone) subtitleParts.push(String(phone));
+        return {
+          id: r.recordId,
+          title: display,
+          subtitle: subtitleParts.length ? subtitleParts.join(' · ') : undefined,
+          module: r.moduleName || 'Contact',
+          moduleKey: r.moduleKey || 'contacts',
+          url: `/crm/r/${r.recordId}`,
+        };
+      });
+      setRecentContacts(mapped);
     } catch {
-      // silently fail
+      setRecentContacts([]);
     } finally {
       setLoadingRecent(false);
     }

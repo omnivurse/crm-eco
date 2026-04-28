@@ -1,6 +1,10 @@
 import { getQueryClient } from '@/components/providers/QueryProvider';
 import { queryKeys } from '@/lib/query-keys';
 import { supabase } from '@/lib/supabase-client';
+import type { CrmRecord } from '@/lib/crm/types';
+import { resolveNoteSourceRecordIdsWithClient, moduleKeyFromJoinedRelation } from '@/lib/crm/note-aggregate';
+
+type RecordRow = CrmRecord & { module?: { key: string } | null };
 
 /**
  * Prefetch record data for the drawer on row hover
@@ -22,7 +26,7 @@ export async function prefetchRecordForDrawer(recordId: string) {
     queryFn: async () => {
       const { data } = await supabase
         .from('crm_records')
-        .select('*')
+        .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
         .eq('id', recordId)
         .single();
       return data;
@@ -31,7 +35,7 @@ export async function prefetchRecordForDrawer(recordId: string) {
   });
 
   // Get the record to know the module_id for field prefetching
-  const record = queryClient.getQueryData<{ module_id: string }>(
+  const record = queryClient.getQueryData<RecordRow>(
     queryKeys.records.detail(recordId)
   );
 
@@ -54,11 +58,13 @@ export async function prefetchRecordForDrawer(recordId: string) {
     queryClient.prefetchQuery({
       queryKey: queryKeys.timeline.byRecord(recordId),
       queryFn: async () => {
+        const moduleKey = moduleKeyFromJoinedRelation(record.module);
+        const noteIds = await resolveNoteSourceRecordIdsWithClient(supabase, record, moduleKey);
         const [notesResult, tasksResult] = await Promise.all([
           supabase
             .from('crm_notes')
             .select('id, body, created_at, created_by')
-            .eq('record_id', recordId)
+            .in('record_id', noteIds)
             .order('created_at', { ascending: false })
             .limit(5),
           supabase

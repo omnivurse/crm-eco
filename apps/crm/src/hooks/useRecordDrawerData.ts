@@ -1,9 +1,11 @@
 'use client';
 
 import { useQuery, useQueries } from '@tanstack/react-query';
+import { useTenantOrganizationId } from '@/contexts/TenantContext';
 import { supabase } from '@/lib/supabase-client';
 import { queryKeys } from '@/lib/query-keys';
 import type { CrmRecord, CrmField } from '@/lib/crm/types';
+import { resolveNoteSourceRecordIdsWithClient, moduleKeyFromJoinedRelation } from '@/lib/crm/note-aggregate';
 
 interface TimelineEvent {
   id: string;
@@ -18,16 +20,21 @@ export interface RecordDrawerData {
   timeline: TimelineEvent[];
 }
 
-// Fetch record data
-async function fetchRecord(recordId: string): Promise<CrmRecord | null> {
-  const { data, error } = await supabase
+// Fetch record data — optional org filter matches server/API (profiles.organization_id → crm_records.org_id).
+type RecordRow = CrmRecord & { module?: { key: string } | null };
+
+async function fetchRecord(recordId: string, tenantOrgId: string | null): Promise<RecordRow | null> {
+  let q = supabase
     .from('crm_records')
-    .select('*')
-    .eq('id', recordId)
-    .single();
+    .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
+    .eq('id', recordId);
+  if (tenantOrgId) {
+    q = q.eq('org_id', tenantOrgId);
+  }
+  const { data, error } = await q.single();
 
   if (error) throw error;
-  return data as CrmRecord | null;
+  return data as RecordRow | null;
 }
 
 // Fetch fields for module
@@ -42,13 +49,16 @@ async function fetchFields(moduleId: string): Promise<CrmField[]> {
   return (data || []) as CrmField[];
 }
 
-// Fetch mini timeline (notes + tasks combined)
-async function fetchMiniTimeline(recordId: string): Promise<TimelineEvent[]> {
+// Fetch mini timeline (notes + tasks combined; notes may include linked lead/contact)
+async function fetchMiniTimeline(record: RecordRow, recordId: string): Promise<TimelineEvent[]> {
+  const moduleKey = moduleKeyFromJoinedRelation(record.module);
+  const noteIds = await resolveNoteSourceRecordIdsWithClient(supabase, record, moduleKey);
+
   const [notesResult, tasksResult] = await Promise.all([
     supabase
       .from('crm_notes')
       .select('id, body, created_at, created_by')
-      .eq('record_id', recordId)
+      .in('record_id', noteIds)
       .order('created_at', { ascending: false })
       .limit(5),
     supabase
@@ -79,10 +89,11 @@ async function fetchMiniTimeline(recordId: string): Promise<TimelineEvent[]> {
 }
 
 export function useRecordDrawerData(recordId: string | null) {
-  // First, fetch the record
+  const tenantOrgId = useTenantOrganizationId();
+
   const recordQuery = useQuery({
-    queryKey: queryKeys.records.detail(recordId!),
-    queryFn: () => fetchRecord(recordId!),
+    queryKey: queryKeys.records.detail(recordId!, tenantOrgId),
+    queryFn: () => fetchRecord(recordId!, tenantOrgId),
     enabled: !!recordId,
     staleTime: 30_000, // 30 seconds fresh
   });
@@ -100,8 +111,8 @@ export function useRecordDrawerData(recordId: string | null) {
       },
       {
         queryKey: queryKeys.timeline.byRecord(recordId || ''),
-        queryFn: () => fetchMiniTimeline(recordId!),
-        enabled: !!recordId,
+        queryFn: () => fetchMiniTimeline(recordQuery.data!, recordId!),
+        enabled: !!recordId && !!recordQuery.data,
         staleTime: 10_000, // 10 seconds - timeline updates more often
       },
     ],

@@ -119,17 +119,17 @@ describe('GET /api/crm/records', () => {
       recordsResult: { data: records, count: 1, error: null },
     });
     mockCreateClient.mockResolvedValue(sb);
-    const req = buildRequest('http://localhost:3000/api/crm/records?module_key=contacts&page=1&page_size=10');
+    const req = buildRequest('http://localhost:3000/api/crm/records?module_key=contacts&page=1&page_size=50');
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.records).toEqual(records);
     expect(body.total).toBe(1);
     expect(body.page).toBe(1);
-    expect(body.pageSize).toBe(10);
+    expect(body.pageSize).toBe(50);
   });
 
-  it('caps page_size at 100', async () => {
+  it('defaults invalid page_size to 25', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
     const sb = buildMockSupabase({
       recordsResult: { data: [], count: 0, error: null },
@@ -139,7 +139,7 @@ describe('GET /api/crm/records', () => {
     const res = await GET(req);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.pageSize).toBe(100);
+    expect(body.pageSize).toBe(25);
   });
 });
 

@@ -19,6 +19,7 @@ import {
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
 import type { CrmModule, CrmField, CrmView, CrmRecord, ViewSort, ViewFilter, TreeGroupBy, CrmDealStage } from '@/lib/crm/types';
+import { CRM_RECORD_PAGE_SIZES, parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
 
 /* ---------- Contacts tab components (lazy-loaded) ---------- */
 const ContactGroups = dynamic(() => import('@/components/contacts/ContactGroups'));
@@ -42,6 +43,7 @@ interface PageProps {
   searchParams: Promise<{
     view?: string;
     page?: string;
+    page_size?: string;
     search?: string;
     scope?: 'all' | 'mine' | 'downline';
     sortField?: string;
@@ -56,7 +58,7 @@ interface PageProps {
 
 async function ModulePageContent({ params, searchParams }: PageProps) {
   const { moduleKey } = await params;
-  const { page: pageStr, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId, viewMode, treeGroupBy, tab } = await searchParams;
+  const { page: pageStr, page_size: pageSizeParam, search, view: viewId, scope, sortField, sortDirection, filters: filtersParam, territory: territoryId, viewMode, treeGroupBy, tab } = await searchParams;
   
   let profile;
   try {
@@ -68,7 +70,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   if (!profile) return notFound();
 
   const page = parseInt(pageStr || '1', 10);
-  const pageSize = 25;
+  const pageSize = parseCrmRecordPageSize(pageSizeParam);
 
   // Step 1: module + territories in parallel (both only need org_id)
   const [moduleResult, territoriesResult] = await Promise.allSettled([
@@ -264,9 +266,12 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / pageSize);
 
-  const buildPageUrl = (p: number) => {
+  const buildListQuery = (overrides: { page?: number; pageSize?: number }) => {
+    const p = overrides.page ?? page;
+    const sz = overrides.pageSize ?? pageSize;
     const params = new URLSearchParams();
     params.set('page', String(p));
+    params.set('page_size', String(sz));
     if (viewId) params.set('view', viewId);
     if (search) params.set('search', search);
     if (scope) params.set('scope', scope);
@@ -274,6 +279,8 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     if (sortDirection) params.set('sortDirection', sortDirection);
     if (filtersParam) params.set('filters', filtersParam);
     if (territoryId) params.set('territory', territoryId);
+    if (viewMode) params.set('viewMode', viewMode);
+    if (treeGroupBy) params.set('treeGroupBy', treeGroupBy);
     return `/crm/modules/${moduleKey}?${params.toString()}`;
   };
 
@@ -295,71 +302,95 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         dealStages={dealStages}
       />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="w-full mt-3 glass-card rounded-lg p-3 border border-slate-200 dark:border-white/10 flex items-center justify-between">
+      {/* Pagination + page size */}
+      {total > 0 && (
+        <div className="w-full mt-3 glass-card rounded-lg p-3 border border-slate-200 dark:border-white/10 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Showing <span className="text-slate-900 dark:text-white font-medium">{((page - 1) * pageSize) + 1}</span> to{' '}
             <span className="text-slate-900 dark:text-white font-medium">{Math.min(page * pageSize, total)}</span> of{' '}
             <span className="text-slate-900 dark:text-white font-medium">{total.toLocaleString()}</span> results
           </p>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 px-3 rounded-lg border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
-              disabled={page <= 1}
-              asChild
-            >
-              <Link href={buildPageUrl(page - 1)} prefetch={false}>
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Previous
-              </Link>
-            </Button>
-            
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (page <= 3) {
-                  pageNum = i + 1;
-                } else if (page >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = page - 2 + i;
-                }
-                
-                return (
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+              <span className="whitespace-nowrap text-slate-500 dark:text-slate-400">Per page</span>
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden">
+                {CRM_RECORD_PAGE_SIZES.map((sz) => (
                   <Link
-                    key={pageNum}
-                    href={buildPageUrl(pageNum)}
+                    key={sz}
+                    href={buildListQuery({ page: 1, pageSize: sz })}
                     prefetch={false}
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
-                      pageNum === page
-                        ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                      pageSize === sz
+                        ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-800 dark:text-teal-300'
+                        : 'bg-white dark:bg-slate-900/40 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
                     }`}
                   >
-                    {pageNum}
+                    {sz}
                   </Link>
-                );
-              })}
+                ))}
+              </div>
             </div>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-9 px-3 rounded-lg border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
-              disabled={page >= totalPages}
-              asChild
-            >
-              <Link href={buildPageUrl(page + 1)} prefetch={false}>
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Link>
-            </Button>
+
+            {totalPages > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-lg border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
+                  disabled={page <= 1}
+                  asChild
+                >
+                  <Link href={buildListQuery({ page: page - 1 })} prefetch={false}>
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Previous
+                  </Link>
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (page <= 3) {
+                      pageNum = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = page - 2 + i;
+                    }
+
+                    return (
+                      <Link
+                        key={pageNum}
+                        href={buildListQuery({ page: pageNum })}
+                        prefetch={false}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center text-sm font-medium transition-colors ${
+                          pageNum === page
+                            ? 'bg-teal-100 dark:bg-teal-500/20 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+                        }`}
+                      >
+                        {pageNum}
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3 rounded-lg border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white disabled:opacity-50"
+                  disabled={page >= totalPages}
+                  asChild
+                >
+                  <Link href={buildListQuery({ page: page + 1 })} prefetch={false}>
+                    Next
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

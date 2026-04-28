@@ -696,6 +696,7 @@ export interface CreateDealStageInput {
   is_won?: boolean;
   is_lost?: boolean;
   display_order?: number;
+  wip_limit?: number | null;
 }
 
 export async function createDealStage(input: CreateDealStageInput): Promise<CrmDealStage> {
@@ -724,6 +725,7 @@ export async function createDealStage(input: CreateDealStageInput): Promise<CrmD
       is_won: input.is_won || false,
       is_lost: input.is_lost || false,
       display_order: displayOrder,
+      wip_limit: input.wip_limit ?? null,
     })
     .select()
     .single();
@@ -734,7 +736,7 @@ export async function createDealStage(input: CreateDealStageInput): Promise<CrmD
 
 export async function updateDealStage(
   stageId: string,
-  updates: Partial<Pick<CrmDealStage, 'name' | 'color' | 'probability' | 'is_won' | 'is_lost' | 'display_order' | 'is_active'>>
+  updates: Partial<Pick<CrmDealStage, 'name' | 'color' | 'probability' | 'is_won' | 'is_lost' | 'display_order' | 'is_active' | 'wip_limit'>>
 ): Promise<CrmDealStage> {
   const supabase = await createCrmClient();
   

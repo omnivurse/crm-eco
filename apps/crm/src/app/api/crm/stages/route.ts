@@ -41,13 +41,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { key, name, color, probability, is_won, is_lost, display_order } = body;
+    const { key, name, color, probability, is_won, is_lost, display_order, wip_limit } = body;
 
     if (!key || !name) {
       return NextResponse.json(
         { error: 'key and name are required' },
         { status: 400 }
       );
+    }
+
+    let normalizedWipLimit: number | null = null;
+    if (wip_limit !== null && wip_limit !== undefined && wip_limit !== '') {
+      const n = Math.floor(Number(wip_limit));
+      normalizedWipLimit = Number.isFinite(n) && n >= 0 ? n : null;
     }
 
     const stage = await createDealStage({
@@ -59,6 +65,7 @@ export async function POST(request: NextRequest) {
       is_won,
       is_lost,
       display_order,
+      wip_limit: normalizedWipLimit,
     });
 
     return NextResponse.json(stage, { status: 201 });
@@ -94,6 +101,16 @@ export async function PUT(request: NextRequest) {
         { error: 'id is required' },
         { status: 400 }
       );
+    }
+
+    if ('wip_limit' in updates) {
+      const raw = updates.wip_limit;
+      if (raw === null || raw === undefined || raw === '') {
+        updates.wip_limit = null;
+      } else {
+        const n = Math.floor(Number(raw));
+        updates.wip_limit = Number.isFinite(n) && n >= 0 ? n : null;
+      }
     }
 
     const stage = await updateDealStage(id, updates);

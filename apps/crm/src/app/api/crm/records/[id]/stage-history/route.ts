@@ -58,6 +58,7 @@ export async function GET(
     .from('crm_records')
     .select('id, stage, updated_at')
     .eq('id', id)
+    .eq('org_id', profile.organization_id)
     .maybeSingle();
 
   if (recordErr) {
@@ -83,6 +84,7 @@ export async function GET(
       `,
     )
     .eq('record_id', id)
+    .eq('org_id', profile.organization_id)
     .order('created_at', { ascending: false })
     .limit(100);
 

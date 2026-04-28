@@ -23,6 +23,7 @@ import {
 import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
+import { resolveNoteSourceRecordIdsWithClient } from '@/lib/crm/note-aggregate';
 
 // ============================================================================
 // Types
@@ -143,18 +144,12 @@ export default function DealWarRoomPage() {
     if (!id) return;
 
     try {
-      const [dealRes, notesRes, tasksRes, stageRes] = await Promise.all([
+      const [dealRes, tasksRes, stageRes] = await Promise.all([
         supabase
           .from('crm_records')
           .select('id, title, stage, status, data, owner_profile:profiles!crm_records_owner_id_fkey(full_name)')
           .eq('id', id)
           .single(),
-        supabase
-          .from('crm_notes')
-          .select('id, body, is_pinned, created_at, author:profiles!crm_notes_created_by_fkey(full_name)')
-          .eq('record_id', id)
-          .order('created_at', { ascending: false })
-          .limit(50),
         supabase
           .from('crm_tasks')
           .select('id, title, description, due_at, priority, status, activity_type, completed_at, created_at, assignee:profiles!crm_tasks_assigned_to_fkey(full_name)')
@@ -175,8 +170,25 @@ export default function DealWarRoomPage() {
         return;
       }
 
+      const dealRow = dealRes.data as DealRecord;
+      const noteSourceIds = await resolveNoteSourceRecordIdsWithClient(
+        supabase,
+        {
+          id: dealRow.id,
+          data: (dealRow.data || {}) as Record<string, unknown>,
+        },
+        'deals',
+      );
+
+      const notesRes = await supabase
+        .from('crm_notes')
+        .select('id, body, is_pinned, created_at, author:profiles!crm_notes_created_by_fkey(full_name)')
+        .in('record_id', noteSourceIds)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setDeal(dealRes.data as any);
+      setDeal(dealRow as any);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setNotes((notesRes.data as any) || []);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

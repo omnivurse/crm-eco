@@ -4,8 +4,8 @@ import {
   getRecordWithModule,
   getFieldsForModule,
   getDefaultLayout,
-  getNotesForRecord,
-  getTimelineForRecord,
+  getNotesForRecordAggregated,
+  getTimelineForRecordAggregated,
   getRecordLinks,
   getAttachmentsForRecord,
   getDealStages,
@@ -33,7 +33,7 @@ interface PageProps {
 
 /** Lazy-loaded timeline tab — fetches data only when streamed */
 async function LazyTimeline({ recordId }: { recordId: string }) {
-  const timeline = await getTimelineForRecord(recordId);
+  const timeline = await getTimelineForRecordAggregated(recordId);
   return <RecordTimeline events={timeline} />;
 }
 
@@ -111,7 +111,7 @@ async function RecordDetailContent({ params }: PageProps) {
   ] = await Promise.allSettled([
     getFieldsForModule(module.id),
     getDefaultLayout(module.id),
-    getNotesForRecord(recordId),
+    getNotesForRecordAggregated(record, module.key),
     module.key === 'deals' ? getDealStages(profile.organization_id) : Promise.resolve([]),
     isLayoutV2Enabled(profile),
     getRecordInsights(recordId),
@@ -144,6 +144,26 @@ async function RecordDetailContent({ params }: PageProps) {
       ? (recordData.notes_history as string)
       : null;
 
+  // Count legacy entries so the Notes tab badge reflects them too. The full
+  // parser lives in LegacyNotesCard (client-only); for the count we mirror its
+  // contract: split on <hr>, drop empties.
+  const legacyNoteCount = legacyNotes
+    ? legacyNotes
+        .split(/<hr\s*\/?>/gi)
+        .map((c) => c.replace(/<[^>]*>/g, '').trim())
+        .filter((c) => c.length > 0).length
+    : 0;
+
+  // V2 shell prefers insights.counts.notes; fold legacy entries in so the
+  // tab badge stays accurate regardless of which shell path renders.
+  const insightsWithLegacy =
+    legacyNoteCount > 0
+      ? {
+          ...insights,
+          counts: { ...insights.counts, notes: insights.counts.notes + legacyNoteCount },
+        }
+      : insights;
+
   const Shell = useLayoutV2 ? RecordDetailShellV2 : RecordDetailShell;
 
   return (
@@ -154,10 +174,10 @@ async function RecordDetailContent({ params }: PageProps) {
       module={module}
       fields={fields}
       stages={stages}
-      noteCount={notes.length}
+      noteCount={notes.length + legacyNoteCount}
       notes={notes}
       orgId={profile.organization_id}
-      insights={insights}
+      insights={insightsWithLegacy}
       className="h-[calc(100vh-64px)]"
     >
       {{
@@ -198,11 +218,14 @@ async function RecordDetailContent({ params }: PageProps) {
         ),
 
         notes: (
-          <NotesPanel
-            recordId={recordId}
-            notes={notes}
-            orgId={profile.organization_id}
-          />
+          <div className="space-y-4">
+            <NotesPanel
+              recordId={recordId}
+              notes={notes}
+              orgId={profile.organization_id}
+            />
+            {legacyNotes && <LegacyNotesCard notesHtml={legacyNotes} />}
+          </div>
         ),
 
         attachments: (

@@ -19,6 +19,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { applyCrmRecordTextSearch } from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,31 +105,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      const trimmed = search.trim();
-      const phoneDigits = trimmed.replace(/[^0-9]/g, '');
-      const isPhoneQuery =
-        phoneDigits.length >= 4 && phoneDigits.length <= 15;
-
-      if (isPhoneQuery) {
-        const safePhone = phoneDigits.slice(-10);
-        const safeTrimmed = trimmed.replace(/[%_,().\\]/g, '\\$&');
-        query = query.or(
-          `phone.ilike.%${safePhone}%,phone.ilike.%${safeTrimmed}%,title.ilike.%${safeTrimmed}%`,
-        );
-      } else if (trimmed.length >= 2) {
-        const prefixQuery = trimmed
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((w) => `${w}:*`)
-          .join(' & ');
-        query = query.textSearch('search', prefixQuery, {
-          type: 'plain',
-          config: 'english',
-        });
-      } else {
-        const safe = trimmed.replace(/[%_,().\\]/g, '\\$&');
-        query = query.or(`title.ilike.%${safe}%,email.ilike.%${safe}%`);
-      }
+      query = applyCrmRecordTextSearch(query, search);
     }
 
     query = query.order('created_at', { ascending: false }).range(0, HARD_CAP - 1);

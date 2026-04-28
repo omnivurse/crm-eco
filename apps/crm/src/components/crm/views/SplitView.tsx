@@ -70,12 +70,15 @@ const CompactRow = memo(function CompactRow({
   isSelected,
   onSelect,
   onClick,
+  onOpenFullRecord,
 }: {
   record: CrmRecord;
   isActive: boolean;
   isSelected: boolean;
   onSelect: () => void;
   onClick: () => void;
+  /** Navigate to `/crm/r/:id` (e.g. double-click). */
+  onOpenFullRecord?: () => void;
 }) {
   const displayName = getDisplayName(record);
   const { status, style: statusStyle } = getStatusInfo(record);
@@ -91,6 +94,11 @@ const CompactRow = memo(function CompactRow({
         isSelected && !isActive && 'bg-teal-50/50 dark:bg-teal-500/5'
       )}
       onClick={onClick}
+      onDoubleClick={(e) => {
+        e.preventDefault();
+        onOpenFullRecord?.();
+      }}
+      title="Click to preview · Double-click to open full record"
     >
       <div onClick={(e) => e.stopPropagation()}>
         <Checkbox
@@ -443,6 +451,7 @@ export const SplitView = memo(function SplitView({
                 isSelected={selectedIds.has(record.id)}
                 onSelect={() => handleSelectRow(record.id)}
                 onClick={() => setActiveRecordId(record.id)}
+                onOpenFullRecord={() => onRowClick?.(record.id)}
               />
             </div>
           ))}

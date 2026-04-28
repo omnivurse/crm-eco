@@ -21,6 +21,8 @@ import {
 } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
+/** Avoid Edge/runtime quirks on hosts where API routes otherwise 404 or mis-route. */
+export const runtime = 'nodejs';
 
 interface RecentlyViewedJoinedRow {
   record_id: string;
@@ -62,10 +64,23 @@ export async function GET(request: NextRequest) {
       .eq('org_id', profile.organization_id)
       .eq('key', moduleKey)
       .maybeSingle();
-    if (!moduleRow) {
+
+    // Match /crm/modules/contacts behavior: some orgs only have `members`, not `contacts`.
+    let resolved = moduleRow;
+    if (!resolved && moduleKey === 'contacts') {
+      const { data: membersRow } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('org_id', profile.organization_id)
+        .eq('key', 'members')
+        .maybeSingle();
+      resolved = membersRow ?? null;
+    }
+
+    if (!resolved) {
       return NextResponse.json({ data: [] });
     }
-    moduleId = moduleRow.id;
+    moduleId = resolved.id;
   }
 
   const { user } = await getAuthUser();
@@ -154,8 +169,17 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-  if (!record || record.org_id !== profile.organization_id) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!record) {
+    return NextResponse.json(
+      { error: 'Record not found', code: 'record_not_found' },
+      { status: 404 },
+    );
+  }
+  if (record.org_id !== profile.organization_id) {
+    return NextResponse.json(
+      { error: 'Record is not in your organization', code: 'org_mismatch' },
+      { status: 403 },
+    );
   }
 
   // Upsert on (user_id, record_id). We bump last_viewed_at + view_count

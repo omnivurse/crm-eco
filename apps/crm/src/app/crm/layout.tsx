@@ -34,14 +34,20 @@ export default async function CrmLayout({
     redirect('/crm-login?error=no_crm_access');
   }
 
-  // Fetch organization and modules in parallel with caching
+  const organizationId = profile.organization_id;
+  if (
+    !organizationId ||
+    (typeof organizationId === 'string' && organizationId.trim() === '')
+  ) {
+    redirect('/crm-login?error=no_organization');
+  }
   let organization = null;
   let modules: Awaited<ReturnType<typeof getCachedModules>> = [];
 
   try {
     [organization, modules] = await Promise.all([
-      getCachedOrganization(profile.organization_id),
-      getCachedModules(profile.organization_id),
+      getCachedOrganization(organizationId),
+      getCachedModules(organizationId),
     ]);
   } catch (error) {
     console.error('[CRM Layout] Failed to fetch org/modules:', error);
@@ -52,8 +58,8 @@ export default async function CrmLayout({
   let activeModules = modules || [];
   if (activeModules.length === 0) {
     try {
-      await ensureDefaultModules(profile.organization_id);
-      activeModules = await getModules(profile.organization_id);
+      await ensureDefaultModules(organizationId);
+      activeModules = await getModules(organizationId);
     } catch (error) {
       console.error('[CRM Layout] Failed to auto-seed modules:', error);
       // Continue with empty modules
@@ -64,6 +70,7 @@ export default async function CrmLayout({
     <ClientProviders
       userName={profile.full_name || ''}
       userEmail={profile.email || ''}
+      organizationId={organizationId}
     >
       <CrmShell
         modules={activeModules}

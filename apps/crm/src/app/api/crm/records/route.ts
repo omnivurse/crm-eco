@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { executeCrmRecordCreate } from '@/lib/crm/record-create-service';
+import { applyCrmRecordTextSearch } from '@/lib/crm/record-search';
+import { parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
 
 /**
  * GET /api/crm/records
@@ -19,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const moduleKey = searchParams.get('module_key');
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const pageSize = Math.min(parseInt(searchParams.get('page_size') || '25', 10), 100);
+    const pageSize = parseCrmRecordPageSize(searchParams.get('page_size'));
     const search = searchParams.get('search');
     const advisorId = searchParams.get('advisor_id');
     const includeDownline = searchParams.get('include_downline') === 'true';
@@ -90,25 +92,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      const trimmed = search.trim();
-      const phoneDigits = trimmed.replace(/[^0-9]/g, '');
-      const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
-
-      if (isPhoneQuery) {
-        query = query.or(
-          `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${trimmed}%,title.ilike.%${trimmed}%`
-        );
-      } else if (trimmed.length >= 2) {
-        const prefixQuery = trimmed
-          .split(/\s+/)
-          .filter(Boolean)
-          .map((w) => `${w}:*`)
-          .join(' & ');
-        query = query.textSearch('search', prefixQuery, { type: 'plain', config: 'english' });
-      } else {
-        const safeSearch = trimmed.replace(/[%_,().\\]/g, '\\$&');
-        query = query.or(`title.ilike.%${safeSearch}%,email.ilike.%${safeSearch}%`);
-      }
+      query = applyCrmRecordTextSearch(query, search);
     }
 
     // Apply sorting

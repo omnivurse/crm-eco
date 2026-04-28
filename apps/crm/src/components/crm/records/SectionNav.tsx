@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback } from 'react';
+import { useCallback } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { LayoutSectionAccent } from '@/lib/crm/types';
 import type { SectionMeta } from './section-utils';
@@ -114,8 +114,6 @@ const NAV_ACCENT_CLASSES: Record<LayoutSectionAccent, NavAccentClassSet> = {
 };
 
 export function SectionNav({ sections, activeSectionKey, onSectionClick }: SectionNavProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
   const handleClick = useCallback(
     (key: string) => {
       onSectionClick(key);
@@ -132,10 +130,7 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
 
   return (
     <div className="sticky top-[140px] z-[5] bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200 dark:border-white/5 -mx-1 px-1 shadow-sm">
-      <div
-        ref={scrollRef}
-        className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-hide"
-      >
+      <div className="flex flex-wrap items-center gap-2 py-2.5">
         {sections.map((s) => {
           const isActive = s.key === activeSectionKey;
           const navAccent = NAV_ACCENT_CLASSES[s.accent ?? 'slate'];

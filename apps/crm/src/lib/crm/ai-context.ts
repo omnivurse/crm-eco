@@ -9,6 +9,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { CrmRecord } from './types';
+import { resolveNoteSourceRecordIdsWithClient, moduleKeyFromJoinedRelation } from './note-aggregate';
 
 export interface AiRecordContext {
   record: CrmRecord;
@@ -38,12 +39,19 @@ export async function loadAiRecordContext({
 }: LoadAiContextArgs): Promise<AiRecordContext | null> {
   const { data: record } = await supabase
     .from('crm_records')
-    .select('*')
+    .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
     .eq('id', recordId)
     .eq('org_id', orgId)
     .maybeSingle();
 
   if (!record) return null;
+
+  const moduleKey = moduleKeyFromJoinedRelation(record.module);
+  const noteIds = await resolveNoteSourceRecordIdsWithClient(
+    supabase,
+    record as CrmRecord,
+    moduleKey,
+  );
 
   const [{ data: moduleRow }, { data: notes }, { data: tasks }] = await Promise.all([
     supabase
@@ -53,8 +61,8 @@ export async function loadAiRecordContext({
       .maybeSingle(),
     supabase
       .from('crm_notes')
-      .select('content, created_at')
-      .eq('record_id', recordId)
+      .select('body, created_at')
+      .in('record_id', noteIds)
       .order('created_at', { ascending: false })
       .limit(limit),
     supabase
@@ -72,7 +80,7 @@ export async function loadAiRecordContext({
       (notes ?? []).map((n) => ({
         // Trim long notes so a single runaway entry doesn't dominate the
         // prompt budget.
-        content: String(n.content ?? '').slice(0, 500),
+        content: String(n.body ?? '').slice(0, 500),
         created_at: n.created_at,
       })),
     recentTasks:

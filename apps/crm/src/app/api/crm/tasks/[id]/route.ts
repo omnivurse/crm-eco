@@ -90,6 +90,7 @@ export async function PATCH(
     .from('crm_tasks')
     .select('id')
     .eq('id', id)
+    .eq('org_id', profile.organization_id)
     .maybeSingle();
 
   if (existingErr) {
@@ -106,6 +107,7 @@ export async function PATCH(
     .from('crm_tasks')
     .update(updates)
     .eq('id', id)
+    .eq('org_id', profile.organization_id)
     .select()
     .maybeSingle();
 

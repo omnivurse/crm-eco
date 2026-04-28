@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Dialog,
@@ -56,81 +56,77 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const searchAbortRef = useRef<AbortController | null>(null);
 
-  /**
-   * Hybrid global search.
-   *
-   * Calls the unified `/api/crm/search` endpoint which runs the
-   * `crm_smart_search` Postgres RPC under the hood — combining FTS
-   * prefix matching with `pg_trgm` similarity for typo tolerance.
-   * That way "Bollman" still surfaces "Bollmann", just like Zoho.
-   *
-   * The endpoint already handles phone-number normalisation, RLS
-   * scoping, and the ilike fallback if the RPC isn't available.
-   */
-  const search = useCallback(async (searchQuery: string) => {
-    const trimmed = searchQuery.trim();
+  // Debounced search — abort in-flight fetches when query changes (same pattern as CommandPalette).
+  useEffect(() => {
+    if (!open) return;
+
+    const trimmed = query.trim();
     if (!trimmed) {
+      searchAbortRef.current?.abort();
       setResults([]);
+      setLoading(false);
       return;
     }
 
+    searchAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    searchAbortRef.current = ctrl;
     setLoading(true);
-    const controller = new AbortController();
 
-    try {
-      const res = await fetch(
-        `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=25`,
-        { signal: controller.signal, credentials: 'same-origin' },
-      );
+    const handle = window.setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=35`,
+          { signal: ctrl.signal, credentials: 'same-origin' },
+        );
 
-      if (!res.ok) {
-        console.error('Search error:', res.status, await res.text());
-        setResults([]);
-        return;
+        if (!res.ok) {
+          if (!ctrl.signal.aborted) {
+            console.error('Search error:', res.status, await res.text());
+            setResults([]);
+          }
+          return;
+        }
+
+        const payload = (await res.json()) as {
+          results?: Array<{
+            id: string;
+            title: string;
+            subtitle?: string;
+            module: string;
+            moduleKey: string;
+            matchType?: 'exact' | 'fuzzy';
+          }>;
+        };
+
+        if (!ctrl.signal.aborted) {
+          const searchResults: SearchResult[] = (payload.results || []).map((r) => ({
+            id: r.id,
+            title: r.title || 'Untitled',
+            subtitle: r.subtitle,
+            module: r.moduleKey || 'unknown',
+            moduleName: r.module || 'Record',
+            matchType: r.matchType,
+          }));
+          setResults(searchResults);
+          setSelectedIndex(0);
+        }
+      } catch (error) {
+        if ((error as { name?: string }).name === 'AbortError') return;
+        if (!ctrl.signal.aborted) console.error('Search error:', error);
+        if (!ctrl.signal.aborted) setResults([]);
+      } finally {
+        if (!ctrl.signal.aborted) setLoading(false);
       }
-
-      const payload = (await res.json()) as {
-        results?: Array<{
-          id: string;
-          title: string;
-          subtitle?: string;
-          module: string;
-          moduleKey: string;
-          matchType?: 'exact' | 'fuzzy';
-        }>;
-      };
-
-      const searchResults: SearchResult[] = (payload.results || []).map((r) => ({
-        id: r.id,
-        title: r.title || 'Untitled',
-        subtitle: r.subtitle,
-        module: r.moduleKey || 'unknown',
-        moduleName: r.module || 'Record',
-        matchType: r.matchType,
-      }));
-
-      setResults(searchResults);
-      setSelectedIndex(0);
-    } catch (error) {
-      if ((error as { name?: string }).name !== 'AbortError') {
-        console.error('Search error:', error);
-      }
-    } finally {
-      setLoading(false);
-    }
-
-    return () => controller.abort();
-  }, []);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      search(query);
     }, 300);
 
-    return () => clearTimeout(timer);
-  }, [query, search]);
+    return () => {
+      window.clearTimeout(handle);
+      ctrl.abort();
+    };
+  }, [query, open]);
 
   // Keyboard navigation
   useEffect(() => {

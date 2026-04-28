@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery, useQueries } from '@tanstack/react-query';
+import { useTenantOrganizationId } from '@/contexts/TenantContext';
 import { supabase } from '@/lib/supabase-client';
 import { queryKeys } from '@/lib/query-keys';
 import type { CrmRecord, CrmField, CrmLayout } from '@/lib/crm/types';
@@ -22,15 +23,21 @@ export interface EditRecordData {
   layout: CrmLayout | null;
 }
 
-async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | null> {
-  const { data, error } = await supabase
+async function fetchRecordWithModule(
+  recordId: string,
+  tenantOrgId: string | null,
+): Promise<EditRecordRow | null> {
+  let q = supabase
     .from('crm_records')
     .select(`
       *,
       module:crm_modules!crm_records_module_id_fkey(id, key, name, name_plural)
     `)
-    .eq('id', recordId)
-    .single();
+    .eq('id', recordId);
+  if (tenantOrgId) {
+    q = q.eq('org_id', tenantOrgId);
+  }
+  const { data, error } = await q.single();
 
   if (error) throw error;
   if (!data) return null;
@@ -67,9 +74,11 @@ async function fetchDefaultLayout(moduleId: string): Promise<CrmLayout | null> {
 }
 
 export function useEditRecordData(recordId: string | null) {
+  const tenantOrgId = useTenantOrganizationId();
+
   const recordQuery = useQuery({
-    queryKey: ['edit-record', recordId],
-    queryFn: () => fetchRecordWithModule(recordId!),
+    queryKey: ['edit-record', recordId, tenantOrgId ?? ''],
+    queryFn: () => fetchRecordWithModule(recordId!, tenantOrgId),
     enabled: !!recordId,
     staleTime: 0,
   });

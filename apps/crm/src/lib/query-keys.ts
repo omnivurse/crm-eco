@@ -10,7 +10,10 @@ export const queryKeys = {
     list: (moduleId: string, filters?: Record<string, unknown>) =>
       [...queryKeys.records.lists(), moduleId, filters] as const,
     details: () => [...queryKeys.records.all, 'detail'] as const,
-    detail: (recordId: string) => [...queryKeys.records.details(), recordId] as const,
+    detail: (recordId: string, tenantOrgId?: string | null) =>
+      tenantOrgId
+        ? ([...queryKeys.records.details(), recordId, tenantOrgId] as const)
+        : ([...queryKeys.records.details(), recordId] as const),
     // For drawer - lighter version with limited data
     drawer: (recordId: string) => [...queryKeys.records.all, 'drawer', recordId] as const,
   },

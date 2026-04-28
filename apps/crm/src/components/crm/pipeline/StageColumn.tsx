@@ -3,9 +3,13 @@
 import { useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Plus, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, AlertTriangle, Settings2, Loader2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { Button } from '@crm-eco/ui/components/button';
+import { Input } from '@crm-eco/ui/components/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@crm-eco/ui/components/popover';
+import { toast } from 'sonner';
 import { DealCard } from './DealCard';
 import type { CrmRecord, CrmDealStage } from '@/lib/crm/types';
 
@@ -18,6 +22,10 @@ interface StageColumnProps {
   wipLimit?: number; // Work-in-progress limit
   defaultCollapsed?: boolean;
   onQuickAction?: (action: 'call' | 'email' | 'task' | 'view' | 'edit' | 'delete', dealId: string) => void;
+  /** Show the WIP-limit settings gear (admins/managers only). */
+  canEditStage?: boolean;
+  /** Persist a new WIP limit (or null to turn it off). Returns the saved value. */
+  onWipLimitChange?: (stageId: string, newLimit: number | null) => Promise<void>;
 }
 
 export function StageColumn({
@@ -29,14 +37,51 @@ export function StageColumn({
   wipLimit,
   defaultCollapsed = false,
   onQuickAction,
+  canEditStage = false,
+  onWipLimitChange,
 }: StageColumnProps) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [draftLimit, setDraftLimit] = useState<string>(
+    wipLimit !== undefined ? String(wipLimit) : ''
+  );
+  const [isSavingLimit, setIsSavingLimit] = useState(false);
   const { isOver, setNodeRef } = useDroppable({
     id: stage.key,
   });
 
   const isOverWipLimit = wipLimit !== undefined && deals.length > wipLimit;
   const isAtWipLimit = wipLimit !== undefined && deals.length === wipLimit;
+  const showSettings = canEditStage && !!onWipLimitChange;
+
+  const handleSaveLimit = async (turnOff: boolean) => {
+    if (!onWipLimitChange) return;
+    let next: number | null = null;
+    if (!turnOff) {
+      const trimmed = draftLimit.trim();
+      if (trimmed === '') {
+        next = null;
+      } else {
+        const n = Math.floor(Number(trimmed));
+        if (!Number.isFinite(n) || n < 0) {
+          toast.error('Enter a whole number 0 or higher');
+          return;
+        }
+        next = n;
+      }
+    }
+    setIsSavingLimit(true);
+    try {
+      await onWipLimitChange(stage.id, next);
+      toast.success(next === null ? 'Limit turned off' : `Limit set to ${next}`);
+      setSettingsOpen(false);
+    } catch (err) {
+      console.error('Failed to save WIP limit:', err);
+      toast.error('Could not save the limit');
+    } finally {
+      setIsSavingLimit(false);
+    }
+  };
 
   return (
     <div className={cn(
@@ -87,6 +132,86 @@ export function StageColumn({
                 <span className="text-xs text-slate-500">
                   {stage.probability}%
                 </span>
+              )}
+              {showSettings && (
+                <Popover
+                  open={settingsOpen}
+                  onOpenChange={(open) => {
+                    setSettingsOpen(open);
+                    if (open) {
+                      setDraftLimit(wipLimit !== undefined ? String(wipLimit) : '');
+                    }
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      title="Set a limit for this column"
+                      className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors"
+                    >
+                      <Settings2 className="w-3.5 h-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-72 p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">
+                          Column limit
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Show a warning when this column has more than this many
+                          deals. Leave blank or turn off if you don&apos;t want one.
+                        </p>
+                      </div>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1}
+                        inputMode="numeric"
+                        placeholder="e.g. 10"
+                        value={draftLimit}
+                        onChange={(e) => setDraftLimit(e.target.value)}
+                        disabled={isSavingLimit}
+                        className="h-9"
+                      />
+                      <div className="flex items-center justify-between gap-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={isSavingLimit || wipLimit === undefined}
+                          onClick={() => handleSaveLimit(true)}
+                          className="text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                        >
+                          Turn off
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={isSavingLimit}
+                            onClick={() => setSettingsOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={isSavingLimit}
+                            onClick={() => handleSaveLimit(false)}
+                          >
+                            {isSavingLimit ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              'Save'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
           )}

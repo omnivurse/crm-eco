@@ -32,6 +32,7 @@ export async function PATCH(
       .from('crm_modules')
       .update(updates)
       .eq('id', id)
+      .eq('org_id', profile.organization_id)
       .select()
       .single();
 
@@ -67,6 +68,7 @@ export async function DELETE(
       .from('crm_modules')
       .select('is_system')
       .eq('id', id)
+      .eq('org_id', profile.organization_id)
       .single();
 
     if (existingModule?.is_system) {
@@ -76,7 +78,8 @@ export async function DELETE(
     const { error } = await supabase
       .from('crm_modules')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', profile.organization_id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

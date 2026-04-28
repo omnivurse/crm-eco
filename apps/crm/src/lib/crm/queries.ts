@@ -34,6 +34,8 @@ import type {
   FilterOperator,
   CrmTerritory,
 } from './types';
+import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
+import { applyCrmRecordTextSearch } from './record-search';
 
 // ============================================================================
 // Date Range Helper Functions
@@ -191,6 +193,8 @@ export async function createCrmClient() {
 // ============================================================================
 // User & Profile Queries
 // ============================================================================
+// Tenant: `profiles.organization_id` is the same UUID as `crm_*`.`org_id` for that tenant
+// (conventions: `lib/crm/org-scope.ts`).
 
 export async function getCurrentProfile(): Promise<CrmProfile | null> {
   try {
@@ -755,21 +759,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   }
 
   if (search) {
-    const phoneDigits = search.replace(/[^0-9]/g, '');
-    const isPhoneQuery = phoneDigits.length >= 4 && phoneDigits.length <= 15;
-
-    if (isPhoneQuery) {
-      query = query.or(
-        `phone.ilike.%${phoneDigits.slice(-10)}%,phone.ilike.%${search}%,title.ilike.%${search}%`
-      );
-    } else {
-      const prefixQuery = search
-        .split(/\s+/)
-        .filter(Boolean)
-        .map((w) => `${w}:*`)
-        .join(' & ');
-      query = query.textSearch('search', prefixQuery, { type: 'plain', config: 'english' });
-    }
+    query = applyCrmRecordTextSearch(query, search);
   }
 
   // Apply sorting — real columns on crm_records vs JSONB `data` paths
@@ -868,10 +858,26 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
 // Notes Queries
 // ============================================================================
 
-export async function getNotesForRecord(recordId: string, limit = 100): Promise<CrmNoteWithAuthor[]> {
+const DEFAULT_NOTES_LIMIT = 500;
+
+/** All CRM record IDs whose notes appear on this record (person lineage, deal links, etc.). */
+export async function resolveNoteSourceRecordIds(
+  record: CrmRecord,
+  moduleKey: string,
+): Promise<string[]> {
+  const supabase = await createCrmClient();
+  return resolveNoteSourceRecordIdsWithClient(supabase, record, moduleKey);
+}
+
+export async function getNotesForRecords(
+  recordIds: string[],
+  limit = DEFAULT_NOTES_LIMIT,
+): Promise<CrmNoteWithAuthor[]> {
+  const uniqueIds = [...new Set(recordIds.filter(Boolean))];
+  if (uniqueIds.length === 0) return [];
+
   const supabase = await createCrmClient();
 
-  // Try with FK hint first, fallback to simple join if constraint name doesn't match
   let data, error;
   ({ data, error } = await supabase
     .from('crm_notes')
@@ -883,11 +889,10 @@ export async function getNotesForRecord(recordId: string, limit = 100): Promise<
         avatar_url
       )
     `)
-    .eq('record_id', recordId)
+    .in('record_id', uniqueIds)
     .order('created_at', { ascending: false })
     .limit(limit));
 
-  // Fallback: if FK hint fails, try without it
   if (error) {
     console.warn('[CRM] Notes FK hint failed, trying without hint:', error.message);
     ({ data, error } = await supabase
@@ -900,16 +905,32 @@ export async function getNotesForRecord(recordId: string, limit = 100): Promise<
           avatar_url
         )
       `)
-      .eq('record_id', recordId)
+      .in('record_id', uniqueIds)
       .order('created_at', { ascending: false })
       .limit(limit));
   }
 
   if (error) {
-    console.error('[CRM] getNotesForRecord failed:', error);
+    console.error('[CRM] getNotesForRecords failed:', error);
     return [];
   }
   return (data || []) as CrmNoteWithAuthor[];
+}
+
+export async function getNotesForRecordAggregated(
+  record: CrmRecord,
+  moduleKey: string,
+  limit = DEFAULT_NOTES_LIMIT,
+): Promise<CrmNoteWithAuthor[]> {
+  const ids = await resolveNoteSourceRecordIds(record, moduleKey);
+  return getNotesForRecords(ids, limit);
+}
+
+export async function getNotesForRecord(
+  recordId: string,
+  limit = DEFAULT_NOTES_LIMIT,
+): Promise<CrmNoteWithAuthor[]> {
+  return getNotesForRecords([recordId], limit);
 }
 
 // ============================================================================
@@ -1543,9 +1564,15 @@ export async function getAttachmentsForRecord(recordId: string): Promise<CrmAtta
 // Timeline Queries
 // ============================================================================
 
-export async function getTimelineForRecord(recordId: string, limit = 50): Promise<TimelineEvent[]> {
+export async function getTimelineForRecord(
+  recordId: string,
+  limit = 50,
+  noteRecordIds?: string[],
+): Promise<TimelineEvent[]> {
   const supabase = await createCrmClient();
-  
+  const noteIds =
+    noteRecordIds && noteRecordIds.length > 0 ? noteRecordIds : [recordId];
+
   // Fetch all timeline sources in parallel
   const [stageHistory, tasks, notes, attachments, auditLogs] = await Promise.all([
     // Stage history
@@ -1578,7 +1605,7 @@ export async function getTimelineForRecord(recordId: string, limit = 50): Promis
       .order('created_at', { ascending: false })
       .limit(limit),
     
-    // Notes
+    // Notes (may span lead + contact after conversion)
     supabase
       .from('crm_notes')
       .select(`
@@ -1589,7 +1616,7 @@ export async function getTimelineForRecord(recordId: string, limit = 50): Promis
           avatar_url
         )
       `)
-      .eq('record_id', recordId)
+      .in('record_id', noteIds)
       .order('created_at', { ascending: false })
       .limit(limit),
     
@@ -1694,6 +1721,28 @@ export async function getTimelineForRecord(recordId: string, limit = 50): Promis
   return events
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
     .slice(0, limit);
+}
+
+/** Notes on the timeline include the linked lead/contact when applicable. */
+export async function getTimelineForRecordAggregated(
+  recordId: string,
+  limit = 50,
+): Promise<TimelineEvent[]> {
+  const supabase = await createCrmClient();
+  const { data: row, error } = await supabase
+    .from('crm_records')
+    .select('id, data, module:crm_modules!crm_records_module_id_fkey(key)')
+    .eq('id', recordId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return getTimelineForRecord(recordId, limit);
+  }
+
+  const moduleKey = moduleKeyFromJoinedRelation(row.module);
+  const record = { id: row.id, data: row.data } as CrmRecord;
+  const noteIds = await resolveNoteSourceRecordIds(record, moduleKey);
+  return getTimelineForRecord(recordId, limit, noteIds);
 }
 
 // ============================================================================

@@ -28,6 +28,7 @@ const TransitionGateDialog = dynamic(
 interface PipelineClientProps {
   deals: CrmRecord[];
   stages: CrmDealStage[];
+  canEditStages?: boolean;
 }
 
 interface PendingTransition {
@@ -39,10 +40,26 @@ interface PendingTransition {
   fromStageLabel?: string;
 }
 
-export function PipelineClient({ deals, stages }: PipelineClientProps) {
+export function PipelineClient({ deals, stages, canEditStages = false }: PipelineClientProps) {
   const router = useRouter();
   const [pendingTransition, setPendingTransition] = useState<PendingTransition | null>(null);
   const [gateDialogOpen, setGateDialogOpen] = useState(false);
+
+  const handleWipLimitChange = useCallback(
+    async (stageId: string, newLimit: number | null): Promise<void> => {
+      const response = await fetch('/api/crm/stages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: stageId, wip_limit: newLimit }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || 'Failed to save column limit');
+      }
+      router.refresh();
+    },
+    [router]
+  );
 
   const getStageInfo = useCallback((stageKey: string) => {
     const stage = stages.find(s => s.key === stageKey);
@@ -122,6 +139,8 @@ export function PipelineClient({ deals, stages }: PipelineClientProps) {
         deals={deals}
         stages={stages}
         onStageChange={handleStageChange}
+        canEditStages={canEditStages}
+        onWipLimitChange={canEditStages ? handleWipLimitChange : undefined}
       />
 
       {/* Transition Gate Dialog */}

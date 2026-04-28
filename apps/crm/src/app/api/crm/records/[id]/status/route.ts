@@ -72,14 +72,11 @@ export async function PATCH(
       .from('crm_records')
       .select('id, org_id, status, title, module_id, data, crm_modules!inner(key)')
       .eq('id', recordId)
+      .eq('org_id', profile.organization_id)
       .single();
 
     if (fetchError || !record) {
       return NextResponse.json({ error: 'Record not found' }, { status: 404 });
-    }
-
-    if (record.org_id !== profile.organization_id) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
     const previousStatus = record.status;
@@ -97,7 +94,8 @@ export async function PATCH(
         data: updatedData,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', recordId);
+      .eq('id', recordId)
+      .eq('org_id', profile.organization_id);
 
     if (updateError) {
       return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });

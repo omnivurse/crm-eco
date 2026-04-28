@@ -117,7 +117,10 @@ export const ModuleShell = memo(function ModuleShell({
   // unreadable on phones.
   const isMobile = useIsMobile();
   const [mobileToolbarOpen, setMobileToolbarOpen] = useState(false);
-  const effectiveViewMode: ViewMode = isMobile && viewMode === 'table' ? 'list' : viewMode;
+  // On small screens, both table and split layouts are hard to use (split hides
+  // the preview or makes rows untappable). Use list rows — they navigate on tap.
+  const effectiveViewMode: ViewMode =
+    isMobile && (viewMode === 'table' || viewMode === 'split') ? 'list' : viewMode;
   const mobileActiveCount =
     filters.length + (scope !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
 

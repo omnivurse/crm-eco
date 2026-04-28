@@ -10,7 +10,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import {
   getCurrentProfile,
-  getTimelineForRecord,
+  getTimelineForRecordAggregated,
 } from '@/lib/crm/queries';
 
 export const dynamic = 'force-dynamic';
@@ -36,7 +36,7 @@ export async function GET(
   );
 
   try {
-    const events = await getTimelineForRecord(id, limit);
+    const events = await getTimelineForRecordAggregated(id, limit);
     return NextResponse.json({ events });
   } catch (err) {
     console.error('[timeline API] failed:', err);

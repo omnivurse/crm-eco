@@ -28,6 +28,8 @@ interface PipelineBoardProps {
   stages: CrmDealStage[];
   onStageChange?: (dealId: string, newStage: string, oldStage: string) => Promise<void>;
   className?: string;
+  canEditStages?: boolean;
+  onWipLimitChange?: (stageId: string, newLimit: number | null) => Promise<void>;
 }
 
 export function PipelineBoard({
@@ -35,6 +37,8 @@ export function PipelineBoard({
   stages,
   onStageChange,
   className,
+  canEditStages = false,
+  onWipLimitChange,
 }: PipelineBoardProps) {
   const [deals, setDeals] = useState<CrmRecord[]>(initialDeals);
   const [activeDeal, setActiveDeal] = useState<CrmRecord | null>(null);
@@ -171,6 +175,9 @@ export function PipelineBoard({
                   deals={stageDeals}
                   totalValue={totalValue}
                   isUpdating={isUpdating}
+                  wipLimit={stage.wip_limit ?? undefined}
+                  canEditStage={canEditStages}
+                  onWipLimitChange={onWipLimitChange}
                 />
               </SortableContext>
             );
