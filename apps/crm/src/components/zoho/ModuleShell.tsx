@@ -1000,10 +1000,13 @@ export const ModuleShell = memo(function ModuleShell({
               {/* Spotlight-style dropdown: fuzzy hits via crm_smart_search.
                   Same backend the top-header search uses, just module-scoped.
                   Click → open record. URL filter (Enter / 300ms-debounce) is
-                  unchanged and still narrows the list view as before. */}
+                  unchanged and still narrows the list view as before.
+                  z-50 + min-w on dropdown so it floats above the toolbar's
+                  glass-card backdrop-filter (which creates a new stacking
+                  context that traps low z-index children). */}
               {liveOpen && searchQuery.trim().length >= 2 && (
                 <div
-                  className="absolute z-30 mt-1 w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden"
+                  className="absolute left-0 right-0 top-full z-50 mt-1 min-w-[20rem] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden"
                   // Keep dropdown alive while user clicks a result.
                   onMouseDown={(e) => e.preventDefault()}
                 >
