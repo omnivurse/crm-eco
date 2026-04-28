@@ -176,7 +176,8 @@ export async function POST(request: NextRequest) {
           .from('inbox_conversations')
           .update({ unread_count: 0, last_read_at: new Date().toISOString() })
           .eq('id', itemId)
-          .eq('org_id', profile.organization_id);
+          .eq('org_id', profile.organization_id)
+          .eq('assigned_to', profile.id);
 
         if (error) {
           return NextResponse.json(

@@ -63,6 +63,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid organization' }, { status: 403 });
     }
 
+    const { data: moduleRow, error: moduleLookupError } = await supabase
+      .from('crm_modules')
+      .select('id')
+      .eq('id', moduleId)
+      .eq('org_id', profile.organization_id)
+      .maybeSingle();
+
+    if (moduleLookupError || !moduleRow) {
+      return NextResponse.json(
+        { error: 'Module not found in your organization' },
+        { status: 403 },
+      );
+    }
+
     // Create import job
     const { data: importJob, error: jobError } = await supabase
       .from('crm_import_jobs')

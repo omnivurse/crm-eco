@@ -78,13 +78,47 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
       }
 
-      // Insert tag assignments
-      const tagAssignments = parsed.data.record_ids.flatMap((recordId) =>
-        parsed.data.tag_ids.map((tagId) => ({
+      const { data: okRecords, error: recErr } = await supabase
+        .from('crm_records')
+        .select('id')
+        .in('id', parsed.data.record_ids)
+        .eq('org_id', profile.organization_id);
+
+      if (recErr) {
+        console.error('Error validating records for tags:', recErr);
+        return NextResponse.json({ error: recErr.message }, { status: 500 });
+      }
+
+      const { data: okTags, error: tagErr } = await supabase
+        .from('crm_tags')
+        .select('id')
+        .in('id', parsed.data.tag_ids)
+        .eq('org_id', profile.organization_id);
+
+      if (tagErr) {
+        console.error('Error validating tags:', tagErr);
+        return NextResponse.json({ error: tagErr.message }, { status: 500 });
+      }
+
+      const validRecordIds = new Set((okRecords ?? []).map((r) => r.id));
+      const validTagIds = (okTags ?? []).map((t) => t.id);
+
+      if (validRecordIds.size === 0 || validTagIds.length === 0) {
+        return NextResponse.json(
+          {
+            error: 'No matching records or tags in your organization',
+            code: 'nothing_to_apply',
+          },
+          { status: 400 },
+        );
+      }
+
+      const tagAssignments = [...validRecordIds].flatMap((recordId) =>
+        validTagIds.map((tagId) => ({
           record_id: recordId,
           tag_id: tagId,
           org_id: profile.organization_id,
-        }))
+        })),
       );
 
       const { error } = await supabase

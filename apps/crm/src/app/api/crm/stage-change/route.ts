@@ -55,6 +55,10 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    if (previousRecord.org_id !== profile.organization_id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     
     const previousStage = previousRecord.stage;
 

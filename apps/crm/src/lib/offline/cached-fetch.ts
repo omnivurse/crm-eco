@@ -26,6 +26,7 @@
  */
 
 import { cacheGet, cachePut, isStale as idbIsStale } from './response-cache';
+import { isEffectiveOnline } from './force-offline';
 
 export interface CachedFetchOptions<T> {
   /** Unique cache key for this request. Callers usually pass the URL
@@ -56,8 +57,7 @@ export interface CachedFetchResult<T> {
 }
 
 function isOnline(): boolean {
-  if (typeof navigator === 'undefined') return true;
-  return navigator.onLine;
+  return isEffectiveOnline();
 }
 
 /** Shallow-ish equality that's good enough for "did the server

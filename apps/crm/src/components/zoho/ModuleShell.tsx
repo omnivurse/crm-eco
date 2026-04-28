@@ -433,6 +433,7 @@ export const ModuleShell = memo(function ModuleShell({
       url: '/api/crm/records/bulk',
       body: {
         record_ids: Array.from(selectedIds),
+        module_id: module.id,
         updates: { owner_id: selectedOwnerId === '__unassigned__' ? null : selectedOwnerId },
       },
       queue: {
@@ -463,7 +464,7 @@ export const ModuleShell = memo(function ModuleShell({
     } else {
       toast.error(sendResult.error || 'Failed to assign owner');
     }
-  }, [selectedOwnerId, selectedIds, router, reportBulkResult, module.key]);
+  }, [selectedOwnerId, selectedIds, router, reportBulkResult, module.key, module.id]);
 
   const handleChangeStatus = useCallback(() => {
     setSelectedStatus('');
@@ -483,6 +484,7 @@ export const ModuleShell = memo(function ModuleShell({
       url: '/api/crm/records/bulk',
       body: {
         record_ids: Array.from(selectedIds),
+        module_id: module.id,
         updates: { status: selectedStatus },
       },
       queue: {
@@ -507,7 +509,7 @@ export const ModuleShell = memo(function ModuleShell({
     } else {
       toast.error(sendResult.error || 'Failed to update status');
     }
-  }, [selectedStatus, selectedIds, router, reportBulkResult, module.key]);
+  }, [selectedStatus, selectedIds, router, reportBulkResult, module.key, module.id]);
 
   const handleChangeStage = useCallback(() => {
     setSelectedStage('');
@@ -527,6 +529,7 @@ export const ModuleShell = memo(function ModuleShell({
       url: '/api/crm/records/bulk',
       body: {
         record_ids: Array.from(selectedIds),
+        module_id: module.id,
         updates: { stage: selectedStage },
       },
       queue: {
@@ -551,7 +554,7 @@ export const ModuleShell = memo(function ModuleShell({
     } else {
       toast.error(sendResult.error || 'Failed to update stage');
     }
-  }, [selectedStage, selectedIds, router, reportBulkResult, module.key]);
+  }, [selectedStage, selectedIds, router, reportBulkResult, module.key, module.id]);
 
   const handleAddTag = useCallback(() => {
     setSelectedTagIds([]);
@@ -636,7 +639,7 @@ export const ModuleShell = memo(function ModuleShell({
     const sendResult = await queuedSend({
       method: 'DELETE',
       url: '/api/crm/records/bulk',
-      body: { record_ids: Array.from(selectedIds) },
+      body: { record_ids: Array.from(selectedIds), module_id: module.id },
       queue: {
         label: `Delete ${count} record${count === 1 ? '' : 's'}`,
         moduleKey: module.key,
@@ -659,62 +662,141 @@ export const ModuleShell = memo(function ModuleShell({
     } else {
       toast.error(sendResult.error || 'Failed to delete records');
     }
-  }, [selectedIds, router, reportBulkResult, module.key]);
+  }, [selectedIds, router, reportBulkResult, module.key, module.id]);
 
-  const handleExport = useCallback(() => {
-    const recordsToExport = selectedCount > 0
-      ? records.filter(r => selectedIds.has(r.id))
-      : records;
+  const handleExport = useCallback(async () => {
+    if (selectedCount > 0) {
+      const recordsToExport = records.filter((r) => selectedIds.has(r.id));
+      if (recordsToExport.length === 0) {
+        toast.error('No records to export');
+        return;
+      }
 
-    if (recordsToExport.length === 0) {
+      const headers = visibleColumns.map((col) => {
+        const field = fields.find((f) => f.key === col);
+        return field?.label || col;
+      });
+
+      const rows = recordsToExport.map((record) => {
+        const recordData = record as unknown as Record<string, unknown>;
+        return visibleColumns.map((col) => {
+          const value = recordData[col] ?? (record.data as Record<string, unknown>)?.[col];
+          if (value === null || value === undefined) return '';
+          if (typeof value === 'object') return JSON.stringify(value);
+          return String(value);
+        });
+      });
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map((row) =>
+          row
+            .map((cell) => {
+              const str = String(cell);
+              if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+              }
+              return str;
+            })
+            .join(','),
+        ),
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${module.key}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${recordsToExport.length} selected ${module.name_plural || 'records'}`);
+      return;
+    }
+
+    if (totalCount === 0) {
       toast.error('No records to export');
       return;
     }
 
-    // Build CSV
-    const headers = visibleColumns.map(col => {
-      const field = fields.find(f => f.key === col);
-      return field?.label || col;
-    });
+    const params = new URLSearchParams();
+    params.set('module_key', module.key);
 
-    const rows = recordsToExport.map(record => {
-      // Access record properties with proper typing
-      const recordData = record as unknown as Record<string, unknown>;
-      return visibleColumns.map(col => {
-        // Try direct property first, then check data object
-        const value = recordData[col] ?? (record.data as Record<string, unknown>)?.[col];
-        if (value === null || value === undefined) return '';
-        if (typeof value === 'object') return JSON.stringify(value);
-        return String(value);
+    const validFilters = filters.filter(isValidFilter);
+    if (validFilters.length > 0) {
+      params.set('filters', JSON.stringify(validFilters));
+    } else if (activeViewId) {
+      params.set('view', activeViewId);
+    }
+
+    if (searchQuery.trim()) {
+      params.set('search', searchQuery.trim());
+    }
+    if (scope !== 'all') {
+      params.set('scope', scope);
+    }
+
+    const territory = searchParamsRef.current.get('territory');
+    if (territory) {
+      params.set('territory', territory);
+    }
+
+    if (sortField) {
+      params.set('sortField', sortField);
+      params.set('sortDirection', sortDirection);
+    }
+
+    params.set('columns', visibleColumns.join(','));
+
+    const toastId = 'crm-export-csv';
+    toast.loading('Building CSV…', { id: toastId });
+    try {
+      const res = await fetch(`/api/crm/records/export-csv?${params.toString()}`);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => null) as { error?: string } | null;
+        throw new Error(errBody?.error || `Export failed (${res.status})`);
+      }
+
+      const blob = await res.blob();
+      const dlUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const cd = res.headers.get('Content-Disposition');
+      let fname = `${module.key}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      const m = cd?.match(/filename="([^"]+)"/);
+      if (m?.[1]) {
+        fname = m[1];
+      }
+      link.setAttribute('href', dlUrl);
+      link.setAttribute('download', fname);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(dlUrl);
+
+      toast.success(`Exported all matching ${module.name_plural || 'records'}`, {
+        id: toastId,
+        description: 'Same filters and sort as this list (up to 100k rows).',
       });
-    });
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row =>
-        row.map(cell => {
-          const str = String(cell);
-          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-            return `"${str.replace(/"/g, '""')}"`;
-          }
-          return str;
-        }).join(',')
-      ),
-    ].join('\n');
-
-    // Download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${module.key}-${format(new Date(), 'yyyy-MM-dd')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success(`Exported ${recordsToExport.length} ${module.name_plural || 'records'}`);
-  }, [selectedIds, selectedCount, records, visibleColumns, fields, module]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Export failed', { id: toastId });
+    }
+  }, [
+    selectedCount,
+    selectedIds,
+    records,
+    visibleColumns,
+    fields,
+    module,
+    totalCount,
+    filters,
+    activeViewId,
+    searchQuery,
+    scope,
+    sortField,
+    sortDirection,
+  ]);
 
   const handleCreateView = useCallback(() => {
     const viewName = prompt('Enter a name for the new view:');

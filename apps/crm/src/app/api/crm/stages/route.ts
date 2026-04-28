@@ -113,7 +113,7 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const stage = await updateDealStage(id, updates);
+    const stage = await updateDealStage(id, updates, profile.organization_id);
     return NextResponse.json(stage);
   } catch (error) {
     console.error('Error updating deal stage:', error);
@@ -149,7 +149,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await deleteDealStage(id);
+    await deleteDealStage(id, profile.organization_id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting deal stage:', error);

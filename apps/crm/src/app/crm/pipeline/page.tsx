@@ -1,19 +1,110 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import {
-  Plus,
-  TrendingUp,
-  Filter,
-  Settings2,
-  Info,
-} from 'lucide-react';
-import { Button } from '@crm-eco/ui/components/button';
+import { TrendingUp, Info } from 'lucide-react';
 import { getCurrentProfile, getModuleByKey, getRecords, getDealStages } from '@/lib/crm/queries';
 import { PipelineClient } from './PipelineClient';
-import type { CrmRecord, CrmDealStage } from '@/lib/crm/types';
+import { PipelineToolbar } from './PipelineToolbar';
+import type { CrmRecord, CrmDealStage, CrmModule, ViewFilter } from '@/lib/crm/types';
 
-async function PipelineContent() {
+/** Batch size for pipeline board hydration (org-scoped `crm_records`). */
+const PIPELINE_DEAL_PAGE_SIZE = 500;
+/** Safety cap so one request cannot load unbounded rows into memory. */
+const MAX_PIPELINE_DEALS_LOADED = 5000;
+
+function parsePipelineRecordFilters(raw: string | undefined): ViewFilter[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (f): f is ViewFilter =>
+        f != null &&
+        typeof f === 'object' &&
+        typeof (f as ViewFilter).field === 'string' &&
+        typeof (f as ViewFilter).operator === 'string'
+    );
+  } catch {
+    return [];
+  }
+}
+
+function buildDealsModuleHref(q: {
+  search?: string;
+  filters?: string;
+  scope?: string;
+}): string {
+  const p = new URLSearchParams();
+  p.set('page', '1');
+  if (q.search?.trim()) p.set('search', q.search.trim());
+  if (q.filters) p.set('filters', q.filters);
+  if (q.scope && (q.scope === 'mine' || q.scope === 'downline')) p.set('scope', q.scope);
+  const qs = p.toString();
+  return qs ? `/crm/modules/deals?${qs}` : '/crm/modules/deals';
+}
+
+/**
+ * Loads deals for the kanban: pages through `getRecords` until exhausted or cap,
+ * with an accurate `total` from the first page (`includeCount`).
+ */
+async function loadDealsForPipelineBoard(
+  dealsModule: CrmModule,
+  query: {
+    filters: ViewFilter[];
+    search?: string;
+    scope?: 'all' | 'mine' | 'downline';
+  }
+): Promise<{
+  deals: CrmRecord[];
+  totalInDatabase: number;
+  pipelineTruncated: boolean;
+}> {
+  const { filters, search, scope = 'all' } = query;
+  const deals: CrmRecord[] = [];
+  let totalInDatabase = 0;
+  let page = 1;
+
+  while (deals.length < MAX_PIPELINE_DEALS_LOADED) {
+    const result = await getRecords({
+      moduleId: dealsModule.id,
+      orgId: dealsModule.org_id,
+      page,
+      pageSize: PIPELINE_DEAL_PAGE_SIZE,
+      filters,
+      search,
+      scope,
+      sort: [{ field: 'created_at', direction: 'desc' }],
+      includeCount: page === 1,
+    });
+
+    if (page === 1) {
+      totalInDatabase = result.total;
+    }
+
+    deals.push(...result.records);
+
+    if (result.records.length < PIPELINE_DEAL_PAGE_SIZE) {
+      break;
+    }
+    page += 1;
+  }
+
+  const pipelineTruncated = totalInDatabase > deals.length;
+
+  return { deals, totalInDatabase, pipelineTruncated };
+}
+
+interface PipelinePageSearchParams {
+  search?: string;
+  filters?: string;
+  scope?: string;
+}
+
+async function PipelineContent({
+  searchParams,
+}: {
+  searchParams: Promise<PipelinePageSearchParams>;
+}) {
   let profile;
   try {
     profile = await getCurrentProfile();
@@ -25,6 +116,13 @@ async function PipelineContent() {
     redirect('/crm-login');
   }
 
+  const sp = await searchParams;
+  const recordFilters = parsePipelineRecordFilters(sp.filters);
+  const search = sp.search?.trim() || undefined;
+  const scopeRaw = sp.scope;
+  const scope: 'all' | 'mine' | 'downline' =
+    scopeRaw === 'mine' || scopeRaw === 'downline' ? scopeRaw : 'all';
+
   // Get deals module and stages
   let dealsModule;
   try {
@@ -35,23 +133,23 @@ async function PipelineContent() {
 
   let deals: CrmRecord[] = [];
   let stages: CrmDealStage[] = [];
-  let totalDeals = 0;
+  let totalDealsInDb = 0;
+  let pipelineTruncated = false;
 
   if (dealsModule) {
     try {
-      const [result, stagesResult] = await Promise.all([
-        getRecords({
-          moduleId: dealsModule.id,
-          page: 1,
-          pageSize: 100,
-          filters: [],
-          sort: [{ field: 'created_at', direction: 'desc' }],
+      const [loadResult, stagesResult] = await Promise.all([
+        loadDealsForPipelineBoard(dealsModule, {
+          filters: recordFilters,
+          search,
+          scope,
         }),
         getDealStages(profile.organization_id),
       ]);
 
-      deals = result.records;
-      totalDeals = result.total;
+      deals = loadResult.deals;
+      totalDealsInDb = loadResult.totalInDatabase;
+      pipelineTruncated = loadResult.pipelineTruncated;
       stages = stagesResult;
     } catch (err) {
       console.error('[Pipeline] Failed to fetch deals/stages:', err);
@@ -111,10 +209,22 @@ async function PipelineContent() {
 
   const { dealsByStage, totalPipelineValue, wonValue, activeDeals, wonDeals } = stats;
   const negotiationDeals = dealsByStage['negotiation']?.length || 0;
-  const winRate = totalDeals > 0 ? Math.round((wonDeals / totalDeals) * 100) : 0;
+  /** When the board is partial, win rate is computed on loaded rows only so we do not imply org-wide accuracy. */
+  const winRateDenominator = pipelineTruncated ? deals.length : totalDealsInDb;
+  const winRate =
+    winRateDenominator > 0 ? Math.round((wonDeals / winRateDenominator) * 100) : 0;
   const canEditStages =
     profile.crm_role === 'crm_admin' || profile.crm_role === 'crm_manager';
   const hasAnyLimit = stages.some((s) => s.wip_limit != null);
+  const dealsModuleHref = buildDealsModuleHref({
+    search: sp.search,
+    filters: sp.filters,
+    scope: sp.scope,
+  });
+  const stageOptions = stages
+    .filter((s) => s.is_active !== false)
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    .map((s) => ({ key: s.key, name: s.name }));
 
   return (
     <div className="h-full flex flex-col">
@@ -133,31 +243,7 @@ async function PipelineContent() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Filter
-          </Button>
-          <Button
-            variant="outline"
-            className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
-          >
-            <Settings2 className="w-4 h-4 mr-2" />
-            Customize
-          </Button>
-          <Button
-            className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm hover:shadow-md"
-            asChild
-          >
-            <Link href="/crm/modules/deals/new">
-              <Plus className="w-4 h-4 mr-2" />
-              New Deal
-            </Link>
-          </Button>
-        </div>
+        <PipelineToolbar stages={stageOptions} canEditStages={canEditStages} />
       </div>
 
       {/* Stats Row */}
@@ -189,9 +275,32 @@ async function PipelineContent() {
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {winRate}%
           </p>
-          <p className="text-slate-500 text-xs mt-1">All time</p>
+          <p className="text-slate-500 text-xs mt-1">
+            {pipelineTruncated
+              ? `Based on ${deals.length.toLocaleString()} newest loaded deals`
+              : 'All deals in this org'}
+          </p>
         </div>
       </div>
+
+      {pipelineTruncated && dealsModule && (
+        <div
+          className="mb-4 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-4 py-3 text-sm text-amber-900 dark:text-amber-200"
+          role="status"
+        >
+          Showing the first{' '}
+          <span className="font-semibold">{deals.length.toLocaleString()}</span> of{' '}
+          <span className="font-semibold">{totalDealsInDb.toLocaleString()}</span>{' '}
+          deals (newest first). Stats above reflect only these deals.{' '}
+          <Link
+            href={dealsModuleHref}
+            className="font-medium underline underline-offset-2 hover:text-amber-950 dark:hover:text-amber-100"
+          >
+            Open Deals
+          </Link>{' '}
+          to filter or export the full list.
+        </div>
+      )}
 
       {/* How it works — plain-English */}
       <div className="mb-4 rounded-xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-4">
@@ -233,10 +342,14 @@ async function PipelineContent() {
   );
 }
 
-export default function PipelinePage() {
+export default function PipelinePage({
+  searchParams,
+}: {
+  searchParams: Promise<PipelinePageSearchParams>;
+}) {
   return (
     <Suspense fallback={<PipelineSkeleton />}>
-      <PipelineContent />
+      <PipelineContent searchParams={searchParams} />
     </Suspense>
   );
 }

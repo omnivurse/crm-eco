@@ -736,7 +736,8 @@ export async function createDealStage(input: CreateDealStageInput): Promise<CrmD
 
 export async function updateDealStage(
   stageId: string,
-  updates: Partial<Pick<CrmDealStage, 'name' | 'color' | 'probability' | 'is_won' | 'is_lost' | 'display_order' | 'is_active' | 'wip_limit'>>
+  updates: Partial<Pick<CrmDealStage, 'name' | 'color' | 'probability' | 'is_won' | 'is_lost' | 'display_order' | 'is_active' | 'wip_limit'>>,
+  organizationId: string,
 ): Promise<CrmDealStage> {
   const supabase = await createCrmClient();
   
@@ -744,6 +745,7 @@ export async function updateDealStage(
     .from('crm_deal_stages')
     .update(updates)
     .eq('id', stageId)
+    .eq('org_id', organizationId)
     .select()
     .single();
 
@@ -751,14 +753,15 @@ export async function updateDealStage(
   return data as CrmDealStage;
 }
 
-export async function deleteDealStage(stageId: string): Promise<void> {
+export async function deleteDealStage(stageId: string, organizationId: string): Promise<void> {
   const supabase = await createCrmClient();
   
   // Soft delete by marking as inactive
   const { error } = await supabase
     .from('crm_deal_stages')
     .update({ is_active: false })
-    .eq('id', stageId);
+    .eq('id', stageId)
+    .eq('org_id', organizationId);
 
   if (error) throw error;
 }

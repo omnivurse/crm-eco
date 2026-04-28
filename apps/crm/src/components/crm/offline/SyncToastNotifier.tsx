@@ -18,6 +18,10 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { CloudOff, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { mutationQueue } from '@/lib/offline/mutation-queue';
+import {
+  FORCE_OFFLINE_CHANGED_EVENT,
+  isEffectiveOnline,
+} from '@/lib/offline/force-offline';
 
 const DRAIN_DEBOUNCE_MS = 1500;
 /**
@@ -109,8 +113,14 @@ export function SyncToastNotifier() {
         },
       );
     };
+    const onEffectiveConnectionChange = () => {
+      if (isEffectiveOnline()) onOnline();
+      else onOffline();
+    };
+
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+    window.addEventListener(FORCE_OFFLINE_CHANGED_EVENT, onEffectiveConnectionChange);
 
     // Failure summary — when a mutation enters the `failed` list (eg.
     // 409 conflict), surface it as a distinct toast pointing at the
@@ -147,6 +157,10 @@ export function SyncToastNotifier() {
       unsubSnapshot();
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
+      window.removeEventListener(
+        FORCE_OFFLINE_CHANGED_EVENT,
+        onEffectiveConnectionChange,
+      );
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);

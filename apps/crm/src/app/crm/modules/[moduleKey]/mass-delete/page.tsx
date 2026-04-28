@@ -108,7 +108,7 @@ export default function MassDeletePage() {
     } finally {
       setLoading(false);
     }
-  }, [moduleKey, page, searchQuery]);
+  }, [moduleKey, page, searchQuery, module?.id]);
 
   useEffect(() => {
     fetchData();
@@ -151,7 +151,10 @@ export default function MassDeletePage() {
       const response = await fetch('/api/crm/records/bulk', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ record_ids: Array.from(selectedIds) }),
+        body: JSON.stringify({
+          record_ids: Array.from(selectedIds),
+          ...(module?.id ? { module_id: module.id } : {}),
+        }),
       });
 
       if (!response.ok) {

@@ -30,6 +30,8 @@ import { withIdempotency } from '@/lib/server/idempotency';
 const bulkUpdateSchema = z
   .object({
     record_ids: z.array(z.string().uuid()).min(1).max(5000),
+    /** When set, IDs that belong to another module are skipped (UI sends current list module). */
+    module_id: z.string().uuid().optional(),
     updates: z
       .object({
         owner_id: z.string().uuid().nullable().optional(),
@@ -53,6 +55,7 @@ const bulkUpdateSchema = z
 
 const bulkDeleteSchema = z.object({
   record_ids: z.array(z.string().uuid()).min(1).max(5000),
+  module_id: z.string().uuid().optional(),
 });
 
 interface BulkResult {
@@ -130,7 +133,7 @@ async function runBulkPatch({
       );
     }
 
-    const { record_ids: requestedIds, updates } = parsed.data;
+    const { record_ids: requestedIds, updates, module_id: expectedModuleId } = parsed.data;
     const supabase = await createCrmClient();
 
     // Pre-flight: resolve which of the requested IDs are actually visible to
@@ -158,7 +161,17 @@ async function runBulkPatch({
     };
     const resolved = (existing ?? []) as ExistingRow[];
     const resolvedIds = new Set(resolved.map((r) => r.id));
-    const skippedIds = requestedIds.filter((id) => !resolvedIds.has(id));
+    let skippedIds = requestedIds.filter((id) => !resolvedIds.has(id));
+
+    let working = resolved;
+    if (expectedModuleId) {
+      for (const r of resolved) {
+        if (r.module_id !== expectedModuleId) {
+          skippedIds.push(r.id);
+        }
+      }
+      working = resolved.filter((r) => r.module_id === expectedModuleId);
+    }
 
     const updatedAt = new Date().toISOString();
     const updatedIds = new Set<string>();
@@ -170,20 +183,20 @@ async function runBulkPatch({
     if (updates.status !== undefined) topLevel.status = updates.status;
     if (updates.stage !== undefined) topLevel.stage = updates.stage;
 
-    if (Object.keys(topLevel).length > 0 && resolved.length > 0) {
+    if (Object.keys(topLevel).length > 0 && working.length > 0) {
       const { data: updatedRows, error: updateError } = await supabase
         .from('crm_records')
         .update({ ...topLevel, updated_at: updatedAt })
         .in(
           'id',
-          resolved.map((r) => r.id),
+          working.map((r) => r.id),
         )
         .eq('org_id', profile.organization_id)
         .select('id');
 
       if (updateError) {
         console.error('[bulk PATCH] top-level update failed:', updateError);
-        resolved.forEach((r) =>
+        working.forEach((r) =>
           failed.push({ id: r.id, reason: updateError.message }),
         );
       } else {
@@ -192,7 +205,7 @@ async function runBulkPatch({
     } else if (Object.keys(topLevel).length === 0) {
       // If only JSONB ops were requested, seed updatedIds with all resolved
       // rows; per-row step below will prune on individual failure.
-      resolved.forEach((r) => updatedIds.add(r.id));
+      working.forEach((r) => updatedIds.add(r.id));
     }
 
     // Step 2 — owner ownership-normalization sync (lane-aware).
@@ -205,7 +218,7 @@ async function runBulkPatch({
 
       if (ownerProfile) {
         const groupByLane = (lane: (r: ExistingRow) => boolean) =>
-          resolved.filter(lane).map((r) => r.id);
+          working.filter(lane).map((r) => r.id);
 
         const healthshareIds = groupByLane((r) => r.market_type === 'healthshare');
         const insuranceIds = groupByLane(
@@ -265,7 +278,7 @@ async function runBulkPatch({
       (updates.data_patch && Object.keys(updates.data_patch).length > 0);
 
     if (hasJsonbOp) {
-      for (const row of resolved) {
+      for (const row of working) {
         const currentData = (row.data ?? {}) as Record<string, unknown>;
         const nextData: Record<string, unknown> = { ...currentData };
 
@@ -380,12 +393,12 @@ async function runBulkDelete({
       );
     }
 
-    const { record_ids: requestedIds } = parsed.data;
+    const { record_ids: requestedIds, module_id: expectedModuleId } = parsed.data;
     const supabase = await createCrmClient();
 
     const { data: existing, error: fetchError } = await supabase
       .from('crm_records')
-      .select('id')
+      .select('id, module_id')
       .in('id', requestedIds)
       .eq('org_id', profile.organization_id);
 
@@ -397,8 +410,21 @@ async function runBulkDelete({
       );
     }
 
-    const resolvedIds = new Set(((existing ?? []) as { id: string }[]).map((r) => r.id));
-    const skippedIds = requestedIds.filter((id) => !resolvedIds.has(id));
+    const rows = (existing ?? []) as { id: string; module_id: string }[];
+    const resolvedIds = new Set<string>();
+    for (const r of rows) {
+      resolvedIds.add(r.id);
+    }
+    let skippedIds = requestedIds.filter((id) => !resolvedIds.has(id));
+
+    if (expectedModuleId) {
+      for (const r of rows) {
+        if (r.module_id !== expectedModuleId) {
+          resolvedIds.delete(r.id);
+          skippedIds.push(r.id);
+        }
+      }
+    }
 
     const failed: Array<{ id: string; reason: string }> = [];
     const deletedIds = new Set<string>();

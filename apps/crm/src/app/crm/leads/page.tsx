@@ -1,11 +1,8 @@
 import { redirect } from 'next/navigation';
 
 interface PageProps {
-  searchParams: Promise<{
-    view?: string;
-    page?: string;
-    search?: string;
-  }>;
+  /** Forward the full query string so filters, scope, territory, sort, etc. match the list page. */
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 // Leads page - redirects to the generic module page with the leads module key
@@ -13,10 +10,17 @@ interface PageProps {
 export default async function LeadsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const queryString = new URLSearchParams();
-  if (params.view) queryString.set('view', params.view);
-  if (params.page) queryString.set('page', params.page);
-  if (params.search) queryString.set('search', params.search);
-  
+  for (const [key, val] of Object.entries(params)) {
+    if (val === undefined || val === '') continue;
+    if (Array.isArray(val)) {
+      for (const v of val) {
+        if (v !== undefined && v !== '') queryString.append(key, v);
+      }
+    } else {
+      queryString.set(key, val);
+    }
+  }
+
   const query = queryString.toString();
   redirect(`/crm/modules/leads${query ? `?${query}` : ''}`);
 }

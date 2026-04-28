@@ -197,6 +197,7 @@ export default async function LeadsReportPage() {
   const { data: leadsData } = await supabase
     .from('crm_records')
     .select('id, title, status, data, created_at, updated_at')
+    .eq('org_id', profile.organization_id)
     .eq('module_id', leadsModuleId)
     .order('created_at', { ascending: false });
 

@@ -32,15 +32,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'module_key is required' }, { status: 400 });
     }
 
-    // Fetch module by key
+    // Resolve module within this org only (keys like `leads` exist per-tenant).
     const { data: module, error: moduleError } = await supabase
       .from('crm_modules')
       .select('id, org_id')
+      .eq('org_id', profile.organization_id)
       .eq('key', moduleKey)
-      .single();
+      .maybeSingle();
 
-    // Validate module belongs to user's organization
-    if (moduleError || !module || module.org_id !== profile.organization_id) {
+    if (moduleError || !module) {
       return NextResponse.json({ error: 'Module not found' }, { status: 404 });
     }
 

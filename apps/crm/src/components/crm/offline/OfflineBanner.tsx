@@ -16,6 +16,10 @@ import { WifiOff, Database } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { useMutationQueue } from '@/hooks/useMutationQueue';
 import { subscribeCacheServed } from '@/lib/offline/cached-fetch';
+import {
+  FORCE_OFFLINE_CHANGED_EVENT,
+  getForceOffline,
+} from '@/lib/offline/force-offline';
 
 export const OfflineBanner = memo(function OfflineBanner({
   className,
@@ -23,6 +27,22 @@ export const OfflineBanner = memo(function OfflineBanner({
   className?: string;
 }) {
   const { isOnline, pending } = useMutationQueue();
+  const [simulated, setSimulated] = useState(false);
+  useEffect(() => {
+    const sync = () => {
+      if (typeof navigator === 'undefined') return;
+      setSimulated(getForceOffline() && navigator.onLine);
+    };
+    sync();
+    window.addEventListener(FORCE_OFFLINE_CHANGED_EVENT, sync);
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener(FORCE_OFFLINE_CHANGED_EVENT, sync);
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
 
   // Track cache reads that happened *while offline* — powers the
   // "Showing cached data" suffix. We only increment the counter when
@@ -63,6 +83,7 @@ export const OfflineBanner = memo(function OfflineBanner({
       <span className="inline-flex items-center gap-1.5">
         <WifiOff className="w-3.5 h-3.5" />
         You&apos;re offline — changes are saved locally
+        {simulated ? ' (simulated)' : ''}
         {pending.length > 0
           ? ` (${pending.length} queued)`
           : ''}{' '}

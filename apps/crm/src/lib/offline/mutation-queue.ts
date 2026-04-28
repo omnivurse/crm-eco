@@ -28,6 +28,10 @@
 import { recordOfflineEvent } from './instrumentation';
 import { logReceipt } from './receipt-log';
 import { emitSyncReceipt } from './sync-broadcast';
+import {
+  FORCE_OFFLINE_CHANGED_EVENT,
+  isEffectiveOnline,
+} from './force-offline';
 
 const STORAGE_KEY = 'crm.mutationQueue.v1';
 const MAX_RETRIES = 5;
@@ -178,21 +182,25 @@ class MutationQueue {
 
       window.addEventListener('online', this.handleOnline);
       window.addEventListener('offline', this.handleOffline);
+      window.addEventListener(FORCE_OFFLINE_CHANGED_EVENT, this.handleForceOfflineFlip);
 
       // Drain on focus in case we missed the online event (iOS Safari).
       window.addEventListener('focus', this.handleFocus);
 
       // If we came back online while the page was loading, flush ASAP.
-      if (navigator.onLine) {
+      if (isEffectiveOnline()) {
         this.scheduleDrain(0);
       }
     }
   }
 
   private handleOnline = () => {
-    recordOfflineEvent({ type: 'connection', online: true });
+    const online = isEffectiveOnline();
+    recordOfflineEvent({ type: 'connection', online });
     this.emit();
-    this.scheduleDrain(250);
+    if (online) {
+      this.scheduleDrain(250);
+    }
   };
 
   private handleOffline = () => {
@@ -200,8 +208,17 @@ class MutationQueue {
     this.emit();
   };
 
+  private handleForceOfflineFlip = () => {
+    const online = isEffectiveOnline();
+    recordOfflineEvent({ type: 'connection', online });
+    this.emit();
+    if (online) {
+      this.scheduleDrain(250);
+    }
+  };
+
   private handleFocus = () => {
-    if (isBrowser() && navigator.onLine) this.scheduleDrain(500);
+    if (isBrowser() && isEffectiveOnline()) this.scheduleDrain(500);
   };
 
   private persist() {
@@ -240,7 +257,7 @@ class MutationQueue {
     return {
       pending,
       failed,
-      isOnline: isBrowser() ? navigator.onLine : true,
+      isOnline: isBrowser() ? isEffectiveOnline() : true,
       isSyncing: this.running,
       lastSyncedAt: this.lastSyncedAt,
     };
@@ -435,7 +452,7 @@ class MutationQueue {
   private async drain(): Promise<void> {
     if (this.running) return;
     if (!isBrowser()) return;
-    if (!navigator.onLine) return;
+    if (!isEffectiveOnline()) return;
 
     const next = this.mutations.find(
       (m) =>

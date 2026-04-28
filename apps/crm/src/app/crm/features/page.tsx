@@ -273,7 +273,7 @@ export default function FeaturesPage() {
             'Key contact mapping',
             'Account activity feed',
           ]}
-          href="/crm/accounts"
+          href="/crm/modules/accounts"
         />
         <FeatureCard
           icon={<DollarSign className="w-6 h-6" />}

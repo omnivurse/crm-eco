@@ -94,7 +94,7 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'sec-pipeline', separator: true, sectionTitle: 'Sales Pipeline' },
     { key: 'leads', label: 'Leads', icon: 'user-plus', href: '/crm/modules/leads' },
     { key: 'contacts', label: 'Contacts', icon: 'users', href: '/crm/modules/contacts' },
-    { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/accounts' },
+    { key: 'accounts', label: 'Accounts', icon: 'building', href: '/crm/modules/accounts' },
     { key: 'deals', label: 'Deals', icon: 'dollar-sign', href: '/crm/modules/deals' },
     { key: 'pipeline', label: 'Pipeline', icon: 'kanban', href: '/crm/pipeline' },
 

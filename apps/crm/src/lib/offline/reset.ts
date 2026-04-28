@@ -15,6 +15,7 @@
  *      button, for support triage.
  */
 
+import { setForceOffline } from './force-offline';
 import { mutationQueue } from './mutation-queue';
 import { cacheClear } from './response-cache';
 import { clearRecentRecords } from './recent-records';
@@ -22,6 +23,11 @@ import { clearReceipts } from './receipt-log';
 import { clearOfflineEventBuffer } from './instrumentation';
 
 export async function clearOfflineState(): Promise<void> {
+  try {
+    setForceOffline(false);
+  } catch {
+    /* noop */
+  }
   try {
     mutationQueue.clearAll();
   } catch {

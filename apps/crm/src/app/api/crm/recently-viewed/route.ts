@@ -99,6 +99,7 @@ export async function GET(request: NextRequest) {
        module:crm_modules ( key, name )`,
     )
     .eq('user_id', user.id)
+    .eq('organization_id', profile.organization_id)
     .order('last_viewed_at', { ascending: false })
     .limit(limit);
   if (moduleId) {

@@ -26,6 +26,7 @@ import {
   mutationQueue,
   type MutationMethod,
 } from '@/lib/offline/mutation-queue';
+import { isEffectiveOnline } from '@/lib/offline/force-offline';
 
 const IDEMPOTENCY_HEADER = 'Idempotency-Key';
 const TRACE_HEADER = 'X-Request-Id';
@@ -76,8 +77,7 @@ export type QueuedSendResult =
   | { ok: false; queued: false; response?: Response; error: string };
 
 function isOnline(): boolean {
-  if (typeof navigator === 'undefined') return true;
-  return navigator.onLine;
+  return isEffectiveOnline();
 }
 
 export async function queuedSend(

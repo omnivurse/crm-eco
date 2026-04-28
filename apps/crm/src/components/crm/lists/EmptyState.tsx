@@ -98,7 +98,7 @@ export const EMPTY_STATE_CONFIGS: Record<string, Omit<EmptyStateProps, 'classNam
         title: 'No accounts yet',
         description: 'Accounts help you organize contacts and deals under their parent company. Create your first account to get started.',
         actionLabel: 'Create First Account',
-        actionHref: '/crm/accounts/new',
+        actionHref: '/crm/modules/accounts/new',
     },
     tasks: {
         icon: CheckSquare,

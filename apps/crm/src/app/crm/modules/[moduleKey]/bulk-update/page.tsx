@@ -169,7 +169,7 @@ export default function BulkUpdatePage() {
     } finally {
       setLoading(false);
     }
-  }, [moduleKey, page, searchQuery]);
+  }, [moduleKey, page, searchQuery, module?.id]);
 
   useEffect(() => {
     fetchData();
@@ -245,6 +245,7 @@ export default function BulkUpdatePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           record_ids: Array.from(selectedIds),
+          ...(module?.id ? { module_id: module.id } : {}),
           updates,
         }),
       });

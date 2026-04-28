@@ -33,6 +33,7 @@ import dynamic from 'next/dynamic';
 import { ThemeToggle } from './ThemeToggle';
 import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
+import { ConnectivityModeToggle } from '@/components/crm/offline/ConnectivityModeToggle';
 import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill';
 import { clearOfflineState } from '@/lib/offline/reset';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
@@ -205,6 +206,8 @@ export const CrmTopBar = memo(function CrmTopBar({
         <div className="hidden xs:block">
           <ThemeToggle variant="icon" />
         </div>
+
+        <ConnectivityModeToggle className="hidden xs:flex" />
 
         {/* Pending changes pill — auto-hides when the mutation queue
             is empty, so it only appears when the user actually has

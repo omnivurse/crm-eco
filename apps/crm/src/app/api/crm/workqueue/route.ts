@@ -9,6 +9,7 @@ import type {
   WorkqueueAction,
   WorkqueuePriority,
 } from '@/lib/workqueue/types';
+import { loadActionableApprovalsForWorkqueue } from '@/lib/workqueue/load-actionable-approvals-for-workqueue';
 
 // ---------------------------------------------------------------------------
 // Priority ordering for final sort
@@ -51,6 +52,31 @@ const MESSAGE_ACTIONS: WorkqueueAction[] = [
   { key: 'open', label: 'Open', variant: 'secondary' },
 ];
 
+/** Deal stages treated as closed for at-risk/stale logic */
+const CLOSED_DEAL_STAGES =
+  '("Closed Won","Closed Lost","closed_won","closed_lost")';
+
+/** Lead stages that should not appear in the "new leads" workqueue */
+const LEAD_WORKQUEUE_OR_FILTER =
+  'stage.is.null,stage.not.in.(Converted,converted,Disqualified,disqualified,Closed,closed,"Closed Won","Closed Lost",closed_won,closed_lost)';
+
+async function fetchExactCount(
+  label: string,
+  req: PromiseLike<{ count: number | null; error: { message: string } | null }>,
+): Promise<number> {
+  try {
+    const { count, error } = await req;
+    if (error) {
+      console.warn(`[Workqueue] ${label} count:`, error.message);
+      return 0;
+    }
+    return count ?? 0;
+  } catch (e) {
+    console.warn(`[Workqueue] ${label} count failed:`, e);
+    return 0;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // GET /api/crm/workqueue
 // ---------------------------------------------------------------------------
@@ -61,6 +87,12 @@ export async function GET(request: NextRequest) {
     if (!profile) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (
+      !profile.organization_id ||
+      (typeof profile.organization_id === 'string' && profile.organization_id.trim() === '')
+    ) {
+      return NextResponse.json({ error: 'No organization context' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const tab = (searchParams.get('tab') || 'all') as WorkqueueTab;
@@ -70,9 +102,8 @@ export async function GET(request: NextRequest) {
     const today = now.toISOString().split('T')[0];
     const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
 
-    // Run all queries in parallel
+    // Run all queries in parallel (pending approvals: paginated load after this — see below)
     const [
-      approvalsResult,
       overdueResult,
       todayResult,
       followUpResult,
@@ -80,27 +111,7 @@ export async function GET(request: NextRequest) {
       messagesResult,
       leadsModuleResult,
     ] = await Promise.allSettled([
-      // 1. Pending approvals assigned to current user
-      tab === 'all' || tab === 'approvals'
-        ? supabase
-            .from('crm_approvals')
-            .select(`
-              id,
-              status,
-              current_step,
-              context,
-              requested_by,
-              created_at,
-              record_id,
-              process_id
-            `)
-            .eq('org_id', profile.organization_id)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false })
-            .limit(20)
-        : Promise.resolve({ data: [], error: null }),
-
-      // 2. Overdue tasks
+      // 1. Overdue tasks
       tab === 'all' || tab === 'tasks'
         ? supabase
             .from('crm_tasks')
@@ -114,7 +125,7 @@ export async function GET(request: NextRequest) {
             .limit(20)
         : Promise.resolve({ data: [], error: null }),
 
-      // 3. Today's tasks
+      // 2. Today's tasks
       tab === 'all' || tab === 'tasks'
         ? supabase
             .from('crm_tasks')
@@ -129,7 +140,7 @@ export async function GET(request: NextRequest) {
             .limit(20)
         : Promise.resolve({ data: [], error: null }),
 
-      // 4. Follow-ups (tasks with reminder_at in next 24h)
+      // 3. Follow-ups (tasks with reminder_at in next 24h)
       tab === 'all' || tab === 'tasks'
         ? supabase
             .from('crm_tasks')
@@ -144,7 +155,7 @@ export async function GET(request: NextRequest) {
             .limit(20)
         : Promise.resolve({ data: [], error: null }),
 
-      // 5. Deals module ID (needed to query at-risk deals)
+      // 4. Deals module ID (needed to query at-risk deals)
       tab === 'all' || tab === 'deals'
         ? supabase
             .from('crm_modules')
@@ -154,11 +165,11 @@ export async function GET(request: NextRequest) {
             .single()
         : Promise.resolve({ data: null, error: null }),
 
-      // 6. Unread inbox conversations
+      // 5. Unread inbox conversations
       tab === 'all' || tab === 'messages'
         ? supabase
             .from('inbox_conversations')
-            .select('id, subject, snippet, channel, status, assigned_to, contact_name, contact_email, unread_count, last_message_at, created_at')
+            .select('id, subject, preview, channel, status, assigned_to, contact_name, contact_email, unread_count, last_message_at, created_at')
             .eq('org_id', profile.organization_id)
             .eq('assigned_to', profile.id)
             .gt('unread_count', 0)
@@ -167,7 +178,7 @@ export async function GET(request: NextRequest) {
             .limit(20)
         : Promise.resolve({ data: [], error: null }),
 
-      // 7. Leads module ID (needed to query new leads)
+      // 6. Leads module ID (needed to query new leads)
       tab === 'all' || tab === 'leads'
         ? supabase
             .from('crm_modules')
@@ -186,10 +197,11 @@ export async function GET(request: NextRequest) {
         const { data } = await supabase
           .from('crm_records')
           .select('id, title, status, stage, updated_at, created_at')
+          .eq('org_id', profile.organization_id)
           .eq('module_id', dealsModule.id)
           .eq('owner_id', profile.id)
           .lt('updated_at', weekAgo)
-          .not('stage', 'in', '("Closed Won","Closed Lost","closed_won","closed_lost")')
+          .not('stage', 'in', CLOSED_DEAL_STAGES)
           .order('updated_at', { ascending: true })
           .limit(10);
         atRiskDeals = data || [];
@@ -198,37 +210,27 @@ export async function GET(request: NextRequest) {
 
     // Normalize all results into WorkqueueItem[]
     const items: WorkqueueItem[] = [];
+    /** Actionable pending approvals for this user (same rules as approvals engine). */
+    let actionableApprovalCount = 0;
 
-    // -- Approvals -------------------------------------------------------
-    const approvals = approvalsResult.status === 'fulfilled'
-      ? (approvalsResult.value as { data: any[] | null }).data || []
-      : [];
-
-    // Fetch process names for approvals
-    if (approvals.length > 0) {
-      const processIds = [...new Set(approvals.map((a: any) => a.process_id))];
-      const { data: processes } = await supabase
-        .from('crm_approval_processes')
-        .select('id, name')
-        .in('id', processIds);
-      const processMap = new Map((processes || []).map((p: any) => [p.id, p.name]));
-
-      const recordIds = [...new Set(approvals.map((a: any) => a.record_id))];
-      const { data: records } = await supabase
-        .from('crm_records')
-        .select('id, title')
-        .in('id', recordIds);
-      const recordMap = new Map((records || []).map((r: any) => [r.id, r.title]));
-
-      for (const a of approvals) {
+    // -- Approvals (exact count: scan all pending rows in stable pages) -----
+    if (tab === 'all' || tab === 'approvals') {
+      const { totalActionable, topForUi } = await loadActionableApprovalsForWorkqueue(
+        supabase,
+        profile.organization_id,
+        profile.id,
+        profile.crm_role ?? null,
+      );
+      actionableApprovalCount = totalActionable;
+      for (const { row: a, processName, recordTitle } of topForUi) {
         items.push({
           id: a.id,
           type: 'pending_approval',
           priority: 'high',
-          title: recordMap.get(a.record_id) || 'Approval Request',
-          subtitle: `${processMap.get(a.process_id) || 'Approval'} - Step ${(a.current_step || 0) + 1}`,
+          title: recordTitle || 'Approval Request',
+          subtitle: `${processName} - Step ${(a.current_step || 0) + 1}`,
           recordId: a.record_id,
-          recordTitle: recordMap.get(a.record_id) || undefined,
+          recordTitle: recordTitle || undefined,
           meta: { context: a.context, processId: a.process_id },
           createdAt: a.created_at,
           actions: APPROVAL_ACTIONS,
@@ -333,9 +335,10 @@ export async function GET(request: NextRequest) {
         const { data, error: leadsError } = await supabase
           .from('crm_records')
           .select('id, title, status, stage, data, owner_id, created_at, updated_at')
+          .eq('org_id', profile.organization_id)
           .eq('module_id', leadsModule.id)
           .or(`owner_id.eq.${profile.id},owner_id.is.null`)
-          .or('stage.is.null,and(stage.not.in.("Converted","converted","Disqualified","disqualified","Closed","closed"))')
+          .or(LEAD_WORKQUEUE_OR_FILTER)
           .order('created_at', { ascending: false })
           .limit(20);
         if (leadsError) {
@@ -377,7 +380,7 @@ export async function GET(request: NextRequest) {
         type: 'unread_message',
         priority: 'normal',
         title: m.contact_name || m.contact_email || 'Unknown Contact',
-        subtitle: m.snippet || m.subject || 'New message',
+        subtitle: m.preview || m.subject || 'New message',
         meta: {
           channel: m.channel,
           unreadCount: m.unread_count,
@@ -388,6 +391,95 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // ---------------------------------------------------------------------
+    // Exact summary counts (not limited to list fetch caps)
+    // ---------------------------------------------------------------------
+    const dealsModuleForCount =
+      dealsModuleResult.status === 'fulfilled' ? dealsModuleResult.value.data : null;
+    const leadsModuleForCount =
+      leadsModuleResult.status === 'fulfilled' ? leadsModuleResult.value.data : null;
+    const reminderHorizon = new Date(now.getTime() + 86400000).toISOString();
+
+    const [
+      overdueCount,
+      todayCount,
+      followUpCount,
+      atRiskCount,
+      msgCount,
+      leadCount,
+    ] = await Promise.all([
+      fetchExactCount(
+        'overdue-tasks',
+        supabase
+          .from('crm_tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('assigned_to', profile.id)
+          .neq('status', 'completed')
+          .neq('status', 'cancelled')
+          .lt('due_at', today),
+      ),
+      fetchExactCount(
+        'today-tasks',
+        supabase
+          .from('crm_tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('assigned_to', profile.id)
+          .neq('status', 'completed')
+          .neq('status', 'cancelled')
+          .gte('due_at', today)
+          .lte('due_at', `${today}T23:59:59`),
+      ),
+      fetchExactCount(
+        'follow-ups',
+        supabase
+          .from('crm_tasks')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('assigned_to', profile.id)
+          .neq('status', 'completed')
+          .neq('status', 'cancelled')
+          .not('reminder_at', 'is', null)
+          .lte('reminder_at', reminderHorizon),
+      ),
+      dealsModuleForCount?.id
+        ? fetchExactCount(
+            'at-risk-deals',
+            supabase
+              .from('crm_records')
+              .select('id', { count: 'exact', head: true })
+              .eq('org_id', profile.organization_id)
+              .eq('module_id', dealsModuleForCount.id)
+              .eq('owner_id', profile.id)
+              .lt('updated_at', weekAgo)
+              .not('stage', 'in', CLOSED_DEAL_STAGES),
+          )
+        : Promise.resolve(0),
+      fetchExactCount(
+        'messages',
+        supabase
+          .from('inbox_conversations')
+          .select('id', { count: 'exact', head: true })
+          .eq('org_id', profile.organization_id)
+          .eq('assigned_to', profile.id)
+          .gt('unread_count', 0)
+          .in('status', ['open', 'pending']),
+      ),
+      leadsModuleForCount?.id
+        ? fetchExactCount(
+            'new-leads',
+            supabase
+              .from('crm_records')
+              .select('id', { count: 'exact', head: true })
+              .eq('org_id', profile.organization_id)
+              .eq('module_id', leadsModuleForCount.id)
+              .or(`owner_id.eq.${profile.id},owner_id.is.null`)
+              .or(LEAD_WORKQUEUE_OR_FILTER),
+          )
+        : Promise.resolve(0),
+    ]);
+
     // Sort: priority first, then most recent
     items.sort((a, b) => {
       const pDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority];
@@ -397,14 +489,21 @@ export async function GET(request: NextRequest) {
 
     // Build summary counts
     const summary: WorkqueueSummary = {
-      approvals: items.filter((i) => i.type === 'pending_approval').length,
-      overdueTasks: items.filter((i) => i.type === 'overdue_task').length,
-      todayTasks: items.filter((i) => i.type === 'today_task').length,
-      followUps: items.filter((i) => i.type === 'follow_up').length,
-      atRiskDeals: items.filter((i) => i.type === 'at_risk_deal').length,
-      messages: items.filter((i) => i.type === 'unread_message').length,
-      newLeads: items.filter((i) => i.type === 'new_lead').length,
-      total: items.length,
+      approvals: actionableApprovalCount,
+      overdueTasks: overdueCount,
+      todayTasks: todayCount,
+      followUps: followUpCount,
+      atRiskDeals: atRiskCount,
+      messages: msgCount,
+      newLeads: leadCount,
+      total:
+        actionableApprovalCount +
+        overdueCount +
+        todayCount +
+        followUpCount +
+        atRiskCount +
+        msgCount +
+        leadCount,
     };
 
     const response: WorkqueueResponse = { items, summary };

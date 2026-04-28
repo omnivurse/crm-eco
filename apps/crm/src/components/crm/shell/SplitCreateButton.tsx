@@ -54,7 +54,7 @@ const RECORD_OPTIONS: CreateOption[] = [
     {
         label: 'Account',
         description: 'Add a company',
-        href: '/crm/accounts/new',
+        href: '/crm/modules/accounts/new',
         icon: Building,
         color: 'text-purple-600 dark:text-purple-400',
     },
