@@ -1075,7 +1075,11 @@ export async function getAuditLogForRecord(recordId: string, limit = 50): Promis
     .select('id, org_id, actor_id, action, entity, entity_id, diff, meta, created_at')
     .eq('entity', 'crm_records')
     .eq('entity_id', recordId)
+    // `created_at` ties happen often (bulk imports / batch jobs write rows
+    // within the same microsecond). Adding `id` as the secondary key makes
+    // the LIMIT cutoff reproducible run-to-run.
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
@@ -1091,6 +1095,7 @@ export async function getRecentActivity(orgId: string, limit = 20): Promise<CrmA
     .select('id, action, entity, created_at')
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
@@ -1103,12 +1108,13 @@ export async function getRecentActivity(orgId: string, limit = 20): Promise<CrmA
 
 export async function getRecentImportJobs(orgId: string, limit = 10): Promise<CrmImportJob[]> {
   const supabase = await createCrmClient();
-  
+
   const { data, error } = await supabase
     .from('crm_import_jobs')
     .select('*')
     .eq('org_id', orgId)
     .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .limit(limit);
 
   if (error) throw error;
@@ -1611,9 +1617,14 @@ export async function getTimelineForRecord(
         )
       `)
       .eq('record_id', recordId)
+      // Each timeline subquery uses (created_at DESC, id DESC) so the LIMIT
+      // cutoff is reproducible — bulk inserts (imports, batch jobs) often
+      // share `created_at` to the microsecond, which would otherwise let
+      // Postgres pick an arbitrary subset.
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit),
-    
+
     // Tasks/Activities
     supabase
       .from('crm_tasks')
@@ -1627,8 +1638,9 @@ export async function getTimelineForRecord(
       `)
       .eq('record_id', recordId)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit),
-    
+
     // Notes (may span lead + contact after conversion)
     supabase
       .from('crm_notes')
@@ -1642,8 +1654,9 @@ export async function getTimelineForRecord(
       `)
       .in('record_id', noteIds)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit),
-    
+
     // Attachments
     supabase
       .from('crm_attachments')
@@ -1657,8 +1670,9 @@ export async function getTimelineForRecord(
       `)
       .eq('record_id', recordId)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit),
-    
+
     // Audit logs
     supabase
       .from('crm_audit_log')
@@ -1673,6 +1687,7 @@ export async function getTimelineForRecord(
       .eq('entity', 'crm_records')
       .eq('entity_id', recordId)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(limit),
   ]);
 

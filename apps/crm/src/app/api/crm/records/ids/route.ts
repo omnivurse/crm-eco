@@ -108,7 +108,14 @@ export async function GET(request: NextRequest) {
       query = applyCrmRecordTextSearch(query, search);
     }
 
-    query = query.order('created_at', { ascending: false }).range(0, HARD_CAP - 1);
+    // Append `id` tiebreaker so the 5,000-row hard-cap returns a reproducible
+    // subset when many records share a `created_at` (bulk imports, batch jobs).
+    // Without it, "Select All" can quietly include slightly different sets
+    // across page loads, breaking bulk operations the user just ran.
+    query = query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(0, HARD_CAP - 1);
 
     const { data, count, error } = await query;
 
