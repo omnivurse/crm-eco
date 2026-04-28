@@ -260,7 +260,7 @@ export default function ImportsPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/crm">
+          <Link href="/crm" prefetch={false}>
             <ArrowLeft className="w-5 h-5" />
           </Link>
         </Button>
@@ -278,6 +278,30 @@ export default function ImportsPage() {
           </div>
         </div>
       </div>
+
+      {/* Trickle-update CTA: lives at the top of the Imports page so the
+          most common Zoho-migration workflow is one click away. */}
+      <Link
+        href="/crm/imports/update"
+        prefetch={false}
+        className="block group rounded-xl border border-amber-200 dark:border-amber-500/30 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10 hover:border-amber-300 dark:hover:border-amber-500/50 transition-colors p-5"
+      >
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-br from-amber-500/30 to-orange-500/30 rounded-xl flex-shrink-0">
+            <RefreshCw className="w-6 h-6 text-amber-700 dark:text-amber-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-slate-900 dark:text-white">
+              Update existing records from a Zoho CSV
+            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              Drop an export — we&apos;ll match by Zoho&nbsp;ID, email, or phone and only touch the
+              records in the file. Records not in the CSV stay exactly as they are.
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </div>
+      </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Import Form */}
