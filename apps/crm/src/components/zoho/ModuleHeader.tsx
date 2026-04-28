@@ -19,6 +19,7 @@ import {
   Settings,
   LayoutGrid,
   Pencil,
+  RefreshCw,
   Trash2,
 } from 'lucide-react';
 import {
@@ -238,6 +239,16 @@ export function ModuleHeader({
                 Manage Views
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+              <DropdownMenuItem asChild className="cursor-pointer gap-2">
+                <Link
+                  href={`/crm/imports/update?module=${module.key}`}
+                  prefetch={false}
+                  className="flex items-center gap-2 w-full text-slate-700 dark:text-slate-300"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Update from CSV
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={handleBulkUpdate}
                 className="text-slate-700 dark:text-slate-300 cursor-pointer gap-2"
