@@ -124,8 +124,6 @@ export const ModuleShell = memo(function ModuleShell({
   const mobileActiveCount =
     filters.length + (scope !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
 
-  // Track if initial mount to avoid triggering search on page load
-  const isInitialMount = useRef(true);
   const searchParamsRef = useRef(searchParams);
 
   // Keep searchParams ref updated without triggering effect
@@ -156,27 +154,28 @@ export const ModuleShell = memo(function ModuleShell({
     setFilters((prev) => (prev.length === 0 ? prev : []));
   }, [searchParams]);
 
-  // Debounced live search - only triggered by searchQuery changes
-  useEffect(() => {
-    // Skip the initial mount to avoid double navigation
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
+  /** Push current search box value to the URL if it differs (same logic as debounced + Enter submit). */
+  const flushSearchToUrl = useCallback(() => {
+    const params = new URLSearchParams(searchParamsRef.current.toString());
+    const trimmed = searchQuery.trim();
+    const urlSearch = (params.get('search') || '').trim();
+    if (trimmed === urlSearch) {
       return;
     }
-
-    const timer = setTimeout(() => {
-      const params = new URLSearchParams(searchParamsRef.current.toString());
-      if (searchQuery.trim()) {
-        params.set('search', searchQuery.trim());
-      } else {
-        params.delete('search');
-      }
-      params.delete('page');
-      router.push(`/crm/modules/${module.key}?${params.toString()}`);
-    }, 300);
-
-    return () => clearTimeout(timer);
+    if (trimmed) {
+      params.set('search', trimmed);
+    } else {
+      params.delete('search');
+    }
+    params.delete('page');
+    router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
   }, [searchQuery, router, module.key]);
+
+  // Debounced live search — first keystroke must update the URL (do not skip initial effect).
+  useEffect(() => {
+    const timer = window.setTimeout(flushSearchToUrl, 300);
+    return () => window.clearTimeout(timer);
+  }, [flushSearchToUrl]);
 
   // Scope change handler
   const handleScopeChange = useCallback((newScope: RecordScope) => {
@@ -188,16 +187,20 @@ export const ModuleShell = memo(function ModuleShell({
       params.set('scope', newScope);
     }
     params.delete('page');
-    router.push(`/crm/modules/${module.key}?${params.toString()}`);
+    router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
   }, [router, module.key]);
 
   const isAdminOrOwner = userRole === 'owner' || userRole === 'admin' || userRole === 'staff';
 
   // Handlers
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    // Search is already handled by the debounced effect
-  }, []);
+  const handleSearch = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      // Enter should search immediately instead of waiting on the 300ms debounce.
+      flushSearchToUrl();
+    },
+    [flushSearchToUrl],
+  );
 
   // Persist filters to URL
   const pushFiltersToUrl = useCallback((newFilters: ViewFilter[]) => {
@@ -870,10 +873,10 @@ export const ModuleShell = memo(function ModuleShell({
               onCreateView={handleCreateView}
             />
 
-            <form onSubmit={handleSearch} className="relative flex-1 max-w-sm">
+            <form onSubmit={handleSearch} className="relative flex-1 min-w-[12rem] max-w-md">
               <Search className={cn(
                 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors',
-                searchFocused ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'
+                searchFocused ? 'text-teal-600 dark:text-teal-400' : 'text-slate-500 dark:text-slate-400'
               )} />
               <Input
                 type="search"
@@ -883,9 +886,13 @@ export const ModuleShell = memo(function ModuleShell({
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
                 className={cn(
-                  'pl-9 h-9 rounded-lg text-sm',
-                  'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10',
-                  'text-slate-900 dark:text-white placeholder:text-slate-400',
+                  'pl-9 h-10 rounded-lg text-sm shadow-sm',
+                  // Solid surface so the field stands out against the glass-card toolbar.
+                  'bg-white dark:bg-slate-900',
+                  // Stronger borders so the bar is visible without focus.
+                  'border-slate-300 dark:border-slate-700',
+                  'hover:border-slate-400 dark:hover:border-slate-600',
+                  'text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400',
                   searchFocused && 'border-teal-500 ring-2 ring-teal-500/20'
                 )}
               />

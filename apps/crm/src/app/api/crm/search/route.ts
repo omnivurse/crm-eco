@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import {
+  buildPhoneSearchOrFilter,
+  escapeIlikePattern,
+  phoneFormatVariants,
+} from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -283,27 +288,9 @@ async function phoneIlikeFallback(
     limit: number;
   },
 ): Promise<SmartSearchRow[]> {
-  const safeRaw = opts.rawQuery.replace(/[%_\\]/g, '\\$&');
-  const variants = phoneFormatVariants(opts.digits);
-  const tail = opts.digits.slice(-10);
-
-  // De-dup so the .or() string stays compact.
-  const orClauses = new Set<string>();
-  orClauses.add(`phone.ilike.%${escapeIlike(opts.digits)}%`);
-  if (tail && tail !== opts.digits) {
-    orClauses.add(`phone.ilike.%${escapeIlike(tail)}%`);
-  }
-  for (const v of variants) {
-    orClauses.add(`phone.ilike.%${escapeIlike(v)}%`);
-  }
-  orClauses.add(`phone.ilike.%${safeRaw}%`);
-  // Last-resort sweep across raw JSONB text using digits-only — catches
-  // cases where the JSON happens to contain the number unformatted.
-  if (opts.digits.length >= 4) {
-    orClauses.add(`data::text.ilike.%${escapeIlike(opts.digits)}%`);
-    if (tail && tail !== opts.digits) {
-      orClauses.add(`data::text.ilike.%${escapeIlike(tail)}%`);
-    }
+  const filter = buildPhoneSearchOrFilter(opts.rawQuery);
+  if (!filter) {
+    return [];
   }
 
   let qb = supabase
@@ -315,7 +302,7 @@ async function phoneIlikeFallback(
     `,
     )
     .eq('org_id', orgId)
-    .or(Array.from(orClauses).join(','))
+    .or(filter)
     .limit(opts.limit);
 
   if (opts.moduleFilter) {
@@ -345,58 +332,6 @@ async function phoneIlikeFallback(
 }
 
 /**
- * Generate the most common visual phone formats for a string of digits, so
- * the ilike fallback can match rows stored in mismatched formats.
- *
- * For 10 digits `8005558888` returns:
- *   `800-555-8888`, `(800) 555-8888`, `(800)555-8888`, `800.555.8888`,
- *   `800 555 8888`, `+1 800 555 8888`, `1-800-555-8888`, `18005558888`,
- *   plus the same with the leading `1` stripped if present.
- */
-function phoneFormatVariants(digits: string): string[] {
-  if (digits.length < 4) return [];
-
-  const out = new Set<string>();
-  const candidates: string[] = [digits];
-  // If 11 digits and starts with 1 (NANP country code), also try the 10-digit
-  // form. If exactly 10, also try the +1-prefixed form.
-  if (digits.length === 11 && digits.startsWith('1')) {
-    candidates.push(digits.slice(1));
-  } else if (digits.length === 10) {
-    candidates.push('1' + digits);
-  }
-
-  for (const d of candidates) {
-    out.add(d);
-    if (d.length === 10) {
-      const a = d.slice(0, 3);
-      const b = d.slice(3, 6);
-      const c = d.slice(6);
-      out.add(`${a}-${b}-${c}`);
-      out.add(`(${a}) ${b}-${c}`);
-      out.add(`(${a})${b}-${c}`);
-      out.add(`(${a}) ${b} ${c}`);
-      out.add(`${a}.${b}.${c}`);
-      out.add(`${a} ${b} ${c}`);
-    } else if (d.length === 11 && d.startsWith('1')) {
-      const a = d.slice(1, 4);
-      const b = d.slice(4, 7);
-      const c = d.slice(7);
-      out.add(`1-${a}-${b}-${c}`);
-      out.add(`1 (${a}) ${b}-${c}`);
-      out.add(`+1 ${a} ${b} ${c}`);
-      out.add(`+1-${a}-${b}-${c}`);
-      out.add(`+1 (${a}) ${b}-${c}`);
-    }
-  }
-  return Array.from(out);
-}
-
-function escapeIlike(value: string): string {
-  return value.replace(/[%_\\]/g, '\\$&');
-}
-
-/**
  * Last-resort fallback used when the RPC errors out. Pure ilike — no
  * fuzzy tolerance, but it still tries multiple phone formats so a
  * `(800) 555-8888` query finds an `8005558888` row (and vice-versa) even
@@ -407,7 +342,7 @@ async function ilikeFallback(
   orgId: string,
   opts: { query: string; moduleFilter: string | null; limit: number },
 ): Promise<SmartSearchRow[]> {
-  const safe = escapeIlike(opts.query);
+  const safe = escapeIlikePattern(opts.query);
   const digits = opts.query.replace(/\D/g, '');
 
   const orClauses = new Set<string>([
@@ -421,12 +356,12 @@ async function ilikeFallback(
   // the common phone presentations.
   if (digits.length >= 4 && digits.length <= 15) {
     for (const v of phoneFormatVariants(digits)) {
-      orClauses.add(`phone.ilike.%${escapeIlike(v)}%`);
+      orClauses.add(`phone.ilike.%${escapeIlikePattern(v)}%`);
     }
-    orClauses.add(`data::text.ilike.%${escapeIlike(digits)}%`);
+    orClauses.add(`data::text.ilike.%${escapeIlikePattern(digits)}%`);
     const tail = digits.slice(-10);
     if (tail && tail !== digits) {
-      orClauses.add(`data::text.ilike.%${escapeIlike(tail)}%`);
+      orClauses.add(`data::text.ilike.%${escapeIlikePattern(tail)}%`);
     }
   }
 
