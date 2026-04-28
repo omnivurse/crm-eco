@@ -1,5 +1,5 @@
 import { Suspense, type ComponentType } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -15,6 +15,7 @@ import {
   getAdvisorsForTree,
   getAgentTreeData,
   getDealStages,
+  createCrmClient,
 } from '@/lib/crm/queries';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
 import { ModuleListClient } from './ModuleListClient';
@@ -100,6 +101,30 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     }
   }
 
+  // If the module is disabled (e.g. PIFH's vestigial `deals` and `prospects`
+  // duplicates), redirect to a sibling enabled module with the same display
+  // name so old bookmarks and stale links don't dead-end on a 0-record page.
+  if (crmModule && crmModule.is_enabled === false) {
+    try {
+      const supabase = await createCrmClient();
+      const { data: sibling } = await supabase
+        .from('crm_modules')
+        .select('key')
+        .eq('org_id', profile.organization_id)
+        .eq('is_enabled', true)
+        .eq('name_plural', crmModule.name_plural ?? '')
+        .neq('id', crmModule.id)
+        .order('display_order', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (sibling?.key) {
+        redirect(`/crm/modules/${sibling.key}`);
+      }
+    } catch (err) {
+      console.error('[ModulePage] Failed to resolve disabled module sibling:', err);
+    }
+  }
+
   if (!crmModule) return notFound();
 
   // ---- Contacts sub-tab: render dedicated component and skip record queries ----
@@ -167,6 +192,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
   try {
     const result = await getRecords({
       moduleId: crmModule.id,
+      orgId: crmModule.org_id,
       page,
       pageSize,
       search,
@@ -189,6 +215,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
       if (membersModule && membersModule.id !== crmModule.id) {
         const fallback = await getRecords({
           moduleId: membersModule.id,
+          orgId: membersModule.org_id,
           page,
           pageSize,
           search,
