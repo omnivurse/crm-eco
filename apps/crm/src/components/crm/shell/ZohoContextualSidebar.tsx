@@ -335,6 +335,7 @@ export function ZohoContextualSidebar({
 
                         return (
                             <Link
+                                prefetch={false}
                                 key={item.key}
                                 href={item.href}
                                 className={cn(
@@ -430,6 +431,7 @@ export function ZohoContextualSidebar({
 
                         return (
                             <Link
+                                prefetch={false}
                                 key={item.key}
                                 href={item.href}
                                 onClick={handleLinkClick}
@@ -465,6 +467,7 @@ export function ZohoContextualSidebar({
                 {/* Mobile Footer - Quick Actions */}
                 <div className="p-4 border-t border-slate-200 dark:border-white/5 space-y-2">
                     <Link
+                        prefetch={false}
                         href="/crm/settings"
                         onClick={handleLinkClick}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5"

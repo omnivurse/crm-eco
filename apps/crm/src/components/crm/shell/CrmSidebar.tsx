@@ -167,7 +167,7 @@ const MemoNavItem = memo(function MemoNavItem({
         collapsed ? 'justify-center px-2' : 'justify-start px-3'
       )}
     >
-      <Link href={item.href} title={collapsed ? item.name : undefined}>
+      <Link prefetch={false} href={item.href} title={collapsed ? item.name : undefined}>
         <Icon className={cn(
           'w-5 h-5 flex-shrink-0 transition-colors',
           active && 'text-teal-600 dark:text-teal-400'
@@ -323,7 +323,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
 
       {/* Logo / Org Name */}
       <div className="flex items-center h-16 px-4 border-b border-slate-200 dark:border-white/5">
-        <Link href="/crm" className="flex items-center gap-3 min-w-0 group">
+        <Link prefetch={false} href="/crm" className="flex items-center gap-3 min-w-0 group">
           <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
             <Image
               src="/logo.svg"
@@ -364,7 +364,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
                 collapsed ? 'justify-center px-2' : 'justify-start px-3'
               )}
             >
-              <Link href="/crm">
+              <Link prefetch={false} href="/crm">
                 <LayoutDashboard className={cn(
                   'w-5 h-5 flex-shrink-0 transition-colors',
                   isActive('/crm') && pathname === '/crm' && 'text-teal-600 dark:text-teal-400'
@@ -403,6 +403,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
                       )}
                     >
                       <Link
+                        prefetch={false}
                         href={path}
                         title={collapsed ? module.name : undefined}
                         style={{ animationDelay: `${index * 50}ms` }}

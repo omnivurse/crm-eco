@@ -101,7 +101,7 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
         )}
         asChild
       >
-        <Link href="/crm">
+        <Link prefetch={false} href="/crm">
           <LayoutDashboard className="w-4 h-4" />
           <span className="hidden sm:inline">Dashboard</span>
         </Link>
@@ -128,7 +128,7 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
             )}
             asChild
           >
-            <Link href={path}>
+            <Link prefetch={false} href={path}>
               <Icon className={cn(
                 'w-4 h-4',
                 isActive(path) && 'text-teal-600 dark:text-teal-400'
@@ -168,6 +168,7 @@ export function ModuleTabs({ modules, maxVisible = 6 }: ModuleTabsProps) {
               return (
                 <DropdownMenuItem key={module.id} asChild>
                   <Link
+                    prefetch={false}
                     href={path}
                     className={cn(
                       'flex items-center gap-2 cursor-pointer',

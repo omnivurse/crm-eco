@@ -59,6 +59,7 @@ export function ZohoModuleBar() {
 
                 return (
                     <Link
+                        prefetch={false}
                         key={module.key}
                         href={module.href}
                         onClick={() => handleModuleClick(module.key)}

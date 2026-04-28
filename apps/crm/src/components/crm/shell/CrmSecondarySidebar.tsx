@@ -53,7 +53,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/import') && 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
               )}>
-            <Link href="/crm/import" title="Import Data">
+            <Link prefetch={false} href="/crm/import" title="Import Data">
               <Upload className="w-4 h-4" />
             </Link>
           </Button>
@@ -63,7 +63,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/pipeline') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400'
               )}>
-            <Link href="/crm/pipeline" title="Pipeline">
+            <Link prefetch={false} href="/crm/pipeline" title="Pipeline">
               <TrendingUp className="w-4 h-4" />
             </Link>
           </Button>
@@ -73,7 +73,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/reports') && 'bg-violet-50 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400'
               )}>
-            <Link href="/crm/reports" title="Reports">
+            <Link prefetch={false} href="/crm/reports" title="Reports">
               <BarChart3 className="w-4 h-4" />
             </Link>
           </Button>
@@ -88,7 +88,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/enrollment') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400'
               )}>
-            <Link href="/crm/enrollment" title="Enrollment">
+            <Link prefetch={false} href="/crm/enrollment" title="Enrollment">
               <ClipboardList className="w-4 h-4" />
             </Link>
           </Button>
@@ -98,7 +98,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/needs') && 'bg-rose-50 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400'
               )}>
-            <Link href="/crm/needs" title="Needs">
+            <Link prefetch={false} href="/crm/needs" title="Needs">
               <Heart className="w-4 h-4" />
             </Link>
           </Button>
@@ -112,7 +112,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
               'hover:bg-slate-100 dark:hover:bg-white/10',
               isActive('/crm/settings') && 'bg-slate-100 dark:bg-white/10'
             )}>
-          <Link href="/crm/settings" title="Settings">
+          <Link prefetch={false} href="/crm/settings" title="Settings">
             <Settings className="w-4 h-4" />
           </Link>
         </Button>
@@ -146,7 +146,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/import') && 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'
               )}>
-            <Link href="/crm/import">
+            <Link prefetch={false} href="/crm/import">
               <Upload className={cn('w-4 h-4', isActive('/crm/import') && 'text-emerald-600 dark:text-emerald-400')} />
               Import Data
             </Link>
@@ -157,7 +157,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/pipeline') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
               )}>
-            <Link href="/crm/pipeline">
+            <Link prefetch={false} href="/crm/pipeline">
               <TrendingUp className={cn('w-4 h-4', isActive('/crm/pipeline') && 'text-teal-600 dark:text-teal-400')} />
               Pipeline
             </Link>
@@ -168,7 +168,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                 'hover:bg-slate-100 dark:hover:bg-white/10',
                 isActive('/crm/reports') && 'bg-violet-50 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/30'
               )}>
-            <Link href="/crm/reports">
+            <Link prefetch={false} href="/crm/reports">
               <BarChart3 className={cn('w-4 h-4', isActive('/crm/reports') && 'text-violet-600 dark:text-violet-400')} />
               Reports
             </Link>
@@ -187,7 +187,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                   'hover:bg-slate-100 dark:hover:bg-white/10',
                   isActive('/crm/enrollment') && 'bg-teal-50 dark:bg-teal-500/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-500/30'
                 )}>
-              <Link href="/crm/enrollment">
+              <Link prefetch={false} href="/crm/enrollment">
                 <ClipboardList className={cn('w-4 h-4', isActive('/crm/enrollment') && 'text-teal-600 dark:text-teal-400')} />
                 Enrollment
               </Link>
@@ -198,7 +198,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
                   'hover:bg-slate-100 dark:hover:bg-white/10',
                   isActive('/crm/needs') && 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30'
                 )}>
-              <Link href="/crm/needs">
+              <Link prefetch={false} href="/crm/needs">
                 <Heart className={cn('w-4 h-4', isActive('/crm/needs') && 'text-rose-600 dark:text-rose-400')} />
                 Needs
               </Link>
@@ -215,7 +215,7 @@ export function CrmSecondarySidebar({ isOpen, onToggle }: CrmSecondarySidebarPro
               'hover:bg-slate-100 dark:hover:bg-white/10',
               isActive('/crm/settings') && 'bg-slate-100 dark:bg-white/10'
             )}>
-          <Link href="/crm/settings">
+          <Link prefetch={false} href="/crm/settings">
             <Settings className="w-4 h-4" />
             Settings
           </Link>

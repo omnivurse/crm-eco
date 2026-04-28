@@ -75,7 +75,9 @@ async function RecordDetailContent({ params }: PageProps) {
     if (profileResult.status === 'rejected') {
       console.error('[RecordDetail] Failed to get profile:', profileResult.reason);
     }
-    return notFound();
+    // Avoid misleading global 404: middleware already ensured a session; missing
+    // profile here is usually auth/cookie drift or a transient read failure.
+    redirect('/crm-login?error=profile_fetch_failed');
   }
 
   const result = recordResult.status === 'fulfilled' ? recordResult.value : null;

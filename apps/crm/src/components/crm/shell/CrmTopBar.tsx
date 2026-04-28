@@ -152,7 +152,7 @@ export const CrmTopBar = memo(function CrmTopBar({
       </Button>
 
       {/* Left Section: Logo */}
-      <Link href="/crm" className="flex items-center gap-2 group flex-shrink-0">
+      <Link prefetch={false} href="/crm" className="flex items-center gap-2 group flex-shrink-0">
         <Image
           src="/logo.svg"
           alt="Double Helix Hub"

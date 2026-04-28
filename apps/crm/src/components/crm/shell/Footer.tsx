@@ -26,7 +26,7 @@ export function Footer() {
         <div className="flex items-center justify-between">
           {/* Logo & Tagline - optimized with Next.js Image */}
           <div className="flex items-center gap-3">
-            <Link href="/crm" className="flex items-center gap-2 flex-shrink-0">
+            <Link prefetch={false} href="/crm" className="flex items-center gap-2 flex-shrink-0">
               <Image
                 src="/logo.svg"
                 alt="Double Helix Hub"
@@ -46,6 +46,7 @@ export function Footer() {
           {/* Navigation Links */}
           <nav className="flex items-center gap-4 lg:gap-6">
             <Link
+              prefetch={false}
               href="/crm/features"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
@@ -53,6 +54,7 @@ export function Footer() {
               <span className="hidden sm:inline">Features</span>
             </Link>
             <Link
+              prefetch={false}
               href="/crm/learn"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >
@@ -60,6 +62,7 @@ export function Footer() {
               <span className="hidden sm:inline">Learn</span>
             </Link>
             <Link
+              prefetch={false}
               href="/crm/learn/getting-started"
               className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
             >

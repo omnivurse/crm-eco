@@ -134,7 +134,7 @@ export function SplitCreateButton({
                 )}
                 asChild
             >
-                <Link href={defaultHref}>
+                <Link prefetch={false} href={defaultHref}>
                     <Plus className="w-4 h-4 mr-1.5" />
                     {defaultLabel}
                 </Link>
@@ -165,7 +165,7 @@ export function SplitCreateButton({
                     </DropdownMenuLabel>
                     {RECORD_OPTIONS.map((option) => (
                         <DropdownMenuItem key={option.label} asChild className="cursor-pointer">
-                            <Link href={option.href} className="flex items-center gap-3 py-2">
+                            <Link prefetch={false} href={option.href} className="flex items-center gap-3 py-2">
                                 <div className={cn('p-1.5 rounded-md bg-slate-100 dark:bg-slate-800', option.color)}>
                                     <option.icon className="w-4 h-4" />
                                 </div>
@@ -191,7 +191,7 @@ export function SplitCreateButton({
                     </DropdownMenuLabel>
                     {ACTIVITY_OPTIONS.map((option) => (
                         <DropdownMenuItem key={option.label} asChild className="cursor-pointer">
-                            <Link href={option.href} className="flex items-center gap-3 py-2">
+                            <Link prefetch={false} href={option.href} className="flex items-center gap-3 py-2">
                                 <div className={cn('p-1.5 rounded-md bg-slate-100 dark:bg-slate-800', option.color)}>
                                     <option.icon className="w-4 h-4" />
                                 </div>
@@ -217,7 +217,7 @@ export function SplitCreateButton({
                     </DropdownMenuLabel>
                     {FINANCIAL_OPTIONS.map((option) => (
                         <DropdownMenuItem key={option.label} asChild className="cursor-pointer">
-                            <Link href={option.href} className="flex items-center gap-3 py-2">
+                            <Link prefetch={false} href={option.href} className="flex items-center gap-3 py-2">
                                 <div className={cn('p-1.5 rounded-md bg-slate-100 dark:bg-slate-800', option.color)}>
                                     <option.icon className="w-4 h-4" />
                                 </div>
@@ -239,7 +239,7 @@ export function SplitCreateButton({
 
                     {/* Import Option */}
                     <DropdownMenuItem asChild className="cursor-pointer">
-                        <Link href="/crm/import" className="flex items-center gap-3 py-2">
+                        <Link prefetch={false} href="/crm/import" className="flex items-center gap-3 py-2">
                             <div className="p-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                                 <Upload className="w-4 h-4" />
                             </div>
