@@ -17,7 +17,19 @@ import type { Member as CanonicalMember, Advisor as CanonicalAdvisor } from '@cr
 
 type Member = Pick<CanonicalMember, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'status' | 'state' | 'plan_name' | 'effective_date' | 'termination_date' | 'created_at'> & {
   advisor: Pick<CanonicalAdvisor, 'id' | 'first_name' | 'last_name'> | null;
+  /** Resolved `crm_records.id` for the matching CRM record (by email). Lets
+   *  the member rows link to the same `/crm/r/:id` detail page everything
+   *  else uses. Null when no matching CRM record exists yet. */
+  crm_record_id?: string | null;
 };
+
+/** Build the URL for a member row. Prefers the matched `crm_record_id` so
+ *  clicks land on the standard record detail; falls back to the members-table
+ *  id if no match exists, which keeps the link click intact (the detail page
+ *  surfaces a "not found" state rather than a hard 404). */
+function memberHref(member: Member): string {
+  return `/crm/r/${member.crm_record_id ?? member.id}`;
+}
 
 function getStatusBadgeVariant(
   status: string
@@ -53,7 +65,7 @@ function formatDate(dateStr: string): string {
 function MemberCard({ member }: { member: Member }) {
   return (
     <Link
-      href={`/crm/r/${member.id}`}
+      href={memberHref(member)}
       className="block bg-white dark:bg-slate-900/60 rounded-xl border border-slate-200/60 dark:border-slate-700/50 p-4 hover:shadow-md transition-shadow active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -103,7 +115,7 @@ function MemberTableRow({ member }: { member: Member }) {
     <tr className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
       <td className="py-3 pr-4">
         <Link
-          href={`/crm/r/${member.id}`}
+          href={memberHref(member)}
           className="text-sm font-medium text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
         >
           {member.first_name} {member.last_name}

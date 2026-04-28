@@ -103,18 +103,30 @@ export async function GET() {
         .eq('active_plan_type', 'short_term'),
     ]);
 
+    const planTotals = {
+      healthshare: healthshareCount.count ?? 0,
+      insurance: insuranceCount.count ?? 0,
+      medicaid: medicaidCount.count ?? 0,
+      short_term: shortTermCount.count ?? 0,
+    };
+    const hasPlanData =
+      planTotals.healthshare +
+        planTotals.insurance +
+        planTotals.medicaid +
+        planTotals.short_term >
+      0;
+
+    // If `active_plan_type` isn't being populated yet (common for tenants
+    // newly synced from the Admin Portal), omit the plan-type breakdown
+    // entirely. Showing four zero cards is misleading — the UI hides the
+    // section when `byPlanType` is undefined.
     return NextResponse.json({
       total: totalCount.count ?? 0,
       active: activeCount.count ?? 0,
       inactive: inactiveCount.count ?? 0,
       futureActive: futureActiveCount.count ?? 0,
       futureInactive: futureInactiveCount.count ?? 0,
-      byPlanType: {
-        healthshare: healthshareCount.count ?? 0,
-        insurance: insuranceCount.count ?? 0,
-        medicaid: medicaidCount.count ?? 0,
-        short_term: shortTermCount.count ?? 0,
-      },
+      ...(hasPlanData ? { byPlanType: planTotals } : {}),
     });
   } catch (error) {
     console.error('[Members Stats] Error:', error);
