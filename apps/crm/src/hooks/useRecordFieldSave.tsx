@@ -227,11 +227,61 @@ export function RecordFieldSaveProvider({
             /* ignore */
           }
           if (res.status === 409) {
+            // 409 here almost always means the record's `updated_at`
+            // drifted under us (another tab, a sync trigger, a backend
+            // dedupe sweep, etc.) — not that someone overwrote *this*
+            // field. Inline editors save one field at a time, so we can
+            // safely refresh our token and replay the same single-field
+            // PATCH transparently. The user never sees the conflict.
+            //
+            // We retry at most once; if the second attempt also 409s,
+            // something genuinely racy is happening (two humans in the
+            // same field) and we surface the error so a real human can
+            // sort it out instead of silently overwriting their edit.
+            if (currentUpdatedAt) {
+              updatedAtRef.current = currentUpdatedAt;
+              onConflict?.({ field, currentUpdatedAt, value });
+              const retryHeaders: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'Idempotency-Key': makeIdempotencyKey(),
+                'If-Match': currentUpdatedAt,
+              };
+              const retryRes = await fetch(`/api/crm/records/${recordId}`, {
+                method: 'PATCH',
+                headers: retryHeaders,
+                credentials: 'same-origin',
+                signal: controller.signal,
+                body: JSON.stringify(payload),
+              });
+              if (retryRes.ok) {
+                try {
+                  const body = (await retryRes.clone().json()) as {
+                    updated_at?: string | null;
+                  };
+                  if (body?.updated_at) updatedAtRef.current = body.updated_at;
+                } catch {
+                  /* response not JSON — ignore */
+                }
+                updateField(field, {
+                  status: 'saved',
+                  error: undefined,
+                  savedAt: Date.now(),
+                });
+                onSaved?.(field, value);
+                return;
+              }
+              // Second 409 → real concurrent edit on this field. Fall
+              // through to the user-facing error.
+              try {
+                const retryBody = await retryRes.json();
+                if (typeof retryBody?.currentUpdatedAt === 'string') {
+                  updatedAtRef.current = retryBody.currentUpdatedAt;
+                }
+              } catch {
+                /* ignore */
+              }
+            }
             message = 'Record was updated elsewhere — reload to retry';
-            // Advance our token so the *next* save (for a different
-            // field) doesn't also trip the conflict check on stale data.
-            if (currentUpdatedAt) updatedAtRef.current = currentUpdatedAt;
-            onConflict?.({ field, currentUpdatedAt, value });
           }
           updateField(field, { status: 'error', error: message });
           return;
