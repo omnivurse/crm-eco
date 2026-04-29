@@ -460,6 +460,8 @@ export interface RecordQueryOptions {
   filters?: ViewFilter[];
   sort?: ViewSort[];
   search?: string;
+  /** `crm_fields.key` paths for searching `data->>key` (avoids brittle `data::text` filters) */
+  searchDataJsonKeys?: string[];
   scope?: 'all' | 'mine' | 'downline';
   /** Optional territory ID to filter records by */
   territoryId?: string;
@@ -488,6 +490,7 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     filters = [],
     sort = [],
     search,
+    searchDataJsonKeys,
     scope = 'all',
     territoryId,
     includeCount = true,
@@ -782,8 +785,13 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     }
   }
 
-  if (search) {
-    query = applyCrmRecordTextSearch(query, search);
+  if (search?.trim()) {
+    let dataJsonKeys = searchDataJsonKeys;
+    if (!dataJsonKeys?.length) {
+      const flds = await getFieldsForModule(moduleId);
+      dataJsonKeys = flds.map((f) => f.key);
+    }
+    query = applyCrmRecordTextSearch(query, search, { dataJsonKeys });
   }
 
   // Apply sorting — real columns on crm_records vs JSONB `data` paths

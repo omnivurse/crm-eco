@@ -19,7 +19,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { applyCrmRecordTextSearch } from '@/lib/crm/record-search';
+import {
+  applyCrmRecordTextSearch,
+  fetchModuleDataJsonKeysForSearch,
+} from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -104,8 +107,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('contact_type', contactType);
     }
 
-    if (search) {
-      query = applyCrmRecordTextSearch(query, search);
+    if (search?.trim()) {
+      const dataJsonKeys = await fetchModuleDataJsonKeysForSearch(supabase, moduleRow.id);
+      query = applyCrmRecordTextSearch(query, search, { dataJsonKeys });
     }
 
     // Append `id` tiebreaker so the 5,000-row hard-cap returns a reproducible

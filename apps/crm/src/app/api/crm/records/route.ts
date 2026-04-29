@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthUser, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
 import { executeCrmRecordCreate } from '@/lib/crm/record-create-service';
-import { applyCrmRecordTextSearch } from '@/lib/crm/record-search';
+import {
+  applyCrmRecordTextSearch,
+  fetchModuleDataJsonKeysForSearch,
+} from '@/lib/crm/record-search';
 import { parseCrmRecordPageSize } from '@/lib/crm/record-list-constants';
 
 /**
@@ -91,8 +94,9 @@ export async function GET(request: NextRequest) {
       query = query.eq('contact_type', contactType);
     }
 
-    if (search) {
-      query = applyCrmRecordTextSearch(query, search);
+    if (search?.trim()) {
+      const dataJsonKeys = await fetchModuleDataJsonKeysForSearch(supabase, module.id);
+      query = applyCrmRecordTextSearch(query, search, { dataJsonKeys });
     }
 
     // Apply sorting

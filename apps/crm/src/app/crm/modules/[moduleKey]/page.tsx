@@ -213,6 +213,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
       page,
       pageSize,
       search,
+      searchDataJsonKeys: fields.map((f) => f.key),
       filters,
       sort,
       scope: scope || 'all',

@@ -1,16 +1,58 @@
 /**
  * Shared text/phone search for `crm_records` list queries (server module page + REST API).
- * Aligns with `/api/crm/search` phone fallback: multiple NANP formats on `phone`,
- * digits / tail-10 on `data::text` (mobile/work_phone JSON), plus normal title/email/phone/data
- * for word-shaped queries.
+ *
+ * PostgREST `.or()` filter strings **cannot** reliably use `data::text` (the `::`
+ * collides with API parsing). We search JSONB with `data->>field_key.ilike...`
+ * using each module's `crm_fields.key` list instead.
  *
  * Multi-word queries AND across terms: each word must match in at least one column
- * (PostgREST chains `.or()` filters with AND semantics between groups).
+ * (chained `.or()` groups are AND'd).
  */
 
 export function escapeIlikePattern(value: string): string {
   return value.replace(/[%_\\]/g, '\\$&');
 }
+
+/** Safe `data->>` path segment for PostgREST filter strings */
+const SAFE_DATA_JSON_KEY = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+
+/**
+ * Load field keys for a module so list search can target `data->>key` without casts.
+ * Capped to keep `.or()` filter strings within PostgREST URL limits.
+ */
+export async function fetchModuleDataJsonKeysForSearch(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  moduleId: string,
+  maxKeys = 80,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('crm_fields')
+    .select('key')
+    .eq('module_id', moduleId);
+  if (error || !data) return [];
+  return (data as { key: string }[])
+    .map((r) => r.key)
+    .filter((k) => typeof k === 'string' && SAFE_DATA_JSON_KEY.test(k))
+    .slice(0, maxKeys);
+}
+
+/**
+ * Common JSON paths that store phone-like values (substring digit search).
+ * Kept in sync with `/api/crm/search` phone fallbacks.
+ */
+const JSON_PHONE_FIELD_KEYS = [
+  'mobile',
+  'work_phone',
+  'home_phone',
+  'cell',
+  'mobile_phone',
+  'cell_phone',
+  'phone_number',
+  'alt_phone',
+  'secondary_phone',
+  'fax',
+];
 
 /**
  * Generate common visual phone formats for a digit string so ILIKE can match
@@ -55,11 +97,52 @@ export function phoneFormatVariants(digits: string): string[] {
 
 const MAX_PHONE_OR_CLAUSES = 48;
 
+function mergeJsonFieldKeys(dataJsonKeys?: string[]): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const k of [...JSON_PHONE_FIELD_KEYS, ...(dataJsonKeys ?? [])]) {
+    if (!k || !SAFE_DATA_JSON_KEY.test(k) || seen.has(k)) continue;
+    seen.add(k);
+    out.push(k);
+    if (out.length >= 80) break;
+  }
+  return out;
+}
+
+function pushJsonDigitClauses(
+  clauses: Set<string>,
+  digits: string,
+  tail: string | null,
+  dataJsonKeys: string[] | undefined,
+) {
+  const keys = mergeJsonFieldKeys(dataJsonKeys);
+  for (const key of keys) {
+    if (clauses.size >= MAX_PHONE_OR_CLAUSES) break;
+    clauses.add(`data->>${key}.ilike.%${escapeIlikePattern(digits)}%`);
+    if (tail && tail !== digits && clauses.size < MAX_PHONE_OR_CLAUSES) {
+      clauses.add(`data->>${key}.ilike.%${escapeIlikePattern(tail)}%`);
+    }
+  }
+}
+
+function buildWordSearchOrClause(
+  pattern: string /** includes leading/trailing `%` */,
+  dataJsonKeys: string[] | undefined,
+): string {
+  const parts = [`title.ilike.${pattern}`, `email.ilike.${pattern}`, `phone.ilike.${pattern}`];
+  for (const key of mergeJsonFieldKeys(dataJsonKeys)) {
+    parts.push(`data->>${key}.ilike.${pattern}`);
+  }
+  return parts.join(',');
+}
+
 /**
  * Single PostgREST `.or(...)` filter string for phone-heavy search on `crm_records`.
- * Used by list queries and by `/api/crm/search` phone fallback.
  */
-export function buildPhoneSearchOrFilter(rawSearch: string): string {
+export function buildPhoneSearchOrFilter(
+  rawSearch: string,
+  opts?: { dataJsonKeys?: string[] },
+): string {
   const digits = rawSearch.replace(/\D/g, '');
   if (digits.length < 4 || digits.length > 15) {
     return '';
@@ -82,16 +165,18 @@ export function buildPhoneSearchOrFilter(rawSearch: string): string {
   clauses.add(`phone.ilike.%${safeRaw}%`);
 
   if (digits.length >= 4) {
-    clauses.add(`data::text.ilike.%${escapeIlikePattern(digits)}%`);
-    if (tail && tail !== digits) {
-      clauses.add(`data::text.ilike.%${escapeIlikePattern(tail)}%`);
-    }
+    pushJsonDigitClauses(clauses, digits, tail !== digits ? tail : null, opts?.dataJsonKeys);
   }
 
   return Array.from(clauses).join(',');
 }
 
 type OrQuery = { or: (filters: string) => OrQuery };
+
+export interface ApplyCrmRecordTextSearchOpts {
+  /** Module `crm_fields.key` values — drives `data->>key` ILIKE clauses */
+  dataJsonKeys?: string[];
+}
 
 /**
  * True when the user is clearly typing a phone (formatted digits), matching `/api/crm/search`.
@@ -120,14 +205,18 @@ function tokenLooksLikePhone(term: string): boolean {
 /**
  * Applies search filters to a PostgREST query builder that exposes `.or(...)`.
  */
-export function applyCrmRecordTextSearch<Q extends OrQuery>(query: Q, search: string | undefined): Q {
+export function applyCrmRecordTextSearch<Q extends OrQuery>(
+  query: Q,
+  search: string | undefined,
+  opts?: ApplyCrmRecordTextSearchOpts,
+): Q {
   if (!search || !search.trim()) return query;
 
   const rawSearch = search.trim();
+  const dataJsonKeys = opts?.dataJsonKeys;
 
-  // Dedicated phone path — matches formatted columns + JSON phone fields via data::text
   if (isPhoneHeavyQuery(rawSearch)) {
-    const phoneFilter = buildPhoneSearchOrFilter(rawSearch);
+    const phoneFilter = buildPhoneSearchOrFilter(rawSearch, { dataJsonKeys });
     if (phoneFilter) {
       return query.or(phoneFilter) as Q;
     }
@@ -137,14 +226,14 @@ export function applyCrmRecordTextSearch<Q extends OrQuery>(query: Q, search: st
   let q: OrQuery = query;
   for (const term of terms) {
     if (tokenLooksLikePhone(term)) {
-      const phoneFilter = buildPhoneSearchOrFilter(term);
+      const phoneFilter = buildPhoneSearchOrFilter(term, { dataJsonKeys });
       if (phoneFilter) {
         q = q.or(phoneFilter);
         continue;
       }
     }
     const p = `%${escapeIlikePattern(term)}%`;
-    q = q.or(`title.ilike.${p},email.ilike.${p},phone.ilike.${p},data::text.ilike.${p}`);
+    q = q.or(buildWordSearchOrClause(p, dataJsonKeys));
   }
   return q as Q;
 }
