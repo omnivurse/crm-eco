@@ -83,7 +83,7 @@ phone_clusters AS (
     (
       SELECT min(similarity(coalesce(t1.t, ''), coalesce(t2.t, '')))
       FROM unnest(pc.titles) WITH ORDINALITY AS t1(t, i),
-           unnest(pc.titles) WITH ORDINALITY AS t2(t, j)
+           unnest(pc.titles) WITH ORDINALITY AS t2(t, i)
       WHERE t1.i < t2.i
     )                  AS min_name_similarity
   FROM phone_clusters_raw pc
