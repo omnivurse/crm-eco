@@ -54,8 +54,17 @@ export function mergeCrmDataJsonIntoRowColumns(
       ([displayFirst, last].filter(Boolean).join(' ') || ctx.previousTitle) ?? null;
   }
 
-  if (d.contact_status !== undefined) updates.status = d.contact_status || null;
+  // Status precedence: lead_status FIRST, then contact_status overrides, then
+  // explicit `status` overrides everything. Reason: when a lead is converted
+  // to a contact, the lead row keeps `lead_status='Converted'` forever as
+  // history. The new contact row inherits that value in its JSONB during
+  // conversion / form round-trip. If lead_status ran *after* contact_status,
+  // every save on a converted contact would silently revert their live
+  // contact_status back to "Converted" — exactly the bug Wendy reported on
+  // Barry Donath ("change to Pending, reverts back to Converted"). Running
+  // contact_status last makes the contact's live status authoritative.
   if (d.lead_status !== undefined) updates.status = d.lead_status || null;
+  if (d.contact_status !== undefined) updates.status = d.contact_status || null;
   if (d.status !== undefined) updates.status = d.status || null;
 
   for (const key of CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH) {
