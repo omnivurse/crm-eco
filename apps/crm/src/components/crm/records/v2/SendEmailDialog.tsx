@@ -148,7 +148,7 @@ export function SendEmailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+      <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
         <DialogHeader className="px-5 pt-5 pb-2">
           <DialogTitle className="text-lg font-semibold">
             Email {record.title ? `— ${record.title}` : ''}
