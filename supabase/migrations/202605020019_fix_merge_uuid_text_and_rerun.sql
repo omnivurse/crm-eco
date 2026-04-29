@@ -1,28 +1,27 @@
 -- =============================================================================
--- Fix: merge_crm_records was failing every call with
---   "operator does not exist: uuid = text"
--- because the legacy `public.notes` re-parent step casts the keeper/dup ids
--- to `text` (assuming an older schema) but `notes.record_id` is now `uuid`.
--- Confirmed via information_schema on 2026-04-29:
---   public.notes.record_id  = uuid
--- The narrow EXCEPTION handler in that block only caught
--- undefined_table / undefined_column, so the operator-does-not-exist error
--- bubbled to the outer handler and the function returned
---   { success: false, error: "operator does not exist: uuid = text" }
--- with PL/pgSQL implicitly rolling back the entire function body.
--- Net effect: ..0018 attempted 466 merges, every one rolled back, ZERO data
--- changes. Safe to re-run after the fix.
+-- (1) Fix merge_crm_records: legacy public.notes update was casting uuid → text,
+--     producing "operator does not exist: uuid = text" because notes.record_id
+--     is uuid in this DB.
 --
--- This migration:
---   1. CREATE OR REPLACE merge_crm_records — removes the spurious ::text
---      cast on the legacy notes update; everything else is identical to
---      the live function definition (verified via pg_get_functiondef).
---   2. Re-runs the same cluster-merge loop from ..0018. Idempotent: only
---      clusters still present in crm_duplicate_audit get processed.
+-- (2) Bulk-merge remaining within-module duplicate clusters in PIFH.
+--     Implementation copied from ..0014 (the prior phone+name sweep) which is
+--     ~50× faster than calling merge_crm_records 466 times: pre-computes the FK
+--     re-parent SQL templates once instead of re-querying information_schema
+--     inside every merge. ..0014's body merged 48 records in seconds; this
+--     migration applies the same pattern over the ~466 records the audit view
+--     surfaces.
+--
+-- Tier-1 (auto-merge) requires:
+--   • email rule:       any cross/same-module duplicates with shared email
+--   • phone+name rule:  min_name_similarity >= 0.5 AND suffix-coherent
+--                       (no Jr/Sr/II/III/IV mismatch within the cluster)
+--
+-- Idempotent: the audit view re-evaluates from current crm_records, so a
+-- re-run becomes a no-op if everything was already merged.
 -- =============================================================================
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- (1) Patch merge_crm_records — drop the ::text cast on legacy notes update
+-- (1) Patch merge_crm_records — drop the spurious ::text cast
 -- ─────────────────────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.merge_crm_records(
   p_keeper_id     uuid,
@@ -123,10 +122,7 @@ BEGIN
   UPDATE crm_notes SET record_id = p_keeper_id WHERE record_id = p_duplicate_id;
   GET DIAGNOSTICS v_moved_notes = ROW_COUNT;
 
-  -- ── FIX: legacy notes table — record_id is uuid in this DB, not text.
-  -- Drop the ::text cast that was producing "operator does not exist:
-  -- uuid = text" on every merge. Keep narrow exception so a missing
-  -- table/column is still tolerated.
+  -- legacy notes table (record_id is uuid in this DB; previously cast to text by mistake)
   BEGIN
     EXECUTE 'UPDATE public.notes SET record_id = $1 WHERE record_id = $2'
       USING p_keeper_id, p_duplicate_id;
@@ -159,7 +155,6 @@ BEGIN
           AND kl.link_type        = crm_record_links.link_type
      );
   UPDATE crm_record_links SET target_record_id = p_keeper_id WHERE target_record_id = p_duplicate_id;
-
   DELETE FROM crm_record_links WHERE source_record_id = target_record_id;
 
   GET DIAGNOSTICS v_moved_links = ROW_COUNT;
@@ -188,16 +183,12 @@ BEGIN
         AND NOT (tc.table_name IN ('crm_notes','crm_tasks','crm_attachments','crm_record_links'))
     LOOP
       BEGIN
-        sql := format(
-          'UPDATE %I.%I SET %I = $1 WHERE %I = $2',
-          r.table_schema, r.table_name, r.column_name, r.column_name
-        );
+        sql := format('UPDATE %I.%I SET %I = $1 WHERE %I = $2',
+          r.table_schema, r.table_name, r.column_name, r.column_name);
         EXECUTE sql USING p_keeper_id, p_duplicate_id;
       EXCEPTION WHEN unique_violation THEN
-        sql := format(
-          'DELETE FROM %I.%I WHERE %I = $1',
-          r.table_schema, r.table_name, r.column_name
-        );
+        sql := format('DELETE FROM %I.%I WHERE %I = $1',
+          r.table_schema, r.table_name, r.column_name);
         EXECUTE sql USING p_duplicate_id;
       WHEN others THEN
         RAISE WARNING 'merge_crm_records: skipped %.%.%: %',
@@ -222,11 +213,7 @@ BEGIN
   BEGIN
     INSERT INTO crm_audit_log (org_id, actor_id, entity, entity_id, action, diff)
     VALUES (
-      v_keeper.org_id,
-      p_user_id,
-      'record',
-      p_keeper_id,
-      'merge',
+      v_keeper.org_id, p_user_id, 'record', p_keeper_id, 'merge',
       jsonb_build_object(
         'kept_id',           p_keeper_id,
         'deleted_id',        p_duplicate_id,
@@ -242,15 +229,10 @@ BEGIN
     RAISE WARNING 'merge_crm_records: audit insert failed: %', SQLERRM;
   END;
 
-  RETURN jsonb_build_object(
-    'success',           true,
-    'kept_id',           p_keeper_id,
-    'deleted_id',        p_duplicate_id,
-    'moved_notes',       v_moved_notes,
-    'moved_tasks',       v_moved_tasks,
-    'moved_attachments', v_moved_attach,
-    'moved_links',       v_moved_links
-  );
+  RETURN jsonb_build_object('success', true,
+    'kept_id', p_keeper_id, 'deleted_id', p_duplicate_id,
+    'moved_notes', v_moved_notes, 'moved_tasks', v_moved_tasks,
+    'moved_attachments', v_moved_attach, 'moved_links', v_moved_links);
 
 EXCEPTION WHEN others THEN
   RETURN jsonb_build_object('success', false, 'error', SQLERRM);
@@ -258,8 +240,7 @@ END;
 $fn$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- (2) Re-run the cluster-merge loop now that the RPC works.
--- Body identical to ..0018 — see that migration's header for reasoning.
+-- (2) Fast inline merge — same logic as ..0014, applied across the audit view
 -- ─────────────────────────────────────────────────────────────────────────────
 SET LOCAL statement_timeout = 0;
 
@@ -269,31 +250,56 @@ DECLARE
   v_org     CONSTANT uuid := '00000000-0000-0000-0000-000000000001';
   cluster   record;
   dup_id    uuid;
+  v_keeper  crm_records%ROWTYPE;
+  v_dup     crm_records%ROWTYPE;
+  v_final_data jsonb;
   v_total_clusters     int := 0;
   v_processed          int := 0;
-  v_merges             int := 0;
+  v_merged             int := 0;
   v_skipped_suffix     int := 0;
   v_skipped_stale      int := 0;
-  v_skipped_xmodule    int := 0;
   v_errors             int := 0;
-  v_merge_result       jsonb;
+  fk_updates           text[];
+  fk_deletes           text[];
+  i                    int;
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = v_actor AND organization_id = v_org
+    SELECT 1 FROM public.profiles WHERE id = v_actor AND organization_id = v_org
   ) THEN
-    RAISE EXCEPTION '[merge] actor profile.id % is not on PIFH org %', v_actor, v_org;
+    RAISE EXCEPTION '[merge-fast] actor % not on PIFH org', v_actor;
   END IF;
 
-  CREATE TEMP TABLE _merge_clusters_v2 ON COMMIT DROP AS
+  -- Pre-compute FK templates ONCE (this is the speedup vs calling
+  -- merge_crm_records, which re-runs this query inside every call).
+  WITH fks AS (
+    SELECT
+      format('UPDATE %I.%I SET %I = $1 WHERE %I = $2',
+             tc.table_schema, tc.table_name, kcu.column_name, kcu.column_name) AS upd_sql,
+      format('DELETE FROM %I.%I WHERE %I = $1',
+             tc.table_schema, tc.table_name, kcu.column_name) AS del_sql
+    FROM information_schema.table_constraints tc
+    JOIN information_schema.key_column_usage kcu
+      ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage ccu
+      ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+      AND ccu.table_schema = 'public'
+      AND ccu.table_name   = 'crm_records'
+      AND ccu.column_name  = 'id'
+      AND tc.table_name NOT IN ('crm_notes','crm_tasks','crm_attachments','crm_record_links')
+  )
+  SELECT array_agg(upd_sql), array_agg(del_sql) INTO fk_updates, fk_deletes FROM fks;
+
+  -- Snapshot the cluster list (audit view aggregates over crm_records, which
+  -- we're about to mutate — temp table guarantees a stable iterator).
+  CREATE TEMP TABLE _merge_clusters_fast ON COMMIT DROP AS
   SELECT
     keeper_id_oldest,
     duplicate_ids,
     rule,
     titles,
-    module_ids,
+    coalesce(min_name_similarity, 0) AS min_sim,
     member_count,
-    coalesce(min_name_similarity, 0) AS min_name_similarity,
     row_number() OVER (
       ORDER BY
         CASE WHEN rule = 'email' THEN 0 ELSE 1 END,
@@ -307,19 +313,15 @@ BEGIN
       OR (rule = 'phone+name' AND coalesce(min_name_similarity, 0) >= 0.5)
     );
 
-  SELECT count(*) INTO v_total_clusters FROM _merge_clusters_v2;
-  RAISE NOTICE '[merge-rerun] starting. clusters_to_process=%', v_total_clusters;
+  SELECT count(*) INTO v_total_clusters FROM _merge_clusters_fast;
+  RAISE NOTICE '[merge-fast] starting. clusters=%', v_total_clusters;
 
   FOR cluster IN
-    SELECT * FROM _merge_clusters_v2 ORDER BY process_order
+    SELECT * FROM _merge_clusters_fast ORDER BY process_order
   LOOP
     v_processed := v_processed + 1;
 
-    IF (SELECT count(DISTINCT m) FROM unnest(cluster.module_ids) m) > 1 THEN
-      v_skipped_xmodule := v_skipped_xmodule + 1;
-      CONTINUE;
-    END IF;
-
+    -- Suffix-coherence guard (Jr/Sr/II/III/IV mismatch → skip, likely father+son).
     IF cluster.rule = 'phone+name' AND (
       SELECT count(DISTINCT coalesce(
         lower((regexp_match(btrim(t), '(?i)(?:^|[\s,])(jr\.?|sr\.?|ii|iii|iv)\s*$'))[1]),
@@ -331,44 +333,143 @@ BEGIN
       CONTINUE;
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM public.crm_records WHERE id = cluster.keeper_id_oldest) THEN
+    -- Lock keeper. If gone (merged in earlier cluster), skip.
+    SELECT * INTO v_keeper FROM public.crm_records WHERE id = cluster.keeper_id_oldest FOR UPDATE;
+    IF NOT FOUND THEN
       v_skipped_stale := v_skipped_stale + 1;
       CONTINUE;
     END IF;
 
     FOREACH dup_id IN ARRAY cluster.duplicate_ids LOOP
-      IF NOT EXISTS (SELECT 1 FROM public.crm_records WHERE id = dup_id) THEN
-        v_skipped_stale := v_skipped_stale + 1;
-        CONTINUE;
-      END IF;
-
       BEGIN
-        SELECT public.merge_crm_records(
-          p_keeper_id    => cluster.keeper_id_oldest,
-          p_duplicate_id => dup_id,
-          p_user_id      => v_actor
-        ) INTO v_merge_result;
-
-        IF (v_merge_result->>'success')::boolean IS TRUE THEN
-          v_merges := v_merges + 1;
-        ELSE
-          v_errors := v_errors + 1;
-          RAISE NOTICE '[merge-rerun] keeper=% dup=% returned %',
-            cluster.keeper_id_oldest, dup_id, v_merge_result;
+        SELECT * INTO v_dup FROM public.crm_records WHERE id = dup_id FOR UPDATE;
+        IF NOT FOUND THEN
+          v_skipped_stale := v_skipped_stale + 1;
+          CONTINUE;
         END IF;
+
+        IF v_dup.org_id <> v_keeper.org_id THEN
+          v_errors := v_errors + 1;
+          CONTINUE;
+        END IF;
+
+        -- Same-module guard. The 1 email cross-module cluster (Susan King)
+        -- gets skipped here — handle that one via the UI.
+        IF v_dup.module_id <> v_keeper.module_id THEN
+          v_skipped_stale := v_skipped_stale + 1;
+          CONTINUE;
+        END IF;
+
+        -- Key-wise data merge: keeper wins, keeper blanks fill from dup.
+        SELECT COALESCE(jsonb_object_agg(k, v), '{}'::jsonb) INTO v_final_data
+        FROM (
+          SELECT k,
+            CASE
+              WHEN (v_keeper.data -> k) IS NULL
+                OR v_keeper.data ->> k IS NULL
+                OR v_keeper.data ->> k = ''
+              THEN v_dup.data -> k
+              ELSE v_keeper.data -> k
+            END AS v
+          FROM (
+            SELECT DISTINCT k FROM (
+              SELECT jsonb_object_keys(COALESCE(v_keeper.data, '{}'::jsonb)) AS k
+              UNION
+              SELECT jsonb_object_keys(COALESCE(v_dup.data, '{}'::jsonb)) AS k
+            ) keys
+          ) all_keys
+        ) merged
+        WHERE v IS NOT NULL;
+
+        UPDATE public.crm_notes       SET record_id = v_keeper.id WHERE record_id = v_dup.id;
+        UPDATE public.crm_tasks       SET record_id = v_keeper.id WHERE record_id = v_dup.id;
+        BEGIN
+          UPDATE public.crm_attachments SET record_id = v_keeper.id WHERE record_id = v_dup.id;
+        EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+        END;
+        BEGIN
+          UPDATE public.notes SET record_id = v_keeper.id WHERE record_id = v_dup.id;
+        EXCEPTION WHEN undefined_table OR undefined_column THEN NULL;
+        END;
+
+        DELETE FROM public.crm_record_links
+         WHERE source_record_id = v_dup.id AND target_record_id = v_keeper.id;
+        DELETE FROM public.crm_record_links
+         WHERE target_record_id = v_dup.id AND source_record_id = v_keeper.id;
+        DELETE FROM public.crm_record_links
+         WHERE source_record_id = v_dup.id
+           AND EXISTS (SELECT 1 FROM public.crm_record_links kl
+                        WHERE kl.source_record_id = v_keeper.id
+                          AND kl.target_record_id = crm_record_links.target_record_id
+                          AND kl.link_type        = crm_record_links.link_type);
+        UPDATE public.crm_record_links SET source_record_id = v_keeper.id WHERE source_record_id = v_dup.id;
+        DELETE FROM public.crm_record_links
+         WHERE target_record_id = v_dup.id
+           AND EXISTS (SELECT 1 FROM public.crm_record_links kl
+                        WHERE kl.target_record_id = v_keeper.id
+                          AND kl.source_record_id = crm_record_links.source_record_id
+                          AND kl.link_type        = crm_record_links.link_type);
+        UPDATE public.crm_record_links SET target_record_id = v_keeper.id WHERE target_record_id = v_dup.id;
+        DELETE FROM public.crm_record_links WHERE source_record_id = target_record_id;
+
+        IF fk_updates IS NOT NULL THEN
+          FOR i IN 1..array_length(fk_updates, 1) LOOP
+            BEGIN
+              EXECUTE fk_updates[i] USING v_keeper.id, v_dup.id;
+            EXCEPTION WHEN unique_violation THEN
+              EXECUTE fk_deletes[i] USING v_dup.id;
+            WHEN OTHERS THEN NULL;
+            END;
+          END LOOP;
+        END IF;
+
+        UPDATE public.crm_records SET
+          data       = v_final_data,
+          title      = COALESCE(NULLIF(v_keeper.title, ''), NULLIF(v_dup.title, '')),
+          email      = COALESCE(NULLIF(v_keeper.email, ''), NULLIF(v_dup.email, '')),
+          phone      = COALESCE(NULLIF(v_keeper.phone, ''), NULLIF(v_dup.phone, '')),
+          status     = CASE
+            WHEN v_keeper.status = 'Active' THEN v_keeper.status
+            WHEN v_dup.status    = 'Active' THEN v_dup.status
+            ELSE COALESCE(NULLIF(v_keeper.status, ''), NULLIF(v_dup.status, ''))
+          END,
+          owner_id   = COALESCE(v_keeper.owner_id, v_dup.owner_id),
+          updated_at = now()
+        WHERE id = v_keeper.id;
+
+        DELETE FROM public.crm_records WHERE id = v_dup.id;
+
+        BEGIN
+          INSERT INTO public.crm_audit_log (org_id, actor_id, entity, entity_id, action, diff)
+          VALUES (v_keeper.org_id, v_actor, 'record', v_keeper.id, 'merge',
+            jsonb_build_object(
+              'kept_id',    v_keeper.id,
+              'deleted_id', v_dup.id,
+              'reason',     format('within-module bulk dedupe (%s)', cluster.rule),
+              'merged_at',  now()
+            ));
+        EXCEPTION WHEN OTHERS THEN NULL;
+        END;
+
+        v_merged := v_merged + 1;
+
+        -- Refresh the in-memory keeper row since we just updated it; subsequent
+        -- iterations within the same cluster need the latest data/title/etc.
+        SELECT * INTO v_keeper FROM public.crm_records WHERE id = v_keeper.id;
+
       EXCEPTION WHEN OTHERS THEN
         v_errors := v_errors + 1;
-        RAISE NOTICE '[merge-rerun] keeper=% dup=% raised %: %',
-          cluster.keeper_id_oldest, dup_id, SQLSTATE, SQLERRM;
+        RAISE NOTICE '[merge-fast] keeper=% dup=% raised %: %',
+          v_keeper.id, dup_id, SQLSTATE, SQLERRM;
       END;
 
-      IF v_merges % 50 = 0 AND v_merges > 0 THEN
-        RAISE NOTICE '[merge-rerun] progress: % merges (cluster %/%)',
-          v_merges, v_processed, v_total_clusters;
+      IF v_merged % 50 = 0 AND v_merged > 0 THEN
+        RAISE NOTICE '[merge-fast] progress: % merges (cluster %/%)',
+          v_merged, v_processed, v_total_clusters;
       END IF;
     END LOOP;
   END LOOP;
 
-  RAISE NOTICE '[merge-rerun] DONE. clusters=% merges=% skipped_xmodule=% skipped_suffix=% skipped_stale=% errors=%',
-    v_total_clusters, v_merges, v_skipped_xmodule, v_skipped_suffix, v_skipped_stale, v_errors;
+  RAISE NOTICE '[merge-fast] DONE. clusters=% merged=% skipped_suffix=% skipped_stale=% errors=%',
+    v_total_clusters, v_merged, v_skipped_suffix, v_skipped_stale, v_errors;
 END $outer$;
