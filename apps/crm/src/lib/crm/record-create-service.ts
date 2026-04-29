@@ -37,7 +37,7 @@ export async function executeCrmRecordCreate(params: {
 
   const { data: moduleRow, error: moduleErr } = await supabase
     .from('crm_modules')
-    .select('id, org_id')
+    .select('id, org_id, key')
     .eq('id', input.module_id)
     .single();
 
@@ -70,7 +70,7 @@ export async function executeCrmRecordCreate(params: {
   }
 
   const d = input.data as Record<string, unknown>;
-  const rowFromData = mergeCrmDataJsonIntoRowColumns(d, {});
+  const rowFromData = mergeCrmDataJsonIntoRowColumns(d, { moduleKey: moduleRow.key });
 
   const insertRow: Record<string, unknown> = {
     org_id: profile.organization_id,

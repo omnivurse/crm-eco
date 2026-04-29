@@ -844,8 +844,16 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   if (error) throw error;
 
+  const rows = (data || []) as CrmRecord[];
+  const seenIds = new Set<string>();
+  const records = rows.filter((r) => {
+    if (seenIds.has(r.id)) return false;
+    seenIds.add(r.id);
+    return true;
+  });
+
   return {
-    records: (data || []) as CrmRecord[],
+    records,
     total: includeCount ? count || 0 : 0,
     page,
     pageSize,
@@ -2007,6 +2015,15 @@ export interface AdvisorTreeData {
   recordCounts: Record<string, number>;
 }
 
+function dedupeAdvisorsById<T extends { id: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    if (seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
 /**
  * Fetch advisors and their record counts for the tree view.
  * Admins see all org advisors; agents/advisors see only their downline.
@@ -2039,7 +2056,7 @@ export async function getAdvisorsForTree(
     return { advisors: [], recordCounts: {} };
   }
 
-  const advisorList = advisors || [];
+  const advisorList = dedupeAdvisorsById(advisors || []);
   if (advisorList.length === 0) {
     return { advisors: [], recordCounts: {} };
   }
@@ -2123,10 +2140,17 @@ export async function getAgentTreeData(
     return { agents: [], totalRecords: 0 };
   }
 
-  const agents = (data || []).map((d: { agent_name: string; record_count: number }) => ({
+  const rawAgents = (data || []).map((d: { agent_name: string; record_count: number }) => ({
     name: d.agent_name,
     recordCount: Number(d.record_count),
   }));
+
+  // RPC should group by name, but duplicate keys still surface as repeated rows; merge counts.
+  const byName = new Map<string, number>();
+  for (const a of rawAgents) {
+    byName.set(a.name, (byName.get(a.name) ?? 0) + a.recordCount);
+  }
+  const agents = Array.from(byName.entries()).map(([name, recordCount]) => ({ name, recordCount }));
 
   const totalRecords = agents.reduce((sum: number, a: { recordCount: number }) => sum + a.recordCount, 0);
 

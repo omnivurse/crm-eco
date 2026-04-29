@@ -4,7 +4,6 @@ import { useState, useCallback, useMemo, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
-import { Input } from '@crm-eco/ui';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +13,6 @@ import {
 import {
   ChevronRight,
   ChevronDown,
-  Search,
   Users,
   User,
   Building2,
@@ -22,6 +20,7 @@ import {
   ZoomOut,
   Inbox,
   ArrowUpDown,
+  Filter,
 } from 'lucide-react';
 import type { CrmRecord, CrmField, AdvisorTreeNode, TreeGroupBy } from '@/lib/crm/types';
 import type { AdvisorTreeData, AgentTreeData } from '@/lib/crm/queries';
@@ -34,6 +33,8 @@ interface TreeViewProps {
   records: CrmRecord[];
   fields: CrmField[];
   moduleKey: string;
+  /** Mirrors `?search=` from the module page (toolbar). Single source of truth. */
+  moduleSearch?: string;
   advisorTreeData?: AdvisorTreeData | null;
   agentTreeData?: AgentTreeData | null;
   treeGroupBy?: TreeGroupBy;
@@ -42,23 +43,48 @@ interface TreeViewProps {
 
 type SortKey = 'name' | 'tier' | 'count';
 
+/** Dedupe CRM records by id (same row must not render twice under an agent group). */
+function mergeRecordListsById(a: CrmRecord[], b: CrmRecord[]): CrmRecord[] {
+  if (a.length === 0) return b;
+  if (b.length === 0) return a;
+  const seen = new Set(a.map((r) => r.id));
+  const out = [...a];
+  for (const r of b) {
+    if (!seen.has(r.id)) {
+      seen.add(r.id);
+      out.push(r);
+    }
+  }
+  return out;
+}
+
 /** Build a tree from the flat advisor list + record counts map */
 function buildAdvisorTree(
   advisors: AdvisorTreeData['advisors'],
   recordCounts: Record<string, number>,
 ): AdvisorTreeNode[] {
+  const seenAdvisorIds = new Set<string>();
+  const uniqueAdvisors = advisors.filter((a) => {
+    if (seenAdvisorIds.has(a.id)) return false;
+    seenAdvisorIds.add(a.id);
+    return true;
+  });
+
   const map = new Map<string, AdvisorTreeNode>();
   const roots: AdvisorTreeNode[] = [];
 
-  for (const a of advisors) {
+  for (const a of uniqueAdvisors) {
     map.set(a.id, { ...a, children: [], recordCount: recordCounts[a.id] || 0 });
   }
 
-  for (const a of advisors) {
+  for (const a of uniqueAdvisors) {
     const node = map.get(a.id)!;
     if (a.parent_advisor_id && map.has(a.parent_advisor_id)) {
-      map.get(a.parent_advisor_id)!.children.push(node);
-    } else {
+      const parent = map.get(a.parent_advisor_id)!;
+      if (!parent.children.some((c) => c.id === a.id)) {
+        parent.children.push(node);
+      }
+    } else if (!roots.some((r) => r.id === a.id)) {
       roots.push(node);
     }
   }
@@ -92,18 +118,22 @@ function sortNodes(nodes: AdvisorTreeNode[], key: SortKey): AdvisorTreeNode[] {
   return sorted.map(n => ({ ...n, children: sortNodes(n.children, key) }));
 }
 
-/** Filter tree nodes by a search query (keeps ancestors of matches) */
-function filterTree(nodes: AdvisorTreeNode[], query: string): AdvisorTreeNode[] {
-  if (!query) return nodes;
-  const q = query.toLowerCase();
+/**
+ * When `query` is set, `records` are already narrowed by the server (`getRecords` + module toolbar).
+ * Keep a branch if the advisor matches text or any visible row is assigned to this advisor (or a descendant matches).
+ */
+function filterTree(nodes: AdvisorTreeNode[], query: string, records: CrmRecord[]): AdvisorTreeNode[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return nodes;
   return nodes.reduce<AdvisorTreeNode[]>((acc, node) => {
-    const match =
+    const advisorMatch =
       `${node.first_name} ${node.last_name}`.toLowerCase().includes(q) ||
       (node.email || '').toLowerCase().includes(q) ||
       (node.agency_name || '').toLowerCase().includes(q) ||
       (node.producer_code || '').toLowerCase().includes(q);
-    const filteredChildren = filterTree(node.children, query);
-    if (match || filteredChildren.length > 0) {
+    const contactMatch = records.some((r) => r.canonical_advisor_id === node.id);
+    const filteredChildren = filterTree(node.children, query, records);
+    if (advisorMatch || contactMatch || filteredChildren.length > 0) {
       acc.push({ ...node, children: filteredChildren });
     }
     return acc;
@@ -303,14 +333,20 @@ function buildAgentHierarchy(
     const recs = recordsByAgent.get(agent.name) || [];
 
     if (subGroupName) {
-      parent.subGroups.push({
-        name: subGroupName,
-        recordCount: agent.recordCount,
-        records: recs,
-      });
+      const existingSg = parent.subGroups.find((sg) => sg.name === subGroupName);
+      if (existingSg) {
+        existingSg.recordCount += agent.recordCount;
+        existingSg.records = mergeRecordListsById(existingSg.records, recs);
+      } else {
+        parent.subGroups.push({
+          name: subGroupName,
+          recordCount: agent.recordCount,
+          records: [...recs],
+        });
+      }
     } else {
-      parent.directCount = agent.recordCount;
-      parent.directRecords = recs;
+      parent.directCount += agent.recordCount;
+      parent.directRecords = mergeRecordListsById(parent.directRecords, recs);
     }
     parent.totalCount += agent.recordCount;
   }
@@ -573,13 +609,14 @@ export const TreeView = memo(function TreeView({
   records,
   fields: _fields,
   moduleKey: _moduleKey,
+  moduleSearch = '',
   advisorTreeData,
   agentTreeData,
   treeGroupBy = 'advisor',
   onRowClick,
 }: TreeViewProps) {
   const router = useRouter();
-  const [search, setSearch] = useState('');
+  const searchQ = moduleSearch.trim();
   const [sortBy, setSortBy] = useState<SortKey>('name');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -605,9 +642,9 @@ export const TreeView = memo(function TreeView({
   const advisorTree = useMemo(() => {
     if (treeGroupBy !== 'advisor' || !advisorTreeData) return [];
     const tree = buildAdvisorTree(advisorTreeData.advisors, advisorTreeData.recordCounts);
-    const filtered = filterTree(tree, search);
+    const filtered = filterTree(tree, searchQ, records);
     return sortNodes(filtered, sortBy);
-  }, [advisorTreeData, treeGroupBy, search, sortBy]);
+  }, [advisorTreeData, treeGroupBy, searchQ, sortBy, records]);
 
   /* Agent hierarchy ------------------------------------------------- */
 
@@ -646,18 +683,23 @@ export const TreeView = memo(function TreeView({
       items.forEach((it) => it.subGroups.sort((a, b) => a.name.localeCompare(b.name)));
     }
 
-    // Filter
-    if (search) {
-      const q = search.toLowerCase();
-      items = items.filter(
-        (it) =>
-          it.name.toLowerCase().includes(q) ||
-          it.subGroups.some((sg) => sg.name.toLowerCase().includes(q)),
-      );
+    // With module search active, `records` are server-filtered — keep branches with visible rows or name matches.
+    if (searchQ) {
+      const ql = searchQ.toLowerCase();
+      items = items.filter((it) => {
+        const structureMatch =
+          it.name.toLowerCase().includes(ql) ||
+          it.subGroups.some((sg) => sg.name.toLowerCase().includes(ql));
+        if (structureMatch) return true;
+        return (
+          it.directRecords.length > 0 ||
+          it.subGroups.some((sg) => sg.records.length > 0)
+        );
+      });
     }
 
     return items;
-  }, [records, agentTreeData, treeGroupBy, search, sortBy]);
+  }, [records, agentTreeData, treeGroupBy, searchQ, sortBy]);
 
   /* Expand / Collapse ---------------------------------------------- */
 
@@ -687,31 +729,32 @@ export const TreeView = memo(function TreeView({
 
   return (
     <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <div className="relative flex-1 max-w-xs">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-            <Input
-              type="search"
-              placeholder={
-                'Search advisors...'
-              }
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-sm rounded-lg bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10"
-            />
+      {/* Toolbar — module search lives in ModuleShell above (URL `search`). */}
+      <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            {searchQ ? (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-teal-200 dark:border-teal-500/30 bg-teal-50/80 dark:bg-teal-500/10 px-2 py-1 text-teal-800 dark:text-teal-300">
+                <Filter className="w-3.5 h-3.5 shrink-0" />
+                <span className="font-medium truncate max-w-[min(28rem,70vw)]" title={searchQ}>
+                  Module search: {searchQ}
+                </span>
+              </span>
+            ) : null}
+            <span className="whitespace-nowrap">
+              {searchQ
+                ? treeGroupBy === 'advisor'
+                  ? `${advisorTree.length} root branch${advisorTree.length !== 1 ? 'es' : ''} · ${records.length} matching record${records.length !== 1 ? 's' : ''} on this page`
+                  : `${agentHierarchy.length} group${agentHierarchy.length !== 1 ? 's' : ''} · ${records.length} matching record${records.length !== 1 ? 's' : ''} on this page`
+                : treeGroupBy === 'advisor'
+                  ? `${totalAdvisors} advisor${totalAdvisors !== 1 ? 's' : ''} \u00B7 ${totalTreeRecords.toLocaleString()} contact${totalTreeRecords !== 1 ? 's' : ''} assigned`
+                  : `${agentHierarchy.length} advisor${agentHierarchy.length !== 1 ? 's' : ''} \u00B7 ${totalAgentRecords.toLocaleString()} contact${totalAgentRecords !== 1 ? 's' : ''} assigned`}
+            </span>
           </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-            {treeGroupBy === 'advisor'
-              ? `${totalAdvisors} advisor${totalAdvisors !== 1 ? 's' : ''} \u00B7 ${totalTreeRecords.toLocaleString()} contact${totalTreeRecords !== 1 ? 's' : ''} assigned`
-              : `${agentHierarchy.length} advisor${agentHierarchy.length !== 1 ? 's' : ''} \u00B7 ${totalAgentRecords.toLocaleString()} contact${totalAgentRecords !== 1 ? 's' : ''} assigned`}
-          </span>
-        </div>
 
-        <div className="flex items-center gap-1.5">
-          {/* Sort */}
-          <DropdownMenu>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {/* Sort */}
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -770,6 +813,7 @@ export const TreeView = memo(function TreeView({
             Collapse
           </Button>
         </div>
+        </div>
       </div>
 
       {/* Tree content */}
@@ -779,9 +823,11 @@ export const TreeView = memo(function TreeView({
             <div className="py-12 text-center">
               <Users className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                {search ? 'No advisors match your search' : 'No HealthShare advisors found'}
+                {searchQ
+                  ? 'No advisors match this module search. Try different keywords or clear the search above.'
+                  : 'No HealthShare advisors found'}
               </p>
-              {!search && (
+              {!searchQ && (
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto">
                   Advisors manage HealthShare contacts. Make sure advisor records exist and contacts are assigned.
                 </p>
@@ -804,9 +850,11 @@ export const TreeView = memo(function TreeView({
           <div className="py-12 text-center">
             <Inbox className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              {search ? 'No advisors match your search' : 'No advisors found'}
+              {searchQ
+                ? 'No agent groups match this module search. Try different keywords or clear the search above.'
+                : 'No advisors found'}
             </p>
-            {!search && (
+            {!searchQ && (
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 max-w-xs mx-auto">
                 Contacts are grouped by their assigned advisor. Use plan type to distinguish HealthShare from Traditional Insurance.
               </p>

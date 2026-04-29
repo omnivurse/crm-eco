@@ -39,6 +39,8 @@ interface ModuleListClientProps {
   treeGroupBy?: TreeGroupBy;
   /** Deal stages — only provided for the deals module, powers kanban columns. */
   dealStages?: CrmDealStage[];
+  /** Same as `?search=` / module toolbar — single source of truth for tree filtering */
+  moduleSearch?: string;
 }
 
 // Inner component that consumes the ModuleShell context and renders the active view
@@ -52,6 +54,7 @@ function ModuleViewContent({
   agentTreeData,
   treeGroupBy,
   dealStages,
+  moduleSearch,
 }: {
   records: CrmRecord[];
   fields: CrmField[];
@@ -62,6 +65,7 @@ function ModuleViewContent({
   agentTreeData?: AgentTreeData | null;
   treeGroupBy?: TreeGroupBy;
   dealStages?: CrmDealStage[];
+  moduleSearch?: string;
 }) {
   const router = useRouter();
   const shellContext = useModuleShellOptional();
@@ -161,6 +165,7 @@ function ModuleViewContent({
           records={records}
           fields={fields}
           moduleKey={moduleKey}
+          moduleSearch={moduleSearch ?? ''}
           advisorTreeData={advisorTreeData}
           agentTreeData={agentTreeData}
           treeGroupBy={treeGroupBy}
@@ -199,6 +204,7 @@ function ModuleListContent({
   agentTreeData,
   treeGroupBy,
   dealStages,
+  moduleSearch,
 }: ModuleListClientProps) {
   return (
     <ModuleShell
@@ -221,6 +227,7 @@ function ModuleListContent({
         agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}
         dealStages={dealStages}
+        moduleSearch={moduleSearch}
       />
     </ModuleShell>
   );

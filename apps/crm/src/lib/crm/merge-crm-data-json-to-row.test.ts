@@ -79,4 +79,28 @@ describe('mergeCrmDataJsonIntoRowColumns', () => {
     expect(updates.email).toBeNull();
     expect(updates.phone).toBeNull();
   });
+
+  it('contacts module: contact_status wins over inherited lead_status (Converted)', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { lead_status: 'Converted', contact_status: 'Pending' },
+      { moduleKey: 'contacts' }
+    );
+    expect(updates.status).toBe('Pending');
+  });
+
+  it('contacts module: does not map lead_status alone onto row status', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { lead_status: 'Converted' },
+      { moduleKey: 'contacts' }
+    );
+    expect(updates.status).toBeUndefined();
+  });
+
+  it('leads module: lead_status maps to row, contact_status can override', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { lead_status: 'Hot', contact_status: 'Pending' },
+      { moduleKey: 'leads' }
+    );
+    expect(updates.status).toBe('Pending');
+  });
 });

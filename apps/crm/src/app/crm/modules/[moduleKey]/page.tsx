@@ -345,6 +345,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
         agentTreeData={agentTreeData}
         treeGroupBy={treeGroupBy}
         dealStages={dealStages}
+        moduleSearch={search ?? ''}
       />
 
       {/* Pagination + page size */}

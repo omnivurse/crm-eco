@@ -59,6 +59,20 @@ export function ConvertToContactDialog({
 
       const data = await response.json();
 
+      if (!response.ok) {
+        setResult({
+          success: false,
+          message:
+            typeof data?.error === 'string'
+              ? data.error
+              : response.status === 403
+                ? 'You do not have permission to convert leads. Ask a manager or admin if this is unexpected.'
+                : 'Failed to convert lead to contact',
+          existingContactId: data?.existing_contact_id,
+        });
+        return;
+      }
+
       if (data.success) {
         setResult({
           success: true,
@@ -141,6 +155,12 @@ export function ConvertToContactDialog({
                   <p className="text-xs text-slate-400">
                     All matching fields (name, email, phone, address, family, etc.) and all notes
                     will be moved to the contact record. The original lead will be preserved and linked.
+                  </p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400/90 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5">
+                    <strong className="font-medium">Contact vs member:</strong> this action creates a{' '}
+                    <strong>CRM contact</strong> (someone you track in Contacts). It is not the same as
+                    the green <strong>Convert to Member</strong> button, which enrolls someone in the member system.
+                    Use this when they should appear in your Contacts list.
                   </p>
                 </div>
               </AlertDialogDescription>

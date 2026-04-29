@@ -3,6 +3,14 @@ import { CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH } from '@/lib/crm/record-for
 export interface MergeCrmDataJsonContext {
   /** For PATCH: previous row title when first/last clear. */
   previousTitle?: string | null;
+  /**
+   * `crm_modules.key` for the record. When `'contacts'`, `lead_status` in
+   * JSONB is treated as historical (converted leads) and must not drive
+   * `crm_records.status` — only `contact_status` / explicit `data.status`
+   * do. The same applies to the **members** module (it uses `contact_status`
+   * for operational status, not `lead_status`).
+   */
+  moduleKey?: string | null;
 }
 
 /**
@@ -54,16 +62,18 @@ export function mergeCrmDataJsonIntoRowColumns(
       ([displayFirst, last].filter(Boolean).join(' ') || ctx.previousTitle) ?? null;
   }
 
-  // Status precedence: lead_status FIRST, then contact_status overrides, then
-  // explicit `status` overrides everything. Reason: when a lead is converted
-  // to a contact, the lead row keeps `lead_status='Converted'` forever as
-  // history. The new contact row inherits that value in its JSONB during
-  // conversion / form round-trip. If lead_status ran *after* contact_status,
-  // every save on a converted contact would silently revert their live
-  // contact_status back to "Converted" — exactly the bug Wendy reported on
-  // Barry Donath ("change to Pending, reverts back to Converted"). Running
-  // contact_status last makes the contact's live status authoritative.
-  if (d.lead_status !== undefined) updates.status = d.lead_status || null;
+  // Status: for **leads** (and other non-person modules), lead_status → row,
+  // then contact_status overrides, then explicit `data.status`. For **contacts**
+  // and **members**, never map legacy `lead_status` onto the row — converted
+  // rows often keep `lead_status: "Converted"` as history while the live field
+  // is `contact_status`. Partial PATCHes merge into existing JSONB; without
+  // this guard, `lead_status` could still drive the row when `contact_status`
+  // was omitted from a patch payload.
+  const personContactStyleModule =
+    ctx.moduleKey === 'contacts' || ctx.moduleKey === 'members';
+  if (!personContactStyleModule && d.lead_status !== undefined) {
+    updates.status = d.lead_status || null;
+  }
   if (d.contact_status !== undefined) updates.status = d.contact_status || null;
   if (d.status !== undefined) updates.status = d.status || null;
 

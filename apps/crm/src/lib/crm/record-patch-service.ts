@@ -67,7 +67,7 @@ export async function executeCrmRecordPatch(params: {
 
   const { data: previousRecord, error: fetchError } = await supabase
     .from('crm_records')
-    .select('*')
+    .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
     .eq('id', id)
     .eq('org_id', profile.organization_id)
     .single();
@@ -95,12 +95,25 @@ export async function executeCrmRecordPatch(params: {
 
   const updates: Record<string, unknown> = {};
 
+  type RecordWithModule = typeof previousRecord & {
+    module?: { key: string } | null;
+  };
+  const moduleKey = (previousRecord as RecordWithModule).module?.key ?? null;
+
   if (body.data !== undefined) {
-    updates.data = body.data;
-    const d = body.data as Record<string, unknown>;
+    const patch = body.data as Record<string, unknown>;
+    const prevData =
+      previousRecord.data && typeof previousRecord.data === 'object'
+        ? { ...(previousRecord.data as Record<string, unknown>) }
+        : {};
+    const mergedData = { ...prevData, ...patch };
+    updates.data = mergedData;
     Object.assign(
       updates,
-      mergeCrmDataJsonIntoRowColumns(d, { previousTitle: previousRecord.title })
+      mergeCrmDataJsonIntoRowColumns(mergedData, {
+        previousTitle: previousRecord.title,
+        moduleKey,
+      })
     );
   }
 
@@ -163,7 +176,14 @@ export async function executeCrmRecordPatch(params: {
   }
 
   const dataObj =
-    body.data && typeof body.data === 'object' ? (body.data as Record<string, unknown>) : null;
+    body.data && typeof body.data === 'object'
+      ? ({
+          ...(previousRecord.data && typeof previousRecord.data === 'object'
+            ? (previousRecord.data as Record<string, unknown>)
+            : {}),
+          ...(body.data as Record<string, unknown>),
+        } as Record<string, unknown>)
+      : null;
   const laneOrCarrierTouched =
     body.market_type !== undefined ||
     body.carrier_id !== undefined ||

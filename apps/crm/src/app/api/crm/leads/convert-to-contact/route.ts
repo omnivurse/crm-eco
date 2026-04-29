@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
+    if (!['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role || '')) {
       return NextResponse.json(
         { success: false, error: 'You do not have permission to convert leads' },
         { status: 403 },

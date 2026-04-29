@@ -86,8 +86,9 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled }: ConvertLe
                   Convert Lead to Member?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500">
-                  This will create a new member record for <strong>{recordTitle}</strong> in the 
-                  enrollment system and mark this lead as converted.
+                  This will create a new <strong>member</strong> (enrollment) record for{' '}
+                  <strong>{recordTitle}</strong> and mark this lead as converted. To add them to the CRM{' '}
+                  <strong>Contacts</strong> module only, use <strong>Convert to Contact</strong> instead.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

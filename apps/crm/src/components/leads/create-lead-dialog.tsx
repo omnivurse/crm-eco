@@ -113,24 +113,25 @@ export function CreateLeadDialog() {
     notes: '',
   });
 
-  // Fetch advisors when dialog opens
+  // Fetch advisors when dialog opens (scoped to current org so the list cannot repeat across tenants)
   useEffect(() => {
-    if (open) {
+    if (open && authProfile?.organization_id) {
       const fetchAdvisors = async () => {
         const supabase = createClient();
         const { data } = await supabase
           .from('advisors')
           .select('id, first_name, last_name')
+          .eq('organization_id', authProfile.organization_id)
           .eq('status', 'active')
           .order('last_name');
-        
+
         if (data) {
           setAdvisors(data as Advisor[]);
         }
       };
       fetchAdvisors();
     }
-  }, [open]);
+  }, [open, authProfile?.organization_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
