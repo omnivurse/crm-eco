@@ -29,7 +29,7 @@ export default function EditRecordPage() {
   const latestValuesRef = useRef<Record<string, unknown>>({});
   const initialValuesRef = useRef<Record<string, unknown>>({});
 
-  const { data, isLoading, error } = useEditRecordData(recordId);
+  const { data, isLoading, error, recordRow, recordQueryError } = useEditRecordData(recordId);
   const record = data?.record;
   const fields = useMemo(() => data?.fields ?? [], [data?.fields]);
   const layout = data?.layout ?? null;
@@ -40,7 +40,8 @@ export default function EditRecordPage() {
   const [resolving, setResolving] = useState(false);
   useEffect(() => {
     if (isLoading) return;
-    if (record) return;
+    // Use the raw row — while fields/layout load, aggregated `record` is still undefined.
+    if (recordRow) return;
     if (!recordId) return;
     let cancelled = false;
     setResolving(true);
@@ -72,7 +73,7 @@ export default function EditRecordPage() {
     return () => {
       cancelled = true;
     };
-  }, [isLoading, record, recordId, router]);
+  }, [isLoading, recordRow, recordId, router]);
 
   const defaultValues = useMemo(() => {
     if (!record) return {} as Record<string, unknown>;
@@ -84,12 +85,15 @@ export default function EditRecordPage() {
     return merged;
   }, [record]);
 
-  // Show error toast if loading fails
+  // Only surface a load error after merge recovery has settled; otherwise a
+  // transient fetch issue or a merged stale id can wrongly pair "Failed to
+  // load" with a redirect to the keeper.
   useEffect(() => {
-    if (error) {
-      toast.error('Failed to load record');
-    }
-  }, [error]);
+    if (isLoading || resolving) return;
+    if (recordRow) return;
+    if (!recordQueryError) return;
+    toast.error('Failed to load record');
+  }, [isLoading, resolving, recordRow, recordQueryError]);
 
   // Track form values + dirty state from the shared form component
   const handleValuesChange = useCallback((values: Record<string, unknown>) => {

@@ -23,21 +23,20 @@ export interface EditRecordData {
   layout: CrmLayout | null;
 }
 
-async function fetchRecordWithModule(
-  recordId: string,
-  tenantOrgId: string | null,
-): Promise<EditRecordRow | null> {
-  let q = supabase
+/**
+ * Load by id only — same contract as server `getRecordWithModule`:
+ * rely on `crm_records` RLS for org/access. Filtering by TenantContext here
+ * could false-null when layout org and RLS-visible rows drift (rare advisors).
+ */
+async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | null> {
+  const { data, error } = await supabase
     .from('crm_records')
     .select(`
       *,
       module:crm_modules!crm_records_module_id_fkey(id, key, name, name_plural)
     `)
-    .eq('id', recordId);
-  if (tenantOrgId) {
-    q = q.eq('org_id', tenantOrgId);
-  }
-  const { data, error } = await q.maybeSingle();
+    .eq('id', recordId)
+    .maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
@@ -78,7 +77,7 @@ export function useEditRecordData(recordId: string | null) {
 
   const recordQuery = useQuery({
     queryKey: ['edit-record', recordId, tenantOrgId ?? ''],
-    queryFn: () => fetchRecordWithModule(recordId!, tenantOrgId),
+    queryFn: () => fetchRecordWithModule(recordId!),
     enabled: !!recordId,
     staleTime: 0,
   });
@@ -120,6 +119,10 @@ export function useEditRecordData(recordId: string | null) {
   return {
     data,
     isLoading: !!isLoading,
+    /** Loaded `crm_records` row — present while fields/layout are still fetching. */
+    recordRow: (recordQuery.data ?? null) as EditRecordRow | null,
+    /** Only the primary lookup failing (vs layout/metadata errors). */
+    recordQueryError: recordQuery.error ?? null,
     error: recordQuery.error || fieldsQuery.error || layoutQuery.error,
   };
 }

@@ -5,10 +5,10 @@
  * another (via merge_crm_records or bulk dedupe migrations), we redirect
  * them to the keeper instead of showing a generic 404.
  *
- * Merge audit rows store **`entity_id` = keeper id** (see migrations).
- * The merged-away duplicate UUID appears in **`diff.deleted_id`**. Stale
- * bookmarks must therefore resolve via `diff->>'deleted_id'` (primary path).
- * Legacy tombstones keyed by duplicate id as `entity_id` are still supported.
+ * Merge audit rows usually store **`entity_id` = keeper id** with
+ * **`diff.deleted_id` = duplicate**. Stale bookmarks resolve via those fields.
+ * Bulk merge scripts may silently skip audit inserts (`EXCEPTION WHEN OTHERS
+ * THEN NULL`); those merges cannot be redirected from history alone.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -64,59 +64,107 @@ function adminClient() {
 
 type AdminClient = NonNullable<ReturnType<typeof adminClient>>;
 
-/**
- * Finds one merge hop from a stale id `cursor` (usually the deleted duplicate)
- * to `diff.kept_id`. Prefer matching `diff.deleted_id` because merge RPC
- * and bulk migrations log `entity_id` as the keeper, not the duplicate.
- */
-async function findMergeHopFromAudit(
-  admin: AdminClient,
-  cursor: string
-): Promise<{ mergedAt: string | null; keeperId: string } | null> {
-  let auditRow: { diff: unknown; created_at?: string | null } | null = null;
+/** Normalize UUID-ish strings so JSONB `->>` lookups match Postgres output. */
+function normalizeRecordId(id: string): string {
+  return id.trim().toLowerCase();
+}
 
-  const primary = await admin
-    .from('crm_audit_log')
-    .select('diff, created_at')
-    .eq('entity', 'record')
-    .eq('action', 'merge')
-    .eq('diff->>deleted_id', cursor)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (primary.error) {
-    console.error('[resolve-record] audit primary:', primary.error.message);
-  }
-  auditRow = primary.data ?? null;
-
-  if (!auditRow) {
-    const legacy = await admin
-      .from('crm_audit_log')
-      .select('diff, created_at')
-      .eq('entity', 'record')
-      .eq('action', 'merge')
-      .eq('entity_id', cursor)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (legacy.error) {
-      console.error('[resolve-record] audit legacy:', legacy.error.message);
-    }
-    auditRow = legacy.data ?? null;
-  }
-
-  if (!auditRow) return null;
-
+function hopFromAuditRow(
+  auditRow: { diff: unknown; created_at?: string | null },
+  cursorNormalized: string
+): { mergedAt: string | null; keeperId: string } | null {
   const diff = (auditRow.diff ?? {}) as Record<string, unknown>;
-  const keptId = typeof diff.kept_id === 'string' ? diff.kept_id : null;
-  if (!keptId || keptId === cursor) return null;
+  let keptRaw = diff.kept_id;
+  if (typeof keptRaw !== 'string') {
+    if (typeof keptRaw === 'number') keptRaw = String(keptRaw);
+    else keptRaw = null;
+  }
+  const keptId = keptRaw?.trim()?.toLowerCase() ?? '';
+  if (!keptId || keptId === cursorNormalized) return null;
 
   return {
     keeperId: keptId,
     mergedAt: (auditRow.created_at as string | undefined) ?? null,
   };
+}
+
+/**
+ * Finds one merge hop from a stale id `cursor` (usually the deleted duplicate)
+ * to `diff.kept_id`. Prefer matching `diff.deleted_id` because merge RPC
+ * and bulk migrations log `entity_id` as the keeper, not the duplicate.
+ *
+ * We try several lookups because historically:
+ * - Some bulk merges swallowed audit insert failures (no row at all → unrecoverable here).
+ * - `entity` was sometimes modeled as legacy values.
+ * - `deleted_id` appears under `deleted_snapshot.id` semantics for older rows if backfilled oddly.
+ */
+async function findMergeHopFromAudit(
+  admin: AdminClient,
+  cursor: string
+): Promise<{ mergedAt: string | null; keeperId: string } | null> {
+  const c = normalizeRecordId(cursor);
+
+  const tryRow = (row: {
+    diff: unknown;
+    created_at?: string | null;
+  } | null): { mergedAt: string | null; keeperId: string } | null => {
+    if (!row) return null;
+    return hopFromAuditRow(row, c);
+  };
+
+  const runners: Array<{ label: string; run: () => Promise<unknown> }> = [
+    {
+      label: 'diff_deleted_id',
+      run: () =>
+        admin
+          .from('crm_audit_log')
+          .select('diff, created_at')
+          .in('entity', ['record', 'crm_records'])
+          .eq('action', 'merge')
+          .eq('diff->>deleted_id', c)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+    },
+    {
+      label: 'entity_id_tombstone',
+      run: () =>
+        admin
+          .from('crm_audit_log')
+          .select('diff, created_at')
+          .in('entity', ['record', 'crm_records'])
+          .eq('action', 'merge')
+          .eq('entity_id', cursor)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+    },
+    {
+      label: 'snapshotted_duplicate',
+      run: () =>
+        admin
+          .from('crm_audit_log')
+          .select('diff, created_at')
+          .in('entity', ['record', 'crm_records'])
+          .eq('action', 'merge')
+          .eq('diff->deleted_snapshot->>id', c)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+    },
+  ];
+
+  for (const { label, run } of runners) {
+    const { data: row, error } = await run();
+    if (error) {
+      console.error(`[resolve-record] audit ${label}:`, error.message);
+      continue;
+    }
+    const hop = tryRow(row);
+    if (hop) return hop;
+  }
+
+  return null;
 }
 
 export async function resolveRecordOrMergeDestination(
@@ -129,7 +177,12 @@ export async function resolveRecordOrMergeDestination(
   }
 
   const admin = adminClient();
-  if (!admin) return { kind: 'missing' };
+  if (!admin) {
+    console.warn(
+      '[resolve-record] SUPABASE_SERVICE_ROLE_KEY unavailable; cannot read merge audit tail',
+    );
+    return { kind: 'missing' };
+  }
 
   // Walk the merge chain: A merged → B merged → C ⇒ stale URL for A lands on C.
   let cursor = recordId;

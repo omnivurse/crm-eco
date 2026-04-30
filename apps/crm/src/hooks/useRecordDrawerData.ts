@@ -20,18 +20,15 @@ export interface RecordDrawerData {
   timeline: TimelineEvent[];
 }
 
-// Fetch record data — optional org filter matches server/API (profiles.organization_id → crm_records.org_id).
 type RecordRow = CrmRecord & { module?: { key: string } | null };
 
-async function fetchRecord(recordId: string, tenantOrgId: string | null): Promise<RecordRow | null> {
-  let q = supabase
+// Load by id + RLS only (same rationale as useEditRecordData).
+async function fetchRecord(recordId: string): Promise<RecordRow | null> {
+  const { data, error } = await supabase
     .from('crm_records')
     .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
-    .eq('id', recordId);
-  if (tenantOrgId) {
-    q = q.eq('org_id', tenantOrgId);
-  }
-  const { data, error } = await q.single();
+    .eq('id', recordId)
+    .maybeSingle();
 
   if (error) throw error;
   return data as RecordRow | null;
@@ -93,7 +90,7 @@ export function useRecordDrawerData(recordId: string | null) {
 
   const recordQuery = useQuery({
     queryKey: queryKeys.records.detail(recordId!, tenantOrgId),
-    queryFn: () => fetchRecord(recordId!, tenantOrgId),
+    queryFn: () => fetchRecord(recordId!),
     enabled: !!recordId,
     staleTime: 30_000, // 30 seconds fresh
   });
