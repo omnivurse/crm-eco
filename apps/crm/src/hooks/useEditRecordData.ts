@@ -37,7 +37,7 @@ async function fetchRecordWithModule(
   if (tenantOrgId) {
     q = q.eq('org_id', tenantOrgId);
   }
-  const { data, error } = await q.single();
+  const { data, error } = await q.maybeSingle();
 
   if (error) throw error;
   if (!data) return null;
