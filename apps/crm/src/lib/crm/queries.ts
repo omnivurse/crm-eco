@@ -392,16 +392,20 @@ export async function getFieldsBySection(moduleId: string): Promise<Record<strin
 
 export async function getDefaultLayout(moduleId: string): Promise<CrmLayout | null> {
   const supabase = await createCrmClient();
-  
+
+  // Tolerate accidental duplicate defaults: pick the most recently updated.
+  // The DB also enforces uniqueness via uq_crm_layouts_one_default_per_module
+  // (202605040002), this is the application-side belt-and-suspenders.
   const { data, error } = await supabase
     .from('crm_layouts')
     .select('*')
     .eq('module_id', moduleId)
     .eq('is_default', true)
-    .single();
+    .order('updated_at', { ascending: false })
+    .limit(1);
 
-  if (error && error.code !== 'PGRST116') throw error;
-  return data as CrmLayout | null;
+  if (error) throw error;
+  return ((data?.[0] ?? null) as CrmLayout | null);
 }
 
 export async function getLayoutsForModule(moduleId: string): Promise<CrmLayout[]> {

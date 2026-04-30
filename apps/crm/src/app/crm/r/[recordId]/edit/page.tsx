@@ -35,6 +35,9 @@ interface DiagnoseResponse {
     layoutsCountRls?: number;
     defaultLayoutsCount?: number;
   };
+  serviceRole?: { ok: boolean; error: string | null };
+  rlsError?: string | null;
+  adminError?: string | null;
   mergeTombstone: { keeperId: string; mergedAt: string | null } | null;
   flags: { recordOrgMatchesProfile: boolean; moduleOrgMatchesRecord: boolean };
   likelyCause: string;
@@ -64,6 +67,8 @@ function describeCause(cause: string): string {
       return "Layouts exist for this module but RLS hides them from your session — typically crm_layouts.org_id doesn't match your profile org.";
     case 'no_fields_for_module':
       return 'No crm_fields rows exist for this module at all — the module has no field schema configured in this org.';
+    case 'service_role_broken':
+      return 'SUPABASE_SERVICE_ROLE_KEY on the server is missing or not actually a service_role token — the diagnose admin probe failed. Fix the Vercel env, then re-run.';
     default:
       return cause;
   }
@@ -270,6 +275,39 @@ function FormMetadataFailedDiagnostic({
             <p className="text-slate-800 dark:text-slate-200 mb-2">
               {diag.likelyCause}
             </p>
+            {diag.serviceRole && (
+              <>
+                <p className="text-slate-500 mb-1">service_role probe</p>
+                <p
+                  className={
+                    diag.serviceRole.ok
+                      ? 'text-emerald-600 dark:text-emerald-400 mb-2'
+                      : 'text-red-600 dark:text-red-400 mb-2'
+                  }
+                >
+                  {diag.serviceRole.ok ? 'ok' : 'failed'}
+                  {diag.serviceRole.error
+                    ? ` — ${diag.serviceRole.error}`
+                    : ''}
+                </p>
+              </>
+            )}
+            {diag.adminError && (
+              <>
+                <p className="text-slate-500 mb-1">admin error</p>
+                <p className="text-red-600 dark:text-red-400 mb-2">
+                  {diag.adminError}
+                </p>
+              </>
+            )}
+            {diag.rlsError && (
+              <>
+                <p className="text-slate-500 mb-1">rls error</p>
+                <p className="text-red-600 dark:text-red-400 mb-2">
+                  {diag.rlsError}
+                </p>
+              </>
+            )}
             {diag.module.fieldsCount !== undefined && (
               <>
                 <p className="text-slate-500 mb-1">fields rows visible</p>

@@ -35,6 +35,19 @@ export async function GET(
     auth: { persistSession: false },
   });
 
+  // Service-role smoke test: `auth.users` is gated to service_role. An anon
+  // key mistakenly set as SUPABASE_SERVICE_ROLE_KEY in Vercel hits a
+  // permission error here even though the request itself looks fine.
+  const adminAuthClient = createServiceClient(url, serviceKey, {
+    auth: { persistSession: false },
+    db: { schema: 'auth' },
+  });
+  const { error: adminProbeErr, count: adminProbeCount } = await adminAuthClient
+    .from('users')
+    .select('id', { count: 'exact', head: true });
+  const adminProbeOk = adminProbeErr == null && (adminProbeCount ?? 0) > 0;
+  const adminProbeError = adminProbeErr?.message ?? null;
+
   const trimmed = id.trim();
 
   const [recordRlsRes, recordAdminRes] = await Promise.all([
@@ -132,7 +145,11 @@ export async function GET(
     moduleOrgId === recordAdminRes.data.org_id;
 
   let likelyCause = 'unknown';
-  if (!existsAnywhere) {
+  if (!adminProbeOk) {
+    // Without working service role we cannot trust the existsAnywhere check,
+    // so flag the env problem instead of falsely reporting no_such_record.
+    likelyCause = 'service_role_broken';
+  } else if (!existsAnywhere) {
     likelyCause = mergeTombstone ? 'merged_with_tombstone' : 'no_such_record';
   } else if (!recordOrgMatchesProfile) {
     likelyCause = 'wrong_org_for_user';
@@ -184,5 +201,9 @@ export async function GET(
     likelyCause,
     rlsError: recordRlsRes.error?.message ?? null,
     adminError: recordAdminRes.error?.message ?? null,
+    serviceRole: {
+      ok: adminProbeOk,
+      error: adminProbeError,
+    },
   });
 }

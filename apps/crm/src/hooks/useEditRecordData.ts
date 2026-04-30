@@ -67,15 +67,19 @@ async function fetchFieldsForModule(moduleId: string): Promise<CrmField[]> {
 }
 
 async function fetchDefaultLayout(moduleId: string): Promise<CrmLayout | null> {
+  // `.limit(1)` over `.maybeSingle()` so accidental duplicate defaults never
+  // crash the edit page again (a partial unique index also enforces this at
+  // the DB level — see 202605040002_crm_layouts_unique_default.sql).
   const { data, error } = await supabase
     .from('crm_layouts')
     .select('*')
     .eq('module_id', moduleId)
     .eq('is_default', true)
-    .maybeSingle();
+    .order('updated_at', { ascending: false })
+    .limit(1);
 
   if (error) throw error;
-  return data as CrmLayout | null;
+  return ((data?.[0] ?? null) as CrmLayout | null);
 }
 
 export function useEditRecordData(recordId: string | null) {
