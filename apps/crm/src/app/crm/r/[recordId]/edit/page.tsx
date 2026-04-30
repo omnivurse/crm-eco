@@ -36,8 +36,6 @@ interface DiagnoseResponse {
     defaultLayoutsCount?: number;
   };
   serviceRole?: { ok: boolean; error: string | null };
-  rlsError?: string | null;
-  adminError?: string | null;
   mergeTombstone: { keeperId: string; mergedAt: string | null } | null;
   flags: { recordOrgMatchesProfile: boolean; moduleOrgMatchesRecord: boolean };
   likelyCause: string;
