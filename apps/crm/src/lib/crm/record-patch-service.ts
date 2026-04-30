@@ -9,6 +9,7 @@ import {
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
 } from '@/lib/crm/merge-crm-data-json-to-row';
+import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
 
 /** Matches `getAuthProfile()` shape used by CRM API routes */
 /** Profile fields required by CRM record create/patch (matches `getAuthProfile()`). */
@@ -64,6 +65,8 @@ export async function executeCrmRecordPatch(params: {
   ifMatchUpdatedAt?: string | null;
 }): Promise<CrmRecordPatchResult> {
   const { supabase, profile, id, body, ifMatchUpdatedAt } = params;
+
+  await alignMisalignedRecordModule(profile.organization_id, id);
 
   const { data: previousRecord, error: fetchError } = await supabase
     .from('crm_records')

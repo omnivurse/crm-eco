@@ -15,6 +15,151 @@ import {
   type DynamicRecordFormHandle,
 } from '@/components/crm/records/DynamicRecordForm';
 
+interface DiagnoseResponse {
+  recordId: string;
+  profile: { organization_id: string; crm_role: string | null; user_id: string };
+  record: {
+    existsAnywhere: boolean;
+    visibleViaRls: boolean;
+    org_id: string | null;
+    module_id: string | null;
+    title: string | null;
+    updated_at: string | null;
+  };
+  module: { org_id: string | null; key: string | null };
+  mergeTombstone: { keeperId: string; mergedAt: string | null } | null;
+  flags: { recordOrgMatchesProfile: boolean; moduleOrgMatchesRecord: boolean };
+  likelyCause: string;
+  rlsError: string | null;
+  adminError: string | null;
+}
+
+function describeCause(cause: string): string {
+  switch (cause) {
+    case 'no_such_record':
+      return 'No record exists with this id anywhere in the database. The link is stale.';
+    case 'merged_with_tombstone':
+      return 'This record was merged into another. The keeper id is shown below.';
+    case 'wrong_org_for_user':
+      return "The record exists but its org_id does not match your profile's organization. RLS is hiding it.";
+    case 'module_org_drift':
+      return 'The record points at a module owned by another organization, breaking the embed under RLS.';
+    case 'rls_hidden_other_reason':
+      return 'Service-role can see the record but RLS hides it for your session — check policies/role.';
+    case 'visible_should_load':
+      return 'The record is visible to you per RLS — this is likely a transient client-side fetch failure. Try reloading.';
+    default:
+      return cause;
+  }
+}
+
+function RecordNotFoundDiagnostic({ recordId }: { recordId: string }) {
+  const [diag, setDiag] = useState<DiagnoseResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/crm/records/${recordId}/diagnose`);
+        if (!res.ok) {
+          setError(`Diagnose returned ${res.status}`);
+          return;
+        }
+        const body = (await res.json()) as DiagnoseResponse;
+        if (!cancelled) setDiag(body);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Unknown error');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto px-4 text-center">
+      <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        Record not found
+      </p>
+      <p className="text-sm text-slate-600 dark:text-slate-400 mb-1 font-mono break-all">
+        record id: {recordId}
+      </p>
+      {loading && (
+        <p className="text-xs text-slate-500 mb-4">Running diagnostics…</p>
+      )}
+      {error && !loading && (
+        <p className="text-xs text-red-500 mb-4">Diagnostics failed: {error}</p>
+      )}
+      {diag && !loading && (
+        <div className="text-left text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg p-4 mb-4 w-full font-mono break-all">
+          <p className="mb-2 text-slate-700 dark:text-slate-300">
+            <span className="font-semibold">cause:</span> {diag.likelyCause}
+          </p>
+          <p className="mb-3 text-slate-600 dark:text-slate-400 normal-case font-sans">
+            {describeCause(diag.likelyCause)}
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <p className="text-slate-500">profile.org_id</p>
+              <p className="text-slate-800 dark:text-slate-200">
+                {diag.profile.organization_id}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">profile.crm_role</p>
+              <p className="text-slate-800 dark:text-slate-200">
+                {diag.profile.crm_role ?? 'null'}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">record.exists</p>
+              <p className="text-slate-800 dark:text-slate-200">
+                {String(diag.record.existsAnywhere)}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">record.visibleViaRls</p>
+              <p className="text-slate-800 dark:text-slate-200">
+                {String(diag.record.visibleViaRls)}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">record.org_id</p>
+              <p className="text-slate-800 dark:text-slate-200">
+                {diag.record.org_id ?? '—'}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-500">module.org_id / key</p>
+              <p className="text-slate-800 dark:text-slate-200">
+                {diag.module.org_id ?? '—'} / {diag.module.key ?? '—'}
+              </p>
+            </div>
+          </div>
+          {diag.mergeTombstone && (
+            <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10">
+              <p className="text-slate-500">merged into keeper</p>
+              <Link
+                href={`/crm/r/${diag.mergeTombstone.keeperId}/edit`}
+                className="text-teal-600 hover:underline"
+              >
+                {diag.mergeTombstone.keeperId}
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
+      <Button variant="outline" asChild>
+        <Link href="/crm">Back to CRM</Link>
+      </Button>
+    </div>
+  );
+}
+
 const AUTOSAVE_DELAY_MS = 8_000;
 
 export default function EditRecordPage() {
@@ -269,14 +414,7 @@ export default function EditRecordPage() {
   }
 
   if (!data?.record) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <p className="text-slate-600 dark:text-slate-400 mb-4">Record not found</p>
-        <Button variant="outline" asChild>
-          <Link href="/crm">Back to CRM</Link>
-        </Button>
-      </div>
-    );
+    return <RecordNotFoundDiagnostic recordId={recordId} />;
   }
 
   const editRecord = data.record;

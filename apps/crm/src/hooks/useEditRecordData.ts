@@ -36,51 +36,23 @@ function moduleDependencyId(row: EditRecordRow | null | undefined): string | nul
 }
 
 /**
- * Load by id only — same contract as server `getRecordWithModule`:
- * rely on `crm_records` RLS for org/access.
+ * Load edit row via authenticated API — server heals misaligned `module_id`
+ * (RLS hides modules from other orgs) before returning the PostgREST-shaped row.
  */
 async function fetchRecordWithModule(recordId: string): Promise<EditRecordRow | null> {
-  const { data, error } = await supabase
-    .from('crm_records')
-    .select(`
-      *,
-      module:crm_modules!crm_records_module_id_fkey(id, key, name, name_plural)
-    `)
-    .eq('id', recordId)
-    .maybeSingle();
-
-  if (error) throw error;
-  if (!data) return null;
-
-  let moduleData = Array.isArray(data.module) ? data.module[0] : data.module;
-  const mid = typeof data.module_id === 'string' ? data.module_id : null;
-
-  if (!moduleData?.id && mid) {
-    const { data: mod, error: modErr } = await supabase
-      .from('crm_modules')
-      .select('id, key, name, name_plural')
-      .eq('id', mid)
-      .maybeSingle();
-
-    if (!modErr && mod) {
-      moduleData = mod;
-    } else {
-      // Last resort: unblock fields/layout queries (RLS blocked module row is rare here).
-      moduleData = {
-        id: mid,
-        key: 'unknown',
-        name: 'Record',
-        name_plural: null,
-      };
+  const res = await fetch(
+    `/api/crm/records/${encodeURIComponent(recordId)}/bootstrap-edit`,
+    {
+      credentials: 'same-origin',
+      cache: 'no-store',
     }
-  }
+  );
 
-  if (!moduleData?.id) return null;
+  if (res.status === 401) return null;
+  if (!res.ok) return null;
 
-  return {
-    ...data,
-    module: moduleData,
-  } as EditRecordRow;
+  const body = (await res.json()) as { record?: EditRecordRow | null };
+  return body.record ?? null;
 }
 
 async function fetchFieldsForModule(moduleId: string): Promise<CrmField[]> {

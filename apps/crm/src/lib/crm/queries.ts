@@ -36,6 +36,7 @@ import type {
 } from './types';
 import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
 import { applyCrmRecordTextSearch } from './record-search';
+import { alignMisalignedRecordModule } from './align-record-module';
 
 // ============================================================================
 // Date Range Helper Functions
@@ -875,6 +876,11 @@ export async function getRecordById(recordId: string): Promise<CrmRecord | null>
 }
 
 export async function getRecordWithModule(recordId: string): Promise<{ record: CrmRecord; module: CrmModule } | null> {
+  const profile = await getCachedCurrentProfile();
+  if (!profile?.organization_id) return null;
+
+  await alignMisalignedRecordModule(profile.organization_id, recordId);
+
   const supabase = await createCrmClient();
 
   const { data, error } = await supabase
