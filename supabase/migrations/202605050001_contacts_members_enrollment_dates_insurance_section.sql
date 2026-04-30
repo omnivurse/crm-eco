@@ -4,7 +4,7 @@
 --
 -- 1. Move those two columns next to traditional insurance/product fields on contacts + members.
 -- 2. Relabel legacy layout sections whose key is still "product" vs "insurance" so leftovers
---    (vision / dental / add_on_product) aren't titled "Product" / "Insurance" alone.
+--    (vision / dental / add_on_product) aren't titled "Product" / misleading generic Insurance titles.
 
 UPDATE public.crm_fields f
 SET section = 'insurance'
@@ -34,9 +34,9 @@ SET config = jsonb_set(
                       WHEN 'insurance' THEN
                         CASE elem->>'label'
                           WHEN 'Insurance'
-                            THEN elem || jsonb_build_object('label', 'Insurance & product')
+                            THEN elem || jsonb_build_object('label', 'HealthShare')
                           WHEN 'Insurance / Product'
-                            THEN elem || jsonb_build_object('label', 'Insurance & product')
+                            THEN elem || jsonb_build_object('label', 'HealthShare')
                           ELSE elem
                         END
                       ELSE elem

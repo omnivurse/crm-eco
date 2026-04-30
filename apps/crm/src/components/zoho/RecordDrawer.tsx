@@ -42,7 +42,7 @@ const SECTION_LABELS: Record<string, string> = {
   family_spouse: 'Spouse Information',
   family_children: 'Children',
   family: 'Family',
-  insurance: 'Insurance / Product',
+  insurance: 'HealthShare',
   commissions: 'Commissions & Referrals',
   payment: 'Payment Information',
   identifiers: 'Codes & Identifiers',

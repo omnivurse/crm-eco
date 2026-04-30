@@ -45,6 +45,10 @@ import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
 import { AdvisorCarrierField } from './AdvisorCarrierField';
+import {
+  fallbackSectionHeadingFromFieldSection,
+  normalizeLegacySectionHeading,
+} from './section-utils';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -681,13 +685,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       if (!coveredKeys.has(sectionKey)) {
         extraSections.push({
           key: sectionKey,
-          label: sectionKey.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          label: fallbackSectionHeadingFromFieldSection(sectionKey),
           columns: 2,
         });
       }
     }
 
-    return [...layoutSections, ...extraSections];
+    return [...layoutSections, ...extraSections].map((s) => ({
+      ...s,
+      label: normalizeLegacySectionHeading(s.key, s.label),
+    }));
   }, [layoutConfig.sections, fieldsBySection]);
 
   const handleFormSubmit = onSubmit ? handleSubmit(onSubmit) : undefined;
@@ -822,6 +829,71 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
+  /** Product / plan / tier lines for the emerald snapshot (never duplicates carrier/date rows). */
+  const heroProductPlanFields = useMemo(() => {
+    const skipKeys = new Set<string>();
+    if (heroSharingField) skipKeys.add(heroSharingField.key);
+    if (heroStartDateField) skipKeys.add(heroStartDateField.key);
+
+    const preferredKeys = [
+      'product',
+      'insurance_plan_name',
+      'plan_name',
+      'plan_type',
+      'coverage_option',
+      'monthly_share',
+      'monthly_contribution',
+      'monthly_premium',
+      'member_tier',
+      'sharing_member_id',
+      'sharing_status',
+      'previous_product',
+    ];
+
+    const out: CrmField[] = [];
+    const seen = new Set<string>();
+
+    const tryAdd = (f: CrmField | undefined) => {
+      if (!f || skipKeys.has(f.key) || seen.has(f.key)) return;
+      out.push(f);
+      seen.add(f.key);
+    };
+
+    for (const k of preferredKeys) {
+      tryAdd(findFieldByKey(k));
+      if (out.length >= 6) break;
+    }
+
+    if (out.length < 6) {
+      const patterned = visibleFields.filter(
+        (f) =>
+          !skipKeys.has(f.key) &&
+          !seen.has(f.key) &&
+          (f.type === 'text' ||
+            f.type === 'textarea' ||
+            f.type === 'select' ||
+            f.type === 'picklist') &&
+          /plan|product|tier|premium|monthly.?share|contribution|coverage.?option|member.?tier/i.test(
+            f.key,
+          ),
+      );
+      for (const f of patterned) {
+        tryAdd(f);
+        if (out.length >= 6) break;
+      }
+    }
+
+    return out;
+  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField]);
+
+  /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
+  const heroProductPlanSnapshotFields = useMemo(() => {
+    if (readOnly && !inlineEditable) {
+      return heroProductPlanFields.filter((f) => hasValue(f.key));
+    }
+    return heroProductPlanFields;
+  }, [heroProductPlanFields, hasValue, inlineEditable, readOnly]);
+
   const renderSections = () => (
     <>
       {sections.map((section) => {
@@ -883,7 +955,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   // ──────────────────────────────────────────────────────────
                   // HERO LAYOUT
                   //   Left column  → the section's own fields (Name, etc.)
-                  //   Right column → Health Share Name + Start Date summary,
+                  //   Right column → Carrier / sharing + plan/product lines + dates,
                   //                  editable inline via the same form state.
                   // ──────────────────────────────────────────────────────────
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -911,6 +983,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                             No carrier or sharing entity field configured
                           </p>
                         )}
+                        {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
                         {heroStartDateField ? (
                           renderFieldCell(heroStartDateField)
                         ) : (

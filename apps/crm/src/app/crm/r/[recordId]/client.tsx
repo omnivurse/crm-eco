@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components
 import { Avatar, AvatarFallback } from '@crm-eco/ui/components/avatar';
 import { Separator } from '@crm-eco/ui/components/separator';
 import { DynamicRecordForm, FieldRenderer } from '@/components/crm/records';
+import { normalizeLegacySectionHeading } from '@/components/crm/records/section-utils';
 import type {
   CrmRecord,
   CrmModule,
@@ -290,7 +291,9 @@ export function RecordDetailClient({
                 return (
                   <Card key={section.key}>
                     <CardHeader className="py-4">
-                      <CardTitle className="text-base">{section.label}</CardTitle>
+                      <CardTitle className="text-base">
+                        {normalizeLegacySectionHeading(section.key, section.label)}
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

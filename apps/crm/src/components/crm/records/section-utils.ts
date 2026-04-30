@@ -18,6 +18,31 @@ export interface SectionMeta {
 }
 
 /**
+ * Legacy slug `insurance` (Zoho/import era) carries HealthShare-centric product/carrier/start rows
+ * for PIF deployments. Labels like "Insurance" are misleading compared to newer `insurance_coverage`
+ * wording — prefer HealthShare when the layout uses a generic insurance title so nav + overview match.
+ *
+ * Leaves custom titles alone (anything that doesn't start with "Insurance", case-insensitive).
+ */
+export function normalizeLegacySectionHeading(key: string, label: string): string {
+  if (key !== 'insurance') return label;
+  const t = label.trim();
+  if (t === '') return 'HealthShare';
+  if (/^insurance\b/i.test(t)) return 'HealthShare';
+  return label;
+}
+
+function titleCaseSectionKey(sectionKey: string): string {
+  return sectionKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Default heading for extra sections inferred only from {@link CrmField.section}. */
+export function fallbackSectionHeadingFromFieldSection(sectionKey: string): string {
+  if (sectionKey === 'insurance') return 'HealthShare';
+  return titleCaseSectionKey(sectionKey);
+}
+
+/**
  * Compute section metadata from fields + layout.
  * Returns the list of sections with field counts, filtering out empty ones.
  */
@@ -44,7 +69,7 @@ export function getSectionMeta(
     if (!coveredKeys.has(sectionKey)) {
       allSections.push({
         key: sectionKey,
-        label: sectionKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        label: fallbackSectionHeadingFromFieldSection(sectionKey),
         columns: 2,
       });
     }
@@ -54,7 +79,7 @@ export function getSectionMeta(
     .filter((s) => (grouped[s.key]?.length ?? 0) > 0)
     .map((s) => ({
       key: s.key,
-      label: s.label,
+      label: normalizeLegacySectionHeading(s.key, s.label),
       fieldCount: grouped[s.key]?.length ?? 0,
       accent: s.accent,
     }));
