@@ -69,18 +69,24 @@ function normalizeRecordId(id: string): string {
   return id.trim().toLowerCase();
 }
 
+function keeperIdFromDiff(diff: Record<string, unknown>, cursorNormalized: string): string | null {
+  const raw = diff.kept_id;
+  let asText: string | null = null;
+  if (typeof raw === 'string') asText = raw;
+  else if (typeof raw === 'number' && Number.isFinite(raw)) asText = String(raw);
+  if (asText === null) return null;
+  const keptId = asText.trim().toLowerCase();
+  if (!keptId || keptId === cursorNormalized) return null;
+  return keptId;
+}
+
 function hopFromAuditRow(
   auditRow: { diff: unknown; created_at?: string | null },
   cursorNormalized: string
 ): { mergedAt: string | null; keeperId: string } | null {
   const diff = (auditRow.diff ?? {}) as Record<string, unknown>;
-  let keptRaw = diff.kept_id;
-  if (typeof keptRaw !== 'string') {
-    if (typeof keptRaw === 'number') keptRaw = String(keptRaw);
-    else keptRaw = null;
-  }
-  const keptId = keptRaw?.trim()?.toLowerCase() ?? '';
-  if (!keptId || keptId === cursorNormalized) return null;
+  const keptId = keeperIdFromDiff(diff, cursorNormalized);
+  if (!keptId) return null;
 
   return {
     keeperId: keptId,
@@ -112,50 +118,49 @@ async function findMergeHopFromAudit(
     return hopFromAuditRow(row, c);
   };
 
-  const runners: Array<{ label: string; run: () => Promise<unknown> }> = [
+  type AuditPick = { diff: unknown; created_at?: string | null };
+
+  const queries: Array<{ label: string; builder: PromiseLike<{ data: AuditPick | null; error: { message: string } | null }> }> = [
     {
       label: 'diff_deleted_id',
-      run: () =>
-        admin
-          .from('crm_audit_log')
-          .select('diff, created_at')
-          .in('entity', ['record', 'crm_records'])
-          .eq('action', 'merge')
-          .eq('diff->>deleted_id', c)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+      builder: admin
+        .from('crm_audit_log')
+        .select('diff, created_at')
+        .in('entity', ['record', 'crm_records'])
+        .eq('action', 'merge')
+        .eq('diff->>deleted_id', c)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     },
     {
       label: 'entity_id_tombstone',
-      run: () =>
-        admin
-          .from('crm_audit_log')
-          .select('diff, created_at')
-          .in('entity', ['record', 'crm_records'])
-          .eq('action', 'merge')
-          .eq('entity_id', cursor)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+      builder: admin
+        .from('crm_audit_log')
+        .select('diff, created_at')
+        .in('entity', ['record', 'crm_records'])
+        .eq('action', 'merge')
+        .eq('entity_id', cursor)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     },
     {
       label: 'snapshotted_duplicate',
-      run: () =>
-        admin
-          .from('crm_audit_log')
-          .select('diff, created_at')
-          .in('entity', ['record', 'crm_records'])
-          .eq('action', 'merge')
-          .eq('diff->deleted_snapshot->>id', c)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+      builder: admin
+        .from('crm_audit_log')
+        .select('diff, created_at')
+        .in('entity', ['record', 'crm_records'])
+        .eq('action', 'merge')
+        .eq('diff->deleted_snapshot->>id', c)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
     },
   ];
 
-  for (const { label, run } of runners) {
-    const { data: row, error } = await run();
+  for (const { label, builder } of queries) {
+    const { data: row, error } = await builder;
     if (error) {
       console.error(`[resolve-record] audit ${label}:`, error.message);
       continue;
