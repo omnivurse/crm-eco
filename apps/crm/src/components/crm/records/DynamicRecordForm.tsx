@@ -755,22 +755,52 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     [visibleFields],
   );
 
+  // Pattern-matched fallbacks: walk every field in the module and pick the
+  // first whose key matches our heuristic. This is the safety net that fires
+  // when a record's module uses non-standard section names or custom keys —
+  // the snapshot still surfaces *something* useful.
+  const matchByKeyPattern = useCallback(
+    (patterns: RegExp[], typeFilter: (f: CrmField) => boolean) => {
+      // Prefer a populated match first
+      for (const pattern of patterns) {
+        const populated = visibleFields.find(
+          (f) => typeFilter(f) && pattern.test(f.key) && hasValue(f.key),
+        );
+        if (populated) return populated;
+      }
+      // Fall back to the first existing field that matches any pattern
+      for (const pattern of patterns) {
+        const existing = visibleFields.find((f) => typeFilter(f) && pattern.test(f.key));
+        if (existing) return existing;
+      }
+      return undefined;
+    },
+    [visibleFields, hasValue],
+  );
+
   const heroSharingField = useMemo(() => {
+    const isCarrierType = (f: CrmField) => f.type === 'select' || f.type === 'text';
     const candidates = [
       findFieldByKey('sharing_entity'),
       findFieldByKey('insurance_carrier'),
       findFieldByKey('carrier'),
       findFieldByKey('carrier_name'),
       findFieldByKey('coverage_option'),
-      findFieldInSection('health_sharing', (f) => f.type === 'select' || f.type === 'text'),
-      findFieldInSection('insurance_coverage', (f) => f.type === 'select' || f.type === 'text'),
-      findFieldInSection('insurance', (f) => f.type === 'select' || f.type === 'text'),
+      findFieldInSection('health_sharing', isCarrierType),
+      findFieldInSection('insurance_coverage', isCarrierType),
+      findFieldInSection('insurance', isCarrierType),
+      // Generic key-pattern fallback (any module / custom section)
+      matchByKeyPattern(
+        [/sharing|share/i, /carrier|provider/i, /entity/i, /coverage/i],
+        isCarrierType,
+      ),
     ].filter((f): f is CrmField => Boolean(f));
 
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
-  }, [findFieldByKey, findFieldInSection, hasValue]);
+  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
   const heroStartDateField = useMemo(() => {
+    const isDateType = (f: CrmField) => f.type === 'date';
     const candidates = [
       findFieldByKey('sharing_effective_date'),
       findFieldByKey('insurance_effective_date'),
@@ -778,14 +808,19 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       findFieldByKey('start_date'),
       findFieldByKey('original_start_date'),
       findFieldByKey('current_year_start_date'),
-      findFieldInSection('health_sharing', (f) => f.type === 'date'),
-      findFieldInSection('insurance_coverage', (f) => f.type === 'date'),
-      findFieldInSection('insurance', (f) => f.type === 'date'),
-      findFieldInSection('start_date', (f) => f.type === 'date'),
+      findFieldInSection('health_sharing', isDateType),
+      findFieldInSection('insurance_coverage', isDateType),
+      findFieldInSection('insurance', isDateType),
+      findFieldInSection('start_date', isDateType),
+      // Generic key-pattern fallback
+      matchByKeyPattern(
+        [/effective.*date|start.*date|begin.*date/i, /^date$/i],
+        isDateType,
+      ),
     ].filter((f): f is CrmField => Boolean(f));
 
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
-  }, [findFieldByKey, findFieldInSection, hasValue]);
+  }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
   const renderSections = () => (
     <>
