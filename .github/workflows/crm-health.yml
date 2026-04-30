@@ -1,0 +1,60 @@
+# Workspace guards + CRM DB integrity (report + strict asserts).
+#
+# Runs on pushes/PRs to main. Ensures no nested repo creep and that merge/recently-viewed/table
+# invariants remain clean (requires the same Postgres URL as `pifh-deploy-gate.yml`).
+#
+# Secret (reuse): PIFH_SUPABASE_DB_URL
+#
+# Tasks with record_id IS NULL are allowed ("standalone tasks" — see migrations).
+#
+name: CRM health
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workspace-hygiene:
+    name: Nested repo guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Block tracked ./crm-eco clone + nested .git
+        run: sh scripts/workspace-hygiene.sh
+
+  crm-db-integrity:
+    name: DB integrity audit (strict)
+    needs: workspace-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dotenv (audit runner)
+        run: npm install --no-save dotenv@^17.2.3
+
+      - name: Run reporting SQL + strict asserts
+        env:
+          PIFH_SUPABASE_DB_URL: ${{ secrets.PIFH_SUPABASE_DB_URL }}
+        run: |
+          if [ -z "${PIFH_SUPABASE_DB_URL}" ]; then
+            echo "::error::PIFH_SUPABASE_DB_URL Actions secret missing (reuse from PIFH deploy gate)."
+            exit 1
+          fi
+          node scripts/run-db-audit-records.mjs --strict

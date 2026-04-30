@@ -11,6 +11,13 @@ admin multi-tenancy refactor (`apps/admin`), the new marketing site
 The goal: **zero downtime, zero data loss, zero broken sessions for the
 two existing PIFH owner accounts.**
 
+Automated safeguards on `main` / PRs:
+
+- **`pifh-deploy-gate.yml`** — business invariants (`npm run pifh:gate`, needs `PIFH_SUPABASE_DB_URL`).
+- **`crm-health.yml`** — blocks nested `./crm-eco/` and runs **`npm run db:audit:records:strict`** on the DB using the **same**
+  **`PIFH_SUPABASE_DB_URL`**. Covers merge-audit shapes, orphaned `recently_viewed`/notes/tasks **FK gaps** (when `record_id` is non-null),
+  and duplicate migration version keys. Nullable **`crm_tasks.record_id`** (standalone tasks) is **valid** — not asserted.
+
 ---
 
 ## 1. Pre-flight findings (verified against live DB)

@@ -29,7 +29,8 @@ export default function EditRecordPage() {
   const latestValuesRef = useRef<Record<string, unknown>>({});
   const initialValuesRef = useRef<Record<string, unknown>>({});
 
-  const { data, isLoading, error, recordRow, recordQueryError } = useEditRecordData(recordId);
+  const { data, isLoading, error, recordRow, recordQueryError, moduleMetadataMissing, dependentsFailed } =
+    useEditRecordData(recordId);
   const record = data?.record;
   const fields = useMemo(() => data?.fields ?? [], [data?.fields]);
   const layout = data?.layout ?? null;
@@ -232,7 +233,42 @@ export default function EditRecordPage() {
     );
   }
 
-  if (!record) {
+  /** Module join empty under RLS (typical: module.org_id ≠ record.org_id after tenant moves). */
+  if (moduleMetadataMissing) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-lg mx-auto px-4 text-center">
+        <p className="font-medium text-slate-900 dark:text-white mb-2">Cannot load this record&apos;s module</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          The row exists, but CRM could not resolve its module metadata. This usually means{' '}
+          <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">module_id</code> points
+          at another organization&apos;s module after a migration or import — the list may still show the
+          title, but edit needs a matching module in your org.
+        </p>
+        <p className="text-xs text-slate-500 dark:text-slate-500 mb-6 font-mono break-all">
+          record&nbsp;{recordId}
+          {recordRow?.module_id ? ` · module_id ${recordRow.module_id}` : ''}
+        </p>
+        <Button variant="outline" asChild>
+          <Link href="/crm">Back to CRM</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (dependentsFailed && error != null) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-md mx-auto px-4 text-center">
+        <p className="font-medium text-slate-900 dark:text-white mb-2">Could not load form metadata</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{msg}</p>
+        <Button variant="outline" asChild>
+          <Link href="/crm">Back to CRM</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!data?.record) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <p className="text-slate-600 dark:text-slate-400 mb-4">Record not found</p>
@@ -243,6 +279,8 @@ export default function EditRecordPage() {
     );
   }
 
+  const editRecord = data.record;
+
   return (
     <div className="w-full px-3 sm:px-4 py-3">
       {/* Header */}
@@ -252,15 +290,15 @@ export default function EditRecordPage() {
           className="inline-flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to {record.title}
+          Back to {editRecord.title}
         </Link>
 
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Edit {record.module.name}
+              Edit {editRecord.module.name}
             </h1>
-            <p className="text-slate-500 dark:text-slate-400">Editing: {record.title}</p>
+            <p className="text-slate-500 dark:text-slate-400">Editing: {editRecord.title}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -303,7 +341,7 @@ export default function EditRecordPage() {
         fields={fields}
         layout={layout}
         defaultValues={defaultValues}
-        record={record}
+        record={editRecord}
         mode="edit"
         isLoading={saving}
         onSubmit={handleSubmitFromForm}

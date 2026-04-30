@@ -24,11 +24,12 @@ export async function prefetchRecordForDrawer(recordId: string) {
   await queryClient.prefetchQuery({
     queryKey: queryKeys.records.detail(recordId),
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('crm_records')
         .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
         .eq('id', recordId)
-        .single();
+        .maybeSingle();
+      if (error) throw error;
       return data;
     },
     staleTime: 30_000, // 30 seconds

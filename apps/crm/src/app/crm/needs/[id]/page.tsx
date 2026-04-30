@@ -124,12 +124,12 @@ export default function NeedDetailPage() {
     try {
       // For demo, we'll use a mock need if none exists
       // In production, this would be a real database query
+      // RLS scopes org/access; mirroring edit/drawer (no redundant org filter).
       const { data: needData, error } = await supabase
         .from('crm_records')
         .select('*')
         .eq('id', needId)
-        .eq('org_id', authProfile.organization_id)
-        .single();
+        .maybeSingle();
 
       if (error || !needData) {
         // Demo data for showcase
