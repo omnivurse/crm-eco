@@ -732,15 +732,33 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   );
 
   // Find the "hero summary" fields anywhere in the field list — they don't
-  // need to live in the hero section to be surfaced there.
-  const heroSharingField = useMemo(
-    () => visibleFields.find((f) => f.key === 'sharing_entity'),
-    [visibleFields],
+  // need to live in the hero section to be surfaced there. Prefer the health
+  // sharing pair, but fall back to the insurance pair when the record's
+  // coverage data lives there instead (a record can only really be one or
+  // the other, so we surface whichever has a populated value).
+  const hasValue = useCallback(
+    (key: string) => {
+      const v = defaultValues[key];
+      return v !== null && v !== undefined && v !== '';
+    },
+    [defaultValues],
   );
-  const heroStartDateField = useMemo(
-    () => visibleFields.find((f) => f.key === 'sharing_effective_date'),
-    [visibleFields],
-  );
+
+  const heroSharingField = useMemo(() => {
+    const sharing = visibleFields.find((f) => f.key === 'sharing_entity');
+    const insurance = visibleFields.find((f) => f.key === 'insurance_carrier');
+    if (sharing && hasValue('sharing_entity')) return sharing;
+    if (insurance && hasValue('insurance_carrier')) return insurance;
+    return sharing ?? insurance;
+  }, [visibleFields, hasValue]);
+
+  const heroStartDateField = useMemo(() => {
+    const sharing = visibleFields.find((f) => f.key === 'sharing_effective_date');
+    const insurance = visibleFields.find((f) => f.key === 'insurance_effective_date');
+    if (sharing && hasValue('sharing_effective_date')) return sharing;
+    if (insurance && hasValue('insurance_effective_date')) return insurance;
+    return sharing ?? insurance;
+  }, [visibleFields, hasValue]);
 
   const renderSections = () => (
     <>
@@ -828,14 +846,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                           renderFieldCell(heroSharingField)
                         ) : (
                           <p className="text-xs text-muted-foreground">
-                            No Health Share field configured
+                            No carrier or sharing entity field configured
                           </p>
                         )}
                         {heroStartDateField ? (
                           renderFieldCell(heroStartDateField)
                         ) : (
                           <p className="text-xs text-muted-foreground">
-                            No Start Date field configured
+                            No effective date field configured
                           </p>
                         )}
                       </div>
