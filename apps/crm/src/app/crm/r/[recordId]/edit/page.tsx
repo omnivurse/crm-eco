@@ -26,7 +26,15 @@ interface DiagnoseResponse {
     title: string | null;
     updated_at: string | null;
   };
-  module: { org_id: string | null; key: string | null };
+  module: {
+    org_id: string | null;
+    key: string | null;
+    fieldsCount?: number;
+    fieldsCountRls?: number;
+    layoutsCount?: number;
+    layoutsCountRls?: number;
+    defaultLayoutsCount?: number;
+  };
   mergeTombstone: { keeperId: string; mergedAt: string | null } | null;
   flags: { recordOrgMatchesProfile: boolean; moduleOrgMatchesRecord: boolean };
   likelyCause: string;
@@ -48,6 +56,14 @@ function describeCause(cause: string): string {
       return 'Service-role can see the record but RLS hides it for your session — check policies/role.';
     case 'visible_should_load':
       return 'The record is visible to you per RLS — this is likely a transient client-side fetch failure. Try reloading.';
+    case 'duplicate_default_layouts':
+      return 'There is more than one default layout for this module — maybeSingle() throws on multiple rows. Mark only one is_default = true.';
+    case 'fields_rls_hidden':
+      return "Fields exist for this module but RLS hides them from your session — typically crm_fields.org_id doesn't match your profile org.";
+    case 'layouts_rls_hidden':
+      return "Layouts exist for this module but RLS hides them from your session — typically crm_layouts.org_id doesn't match your profile org.";
+    case 'no_fields_for_module':
+      return 'No crm_fields rows exist for this module at all — the module has no field schema configured in this org.';
     default:
       return cause;
   }
@@ -153,6 +169,129 @@ function RecordNotFoundDiagnostic({ recordId }: { recordId: string }) {
           )}
         </div>
       )}
+      <Button variant="outline" asChild>
+        <Link href="/crm">Back to CRM</Link>
+      </Button>
+    </div>
+  );
+}
+
+interface PostgrestErrorShape {
+  message?: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}
+
+function describeUnknownError(err: unknown): PostgrestErrorShape {
+  if (err instanceof Error) return { message: err.message };
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    return {
+      message: typeof e.message === 'string' ? e.message : undefined,
+      code: typeof e.code === 'string' ? e.code : undefined,
+      details: typeof e.details === 'string' ? e.details : undefined,
+      hint: typeof e.hint === 'string' ? e.hint : undefined,
+    };
+  }
+  return { message: typeof err === 'string' ? err : undefined };
+}
+
+function FormMetadataFailedDiagnostic({
+  recordId,
+  moduleId,
+  error,
+}: {
+  recordId: string;
+  moduleId: string | null;
+  error: unknown;
+}) {
+  const e = describeUnknownError(error);
+  const [diag, setDiag] = useState<DiagnoseResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/crm/records/${recordId}/diagnose`);
+        if (!res.ok) return;
+        const body = (await res.json()) as DiagnoseResponse;
+        if (!cancelled) setDiag(body);
+      } catch {
+        // best-effort
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [recordId]);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-2xl mx-auto px-4 text-center">
+      <p className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
+        Could not load form metadata
+      </p>
+      <p className="text-xs text-slate-500 mb-4 font-mono break-all">
+        record {recordId}
+        {moduleId ? ` · module ${moduleId}` : ''}
+      </p>
+      <div className="text-left text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-lg p-4 mb-4 w-full font-mono break-all">
+        <p className="text-slate-500 mb-1">error.message</p>
+        <p className="text-slate-800 dark:text-slate-200 mb-2">
+          {e.message ?? '(no message)'}
+        </p>
+        {e.code && (
+          <>
+            <p className="text-slate-500 mb-1">error.code</p>
+            <p className="text-slate-800 dark:text-slate-200 mb-2">{e.code}</p>
+          </>
+        )}
+        {e.details && (
+          <>
+            <p className="text-slate-500 mb-1">error.details</p>
+            <p className="text-slate-800 dark:text-slate-200 mb-2">{e.details}</p>
+          </>
+        )}
+        {e.hint && (
+          <>
+            <p className="text-slate-500 mb-1">error.hint</p>
+            <p className="text-slate-800 dark:text-slate-200 mb-2">{e.hint}</p>
+          </>
+        )}
+        {loading && (
+          <p className="text-slate-500 mt-3">Running diagnostics…</p>
+        )}
+        {diag && !loading && (
+          <div className="mt-3 pt-3 border-t border-slate-200 dark:border-white/10">
+            <p className="text-slate-500 mb-1">cause</p>
+            <p className="text-slate-800 dark:text-slate-200 mb-2">
+              {diag.likelyCause}
+            </p>
+            {diag.module.fieldsCount !== undefined && (
+              <>
+                <p className="text-slate-500 mb-1">fields rows visible</p>
+                <p className="text-slate-800 dark:text-slate-200 mb-2">
+                  {diag.module.fieldsCount} (admin) /{' '}
+                  {diag.module.fieldsCountRls ?? '?'} (rls)
+                </p>
+              </>
+            )}
+            {diag.module.layoutsCount !== undefined && (
+              <>
+                <p className="text-slate-500 mb-1">layout rows visible</p>
+                <p className="text-slate-800 dark:text-slate-200 mb-2">
+                  {diag.module.layoutsCount} (admin) /{' '}
+                  {diag.module.layoutsCountRls ?? '?'} (rls) ·{' '}
+                  {diag.module.defaultLayoutsCount ?? '?'} default
+                </p>
+              </>
+            )}
+          </div>
+        )}
+      </div>
       <Button variant="outline" asChild>
         <Link href="/crm">Back to CRM</Link>
       </Button>
@@ -401,15 +540,12 @@ export default function EditRecordPage() {
   }
 
   if (dependentsFailed && error != null) {
-    const msg = error instanceof Error ? error.message : String(error);
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-md mx-auto px-4 text-center">
-        <p className="font-medium text-slate-900 dark:text-white mb-2">Could not load form metadata</p>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">{msg}</p>
-        <Button variant="outline" asChild>
-          <Link href="/crm">Back to CRM</Link>
-        </Button>
-      </div>
+      <FormMetadataFailedDiagnostic
+        recordId={recordId}
+        moduleId={recordRow?.module_id ?? null}
+        error={error}
+      />
     );
   }
 

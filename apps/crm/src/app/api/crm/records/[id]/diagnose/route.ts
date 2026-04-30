@@ -55,14 +55,49 @@ export async function GET(
 
   let moduleOrgId: string | null = null;
   let moduleKey: string | null = null;
+  let fieldsCount: number | null = null;
+  let fieldsCountRls: number | null = null;
+  let layoutsCount: number | null = null;
+  let layoutsCountRls: number | null = null;
+  let defaultLayoutsCount: number | null = null;
   if (recordAdminRes.data?.module_id) {
-    const { data: mod } = await admin
-      .from('crm_modules')
-      .select('id, org_id, key')
-      .eq('id', recordAdminRes.data.module_id)
-      .maybeSingle();
-    moduleOrgId = (mod?.org_id as string | undefined) ?? null;
-    moduleKey = (mod?.key as string | undefined) ?? null;
+    const moduleId = recordAdminRes.data.module_id;
+    const [modRes, fieldsAdminRes, fieldsRlsRes, layoutsAdminRes, layoutsRlsRes, defLayoutsRes] =
+      await Promise.all([
+        admin
+          .from('crm_modules')
+          .select('id, org_id, key')
+          .eq('id', moduleId)
+          .maybeSingle(),
+        admin
+          .from('crm_fields')
+          .select('id', { count: 'exact', head: true })
+          .eq('module_id', moduleId),
+        cookieClient
+          .from('crm_fields')
+          .select('id', { count: 'exact', head: true })
+          .eq('module_id', moduleId),
+        admin
+          .from('crm_layouts')
+          .select('id', { count: 'exact', head: true })
+          .eq('module_id', moduleId),
+        cookieClient
+          .from('crm_layouts')
+          .select('id', { count: 'exact', head: true })
+          .eq('module_id', moduleId),
+        admin
+          .from('crm_layouts')
+          .select('id', { count: 'exact', head: true })
+          .eq('module_id', moduleId)
+          .eq('is_default', true),
+      ]);
+    moduleOrgId = (modRes.data?.org_id as string | undefined) ?? null;
+    moduleKey = (modRes.data?.key as string | undefined) ?? null;
+    fieldsCount = fieldsAdminRes.count ?? null;
+    fieldsCountRls = fieldsRlsRes.count ?? null;
+    layoutsCount = layoutsAdminRes.count ?? null;
+    layoutsCountRls = layoutsRlsRes.count ?? null;
+    defaultLayoutsCount = defLayoutsRes.count ?? null;
   }
 
   let mergeTombstone: { keeperId: string; mergedAt: string | null } | null = null;
@@ -105,6 +140,14 @@ export async function GET(
     likelyCause = 'module_org_drift';
   } else if (!visibleViaRls) {
     likelyCause = 'rls_hidden_other_reason';
+  } else if ((defaultLayoutsCount ?? 0) > 1) {
+    likelyCause = 'duplicate_default_layouts';
+  } else if ((fieldsCount ?? 0) > 0 && (fieldsCountRls ?? 0) === 0) {
+    likelyCause = 'fields_rls_hidden';
+  } else if ((layoutsCount ?? 0) > 0 && (layoutsCountRls ?? 0) === 0) {
+    likelyCause = 'layouts_rls_hidden';
+  } else if ((fieldsCount ?? 0) === 0) {
+    likelyCause = 'no_fields_for_module';
   } else {
     likelyCause = 'visible_should_load';
   }
@@ -127,6 +170,11 @@ export async function GET(
     module: {
       org_id: moduleOrgId,
       key: moduleKey,
+      fieldsCount,
+      fieldsCountRls,
+      layoutsCount,
+      layoutsCountRls,
+      defaultLayoutsCount,
     },
     mergeTombstone,
     flags: {
