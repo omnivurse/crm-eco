@@ -1121,57 +1121,67 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 </div>
               </div>
 
-              {/* Header Actions: Send Email | Convert | Edit | Note Template ⌄ | ⋯ */}
-              <div className="flex items-center gap-2 shrink-0">
+              {/* Header Actions: Convert (leads only) | Send Email | Edit | Note Template ⌄ | ⋯ */}
+              <div className="flex flex-wrap items-center gap-2 justify-end shrink-0 min-w-0">
                 <PresenceStack
                   participants={presenceParticipants}
                   moduleKey={module.key}
                   className="mr-1"
                 />
-                {record.email && (
-                  <Button
-                    size="sm"
-                    onClick={handleSendEmail}
-                    className="hidden sm:inline-flex bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
-                  >
-                    <Mail className="w-4 h-4 mr-1.5" />
-                    Send Email
-                  </Button>
-                )}
-
                 {canConvertToContact && (
                   <Button
                     size="sm"
                     variant="outline"
+                    type="button"
+                    aria-label="Convert lead to contact"
                     onClick={() => setShowConvertDialog(true)}
-                    className="hidden md:inline-flex border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10"
+                    className="inline-flex shrink-0 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 font-medium"
                   >
-                    <UserCheck className="w-4 h-4 mr-1.5" />
-                    Convert
+                    <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                    <span className="text-xs sm:text-sm">Convert</span>
                   </Button>
                 )}
 
                 <Button
-                  variant="outline"
+                  type="button"
                   size="sm"
-                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
-                  onClick={handleEditRecord}
+                  disabled={!record.email}
+                  title={
+                    record.email ? 'Compose email to this record' : 'Add an email on this record to enable send'
+                  }
+                  onClick={() => void handleSendEmail()}
+                  className="inline-flex shrink-0 bg-rose-600 hover:bg-rose-700 text-white shadow-sm disabled:opacity-40"
                 >
-                  <Edit className="w-4 h-4 md:mr-1.5" />
-                  <span className="hidden md:inline">Edit</span>
+                  <Mail className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                  <span className="text-xs font-medium sm:text-sm">
+                    <span className="sm:hidden">Email</span>
+                    <span className="hidden sm:inline">Send Email</span>
+                  </span>
                 </Button>
 
-                {/* Note Template split button — hidden on mobile (the ⋯
-                    menu picks up Note-related actions via Add Note). */}
-                <div className="hidden md:flex items-stretch">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shrink-0"
+                  onClick={handleEditRecord}
+                >
+                  <Edit className="w-4 h-4 min-[380px]:mr-1.5" />
+                  <span className="hidden min-[380px]:inline">Edit</span>
+                </Button>
+
+                {/* Note templates — visible on narrow viewports; overflow row wraps via flex-wrap above. */}
+                <div className="flex items-stretch shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
+                    type="button"
                     onClick={() => setShowTemplatePicker(true)}
                     className="rounded-r-none border-r-0 border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300"
                   >
-                    <StickyNote className="w-4 h-4 mr-1.5" />
-                    Note Template
+                    <StickyNote className="w-4 h-4 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Note Template</span>
+                    <span className="inline sm:hidden text-xs font-medium">Template</span>
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -1280,6 +1290,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     align="end"
                     className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
                   >
+                    <DropdownMenuItem
+                      disabled={!record.email}
+                      onClick={() => void handleSendEmail()}
+                      title={!record.email ? 'Add an email address on this record first' : undefined}
+                    >
+                      <Mail className="w-4 h-4 mr-2 text-rose-600" />
+                      Send email
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowTemplatePicker(true)}>
+                      <StickyNote className="w-4 h-4 mr-2" />
+                      Note templates…
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
                     <DropdownMenuItem
                       onClick={async () => {
                         try {

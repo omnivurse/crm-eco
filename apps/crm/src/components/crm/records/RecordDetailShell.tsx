@@ -539,11 +539,24 @@ export const RecordDetailShell = memo(function RecordDetailShell({
               </div>
 
               {/* Header Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2 shrink-0 justify-end">
+                {canConvertToContact && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    aria-label="Convert lead to contact"
+                    className="border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 shrink-0"
+                    onClick={() => setShowConvertDialog(true)}
+                  >
+                    <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                    <span className="text-xs font-medium sm:text-sm">Convert</span>
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
+                  className="border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white shrink-0"
                   onClick={handleEditRecord}
                 >
                   <Edit className="w-4 h-4 mr-1" />
