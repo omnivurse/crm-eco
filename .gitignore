@@ -53,3 +53,6 @@ pnpm-lock.yaml
 
 # Data exports (never commit raw contact/client data)
 *.csv
+
+# Nested accidental clone/copy of this repo (has its own .git; huge + wrong to commit)
+/crm-eco/
