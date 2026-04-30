@@ -732,10 +732,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   );
 
   // Find the "hero summary" fields anywhere in the field list — they don't
-  // need to live in the hero section to be surfaced there. Prefer the health
-  // sharing pair, but fall back to the insurance pair when the record's
-  // coverage data lives there instead (a record can only really be one or
-  // the other, so we surface whichever has a populated value).
+  // need to live in the hero section to be surfaced there. We resolve in a
+  // priority order so this works whether the record's coverage data lives
+  // in the health-sharing fields, the insurance fields, or a custom field
+  // sitting in either section.
   const hasValue = useCallback(
     (key: string) => {
       const v = defaultValues[key];
@@ -744,21 +744,48 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     [defaultValues],
   );
 
+  const findFieldByKey = useCallback(
+    (key: string) => visibleFields.find((f) => f.key === key),
+    [visibleFields],
+  );
+
+  const findFieldInSection = useCallback(
+    (section: string, predicate: (f: CrmField) => boolean) =>
+      visibleFields.find((f) => f.section === section && predicate(f)),
+    [visibleFields],
+  );
+
   const heroSharingField = useMemo(() => {
-    const sharing = visibleFields.find((f) => f.key === 'sharing_entity');
-    const insurance = visibleFields.find((f) => f.key === 'insurance_carrier');
-    if (sharing && hasValue('sharing_entity')) return sharing;
-    if (insurance && hasValue('insurance_carrier')) return insurance;
-    return sharing ?? insurance;
-  }, [visibleFields, hasValue]);
+    const candidates = [
+      findFieldByKey('sharing_entity'),
+      findFieldByKey('insurance_carrier'),
+      findFieldByKey('carrier'),
+      findFieldByKey('carrier_name'),
+      findFieldByKey('coverage_option'),
+      findFieldInSection('health_sharing', (f) => f.type === 'select' || f.type === 'text'),
+      findFieldInSection('insurance_coverage', (f) => f.type === 'select' || f.type === 'text'),
+      findFieldInSection('insurance', (f) => f.type === 'select' || f.type === 'text'),
+    ].filter((f): f is CrmField => Boolean(f));
+
+    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
+  }, [findFieldByKey, findFieldInSection, hasValue]);
 
   const heroStartDateField = useMemo(() => {
-    const sharing = visibleFields.find((f) => f.key === 'sharing_effective_date');
-    const insurance = visibleFields.find((f) => f.key === 'insurance_effective_date');
-    if (sharing && hasValue('sharing_effective_date')) return sharing;
-    if (insurance && hasValue('insurance_effective_date')) return insurance;
-    return sharing ?? insurance;
-  }, [visibleFields, hasValue]);
+    const candidates = [
+      findFieldByKey('sharing_effective_date'),
+      findFieldByKey('insurance_effective_date'),
+      findFieldByKey('effective_date'),
+      findFieldByKey('start_date'),
+      findFieldByKey('original_start_date'),
+      findFieldByKey('current_year_start_date'),
+      findFieldInSection('health_sharing', (f) => f.type === 'date'),
+      findFieldInSection('insurance_coverage', (f) => f.type === 'date'),
+      findFieldInSection('insurance', (f) => f.type === 'date'),
+      findFieldInSection('start_date', (f) => f.type === 'date'),
+    ].filter((f): f is CrmField => Boolean(f));
+
+    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
+  }, [findFieldByKey, findFieldInSection, hasValue]);
 
   const renderSections = () => (
     <>

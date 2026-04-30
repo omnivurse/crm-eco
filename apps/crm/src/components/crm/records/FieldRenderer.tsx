@@ -8,6 +8,17 @@ import type { CrmField } from '@/lib/crm/types';
 import { Mail, Phone, ExternalLink, Check, X, Copy } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
+// Parse a value into a Date for display. Date-only strings (YYYY-MM-DD) are
+// constructed in local time so they render as the same calendar day in every
+// timezone — `new Date('2025-11-01')` would otherwise be parsed as UTC midnight
+// and shown as Oct 31 in any UTC- zone.
+function parseFieldDate(raw: unknown): Date {
+  const s = String(raw);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Date(s);
+}
+
 // ---------------------------------------------------------------------------
 // Carrier-name resolution
 // ---------------------------------------------------------------------------
@@ -221,7 +232,7 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
     case 'date': {
       let dateFormatted: string;
       try {
-        dateFormatted = format(new Date(String(value)), 'MMM d, yyyy');
+        dateFormatted = format(parseFieldDate(value), 'MMM d, yyyy');
       } catch {
         dateFormatted = String(value);
       }
@@ -231,7 +242,7 @@ export const FieldRenderer = memo(function FieldRenderer({ field, value, classNa
     case 'datetime': {
       let datetimeFormatted: string;
       try {
-        datetimeFormatted = format(new Date(String(value)), 'MMM d, yyyy h:mm a');
+        datetimeFormatted = format(parseFieldDate(value), 'MMM d, yyyy h:mm a');
       } catch {
         datetimeFormatted = String(value);
       }
@@ -308,14 +319,14 @@ export function getDisplayValue(field: CrmField, value: unknown): string {
 
     case 'date':
       try {
-        return format(new Date(String(value)), 'yyyy-MM-dd');
+        return format(parseFieldDate(value), 'yyyy-MM-dd');
       } catch {
         return String(value);
       }
 
     case 'datetime':
       try {
-        return format(new Date(String(value)), 'yyyy-MM-dd HH:mm');
+        return format(parseFieldDate(value), 'yyyy-MM-dd HH:mm');
       } catch {
         return String(value);
       }
