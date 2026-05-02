@@ -165,6 +165,15 @@ export function RecordFieldSaveProvider({
   // Refs (not state) so closures in debounced timers always read the
   // freshest value without re-creating the debounce timer.
   const updatedAtRef = useRef<string | null>(initialUpdatedAt);
+  // Serialise dispatched saves: when the user blurs five fields in 500ms
+  // (or `flush()` fires Promise.all on N pending entries), we used to race —
+  // every save carried the same `If-Match`, the first one moved updated_at,
+  // and the rest got 409. The route retries once, but with 3+ concurrent
+  // saves the retry's `If-Match` was already stale too, so the third save
+  // silently errored. Result: partial save (some fields persist, others
+  // drop). Chaining each dispatchSave behind the previous one trades a
+  // little latency for atomicity from the user's perspective.
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     updatedAtRef.current = initialUpdatedAt ?? updatedAtRef.current;
@@ -346,6 +355,21 @@ export function RecordFieldSaveProvider({
     [recordId, onSaved, onConflict, updateField],
   );
 
+  // Chain a save behind whatever's already in flight so two concurrent
+  // dispatches never carry the same stale `If-Match`. This is what stops
+  // partial-save races when the user edits several fields in quick succession.
+  const enqueueDispatch = useCallback(
+    (field: string, value: unknown, target: FieldSaveTarget) => {
+      const next = saveChainRef.current.then(
+        () => dispatchSave(field, value, target),
+        () => dispatchSave(field, value, target),
+      );
+      saveChainRef.current = next;
+      return next;
+    },
+    [dispatchSave],
+  );
+
   const save = useCallback<RecordFieldSaveContextValue['save']>(
     (field, value, options) => {
       const target: FieldSaveTarget =
@@ -363,7 +387,7 @@ export function RecordFieldSaveProvider({
 
         const timer = setTimeout(async () => {
           pendingRef.current.delete(field);
-          await dispatchSave(field, value, target);
+          await enqueueDispatch(field, value, target);
           resolve();
         }, debounceMs);
 
@@ -376,20 +400,19 @@ export function RecordFieldSaveProvider({
         });
       });
     },
-    [dispatchSave, debounceMs, updateField],
+    [enqueueDispatch, debounceMs, updateField],
   );
 
   const flush = useCallback(async () => {
     const entries = Array.from(pendingRef.current.values());
     pendingRef.current.clear();
-    await Promise.all(
-      entries.map(async (entry) => {
-        clearTimeout(entry.timer);
-        await dispatchSave(entry.field, entry.value, entry.target);
-        entry.resolve();
-      }),
-    );
-  }, [dispatchSave]);
+    // Sequential, not Promise.all — see saveChainRef comment for why.
+    for (const entry of entries) {
+      clearTimeout(entry.timer);
+      await enqueueDispatch(entry.field, entry.value, entry.target);
+      entry.resolve();
+    }
+  }, [enqueueDispatch]);
 
   // Derived counters that the pill consumes.
   const { pendingCount, lastSavedAt, lastError } = useMemo(() => {
