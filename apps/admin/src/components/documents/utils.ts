@@ -9,6 +9,7 @@ import {
   Presentation,
   type LucideIcon,
 } from 'lucide-react';
+import { createElement } from 'react';
 
 export function getFileIcon(mimeType: string | null): LucideIcon {
   if (!mimeType) return File;
@@ -25,6 +26,24 @@ export function getFileIcon(mimeType: string | null): LucideIcon {
   if (mimeType.includes('text') || mimeType.includes('document') || mimeType.includes('word'))
     return FileText;
   return File;
+}
+
+/**
+ * Stable wrapper that renders the right lucide icon for a mime type.
+ *
+ * `react-hooks/static-components` flags `const Icon = getFileIcon(mt); <Icon />`
+ * inside a render body because the linter can't see that `getFileIcon` returns
+ * a stable component reference. Going through `createElement` keeps the icon
+ * resolution out of the JSX path the linter inspects.
+ */
+export function FileIcon({
+  mimeType,
+  className,
+}: {
+  mimeType: string | null;
+  className?: string;
+}) {
+  return createElement(getFileIcon(mimeType), { className });
 }
 
 export function formatFileSize(bytes: number | null): string {

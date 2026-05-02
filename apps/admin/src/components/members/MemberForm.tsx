@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 import {
@@ -17,6 +17,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { AdvisorCombobox } from './AdvisorCombobox';
 import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
+import { useFormAutosave } from '@/hooks/useFormAutosave';
 
 interface Agent {
   id: string;
@@ -86,8 +87,56 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
     receive_emails: initialData?.receive_emails ?? true,
   });
 
+  // Autosave only fires for edits — there's no row to PATCH on a fresh
+  // create. Each form value change resets the 1.5s debounce; flush() runs
+  // on tab hide / unmount so the rep's last edits don't drop on the floor.
+  const memberId = initialData?.id;
+  const autosave = useFormAutosave({
+    initial: formData,
+    delayMs: 1500,
+    save: async (next) => {
+      if (!isEditing || !memberId) return;
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      );
+      const memberData = {
+        ...next,
+        advisor_id: next.advisor_id || null,
+        market_type: next.market_type || null,
+        date_of_birth: next.date_of_birth || null,
+        phone: next.phone || null,
+        gender: next.gender || null,
+        address_line1: next.address_line1 || null,
+        address_line2: next.address_line2 || null,
+        city: next.city || null,
+        state: next.state || null,
+        zip_code: next.zip_code || null,
+        existing_condition_description: next.existing_condition
+          ? next.existing_condition_description || null
+          : null,
+      };
+      const result = await guaranteedUpdateWithVersion(
+        supabase,
+        'members',
+        memberId,
+        memberData,
+      );
+      if (!result.ok) throw new Error(result.error);
+    },
+  });
+
+  // Mirror local formData → autosave hook so every onChange triggers a save.
+  useEffect(() => {
+    if (isEditing) autosave.setValues(formData);
+    // autosave is stable, formData is the dependency we actually care about
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, isEditing]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Drain any pending autosave so the manual save doesn't double-fire.
+    if (isEditing) await autosave.flush();
     setLoading(true);
     setError(null);
 

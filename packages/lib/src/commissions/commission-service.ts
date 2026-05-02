@@ -1,3 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any --
+ * Commission tables (commission_tiers, commission_transactions, commission_payouts,
+ * commission_holds, etc.) aren't in the generated Supabase Database type yet,
+ * so every from('...') / rpc('...') call needs an `as any` cast to compile.
+ * Replacing these with a proper Database type would touch ~25 callsites and
+ * is unrelated to the work in this file. The cast is intentional and
+ * file-scoped here rather than scattered through the body.
+ */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../types';
 
@@ -206,66 +214,96 @@ export class CommissionService {
   }
 
   /**
-   * Generates override commissions for the upline chain
+   * Generates override commissions for the upline chain.
+   *
+   * Previous implementation walked the parent chain with one lookup per level
+   * (parent advisor → its eligibility → commission tier → tier details), so
+   * a 5-level downline took ~20 round-trips. The new flow:
+   *   1. One RPC call (`get_advisor_upline`) returns the entire chain plus
+   *      each ancestor's commission_tier_id and eligibility flag.
+   *   2. One `.in()` lookup batches the tier rows for every distinct tier_id
+   *      in the chain.
+   *   3. Calculations and inserts happen in memory against the prefetched
+   *      data, so the depth no longer drives round-trips.
    */
   async generateOverrides(input: GenerateOverridesInput): Promise<CommissionTransaction[]> {
     const maxLevels = input.maxLevels ?? 5;
     const transactions: CommissionTransaction[] = [];
 
-    let currentAdvisorId = input.sourceAdvisorId;
-    let level = 1;
+    interface UplineRow {
+      level: number;
+      advisor_id: string;
+      parent_advisor_id: string | null;
+      commission_eligible: boolean | null;
+      commission_tier_id: string | null;
+    }
 
-    while (level <= maxLevels) {
-      // Get the parent advisor
-      const { data: advisor } = await (this.supabase as any)
-        .from('advisors')
-        .select('parent_advisor_id, commission_eligible')
-        .eq('id', currentAdvisorId)
-        .single() as { data: Pick<Advisor, 'parent_advisor_id' | 'commission_eligible'> | null };
+    const { data: uplineRaw, error: uplineErr } = await (this.supabase as any).rpc(
+      'get_advisor_upline',
+      { p_advisor_id: input.sourceAdvisorId, p_max_levels: maxLevels },
+    );
+    if (uplineErr || !uplineRaw) {
+      console.error('Failed to fetch upline:', uplineErr?.message ?? 'unknown error');
+      return transactions;
+    }
 
-      if (!advisor?.parent_advisor_id) break;
+    const upline: UplineRow[] = uplineRaw as UplineRow[];
+    const eligibleAncestors = upline.filter((u) => u.commission_eligible === true);
+    if (eligibleAncestors.length === 0) return transactions;
 
-      // Check if parent is commission eligible
-      const { data: parentAdvisor } = await (this.supabase as any)
-        .from('advisors')
-        .select('id, commission_eligible')
-        .eq('id', advisor.parent_advisor_id)
-        .single() as { data: Pick<Advisor, 'id' | 'commission_eligible'> | null };
-
-      if (!parentAdvisor || !parentAdvisor.commission_eligible) {
-        currentAdvisorId = advisor.parent_advisor_id;
-        continue;
+    // Batch-load tier details for every distinct tier_id in the chain.
+    const tierIds = Array.from(
+      new Set(
+        eligibleAncestors
+          .map((u) => u.commission_tier_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+    const tierMap = new Map<string, CommissionTier>();
+    if (tierIds.length > 0) {
+      const { data: tiers } = await (this.supabase as any)
+        .from('commission_tiers')
+        .select('*')
+        .in('id', tierIds);
+      for (const t of tiers ?? []) {
+        tierMap.set((t as CommissionTier).id, t as CommissionTier);
       }
+    }
 
-      // Calculate override commission for the parent
+    for (const ancestor of eligibleAncestors) {
+      const tier = ancestor.commission_tier_id
+        ? tierMap.get(ancestor.commission_tier_id) ?? null
+        : null;
+
+      const ratePct = tier?.override_rate_pct ?? 0;
+      const commissionAmount = (input.grossAmount * ratePct) / 100;
+      if (commissionAmount <= 0) continue;
+
       const calculationInput: CalculateCommissionInput = {
         enrollmentId: input.enrollmentId,
-        advisorId: parentAdvisor.id,
+        advisorId: ancestor.advisor_id,
         grossAmount: input.grossAmount,
         transactionType: 'override',
         periodStart: input.periodStart,
         periodEnd: input.periodEnd,
         sourceAdvisorId: input.sourceAdvisorId,
-        overrideLevel: level,
+        overrideLevel: ancestor.level,
       };
 
-      const calculation = await this.calculateCommission(calculationInput);
+      const transaction = await this.createCommissionTransaction(
+        calculationInput,
+        {
+          advisorId: ancestor.advisor_id,
+          commissionAmount,
+          ratePct,
+          tierId: tier?.id ?? null,
+          tierName: tier?.name ?? null,
+        },
+        input.enrollmentId,
+        undefined,
+      );
 
-      if (calculation.commissionAmount > 0) {
-        const transaction = await this.createCommissionTransaction(
-          calculationInput,
-          calculation,
-          input.enrollmentId,
-          undefined
-        );
-
-        if (transaction) {
-          transactions.push(transaction);
-        }
-      }
-
-      currentAdvisorId = advisor.parent_advisor_id;
-      level++;
+      if (transaction) transactions.push(transaction);
     }
 
     return transactions;

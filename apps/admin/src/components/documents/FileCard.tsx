@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import type { Document, DocFolder } from './types';
-import { getFileIcon, formatFileSize, formatDate, isPreviewable } from './utils';
+import { FileIcon, formatFileSize, formatDate, isPreviewable } from './utils';
 
 interface FileCardProps {
   item: Document | DocFolder;
@@ -45,7 +45,6 @@ export function FileCard({
 }: FileCardProps) {
   const isDoc = type === 'document';
   const doc = isDoc ? (item as Document) : null;
-  const Icon = isDoc ? getFileIcon(doc!.mime_type) : Folder;
 
   return (
     <div
@@ -106,7 +105,11 @@ export function FileCard({
       </div>
 
       <div onClick={() => onOpen(item.id)} className="flex flex-col items-center pt-4 pb-2">
-        <Icon className={`w-10 h-10 mb-2 ${isDoc ? 'text-gray-400' : 'text-blue-400'}`} />
+        {isDoc ? (
+          <FileIcon mimeType={doc!.mime_type} className="w-10 h-10 mb-2 text-gray-400" />
+        ) : (
+          <Folder className="w-10 h-10 mb-2 text-blue-400" />
+        )}
         <span className="text-sm font-medium text-center truncate w-full">{item.name}</span>
         <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
           {isDoc && <span>{formatFileSize(doc!.size_bytes)}</span>}

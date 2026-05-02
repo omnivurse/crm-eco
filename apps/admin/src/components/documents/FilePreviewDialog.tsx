@@ -22,18 +22,37 @@ export function FilePreviewDialog({
   getPreviewUrl,
   onDownload,
 }: FilePreviewDialogProps) {
+  // Loading is derived from "dialog open and URL not yet fetched" rather
+  // than a separate state — that way the only setState call inside the
+  // effect is setUrl after the async fetch completes, which keeps
+  // react-hooks/set-state-in-effect happy.
   const [url, setUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const loading = open && url === null && !failed;
 
   useEffect(() => {
-    if (open) {
-      setLoading(true);
-      getPreviewUrl()
-        .then(setUrl)
-        .finally(() => setLoading(false));
-    } else {
+    if (!open) {
+      // Reset on close so the next open starts in the loading state. This
+      // is one of the patterns the lint rule's docs explicitly call out as
+      // legitimate (resetting state in response to a parent prop), but the
+      // rule still fires — suppress with a comment rather than torture the
+      // shape into something less obvious.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUrl(null);
+      setFailed(false);
+      return;
     }
+    let cancelled = false;
+    getPreviewUrl()
+      .then((next) => {
+        if (!cancelled) setUrl(next);
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open, getPreviewUrl]);
 
   const isImage = mimeType?.startsWith('image/');

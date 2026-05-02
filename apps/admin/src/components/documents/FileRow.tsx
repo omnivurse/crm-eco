@@ -11,7 +11,7 @@ import {
 } from '@crm-eco/ui/components/dropdown-menu';
 import { TableCell, TableRow } from '@crm-eco/ui/components/table';
 import type { Document, DocFolder } from './types';
-import { getFileIcon, formatFileSize, formatDate, isPreviewable } from './utils';
+import { FileIcon, formatFileSize, formatDate, isPreviewable } from './utils';
 
 interface FileRowProps {
   item: Document | DocFolder;
@@ -46,7 +46,6 @@ export function FileRow({
 }: FileRowProps) {
   const isDoc = type === 'document';
   const doc = isDoc ? (item as Document) : null;
-  const Icon = isDoc ? getFileIcon(doc!.mime_type) : Folder;
 
   return (
     <TableRow className="group hover:bg-gray-50">
@@ -61,7 +60,11 @@ export function FileRow({
           onClick={() => onOpen(item.id)}
           className="flex items-center gap-2 text-sm hover:text-blue-600 transition-colors"
         >
-          <Icon className={`w-4 h-4 shrink-0 ${isDoc ? 'text-gray-400' : 'text-blue-400'}`} />
+          {isDoc ? (
+            <FileIcon mimeType={doc!.mime_type} className="w-4 h-4 shrink-0 text-gray-400" />
+          ) : (
+            <Folder className="w-4 h-4 shrink-0 text-blue-400" />
+          )}
           <span className="truncate">{item.name}</span>
           {item.is_favorite && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />}
         </button>

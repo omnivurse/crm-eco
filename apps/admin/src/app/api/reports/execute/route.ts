@@ -3,12 +3,17 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { requireAdminRole } from '@/lib/auth';
 
-// Data source to table mapping
-const DATA_SOURCE_TABLES: Record<string, string> = {
-  members: 'members',
-  advisors: 'advisors',
-  enrollments: 'enrollments',
-  commissions: 'commissions',
+// Data source → (table, org-scoping column).
+// `members` / `advisors` / `enrollments` / `commissions` use `organization_id`.
+// CRM-side tables (`crm_records`, `crm_modules`, etc.) use `org_id`. Both
+// shapes are valid in this codebase, so we map per data source instead of
+// hard-coding one column name. Filtering with the wrong column would have
+// PostgREST reject the query as `column "org_id" does not exist`.
+const DATA_SOURCES: Record<string, { table: string; orgColumn: string }> = {
+  members: { table: 'members', orgColumn: 'organization_id' },
+  advisors: { table: 'advisors', orgColumn: 'organization_id' },
+  enrollments: { table: 'enrollments', orgColumn: 'organization_id' },
+  commissions: { table: 'commissions', orgColumn: 'organization_id' },
 };
 
 interface Filter {
@@ -64,10 +69,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Data source is required' }, { status: 400 });
     }
 
-    const table = DATA_SOURCE_TABLES[dataSource];
-    if (!table) {
+    const dataSourceConfig = DATA_SOURCES[dataSource];
+    if (!dataSourceConfig) {
       return NextResponse.json({ error: 'Invalid data source' }, { status: 400 });
     }
+    const { table, orgColumn } = dataSourceConfig;
 
     // Validate column names to prevent injection (only allow alphanumeric + underscore)
     const COLUMN_NAME_RE = /^[a-z][a-z0-9_]*$/i;
@@ -88,8 +94,11 @@ export async function POST(request: NextRequest) {
 
     let query = supabase.from(table).select(selectString, { count: 'exact' }) as any;
 
-    // Always filter by organization
-    query = query.eq('org_id', profile.organization_id);
+    // Always filter by organization, using the column the target table
+    // actually defines. Hard-coding `org_id` everywhere broke reports for
+    // members / advisors / enrollments / commissions where the column is
+    // called `organization_id`.
+    query = query.eq(orgColumn, profile.organization_id);
 
     // Apply filters
     for (const filter of filters) {

@@ -1,12 +1,30 @@
 'use client';
 
+/* eslint-disable react-hooks/set-state-in-effect --
+ *
+ * Each of the data hooks below (useDocuments, useFolderTree, useTrash,
+ * useFavorites, useAuditLog) follows the same intentional pattern: a
+ * useCallback fetcher that calls setLoading(true) at the start, awaits
+ * supabase, and setLoading(false) in finally. The fetcher is kicked off
+ * via `useEffect(() => { fetcher(); }, [fetcher])`.
+ *
+ * react-hooks/set-state-in-effect flags the synchronous setLoading(true)
+ * inside the fetcher because the linter sees it as "setState during
+ * render path" once the effect runs the callback. The cascading render
+ * happens exactly once per data fetch (which is exactly when we *want*
+ * the spinner to appear), so the perf cost is the spinner mount —
+ * negligible. Refactoring all five hooks to a useReducer / start-action
+ * pattern is a larger change than this rule's value here. We disable it
+ * file-wide with this justification rather than scatter targeted
+ * suppressions through the file body.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, useAdminAuth } from './useAdminAuth';
 import type { DocFolder, Document, DocumentAuditEntry, SortField, SortDir, BreadcrumbItem } from './types';
 
 const PAGE_SIZE = 50;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
 export function useDocuments(
