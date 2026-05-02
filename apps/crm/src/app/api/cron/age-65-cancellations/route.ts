@@ -35,6 +35,20 @@ interface OutboxRow {
   rep_name: string | null;
 }
 
+interface AppliedRecord {
+  record_id: string;
+  org_id: string;
+  member_name: string | null;
+  member_email: string | null;
+  cancellation_date: string;
+  owner_id: string | null;
+}
+
+interface ApplyResult {
+  count: number;
+  cancelled: AppliedRecord[];
+}
+
 function authorised(request: NextRequest): boolean {
   if (request.headers.get('x-vercel-cron')) return true;
   const secret = process.env.CRON_SECRET;
@@ -99,7 +113,7 @@ export async function GET(request: NextRequest) {
   });
 
   // ── 1. Apply cancellations ────────────────────────────────────────────────
-  const { data: applied, error: applyErr } = await supabase.rpc(
+  const { data: appliedRaw, error: applyErr } = await supabase.rpc(
     'apply_age_65_auto_cancellation',
     { p_record_id: null },
   );
@@ -107,8 +121,54 @@ export async function GET(request: NextRequest) {
     console.error('[age-65 cron] apply error:', applyErr.message);
     return NextResponse.json({ error: applyErr.message }, { status: 500 });
   }
+  const applied = (appliedRaw ?? { count: 0, cancelled: [] }) as ApplyResult;
 
-  // ── 2. Drain unsent outbox rows ───────────────────────────────────────────
+  // ── 2. Insert outbox rows for newly-cancelled records (if any) ────────────
+  // Look up the rep email/name for each cancelled record's owner in one batch.
+  if (applied.cancelled.length > 0) {
+    const ownerIds = Array.from(
+      new Set(applied.cancelled.map((c) => c.owner_id).filter((id): id is string => Boolean(id))),
+    );
+    const ownerMap = new Map<string, { email: string | null; full_name: string | null }>();
+    if (ownerIds.length > 0) {
+      const { data: owners } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .in('id', ownerIds);
+      for (const o of owners ?? []) {
+        ownerMap.set(o.id as string, {
+          email: (o.email as string | null) ?? null,
+          full_name: (o.full_name as string | null) ?? null,
+        });
+      }
+    }
+
+    const outboxRows = applied.cancelled.map((c) => {
+      const owner = c.owner_id ? ownerMap.get(c.owner_id) : null;
+      return {
+        org_id: c.org_id,
+        record_id: c.record_id,
+        member_name: c.member_name,
+        member_email: c.member_email,
+        cancellation_date: c.cancellation_date,
+        rep_user_id: c.owner_id,
+        rep_email: owner?.email ?? null,
+        rep_name: owner?.full_name ?? null,
+      };
+    });
+
+    const { error: insertErr } = await supabase
+      .from('crm_age_65_cancellation_outbox')
+      .upsert(outboxRows, {
+        onConflict: 'record_id,cancellation_date',
+        ignoreDuplicates: true,
+      });
+    if (insertErr) {
+      console.error('[age-65 cron] outbox upsert error:', insertErr.message);
+    }
+  }
+
+  // ── 3. Drain unsent outbox rows ───────────────────────────────────────────
   const { count: outboxTotal } = await supabase
     .from('crm_age_65_cancellation_outbox')
     .select('id', { count: 'exact', head: true });
