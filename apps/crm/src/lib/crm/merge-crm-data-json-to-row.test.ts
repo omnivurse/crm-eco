@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
+  normalizeDateColumnValue,
 } from './merge-crm-data-json-to-row';
 
 describe('normalizeRowColumnValue', () => {
@@ -102,5 +103,75 @@ describe('mergeCrmDataJsonIntoRowColumns', () => {
       { moduleKey: 'leads' }
     );
     expect(updates.status).toBe('Pending');
+  });
+
+  // Regression: a date string like "6/1/26" in an indexed DATE column would
+  // be parsed by Postgres as June 1, year 26 AD. Date columns must be
+  // normalised to ISO with a Y2K pivot before they reach the database.
+  it('normalises a 2-digit-year US date to ISO with Y2K pivot before writing the column', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      original_start_date: '6/1/26',
+      current_year_start_date: '12/31/29',
+      cancellation_date: '4/15/68',
+    });
+    expect(updates.original_start_date).toBe('2026-06-01');
+    expect(updates.current_year_start_date).toBe('2029-12-31');
+    expect(updates.cancellation_date).toBe('1968-04-15');
+  });
+
+  it('passes through a clean ISO date unchanged', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      original_start_date: '2024-03-15',
+    });
+    expect(updates.original_start_date).toBe('2024-03-15');
+  });
+
+  it('rejects un-pivotable garbage in DATE columns by returning null', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      original_start_date: 'not a date',
+    });
+    expect(updates.original_start_date).toBeNull();
+  });
+});
+
+describe('normalizeDateColumnValue', () => {
+  it('passes ISO YYYY-MM-DD through unchanged', () => {
+    expect(normalizeDateColumnValue('2024-03-15')).toBe('2024-03-15');
+  });
+
+  it('strips a T-suffixed timestamp down to the date portion', () => {
+    expect(normalizeDateColumnValue('2024-03-15T08:30:00Z')).toBe('2024-03-15');
+  });
+
+  it('pivots ISO with 2-digit year (the historic 0026 bug)', () => {
+    expect(normalizeDateColumnValue('0026-06-01')).toBe('2026-06-01');
+    expect(normalizeDateColumnValue('0099-04-15')).toBe('1999-04-15');
+  });
+
+  it('parses MM/DD/YYYY (US 4-digit)', () => {
+    expect(normalizeDateColumnValue('6/1/2026')).toBe('2026-06-01');
+    expect(normalizeDateColumnValue('06/01/2026')).toBe('2026-06-01');
+  });
+
+  it('parses MM/DD/YY with Y2K pivot', () => {
+    expect(normalizeDateColumnValue('6/1/26')).toBe('2026-06-01');
+    expect(normalizeDateColumnValue('1/1/29')).toBe('2029-01-01');
+    expect(normalizeDateColumnValue('4/15/68')).toBe('1968-04-15');
+    expect(normalizeDateColumnValue('1/1/99')).toBe('1999-01-01');
+  });
+
+  it('returns null for blank / sentinel / garbage values', () => {
+    expect(normalizeDateColumnValue('')).toBeNull();
+    expect(normalizeDateColumnValue('   ')).toBeNull();
+    expect(normalizeDateColumnValue('null')).toBeNull();
+    expect(normalizeDateColumnValue('0000-00-00')).toBeNull();
+    expect(normalizeDateColumnValue('not a date')).toBeNull();
+    expect(normalizeDateColumnValue(null)).toBeNull();
+    expect(normalizeDateColumnValue(undefined)).toBeNull();
+  });
+
+  it('handles Date instances by formatting in UTC', () => {
+    expect(normalizeDateColumnValue(new Date('2026-06-01T00:00:00Z'))).toBe('2026-06-01');
+    expect(normalizeDateColumnValue(new Date('invalid'))).toBeNull();
   });
 });

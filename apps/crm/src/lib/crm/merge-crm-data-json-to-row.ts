@@ -34,6 +34,84 @@ export function normalizeRowColumnValue(value: unknown): unknown {
 }
 
 /**
+ * Indexed `crm_records` columns that hold DATE values. Any value flowing into
+ * one of these columns must be ISO-formatted (`YYYY-MM-DD`) with a sensible
+ * 4-digit year, otherwise Postgres parses ambiguous strings like `"6/1/26"`
+ * as June 1, year 26 AD — the historic 2-digit-year bug we healed in migration
+ * 202605060006.
+ */
+const DATE_COLUMN_KEYS = new Set([
+  'original_start_date',
+  'current_year_start_date',
+  'cancellation_date',
+]);
+
+/**
+ * Normalise a user-supplied date string into ISO `YYYY-MM-DD`, applying a
+ * Y2K-style pivot to 2-digit years. Returns null for blank values and the
+ * trimmed input unchanged for already-ISO strings; throws-via-null for
+ * uninterpretable strings (the caller decides whether to drop or surface).
+ *
+ *   "2026-06-01" → "2026-06-01"   (already ISO; passthrough)
+ *   "6/1/2026"   → "2026-06-01"   (US 4-digit MDY)
+ *   "6/1/26"     → "2026-06-01"   (2-digit pivot: 0..29 → +2000)
+ *   "1/1/68"     → "1968-01-01"   (2-digit pivot: 30..99 → +1900)
+ *   ""           → null
+ *   "null"       → null
+ *   "garbage"    → null
+ */
+export function normalizeDateColumnValue(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return null;
+    const y = value.getUTCFullYear().toString().padStart(4, '0');
+    const m = (value.getUTCMonth() + 1).toString().padStart(2, '0');
+    const d = value.getUTCDate().toString().padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (
+    trimmed === '' ||
+    trimmed.toLowerCase() === 'null' ||
+    trimmed.toLowerCase() === 'undefined' ||
+    trimmed === '0000-00-00'
+  ) {
+    return null;
+  }
+
+  // Already-ISO with 4-digit year: validate and passthrough (only the date
+  // portion — strip any T-suffix to keep DATE columns happy).
+  const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const yr = Number(isoMatch[1]);
+    if (yr >= 1900 && yr <= 2100) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    if (yr >= 0 && yr <= 29) return `${(2000 + yr).toString().padStart(4, '0')}-${isoMatch[2]}-${isoMatch[3]}`;
+    if (yr >= 30 && yr <= 99) return `${(1900 + yr).toString().padStart(4, '0')}-${isoMatch[2]}-${isoMatch[3]}`;
+    return null;
+  }
+
+  // M/D/YYYY or M/D/YY (US-format) — the format historically present in CSVs.
+  const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (slashMatch) {
+    const [, mm, dd, yPart] = slashMatch;
+    const month = mm.padStart(2, '0');
+    const day = dd.padStart(2, '0');
+    let year: number;
+    if (yPart.length === 4) {
+      year = Number(yPart);
+      if (year < 1900 || year > 2100) return null;
+    } else {
+      const twoDigit = Number(yPart);
+      year = twoDigit <= 29 ? 2000 + twoDigit : 1900 + twoDigit;
+    }
+    return `${year.toString().padStart(4, '0')}-${month}-${day}`;
+  }
+
+  return null;
+}
+
+/**
  * Maps JSONB `data` onto indexed `crm_records` columns (shared by POST and PATCH).
  */
 export function mergeCrmDataJsonIntoRowColumns(
@@ -79,7 +157,9 @@ export function mergeCrmDataJsonIntoRowColumns(
 
   for (const key of CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH) {
     if (d[key] !== undefined) {
-      updates[key] = normalizeRowColumnValue(d[key]);
+      updates[key] = DATE_COLUMN_KEYS.has(key)
+        ? normalizeDateColumnValue(d[key])
+        : normalizeRowColumnValue(d[key]);
     }
   }
 

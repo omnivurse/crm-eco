@@ -8,6 +8,7 @@ import type { CrmRecord } from '@/lib/crm/types';
 import {
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
+  normalizeDateColumnValue,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
 
@@ -46,6 +47,13 @@ const CANONICAL_TOP_LEVEL_KEYS = [
   'cancellation_date',
   'group_name',
 ] as const;
+
+/** Subset of CANONICAL_TOP_LEVEL_KEYS that map to DATE columns (not text/uuid). */
+const CANONICAL_DATE_KEYS = new Set<string>([
+  'original_start_date',
+  'current_year_start_date',
+  'cancellation_date',
+]);
 
 /**
  * Single implementation of CRM record PATCH logic (workflows, scoring, PHI, revalidation).
@@ -174,7 +182,9 @@ export async function executeCrmRecordPatch(params: {
 
   for (const key of CANONICAL_TOP_LEVEL_KEYS) {
     if (body[key] !== undefined) {
-      (updates as Record<string, unknown>)[key] = normalizeRowColumnValue(body[key]);
+      (updates as Record<string, unknown>)[key] = CANONICAL_DATE_KEYS.has(key)
+        ? normalizeDateColumnValue(body[key])
+        : normalizeRowColumnValue(body[key]);
     }
   }
 
