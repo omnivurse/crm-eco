@@ -175,7 +175,7 @@ export default function CarrierPlans() {
             >
               <option value="">All Types</option>
               <option value="insurance">Insurance</option>
-              <option value="healthshare">Healthshare</option>
+              <option value="healthshare">HealthShare</option>
               <option value="medicaid">Medicaid</option>
               <option value="short_term">Short-Term</option>
             </select>

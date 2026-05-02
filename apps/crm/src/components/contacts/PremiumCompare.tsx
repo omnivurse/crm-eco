@@ -374,7 +374,7 @@ export default function PremiumCompare() {
                         className="w-full px-2 py-1.5 text-sm rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       >
                         <option value="insurance">Insurance</option>
-                        <option value="healthshare">Healthshare</option>
+                        <option value="healthshare">HealthShare</option>
                         <option value="medicaid">Medicaid</option>
                         <option value="short_term">Short-Term</option>
                       </select>

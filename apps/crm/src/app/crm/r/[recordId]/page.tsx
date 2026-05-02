@@ -18,7 +18,7 @@ import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
 import { getRecordInsights, emptyRecordInsights } from '@/lib/crm/record-insights';
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
-import { RelatedRecordsPanel } from '@/components/crm/records/RelatedRecordsPanel';
+import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecordsPanelClient';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 import { getSectionMeta } from '@/components/crm/records/section-utils';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
@@ -40,7 +40,12 @@ async function LazyTimeline({ recordId }: { recordId: string }) {
 /** Lazy-loaded related records tab */
 async function LazyRelatedRecords({ recordId }: { recordId: string }) {
   const linkedRecords = await getRecordLinks(recordId);
-  return <RelatedRecordsPanel recordId={recordId} linkedRecords={linkedRecords} />;
+  return (
+    <RelatedRecordsPanelClient
+      recordId={recordId}
+      initialLinkedRecords={linkedRecords}
+    />
+  );
 }
 
 /** Lazy-loaded attachments tab */
@@ -137,8 +142,10 @@ async function RecordDetailContent({ params }: PageProps) {
     }
   );
 
-  // Compute section metadata on the server for the section navigator
-  const sectionMeta = getSectionMeta(fields, layout);
+  // Compute section metadata on the server for the section navigator. Pass
+  // the merged form defaults so the pill numbers show *populated* fields,
+  // not the configured-field total — reps want to see what's filled in.
+  const sectionMeta = getSectionMeta(fields, layout, defaultValues);
 
   const recordData = record.data || {};
   const legacyNotes =

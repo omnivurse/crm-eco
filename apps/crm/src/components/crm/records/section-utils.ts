@@ -16,7 +16,15 @@ export const CRM_SECTION_NAV_EVENT = 'crm-record-section-navigate' as const;
 export interface SectionMeta {
   key: string;
   label: string;
+  /** Total fields configured in this section. */
   fieldCount: number;
+  /**
+   * Fields with a non-empty value on the current record. When `recordData`
+   * isn't supplied this falls back to `fieldCount` so callers without record
+   * context still render a number. The pill in the section nav prefers this
+   * because reps care about what's actually filled in, not what's possible.
+   */
+  filledCount: number;
   accent?: LayoutSectionAccent;
 }
 
@@ -45,13 +53,27 @@ export function fallbackSectionHeadingFromFieldSection(sectionKey: string): stri
   return titleCaseSectionKey(sectionKey);
 }
 
+function isPopulated(value: unknown): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim() !== '';
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0;
+  return true;
+}
+
 /**
  * Compute section metadata from fields + layout.
  * Returns the list of sections with field counts, filtering out empty ones.
+ *
+ * `recordData` is the merged form-defaults map (JSONB `data` overlaid with
+ * indexed columns) — when supplied, each section reports the count of fields
+ * whose value is actually populated. Reps see "(3)" instead of "(26)" so the
+ * number reflects what's filled in, not what's possible.
  */
 export function getSectionMeta(
   fields: CrmField[],
   layout?: CrmLayout | null,
+  recordData?: Record<string, unknown> | null,
 ): SectionMeta[] {
   const layoutConfig: LayoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
 
@@ -80,10 +102,18 @@ export function getSectionMeta(
 
   return allSections
     .filter((s) => (grouped[s.key]?.length ?? 0) > 0)
-    .map((s) => ({
-      key: s.key,
-      label: normalizeLegacySectionHeading(s.key, s.label),
-      fieldCount: grouped[s.key]?.length ?? 0,
-      accent: s.accent,
-    }));
+    .map((s) => {
+      const sectionFields = grouped[s.key] ?? [];
+      const fieldCount = sectionFields.length;
+      const filledCount = recordData
+        ? sectionFields.filter((f) => isPopulated(recordData[f.key])).length
+        : fieldCount;
+      return {
+        key: s.key,
+        label: normalizeLegacySectionHeading(s.key, s.label),
+        fieldCount,
+        filledCount,
+        accent: s.accent,
+      };
+    });
 }

@@ -162,12 +162,13 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
             >
               {s.label}
               <span
+                title={`${s.filledCount} of ${s.fieldCount} fields filled in`}
                 className={cn(
                   'inline-flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full text-[10px] font-semibold',
                   isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
                 )}
               >
-                {s.fieldCount}
+                {s.filledCount}
               </span>
             </button>
           );
