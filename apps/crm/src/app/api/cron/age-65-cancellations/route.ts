@@ -269,7 +269,185 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── 3. Drain unsent outbox rows ───────────────────────────────────────────
+  // ── 2.5 Reset rows previously marked "Rep email missing" so we can retry
+  // them after better resolution (advisor_id / normalized_advisor_name fall-
+  // back). The original cron run skipped 153 rows because we only looked up
+  // owner_id; many records use normalized_advisor_name instead. Resetting
+  // notified_at + error lets the lookup logic below have another shot.
+  await supabase
+    .from('crm_age_65_cancellation_outbox')
+    .update({ notified_at: null, notification_error: null })
+    .ilike('notification_error', '%Rep email missing%');
+
+  // ── 3. Resolve missing rep emails for unsent outbox rows ───────────────────
+  // Strategy in priority order, per record:
+  //   1. rep_user_id → profiles.email (already populated by step 2 when owner_id was set)
+  //   2. crm_records.advisor_id → crm_advisors.user_id → profiles.email
+  //   3. crm_records.normalized_advisor_name → crm_advisors.advisor_name → user_id → profiles.email
+  //   4. crm_records.normalized_advisor_name → profiles.full_name → email (case-insensitive)
+  const { data: missingEmailRows } = await supabase
+    .from('crm_age_65_cancellation_outbox')
+    .select('id, record_id, org_id, rep_user_id, rep_email')
+    .is('notified_at', null)
+    .is('rep_email', null)
+    .limit(200);
+
+  if (missingEmailRows && missingEmailRows.length > 0) {
+    const recordIds = missingEmailRows.map((r) => r.record_id as string);
+    const { data: records } = await supabase
+      .from('crm_records')
+      .select('id, advisor_id, normalized_advisor_name')
+      .in('id', recordIds);
+
+    const recordMap = new Map<
+      string,
+      { advisor_id: string | null; normalized_advisor_name: string | null }
+    >();
+    for (const r of records ?? []) {
+      recordMap.set(r.id as string, {
+        advisor_id: (r.advisor_id as string | null) ?? null,
+        normalized_advisor_name: (r.normalized_advisor_name as string | null) ?? null,
+      });
+    }
+
+    const advisorIds = Array.from(
+      new Set(
+        Array.from(recordMap.values())
+          .map((r) => r.advisor_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+    const advisorNames = Array.from(
+      new Set(
+        Array.from(recordMap.values())
+          .map((r) => r.normalized_advisor_name)
+          .filter((n): n is string => Boolean(n)),
+      ),
+    );
+
+    // Look up crm_advisors by id and by name in one shot each
+    const { data: advisorsById } = advisorIds.length
+      ? await supabase
+          .from('crm_advisors')
+          .select('id, user_id, advisor_name')
+          .in('id', advisorIds)
+      : { data: [] };
+
+    const { data: advisorsByName } = advisorNames.length
+      ? await supabase
+          .from('crm_advisors')
+          .select('id, user_id, advisor_name')
+          .in('advisor_name', advisorNames)
+      : { data: [] };
+
+    // Collect all user_ids we'll need profile data for
+    const userIds = Array.from(
+      new Set(
+        [...(advisorsById ?? []), ...(advisorsByName ?? [])]
+          .map((a) => (a as { user_id: string | null }).user_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+
+    const profileByUserId = new Map<string, { email: string | null; full_name: string | null }>();
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name')
+        .in('user_id', userIds);
+      for (const p of profiles ?? []) {
+        profileByUserId.set(p.user_id as string, {
+          email: (p.email as string | null) ?? null,
+          full_name: (p.full_name as string | null) ?? null,
+        });
+      }
+    }
+
+    // Also fall back to profiles.full_name match
+    const profileByName = new Map<string, { email: string | null; full_name: string | null }>();
+    if (advisorNames.length > 0) {
+      const { data: profilesByName } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .in('full_name', advisorNames);
+      for (const p of profilesByName ?? []) {
+        const name = (p.full_name as string | null) ?? '';
+        if (name && !profileByName.has(name)) {
+          profileByName.set(name, {
+            email: (p.email as string | null) ?? null,
+            full_name: name,
+          });
+        }
+      }
+    }
+
+    const advisorByIdMap = new Map((advisorsById ?? []).map((a) => [a.id as string, a]));
+    const advisorByNameMap = new Map(
+      (advisorsByName ?? []).map((a) => [a.advisor_name as string, a]),
+    );
+
+    // Update each outbox row with the best email we found
+    for (const row of missingEmailRows) {
+      const rec = recordMap.get(row.record_id as string);
+      if (!rec) continue;
+
+      let resolvedEmail: string | null = null;
+      let resolvedName: string | null = null;
+      let resolvedUserId: string | null = (row.rep_user_id as string | null) ?? null;
+
+      // Try advisor_id path
+      if (rec.advisor_id) {
+        const adv = advisorByIdMap.get(rec.advisor_id) as
+          | { user_id: string | null; advisor_name: string | null }
+          | undefined;
+        if (adv?.user_id) {
+          const prof = profileByUserId.get(adv.user_id);
+          if (prof?.email) {
+            resolvedEmail = prof.email;
+            resolvedName = prof.full_name ?? adv.advisor_name ?? null;
+            resolvedUserId = adv.user_id;
+          }
+        }
+      }
+
+      // Try normalized_advisor_name path via crm_advisors
+      if (!resolvedEmail && rec.normalized_advisor_name) {
+        const adv = advisorByNameMap.get(rec.normalized_advisor_name) as
+          | { user_id: string | null; advisor_name: string | null }
+          | undefined;
+        if (adv?.user_id) {
+          const prof = profileByUserId.get(adv.user_id);
+          if (prof?.email) {
+            resolvedEmail = prof.email;
+            resolvedName = prof.full_name ?? adv.advisor_name ?? null;
+            resolvedUserId = adv.user_id;
+          }
+        }
+      }
+
+      // Try direct profiles.full_name match
+      if (!resolvedEmail && rec.normalized_advisor_name) {
+        const prof = profileByName.get(rec.normalized_advisor_name);
+        if (prof?.email) {
+          resolvedEmail = prof.email;
+          resolvedName = prof.full_name ?? rec.normalized_advisor_name;
+        }
+      }
+
+      if (resolvedEmail) {
+        await supabase
+          .from('crm_age_65_cancellation_outbox')
+          .update({
+            rep_email: resolvedEmail,
+            rep_name: resolvedName,
+            rep_user_id: resolvedUserId,
+          })
+          .eq('id', row.id as string);
+      }
+    }
+  }
+
+  // ── 4. Drain unsent outbox rows ───────────────────────────────────────────
   const { count: outboxTotal } = await supabase
     .from('crm_age_65_cancellation_outbox')
     .select('id', { count: 'exact', head: true });
