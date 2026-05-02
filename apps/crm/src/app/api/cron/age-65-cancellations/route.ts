@@ -269,15 +269,16 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // ── 2.5 Reset rows previously marked "Rep email missing" so we can retry
-  // them after better resolution (advisor_id / normalized_advisor_name fall-
-  // back). The original cron run skipped 153 rows because we only looked up
-  // owner_id; many records use normalized_advisor_name instead. Resetting
-  // notified_at + error lets the lookup logic below have another shot.
-  await supabase
-    .from('crm_age_65_cancellation_outbox')
-    .update({ notified_at: null, notification_error: null })
-    .ilike('notification_error', '%Rep email missing%');
+  // ── 2.5 Optional retry: query param `?retry_missing_rep=1` resets rows
+  // previously marked "Rep email missing" so the lookup logic below can have
+  // another shot at resolving them. Without this opt-in, those rows stay
+  // settled — re-runs would otherwise re-skip them on every call.
+  if (request.nextUrl.searchParams.get('retry_missing_rep') === '1') {
+    await supabase
+      .from('crm_age_65_cancellation_outbox')
+      .update({ notified_at: null, notification_error: null })
+      .ilike('notification_error', '%Rep email missing%');
+  }
 
   // ── 3. Resolve missing rep emails for unsent outbox rows ───────────────────
   // Strategy in priority order, per record:
