@@ -173,8 +173,13 @@ export function ConvertToContactDialog({
                 Cancel
               </AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => handleConvert()}
                 disabled={isConverting}
+                onClick={(event) => {
+                  // AlertDialog.Action closes immediately by default; with controlled `open`,
+                  // that wipes the modal before conversion finishes (user sees nothing / no toast).
+                  event.preventDefault();
+                  void handleConvert();
+                }}
                 className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white"
               >
                 {isConverting ? (

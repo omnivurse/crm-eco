@@ -10,6 +10,9 @@ import type {
   LayoutSectionAccent,
 } from '@/lib/crm/types';
 
+/** Fired when the user taps an Overview section pill; accordion expands before scroll targets `#section-{key}`. */
+export const CRM_SECTION_NAV_EVENT = 'crm-record-section-navigate' as const;
+
 export interface SectionMeta {
   key: string;
   label: string;

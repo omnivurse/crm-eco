@@ -48,6 +48,7 @@ import { AdvisorCarrierField } from './AdvisorCarrierField';
 import {
   fallbackSectionHeadingFromFieldSection,
   normalizeLegacySectionHeading,
+  CRM_SECTION_NAV_EVENT,
 } from './section-utils';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
@@ -673,6 +674,22 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     setCollapsedSections(newCollapsed);
   };
 
+  /** Overview section pills: expand accordion so `#section-{key}` scroll targets aren't height-zero. */
+  useEffect(() => {
+    const onNav = (e: Event) => {
+      const key = (e as CustomEvent<{ key?: string }>).detail?.key;
+      if (!key || typeof key !== 'string') return;
+      setCollapsedSections((prev) => {
+        if (!prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    };
+    window.addEventListener(CRM_SECTION_NAV_EVENT, onNav as EventListener);
+    return () => window.removeEventListener(CRM_SECTION_NAV_EVENT, onNav as EventListener);
+  }, []);
+
   // Build the effective section list: start with layout sections, then append any
   // field-section keys that aren't covered (handles seed/migration section mismatch)
   const sections = useMemo(() => {
@@ -900,7 +917,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return heroProductPlanFields;
   }, [heroProductPlanFields, hasValue, inlineEditable, readOnly]);
 
-  const renderSections = () => (
+  const renderSections = () => {
+    /** Clears sticky overview pills + approximate shell header when scrolling from section nav. */
+    const overviewScrollAid = readOnly ? 'scroll-mt-[175px]' : '';
+
+    return (
     <>
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
@@ -909,12 +930,29 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         // module) because it always shows the right-hand summary.
         if (sectionFields.length === 0 && !isHero) return null;
 
-        // In readOnly mode, skip sections where every field is empty
+        // In readOnly mode, omit full cards where every field is empty — keep a
+        // cross-column anchor so section pills still scroll (IDs match Overview nav).
         if (readOnly && !isHero) {
           const hasAnyValue = sectionFields.some(
-            (f) => defaultValues[f.key] !== null && defaultValues[f.key] !== undefined && defaultValues[f.key] !== ''
+            (f) =>
+              defaultValues[f.key] !== null &&
+              defaultValues[f.key] !== undefined &&
+              defaultValues[f.key] !== ''
           );
-          if (!hasAnyValue) return null;
+          if (!hasAnyValue) {
+            return (
+              <div
+                key={section.key}
+                id={`section-${section.key}`}
+                data-section={section.key}
+                className={cn(
+                  '[column-span:all] w-full h-px overflow-hidden shrink-0',
+                  overviewScrollAid,
+                )}
+                aria-hidden
+              />
+            );
+          }
         }
 
         const isCollapsed = collapsedSections.has(section.key);
@@ -925,7 +963,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
             key={section.key}
             id={`section-${section.key}`}
             data-section={section.key}
-            className={cn('break-inside-avoid border', accent.border)}
+            className={cn('break-inside-avoid border', accent.border, overviewScrollAid)}
           >
             <CardHeader
               className={cn(
@@ -1020,7 +1058,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         );
       })}
     </>
-  );
+    );
+  };
 
   // Read-only mode: render as plain div without form or actions
   // Use CSS columns (not grid) so collapsed cards truly shrink and siblings flow up

@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { LayoutSectionAccent } from '@/lib/crm/types';
 import type { SectionMeta } from './section-utils';
+import { CRM_SECTION_NAV_EVENT } from './section-utils';
 
 export type { SectionMeta };
 
@@ -118,10 +119,25 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
     (key: string) => {
       onSectionClick(key);
 
-      const el = document.getElementById(`section-${key}`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      // Expand collapsed accordions (`DynamicRecordForm` listens synchronously).
+      window.dispatchEvent(
+        new CustomEvent(CRM_SECTION_NAV_EVENT, {
+          bubbles: true,
+          detail: { key },
+        }),
+      );
+
+      const scrollToTarget = () => {
+        const el = document.getElementById(`section-${key}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      };
+
+      // Defer scroll so React commits uncollapse — immediate scroll misses the anchor.
+      window.setTimeout(() => {
+        requestAnimationFrame(scrollToTarget);
+      }, 100);
     },
     [onSectionClick],
   );
