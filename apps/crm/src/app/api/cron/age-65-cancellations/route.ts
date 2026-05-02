@@ -109,6 +109,14 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 2. Drain unsent outbox rows ───────────────────────────────────────────
+  const { count: outboxTotal } = await supabase
+    .from('crm_age_65_cancellation_outbox')
+    .select('id', { count: 'exact', head: true });
+  const { count: outboxUnsent } = await supabase
+    .from('crm_age_65_cancellation_outbox')
+    .select('id', { count: 'exact', head: true })
+    .is('notified_at', null);
+
   const { data: unsent, error: outboxErr } = await supabase
     .from('crm_age_65_cancellation_outbox')
     .select(
@@ -194,5 +202,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ applied, sent, skipped, failed });
+  return NextResponse.json({
+    applied,
+    outboxTotal,
+    outboxUnsent,
+    sent,
+    skipped,
+    failed,
+  });
 }
