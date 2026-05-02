@@ -115,12 +115,17 @@ export async function GET(request: NextRequest) {
   // Dry-run mode: read-only — return counts so we can debug without mutating.
   if (request.nextUrl.searchParams.get('dry_run') === '1') {
     const [
+      { count: recordsTotal },
       { count: healthshareTotal },
+      { count: jsonbHealthshareTotal },
+      { count: jsonbHealthshareWithDob },
       { count: cancelledTotal },
       { count: agedOutTotal },
       { count: outboxTotalDry },
       { count: outboxUnsentDry },
+      { data: marketTypeSamples },
     ] = await Promise.all([
+      supabase.from('crm_records').select('id', { count: 'exact', head: true }),
       supabase
         .from('crm_records')
         .select('id', { count: 'exact', head: true })
@@ -128,12 +133,19 @@ export async function GET(request: NextRequest) {
       supabase
         .from('crm_records')
         .select('id', { count: 'exact', head: true })
-        .eq('market_type', 'healthshare')
+        .filter('data->>market_type', 'eq', 'healthshare'),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .filter('data->>market_type', 'eq', 'healthshare')
+        .not('data->>date_of_birth', 'is', null),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
         .eq('status', 'Cancelled'),
       supabase
         .from('crm_records')
         .select('id', { count: 'exact', head: true })
-        .eq('market_type', 'healthshare')
         .filter('data->>cancellation_reason', 'eq', 'Aged out at 65'),
       supabase
         .from('crm_age_65_cancellation_outbox')
@@ -142,15 +154,25 @@ export async function GET(request: NextRequest) {
         .from('crm_age_65_cancellation_outbox')
         .select('id', { count: 'exact', head: true })
         .is('notified_at', null),
+      // Sample 5 distinct market_type column values to verify what's actually stored
+      supabase.from('crm_records').select('market_type').limit(50),
     ]);
+
+    const marketTypeSet = new Set(
+      (marketTypeSamples ?? []).map((r) => (r as { market_type: string | null }).market_type),
+    );
 
     return NextResponse.json({
       dryRun: true,
-      healthshareTotal,
+      recordsTotal,
+      healthshareTotal_column: healthshareTotal,
+      healthshareTotal_jsonb: jsonbHealthshareTotal,
+      healthshareWithDob_jsonb: jsonbHealthshareWithDob,
       cancelledTotal,
       agedOutTotal,
       outboxTotal: outboxTotalDry,
       outboxUnsent: outboxUnsentDry,
+      marketTypeSamples: Array.from(marketTypeSet).slice(0, 10),
     });
   }
 
