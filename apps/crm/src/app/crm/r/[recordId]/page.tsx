@@ -12,6 +12,7 @@ import {
   getCachedCurrentProfile,
 } from '@/lib/crm/queries';
 import { resolveRecordOrMergeDestination } from '@/lib/crm/resolve-record';
+import { applyAge65AutoCancelForRecord } from '@/lib/crm/age-65-auto-cancel';
 import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
 import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV2';
 import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
@@ -102,7 +103,23 @@ async function RecordDetailContent({ params }: PageProps) {
     return notFound();
   }
 
-  const { record, module } = result;
+  // Live application of the HealthShare age-65 auto-cancel rule. The RPC is a
+  // no-op for non-healthshare records, records without a DOB, and records
+  // already cancelled, so calling it for every record view is cheap. When it
+  // does apply a cancellation we re-fetch the record once so the page renders
+  // the post-cancellation state.
+  let activeResult = result;
+  if (result.module.key === 'contacts' || result.module.key === 'members') {
+    const applied = await applyAge65AutoCancelForRecord(result.record.id);
+    if (applied && applied.count > 0) {
+      const refreshed = await getRecordWithModule(recordId);
+      if (refreshed) {
+        activeResult = refreshed;
+      }
+    }
+  }
+
+  const { record, module } = activeResult;
 
   // Step 2: Fetch overview-critical data in parallel with safe error handling.
   // The layout-v2 feature flag is resolved in the same batch so there's no
