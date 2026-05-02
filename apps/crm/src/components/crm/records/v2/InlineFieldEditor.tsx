@@ -111,7 +111,31 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   const [draft, setDraft] = useState<string>(stringify(value));
   const [localError, setLocalError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const focusInitialisedRef = useRef(false);
   const isTextarea = type === 'textarea';
+
+  // Stable ref callback that focus + selects ONCE when the input mounts,
+  // not on every render. The previous inline `(el) => { ... el.focus();
+  // el.select() }` ran on every keystroke (React re-fires ref callbacks
+  // when the function identity changes), so each keystroke select-all'd
+  // the input and the next character replaced the selection — the cursor
+  // appeared "stuck on the first character".
+  const handleInputRef = useCallback(
+    (el: HTMLInputElement | HTMLTextAreaElement | null) => {
+      inputRef.current = el;
+      if (!el) {
+        focusInitialisedRef.current = false;
+        return;
+      }
+      if (focusInitialisedRef.current) return;
+      focusInitialisedRef.current = true;
+      queueMicrotask(() => {
+        el.focus();
+        el.select();
+      });
+    },
+    [],
+  );
 
   // Keep local draft in sync when the parent value changes (e.g. after
   // a realtime update from another user). Uses React's recommended
@@ -285,15 +309,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
     >
       {isTextarea ? (
         <textarea
-          ref={(el) => {
-            inputRef.current = el;
-            if (el) {
-              queueMicrotask(() => {
-                el.focus();
-                el.select();
-              });
-            }
-          }}
+          ref={handleInputRef}
           rows={3}
           {...sharedEditProps}
           className={cn(
@@ -305,15 +321,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         />
       ) : (
         <input
-          ref={(el) => {
-            inputRef.current = el;
-            if (el) {
-              queueMicrotask(() => {
-                el.focus();
-                el.select();
-              });
-            }
-          }}
+          ref={handleInputRef}
           type={type}
           {...sharedEditProps}
           className={cn(

@@ -70,7 +70,15 @@ export async function PATCH(
     // the handler closure. Reading `request.json()` more than once
     // throws in Next's runtime.
     const rawBody = await request.text();
-    const ifMatch = request.headers.get('if-match') || null;
+    // Custom header rather than RFC 7232 If-Match: an unquoted ISO
+    // timestamp isn't a valid ETag, and some intermediaries (Vercel edge,
+    // Cloudflare) reject the request with a 412 before it ever reaches
+    // this route. We accept both during the rollover so any in-flight
+    // client requests don't break.
+    const ifMatch =
+      request.headers.get('x-if-updated-at') ||
+      request.headers.get('if-match') ||
+      null;
 
     const { response } = await withIdempotency(
       {

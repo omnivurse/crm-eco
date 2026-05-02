@@ -391,8 +391,12 @@ class MutationQueue {
     if (!target) return;
     if (options.force) {
       if (target.headers) {
-        const { 'If-Match': _ifMatch, 'If-Unmodified-Since': _ius, ...rest } =
-          target.headers;
+        const {
+          'If-Match': _ifMatch,
+          'If-Unmodified-Since': _ius,
+          'X-If-Updated-At': _xifu,
+          ...rest
+        } = target.headers;
         target.headers = rest;
       }
       if (target.body) {

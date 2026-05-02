@@ -239,7 +239,7 @@ export function RecordFieldSaveProvider({
             'Idempotency-Key': attempt === 1 ? idempotencyKey : makeIdempotencyKey(),
           };
           if (updatedAtRef.current) {
-            headers['If-Match'] = updatedAtRef.current;
+            headers['X-If-Updated-At'] = updatedAtRef.current;
           }
 
           // Per-attempt timeout: chain a temporary AbortController off
@@ -350,7 +350,7 @@ export function RecordFieldSaveProvider({
           // dedupes the queued replay against the cached response.
           'Idempotency-Key': idempotencyKey,
         };
-        if (updatedAtRef.current) headers['If-Match'] = updatedAtRef.current;
+        if (updatedAtRef.current) headers['X-If-Updated-At'] = updatedAtRef.current;
         mutationQueue.enqueue({
           method: 'PATCH',
           url: `/api/crm/records/${recordId}`,
