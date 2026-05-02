@@ -7,8 +7,34 @@ import { getAdminProfile } from '@/lib/profile';
 
 /**
  * POST /api/commissions/process
- * Process commissions for an enrollment
+ * Process commissions for an enrollment.
+ *
+ * Wrapped in a 25s timeout so a hung Postgres lock can't starve the Vercel
+ * function pool. Vercel kills hobby/pro routes at 30s anyway; finishing on
+ * our own timer with a clean 504 keeps clients from seeing a generic
+ * gateway error and gives us a logged "timeout" signal we can monitor.
  */
+const PROCESS_TIMEOUT_MS = 25_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`Timed out after ${ms}ms: ${label}`)),
+      ms,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
@@ -51,9 +77,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Enrollment not found' }, { status: 404 });
     }
 
-    // Process commissions
+    // Process commissions with a hard timeout so a slow Postgres lock
+    // doesn't take down the Vercel function pool.
     const commissionService = createCommissionService(supabase as any, tenant.organizationId);
-    const transactions = await commissionService.processEnrollmentCommissions(enrollmentId);
+    const transactions = await withTimeout(
+      commissionService.processEnrollmentCommissions(enrollmentId),
+      PROCESS_TIMEOUT_MS,
+      `processEnrollmentCommissions(${enrollmentId})`,
+    );
 
     // Log activity
     await (supabase as any).rpc('log_admin_activity', {
@@ -79,7 +110,14 @@ export async function POST(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Commission process error:', error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    console.error('Commission process error:', message);
+    if (message.startsWith('Timed out')) {
+      return NextResponse.json(
+        { error: 'Commission processing timed out. Please retry.' },
+        { status: 504 },
+      );
+    }
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

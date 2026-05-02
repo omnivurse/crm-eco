@@ -128,48 +128,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: rsError.message }, { status: 500 });
     }
 
-    // Replace rate entries
+    // Replace rate entries atomically (DELETE + INSERT in a single SQL tx)
+    // so a failed insert can't leave an empty rate set in production.
     if (rates && rateSet) {
-      await (supabase as any)
-        .from('plan_rate_entries')
-        .delete()
-        .eq('rate_set_id', rateSet.id);
-
-      const entries = buildRateEntries(rateSet.id, ratingModel, rates);
-      if (entries.length > 0) {
-        const { error: entryErr } = await (supabase as any)
-          .from('plan_rate_entries')
-          .insert(entries);
-        if (entryErr) {
-          return NextResponse.json({ error: entryErr.message }, { status: 500 });
-        }
+      const builtEntries = buildRateEntries(rateSet.id, ratingModel, rates);
+      // Strip rate_set_id from each entry — the RPC adds it itself.
+      const rpcEntries = builtEntries.map(({ rate_set_id: _ignored, ...rest }) => rest);
+      const { error: entryErr } = await (supabase as any).rpc('replace_plan_rate_entries', {
+        p_rate_set_id: rateSet.id,
+        p_entries: rpcEntries,
+      });
+      if (entryErr) {
+        return NextResponse.json({ error: entryErr.message }, { status: 500 });
       }
     }
 
-    // Replace fees
+    // Replace fees atomically.
     if (fees && rateSet) {
-      await (supabase as any)
-        .from('plan_fees')
-        .delete()
-        .eq('rate_set_id', rateSet.id);
-
-      if (fees.length > 0) {
-        const feeRows = fees.map((f: any, i: number) => ({
-          rate_set_id: rateSet.id,
-          label: f.label,
-          fee_type: f.type || f.fee_type,
-          amount: f.amount,
-          applies_to: f.applies_to || 'quote',
-          enabled: f.enabled ?? true,
-          sort_order: i,
-        }));
-
-        const { error: feeErr } = await (supabase as any)
-          .from('plan_fees')
-          .insert(feeRows);
-        if (feeErr) {
-          return NextResponse.json({ error: feeErr.message }, { status: 500 });
-        }
+      const feeRows =
+        fees.length > 0
+          ? fees.map((f: any, i: number) => ({
+              label: f.label,
+              fee_type: f.type || f.fee_type,
+              amount: f.amount,
+              applies_to: f.applies_to || 'quote',
+              enabled: f.enabled ?? true,
+              sort_order: i,
+            }))
+          : [];
+      const { error: feeErr } = await (supabase as any).rpc('replace_plan_fees', {
+        p_rate_set_id: rateSet.id,
+        p_fees: feeRows,
+      });
+      if (feeErr) {
+        return NextResponse.json({ error: feeErr.message }, { status: 500 });
       }
     }
 

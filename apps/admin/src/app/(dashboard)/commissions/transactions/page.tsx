@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
 import { toast } from 'sonner';
 import {
   Card,
@@ -141,25 +142,24 @@ export default function CommissionTransactionsPage() {
   async function updateTransactionStatus(transactionId: string, newStatus: string, notes?: string) {
     setProcessingId(transactionId);
     try {
-      const updateData: Record<string, unknown> = {
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      };
+      const updateData: Record<string, unknown> = { status: newStatus };
+      if (newStatus === 'paid') updateData.paid_at = new Date().toISOString();
+      if (notes) updateData.notes = notes;
 
-      if (newStatus === 'paid') {
-        updateData.paid_at = new Date().toISOString();
+      // Optimistic concurrency: another admin (or the bulk action above)
+      // could have just touched this transaction. Retry up to 3× on
+      // version drift before surfacing CONFLICT.
+      const result = await guaranteedUpdateWithVersion(
+        supabase,
+        'commission_transactions',
+        transactionId,
+        updateData,
+      );
+
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
       }
-
-      if (notes) {
-        updateData.notes = notes;
-      }
-
-      const { error } = await (supabase
-        .from('commission_transactions') as any)
-        .update(updateData)
-        .eq('id', transactionId);
-
-      if (error) throw error;
 
       toast.success(`Transaction ${newStatus}`);
       await loadTransactions();
@@ -188,14 +188,30 @@ export default function CommissionTransactionsPage() {
         updateData.paid_at = new Date().toISOString();
       }
 
-      const { error } = await (supabase
+      const targetIds = Array.from(selectedIds);
+
+      // Bulk update returns rows that actually changed; comparing the
+      // length tells us if any ids slipped past (e.g. another admin
+      // already settled them). We surface the discrepancy instead of
+      // claiming success on N when only N-k actually moved.
+      const { data: updatedRows, error } = await (supabase
         .from('commission_transactions') as any)
         .update(updateData)
-        .in('id', Array.from(selectedIds));
+        .in('id', targetIds)
+        .select('id');
 
       if (error) throw error;
 
-      toast.success(`${selectedIds.size} transactions updated to ${newStatus}`);
+      const updatedCount = (updatedRows ?? []).length;
+      if (updatedCount === targetIds.length) {
+        toast.success(`${updatedCount} transactions updated to ${newStatus}`);
+      } else {
+        toast.warning(
+          `${updatedCount} of ${targetIds.length} updated — ${
+            targetIds.length - updatedCount
+          } were changed by another admin. Refresh and retry the rest.`,
+        );
+      }
       setSelectedIds(new Set());
       await loadTransactions();
     } catch (error) {

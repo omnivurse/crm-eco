@@ -16,6 +16,7 @@ import {
 } from '@crm-eco/ui';
 import { Loader2 } from 'lucide-react';
 import { AdvisorCombobox } from './AdvisorCombobox';
+import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
 
 interface Agent {
   id: string;
@@ -136,13 +137,19 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
     };
 
     if (isEditing) {
-      const { error: updateError } = await supabase
-        .from('members')
-        .update(memberData)
-        .eq('id', initialData.id);
+      // Optimistic concurrency: two admins editing the same member
+      // simultaneously would have silently overwritten each other.
+      // Helper retries up to 3× on version drift, then surfaces a
+      // CONFLICT so the UI can prompt the user to refresh.
+      const result = await guaranteedUpdateWithVersion(
+        supabase,
+        'members',
+        initialData.id,
+        memberData,
+      );
 
-      if (updateError) {
-        setError(updateError.message);
+      if (!result.ok) {
+        setError(result.error);
         setLoading(false);
         return;
       }

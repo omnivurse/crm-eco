@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui';
 import { MoreVertical, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
+import { guaranteedUpdateWithVersion } from '@crm-eco/lib';
 
 interface EnrollmentActionsProps {
   enrollmentId: string;
@@ -30,13 +31,23 @@ export function EnrollmentActions({ enrollmentId, currentStatus }: EnrollmentAct
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const { error } = await supabase
-      .from('enrollments')
-      .update({ status: newStatus })
-      .eq('id', enrollmentId);
+    // Optimistic concurrency: if another admin clicked Approve / Reject /
+    // Cancel between this dropdown opening and the click landing, the
+    // update would silently overwrite their action. The helper retries
+    // with a fresh updated_at up to three times before surfacing a
+    // CONFLICT so the UI can show "refresh and try again".
+    const result = await guaranteedUpdateWithVersion(
+      supabase,
+      'enrollments',
+      enrollmentId,
+      { status: newStatus },
+    );
 
-    if (error) {
-      console.error('Failed to update status:', error);
+    if (!result.ok) {
+      console.error('Failed to update status:', result.error);
+      if (typeof window !== 'undefined') {
+        alert(result.error);
+      }
       setLoading(false);
       return;
     }
