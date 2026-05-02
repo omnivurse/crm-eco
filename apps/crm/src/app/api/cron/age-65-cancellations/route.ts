@@ -125,8 +125,13 @@ export async function GET(request: NextRequest) {
 
   const rows = (unsent || []) as OutboxRow[];
   const resendKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.AGE_65_NOTIFICATION_FROM
+  const fromName = process.env.RESEND_FROM_NAME || 'Double Helix CRM';
+  const fromAddress =
+    process.env.AGE_65_NOTIFICATION_FROM
+    || process.env.RESEND_FROM_EMAIL
+    || process.env.FROM_EMAIL
     || 'notifications@doublehelixhub.com';
+  const fromEmail = `${fromName} <${fromAddress}>`;
 
   let sent = 0;
   let skipped = 0;
