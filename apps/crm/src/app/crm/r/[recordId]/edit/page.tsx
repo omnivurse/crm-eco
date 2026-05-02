@@ -416,13 +416,29 @@ export default function EditRecordPage() {
     toast.error('Failed to load record');
   }, [isLoading, resolving, recordRow, recordQueryError]);
 
-  // Track form values + dirty state from the shared form component
+  // Autosave plumbing — `scheduleAutosave` and the visibilitychange
+  // flush are defined below, after `persist`. We keep refs here so the
+  // change handlers wired into the form are stable.
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isDirtyRef = useRef(false);
+  const scheduleAutosaveRef = useRef<() => void>(() => {});
+
   const handleValuesChange = useCallback((values: Record<string, unknown>) => {
     latestValuesRef.current = values;
+    // Each keystroke / field change resets the debounce so the
+    // autosave only fires once the rep stops typing.
+    scheduleAutosaveRef.current();
   }, []);
 
   const handleDirtyChange = useCallback((dirty: boolean) => {
+    isDirtyRef.current = dirty;
     setIsDirty(dirty);
+    if (dirty) {
+      scheduleAutosaveRef.current();
+    } else if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
   }, []);
 
   // Warn user before leaving with unsaved changes (browser close/refresh)
@@ -476,26 +492,68 @@ export default function EditRecordPage() {
     [recordId]
   );
 
-  // Auto-save: debounced save after last change
-  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (!isDirty || !record) return;
+  // Autosave: debounced save AUTOSAVE_DELAY_MS after the last keystroke.
+  // Wired into handleValuesChange / handleDirtyChange via scheduleAutosaveRef
+  // so each keystroke resets the debounce — the previous effect-based
+  // version only re-armed when isDirty flipped false → true, so a long
+  // edit session had one save 8s in and then no further resets while
+  // the rep kept typing.
+  const scheduleAutosave = useCallback(() => {
+    if (!isDirtyRef.current) return;
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(async () => {
+      autoSaveTimer.current = null;
+      if (!isDirtyRef.current) return;
       try {
         await persist(latestValuesRef.current);
         initialValuesRef.current = { ...latestValuesRef.current };
         formRef.current?.reset(latestValuesRef.current);
+        isDirtyRef.current = false;
         setIsDirty(false);
         toast.success('Auto-saved', { duration: 2000 });
       } catch {
         // silent — user will save manually
       }
     }, AUTOSAVE_DELAY_MS);
+  }, [persist]);
+
+  useEffect(() => {
+    scheduleAutosaveRef.current = scheduleAutosave;
+  }, [scheduleAutosave]);
+
+  // Cancel any pending autosave on unmount.
+  useEffect(() => {
     return () => {
       if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     };
-  }, [isDirty, record, persist]);
+  }, []);
+
+  // Flush the pending autosave when the tab becomes hidden (closed,
+  // backgrounded, or the user switched apps) — without this, the
+  // debounce would silently drop the rep's last edits when they
+  // close the browser before the timer fires. `visibilitychange`
+  // fires before `beforeunload` and gives us time for an async save.
+  useEffect(() => {
+    const flushPending = async () => {
+      if (!isDirtyRef.current) return;
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+        autoSaveTimer.current = null;
+      }
+      try {
+        await persist(latestValuesRef.current);
+        initialValuesRef.current = { ...latestValuesRef.current };
+        isDirtyRef.current = false;
+      } catch {
+        // Best-effort — beforeunload guard already warned the user.
+      }
+    };
+    const handler = () => {
+      if (document.visibilityState === 'hidden') void flushPending();
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [persist]);
 
   const invalidateCaches = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['edit-record', recordId] });
@@ -506,12 +564,18 @@ export default function EditRecordPage() {
 
   const handleSave = useCallback(async () => {
     if (!record) return;
+    // Cancel any pending autosave so we don't double-save the same payload.
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
     setSaving(true);
     try {
       // Pull the latest values straight from the form to avoid stale ref content
       const values = formRef.current?.getValues() ?? latestValuesRef.current;
       await persist(values);
       await invalidateCaches();
+      isDirtyRef.current = false;
       setIsDirty(false);
       toast.success('Record updated successfully');
       router.refresh();
@@ -527,10 +591,15 @@ export default function EditRecordPage() {
   const handleSubmitFromForm = useCallback(
     async (values: Record<string, unknown>) => {
       if (!record) return;
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+        autoSaveTimer.current = null;
+      }
       setSaving(true);
       try {
         await persist(values);
         await invalidateCaches();
+        isDirtyRef.current = false;
         setIsDirty(false);
         toast.success('Record updated successfully');
         router.refresh();

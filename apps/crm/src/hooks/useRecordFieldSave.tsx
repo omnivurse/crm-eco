@@ -432,6 +432,20 @@ export function RecordFieldSaveProvider({
     }
   }, [enqueueDispatch]);
 
+  // Flush any debounced inline edits when the tab hides (browser close,
+  // app switch, navigate away). Without this, a save scheduled by a
+  // 250ms debounce can drop on the floor if the rep closes the tab
+  // within that window — rare, but it does happen.
+  useEffect(() => {
+    const flushOnHide = () => {
+      if (document.visibilityState === 'hidden' && pendingRef.current.size > 0) {
+        void flush();
+      }
+    };
+    document.addEventListener('visibilitychange', flushOnHide);
+    return () => document.removeEventListener('visibilitychange', flushOnHide);
+  }, [flush]);
+
   // Derived counters that the pill consumes.
   const { pendingCount, lastSavedAt, lastError } = useMemo(() => {
     let count = 0;
