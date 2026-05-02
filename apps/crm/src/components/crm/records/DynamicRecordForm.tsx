@@ -789,11 +789,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     const isCarrierType = (f: CrmField) => f.type === 'select' || f.type === 'text';
     const candidates = [
       findFieldByKey('sharing_entity'),
+      findFieldByKey('health_insurance_carrier'),
       findFieldByKey('insurance_carrier'),
       findFieldByKey('carrier'),
       findFieldByKey('carrier_name'),
       findFieldByKey('coverage_option'),
       findFieldInSection('health_sharing', isCarrierType),
+      findFieldInSection('health_insurance', isCarrierType),
       findFieldInSection('insurance_coverage', isCarrierType),
       findFieldInSection('insurance', isCarrierType),
       // Generic key-pattern fallback (any module / custom section)
@@ -810,12 +812,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     const isDateType = (f: CrmField) => f.type === 'date';
     const candidates = [
       findFieldByKey('sharing_effective_date'),
+      findFieldByKey('health_insurance_start_date'),
       findFieldByKey('insurance_effective_date'),
       findFieldByKey('effective_date'),
       findFieldByKey('start_date'),
       findFieldByKey('original_start_date'),
       findFieldByKey('current_year_start_date'),
       findFieldInSection('health_sharing', isDateType),
+      findFieldInSection('health_insurance', isDateType),
       findFieldInSection('insurance_coverage', isDateType),
       findFieldInSection('insurance', isDateType),
       findFieldInSection('start_date', isDateType),
@@ -837,7 +841,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
     const preferredKeys = [
       'product',
+      'health_insurance_plan_name',
       'insurance_plan_name',
+      'health_insurance_premium',
       'plan_name',
       'plan_type',
       'coverage_option',
