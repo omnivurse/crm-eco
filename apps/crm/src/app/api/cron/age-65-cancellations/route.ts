@@ -162,6 +162,39 @@ export async function GET(request: NextRequest) {
       (marketTypeSamples ?? []).map((r) => (r as { market_type: string | null }).market_type),
     );
 
+    // Of the aged-out records, count which "rep" field is populated.
+    const [
+      { count: agedOutWithOwnerId },
+      { count: agedOutWithAdvisorId },
+      { count: agedOutWithNormAdvName },
+      { count: agedOutWithNormAgentName },
+    ] = await Promise.all([
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare')
+        .filter('data->>cancellation_reason', 'eq', 'Aged out at 65')
+        .not('owner_id', 'is', null),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare')
+        .filter('data->>cancellation_reason', 'eq', 'Aged out at 65')
+        .not('advisor_id', 'is', null),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare')
+        .filter('data->>cancellation_reason', 'eq', 'Aged out at 65')
+        .not('normalized_advisor_name', 'is', null),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare')
+        .filter('data->>cancellation_reason', 'eq', 'Aged out at 65')
+        .not('normalized_agent_name', 'is', null),
+    ]);
+
     return NextResponse.json({
       dryRun: true,
       recordsTotal,
@@ -170,6 +203,10 @@ export async function GET(request: NextRequest) {
       healthshareWithDob_jsonb: jsonbHealthshareWithDob,
       cancelledTotal,
       agedOutTotal,
+      agedOut_withOwnerId: agedOutWithOwnerId,
+      agedOut_withAdvisorId: agedOutWithAdvisorId,
+      agedOut_withNormAdvName: agedOutWithNormAdvName,
+      agedOut_withNormAgentName: agedOutWithNormAgentName,
       outboxTotal: outboxTotalDry,
       outboxUnsent: outboxUnsentDry,
       marketTypeSamples: Array.from(marketTypeSet).slice(0, 10),
