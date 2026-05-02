@@ -112,6 +112,48 @@ export async function GET(request: NextRequest) {
     auth: { persistSession: false },
   });
 
+  // Dry-run mode: read-only — return counts so we can debug without mutating.
+  if (request.nextUrl.searchParams.get('dry_run') === '1') {
+    const [
+      { count: healthshareTotal },
+      { count: cancelledTotal },
+      { count: agedOutTotal },
+      { count: outboxTotalDry },
+      { count: outboxUnsentDry },
+    ] = await Promise.all([
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare'),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare')
+        .eq('status', 'Cancelled'),
+      supabase
+        .from('crm_records')
+        .select('id', { count: 'exact', head: true })
+        .eq('market_type', 'healthshare')
+        .filter('data->>cancellation_reason', 'eq', 'Aged out at 65'),
+      supabase
+        .from('crm_age_65_cancellation_outbox')
+        .select('id', { count: 'exact', head: true }),
+      supabase
+        .from('crm_age_65_cancellation_outbox')
+        .select('id', { count: 'exact', head: true })
+        .is('notified_at', null),
+    ]);
+
+    return NextResponse.json({
+      dryRun: true,
+      healthshareTotal,
+      cancelledTotal,
+      agedOutTotal,
+      outboxTotal: outboxTotalDry,
+      outboxUnsent: outboxUnsentDry,
+    });
+  }
+
   // ── 1. Apply cancellations ────────────────────────────────────────────────
   const { data: appliedRaw, error: applyErr } = await supabase.rpc(
     'apply_age_65_auto_cancellation',
