@@ -25,7 +25,7 @@ export async function GET() {
       .select('*')
       .eq('org_id', profile.organization_id)
       .eq('is_enabled', true)
-      .order('sort_order', { ascending: true });
+      .order('display_order', { ascending: true });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile, getAttachmentsForRecord } from '@/lib/crm/queries';
 import { createAttachment, deleteAttachment } from '@/lib/crm/mutations';
 
+/** Matches AttachmentsSectionClient / AttachmentsPanel copy (imports may use larger files via same bucket) */
+const MAX_RECORD_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
 /**
  * GET /api/crm/attachments
  * Get attachments for a specific record
@@ -61,7 +64,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (file.size > MAX_RECORD_ATTACHMENT_BYTES) {
+      return NextResponse.json(
+        { error: `File too large (max ${MAX_RECORD_ATTACHMENT_BYTES / (1024 * 1024)}MB)` },
+        { status: 413 }
+      );
+    }
+
     const supabase = await createCrmClient();
+
+    const { data: recordRow, error: recordError } = await supabase
+      .from('crm_records')
+      .select('id, org_id')
+      .eq('id', recordId)
+      .single();
+
+    if (recordError || !recordRow || recordRow.org_id !== profile.organization_id) {
+      return NextResponse.json({ error: 'Record not found' }, { status: 404 });
+    }
 
     // Generate a unique file path
     const timestamp = Date.now();
@@ -78,10 +98,15 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error('Storage upload error:', uploadError);
-      return NextResponse.json(
-        { error: 'Failed to upload file' },
-        { status: 500 }
-      );
+      const cause =
+        typeof uploadError.message === 'string' ? uploadError.message.toLowerCase() : '';
+      if (cause.includes('already exists')) {
+        return NextResponse.json(
+          { error: 'A file conflicted during upload — try again' },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
     }
 
     // Create attachment record

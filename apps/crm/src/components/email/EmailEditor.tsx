@@ -56,6 +56,9 @@ export function EmailEditor({
         heading: {
           levels: [1, 2, 3],
         },
+        // StarterKit v3 bundles Link + Underline; we register our own below for HTML attrs.
+        link: false,
+        underline: false,
       }),
       Image.configure({
         HTMLAttributes: {

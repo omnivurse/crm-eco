@@ -9,18 +9,12 @@
  * selection both commits and dispatches the save.
  */
 
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { AlertTriangle, Check, ChevronDown, Loader2 } from 'lucide-react';
-import {
-  useRecordFieldSave,
-  type FieldSaveTarget,
-} from '@/hooks/useRecordFieldSave';
-import {
-  useRecordFieldLocks,
-  useFieldLockOwner,
-} from '@/hooks/useRecordFieldLocks';
+import { useRecordFieldSave, type FieldSaveTarget } from '@/hooks/useRecordFieldSave';
+import { useRecordFieldLocks, useFieldLockOwner } from '@/hooks/useRecordFieldLocks';
 import { LockedFieldBadge } from './LockedFieldBadge';
 
 export interface InlineSelectOption {
@@ -58,7 +52,27 @@ export const InlineSelectField = memo(function InlineSelectField({
   const state = fields[field];
   const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
   const lockOwner = useFieldLockOwner(field);
-  const currentLabel = useMemo(() => {
+  /** Shown immediately on change; resets from server props on refresh or on save error */
+  const [pick, setPick] = useState<string | null | undefined>(value);
+
+  useEffect(() => {
+    setPick(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (state?.status === 'error') {
+      setPick(value);
+    }
+  }, [state?.status, value, state?.error]);
+
+  /** Editable overlay: optimistic pick so UI updates before refresh */
+  const pickLabel = useMemo(() => {
+    const found = options.find((o) => o.value === pick);
+    return found?.label ?? (pick ? String(pick) : null);
+  }, [options, pick]);
+
+  /** Read-only / locked: always reflect server-provided value, not local pick */
+  const serverLabel = useMemo(() => {
     const found = options.find((o) => o.value === value);
     return found?.label ?? (value ? String(value) : null);
   }, [options, value]);
@@ -66,12 +80,13 @@ export const InlineSelectField = memo(function InlineSelectField({
   const handleChange = useCallback(
     async (e: React.ChangeEvent<HTMLSelectElement>) => {
       const next = e.target.value || null;
-      if (next === (value ?? '')) return;
+      if (next === (pick ?? '')) return;
       onEditEnd?.();
       void releaseFieldLock(field);
+      setPick(next);
       await save(field, next, target ? { target } : undefined);
     },
-    [save, field, target, value, onEditEnd, releaseFieldLock],
+    [save, field, target, pick, onEditEnd, releaseFieldLock]
   );
 
   if (readOnly || lockOwner) {
@@ -85,9 +100,9 @@ export const InlineSelectField = memo(function InlineSelectField({
             : undefined
         }
       >
-        {currentLabel ? (
+        {serverLabel ? (
           <Badge variant="secondary" className="font-normal">
-            {currentLabel}
+            {serverLabel}
           </Badge>
         ) : (
           <span className="text-sm text-slate-400 italic">{placeholder}</span>
@@ -103,25 +118,23 @@ export const InlineSelectField = memo(function InlineSelectField({
         'relative inline-flex items-center gap-1 rounded-md px-1 -mx-1',
         'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
         state?.status === 'error' && 'ring-1 ring-rose-300',
-        className,
+        className
       )}
       data-no-hotkeys
       data-field={field}
       title={state?.status === 'error' ? state.error : undefined}
     >
-      {currentLabel ? (
+      {pickLabel ? (
         <Badge variant="secondary" className="font-normal pointer-events-none">
-          {currentLabel}
+          {pickLabel}
         </Badge>
       ) : (
-        <span className="text-sm text-slate-400 italic pointer-events-none">
-          {placeholder}
-        </span>
+        <span className="text-sm text-slate-400 italic pointer-events-none">{placeholder}</span>
       )}
       <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none" />
       <select
         className="absolute inset-0 opacity-0 cursor-pointer"
-        value={value ?? ''}
+        value={pick ?? ''}
         onChange={handleChange}
         onFocus={() => {
           onEditStart?.();

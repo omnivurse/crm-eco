@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, createElement } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { GizmoTip } from './gizmo-types';
+import { resolveGizmoTipIcon } from './gizmo-tip-icon';
 
 interface GizmoTipCardProps {
   tip: GizmoTip;
@@ -66,21 +67,32 @@ export const GizmoTipCard = memo(function GizmoTipCard({
 
       {/* Tip content */}
       <div className="px-4 pb-3">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          {tip.title}
-        </h3>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          {tip.body}
-        </p>
-
-        {tip.learnMoreHref && (
-          <Link
-            href={tip.learnMoreHref}
-            className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+        <div className="flex gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-teal-50 dark:bg-teal-500/15 border border-teal-100/80 dark:border-teal-500/20"
+            aria-hidden
           >
-            Learn more <ExternalLink className="w-3 h-3" />
-          </Link>
-        )}
+            {createElement(resolveGizmoTipIcon(tip.icon), {
+              className: 'h-4 w-4 text-teal-600 dark:text-teal-400',
+              'aria-hidden': true,
+            })}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{tip.title}</h3>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              {tip.body}
+            </p>
+
+            {tip.learnMoreHref && (
+              <Link
+                href={tip.learnMoreHref}
+                className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+              >
+                Learn more <ExternalLink className="w-3 h-3" aria-hidden />
+              </Link>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Footer: navigation + actions */}

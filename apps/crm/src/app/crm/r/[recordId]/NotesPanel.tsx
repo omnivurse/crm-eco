@@ -1,15 +1,12 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@crm-eco/ui/components/dialog';
-import DOMPurify from 'dompurify';
+import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
+import { sanitizeNoteHtml } from '@/lib/crm/note-sanitize';
+import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -20,7 +17,15 @@ interface NotesPanelProps {
   orgId: string;
 }
 
-function NoteCard({ note, onDelete, onEdit }: { note: CrmNoteWithAuthor; onDelete: (id: string) => void; onEdit: (note: CrmNoteWithAuthor) => void }) {
+function NoteCard({
+  note,
+  onDelete,
+  onEdit,
+}: {
+  note: CrmNoteWithAuthor;
+  onDelete: (id: string) => void;
+  onEdit: (note: CrmNoteWithAuthor) => void;
+}) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -52,11 +57,7 @@ function NoteCard({ note, onDelete, onEdit }: { note: CrmNoteWithAuthor; onDelet
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
             {note.author?.avatar_url ? (
-              <img
-                src={note.author.avatar_url}
-                alt=""
-                className="w-8 h-8 rounded-full"
-              />
+              <img src={note.author.avatar_url} alt="" className="w-8 h-8 rounded-full" />
             ) : (
               <User className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             )}
@@ -72,9 +73,7 @@ function NoteCard({ note, onDelete, onEdit }: { note: CrmNoteWithAuthor; onDelet
         </div>
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {note.is_pinned && (
-            <Pin className="w-4 h-4 text-amber-400 fill-amber-400" />
-          )}
+          {note.is_pinned && <Pin className="w-4 h-4 text-amber-400 fill-amber-400" />}
           <Button
             variant="ghost"
             size="icon"
@@ -101,82 +100,9 @@ function NoteCard({ note, onDelete, onEdit }: { note: CrmNoteWithAuthor; onDelet
 
       <div
         className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none dark:prose-invert [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_strong]:font-semibold [&_strong]:text-slate-800 dark:[&_strong]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_td]:text-sm [&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-700 [&_th]:px-2 [&_th]:py-1 [&_th]:text-sm [&_th]:font-semibold [&_th]:bg-slate-100 dark:[&_th]:bg-slate-800 [&_br]:block [&_p]:mb-1 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:my-2"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(note.body, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'width', 'height'] }) }}
+        dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(note.body) }}
       />
     </div>
-  );
-}
-
-/**
- * Rich text note editor using contentEditable.
- * Preserves HTML formatting when pasting from external sources (emails, enrollment forms, etc.)
- */
-function RichNoteEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const isInitialized = useRef(false);
-
-  useEffect(() => {
-    if (editorRef.current && !isInitialized.current) {
-      editorRef.current.innerHTML = value;
-      isInitialized.current = true;
-    }
-  }, [value]);
-
-  const handleInput = useCallback(() => {
-    if (editorRef.current) {
-      onChange(editorRef.current.innerHTML);
-    }
-  }, [onChange]);
-
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const clipboardData = e.clipboardData;
-
-    // Handle image files from clipboard (e.g. Snipping Tool screenshots)
-    const items = clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith('image/')) {
-        const file = items[i].getAsFile();
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = () => {
-            const dataUrl = reader.result as string;
-            document.execCommand('insertHTML', false, `<img src="${dataUrl}" style="max-width:100%;height:auto;" />`);
-            handleInput();
-          };
-          reader.readAsDataURL(file);
-          return;
-        }
-      }
-    }
-
-    // Try HTML (preserves structure from emails, docs, enrollment forms)
-    const html = clipboardData.getData('text/html');
-    if (html) {
-      const sanitized = DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['b', 'i', 'u', 'strong', 'em', 'br', 'p', 'div', 'span', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'a', 'blockquote', 'pre', 'code', 'hr', 'sub', 'sup', 'img'],
-        ALLOWED_ATTR: ['href', 'target', 'src', 'alt', 'width', 'height'],
-        ALLOW_DATA_ATTR: false,
-      });
-      document.execCommand('insertHTML', false, sanitized);
-    } else {
-      const text = clipboardData.getData('text/plain');
-      document.execCommand('insertText', false, text);
-    }
-
-    handleInput();
-  }, [handleInput]);
-
-  return (
-    <div
-      ref={editorRef}
-      contentEditable
-      suppressContentEditableWarning
-      onInput={handleInput}
-      onPaste={handlePaste}
-      data-placeholder="Write a note... Paste formatted text from emails or enrollment forms — formatting will be preserved."
-      className="min-h-[400px] max-h-[60vh] overflow-y-auto p-4 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900/50 text-sm text-slate-900 dark:text-white leading-relaxed focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/20 prose prose-sm max-w-none dark:prose-invert empty:before:content-[attr(data-placeholder)] empty:before:text-slate-400 dark:empty:before:text-slate-500 empty:before:pointer-events-none [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-700 [&_th]:px-2 [&_th]:py-1 [&_th]:font-semibold [&_th]:bg-slate-100 dark:[&_th]:bg-slate-800"
-    />
   );
 }
 
@@ -188,6 +114,8 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
   const [editingNote, setEditingNote] = useState<CrmNoteWithAuthor | null>(null);
   const [editNoteBody, setEditNoteBody] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  /** Bumps keyed remount so the rich editor resets each time Add Note opens */
+  const [composeEpoch, setComposeEpoch] = useState(0);
 
   const handleEditSubmit = async () => {
     if (!editingNote) return;
@@ -196,7 +124,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
 
     setIsEditSubmitting(true);
     try {
-      const sanitizedBody = DOMPurify.sanitize(editNoteBody.trim());
+      const sanitizedBody = sanitizeNoteHtml(editNoteBody.trim());
       const response = await fetch(`/api/crm/notes/${editingNote.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -226,7 +154,7 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
 
     setIsSubmitting(true);
     try {
-      const sanitizedBody = DOMPurify.sanitize(newNote.trim());
+      const sanitizedBody = sanitizeNoteHtml(newNote.trim());
       const response = await fetch('/api/crm/notes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -264,7 +192,11 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
       {/* Add Note Button */}
       <Button
         variant="outline"
-        onClick={() => setIsAdding(true)}
+        onClick={() => {
+          setNewNote('');
+          setComposeEpoch((e) => e + 1);
+          setIsAdding(true);
+        }}
         className="w-full border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-white/5"
       >
         <Plus className="w-4 h-4 mr-2" />
@@ -281,9 +213,10 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
           </div>
 
           <div className="flex-1 overflow-hidden py-4">
-            <RichNoteEditor key={isAdding ? 'adding' : 'closed'} value={newNote} onChange={setNewNote} />
+            <NoteRichArea key={`compose-${composeEpoch}`} value={newNote} onChange={setNewNote} />
             <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
-              Paste formatted text from emails, documents, or enrollment forms — formatting will be preserved.
+              Bold, italic, underline, and color from the toolbar; paste from email or Docs keeps
+              formatting when safe.
             </p>
           </div>
 
@@ -317,7 +250,15 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
       </Dialog>
 
       {/* Edit Note Dialog */}
-      <Dialog open={!!editingNote} onOpenChange={(open) => { if (!open) { setEditingNote(null); setEditNoteBody(''); } }}>
+      <Dialog
+        open={!!editingNote}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingNote(null);
+            setEditNoteBody('');
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl w-[calc(100%-2rem)] sm:w-[calc(100%-4rem)] sm:max-w-[900px] max-h-[90vh] flex flex-col bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
           <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
             <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
@@ -326,7 +267,9 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
           </div>
 
           <div className="flex-1 overflow-hidden py-4">
-            <RichNoteEditor key={editingNote?.id} value={editNoteBody} onChange={setEditNoteBody} />
+            {editingNote ? (
+              <NoteRichArea key={editingNote.id} value={editNoteBody} onChange={setEditNoteBody} />
+            ) : null}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t border-slate-200 dark:border-white/10">
@@ -362,7 +305,15 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
       {sortedNotes.length > 0 ? (
         <div className="space-y-3">
           {sortedNotes.map((note) => (
-            <NoteCard key={note.id} note={note} onDelete={() => router.refresh()} onEdit={(n) => { setEditingNote(n); setEditNoteBody(n.body); }} />
+            <NoteCard
+              key={note.id}
+              note={note}
+              onDelete={() => router.refresh()}
+              onEdit={(n) => {
+                setEditingNote(n);
+                setEditNoteBody(n.body);
+              }}
+            />
           ))}
         </div>
       ) : (

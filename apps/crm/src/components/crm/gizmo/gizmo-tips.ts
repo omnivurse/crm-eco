@@ -15,22 +15,37 @@ export const GIZMO_TIP_REGISTRY: Record<string, GizmoTipSet> = {
     pageLabel: 'Dashboard',
     tips: [
       {
-        id: 'dash-welcome',
-        title: 'Welcome to your CRM!',
-        body: 'This is your command center. Widgets show real-time stats on your deals, tasks, and pipeline. You can rearrange them by clicking "Edit Layout."',
+        id: 'dash-home-base',
+        title: 'Your home base',
+        body: 'Dashboard widgets summarize pipeline health, workload, and key numbers. Tailor what you see with "Edit Layout" so the first screen matches how you sell.',
         icon: 'layout-dashboard',
+        learnMoreHref: '/crm/learn/getting-started/dashboard',
       },
       {
-        id: 'dash-sidebar',
-        title: 'Navigate with the sidebar',
-        body: 'The left sidebar switches between modules. Click the arrows to collapse it for more room.',
+        id: 'dash-modules-nav',
+        title: 'Modules & main menu',
+        body: 'Use "Modules" for each record type you work in (contacts, deals, carriers, etc.). Below that are quick links—Pipeline, Inbox, Campaigns—grouped into sections.',
         icon: 'panel-left',
       },
       {
-        id: 'dash-smart-chat',
-        title: 'Try the Smart Bar',
-        body: 'The input at the bottom is more than search — type a slash command like /create contact or just describe what you want to do.',
+        id: 'dash-gizmo',
+        title: "That's me—Gizmo",
+        body: 'Click the teal light bulb when you spot it. Tips change on every screen. Dismiss tips you\'ve mastered, use "Got it" to clear a page, or "Hide" to turn me off—you can restore tips from the bottom of the sidebar.',
+        icon: 'lightbulb',
+      },
+      {
+        id: 'dash-smart-chat-ctrl',
+        title: 'Smart Chat at the bottom',
+        body: 'The wide field is Smart Chat (try Ctrl or Cmd + Space). Search records, jump to views, run quick navigation commands, or type what you want in plain language—it suggests next steps.',
         icon: 'terminal',
+        learnMoreHref: '/crm/learn/terminal/commands',
+      },
+      {
+        id: 'dash-learn',
+        title: 'Full guides in Learn',
+        body: 'For deep dives—getting started, reports, workflows, voice, and FAQs—open Learn anytime to walk through features at your own pace.',
+        icon: 'graduation-cap',
+        learnMoreHref: '/crm/learn',
       },
     ],
   },
@@ -142,26 +157,26 @@ export const GIZMO_TIP_REGISTRY: Record<string, GizmoTipSet> = {
       {
         id: 'pipeline-view',
         title: 'Your visual pipeline',
-        body: 'This is a bird\'s-eye view of all active deals across stages. Hover over any bar to see details, or click to jump in.',
+        body: "This is a bird's-eye view of all active deals across stages. Hover over any bar to see details, or click to jump in.",
         icon: 'trending-up',
       },
     ],
   },
 
-  // ── Tasks ──
-  '/crm/tasks': {
-    pageLabel: 'Tasks',
+  // ── Activities & tasks (canonical URL uses /activities; /tasks redirects) ──
+  '/crm/activities': {
+    pageLabel: 'Activities',
     tips: [
       {
-        id: 'tasks-types',
-        title: 'Tasks, calls, and meetings',
-        body: 'Activities come in three flavors: tasks, calls, and meetings. Each has its own fields like call duration or meeting location.',
+        id: 'activities-timeline',
+        title: 'Activities in one timeline',
+        body: 'See calls, meetings, tasks, and other touchpoints together. Filters and tabs help you zero in—use the Tasks shortcut in the sidebar for the task-only view.',
         icon: 'check-square',
       },
       {
-        id: 'tasks-link',
-        title: 'Link tasks to records',
-        body: 'Every task can be linked to a contact, lead, or deal. This keeps your activity history in one place on the record timeline.',
+        id: 'activities-link',
+        title: 'Tied to real records',
+        body: 'When an activity references a contact, deal, or other record, it shows up there too—so your team sees the whole story.',
         icon: 'link',
       },
     ],
@@ -307,13 +322,280 @@ export const GIZMO_TIP_REGISTRY: Record<string, GizmoTipSet> = {
       },
     ],
   },
+
+  // ── Record detail (universal /crm/r/[id]) ──
+  '/crm/r/': {
+    pageLabel: 'Record',
+    tips: [
+      {
+        id: 'record-overview',
+        title: 'Everything about one relationship',
+        body: 'This layout pulls together timeline, linked deals, attachments, notes, and custom fields—scroll sections or use tabs if your workspace splits them.',
+        icon: 'file-text',
+      },
+      {
+        id: 'record-inline-edit',
+        title: 'Click fields to update',
+        body: 'Many lists and statuses save as you choose them—pick a value once and it should refresh on screen right away. Text fields typically save shortly after you stop typing.',
+        icon: 'pencil-line',
+      },
+      {
+        id: 'record-connected-family',
+        title: 'Link family & household records',
+        body: 'In Connected Records, use Link Record to search globally (Mom’s lead vs. Kid’s membership, different modules). Pick a relationship like parent/guardian, dependent, spouse, sibling, or same household—you can open either record from your workspace.',
+        icon: 'users',
+      },
+    ],
+  },
+
+  // ── Learn hub ──
+  '/crm/learn': {
+    pageLabel: 'Learn',
+    tips: [
+      {
+        id: 'learn-structure',
+        title: 'Guides for every major area',
+        body: 'Use the sidebar topics to drill into onboarding, contacts, campaigns, workflows, automation, analytics, FAQs, changelog, and more—paired with videos where we have them.',
+        icon: 'book-open',
+      },
+      {
+        id: 'learn-gizmo',
+        title: 'Prefer bite-sized?',
+        body: 'Gizmo (the teal light bulb) delivers short contextual tips inside the CRM. Learn is where you land for full walkthroughs and reference.',
+        icon: 'lightbulb',
+      },
+    ],
+  },
+
+  // ── Profile ──
+  '/crm/profile': {
+    pageLabel: 'Profile',
+    tips: [
+      {
+        id: 'profile-self',
+        title: 'Your account',
+        body: 'Update display name, email preferences, signatures, or security options here—you’re editing your own profile, not the whole organization.',
+        icon: 'user',
+      },
+    ],
+  },
+
+  // ── Global search ──
+  '/crm/search': {
+    pageLabel: 'Search',
+    tips: [
+      {
+        id: 'search-wide',
+        title: 'Jump across modules',
+        body: 'This search spans the record types your team can access. Refine filters from the toolbar and open anything in one click.',
+        icon: 'search',
+      },
+    ],
+  },
+
+  // ── Communications (email + SMS tabs) ──
+  '/crm/communications': {
+    pageLabel: 'Communications',
+    tips: [
+      {
+        id: 'communications-tabs',
+        title: 'SMS and outbound email',
+        body: 'Use the tabs to switch channels or conversation types. Compose from templates where available and keep transcripts tied to CRM records.',
+        icon: 'message-square',
+      },
+    ],
+  },
+
+  // ── Playbooks ──
+  '/crm/playbooks': {
+    pageLabel: 'Playbooks',
+    tips: [
+      {
+        id: 'playbooks-intro',
+        title: 'Repeatable plays',
+        body: 'Build or follow guided steps your team trusts for outreach, onboarding, or handoffs—so everyone runs the same winning sequence.',
+        icon: 'book-open',
+      },
+    ],
+  },
+
+  // ── Enrollment ──
+  '/crm/enrollment': {
+    pageLabel: 'Enrollment',
+    tips: [
+      {
+        id: 'enrollment-pipeline',
+        title: 'Track enrollment journeys',
+        body: 'Use this area to monitor applications, statuses, and follow-ups tied to enrollment—dig into rows for details just like other modules.',
+        icon: 'clipboard-list',
+      },
+    ],
+  },
+
+  // ── Needs ──
+  '/crm/needs': {
+    pageLabel: 'Needs',
+    tips: [
+      {
+        id: 'needs-command-center',
+        title: 'Member or client needs',
+        body: 'Work open needs from overview or command-center views—filter by owner, urgency, or type so nobody drops a request.',
+        icon: 'heart-handshake',
+      },
+    ],
+  },
+
+  // ── Approvals ──
+  '/crm/approvals': {
+    pageLabel: 'Approvals',
+    tips: [
+      {
+        id: 'approvals-queue',
+        title: 'Approve or clarify fast',
+        body: 'Open each request to see context, attachments, or policy notes. Clearing the queue promptly keeps commissions and payouts on schedule.',
+        icon: 'check-circle',
+      },
+    ],
+  },
+
+  // ── Integrations ──
+  '/crm/integrations': {
+    pageLabel: 'Integrations',
+    tips: [
+      {
+        id: 'integrations-catalog',
+        title: 'Connections & diagnostics',
+        body: 'Link email, calendars, carriers, APIs, webhooks, and more from here. Use logs pages when troubleshooting sync or delivery failures.',
+        icon: 'link',
+      },
+    ],
+  },
+
+  // ── Commissions ──
+  '/crm/commissions': {
+    pageLabel: 'Commissions',
+    tips: [
+      {
+        id: 'commissions-snapshot',
+        title: 'Performance pay in one view',
+        body: 'Use filters or period switches to reconcile payouts versus deals or enrollments—you can export snapshots when Finance needs receipts.',
+        icon: 'wallet',
+      },
+    ],
+  },
+
+  // ── Vendors ──
+  '/crm/vendors': {
+    pageLabel: 'Vendors',
+    tips: [
+      {
+        id: 'vendors-connectors',
+        title: 'External data vendors',
+        body: 'Connect third-party feeds, monitors, or data jobs from here. Change logs and connectors help admins prove what synced and when.',
+        icon: 'building-2',
+      },
+    ],
+  },
+
+  // ── Automations hub (narrower match than bare /crm/settings) ──
+  '/crm/settings/automations': {
+    pageLabel: 'Automations',
+    tips: [
+      {
+        id: 'automations-suite',
+        title: 'Flows, macros, SLA, approvals',
+        body: 'This hub holds workflows, triggers, SLA timers, approvals, macros, cadences, and related tools—bookmark it if you tweak automation weekly.',
+        icon: 'workflow',
+      },
+    ],
+  },
+
+  // ── Duplicates ──
+  '/crm/duplicates': {
+    pageLabel: 'Duplicates',
+    tips: [
+      {
+        id: 'duplicates-merge',
+        title: 'Merge with confidence',
+        body: 'Compare potential dupes side by side—choose the surviving record carefully so timelines, payouts, and compliance stay unified.',
+        icon: 'copy',
+      },
+    ],
+  },
+
+  // ── Imports (plural legacy path sometimes linked) ──
+  '/crm/imports': {
+    pageLabel: 'Imports',
+    tips: [
+      {
+        id: 'imports-batch',
+        title: 'Inbound file jobs',
+        body: 'Track upload batches here—resume failed rows after fixing spreadsheets and keep admins informed with status summaries.',
+        icon: 'upload',
+      },
+    ],
+  },
+
+  // ── Deal war rooms (URLs stay under /crm/deals/...) ──
+  '/crm/deals/': {
+    pageLabel: 'Deal workspace',
+    tips: [
+      {
+        id: 'deals-war-room',
+        title: 'Focused deal collaboration',
+        body: 'War Room pulls the working deal team, next steps, and alerts into one tactical view. For the full record—including rich notes and linked people—open the main record from links in the header.',
+        icon: 'target',
+      },
+    ],
+  },
+
+  // ── Forecasting ──
+  '/crm/forecasting': {
+    pageLabel: 'Forecasting',
+    tips: [
+      {
+        id: 'forecasting-snapshot',
+        title: 'Weighted pipeline outlook',
+        body: 'Compare expected revenue, commit, and upside using the same deal data your reps maintain—drill into categories when leadership asks "what changed?"',
+        icon: 'trending-up',
+      },
+    ],
+  },
+
+  // ── Operations ──
+  '/crm/operations': {
+    pageLabel: 'Operations',
+    tips: [
+      {
+        id: 'operations-control',
+        title: 'Internal run-the-business',
+        body: "Operations views surface queues, SLAs, or back-office work your org tracks—pair it with Approvals and Tasks when you're closing the loop across teams.",
+        icon: 'gauge',
+      },
+    ],
+  },
+
+  // ── Healthcare / networks (when enabled) ──
+  '/crm/healthcare': {
+    pageLabel: 'Healthcare',
+    tips: [
+      {
+        id: 'healthcare-networks',
+        title: 'Networks & directory',
+        body: 'Explore provider or network records your team curates—many roll up to eligibility, referrals, or quoting tools elsewhere in the platform.',
+        icon: 'heart-pulse',
+      },
+    ],
+  },
 };
 
 /**
  * Find the best-matching tip set for a given pathname.
  * Matches the longest prefix first for specificity.
  */
-export function getTipSetForPath(pathname: string): { routeKey: string; tipSet: GizmoTipSet } | null {
+export function getTipSetForPath(
+  pathname: string
+): { routeKey: string; tipSet: GizmoTipSet } | null {
   const sortedKeys = Object.keys(GIZMO_TIP_REGISTRY).sort((a, b) => b.length - a.length);
 
   for (const key of sortedKeys) {

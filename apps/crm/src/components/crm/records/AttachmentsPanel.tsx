@@ -157,26 +157,30 @@ function AttachmentRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="glass-card border-slate-200 dark:border-white/10">
-            <DropdownMenuItem 
+            <DropdownMenuItem
               onClick={handleDownload}
               className="text-slate-300 focus:text-white focus:bg-white/10"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Open in new tab
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
-            >
-              {isDeleting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4 mr-2" />
-              )}
-              Delete
-            </DropdownMenuItem>
+            {onDelete && (
+              <>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                >
+                  {isDeleting ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4 mr-2" />
+                  )}
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

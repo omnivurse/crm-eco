@@ -1,0 +1,108 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  BarChart,
+  BarChart2,
+  BookOpen,
+  Bookmark,
+  Building2,
+  Calendar,
+  CheckCircle,
+  CheckSquare,
+  ClipboardList,
+  Columns,
+  Copy,
+  FileText,
+  Filter,
+  Flame,
+  Gauge,
+  GraduationCap,
+  HeartHandshake,
+  HeartPulse,
+  Inbox,
+  LayoutDashboard,
+  Lightbulb,
+  Link,
+  Mail,
+  MessageSquare,
+  MoveHorizontal,
+  PanelLeft,
+  PencilLine,
+  PieChart,
+  Repeat,
+  Reply,
+  Search,
+  Settings,
+  StickyNote,
+  Target,
+  Terminal,
+  TrendingUp,
+  Upload,
+  User,
+  Users,
+  UserCheck,
+  UserPlus,
+  Wallet,
+  Workflow,
+} from 'lucide-react';
+
+/**
+ * Kebab-case names used in {@link ../gizmo-tips.ts} mapped to lucide-react icons.
+ * Unknown names resolve to Lightbulb.
+ */
+export const GIZMO_TIP_ICONS = {
+  'layout-dashboard': LayoutDashboard,
+  'panel-left': PanelLeft,
+  lightbulb: Lightbulb,
+  terminal: Terminal,
+  'graduation-cap': GraduationCap,
+  'move-horizontal': MoveHorizontal,
+  filter: Filter,
+  bookmark: Bookmark,
+  upload: Upload,
+  'user-check': UserCheck,
+  'user-plus': UserPlus,
+  'arrow-right-left': ArrowRightLeft,
+  flame: Flame,
+  columns: Columns,
+  settings: Settings,
+  'building-2': Building2,
+  link: Link,
+  'trending-up': TrendingUp,
+  'check-square': CheckSquare,
+  mail: Mail,
+  'bar-chart': BarChart,
+  repeat: Repeat,
+  'pie-chart': PieChart,
+  'file-text': FileText,
+  inbox: Inbox,
+  reply: Reply,
+  copy: Copy,
+  calendar: Calendar,
+  'bar-chart-2': BarChart2,
+  'pencil-line': PencilLine,
+  'sticky-note': StickyNote,
+  'book-open': BookOpen,
+  user: User,
+  users: Users,
+  search: Search,
+  'message-square': MessageSquare,
+  'clipboard-list': ClipboardList,
+  'heart-handshake': HeartHandshake,
+  'check-circle': CheckCircle,
+  wallet: Wallet,
+  workflow: Workflow,
+  target: Target,
+  gauge: Gauge,
+  'heart-pulse': HeartPulse,
+} as const satisfies Record<string, LucideIcon>;
+
+export type GizmoRegisteredIconName = keyof typeof GIZMO_TIP_ICONS;
+
+/** Lucide icon for a tip registry `icon` string, or Lightbulb when omitted / unknown */
+export function resolveGizmoTipIcon(icon?: string | null): LucideIcon {
+  if (!icon || !(icon in GIZMO_TIP_ICONS)) {
+    return Lightbulb;
+  }
+  return GIZMO_TIP_ICONS[icon as GizmoRegisteredIconName];
+}

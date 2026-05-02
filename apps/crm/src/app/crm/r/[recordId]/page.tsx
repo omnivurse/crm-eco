@@ -18,7 +18,7 @@ import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV
 import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
 import { getRecordInsights, emptyRecordInsights } from '@/lib/crm/record-insights';
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
-import { AttachmentsPanel } from '@/components/crm/records/AttachmentsPanel';
+import { AttachmentsSectionClient } from '@/components/crm/records/AttachmentsSectionClient';
 import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecordsPanelClient';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
 import { getSectionMeta } from '@/components/crm/records/section-utils';
@@ -49,10 +49,28 @@ async function LazyRelatedRecords({ recordId }: { recordId: string }) {
   );
 }
 
+const CRM_UPLOAD_ROLES = ['crm_admin', 'crm_manager', 'crm_agent'] as const;
+const CRM_ATTACHMENT_DELETE_ROLES = ['crm_admin', 'crm_manager'] as const;
+
 /** Lazy-loaded attachments tab */
-async function LazyAttachments({ recordId }: { recordId: string }) {
+async function LazyAttachments({
+  recordId,
+  attachmentsCanUpload,
+  attachmentsCanDelete,
+}: {
+  recordId: string;
+  attachmentsCanUpload: boolean;
+  attachmentsCanDelete: boolean;
+}) {
   const attachments = await getAttachmentsForRecord(recordId);
-  return <AttachmentsPanel recordId={recordId} attachments={attachments} />;
+  return (
+    <AttachmentsSectionClient
+      recordId={recordId}
+      attachments={attachments}
+      canUpload={attachmentsCanUpload}
+      canDelete={attachmentsCanDelete}
+    />
+  );
 }
 
 function TabSkeleton() {
@@ -256,7 +274,19 @@ async function RecordDetailContent({ params }: PageProps) {
 
         attachments: (
           <Suspense fallback={<TabSkeleton />}>
-            <LazyAttachments recordId={recordId} />
+            <LazyAttachments
+              recordId={recordId}
+              attachmentsCanUpload={
+                !!profile.crm_role &&
+                CRM_UPLOAD_ROLES.includes(profile.crm_role as (typeof CRM_UPLOAD_ROLES)[number])
+              }
+              attachmentsCanDelete={
+                !!profile.crm_role &&
+                CRM_ATTACHMENT_DELETE_ROLES.includes(
+                  profile.crm_role as (typeof CRM_ATTACHMENT_DELETE_ROLES)[number],
+                )
+              }
+            />
           </Suspense>
         ),
       }}

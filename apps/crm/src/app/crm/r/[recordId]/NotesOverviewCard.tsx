@@ -17,15 +17,11 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
-import { Textarea } from '@crm-eco/ui/components/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@crm-eco/ui/components/dialog';
+import { sanitizeNoteHtml } from '@/lib/crm/note-sanitize';
+import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
+import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
-import DOMPurify from 'dompurify';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
 interface NotesOverviewCardProps {
@@ -37,11 +33,26 @@ interface NotesOverviewCardProps {
 const PREVIEW_LIMIT = 5;
 const TRUNCATE_LENGTH = 200;
 
-function NotePreviewItem({ note, onEdit, onDelete }: { note: CrmNoteWithAuthor; onEdit: (note: CrmNoteWithAuthor) => void; onDelete: (id: string) => void }) {
+function stripNotePlain(s: string) {
+  return s
+    .replace(/<[^>]*>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function NotePreviewItem({
+  note,
+  onEdit,
+  onDelete,
+}: {
+  note: CrmNoteWithAuthor;
+  onEdit: (note: CrmNoteWithAuthor) => void;
+  onDelete: (id: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const isTruncated = note.body.length > TRUNCATE_LENGTH;
-  const displayBody = expanded || !isTruncated ? note.body : note.body.slice(0, TRUNCATE_LENGTH) + '...';
+  const plainPreview = stripNotePlain(note.body);
+  const isTruncated = plainPreview.length > TRUNCATE_LENGTH;
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this note?')) return;
@@ -74,9 +85,7 @@ function NotePreviewItem({ note, onEdit, onDelete }: { note: CrmNoteWithAuthor; 
         <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
           {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
         </span>
-        {note.is_pinned && (
-          <Pin className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />
-        )}
+        {note.is_pinned && <Pin className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
         <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
@@ -93,23 +102,37 @@ function NotePreviewItem({ note, onEdit, onDelete }: { note: CrmNoteWithAuthor; 
             disabled={isDeleting}
             onClick={handleDelete}
           >
-            {isDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            {isDeleting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Trash2 className="w-3 h-3" />
+            )}
           </Button>
         </div>
       </div>
-      <div
-        className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed [&_b]:font-semibold [&_b]:text-slate-800 dark:[&_b]:text-slate-100 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4"
-        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(displayBody, { ADD_TAGS: ['img'], ADD_ATTR: ['src', 'alt', 'width', 'height'] }) }}
-      />
+      {expanded || !isTruncated ? (
+        <div
+          className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed prose prose-sm dark:prose-invert max-w-none [&_b]:font-semibold [&_strong]:font-semibold [&_i]:italic [&_em]:italic [&_u]:underline [&_font]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded"
+          dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(note.body) }}
+        />
+      ) : (
+        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          {plainPreview.slice(0, TRUNCATE_LENGTH)}…
+        </p>
+      )}
       {isTruncated && (
         <button
           onClick={() => setExpanded(!expanded)}
           className="mt-1 text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium flex items-center gap-0.5"
         >
           {expanded ? (
-            <>Show less <ChevronUp className="w-3 h-3" /></>
+            <>
+              Show less <ChevronUp className="w-3 h-3" />
+            </>
           ) : (
-            <>Show more <ChevronDown className="w-3 h-3" /></>
+            <>
+              Show more <ChevronDown className="w-3 h-3" />
+            </>
           )}
         </button>
       )}
@@ -126,15 +149,18 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
   const [editingNote, setEditingNote] = useState<CrmNoteWithAuthor | null>(null);
   const [editNoteBody, setEditNoteBody] = useState('');
   const [isEditSubmitting, setIsEditSubmitting] = useState(false);
+  const [composeEpoch, setComposeEpoch] = useState(0);
 
   const handleEditSubmit = async () => {
-    if (!editingNote || !editNoteBody.trim()) return;
+    if (!editingNote) return;
+    const sanitizedBody = sanitizeNoteHtml(editNoteBody);
+    if (!stripNotePlain(sanitizedBody)) return;
     setIsEditSubmitting(true);
     try {
       const res = await fetch(`/api/crm/notes/${editingNote.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: editNoteBody.trim() }),
+        body: JSON.stringify({ body: sanitizedBody }),
       });
       if (!res.ok) throw new Error('Failed to update note');
       toast.success('Note updated');
@@ -161,6 +187,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
     const q = search.toLowerCase();
     return sortedNotes.filter(
       (n) =>
+        stripNotePlain(n.body).toLowerCase().includes(q) ||
         n.body.toLowerCase().includes(q) ||
         (n.author?.full_name || '').toLowerCase().includes(q)
     );
@@ -171,7 +198,8 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
   const pinnedCount = notes.filter((n) => n.is_pinned).length;
 
   const handleSubmit = async () => {
-    if (!newNote.trim()) return;
+    const sanitizedBody = sanitizeNoteHtml(newNote);
+    if (!stripNotePlain(sanitizedBody)) return;
 
     setIsSubmitting(true);
     try {
@@ -180,7 +208,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           record_id: recordId,
-          body: newNote.trim(),
+          body: sanitizedBody,
         }),
       });
 
@@ -204,9 +232,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <StickyNote className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Notes
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Notes</h3>
           <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300">
             {notes.length}
           </span>
@@ -220,7 +246,11 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsAdding(true)}
+          onClick={() => {
+            setNewNote('');
+            setComposeEpoch((e) => e + 1);
+            setIsAdding(true);
+          }}
           className="border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
         >
           <Plus className="w-3.5 h-3.5 mr-1" />
@@ -244,19 +274,15 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       {/* Add Note Form */}
       {isAdding && (
         <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-teal-200 dark:border-teal-500/30">
-          <Textarea
-            value={newNote}
-            onChange={(e) => setNewNote(e.target.value)}
-            placeholder="Write a note..."
-            rows={10}
-            className="mb-2 min-h-[200px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-y text-sm"
-            autoFocus
-          />
-          <div className="flex justify-end gap-2">
+          <NoteRichArea key={`overview-${composeEpoch}`} value={newNote} onChange={setNewNote} />
+          <div className="flex justify-end gap-2 mt-2">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => { setIsAdding(false); setNewNote(''); }}
+              onClick={() => {
+                setIsAdding(false);
+                setNewNote('');
+              }}
               className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white h-8 text-xs"
             >
               Cancel
@@ -264,11 +290,13 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={isSubmitting || !newNote.trim()}
+              disabled={isSubmitting || !stripNotePlain(newNote)}
               className="bg-teal-500 hover:bg-teal-600 text-white h-8 text-xs"
             >
               {isSubmitting ? (
-                <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Saving...</>
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Saving...
+                </>
               ) : (
                 'Add Note'
               )}
@@ -284,7 +312,10 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
             <NotePreviewItem
               key={note.id}
               note={note}
-              onEdit={(n) => { setEditingNote(n); setEditNoteBody(n.body); }}
+              onEdit={(n) => {
+                setEditingNote(n);
+                setEditNoteBody(n.body);
+              }}
               onDelete={() => router.refresh()}
             />
           ))}
@@ -302,8 +333,11 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsAdding(true)}
-            className="border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300"
+            onClick={() => {
+              setNewNote('');
+              setComposeEpoch((e) => e + 1);
+              setIsAdding(true);
+            }}
           >
             <Plus className="w-3.5 h-3.5 mr-1" />
             Add First Note
@@ -314,7 +348,10 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       {/* View All Footer */}
       {(hasMore || (notes.length > 0 && !search)) && (
         <button
-          onClick={onViewAll ?? (() => window.dispatchEvent(new CustomEvent('crm:switch-tab', { detail: 'notes' })))}
+          onClick={
+            onViewAll ??
+            (() => window.dispatchEvent(new CustomEvent('crm:switch-tab', { detail: 'notes' })))
+          }
           className="mt-3 w-full flex items-center justify-center gap-1 py-2 text-sm font-medium text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
         >
           View all {notes.length} notes
@@ -323,25 +360,46 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       )}
 
       {/* Edit Note Dialog */}
-      <Dialog open={!!editingNote} onOpenChange={(open) => { if (!open) { setEditingNote(null); setEditNoteBody(''); } }}>
+      <Dialog
+        open={!!editingNote}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingNote(null);
+            setEditNoteBody('');
+          }
+        }}
+      >
         <DialogContent className="max-w-2xl bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-          <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">Edit Note</DialogTitle>
-          <Textarea
-            value={editNoteBody}
-            onChange={(e) => setEditNoteBody(e.target.value)}
-            rows={10}
-            className="min-h-[200px] bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-sm resize-y"
-            autoFocus
-          />
+          <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-white">
+            Edit Note
+          </DialogTitle>
+          {editingNote ? (
+            <NoteRichArea key={editingNote.id} value={editNoteBody} onChange={setEditNoteBody} />
+          ) : null}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="ghost" size="sm" onClick={() => { setEditingNote(null); setEditNoteBody(''); }}>Cancel</Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditingNote(null);
+                setEditNoteBody('');
+              }}
+            >
+              Cancel
+            </Button>
             <Button
               size="sm"
               onClick={handleEditSubmit}
-              disabled={isEditSubmitting || !editNoteBody.trim()}
+              disabled={isEditSubmitting || !stripNotePlain(editNoteBody)}
               className="bg-teal-600 hover:bg-teal-700 text-white"
             >
-              {isEditSubmitting ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Saving...</> : 'Save Changes'}
+              {isEditSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </div>
         </DialogContent>

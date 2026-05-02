@@ -2,13 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Link2, 
-  Plus, 
-  X, 
-  Users, 
-  UserPlus, 
-  Building2, 
+import {
+  Link2,
+  Plus,
+  X,
+  Users,
+  UserPlus,
+  Building2,
   DollarSign,
   Star,
   ArrowRight,
@@ -29,12 +29,22 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
-import type { CrmLinkedRecord, CrmRecord } from '@/lib/crm/types';
+import type { CrmLinkedRecord } from '@/lib/crm/types';
+
+/** Minimal row used in “link record” search (also returned by global CRM search API). */
+export interface LinkCandidate {
+  id: string;
+  title: string | null;
+  subtitle?: string;
+  module_key: string;
+}
 
 interface RelatedRecordsPanelProps {
   recordId: string;
@@ -43,8 +53,8 @@ interface RelatedRecordsPanelProps {
   onLinkRecord?: (targetRecordId: string, linkType: string, isPrimary?: boolean) => Promise<void>;
   onUnlink?: (linkId: string) => Promise<void>;
   onSetPrimary?: (linkId: string, isPrimary: boolean) => Promise<void>;
-  availableRecords?: CrmRecord[]; // For the link dialog
-  onSearchRecords?: (query: string) => Promise<CrmRecord[]>;
+  availableRecords?: LinkCandidate[];
+  onSearchRecords?: (query: string) => Promise<LinkCandidate[]>;
   className?: string;
 }
 
@@ -53,6 +63,8 @@ const MODULE_ICONS: Record<string, React.ReactNode> = {
   leads: <UserPlus className="w-4 h-4" />,
   deals: <DollarSign className="w-4 h-4" />,
   accounts: <Building2 className="w-4 h-4" />,
+  members: <Users className="w-4 h-4" />,
+  prospects: <UserPlus className="w-4 h-4" />,
 };
 
 const MODULE_COLORS: Record<string, { text: string; bg: string }> = {
@@ -60,15 +72,58 @@ const MODULE_COLORS: Record<string, { text: string; bg: string }> = {
   leads: { text: 'text-violet-400', bg: 'bg-violet-500/10' },
   deals: { text: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   accounts: { text: 'text-amber-400', bg: 'bg-amber-500/10' },
+  members: { text: 'text-sky-400', bg: 'bg-sky-500/10' },
+  prospects: { text: 'text-blue-400', bg: 'bg-blue-500/10' },
 };
 
-const LINK_TYPES = [
-  { value: 'contact_to_account', label: 'Contact → Account' },
-  { value: 'deal_to_contact', label: 'Deal → Contact' },
-  { value: 'deal_to_account', label: 'Deal → Account' },
-  { value: 'lead_to_account', label: 'Lead → Account' },
-  { value: 'related', label: 'Related' },
+const LINK_TYPE_GROUPS: { label: string; items: { value: string; label: string }[] }[] = [
+  {
+    label: 'Family / household',
+    items: [
+      {
+        value: 'family_parent',
+        label: 'Parent / guardian → linked record is your child or dependent',
+      },
+      {
+        value: 'family_child',
+        label: 'Dependent / child → linked record is parent or guardian',
+      },
+      { value: 'family_spouse', label: 'Spouse / partner' },
+      { value: 'family_sibling', label: 'Sibling' },
+      { value: 'family_household', label: 'Household / family (unspecified)' },
+    ],
+  },
+  {
+    label: 'CRM relationships',
+    items: [
+      { value: 'contact_to_account', label: 'Contact → Account' },
+      { value: 'deal_to_contact', label: 'Deal → Contact' },
+      { value: 'deal_to_account', label: 'Deal → Account' },
+      { value: 'lead_to_account', label: 'Lead → Account' },
+      { value: 'related', label: 'Related (general)' },
+    ],
+  },
 ];
+
+/** Human-readable phrase for linked card (direction + link_type semantics). */
+function describeLinkRelationship(linkType: string, direction: 'outbound' | 'inbound'): string {
+  switch (linkType) {
+    case 'family_parent':
+      return direction === 'outbound' ? 'Parent / guardian of' : 'Their parent/guardian';
+    case 'family_child':
+      return direction === 'outbound'
+        ? 'Dependent → guardian on linked record'
+        : 'Their dependent / child';
+    case 'family_spouse':
+      return 'Spouse / partner';
+    case 'family_sibling':
+      return 'Sibling';
+    case 'family_household':
+      return 'Household / family';
+    default:
+      return linkType.replace(/_/g, ' ');
+  }
+}
 
 function LinkedRecordCard({
   record,
@@ -83,7 +138,10 @@ function LinkedRecordCard({
   const [isUpdating, setIsUpdating] = useState(false);
 
   const icon = MODULE_ICONS[record.record_module_key] || <Link2 className="w-4 h-4" />;
-  const colors = MODULE_COLORS[record.record_module_key] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
+  const colors = MODULE_COLORS[record.record_module_key] || {
+    text: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+  };
 
   const handleUnlink = async () => {
     if (!onUnlink) return;
@@ -126,7 +184,10 @@ function LinkedRecordCard({
             {record.record_title || 'Untitled'}
           </Link>
           {record.is_primary && (
-            <Badge variant="outline" className="bg-amber-500/10 border-amber-500/30 text-amber-400 text-xs">
+            <Badge
+              variant="outline"
+              className="bg-amber-500/10 border-amber-500/30 text-amber-400 text-xs"
+            >
               <Star className="w-3 h-3 mr-1" />
               Primary
             </Badge>
@@ -138,7 +199,9 @@ function LinkedRecordCard({
             {record.record_module_name}
           </span>
           <span>•</span>
-          <span className="capitalize">{record.link_type.replace(/_/g, ' ')}</span>
+          <span className="text-slate-400">
+            {describeLinkRelationship(record.link_type, record.direction)}
+          </span>
         </div>
       </div>
 
@@ -165,7 +228,7 @@ function LinkedRecordCard({
             {record.is_primary ? 'Primary' : 'Set as primary'}
           </Button>
         )}
-        
+
         {onUnlink && (
           <Button
             variant="ghost"
@@ -174,11 +237,7 @@ function LinkedRecordCard({
             disabled={isUnlinking}
             className="h-8 w-8 text-slate-400 hover:text-red-400 hover:bg-red-500/10"
           >
-            {isUnlinking ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <X className="w-4 h-4" />
-            )}
+            {isUnlinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
           </Button>
         )}
       </div>
@@ -192,21 +251,21 @@ function LinkRecordDialog({
   onSearch,
 }: {
   onLink: (recordId: string, linkType: string, isPrimary?: boolean) => Promise<void>;
-  availableRecords?: CrmRecord[];
-  onSearch?: (query: string) => Promise<CrmRecord[]>;
+  availableRecords?: LinkCandidate[];
+  onSearch?: (query: string) => Promise<LinkCandidate[]>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRecord, setSelectedRecord] = useState<CrmRecord | null>(null);
-  const [linkType, setLinkType] = useState('related');
+  const [selectedRecord, setSelectedRecord] = useState<LinkCandidate | null>(null);
+  const [linkType, setLinkType] = useState('family_household');
   const [isPrimary, setIsPrimary] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
-  const [searchResults, setSearchResults] = useState<CrmRecord[]>([]);
+  const [searchResults, setSearchResults] = useState<LinkCandidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   const handleSearch = async () => {
     if (!onSearch || !searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     try {
       const results = await onSearch(searchQuery);
@@ -218,21 +277,21 @@ function LinkRecordDialog({
 
   const handleLink = async () => {
     if (!selectedRecord) return;
-    
+
     setIsLinking(true);
     try {
       await onLink(selectedRecord.id, linkType, isPrimary);
       setIsOpen(false);
       setSelectedRecord(null);
       setSearchQuery('');
-      setLinkType('related');
+      setLinkType('family_household');
       setIsPrimary(false);
     } finally {
       setIsLinking(false);
     }
   };
 
-  const recordsToShow = searchQuery ? searchResults : (availableRecords || []);
+  const recordsToShow = searchQuery ? searchResults : availableRecords || [];
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -280,9 +339,9 @@ function LinkRecordDialog({
           <div className="max-h-48 overflow-y-auto space-y-2">
             {recordsToShow.length > 0 ? (
               recordsToShow.map((record) => {
-                const icon = MODULE_ICONS[record.module_id] || <Link2 className="w-4 h-4" />;
+                const icon = MODULE_ICONS[record.module_key] || <Link2 className="w-4 h-4" />;
                 const isSelected = selectedRecord?.id === record.id;
-                
+
                 return (
                   <button
                     key={record.id}
@@ -294,16 +353,14 @@ function LinkRecordDialog({
                         : 'border-white/5 hover:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/30'
                     )}
                   >
-                    <div className="p-1.5 rounded bg-slate-800/50 text-slate-400">
-                      {icon}
-                    </div>
+                    <div className="p-1.5 rounded bg-slate-800/50 text-slate-400">{icon}</div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-white truncate">
                         {record.title || 'Untitled'}
                       </p>
-                      {record.email && (
-                        <p className="text-xs text-slate-500 truncate">{record.email}</p>
-                      )}
+                      {record.subtitle ? (
+                        <p className="text-xs text-slate-500 truncate">{record.subtitle}</p>
+                      ) : null}
                     </div>
                   </button>
                 );
@@ -324,15 +381,23 @@ function LinkRecordDialog({
                   <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="glass-card border-slate-200 dark:border-white/10">
-                    {LINK_TYPES.map((type) => (
-                      <SelectItem 
-                        key={type.value} 
-                        value={type.value}
-                        className="text-slate-300 focus:text-white focus:bg-white/10"
-                      >
-                        {type.label}
-                      </SelectItem>
+                  <SelectContent className="glass-card border-slate-200 dark:border-white/10 max-h-[min(60vh,22rem)]">
+                    {LINK_TYPE_GROUPS.map((group) => (
+                      <SelectGroup key={group.label}>
+                        <SelectLabel className="text-[10px] uppercase tracking-wide text-slate-500 px-2 py-1.5">
+                          {group.label}
+                        </SelectLabel>
+                        {group.items.map((type) => (
+                          <SelectItem
+                            key={type.value}
+                            value={type.value}
+                            title={type.label}
+                            className="text-slate-300 focus:text-white focus:bg-white/10"
+                          >
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
@@ -396,12 +461,15 @@ export function RelatedRecordsPanel({
   className,
 }: RelatedRecordsPanelProps) {
   // Group records by module
-  const recordsByModule = linkedRecords.reduce((acc, record) => {
-    const key = record.record_module_key;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(record);
-    return acc;
-  }, {} as Record<string, CrmLinkedRecord[]>);
+  const recordsByModule = linkedRecords.reduce(
+    (acc, record) => {
+      const key = record.record_module_key;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(record);
+      return acc;
+    },
+    {} as Record<string, CrmLinkedRecord[]>
+  );
 
   if (isLoading) {
     return (
@@ -428,18 +496,17 @@ export function RelatedRecordsPanel({
       {Object.entries(recordsByModule).length > 0 ? (
         Object.entries(recordsByModule).map(([moduleKey, records]) => {
           const icon = MODULE_ICONS[moduleKey] || <Link2 className="w-4 h-4" />;
-          const colors = MODULE_COLORS[moduleKey] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
+          const colors = MODULE_COLORS[moduleKey] || {
+            text: 'text-slate-400',
+            bg: 'bg-slate-500/10',
+          };
           const moduleName = records[0]?.record_module_name || moduleKey;
 
           return (
             <div key={moduleKey}>
               <div className="flex items-center gap-2 mb-3">
-                <div className={cn('p-1.5 rounded-lg', colors.bg, colors.text)}>
-                  {icon}
-                </div>
-                <h3 className="text-sm font-semibold text-white">
-                  {moduleName}s
-                </h3>
+                <div className={cn('p-1.5 rounded-lg', colors.bg, colors.text)}>{icon}</div>
+                <h3 className="text-sm font-semibold text-white">{moduleName}s</h3>
                 <span className="text-xs text-slate-500">({records.length})</span>
               </div>
 
@@ -450,8 +517,8 @@ export function RelatedRecordsPanel({
                     record={record}
                     onUnlink={onUnlink ? () => onUnlink(record.link_id) : undefined}
                     onSetPrimary={
-                      onSetPrimary 
-                        ? (isPrimary) => onSetPrimary(record.link_id, isPrimary) 
+                      onSetPrimary
+                        ? (isPrimary) => onSetPrimary(record.link_id, isPrimary)
                         : undefined
                     }
                   />
@@ -463,9 +530,11 @@ export function RelatedRecordsPanel({
       ) : (
         <div className="text-center py-12">
           <Link2 className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-1">No linked records</h3>
-          <p className="text-slate-400">
-            Link this record to contacts, accounts, or deals
+          <h3 className="text-lg font-medium text-white mb-1">No linked records yet</h3>
+          <p className="text-slate-400 max-w-md mx-auto px-4">
+            Connect households and memberships: search for another lead, member, or contact — for
+            example parent and child on separate memberships — choose a relationship, then jump
+            between records anytime.
           </p>
         </div>
       )}

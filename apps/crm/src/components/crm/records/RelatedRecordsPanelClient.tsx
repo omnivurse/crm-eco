@@ -13,13 +13,14 @@
  *     mutation, so links appear / disappear without a hard navigation.
  *   - Wires the link / unlink / set-primary handlers to the REST endpoints in
  *     `/api/crm/record-links`.
- *   - Wires record search to `/api/crm/records?search=…`.
+ *   - Wires record search to `/api/crm/search?q=…` (global smart search —
+ *     `/api/crm/records` requires module_key per record and was never valid here).
  */
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { CrmLinkedRecord, CrmRecord } from '@/lib/crm/types';
-import { RelatedRecordsPanel } from './RelatedRecordsPanel';
+import type { CrmLinkedRecord } from '@/lib/crm/types';
+import { RelatedRecordsPanel, type LinkCandidate } from './RelatedRecordsPanel';
 
 interface Props {
   recordId: string;
@@ -27,11 +28,7 @@ interface Props {
   className?: string;
 }
 
-export function RelatedRecordsPanelClient({
-  recordId,
-  initialLinkedRecords,
-  className,
-}: Props) {
+export function RelatedRecordsPanelClient({ recordId, initialLinkedRecords, className }: Props) {
   const router = useRouter();
   const [linkedRecords, setLinkedRecords] = useState<CrmLinkedRecord[]>(initialLinkedRecords);
 
@@ -65,7 +62,7 @@ export function RelatedRecordsPanelClient({
       await refresh();
       router.refresh();
     },
-    [recordId, refresh, router],
+    [recordId, refresh, router]
   );
 
   const handleUnlink = useCallback(
@@ -80,7 +77,7 @@ export function RelatedRecordsPanelClient({
       await refresh();
       router.refresh();
     },
-    [refresh, router],
+    [refresh, router]
   );
 
   const handleSetPrimary = useCallback(
@@ -97,23 +94,34 @@ export function RelatedRecordsPanelClient({
       await refresh();
       router.refresh();
     },
-    [refresh, router],
+    [refresh, router]
   );
 
   const handleSearchRecords = useCallback(
-    async (query: string): Promise<CrmRecord[]> => {
+    async (query: string): Promise<LinkCandidate[]> => {
       const trimmed = query.trim();
       if (!trimmed) return [];
-      const res = await fetch(
-        `/api/crm/records?search=${encodeURIComponent(trimmed)}&page_size=10`,
-      );
+      const res = await fetch(`/api/crm/search?q=${encodeURIComponent(trimmed)}&limit=25`);
       if (!res.ok) return [];
-      const json = await res.json();
-      const records = (json?.records ?? []) as CrmRecord[];
-      // Filter out the current record so users can't link a record to itself.
-      return records.filter((r) => r.id !== recordId);
+      const json = (await res.json()) as {
+        results: Array<{
+          id: string;
+          title: string;
+          subtitle?: string;
+          moduleKey: string;
+        }>;
+      };
+      const rows = json?.results ?? [];
+      return rows
+        .filter((r) => r.id !== recordId)
+        .map((r) => ({
+          id: r.id,
+          title: r.title,
+          subtitle: r.subtitle,
+          module_key: r.moduleKey,
+        }));
     },
-    [recordId],
+    [recordId]
   );
 
   return (

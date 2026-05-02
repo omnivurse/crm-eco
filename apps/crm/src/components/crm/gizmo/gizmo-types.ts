@@ -6,7 +6,7 @@ export interface GizmoTip {
   title: string;
   /** 1-2 sentence explanation in Gizmo's friendly voice */
   body: string;
-  /** Optional lucide icon name for visual flavor */
+  /** Lucide graphic name matching {@link ./gizmo-tip-icon.tsx GIZMO_TIP_ICONS} keys (kebab-case) */
   icon?: string;
   /** Optional link to the full learn page */
   learnMoreHref?: string;

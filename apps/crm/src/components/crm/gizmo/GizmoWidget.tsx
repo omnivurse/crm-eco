@@ -4,11 +4,7 @@ import { useState, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, EyeOff } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@crm-eco/ui/components/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@crm-eco/ui/components/popover';
 import { useGizmo } from './GizmoProvider';
 import { GizmoTipCard } from './GizmoTipCard';
 
