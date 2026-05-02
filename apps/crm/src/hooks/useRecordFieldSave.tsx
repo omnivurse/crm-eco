@@ -203,133 +203,151 @@ export function RecordFieldSaveProvider({
       // mutation. Matching keys across live + queued replays is what
       // makes the end-to-end idempotency guarantee work.
       const idempotencyKey = makeIdempotencyKey();
-      try {
-        const payload =
-          target === 'data'
-            ? { data: { [field]: value } }
-            : { [field]: value };
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': idempotencyKey,
-        };
-        if (updatedAtRef.current) {
-          headers['If-Match'] = updatedAtRef.current;
-        }
-        const res = await fetch(`/api/crm/records/${recordId}`, {
-          method: 'PATCH',
-          headers,
-          credentials: 'same-origin',
-          signal: controller.signal,
-          body: JSON.stringify(payload),
-        });
+      const payload =
+        target === 'data'
+          ? { data: { [field]: value } }
+          : { [field]: value };
 
-        if (!res.ok) {
-          let message = `Save failed (${res.status})`;
+      // Tunables for the 409 retry loop. With saveChainRef we serialise
+      // dispatches per-tab, so the only remaining sources of `If-Match`
+      // drift are: a second tab from the same user, another rep editing
+      // the same row, or a backend trigger writing in the background.
+      // Three attempts with exponential backoff (50ms / 200ms) is more
+      // than enough to ride out any of those without surfacing the
+      // conflict to the user.
+      const MAX_409_ATTEMPTS = 3;
+      const RETRY_BACKOFF_MS = [50, 200, 500] as const;
+      // Per-attempt timeout. A request can occasionally hang on a flaky
+      // network or a slow Postgres lock; without this the saveChainRef
+      // queue stalls behind it and every subsequent field looks like
+      // it's "saving forever". On timeout we abort the in-flight fetch,
+      // queue a background retry, and let the chain proceed.
+      const ATTEMPT_TIMEOUT_MS = 10_000;
+
+      try {
+        let attempt = 0;
+        let lastMessage = 'Save failed';
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          attempt++;
+
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            // Reuse the idempotency key only on the very first attempt;
+            // subsequent attempts get fresh keys so the backend's
+            // dedupe table doesn't replay the original 409 response.
+            'Idempotency-Key': attempt === 1 ? idempotencyKey : makeIdempotencyKey(),
+          };
+          if (updatedAtRef.current) {
+            headers['If-Match'] = updatedAtRef.current;
+          }
+
+          // Per-attempt timeout: chain a temporary AbortController off
+          // the field-level controller so timing out one attempt
+          // doesn't kill subsequent retries, but cancelling the field
+          // (via the field-level controller) does kill the timeout.
+          const attemptController = new AbortController();
+          const onParentAbort = () => attemptController.abort();
+          controller.signal.addEventListener('abort', onParentAbort);
+          const timeoutHandle = setTimeout(() => attemptController.abort(), ATTEMPT_TIMEOUT_MS);
+
+          let res: Response;
+          try {
+            res = await fetch(`/api/crm/records/${recordId}`, {
+              method: 'PATCH',
+              headers,
+              credentials: 'same-origin',
+              signal: attemptController.signal,
+              body: JSON.stringify(payload),
+            });
+          } finally {
+            clearTimeout(timeoutHandle);
+            controller.signal.removeEventListener('abort', onParentAbort);
+          }
+
+          if (res.ok) {
+            try {
+              const body = (await res.clone().json()) as {
+                updated_at?: string | null;
+              };
+              if (body?.updated_at) updatedAtRef.current = body.updated_at;
+            } catch {
+              /* response not JSON — ignore */
+            }
+            updateField(field, {
+              status: 'saved',
+              error: undefined,
+              savedAt: Date.now(),
+            });
+            onSaved?.(field, value);
+            return;
+          }
+
+          // Non-OK response — read body once for both the 409 retry
+          // path and the user-facing error message.
           let currentUpdatedAt: string | null = null;
           try {
             const body = await res.json();
-            if (body?.error) message = body.error as string;
+            if (body?.error) lastMessage = body.error as string;
             if (typeof body?.currentUpdatedAt === 'string') {
               currentUpdatedAt = body.currentUpdatedAt;
             }
           } catch {
-            /* ignore */
+            lastMessage = `Save failed (${res.status})`;
           }
-          if (res.status === 409) {
-            // 409 here almost always means the record's `updated_at`
-            // drifted under us (another tab, a sync trigger, a backend
-            // dedupe sweep, etc.) — not that someone overwrote *this*
-            // field. Inline editors save one field at a time, so we can
-            // safely refresh our token and replay the same single-field
-            // PATCH transparently. The user never sees the conflict.
-            //
-            // We retry at most once; if the second attempt also 409s,
-            // something genuinely racy is happening (two humans in the
-            // same field) and we surface the error so a real human can
-            // sort it out instead of silently overwriting their edit.
-            if (currentUpdatedAt) {
-              updatedAtRef.current = currentUpdatedAt;
-              onConflict?.({ field, currentUpdatedAt, value });
-              const retryHeaders: Record<string, string> = {
-                'Content-Type': 'application/json',
-                'Idempotency-Key': makeIdempotencyKey(),
-                'If-Match': currentUpdatedAt,
-              };
-              const retryRes = await fetch(`/api/crm/records/${recordId}`, {
-                method: 'PATCH',
-                headers: retryHeaders,
-                credentials: 'same-origin',
-                signal: controller.signal,
-                body: JSON.stringify(payload),
-              });
-              if (retryRes.ok) {
-                try {
-                  const body = (await retryRes.clone().json()) as {
-                    updated_at?: string | null;
-                  };
-                  if (body?.updated_at) updatedAtRef.current = body.updated_at;
-                } catch {
-                  /* response not JSON — ignore */
-                }
-                updateField(field, {
-                  status: 'saved',
-                  error: undefined,
-                  savedAt: Date.now(),
-                });
-                onSaved?.(field, value);
-                return;
-              }
-              // Second 409 → real concurrent edit on this field. Fall
-              // through to the user-facing error.
-              try {
-                const retryBody = await retryRes.json();
-                if (typeof retryBody?.currentUpdatedAt === 'string') {
-                  updatedAtRef.current = retryBody.currentUpdatedAt;
-                }
-              } catch {
-                /* ignore */
-              }
-            }
-            message = 'Record was updated elsewhere — reload to retry';
+
+          // Only 409 with a server-supplied currentUpdatedAt is
+          // retryable. Anything else (4xx validation, 5xx) bubbles up.
+          if (res.status !== 409 || !currentUpdatedAt) {
+            updateField(field, {
+              status: 'error',
+              error: res.status === 409
+                ? 'Record was updated elsewhere — reload to retry'
+                : lastMessage,
+            });
+            return;
           }
-          updateField(field, { status: 'error', error: message });
-          return;
-        }
 
-        try {
-          const body = (await res.clone().json()) as {
-            updated_at?: string | null;
-          };
-          if (body?.updated_at) updatedAtRef.current = body.updated_at;
-        } catch {
-          /* response not JSON — ignore */
-        }
+          // 409: refresh our token from the server, give the chain a
+          // tick to settle, then retry. We notify on the first retry
+          // only so the conflict callback isn't spammed for ride-out
+          // races.
+          updatedAtRef.current = currentUpdatedAt;
+          if (attempt === 1) {
+            onConflict?.({ field, currentUpdatedAt, value });
+          }
 
-        updateField(field, {
-          status: 'saved',
-          error: undefined,
-          savedAt: Date.now(),
-        });
-        onSaved?.(field, value);
+          if (attempt >= MAX_409_ATTEMPTS) {
+            updateField(field, {
+              status: 'error',
+              error: 'Record is being edited by someone else — reload to retry',
+            });
+            return;
+          }
+
+          const backoff = RETRY_BACKOFF_MS[attempt - 1] ?? 500;
+          await new Promise((r) => setTimeout(r, backoff));
+        }
       } catch (err: unknown) {
-        if ((err as { name?: string })?.name === 'AbortError') return;
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        // Network-level failures (no response from the server) get
-        // queued for background retry so the rep doesn't lose their
-        // typed value when the train tunnel drops Wi-Fi. We still
-        // mark the field as "saved" locally — the pill in the topbar
-        // surfaces the pending sync state globally.
-        const payload =
-          target === 'data'
-            ? { data: { [field]: value } }
-            : { [field]: value };
-        // Reuse the same Idempotency-Key the live fetch generated —
-        // see the sibling branch above for the rationale. If the
-        // network blip happened *after* the server persisted, the
-        // queue drain will replay the cached response and the
-        // optimistic local state stays consistent.
+        if ((err as { name?: string })?.name === 'AbortError') {
+          // Distinguish "user-cancelled" (parent controller aborted)
+          // from "attempt timed out" (only the per-attempt controller
+          // fired). When the parent is aborted, just return — a newer
+          // save for the same field is already in flight.
+          if (controller.signal.aborted) return;
+          // Timeout — fall through to the queue path below so the
+          // user's value isn't lost.
+        }
+        // Network-level failures (or attempt timeout) get queued for
+        // background retry so the rep doesn't lose their typed value
+        // when the train tunnel drops Wi-Fi. We still mark the field
+        // as "saved" locally — the pill in the topbar surfaces the
+        // pending sync state globally.
         const headers: Record<string, string> = {
           'Content-Type': 'application/json',
+          // Reuse the same Idempotency-Key the live fetch generated —
+          // if the timed-out request actually persisted, the backend
+          // dedupes the queued replay against the cached response.
           'Idempotency-Key': idempotencyKey,
         };
         if (updatedAtRef.current) headers['If-Match'] = updatedAtRef.current;
