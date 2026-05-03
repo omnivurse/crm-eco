@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 7;
+const CACHE_VERSION = 8;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
@@ -18,6 +18,17 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/favicon.svg',
 ];
+
+// Last-resort offline shell. Inlined so a broken precache (or first navigation
+// before install completes) still renders a useful page instead of bare text.
+const INLINE_OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline — CRM</title><style>html,body{height:100%}body{margin:0;font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#0f172a;background:linear-gradient(135deg,#f8fafc,#e2e8f0);display:grid;place-items:center;padding:24px}main{max-width:440px;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(15,23,42,.08);padding:28px;text-align:center}h1{margin:0 0 8px;font-size:20px}p{margin:0 0 18px;color:#475569}button{appearance:none;border:0;background:#0891b2;color:#fff;padding:10px 18px;border-radius:8px;font-weight:600;cursor:pointer}button:hover{background:#0e7490}small{display:block;margin-top:14px;color:#94a3b8;font-size:12px}</style></head><body><main><h1>You appear to be offline</h1><p>The page couldn't load. Check your connection and try again.</p><button onclick="location.reload()">Retry</button><small>If this keeps happening, open DevTools → Application → Service Workers → Unregister.</small></main></body></html>`;
+
+function inlineOfflineResponse() {
+  return new Response(INLINE_OFFLINE_HTML, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
 
 /**
  * Install event - cache static assets individually (fault-tolerant)
@@ -228,7 +239,9 @@ async function networkFirstWithOfflineFallback(request) {
       (await caches.match(OFFLINE_URL)) || (await caches.match('/offline'));
     if (offlinePage) return offlinePage;
 
-    return new Response('Offline', { status: 503 });
+    // Final fallback: inline HTML so a broken precache still renders a
+    // page with a Retry button instead of bare "Offline" plaintext.
+    return inlineOfflineResponse();
   }
 }
 
@@ -246,7 +259,13 @@ async function staleWhileRevalidate(request, cacheName) {
     })
     .catch(() => null);
 
-  return cachedResponse || (await fetchPromise) || new Response('Offline', { status: 503 });
+  return (
+    cachedResponse ||
+    (await fetchPromise) ||
+    (request.mode === 'navigate'
+      ? inlineOfflineResponse()
+      : new Response('Offline', { status: 503 }))
+  );
 }
 
 /**
