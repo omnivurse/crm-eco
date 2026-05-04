@@ -39,8 +39,16 @@ export async function GET(request: NextRequest) {
 
     const { data, error, count } = await query;
     if (error) {
-      // Table may not exist yet if migration hasn't been applied
-      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      // Table missing (42P01), generic "does not exist", or PostgREST schema
+      // cache miss (PGRST205) — degrade to empty rather than 500ing the page.
+      const code = (error as { code?: string }).code;
+      if (
+        code === '42P01' ||
+        code === 'PGRST205' ||
+        error.message?.includes('does not exist') ||
+        error.message?.includes('schema cache')
+      ) {
+        console.warn('[Segmentations] Table/cache unavailable, returning empty:', code, error.message);
         return NextResponse.json({ segments: [], total: 0 });
       }
       console.error('[Segmentations] Query error:', error);
