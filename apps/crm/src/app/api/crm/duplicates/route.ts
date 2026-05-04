@@ -84,8 +84,19 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
     if (error) {
       console.error('[duplicates] query error:', error);
+      // Surface the underlying Postgres error to the client so the
+      // Review Duplicates page can show something more specific than
+      // "Failed to load duplicate pairs". Common modes we want visible:
+      //   - statement_timeout when the view is slow on big tenants
+      //   - missing column / view (during deploy mismatches)
+      //   - RLS recursion errors
       return NextResponse.json(
-        { error: 'Failed to load duplicate pairs' },
+        {
+          error: 'Failed to load duplicate pairs',
+          detail: error.message,
+          code: error.code ?? null,
+          hint: error.hint ?? null,
+        },
         { status: 500 },
       );
     }
