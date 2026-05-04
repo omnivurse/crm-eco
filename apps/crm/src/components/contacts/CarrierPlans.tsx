@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Building2,
   Loader2,
+  Plus,
   RefreshCw,
   Search,
   ChevronDown,
@@ -16,6 +17,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { toast } from 'sonner';
+import { useClientAuth } from '@/hooks/useClientAuth';
+import { AddPlanDialog } from './AddPlanDialog';
 
 interface Carrier {
   id: string;
@@ -37,7 +40,7 @@ interface Plan {
   metal_level: string | null;
   base_premium: number | null;
   deductible: number | null;
-  max_oop: number | null;
+  max_out_of_pocket: number | null;
   is_active: boolean;
 }
 
@@ -64,6 +67,9 @@ const METAL_COLORS: Record<string, string> = {
 };
 
 export default function CarrierPlans() {
+  const { profile } = useClientAuth();
+  const canManagePlans = ['crm_admin', 'crm_manager'].includes(profile?.crm_role || '');
+
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,6 +77,7 @@ export default function CarrierPlans() {
   const [expandedCarrier, setExpandedCarrier] = useState<string | null>(null);
   const [plans, setPlans] = useState<Record<string, Plan[]>>({});
   const [loadingPlans, setLoadingPlans] = useState<string | null>(null);
+  const [addPlanFor, setAddPlanFor] = useState<Carrier | null>(null);
 
   async function fetchCarriers() {
     try {
@@ -100,27 +107,14 @@ export default function CarrierPlans() {
     fetchCarriers();
   }
 
-  async function handleExpand(carrierId: string) {
-    if (expandedCarrier === carrierId) {
-      setExpandedCarrier(null);
-      return;
-    }
-    setExpandedCarrier(carrierId);
-
-    // If we already fetched plans for this carrier, skip
-    if (plans[carrierId]) return;
-
+  async function fetchPlansFor(carrierId: string) {
     setLoadingPlans(carrierId);
     try {
-      // Use the search API with no state filter to get plans for this carrier
-      // We fetch from the carriers/search endpoint which returns plans
-      const res = await fetch(`/api/crm/carriers/search?state=*`);
+      const res = await fetch(`/api/crm/carriers/${carrierId}/plans`);
       if (res.ok) {
         const json = await res.json();
-        const carrierPlans = (json.data || []).filter((p: Plan) => p.carrier_id === carrierId);
-        setPlans((prev) => ({ ...prev, [carrierId]: carrierPlans }));
+        setPlans((prev) => ({ ...prev, [carrierId]: json.data || [] }));
       } else {
-        // Fallback: just set empty
         setPlans((prev) => ({ ...prev, [carrierId]: [] }));
       }
     } catch {
@@ -128,6 +122,15 @@ export default function CarrierPlans() {
     } finally {
       setLoadingPlans(null);
     }
+  }
+
+  async function handleExpand(carrierId: string) {
+    if (expandedCarrier === carrierId) {
+      setExpandedCarrier(null);
+      return;
+    }
+    setExpandedCarrier(carrierId);
+    if (!plans[carrierId]) await fetchPlansFor(carrierId);
   }
 
   if (loading) {
@@ -293,9 +296,20 @@ export default function CarrierPlans() {
                         </div>
                       ) : carrierPlans && carrierPlans.length > 0 ? (
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Available Plans ({carrierPlans.length})
-                          </h4>
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                              Available Plans ({carrierPlans.length})
+                            </h4>
+                            {canManagePlans && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setAddPlanFor(carrier)}
+                              >
+                                <Plus className="w-4 h-4 mr-1" /> Add plan
+                              </Button>
+                            )}
+                          </div>
                           {carrierPlans.map((plan) => (
                             <div
                               key={plan.id}
@@ -335,10 +349,10 @@ export default function CarrierPlans() {
                                     <p className="text-xs text-slate-500">Deductible</p>
                                   </div>
                                 )}
-                                {plan.max_oop != null && (
+                                {plan.max_out_of_pocket != null && (
                                   <div className="text-right">
                                     <p className="font-medium text-slate-900 dark:text-white">
-                                      ${plan.max_oop.toLocaleString()}
+                                      ${plan.max_out_of_pocket.toLocaleString()}
                                     </p>
                                     <p className="text-xs text-slate-500">Max OOP</p>
                                   </div>
@@ -348,9 +362,20 @@ export default function CarrierPlans() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-slate-500 text-center py-6 text-sm">
-                          No plans loaded for this carrier. Use the carrier search to find plans by state.
-                        </p>
+                        <div className="text-center py-6 space-y-3">
+                          <p className="text-slate-500 text-sm">
+                            No plans yet for this carrier.
+                          </p>
+                          {canManagePlans && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setAddPlanFor(carrier)}
+                            >
+                              <Plus className="w-4 h-4 mr-1" /> Add the first plan
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
@@ -359,6 +384,25 @@ export default function CarrierPlans() {
             );
           })}
         </div>
+      )}
+
+      {addPlanFor && (
+        <AddPlanDialog
+          open={!!addPlanFor}
+          onOpenChange={(open) => {
+            if (!open) setAddPlanFor(null);
+          }}
+          carrierId={addPlanFor.id}
+          carrierName={addPlanFor.carrier_name}
+          defaultPlanType={
+            (['insurance', 'healthshare', 'medicaid', 'short_term'] as const).includes(
+              addPlanFor.carrier_type as 'insurance' | 'healthshare' | 'medicaid' | 'short_term',
+            )
+              ? (addPlanFor.carrier_type as 'insurance' | 'healthshare' | 'medicaid' | 'short_term')
+              : undefined
+          }
+          onCreated={() => fetchPlansFor(addPlanFor.id)}
+        />
       )}
     </div>
   );
