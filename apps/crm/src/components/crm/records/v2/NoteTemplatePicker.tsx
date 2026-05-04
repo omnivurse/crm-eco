@@ -106,7 +106,7 @@ export function NoteTemplatePicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+      <DialogContent className="sm:max-w-4xl max-h-[80vh] overflow-hidden p-0 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-white/5">
           <DialogTitle className="text-lg font-semibold flex items-center gap-2">
             <StickyNote className="w-5 h-5 text-teal-600" />
