@@ -3,11 +3,13 @@
 import { useState, memo, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { ScrollArea } from '@crm-eco/ui/components/scroll-area';
+import { supabase } from '@/lib/supabase-client';
+import { clearOfflineState } from '@/lib/offline/reset';
 import type { CrmModule } from '@/lib/crm/types';
 import {
   Users,
@@ -100,6 +102,7 @@ import {
   BookOpen,
   GraduationCap,
   Video,
+  LogOut,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -213,6 +216,30 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
     'System': false,
   });
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        await fetch('/api/auth/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'logout', email: user.email }),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log logout:', err);
+    }
+    try {
+      await clearOfflineState();
+    } catch (err) {
+      console.error('Failed to clear offline state on sign-out:', err);
+    }
+    await supabase.auth.signOut();
+    router.push('/crm-login');
+    router.refresh();
+  };
 
   const getIcon = (iconName: string): LucideIcon => {
     return iconMap[iconName] || FileText;
@@ -508,6 +535,21 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
             </Button>
           </div>
         )}
+
+        {/* Sign Out */}
+        <Button
+          variant="ghost"
+          onClick={handleSignOut}
+          title={collapsed ? 'Sign out' : undefined}
+          className={cn(
+            'w-full h-9 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-all duration-200',
+            'hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg',
+            collapsed ? 'justify-center px-2' : 'justify-start px-3 gap-2',
+          )}
+        >
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && <span className="text-sm font-medium">Sign out</span>}
+        </Button>
 
         {/* Collapse Toggle */}
         <Button

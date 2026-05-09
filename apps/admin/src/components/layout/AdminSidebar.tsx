@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createBrowserClient } from '@supabase/ssr';
 import { cn } from '@crm-eco/ui';
 import {
   LayoutDashboard,
@@ -28,6 +29,7 @@ import {
   ChevronLeft,
   PieChart,
   Activity,
+  LogOut,
 } from 'lucide-react';
 import { useTerminal } from '@/components/terminal';
 
@@ -160,8 +162,31 @@ export function AdminSidebar({
   onToggleCollapse,
 }: AdminSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { toggle: toggleTerminal } = useTerminal();
-  
+
+  const handleSignOut = async () => {
+    const supabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        await fetch('/api/auth/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'logout', email: user.email }),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to log logout:', err);
+    }
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   // State for collapsed sections - always start with empty set on server,
   // then hydrate from localStorage on mount to avoid hydration mismatch
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -366,6 +391,29 @@ export function AdminSidebar({
           );
         })}
       </nav>
+
+      {/* Sign Out Button */}
+      <div className={cn("pb-2 transition-all duration-300", !forMobile && isCollapsed ? "px-2" : "px-2")}>
+        <button
+          onClick={() => {
+            handleSignOut();
+            handleLinkClick();
+          }}
+          className={cn(
+            "w-full flex items-center rounded-lg text-sm font-medium transition-all duration-200 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300 group relative",
+            !forMobile && isCollapsed ? "justify-center p-2.5" : "gap-3 px-3 py-2.5"
+          )}
+          title="Sign out"
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          {(forMobile || !isCollapsed) && <span>Sign out</span>}
+          {!forMobile && isCollapsed && (
+            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 dark:bg-slate-900 text-white text-sm rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-lg">
+              Sign out
+            </div>
+          )}
+        </button>
+      </div>
 
       {/* Command Center Button */}
       <div className={cn("pb-2 transition-all duration-300", !forMobile && isCollapsed ? "px-2" : "px-2")}>

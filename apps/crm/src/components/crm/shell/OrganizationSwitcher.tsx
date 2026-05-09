@@ -108,7 +108,7 @@ export function OrganizationSwitcher({
         <div
           role="listbox"
           aria-label="Organizations"
-          className="absolute right-0 z-50 mt-2 w-80 origin-top-right overflow-hidden rounded-xl border border-border bg-popover shadow-2xl ring-1 ring-black/5"
+          className="absolute right-0 z-[60] mt-2 w-80 origin-top-right overflow-hidden rounded-xl border border-border bg-popover shadow-2xl ring-1 ring-black/5"
         >
           <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
             <Building2 className="h-3.5 w-3.5 text-muted-foreground" />

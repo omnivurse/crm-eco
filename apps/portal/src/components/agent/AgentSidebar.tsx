@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@crm-eco/lib/supabase/client';
 import { cn } from '@crm-eco/ui';
 import {
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   Heart,
   Sparkles,
   X,
+  LogOut,
 } from 'lucide-react';
 
 interface NavItem {
@@ -54,12 +56,20 @@ interface AgentSidebarProps {
 
 export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: AgentSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   // Handle link click on mobile - close the menu
   const handleLinkClick = () => {
     if (onMobileClose) {
       onMobileClose();
     }
+  };
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/signin');
+    router.refresh();
   };
 
   const sidebarContent = (
@@ -143,7 +153,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
         <div className="px-3 py-4 border-t border-white/10 space-y-1">
           {bottomNavItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            
+
             return (
               <Link
                 key={item.href}
@@ -169,6 +179,21 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
               </Link>
             );
           })}
+
+          {/* Sign Out */}
+          <button
+            type="button"
+            onClick={() => {
+              handleSignOut();
+              handleLinkClick();
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+          >
+            <span className="text-red-300/70">
+              <LogOut className="h-5 w-5" />
+            </span>
+            Sign out
+          </button>
         </div>
 
         {/* Agent Info Footer */}
