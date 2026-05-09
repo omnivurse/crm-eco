@@ -26,7 +26,7 @@ export function AdminMemberFunnel({ stats }: AdminMemberFunnelProps) {
       key: 'leads',
       label: 'Leads',
       count: pipelineCounts.leads,
-      href: '/leads',
+      href: '/members?status=lead',
       color: 'bg-slate-500 hover:bg-slate-400',
     },
     {

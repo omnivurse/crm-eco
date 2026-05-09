@@ -11,6 +11,7 @@ import {
 } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
 import { ClientProviders } from '@/components/providers/ClientProviders';
+import { getActiveTenant, listMyTenants } from '@/lib/tenant';
 
 export default async function CrmLayout({
   children,
@@ -30,7 +31,16 @@ export default async function CrmLayout({
     redirect('/crm-login');
   }
 
-  if (!profile.crm_role) {
+  // Admit users either via legacy profiles.crm_role OR via a resolved active
+  // tenant from organization_members. The new RLS helpers (post-migration
+  // 202605080010) honor org membership, so an admin-tier member of the
+  // active org is allowed in even without a profile-side crm_role.
+  const activeTenant = await getActiveTenant();
+  const admittedViaTenant =
+    activeTenant !== null &&
+    ['owner', 'super_admin', 'admin', 'staff'].includes(activeTenant.role);
+
+  if (!profile.crm_role && !admittedViaTenant) {
     redirect('/crm-login?error=no_crm_access');
   }
 
@@ -43,14 +53,16 @@ export default async function CrmLayout({
   }
   let organization = null;
   let modules: Awaited<ReturnType<typeof getCachedModules>> = [];
+  let memberships: Awaited<ReturnType<typeof listMyTenants>> = [];
 
   try {
-    [organization, modules] = await Promise.all([
+    [organization, modules, memberships] = await Promise.all([
       getCachedOrganization(organizationId),
       getCachedModules(organizationId),
+      listMyTenants(),
     ]);
   } catch (error) {
-    console.error('[CRM Layout] Failed to fetch org/modules:', error);
+    console.error('[CRM Layout] Failed to fetch org/modules/memberships:', error);
     // Continue with empty modules - the shell can still render
   }
 
@@ -76,6 +88,8 @@ export default async function CrmLayout({
         modules={activeModules}
         profile={profile}
         organizationName={organization?.name}
+        tenants={memberships}
+        activeTenantId={organizationId}
       >
         {children}
       </CrmShell>

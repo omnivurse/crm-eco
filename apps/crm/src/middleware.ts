@@ -8,11 +8,14 @@ const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 minutes in ms
 interface CachedProfile {
   id: string;
   crm_role: string | null;
-  organization_id: string;
   is_active: boolean;
   user_id: string;
   exp: number; // Expiration timestamp
 }
+// NOTE: organization_id is intentionally NOT cached. Tenant switching via
+// `dh_active_org` cookie changes the effective org per request, but
+// middleware-level routing decisions only need is_active + crm_role. Keeping
+// org out of the cache means a switch never serves a stale tenant.
 
 // ---------------------------------------------------------------------------
 // HMAC signing helpers (Web Crypto API — Edge Runtime compatible)
@@ -85,7 +88,7 @@ async function getCachedProfile(request: NextRequest, userId: string): Promise<C
 
 async function setProfileCacheOnResponse(
   response: NextResponse,
-  profile: { id: string; crm_role: string | null; organization_id: string; is_active: boolean },
+  profile: { id: string; crm_role: string | null; is_active: boolean },
   userId: string
 ): Promise<void> {
   const cached: CachedProfile = {
@@ -271,7 +274,7 @@ async function resolveProfile(
   for (let attempt = 0; attempt < 2; attempt++) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, crm_role, organization_id, is_active')
+      .select('id, crm_role, is_active')
       .eq('user_id', userId)
       .single();
 

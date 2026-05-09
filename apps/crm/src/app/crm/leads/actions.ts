@@ -81,7 +81,7 @@ export async function createLeadsSavedView(params: {
       throw new Error(`Failed to create saved view: ${error.message}`);
     }
 
-    revalidatePath('/leads');
+    revalidatePath('/crm/modules/leads');
     return { success: true, viewId: data?.id };
   } catch (error) {
     console.error('createLeadsSavedView error:', error);
@@ -130,7 +130,7 @@ export async function setLeadsSavedViewDefault(viewId: string): Promise<ActionRe
       throw new Error(`Failed to set default view: ${updateError.message}`);
     }
 
-    revalidatePath('/leads');
+    revalidatePath('/crm/modules/leads');
     return { success: true };
   } catch (error) {
     console.error('setLeadsSavedViewDefault error:', error);
@@ -155,7 +155,7 @@ export async function clearLeadsSavedViewDefault(): Promise<ActionResult> {
       .eq('owner_profile_id', profile.id)
       .eq('context', LEADS_BOARD_CONTEXT);
 
-    revalidatePath('/leads');
+    revalidatePath('/crm/modules/leads');
     return { success: true };
   } catch (error) {
     console.error('clearLeadsSavedViewDefault error:', error);
@@ -185,7 +185,7 @@ export async function deleteLeadsSavedView(viewId: string): Promise<ActionResult
       throw new Error(`Failed to delete saved view: ${error.message}`);
     }
 
-    revalidatePath('/leads');
+    revalidatePath('/crm/modules/leads');
     return { success: true };
   } catch (error) {
     console.error('deleteLeadsSavedView error:', error);

@@ -1,9 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
-  "buildCommand": "cd ../.. && npm run build --workspace=@crm-eco/marketing",
-  "installCommand": "cd ../.. && npm install --no-audit --no-fund",
-  "outputDirectory": ".next",
-  "regions": ["iad1"],
-  "github": { "silent": true }
-}

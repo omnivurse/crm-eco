@@ -52,10 +52,14 @@ const QuickCreateDrawer = dynamic(
   { ssr: false }
 );
 
+import { OrganizationSwitcher, type SwitcherTenant } from './OrganizationSwitcher';
+
 interface CrmTopBarProps {
   modules: CrmModule[];
   profile: CrmProfile;
   organizationName?: string;
+  tenants?: SwitcherTenant[];
+  activeTenantId?: string;
   onOpenCommandPalette?: () => void;
   mobileMenuOpen?: boolean;
   onMobileMenuToggle?: () => void;
@@ -65,6 +69,8 @@ export const CrmTopBar = memo(function CrmTopBar({
   modules,
   profile,
   organizationName,
+  tenants,
+  activeTenantId,
   onOpenCommandPalette,
   mobileMenuOpen,
   onMobileMenuToggle,
@@ -176,6 +182,9 @@ export const CrmTopBar = memo(function CrmTopBar({
 
       {/* Right Section: Search + Actions */}
       <div className="flex items-center gap-1 lg:gap-2">
+        {tenants && activeTenantId && tenants.length > 1 && (
+          <OrganizationSwitcher tenants={tenants} activeTenantId={activeTenantId} compact />
+        )}
         {/* Search Button — opens global search overlay */}
         <button
           onClick={() => setSearchOpen(true)}

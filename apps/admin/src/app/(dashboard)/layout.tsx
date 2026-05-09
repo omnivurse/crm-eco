@@ -1,8 +1,5 @@
 import { redirect } from 'next/navigation';
-import { AdminShell } from '@/components/layout/AdminShell';
-import { AdminNotificationListener } from '@/components/notifications/AdminNotificationListener';
-import { TerminalWrapper } from '@/components/terminal/TerminalWrapper';
-import { TenantProvider } from '@/components/tenant/TenantContext';
+import { DashboardClientShell } from '@/components/tenant/DashboardClientShell';
 import { getAdminProfile } from '@/lib/profile';
 import { getActiveTenant, listMyTenants } from '@/lib/tenant';
 
@@ -41,40 +38,22 @@ export default async function DashboardLayout({
   const activeTenantId = activeTenant?.organizationId ?? profile.organization_id;
 
   return (
-    <TenantProvider
-      organizationId={activeTenantId}
-      organizationName={activeTenant?.organizationName ?? undefined}
-      role={activeTenant?.role ?? profile.role ?? undefined}
-      tenants={memberships.map((m) => ({
+    <DashboardClientShell
+      profileId={profile.id}
+      profileFullName={profile.full_name}
+      profileEmail={profile.email}
+      profileRole={profile.role}
+      activeTenantId={activeTenantId}
+      activeTenantName={activeTenant?.organizationName ?? undefined}
+      activeTenantRole={activeTenant?.role ?? profile.role ?? undefined}
+      memberships={memberships.map((m) => ({
         organizationId: m.organizationId,
         organizationName: m.organizationName,
         role: m.role,
       }))}
+      switcherTenants={switcherTenants}
     >
-      <TerminalWrapper
-        profile={{
-          id: profile.id,
-          role: profile.role || undefined,
-          full_name: profile.full_name || undefined,
-          organization_id: activeTenantId || undefined,
-        }}
-      >
-        <AdminShell
-          profile={{
-            fullName: profile.full_name || '',
-            email: profile.email,
-            avatarUrl: null,
-            role: profile.role || '',
-            organizationId: activeTenantId,
-          }}
-          userId={profile.id}
-          tenants={switcherTenants}
-          activeTenantId={activeTenantId}
-        >
-          <AdminNotificationListener userId={profile.id} />
-          {children}
-        </AdminShell>
-      </TerminalWrapper>
-    </TenantProvider>
+      {children}
+    </DashboardClientShell>
   );
 }

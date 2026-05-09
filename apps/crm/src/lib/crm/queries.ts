@@ -221,7 +221,19 @@ export async function getCurrentProfile(): Promise<CrmProfile | null> {
       console.error('[CRM] Error fetching profile:', profileError.message);
     }
 
-    return profile as CrmProfile | null;
+    if (!profile) return null;
+
+    // Override organization_id with the active tenant when the user has
+    // switched orgs via organization_members. Mirrors the same pattern in
+    // apps/crm/src/lib/supabase-server.ts so every CRM call site that reads
+    // profile.organization_id auto-scopes to the active tenant.
+    const { getActiveTenant } = await import('@/lib/tenant');
+    const tenant = await getActiveTenant();
+    if (tenant && tenant.organizationId !== profile.organization_id) {
+      return { ...profile, organization_id: tenant.organizationId } as CrmProfile;
+    }
+
+    return profile as CrmProfile;
   } catch (error) {
     console.error('[CRM] getCurrentProfile failed:', error);
     return null; // Return null instead of throwing — callers check for null

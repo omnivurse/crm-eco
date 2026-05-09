@@ -14,6 +14,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { cache } from 'react';
 import type { User } from '@supabase/supabase-js';
+import { getActiveTenant } from './tenant';
 
 // Types for better type safety
 interface CachedAuthResult {
@@ -28,6 +29,8 @@ interface CachedProfile {
   crm_role: string | null;
   full_name: string | null;
   user_id: string;
+  /** When set, the user reached this org via tenant switching (organization_members), not their primary profile. */
+  active_tenant_role: string | null;
 }
 
 /**
@@ -112,7 +115,20 @@ export const getAuthProfile = cache(async (): Promise<CachedProfile | null> => {
       return null;
     }
 
-    return profile;
+    // If the user has resolved an active tenant via organization_members,
+    // override organization_id so every existing call site that reads
+    // profile.organization_id automatically scopes to the active tenant.
+    // The user's primary profile (and crm_role) are unchanged.
+    const tenant = await getActiveTenant();
+    if (tenant && tenant.organizationId !== profile.organization_id) {
+      return {
+        ...profile,
+        organization_id: tenant.organizationId,
+        active_tenant_role: tenant.role,
+      };
+    }
+
+    return { ...profile, active_tenant_role: null };
   } catch (error) {
     console.error('[Auth] Unexpected error in getAuthProfile:', error);
     return null;
@@ -148,7 +164,15 @@ export const verifyCrmAccess = cache(async () => {
     };
   }
 
-  if (!profile.crm_role) {
+  // Admit users either via legacy profiles.crm_role OR via an active tenant
+  // resolved through organization_members. The new RLS helpers (post-migration
+  // 202605080010) honor membership directly, so a user with admin-tier
+  // membership is allowed to read CRM data even without profiles.crm_role.
+  const admittedViaTenant =
+    profile.active_tenant_role !== null &&
+    ['owner', 'super_admin', 'admin', 'staff'].includes(profile.active_tenant_role);
+
+  if (!profile.crm_role && !admittedViaTenant) {
     return {
       user,
       profile,

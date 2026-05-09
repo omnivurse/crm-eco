@@ -18,15 +18,25 @@ const GizmoWidget = dynamic(
   { ssr: false }
 );
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+import type { SwitcherTenant } from './OrganizationSwitcher';
 
 interface CrmShellProps {
   children: React.ReactNode;
   modules: CrmModule[];
   profile: CrmProfile;
   organizationName?: string;
+  tenants?: SwitcherTenant[];
+  activeTenantId?: string;
 }
 
-export function CrmShell({ children, modules, profile, organizationName }: CrmShellProps) {
+export function CrmShell({
+  children,
+  modules,
+  profile,
+  organizationName,
+  tenants,
+  activeTenantId,
+}: CrmShellProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -85,6 +95,8 @@ export function CrmShell({ children, modules, profile, organizationName }: CrmSh
               modules={modules}
               profile={profile}
               organizationName={organizationName}
+              tenants={tenants}
+              activeTenantId={activeTenantId}
               onOpenCommandPalette={handleOpenCommandPalette}
               mobileMenuOpen={mobileMenuOpen}
               onMobileMenuToggle={handleMobileMenuToggle}

@@ -218,7 +218,7 @@ async function main() {
   ok('Resend setup complete.');
   ok(
     'Next: set RESEND_API_KEY, SALES_FROM_EMAIL, SALES_INBOX_EMAIL on the\n' +
-      '   `apps/marketing` Vercel project (Production scope) and redeploy.',
+      '   appropriate Vercel project (Production scope) and redeploy.',
   );
 }
 

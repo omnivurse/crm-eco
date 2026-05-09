@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
-import { ThemeProvider } from '@/components/providers/theme-provider';
-import { ServiceWorkerRegistration } from '@/components/pwa';
-import { PinLockOverlay } from '@crm-eco/ui';
+import { RootProviders } from '@/components/providers/RootProviders';
 import './globals.css';
 
 const inter = Inter({
@@ -99,11 +97,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://sffisarikcreyyjzdjvb.supabase.co" />
       </head>
       <body className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
-        <PinLockOverlay pin="012049" appName="Secure Access" />
-        <ThemeProvider defaultTheme="light">
-          <ServiceWorkerRegistration />
-          {children}
-        </ThemeProvider>
+        <RootProviders>{children}</RootProviders>
       </body>
     </html>
   );
