@@ -25,6 +25,22 @@ export function ServiceWorkerRegistration() {
       window.addEventListener('sw-update-available', () => {
         setUpdateAvailable(true);
       });
+
+      // Recover from a stale SW that's serving mismatched chunks after a deploy.
+      // Detect the runtime error, unregister all SWs, drop all caches, then reload
+      // once. The reload guard prevents a loop if the error has another cause.
+      const RECOVERY_KEY = '__crm_sw_chunk_recovery__';
+      const handleChunkError = (message: string) => {
+        if (!message.includes("undefined (reading 'call')") && !message.includes('ChunkLoadError')) return;
+        if (sessionStorage.getItem(RECOVERY_KEY)) return;
+        sessionStorage.setItem(RECOVERY_KEY, '1');
+        Promise.all([
+          navigator.serviceWorker.getRegistrations().then((regs) => Promise.all(regs.map((r) => r.unregister()))),
+          'caches' in window ? caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k)))) : Promise.resolve(),
+        ]).finally(() => window.location.reload());
+      };
+      window.addEventListener('error', (e) => handleChunkError(e.message || String(e.error?.message || '')));
+      window.addEventListener('unhandledrejection', (e) => handleChunkError(String(e.reason?.message || e.reason || '')));
     } else if (!swEnabled && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       // If a previous build registered a SW, unregister it in dev so stale
       // caches don't interfere with HMR.

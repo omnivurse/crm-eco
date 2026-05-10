@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 8;
+const CACHE_VERSION = 9;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
