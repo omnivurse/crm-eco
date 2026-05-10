@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase-client';
+import { clearOfflineState } from '@/lib/offline/reset';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
     LayoutDashboard,
@@ -84,7 +86,7 @@ import {
     SlidersHorizontal,
     type LucideIcon,
 } from 'lucide-react';
-import { Lightbulb, Search } from 'lucide-react';
+import { Lightbulb, Search, LogOut } from 'lucide-react';
 import { useModule, getNavItemsForModule, TopModule, type NavItem } from '@/contexts/ModuleContext';
 import { useGizmoSafe } from '@/components/crm/gizmo';
 
@@ -218,6 +220,30 @@ export function ZohoContextualSidebar({
     onMobileClose,
 }: ZohoContextualSidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user?.email) {
+                await fetch('/api/auth/log', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'logout', email: user.email }),
+                });
+            }
+        } catch (err) {
+            console.error('Failed to log logout:', err);
+        }
+        try {
+            await clearOfflineState();
+        } catch (err) {
+            console.error('Failed to clear offline state on sign-out:', err);
+        }
+        await supabase.auth.signOut();
+        router.push('/crm-login');
+        router.refresh();
+    };
 
     // Determine active module from pathname - order matters (more specific first)
     const getActiveFromPath = (): TopModule => {
@@ -375,6 +401,23 @@ export function ZohoContextualSidebar({
                     <GizmoReEnableButton isOpen={isOpen} />
                 </nav>
 
+                {/* Sign Out — pinned to footer for visibility */}
+                <div className={cn('border-t border-slate-200/80 dark:border-white/5 px-2 py-2', !isOpen && 'px-1.5')}>
+                    <button
+                        type="button"
+                        onClick={handleSignOut}
+                        title={!isOpen ? 'Sign out' : undefined}
+                        className={cn(
+                            'w-full flex items-center gap-2.5 px-2.5 py-[6px] rounded-md text-[13px] font-medium transition-colors',
+                            'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-700 dark:hover:text-red-300',
+                            !isOpen && 'justify-center px-1.5'
+                        )}
+                    >
+                        <LogOut className="w-[15px] h-[15px] flex-shrink-0" />
+                        {isOpen && <span className="flex-1 text-left">Sign out</span>}
+                    </button>
+                </div>
+
                 {/* Toggle Button */}
                 <button
                     onClick={onToggle}
@@ -475,6 +518,17 @@ export function ZohoContextualSidebar({
                         <Settings className="w-5 h-5" />
                         <span>Settings</span>
                     </Link>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            handleSignOut();
+                            handleLinkClick();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        <span>Sign out</span>
+                    </button>
                 </div>
             </aside>
         </>
