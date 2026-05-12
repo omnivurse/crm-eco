@@ -228,8 +228,14 @@ BEGIN
       -- UPSERT
       -- ----------------------------------------------------------------------
       IF v_existing_id IS NOT NULL THEN
+        -- SAFE MERGE: existing-wins semantics. Right side of `||` wins for
+        -- shared keys, so v_data only contributes brand-new keys; any field
+        -- already present in `data` (including staff-edited values) is
+        -- preserved. New JSONB keys from the latest Zoho export still land,
+        -- but existing values are never overwritten. Top-level columns
+        -- already use COALESCE(existing, incoming) for the same reason.
         UPDATE crm_records SET
-          data       = data || v_data,
+          data       = COALESCE(v_data, '{}'::jsonb) || COALESCE(data, '{}'::jsonb),
           email      = COALESCE(NULLIF(email, ''), NULLIF(v_row.email, '')),
           phone      = COALESCE(NULLIF(phone, ''), NULLIF(v_row.phone, ''), NULLIF(v_row.mobile, '')),
           status     = COALESCE(NULLIF(status, ''), NULLIF(v_row.lead_status, '')),
