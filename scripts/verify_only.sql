@@ -29,7 +29,7 @@
 \echo ''
 \echo '############################################################'
 \echo '# READ-ONLY VERIFICATION REPORT'
-\echo '# Target org: ac6e7228-2ea0-4582-8464-562c3e8ac56e (PIFH)'
+\echo '# Target org: 00000000-0000-0000-0000-000000000001 (PIFH)'
 \echo '############################################################'
 \echo ''
 
@@ -61,11 +61,11 @@ SELECT
 
 SELECT id, name, created_at
   FROM organizations
- WHERE id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e';
+ WHERE id = '00000000-0000-0000-0000-000000000001';
 
 SELECT id, key, name, is_enabled
   FROM crm_modules
- WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+ WHERE org_id = '00000000-0000-0000-0000-000000000001'
    AND key IN ('leads', 'contacts')
  ORDER BY key;
 
@@ -83,13 +83,13 @@ SELECT
   count(*) AS row_count
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
 GROUP BY m.key
 ORDER BY m.key;
 
 SELECT 'crm_notes (PIFH)' AS table_, count(*)
   FROM crm_notes
- WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e';
+ WHERE org_id = '00000000-0000-0000-0000-000000000001';
 
 -- ----------------------------------------------------------------------------
 -- 4. STAGING TABLES — should be empty between runs
@@ -118,7 +118,7 @@ SELECT
   count(*) FILTER (WHERE r.updated_at > now() - interval '1 day')   AS edited_in_1d
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
 GROUP BY m.key
 ORDER BY m.key;
 
@@ -135,7 +135,7 @@ SELECT
   count(*)
 FROM crm_audit_log
 WHERE entity = 'crm_records'
-  AND org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+  AND org_id = '00000000-0000-0000-0000-000000000001'
   AND created_at > now() - interval '24 hours'
 GROUP BY action
 ORDER BY action;
@@ -162,7 +162,7 @@ SELECT
   r.updated_at
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
   AND m.key = 'contacts'
 ORDER BY r.updated_at DESC
 LIMIT 10;
@@ -183,7 +183,7 @@ SELECT
   count(*)                                    AS total_overlap_rows
 FROM import_leads_staging s
 JOIN crm_records r
-  ON  r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+  ON  r.org_id = '00000000-0000-0000-0000-000000000001'
   AND r.data->>'zoho_record_id' = s.record_id
 JOIN crm_modules m ON m.id = r.module_id;
 
@@ -217,7 +217,7 @@ WITH matched AS (
    WHERE s.note_content IS NOT NULL AND trim(s.note_content) <> ''
      AND EXISTS (
        SELECT 1 FROM crm_records r
-        WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+        WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
           AND (
             r.data->>'zoho_record_id' = s.parent_id
          OR r.data->>'zoho_record_id' = 'zcrm_' || s.parent_id

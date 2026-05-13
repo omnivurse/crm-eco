@@ -26,7 +26,7 @@
 \echo '############################################################'
 \echo '# POST-APPLY VERIFICATION'
 \echo '# Window: last 30 minutes (edit window_minutes at top if needed)'
-\echo '# Target org: ac6e7228-2ea0-4582-8464-562c3e8ac56e (PIFH)'
+\echo '# Target org: 00000000-0000-0000-0000-000000000001 (PIFH)'
 \echo '############################################################'
 
 -- ----------------------------------------------------------------------------
@@ -70,7 +70,7 @@ SELECT
   count(*) AS contacts_modified_in_window
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
   AND m.key = 'contacts'
   AND r.updated_at > now() - (:'window_minutes' || ' minutes')::interval;
 
@@ -88,7 +88,7 @@ WITH contact_updates AS (
   JOIN crm_modules m ON m.id = r.module_id
   WHERE al.entity = 'crm_records'
     AND al.action = 'update'
-    AND al.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+    AND al.org_id = '00000000-0000-0000-0000-000000000001'
     AND m.key = 'contacts'
     AND al.created_at > now() - (:'window_minutes' || ' minutes')::interval
 )
@@ -114,7 +114,7 @@ SELECT
   count(*) AS leads_created_in_window
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
   AND m.key = 'leads'
   AND r.created_at > now() - (:'window_minutes' || ' minutes')::interval;
 
@@ -135,7 +135,7 @@ SELECT
        ELSE '❌ FAIL — '||count(*)||' notes is more than staged ('||99832||')' END AS status,
   count(*) AS notes_created_in_window
 FROM crm_notes
-WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE org_id = '00000000-0000-0000-0000-000000000001'
   AND created_at > now() - (:'window_minutes' || ' minutes')::interval;
 
 -- ----------------------------------------------------------------------------
@@ -147,11 +147,11 @@ WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
 WITH new_leads AS (
   SELECT *
   FROM crm_records
-  WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+  WHERE org_id = '00000000-0000-0000-0000-000000000001'
     AND created_at > now() - (:'window_minutes' || ' minutes')::interval
     AND module_id = (
       SELECT id FROM crm_modules
-      WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND key = 'leads'
+      WHERE org_id = '00000000-0000-0000-0000-000000000001' AND key = 'leads'
     )
 )
 SELECT
@@ -181,7 +181,7 @@ WITH missing AS (
   FROM import_leads_staging s
   WHERE NOT EXISTS (
     SELECT 1 FROM crm_records r
-    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+    WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
       AND r.data->>'zoho_record_id' = s.record_id
   )
 )
@@ -196,7 +196,7 @@ SELECT 'MISSING LEAD' AS issue, record_id, first_name, last_name, email
 FROM import_leads_staging s
 WHERE NOT EXISTS (
   SELECT 1 FROM crm_records r
-  WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+  WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
     AND r.data->>'zoho_record_id' = s.record_id
 )
 LIMIT 10;
@@ -219,7 +219,7 @@ SELECT
   r.created_at
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
   AND m.key = 'leads'
   AND r.created_at > now() - (:'window_minutes' || ' minutes')::interval
 ORDER BY r.created_at DESC
@@ -247,7 +247,7 @@ SELECT
   r.updated_at
 FROM crm_records r
 JOIN crm_modules m ON m.id = r.module_id
-WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE r.org_id = '00000000-0000-0000-0000-000000000001'
   AND m.key = 'contacts'
 ORDER BY r.updated_at DESC
 LIMIT 10;
@@ -265,7 +265,7 @@ SELECT
   al.action,
   count(*) AS n
 FROM crm_audit_log al
-WHERE al.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+WHERE al.org_id = '00000000-0000-0000-0000-000000000001'
   AND al.created_at > now() - (:'window_minutes' || ' minutes')::interval
 GROUP BY al.entity, al.action
 ORDER BY al.entity, al.action;
@@ -278,19 +278,19 @@ ORDER BY al.entity, al.action;
 
 SELECT
   (SELECT count(*) FROM crm_records r JOIN crm_modules m ON m.id = r.module_id
-    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'leads')    AS total_leads,
+    WHERE r.org_id = '00000000-0000-0000-0000-000000000001' AND m.key = 'leads')    AS total_leads,
   (SELECT count(*) FROM crm_records r JOIN crm_modules m ON m.id = r.module_id
-    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'contacts') AS total_contacts,
+    WHERE r.org_id = '00000000-0000-0000-0000-000000000001' AND m.key = 'contacts') AS total_contacts,
   (SELECT count(*) FROM crm_notes
-    WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e')                          AS total_notes,
+    WHERE org_id = '00000000-0000-0000-0000-000000000001')                          AS total_notes,
   (SELECT count(*) FROM crm_records r JOIN crm_modules m ON m.id = r.module_id
-    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'leads'
+    WHERE r.org_id = '00000000-0000-0000-0000-000000000001' AND m.key = 'leads'
       AND r.created_at > now() - (:'window_minutes' || ' minutes')::interval)       AS leads_added_in_window,
   (SELECT count(*) FROM crm_notes
-    WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+    WHERE org_id = '00000000-0000-0000-0000-000000000001'
       AND created_at > now() - (:'window_minutes' || ' minutes')::interval)         AS notes_added_in_window,
   (SELECT count(*) FROM crm_records r JOIN crm_modules m ON m.id = r.module_id
-    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'contacts'
+    WHERE r.org_id = '00000000-0000-0000-0000-000000000001' AND m.key = 'contacts'
       AND r.updated_at > now() - (:'window_minutes' || ' minutes')::interval)       AS contacts_modified_in_window_MUST_BE_0;
 
 \echo ''
