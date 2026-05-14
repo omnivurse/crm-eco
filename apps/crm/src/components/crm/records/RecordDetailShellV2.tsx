@@ -28,6 +28,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import {
   ArrowLeft,
+  Bell,
   Edit,
   MoreHorizontal,
   Mail,
@@ -114,6 +115,8 @@ import { KeyboardShortcutsDialog } from './v2/KeyboardShortcutsDialog';
 import { PresenceStack } from './v2/PresenceStack';
 import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
+import { FollowUpReminderDialog } from './FollowUpReminderDialog';
+import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
 import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
 import { RecordFieldLocksProvider } from '@/hooks/useRecordFieldLocks';
@@ -368,6 +371,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showCustomizeDialog, setShowCustomizeDialog] = useState(false);
   const [showShortcutsDialog, setShowShortcutsDialog] = useState(false);
+  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
+  const [followUpRefreshKey, setFollowUpRefreshKey] = useState(0);
 
   // Right rail can be collapsed when the screen is tight or the user wants
   // the main panel to take the full width.
@@ -1184,6 +1189,21 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 </Button>
 
                 <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  title="Set a follow-up reminder for this record"
+                  onClick={() => setShowFollowUpDialog(true)}
+                  className="inline-flex shrink-0 border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 font-medium"
+                >
+                  <Bell className="w-4 h-4 shrink-0 sm:mr-1.5" />
+                  <span className="text-xs font-medium sm:text-sm">
+                    <span className="sm:hidden">Remind</span>
+                    <span className="hidden sm:inline">Set Reminder</span>
+                  </span>
+                </Button>
+
+                <Button
                   variant="outline"
                   size="sm"
                   type="button"
@@ -1414,6 +1434,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 className="mt-4"
               />
             )}
+
+            {/* Follow-up reminder banner */}
+            <FollowUpBanner
+              recordId={record.id}
+              refreshKey={followUpRefreshKey}
+              className="mt-4"
+            />
 
             {/* Top tabs: Overview / Timeline / Data Privacy */}
             <div className="mt-5 -mb-px">
@@ -1918,6 +1945,14 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       <KeyboardShortcutsDialog
         open={showShortcutsDialog}
         onOpenChange={setShowShortcutsDialog}
+      />
+
+      <FollowUpReminderDialog
+        open={showFollowUpDialog}
+        onOpenChange={setShowFollowUpDialog}
+        recordId={record.id}
+        recordTitle={getRecordDisplayName(record)}
+        onCreated={() => setFollowUpRefreshKey((k) => k + 1)}
       />
 
       {/* Mobile bottom action bar — lg:hidden, renders only on narrow

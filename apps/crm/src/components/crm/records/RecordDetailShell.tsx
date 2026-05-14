@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
+  Bell,
   Edit,
   UserPlus,
   CheckSquare,
@@ -65,6 +66,8 @@ import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContac
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
+import { FollowUpReminderDialog } from './FollowUpReminderDialog';
+import { FollowUpBanner } from './FollowUpBanner';
 
 interface RecordDetailShellProps {
   record: CrmRecord;
@@ -215,6 +218,8 @@ export const RecordDetailShell = memo(function RecordDetailShell({
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
+  const [followUpRefreshKey, setFollowUpRefreshKey] = useState(0);
   const displayStatus = optimisticStatus || record.status;
 
   // Sort notes: most recent first
@@ -563,6 +568,16 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   <Edit className="w-4 h-4 mr-1" />
                   Edit
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  title="Set a follow-up reminder"
+                  onClick={() => setShowFollowUpDialog(true)}
+                  className="border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-500/10 shrink-0"
+                >
+                  <Bell className="w-4 h-4 mr-1" />
+                  Remind
+                </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -669,6 +684,13 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                 className="mt-4"
               />
             )}
+
+            {/* Follow-up reminder banner */}
+            <FollowUpBanner
+              recordId={record.id}
+              refreshKey={followUpRefreshKey}
+              className="mt-4"
+            />
 
             {/* Tabs */}
             <div className="mt-6 -mb-px">
@@ -1182,6 +1204,14 @@ export const RecordDetailShell = memo(function RecordDetailShell({
           owner_id: (record as { owner_id?: string | null }).owner_id ?? null,
           created_at: record.created_at,
         }}
+      />
+
+      <FollowUpReminderDialog
+        open={showFollowUpDialog}
+        onOpenChange={setShowFollowUpDialog}
+        recordId={record.id}
+        recordTitle={getRecordDisplayName(record)}
+        onCreated={() => setFollowUpRefreshKey((k) => k + 1)}
       />
     </div>
   );

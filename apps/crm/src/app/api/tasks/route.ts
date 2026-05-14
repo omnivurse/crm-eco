@@ -64,7 +64,9 @@ const createTaskSchema = z.object({
   due_date: z.string().optional(),
   record_id: z.string().uuid().optional(),
   assigned_to: z.string().uuid().optional(),
-  activity_type: z.enum(['task', 'call', 'meeting', 'email']).optional().default('task'),
+  activity_type: z.enum(['task', 'call', 'meeting', 'email', 'follow_up']).optional().default('task'),
+  repeat_interval_days: z.number().int().positive().optional(),
+  follow_up_note: z.string().optional(),
 });
 
 /**
@@ -106,6 +108,8 @@ export async function POST(request: NextRequest) {
         assigned_to: parsed.data.assigned_to || profile.id,
         created_by: profile.id,
         activity_type: parsed.data.activity_type || 'task',
+        repeat_interval_days: parsed.data.repeat_interval_days || null,
+        follow_up_note: parsed.data.follow_up_note || null,
       })
       .select()
       .single();

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { 
   ArrowRight,
+  Bell,
   CheckSquare,
   Phone,
   Users,
@@ -63,6 +64,7 @@ const ACTIVITY_TYPE_ICONS: Record<string, React.ReactNode> = {
   call: <Phone className="w-4 h-4" />,
   meeting: <Users className="w-4 h-4" />,
   email: <Mail className="w-4 h-4" />,
+  follow_up: <Bell className="w-4 h-4" />,
 };
 
 function StageChangeEvent({ data }: { data: CrmStageHistoryWithUser }) {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { 
+  Bell,
   CheckSquare, 
   Phone, 
   Users, 
@@ -54,6 +55,7 @@ const ACTIVITY_TYPES: { value: ActivityType; label: string; icon: React.ReactNod
   { value: 'call', label: 'Call', icon: <Phone className="w-4 h-4" /> },
   { value: 'meeting', label: 'Meeting', icon: <Users className="w-4 h-4" /> },
   { value: 'email', label: 'Email', icon: <Mail className="w-4 h-4" /> },
+  { value: 'follow_up', label: 'Follow-Up', icon: <Bell className="w-4 h-4" /> },
 ];
 
 const PRIORITIES = [

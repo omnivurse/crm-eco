@@ -450,7 +450,7 @@ export interface CrmNoteWithAuthor extends CrmNote {
 export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type TaskStatus = 'open' | 'in_progress' | 'completed' | 'cancelled';
 
-export type ActivityType = 'task' | 'call' | 'meeting' | 'email';
+export type ActivityType = 'task' | 'call' | 'meeting' | 'email' | 'follow_up';
 export type CallResult = 'connected' | 'left_voicemail' | 'no_answer' | 'busy' | 'wrong_number';
 export type CallType = 'outbound' | 'inbound';
 export type MeetingType = 'in_person' | 'video' | 'phone';
@@ -479,6 +479,10 @@ export interface CrmTask {
   attendees: string[] | null;
   reminder_at: string | null;
   outcome: string | null;
+  /** Recurring reminder cadence — re-notifies every N days until completed */
+  repeat_interval_days: number | null;
+  /** Short context for the follow-up (e.g. "COBRA expires") */
+  follow_up_note: string | null;
 }
 
 export interface CrmTaskWithAssignee extends CrmTask {
