@@ -1,0 +1,54 @@
+Timing is on.
+BEGIN
+Time: 41.106 ms
+SET
+Time: 48.456 ms
+SELECT 1
+Time: 65.930 ms
+ phase  | leads_before | contacts_before | notes_before 
+--------+--------------+-----------------+--------------
+ BEFORE |         1066 |           14205 |        99615
+(1 row)
+
+Time: 41.946 ms
+TRUNCATE TABLE
+Time: 44.002 ms
+COPY 1036
+Time: 728.841 ms
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:  LEADS: 1036 rows staged. Running upsert_leads_batch in 500-row pages...
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:    offset=0 inserted=1 updated=499 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:    offset=500 inserted=0 updated=500 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:    offset=1000 inserted=0 updated=36 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:  LEADS totals: inserted=1 updated=1035 errors=0
+DO
+Time: 3789.806 ms (00:03.790)
+TRUNCATE TABLE
+Time: 43.941 ms
+COPY 99832
+Time: 1673.008 ms (00:01.673)
+        phase        | inserted_count | total_considered | orphan_parent_count 
+---------------------+----------------+------------------+---------------------
+ inline_notes_result |          94750 |            98357 |                3666
+(1 row)
+
+Time: 10305.012 ms (00:10.305)
+             phase              | leads_after | contacts_after_should_match_before | notes_after 
+--------------------------------+-------------+------------------------------------+-------------
+ AFTER (would be, if committed) |        1067 |                              14205 |      194365
+(1 row)
+
+Time: 95.137 ms
+ phase | leads_delta | contacts_delta_should_be_zero | notes_delta 
+-------+-------------+-------------------------------+-------------
+ DELTA |           1 |                             0 |       94750
+(1 row)
+
+Time: 96.051 ms
+ROLLBACK
+Time: 53.834 ms
+
+============================================================================
+  DRY RUN COMPLETE — TRANSACTION ROLLED BACK. No production data changed.
+  Review the leads_delta and notes_delta numbers above.
+  contacts_delta_should_be_zero MUST be 0. If it is not, do not proceed.
+============================================================================

@@ -1,0 +1,52 @@
+Timing is on.
+BEGIN
+Time: 41.660 ms
+SET
+Time: 41.686 ms
+SELECT 1
+Time: 68.318 ms
+ phase  | leads_before | contacts_before | notes_before 
+--------+--------------+-----------------+--------------
+ BEFORE |         1066 |           14205 |        99614
+(1 row)
+
+Time: 42.052 ms
+TRUNCATE TABLE
+Time: 43.625 ms
+COPY 1036
+Time: 662.966 ms
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:  LEADS: 1036 rows staged. Running upsert_leads_batch in 500-row pages...
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:    offset=0 inserted=1 updated=499 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:    offset=500 inserted=0 updated=500 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:    offset=1000 inserted=0 updated=36 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:76: NOTICE:  LEADS totals: inserted=1 updated=1035 errors=0
+DO
+Time: 4350.509 ms (00:04.351)
+TRUNCATE TABLE
+Time: 43.954 ms
+COPY 99832
+Time: 1106.609 ms (00:01.107)
+psql:run_leads_and_notes_DRYRUN.sql:85: ERROR:  canceling statement due to statement timeout
+CONTEXT:  SQL statement "CREATE TEMP TABLE _zoho_notes_work ON COMMIT DROP AS
+  SELECT
+    s.row_num,
+    r.id                                                        AS crm_record_id,
+    p_org_id                                                    AS org_id,
+    trim(s.note_content)                                        AS body,
+    COALESCE(
+      NULLIF(s.created_time, '')::timestamp AT TIME ZONE 'America/Denver',
+      now()
+    )                                                           AS created_at
+  FROM import_notes_staging s
+  JOIN crm_records r
+    ON r.org_id = p_org_id
+   AND (
+         r.data->>'zoho_record_id' = s.parent_id
+      OR r.data->>'zoho_record_id' = 'zcrm_' || s.parent_id
+      OR replace(r.data->>'zoho_record_id', 'zcrm_', '') = s.parent_id
+     )
+  WHERE s.note_content IS NOT NULL
+    AND trim(s.note_content) <> ''
+    AND (p_since IS NULL OR NULLIF(s.created_time, '')::timestamp >= p_since)"
+PL/pgSQL function recover_zoho_notes_for_org(uuid,timestamp with time zone) line 16 at SQL statement
+Time: 900064.574 ms (15:00.065)

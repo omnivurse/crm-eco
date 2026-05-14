@@ -64,6 +64,7 @@ import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisp
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
+import { getRecordDisplayName } from '@/lib/crm/display-name';
 
 interface RecordDetailShellProps {
   record: CrmRecord;
@@ -405,7 +406,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                 </Link>
                 <span className="text-slate-300 dark:text-slate-600 shrink-0">/</span>
                 <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
-                  {record.title || 'Untitled'}
+                  {getRecordDisplayName(record)}
                 </span>
               </div>
               <RecordToolbarGlobalSearch currentRecordId={record.id} />
@@ -419,7 +420,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {record.title || 'Untitled'}
+                    {getRecordDisplayName(record)}
                   </h1>
                   <div className="flex items-center gap-3 mt-1">
                     {record.email && (
@@ -1162,7 +1163,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
           open={showConvertDialog}
           onOpenChange={setShowConvertDialog}
           recordId={record.id}
-          recordTitle={record.title || 'Untitled'}
+          recordTitle={getRecordDisplayName(record)}
           recordData={(record.data || {}) as Record<string, unknown>}
         />
       )}

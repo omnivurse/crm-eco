@@ -46,6 +46,23 @@ function getInitials(title: string | null | undefined): string {
     .toUpperCase() || '—';
 }
 
+/** Resolve the display name from the recently-viewed payload (item.title → data fields → 'Untitled') */
+function getItemDisplayName(item: RecentlyViewedItem): string {
+  if (item.title && item.title !== 'Untitled') return item.title;
+  const d = item.data;
+  if (d) {
+    const preferred = typeof d.preferred_name === 'string' ? d.preferred_name.trim() : '';
+    const first = typeof d.first_name === 'string' ? d.first_name.trim() : '';
+    const last = typeof d.last_name === 'string' ? d.last_name.trim() : '';
+    const displayFirst = preferred || first;
+    const fullName = [displayFirst, last].filter(Boolean).join(' ');
+    if (fullName) return fullName;
+    if (typeof d.account_name === 'string' && d.account_name.trim()) return d.account_name.trim();
+    if (typeof d.name === 'string' && d.name.trim()) return d.name.trim();
+  }
+  return item.title || 'Untitled';
+}
+
 export const RecentlyViewedRail = memo(function RecentlyViewedRail({
   moduleKey,
   limit = 8,
@@ -128,11 +145,11 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
                     'dark:from-teal-500/20 dark:to-cyan-500/20 dark:text-teal-300',
                   )}
                 >
-                  {getInitials(item.title)}
+                  {getInitials(getItemDisplayName(item))}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {item.title ?? 'Untitled'}
+                    {getItemDisplayName(item)}
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     {item.moduleName ?? 'Record'}

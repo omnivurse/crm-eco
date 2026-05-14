@@ -1,0 +1,122 @@
+-- ============================================================================
+-- APPLY: leads + notes only (NO contacts)  —  COMMITS at the end.
+--
+-- ⚠️  Only run this AFTER running run_leads_and_notes_DRYRUN.sql and
+--     reviewing the deltas. This script is identical to the dry-run except
+--     for COMMIT at the end instead of ROLLBACK.
+--
+-- Run with:
+--   cd '/Users/qloudagent/Desktop/CRM DATA/_clean/supabase/pipeline'
+--   psql "$SUPABASE_DB_URL" -f run_leads_and_notes_APPLY.sql 2>&1 | tee apply_run_$(date +%Y%m%d_%H%M%S).log
+--
+-- Safety guarantees:
+--   * Contacts staging table and upsert function are NEVER touched
+--   * \set ON_ERROR_STOP on  →  any error aborts the whole transaction
+--   * The new upsert_leads_batch uses existing-wins JSONB merge, so even
+--     if dedup matches an existing record (none expected today), staff
+--     edits cannot be overwritten
+--   * recover_zoho_notes_for_org is idempotent (±1min body-match dedup) —
+--     re-running cannot create duplicate notes
+-- ============================================================================
+
+\timing on
+\set ON_ERROR_STOP on
+
+BEGIN;
+
+-- ----------------------------------------------------------------------------
+-- 0. CAPTURE BEFORE-STATE for diff reporting
+-- ----------------------------------------------------------------------------
+CREATE TEMP TABLE _before_counts ON COMMIT DROP AS
+SELECT
+  (SELECT count(*) FROM crm_records r
+     JOIN crm_modules m ON m.id = r.module_id
+    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+      AND m.key = 'leads')                                AS leads_before,
+  (SELECT count(*) FROM crm_records r
+     JOIN crm_modules m ON m.id = r.module_id
+    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'
+      AND m.key = 'contacts')                             AS contacts_before,
+  (SELECT count(*) FROM crm_notes
+    WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e') AS notes_before;
+
+SELECT 'BEFORE' AS phase, * FROM _before_counts;
+
+-- ----------------------------------------------------------------------------
+-- 1. LEADS — load staging + batched upsert
+-- ----------------------------------------------------------------------------
+TRUNCATE import_leads_staging RESTART IDENTITY;
+\copy import_leads_staging(record_id, lead_owner_id, lead_owner, is_converted, company, first_name, last_name, email, phone, mobile, lead_source, lead_status, created_by_id, created_by, modified_by_id, modified_by, created_time, modified_time, lead_name, street, city, state, zip_code, email_opt_out, salutation, last_activity_time, spouse, spouse_dob, child_1, child_1_dob, child_2, child_2_dob, child_3, child_3_dob, product_type, next_step, producer_id, producer, date_of_birth, child_5_dob, child_5, child_4_dob, child_4, coverage_option, tag, business_type, days_visited, average_time_spent_minutes, number_of_chats, most_recent_visit, first_visit, first_page_visited, referrer, visitor_score, data_processing_basis_id, data_processing_basis, data_source, middle_name, business_or_practice_name, converted_date_time, lead_conversion_time, unsubscribed_mode, unsubscribed_time, converted_account_id, converted_account, converted_contact_id, converted_contact, converted_deal_id, converted_deal, change_log_time, locked, last_enriched_time, enrich_status, referring_member, mobile_2, connected_to_module, connected_to_id) FROM 'csv/import_leads_staging.csv' WITH (FORMAT csv, HEADER, NULL '');
+
+DO $$
+DECLARE
+  v_offset int := 0;
+  v_batch  int := 500;
+  v_total  int := (SELECT count(*) FROM import_leads_staging);
+  r        record;
+  v_total_inserted int := 0;
+  v_total_updated  int := 0;
+  v_total_errors   int := 0;
+BEGIN
+  RAISE NOTICE 'LEADS: % rows staged. Running upsert_leads_batch in 500-row pages...', v_total;
+  WHILE v_offset < v_total LOOP
+    SELECT * INTO r FROM upsert_leads_batch(v_offset, v_batch, 'ac6e7228-2ea0-4582-8464-562c3e8ac56e'::uuid);
+    v_total_inserted := v_total_inserted + r.inserted;
+    v_total_updated  := v_total_updated  + r.updated;
+    v_total_errors   := v_total_errors   + r.errors;
+    RAISE NOTICE '  offset=% inserted=% updated=% skipped=% errors=%',
+      v_offset, r.inserted, r.updated, r.skipped, r.errors;
+    v_offset := v_offset + v_batch;
+  END LOOP;
+  RAISE NOTICE 'LEADS totals: inserted=% updated=% errors=%',
+    v_total_inserted, v_total_updated, v_total_errors;
+END$$;
+
+-- ----------------------------------------------------------------------------
+-- 2. NOTES — load staging + idempotent recovery RPC
+-- ----------------------------------------------------------------------------
+TRUNCATE import_notes_staging RESTART IDENTITY;
+\copy import_notes_staging(record_id, associated_id, created_by_id, created_by, created_time, modified_by_id, modified_by, modified_time, note_content, note_owner_id, note_owner, note_title, parent_id, parent_name) FROM 'csv/import_notes_staging.csv' WITH (FORMAT csv, HEADER, NULL '');
+
+SELECT 'recover_zoho_notes_for_org result' AS phase, *
+  FROM recover_zoho_notes_for_org('ac6e7228-2ea0-4582-8464-562c3e8ac56e'::uuid, NULL);
+
+-- ----------------------------------------------------------------------------
+-- 3. AFTER-STATE diff
+-- ----------------------------------------------------------------------------
+SELECT
+  'AFTER' AS phase,
+  (SELECT count(*) FROM crm_records r
+     JOIN crm_modules m ON m.id = r.module_id
+    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'leads')    AS leads_after,
+  (SELECT count(*) FROM crm_records r
+     JOIN crm_modules m ON m.id = r.module_id
+    WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'contacts') AS contacts_after_should_match_before,
+  (SELECT count(*) FROM crm_notes
+    WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e') AS notes_after;
+
+SELECT
+  'DELTA' AS phase,
+  ((SELECT count(*) FROM crm_records r
+      JOIN crm_modules m ON m.id = r.module_id
+     WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'leads')
+   - (SELECT leads_before FROM _before_counts))    AS leads_delta,
+  ((SELECT count(*) FROM crm_records r
+      JOIN crm_modules m ON m.id = r.module_id
+     WHERE r.org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e' AND m.key = 'contacts')
+   - (SELECT contacts_before FROM _before_counts)) AS contacts_delta_should_be_zero,
+  ((SELECT count(*) FROM crm_notes
+     WHERE org_id = 'ac6e7228-2ea0-4582-8464-562c3e8ac56e')
+   - (SELECT notes_before FROM _before_counts))    AS notes_delta;
+
+-- ----------------------------------------------------------------------------
+-- COMMIT
+-- ----------------------------------------------------------------------------
+COMMIT;
+
+\echo ''
+\echo '============================================================================'
+\echo '  APPLY COMPLETE — transaction committed.'
+\echo '  Review the deltas above. Leads should match staged row count, contacts'
+\echo '  delta MUST be 0, notes delta = recover_zoho_notes_for_org.inserted_count.'
+\echo '============================================================================'

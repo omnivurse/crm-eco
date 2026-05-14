@@ -88,6 +88,7 @@ import {
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
 import type { RecordInsights } from '@/lib/crm/record-insights';
+import { getRecordDisplayName } from '@/lib/crm/display-name';
 import { RecordAvatarTile } from './v2/RecordAvatarTile';
 import { RecordTagsRow } from './v2/RecordTagsRow';
 import {
@@ -378,6 +379,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const { preferences: uiPrefs } = useUiPreferences();
   const customOrder = uiPrefs.related_list_order?.[module.key];
   const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  // Timestamp of the last committed status change. Used to ignore stale
+  // server props that arrive via router.refresh() before the RSC cache
+  // has propagated the revalidation.
+  const statusCommittedAtRef = useRef<number>(0);
   const displayStatus = optimisticStatus || record.status;
 
   const sortedNotes = useMemo(
@@ -389,7 +394,19 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   );
 
   useEffect(() => {
-    if (optimisticStatus && record.status === optimisticStatus) setOptimisticStatus(null);
+    if (!optimisticStatus) return;
+    // Server prop now matches — clear optimistic.
+    if (record.status === optimisticStatus) {
+      setOptimisticStatus(null);
+      return;
+    }
+    // If a status change was committed recently, the server prop is
+    // probably stale RSC cache — keep optimistic a bit longer.
+    const msSinceCommit = Date.now() - statusCommittedAtRef.current;
+    if (msSinceCommit < 3000) return;
+    // After the grace period, if the server *still* disagrees it means
+    // the change genuinely didn't persist — revert.
+    setOptimisticStatus(null);
   }, [record.status, optimisticStatus]);
 
   // Live insights — seed with SSR value, refresh on demand (after modals
@@ -406,7 +423,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     void trackRecentRecord({
       id: record.id,
       moduleKey: module.key,
-      title: record.title ?? 'Untitled',
+      title: getRecordDisplayName(record),
       subtitle: record.status ?? record.stage ?? undefined,
     });
   }, [record.id, record.title, record.status, record.stage, module.key]);
@@ -736,6 +753,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           throw new Error(err.error || 'Failed');
         }
         toast.success(`Status changed to ${newStatus}`);
+        // Mark the commit timestamp so the optimistic-clear effect
+        // ignores stale server props that arrive before the RSC cache
+        // has propagated the revalidation.
+        statusCommittedAtRef.current = Date.now();
+        // Small delay lets revalidatePath propagate before the RSC
+        // re-fetch, reducing the chance of receiving stale data.
+        await new Promise((r) => setTimeout(r, 150));
         router.refresh();
       } catch (err) {
         setOptimisticStatus(null);
@@ -946,7 +970,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 </Link>
                 <span className="text-slate-300 dark:text-slate-600 shrink-0">/</span>
                 <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
-                  {record.title || 'Untitled'}
+                  {getRecordDisplayName(record)}
                 </span>
               </div>
               <div className="hidden md:block">
@@ -962,7 +986,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             {/* Title row */}
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-4 min-w-0">
-                <RecordAvatarTile name={record.title || 'Untitled'} moduleKey={module.key} size="lg" />
+                <RecordAvatarTile name={getRecordDisplayName(record)} moduleKey={module.key} size="lg" />
                 <div className="min-w-0 flex-1">
                   <h1 className="text-2xl font-bold text-slate-900 dark:text-white truncate flex items-center gap-2">
                     <InlineFieldEditor
@@ -1831,7 +1855,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           open={showConvertDialog}
           onOpenChange={setShowConvertDialog}
           recordId={record.id}
-          recordTitle={record.title || 'Untitled'}
+          recordTitle={getRecordDisplayName(record)}
           recordData={(record.data || {}) as Record<string, unknown>}
         />
       )}

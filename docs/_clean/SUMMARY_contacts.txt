@@ -1,0 +1,50 @@
+CRM-Eco Contact Data Consolidation — Summary
+Generated: 2026-05-11T23:09:12
+
+INPUTS
+  Contacts files:
+    - Contacts_2025_10_16.csv: 4,416 records (160 columns)
+    - Contacts_2026_03_20.csv: 14,411 records (157 columns)
+    Total input rows: 18,827
+    Schema drift: 10_16 has Account Number/Type/Payment Method/Routing Number;
+                  03_20 has Tax-ID. All merged via column union — no data dropped.
+
+  Contact notes file:
+    - Notes_Contacts_2026_03_20.csv: 98,641 records (no intra-file dupes)
+
+DEDUPLICATION (key = Record Id, winner = newest Modified Time;
+                older rows backfill any missing fields)
+  Unique contacts after dedupe: 14,412
+  Duplicate contact rows removed: 4,415
+  (Only 1 contact appeared in 10_16 but not 03_20 — possible deletion.)
+
+  Unique contact notes after dedupe: 98,641
+
+CONTACT NOTES <-> CONTACTS LINKAGE
+  Notes linked to a contact: 98,641
+  Orphaned notes (no parent contact): 0
+  Contacts with at least one note: 12,220 of 14,412
+  Contacts with zero notes: 2,192
+
+SUSPECTED DUPLICATE CONTACTS (same email/phone, different Record Id)
+  Flagged rows for review: 2056
+  Unique groups: 970
+
+LEAD ↔ CONTACT CROSS-MATCHING (same person in both modules)
+  Leads with at least one contact match: 54 of 1,090
+  Total lead-contact pair rows: 60
+  These are people who exist in both modules — likely the lead was
+  converted at some point but the lead record still lingers, OR the
+  same person was entered separately into each module.
+
+ORPHAN LEAD NOTES (from prior pass) — STATUS
+  14,217 orphan lead-notes from leads pass did NOT find homes in the
+  contacts data (0 matches). Their Parent ID.id values do not exist in
+  either your leads or contacts pool. To recover them, re-export Zoho
+  leads WITHOUT the "WS Only / My Leads" filter.
+
+OUTPUTS (in /Users/qloudagent/Desktop/CRM DATA/_clean)
+  contacts_clean.csv                 — deduped contacts (union schema) + Notes_Count
+  notes_contacts_clean.csv           — deduped contact notes (all link cleanly)
+  suspected_duplicate_contacts.csv   — for manual review
+  lead_to_contact_matches.csv        — same-person matches across modules

@@ -1,0 +1,44 @@
+CRM-Eco Lead Data Consolidation — Summary
+Generated: 2026-05-11T23:05:17
+
+INPUTS
+  Leads files:
+    - Leads_2025_10_16.csv: 1,038 records
+    - Leads_2026_02_10.csv: 1,071 records
+    - Leads_2026_03_20.csv: 1,078 records
+    Total input rows: 3,187
+
+  Notes files:
+    - Notes_Leads_2026_02_10.csv: 1,170 records
+    - Notes_Leads_2026_03_20.csv: 15,394 records
+    Total input rows: 16,564
+
+DEDUPLICATION (key = Record Id, winner = newest Modified Time)
+  Unique leads after dedupe: 1,090
+    Records that appeared in 3 files: 1,027
+    Records that appeared in 2 files: 43
+    Records that appeared in 1 file:  20
+  Duplicate lead rows removed: 2,097
+
+  Unique notes after dedupe: 15,408
+  Duplicate note rows removed: 1,156
+
+NOTES <-> LEADS LINKAGE
+  Notes linked to a lead in this dataset: 1,191
+  Orphaned notes (parent lead not in dataset): 14,217
+    These are likely notes for leads outside the WS-filtered exports
+    (other reps' leads, or leads that have been converted to contacts/deals).
+    To recover them, export the unfiltered leads or load the contacts data.
+
+  Leads that have at least one note: 764 of 1,090
+  Leads with zero notes: 326
+
+SUSPECTED DUPLICATE LEADS (same email or phone, different Record Id)
+  Total flagged rows for manual review: 17
+  See suspected_duplicate_leads.csv — DO NOT auto-merge; verify first.
+
+OUTPUTS (in /Users/qloudagent/Desktop/CRM DATA/_clean)
+  leads_clean.csv              — deduped leads with Notes_Count
+  notes_clean_linked.csv       — deduped notes that link to a lead
+  notes_orphaned.csv           — deduped notes with no matching lead in this set
+  suspected_duplicate_leads.csv — review groups (same email/phone, different Record Id)

@@ -1,0 +1,33 @@
+Timing is on.
+BEGIN
+Time: 39.762 ms
+SELECT 1
+Time: 64.056 ms
+ phase  | leads_before | contacts_before | notes_before 
+--------+--------------+-----------------+--------------
+ BEFORE |         1066 |           14205 |        99614
+(1 row)
+
+Time: 39.912 ms
+TRUNCATE TABLE
+Time: 44.019 ms
+COPY 1036
+Time: 380.306 ms
+psql:run_leads_and_notes_DRYRUN.sql:71: NOTICE:  LEADS: 1036 rows staged. Running upsert_leads_batch in 500-row pages...
+psql:run_leads_and_notes_DRYRUN.sql:71: NOTICE:    offset=0 inserted=1 updated=499 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:71: NOTICE:    offset=500 inserted=0 updated=500 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:71: NOTICE:    offset=1000 inserted=0 updated=36 skipped=0 errors=0
+psql:run_leads_and_notes_DRYRUN.sql:71: NOTICE:  LEADS totals: inserted=1 updated=1035 errors=0
+DO
+Time: 7904.278 ms (00:07.904)
+TRUNCATE TABLE
+Time: 45.766 ms
+COPY 99832
+Time: 2374.072 ms (00:02.374)
+psql:run_leads_and_notes_DRYRUN.sql:80: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+psql:run_leads_and_notes_DRYRUN.sql:80: error: connection to server was lost

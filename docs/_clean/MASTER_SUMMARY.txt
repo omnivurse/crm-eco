@@ -1,0 +1,133 @@
+========================================================
+CRM-Eco Data Consolidation — MASTER SUMMARY
+========================================================
+Generated: 2026-05-11T23:10:14
+Output directory: /Users/qloudagent/Desktop/CRM DATA/_clean
+
+This bundle is the final deduped + cross-linked CRM dataset, ready
+for upload to Antigravity / the CRM-Eco project import.
+
+--------------------------------------------------------
+INPUT FILES (raw Zoho exports)
+--------------------------------------------------------
+  Leads:
+    Leads_2025_10_16.csv .................. 1,038 records
+    Leads_2026_02_10.csv .................. 1,071 records
+    Leads_2026_03_20.csv .................. 1,078 records
+    Subtotal: 3,187 input rows
+  Contacts:
+    Contacts_2025_10_16.csv ............... 4,416 records  (160 cols)
+    Contacts_2026_03_20.csv ............... 14,411 records (157 cols)
+    Subtotal: 18,827 input rows
+  Lead notes:
+    Notes_Leads_2026_02_10.csv ............ 1,170 records
+    Notes_Leads_2026_03_20.csv ............ 15,394 records
+    Subtotal: 16,564 input rows
+  Contact notes:
+    Notes_Contacts_2026_03_20.csv ......... 98,641 records
+  GRAND TOTAL INPUT: 137,219 rows across 8 CSVs
+
+--------------------------------------------------------
+DEDUPE RULES APPLIED
+--------------------------------------------------------
+  Primary key:      Zoho Record Id
+  Tie-break:        newest Modified Time wins; if equal, latest file wins
+  Schema drift:     resolved via column union — no data dropped from the
+                    older Contacts file (Account Number, Routing Number,
+                    Payment Method, Account Type retained)
+  Field backfill:   when a newer row had a blank field, the older row's
+                    value was preserved so we never lost data through
+                    deduplication
+  Cross-dupes:      same email or normalized phone, different Record Id
+                    → flagged for review, NOT auto-merged
+
+--------------------------------------------------------
+DEDUPLICATED COUNTS
+--------------------------------------------------------
+  Unique leads ..................... 1,090   (removed 2,097 duplicate rows)
+    Appeared in 3 files: 1,027
+    Appeared in 2 files:    43
+    Appeared in 1 file:     20
+  Unique contacts .................. 14,412  (removed 4,415 duplicate rows)
+    Appeared in both files: 4,415
+    Only in 03_20:          9,996
+    Only in 10_16:              1  (possibly deleted in Zoho)
+  Unique lead notes ................ 15,408  (removed 1,156 duplicate rows)
+  Unique contact notes ............. 98,641
+  TOTAL UNIQUE NOTES ............... 114,049
+
+--------------------------------------------------------
+NOTES ↔ PEOPLE LINKAGE
+--------------------------------------------------------
+  Contact notes:
+    Linked to a contact ........... 98,641 (100%)
+    Orphan ........................ 0
+  Lead notes:
+    Linked to a lead in dataset ... 1,191
+    Orphan (parent missing) ....... 14,217  <-- see note below
+  Persons with at least one note:
+    Contacts: 12,220 of 14,412
+    Leads:        764 of 1,090
+
+  WHY 14,217 ORPHAN LEAD-NOTES:
+    Your leads exports are filtered ("WS Only / My Leads"), but the
+    leads-notes export is unfiltered. The orphan notes belong to lead
+    Record Ids that are (a) outside the WS filter (other reps' leads)
+    or (b) belong to deleted leads. They do NOT match any contact
+    Record Id either — Zoho leaves notes attached to the original
+    Lead Record Id even after conversion, so the contacts data can't
+    rescue them. Action: re-export Zoho leads WITHOUT the WS filter
+    to pull these notes' parents in.
+
+--------------------------------------------------------
+LEAD ↔ CONTACT CROSS-MATCHING (same person, both modules)
+--------------------------------------------------------
+  Matched by email or normalized phone:
+    Leads with a contact twin .... 54 of 1,090
+    Match pairs total ............ 60 (some leads matched multiple contacts)
+
+  These 54 leads should likely be REMOVED from the leads import or
+  marked as already-converted, since the contact record is the
+  canonical version. They are tagged in
+  leads_clean_dedup_against_contacts.csv with Is_Also_Contact=Yes.
+
+--------------------------------------------------------
+SUSPECTED DUPLICATES (within-module, manual review needed)
+--------------------------------------------------------
+  Suspected duplicate leads:       17 rows in   8 groups
+  Suspected duplicate contacts:  2,056 rows in 970 groups   <-- big
+
+  The contacts dupe count is high. Many are likely couples/families
+  sharing an email or phone (not true duplicates). Review the CSV
+  before bulk-merging.
+
+--------------------------------------------------------
+UNIFIED PEOPLE VIEW
+--------------------------------------------------------
+  Contact-first: every contact + leads that don't have a contact match.
+    Contacts:        14,412
+    Leads (no twin): 1,036
+    Total unique people: 15,448
+
+========================================================
+OUTPUT FILES (ready for upload)
+========================================================
+  Primary records:
+    leads_clean.csv                              — 1,090 leads
+    leads_clean_dedup_against_contacts.csv       — 1,090 leads w/ Is_Also_Contact flag
+    contacts_clean.csv                           — 14,412 contacts (union schema)
+    unified_people.csv                           — 15,448 unique people (contacts + non-dup leads)
+  Notes:
+    notes_clean_linked.csv                       — 1,191 lead notes (linked)
+    notes_orphaned.csv                           — 14,217 orphan lead notes
+    notes_contacts_clean.csv                     — 98,641 contact notes
+    all_notes_master.csv                         — 99,832 total notes (lead + contact, combined)
+  Review:
+    suspected_duplicate_leads.csv                — 17 rows / 8 groups
+    suspected_duplicate_contacts.csv             — 2,056 rows / 970 groups
+    lead_to_contact_matches.csv                  — 60 pairs (54 unique leads)
+  Reports:
+    SUMMARY.txt                                  — leads pass summary
+    SUMMARY_contacts.txt                         — contacts pass summary
+    MASTER_SUMMARY.txt                           — this file
+========================================================
