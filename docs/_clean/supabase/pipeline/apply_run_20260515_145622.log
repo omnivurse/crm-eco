@@ -1,0 +1,54 @@
+Timing is on.
+BEGIN
+Time: 40.805 ms
+SET
+Time: 45.329 ms
+SELECT 1
+Time: 252.760 ms
+ phase  | leads_before | contacts_before | notes_before 
+--------+--------------+-----------------+--------------
+ BEFORE |         1066 |           14205 |        99625
+(1 row)
+
+Time: 42.495 ms
+TRUNCATE TABLE
+Time: 45.501 ms
+COPY 1036
+Time: 680.260 ms
+psql:run_leads_and_notes_APPLY.sql:78: NOTICE:  LEADS: 1036 rows staged. Running upsert_leads_batch in 500-row pages...
+psql:run_leads_and_notes_APPLY.sql:78: NOTICE:    offset=0 inserted=1 updated=499 skipped=0 errors=0
+psql:run_leads_and_notes_APPLY.sql:78: NOTICE:    offset=500 inserted=0 updated=500 skipped=0 errors=0
+psql:run_leads_and_notes_APPLY.sql:78: NOTICE:    offset=1000 inserted=0 updated=36 skipped=0 errors=0
+psql:run_leads_and_notes_APPLY.sql:78: NOTICE:  LEADS totals: inserted=1 updated=1035 errors=0
+DO
+Time: 5955.865 ms (00:05.956)
+TRUNCATE TABLE
+Time: 44.096 ms
+COPY 99832
+Time: 2822.540 ms (00:02.823)
+        phase        | inserted_count | total_considered | orphan_parent_count 
+---------------------+----------------+------------------+---------------------
+ inline_notes_result |          94750 |            98357 |                3666
+(1 row)
+
+Time: 15107.070 ms (00:15.107)
+ phase | leads_after | contacts_after_should_match_before | notes_after 
+-------+-------------+------------------------------------+-------------
+ AFTER |        1067 |                              14205 |      194375
+(1 row)
+
+Time: 99.838 ms
+ phase | leads_delta | contacts_delta_should_be_zero | notes_delta 
+-------+-------------+-------------------------------+-------------
+ DELTA |           1 |                             0 |       94750
+(1 row)
+
+Time: 94.258 ms
+COMMIT
+Time: 57.891 ms
+
+============================================================================
+  APPLY COMPLETE — transaction committed.
+  Review the deltas above. Leads should match staged row count, contacts
+  delta MUST be 0, notes delta = recover_zoho_notes_for_org.inserted_count.
+============================================================================

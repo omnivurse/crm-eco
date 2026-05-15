@@ -1,0 +1,106 @@
+Output format is aligned.
+Null display is "∅".
+Timing is off.
+
+############################################################
+# POST-APPLY VERIFICATION
+# Window: last 30 minutes (edit window_minutes at top if needed)
+# Target org: 00000000-0000-0000-0000-000000000001 (PIFH)
+############################################################
+
+── INVARIANT 1: SCHEMA INTACT ──────────────────────────────
+                       status                        | r1 | r2 | r3 | r4 | r5 | r6 | f1 | f2 | f3 
+-----------------------------------------------------+----+----+----+----+----+----+----+----+----
+ ✅ PASS — all expected tables and functions present | t  | t  | t  | t  | t  | t  | t  | t  | t
+(1 row)
+
+
+── INVARIANT 2: CONTACTS UNTOUCHED IN WINDOW ───────────────
+                     status                     | contacts_modified_in_window 
+------------------------------------------------+-----------------------------
+ ❌ FAIL — 7 contacts have updated_at in window |                           7
+(1 row)
+
+
+── INVARIANT 3: AUDIT LOG NO CONTACT-UPDATES ───────────────
+                           status                           | contact_updates_in_window 
+------------------------------------------------------------+---------------------------
+ ❌ FAIL — 9 contact UPDATE entries in window — investigate |                         9
+(1 row)
+
+
+── INVARIANT 4: LEADS CREATED IN WINDOW ────────────────────
+                           status                            | leads_created_in_window 
+-------------------------------------------------------------+-------------------------
+ ⚠️ 1 leads created — outside expected 900-1100 range, review |                       1
+(1 row)
+
+
+── INVARIANT 5: NOTES CREATED IN WINDOW ────────────────────
+                                        status                                        | notes_created_in_window 
+--------------------------------------------------------------------------------------+-------------------------
+ ⚠️ ZERO notes inserted — orphan_parent_count may have been 100%, or apply did not run |                       0
+(1 row)
+
+
+── INVARIANT 6: NEW LEADS WELL-FORMED ──────────────────────
+                            status                             | total_new_leads | missing_module_id | missing_zoho_id | missing_title | with_email | with_phone 
+---------------------------------------------------------------+-----------------+-------------------+-----------------+---------------+------------+------------
+ ✅ PASS — all new leads have module_id, zoho_record_id, title |               1 |                 0 |               0 |             0 |          0 |          1
+(1 row)
+
+
+── INVARIANT 7: ALL STAGED LEADS LANDED ────────────────────
+                      status                      | missing_count 
+--------------------------------------------------+---------------
+ ✅ PASS — every staged lead found in crm_records |             0
+(1 row)
+
+ issue | record_id | first_name | last_name | email 
+-------+-----------+------------+-----------+-------
+(0 rows)
+
+
+── INVARIANT 8: SAMPLE 5 NEW LEADS (eyeball check) ─────────
+   title    | email |   phone    |          status          |         zoho_id          |    lead_source     |                     owner                     | company |          created_at           
+------------+-------+------------+--------------------------+--------------------------+--------------------+-----------------------------------------------+---------+-------------------------------
+ Karen Dame | ∅     | 9049940636 | Cold Prospect - Released | zcrm_1579374000126694031 | Inbound Sales Call | Wendy Scipione - SR VP National Sales Advisor | ∅       | 2026-05-15 18:56:23.114531+00
+(1 row)
+
+
+── INVARIANT 9: SAME 10 CONTACTS AS verify_only.sql §7 ─────
+   Compare side-by-side with your BEFORE snapshot.
+                  id                  |      title       |          email          |     phone      |      status      |         zoho_id          |      spouse      |       carrier       | monthly_premium |          updated_at           
+--------------------------------------+------------------+-------------------------+----------------+------------------+--------------------------+------------------+---------------------+-----------------+-------------------------------
+ 35a3fc8c-47cc-41a0-999e-51c105ac7e7d | Gearhart         | fritzgearhart@gmail.com | 541-870-1671   | Enrolled - 2026  | zcrm_1579374000138751080 |                  | Cigna               | 809.31          | 2026-05-15 18:55:30.521413+00
+ 8a22ec92-efc7-4a9a-9b7c-045a3c789bed | Greene           | mrggreene@hotmail.com   | 3039159657 G   | Active HS Member | zcrm_1579374000182477018 | Sara Greene      | Sedera HealthShare  | 603             | 2026-05-15 18:55:30.521413+00
+ 6cb3c8b1-1cc7-42c9-be1d-87baae42591c | Wilkinson        | awilkinson8@gmail.com   | 970-618-8591   | Active HS Member | zcrm_1579374000017830414 |                  | Zion Health         | 636             | 2026-05-15 18:55:30.521413+00
+ 5740d5a3-e6b5-4f36-8ccb-f24e847eab0e | Delman           | gdelman@comcast.net     | (303) 444-3899 | Enrolled - 2026  | zcrm_1579374000000165335 | Melody Fairchild | Liberty HealthShare | 0               | 2026-05-15 18:55:30.521413+00
+ 3a3e6601-e7c4-4b8e-ba36-cd910861cfe8 | McFee            | amcfee22@gmail.com      | 5174490714     | Cancelled        | zcrm_1579374000109491027 |                  | Zion Health         | 240             | 2026-05-15 18:55:30.521413+00
+ c9fdd4e9-899e-4f91-89ea-da0c87ab88a6 | Jett Greene      |                         | (303) 921-0424 | Pending          | zcrm_1579374000182412037 |                  | Other               | 370             | 2026-05-15 18:55:30.521413+00
+ 31cc961d-5448-46e5-8cef-30b602535555 | Picard           | alaskapicard@icloud.com | 7206263920     | Active HS Member | zcrm_1579374000181862002 |                  | Zion Health         | 268             | 2026-05-15 18:55:30.521413+00
+ 250a0b7e-bc8a-491e-ba85-d2dda5f5466f | Ashley Arman     | yamaha357@gmail.com     | 970-702-4304   | Enrolled - 2026  | zcrm_1579374000130215078 | ∅                | Cigna               | 1231.19         | 2026-05-12 01:55:45.404814+00
+ ac130b1e-368b-448b-bd31-ffd04830a552 | Eugene Max Myers | maxswell11@gmail.com    | 303-818-1190   | Enrolled - 2026  | zcrm_1579374000044079035 | ∅                | Cigna               | 382.42          | 2026-05-12 01:49:57.731416+00
+ bac8165d-6371-4e12-b352-93391902e369 | Susan King       | sueking30@hotmail.com   | 970-485-1290   | Pending          | ∅                        | ∅                | ∅                   | ∅               | 2026-05-11 20:21:14.913297+00
+(10 rows)
+
+
+── INVARIANT 10: AUDIT LOG SUMMARY IN WINDOW ───────────────
+   entity    | action |  n   
+-------------+--------+------
+ crm_records | create |    1
+ crm_records | update | 1044
+(2 rows)
+
+
+── SUMMARY CARD ────────────────────────────────────────────
+ total_leads | total_contacts | total_notes | leads_added_in_window | notes_added_in_window | contacts_modified_in_window_must_be_0 
+-------------+----------------+-------------+-----------------------+-----------------------+---------------------------------------
+        1067 |          14205 |      194375 |                     1 |                     0 |                                     7
+(1 row)
+
+
+############################################################
+# END OF POST-APPLY VERIFICATION — no data was modified.
+############################################################
+
