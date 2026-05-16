@@ -1,5 +1,5 @@
 /**
- * POST /api/cron/follow-up-reminders
+ * GET /api/cron/follow-up-reminders
  *
  * Hourly cron that checks for due follow-up tasks and creates in-app
  * notifications.  If the task has a repeat_interval_days, it keeps
@@ -26,7 +26,7 @@ function authorised(request: NextRequest): boolean {
   return auth === `Bearer ${secret}`;
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   if (!authorised(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
