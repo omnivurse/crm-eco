@@ -216,6 +216,18 @@ export const InlineFieldCell = memo(function InlineFieldCell({
       );
 
     case 'number':
+      return (
+        <InlineFieldEditor
+          {...common}
+          value={value == null ? '' : String(value)}
+          type="number"
+          placeholder={`Add ${field.label.toLowerCase()}`}
+          validate={(v) =>
+            v === '' || !Number.isNaN(Number(v)) ? null : 'Must be a number'
+          }
+        />
+      );
+
     case 'currency':
       return (
         <InlineFieldEditor
@@ -226,6 +238,18 @@ export const InlineFieldCell = memo(function InlineFieldCell({
           validate={(v) =>
             v === '' || !Number.isNaN(Number(v)) ? null : 'Must be a number'
           }
+          display={(v) => {
+            const num = v == null ? NaN : Number(v);
+            if (Number.isNaN(num)) return null;
+            return (
+              <span className="font-medium">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                }).format(num)}
+              </span>
+            );
+          }}
         />
       );
 

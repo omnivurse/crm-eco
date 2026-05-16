@@ -850,11 +850,35 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
+  /** End / cancellation date for the emerald snapshot (below start date). */
+  const heroEndDateField = useMemo(() => {
+    const isDateType = (f: CrmField) => f.type === 'date' || f.type === 'datetime';
+    const candidates = [
+      findFieldByKey('cancellation_date'),
+      findFieldByKey('end_date'),
+      findFieldByKey('termination_date'),
+      findFieldByKey('coverage_end_date'),
+      findFieldByKey('insurance_end_date'),
+      findFieldByKey('sharing_end_date'),
+      // Generic key-pattern fallback
+      matchByKeyPattern(
+        [/cancel.*date|end.*date|termination.*date/i],
+        isDateType,
+      ),
+    ].filter((f): f is CrmField => Boolean(f));
+
+    // Only show if distinct from the start date field
+    const startKey = heroStartDateField?.key;
+    const valid = startKey ? candidates.filter((f) => f.key !== startKey) : candidates;
+    return valid.find((f) => hasValue(f.key)) ?? valid[0];
+  }, [findFieldByKey, matchByKeyPattern, hasValue, heroStartDateField]);
+
   /** Product / plan / tier lines for the emerald snapshot (never duplicates carrier/date rows). */
   const heroProductPlanFields = useMemo(() => {
     const skipKeys = new Set<string>();
     if (heroSharingField) skipKeys.add(heroSharingField.key);
     if (heroStartDateField) skipKeys.add(heroStartDateField.key);
+    if (heroEndDateField) skipKeys.add(heroEndDateField.key);
 
     const preferredKeys = [
       'product',
@@ -867,6 +891,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       'monthly_share',
       'monthly_contribution',
       'monthly_premium',
+      'monthly_amount',
+      'monthly_rate',
+      'iua_amount',
       'member_tier',
       'sharing_member_id',
       'sharing_status',
@@ -895,8 +922,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           (f.type === 'text' ||
             f.type === 'textarea' ||
             f.type === 'select' ||
-            f.type === 'picklist') &&
-          /plan|product|tier|premium|monthly.?share|contribution|coverage.?option|member.?tier/i.test(
+            f.type === 'picklist' ||
+            f.type === 'number' ||
+            f.type === 'currency') &&
+          /plan|product|tier|premium|monthly|contribution|coverage.?option|member.?tier|rate|amount/i.test(
             f.key,
           ),
       );
@@ -907,7 +936,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     }
 
     return out;
-  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField]);
+  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField, heroEndDateField]);
 
   /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
   const heroProductPlanSnapshotFields = useMemo(() => {
@@ -1035,6 +1064,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                             No effective date field configured
                           </p>
                         )}
+                        {heroEndDateField && hasValue(heroEndDateField.key) && renderFieldCell(heroEndDateField)}
                       </div>
                     </div>
                   </div>
