@@ -1637,6 +1637,45 @@ export interface CarrierStateAvailability {
 }
 
 // ============================================================================
+// Carrier Contacts & Credentials
+// ============================================================================
+
+export type CarrierContactRole =
+  | 'general'
+  | 'broker_support'
+  | 'direct_rep'
+  | 'commissions'
+  | 'client_support'
+  | 'underwriting'
+  | 'claims'
+  | 'enrollment'
+  | 'other';
+
+export interface CarrierContact {
+  id: string;
+  organization_id: string;
+  carrier_id: string;
+  contact_role: CarrierContactRole;
+  label: string | null;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  agent_id: string | null;
+  username: string | null;
+  password: string | null;
+  secure_email_user: string | null;
+  secure_email_addr: string | null;
+  portal_url: string | null;
+  custom_link: string | null;
+  custom_link_label: string | null;
+  notes: string | null;
+  is_primary: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
 // Premium Comparison Engine
 // ============================================================================
 

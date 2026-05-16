@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { CarrierContactsPanel } from '@/components/crm/carriers/CarrierContactsPanel';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -325,7 +326,7 @@ export default function CarrierManagementPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-md">
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-slate-900 dark:text-white">
               {editingCarrier ? 'Edit Carrier' : 'Add Carrier'}
@@ -364,6 +365,14 @@ export default function CarrierManagementPage() {
               <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="contact@carrier.com" />
             </div>
           </div>
+
+          {/* Contacts & Credentials — only when editing an existing carrier */}
+          {editingCarrier && (
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+              <CarrierContactsPanel carrierId={editingCarrier.id} />
+            </div>
+          )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving}>
