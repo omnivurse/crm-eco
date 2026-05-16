@@ -48,12 +48,9 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/comms/cron
- * Health check for the cron endpoint
+ * Vercel crons invoke GET — delegate to POST so queue processing
+ * actually fires. Same pattern as /api/cron/idempotency-gc.
  */
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    endpoint: 'message-queue-processor',
-    timestamp: new Date().toISOString(),
-  });
+export async function GET(request: NextRequest) {
+  return POST(request);
 }

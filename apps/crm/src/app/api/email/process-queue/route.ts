@@ -242,10 +242,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    service: 'email-queue-processor',
-    timestamp: new Date().toISOString(),
-  });
+// Vercel crons invoke GET — delegate to POST so queue processing
+// actually fires. Same pattern as /api/cron/idempotency-gc.
+export async function GET(request: NextRequest) {
+  return POST(request);
 }
