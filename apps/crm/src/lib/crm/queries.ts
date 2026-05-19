@@ -976,7 +976,25 @@ export async function getNotesForRecords(
     console.error('[CRM] getNotesForRecords failed:', error);
     return [];
   }
-  return (data || []) as CrmNoteWithAuthor[];
+
+  const rows = (data || []) as CrmNoteWithAuthor[];
+
+  // Deduplicate: when notes are aggregated across linked records (e.g. a
+  // lead was converted to a contact and both got the same Zoho notes), the
+  // same body + timestamp can appear twice. Keep the first occurrence.
+  if (uniqueIds.length > 1) {
+    const seen = new Set<string>();
+    const deduped: CrmNoteWithAuthor[] = [];
+    for (const note of rows) {
+      const key = `${(note.body || '').trim().slice(0, 200)}|${note.created_at}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(note);
+    }
+    return deduped;
+  }
+
+  return rows;
 }
 
 export async function getNotesForRecordAggregated(
