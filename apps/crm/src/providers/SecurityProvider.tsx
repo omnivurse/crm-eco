@@ -4,8 +4,8 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, R
 import { useRouter, usePathname } from 'next/navigation';
 import { SessionLock } from '@/components/auth/SessionLock';
 
-// Session timeout: 30 minutes of inactivity
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+// Session timeout: effectively disabled (24 hours) — client requested removal
+const SESSION_TIMEOUT_MS = 24 * 60 * 60 * 1000; // 24 hours
 const WARNING_BEFORE_TIMEOUT_MS = 5 * 60 * 1000; // Warn 5 minutes before
 
 interface SecurityContextType {

@@ -2,7 +2,7 @@
  * Session Security Utilities
  * 
  * HIPAA-compliant session management with:
- * - 30-minute inactivity timeout
+ * - 24-hour inactivity timeout (extended per client request)
  * - Session tracking and validation
  * - Force logout capability
  */
@@ -19,9 +19,9 @@ function generateUUID(): string {
     });
 }
 
-// Session timeout: 30 minutes of inactivity
-export const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-export const SESSION_ABSOLUTE_TIMEOUT_MS = 12 * 60 * 60 * 1000; // 12 hours max
+// Session timeout: 24 hours of inactivity (extended per client request)
+export const SESSION_TIMEOUT_MS = 24 * 60 * 60 * 1000; // 24 hours
+export const SESSION_ABSOLUTE_TIMEOUT_MS = 7 * 24 * 60 * 60 * 1000; // 7 days max
 
 export interface SessionInfo {
     id: string;
@@ -122,7 +122,7 @@ export async function validateSession(): Promise<SessionInfo | null> {
         return null;
     }
 
-    // Check inactivity timeout (30 minutes)
+    // Check inactivity timeout (24 hours)
     const lastActivity = new Date(sessionData.last_activity_at);
     const inactivityThreshold = new Date(Date.now() - SESSION_TIMEOUT_MS);
 
