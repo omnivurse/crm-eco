@@ -47,6 +47,26 @@ const DATE_COLUMN_KEYS = new Set([
 ]);
 
 /**
+ * Row columns typed as UUID in Postgres. Non-UUID free-text values must
+ * NOT be synced here or Postgres returns `invalid input syntax for type uuid`.
+ */
+const UUID_COLUMN_KEYS = new Set([
+  'carrier_id',
+  'canonical_advisor_id',
+  'advisor_id',
+  'territory_id',
+  'source_record_id',
+  'import_batch_id',
+]);
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isUuidValue(value: unknown): boolean {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
+
+/**
  * Normalise a user-supplied date string into ISO `YYYY-MM-DD`, applying a
  * Y2K-style pivot to 2-digit years. Returns null for blank values and the
  * trimmed input unchanged for already-ISO strings; throws-via-null for
@@ -157,9 +177,18 @@ export function mergeCrmDataJsonIntoRowColumns(
 
   for (const key of CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH) {
     if (d[key] !== undefined) {
-      updates[key] = DATE_COLUMN_KEYS.has(key)
-        ? normalizeDateColumnValue(d[key])
-        : normalizeRowColumnValue(d[key]);
+      if (DATE_COLUMN_KEYS.has(key)) {
+        updates[key] = normalizeDateColumnValue(d[key]);
+      } else if (UUID_COLUMN_KEYS.has(key)) {
+        // UUID row columns reject non-UUID strings with "invalid input
+        // syntax for type uuid". Free-text values (e.g. "LifeX Co Pay PPO")
+        // from carrier picker fallbacks live safely in JSONB and must NOT
+        // be synced to the row column.
+        const v = normalizeRowColumnValue(d[key]);
+        updates[key] = v === null || isUuidValue(v) ? v : null;
+      } else {
+        updates[key] = normalizeRowColumnValue(d[key]);
+      }
     }
   }
 

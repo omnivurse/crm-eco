@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   Link2,
@@ -164,7 +164,7 @@ function LinkedRecordCard({
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-white/10 transition-colors group">
+    <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/30 border border-slate-200 dark:border-white/5 hover:border-slate-300 dark:hover:border-white/10 transition-colors group">
       {/* Direction indicator */}
       <div className={cn('p-2 rounded-lg', colors.bg, colors.text)}>
         {record.direction === 'outbound' ? (
@@ -179,7 +179,7 @@ function LinkedRecordCard({
         <div className="flex items-center gap-2">
           <Link
             href={`/crm/r/${record.record_id}`}
-            className="font-medium text-white hover:text-teal-400 transition-colors truncate"
+            className="font-medium text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate"
           >
             {record.record_title || 'Untitled'}
           </Link>
@@ -262,18 +262,37 @@ function LinkRecordDialog({
   const [isLinking, setIsLinking] = useState(false);
   const [searchResults, setSearchResults] = useState<LinkCandidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSearch = async () => {
-    if (!onSearch || !searchQuery.trim()) return;
+  // Debounced auto-search as user types
+  const runSearch = useCallback(
+    async (q: string) => {
+      if (!onSearch || !q.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      try {
+        const results = await onSearch(q);
+        setSearchResults(results);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [onSearch],
+  );
 
-    setIsSearching(true);
-    try {
-      const results = await onSearch(searchQuery);
-      setSearchResults(results);
-    } finally {
-      setIsSearching(false);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
     }
-  };
+    debounceRef.current = setTimeout(() => void runSearch(searchQuery), 250);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery, runSearch]);
 
   const handleLink = async () => {
     if (!selectedRecord) return;
@@ -298,48 +317,41 @@ function LinkRecordDialog({
       <DialogTrigger asChild>
         <Button
           variant="outline"
-          className="w-full glass border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-white/20"
+          className="w-full glass border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-white/20"
         >
           <Plus className="w-4 h-4 mr-2" />
           Link Record
         </Button>
       </DialogTrigger>
-      <DialogContent className="glass-card border-slate-200 dark:border-white/10 max-w-lg">
+      <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-white">Link a Record</DialogTitle>
+          <DialogTitle className="text-slate-900 dark:text-white">Link a Record</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
           {/* Search */}
           {onSearch && (
-            <div className="flex gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                placeholder="Search for a record..."
-                className="flex-1 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                placeholder="Type a name, email, or phone…"
+                className="pl-9 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+                autoFocus
               />
-              <Button
-                variant="outline"
-                onClick={handleSearch}
-                disabled={isSearching}
-                className="glass border-slate-200 dark:border-white/10 text-slate-300 hover:text-white"
-              >
-                {isSearching ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Search className="w-4 h-4" />
-                )}
-              </Button>
+              {isSearching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 animate-spin" />
+              )}
             </div>
           )}
 
           {/* Results List */}
-          <div className="max-h-48 overflow-y-auto space-y-2">
+          <div className="max-h-60 overflow-y-auto space-y-1.5">
             {recordsToShow.length > 0 ? (
               recordsToShow.map((record) => {
                 const icon = MODULE_ICONS[record.module_key] || <Link2 className="w-4 h-4" />;
+                const colors = MODULE_COLORS[record.module_key] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
                 const isSelected = selectedRecord?.id === record.id;
 
                 return (
@@ -347,27 +359,39 @@ function LinkRecordDialog({
                     key={record.id}
                     onClick={() => setSelectedRecord(record)}
                     className={cn(
-                      'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left',
+                      'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
                       isSelected
-                        ? 'border-teal-500 bg-teal-500/10'
-                        : 'border-white/5 hover:border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900/30'
+                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-500/10 ring-1 ring-teal-500/40'
+                        : 'border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 bg-white dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     )}
                   >
-                    <div className="p-1.5 rounded bg-slate-800/50 text-slate-400">{icon}</div>
+                    <div className={cn('p-1.5 rounded-lg', colors.bg, colors.text)}>{icon}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                         {record.title || 'Untitled'}
                       </p>
                       {record.subtitle ? (
-                        <p className="text-xs text-slate-500 truncate">{record.subtitle}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{record.subtitle}</p>
                       ) : null}
                     </div>
+                    {isSelected && (
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
                   </button>
                 );
               })
             ) : (
-              <p className="text-center py-4 text-slate-500 text-sm">
-                {searchQuery ? 'No records found' : 'Search for records to link'}
+              <p className="text-center py-6 text-slate-500 dark:text-slate-400 text-sm">
+                {searchQuery
+                  ? isSearching
+                    ? 'Searching…'
+                    : 'No records found'
+                  : 'Type above to search for records to link'
+                }
               </p>
             )}
           </div>
@@ -376,12 +400,12 @@ function LinkRecordDialog({
             <>
               {/* Link Type */}
               <div>
-                <label className="text-sm text-slate-400 mb-1 block">Link Type</label>
+                <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">Link Type</label>
                 <Select value={linkType} onValueChange={setLinkType}>
-                  <SelectTrigger className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
+                  <SelectTrigger className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="glass-card border-slate-200 dark:border-white/10 max-h-[min(60vh,22rem)]">
+                  <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-h-[min(60vh,22rem)]">
                     {LINK_TYPE_GROUPS.map((group) => (
                       <SelectGroup key={group.label}>
                         <SelectLabel className="text-[10px] uppercase tracking-wide text-slate-500 px-2 py-1.5">
@@ -392,7 +416,7 @@ function LinkRecordDialog({
                             key={type.value}
                             value={type.value}
                             title={type.label}
-                            className="text-slate-300 focus:text-white focus:bg-white/10"
+                            className="text-slate-700 dark:text-slate-300 focus:text-slate-900 dark:focus:text-white focus:bg-slate-100 dark:focus:bg-white/10"
                           >
                             {type.label}
                           </SelectItem>
@@ -409,9 +433,9 @@ function LinkRecordDialog({
                   type="checkbox"
                   checked={isPrimary}
                   onChange={(e) => setIsPrimary(e.target.checked)}
-                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-900/50 text-teal-500 focus:ring-teal-500/50"
+                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800/50 text-teal-500 focus:ring-teal-500/50"
                 />
-                <span className="text-sm text-slate-300">Mark as primary relationship</span>
+                <span className="text-sm text-slate-600 dark:text-slate-300">Mark as primary relationship</span>
               </label>
             </>
           )}
@@ -421,7 +445,7 @@ function LinkRecordDialog({
             <Button
               variant="ghost"
               onClick={() => setIsOpen(false)}
-              className="text-slate-400 hover:text-white"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             >
               Cancel
             </Button>
@@ -506,7 +530,7 @@ export function RelatedRecordsPanel({
             <div key={moduleKey}>
               <div className="flex items-center gap-2 mb-3">
                 <div className={cn('p-1.5 rounded-lg', colors.bg, colors.text)}>{icon}</div>
-                <h3 className="text-sm font-semibold text-white">{moduleName}s</h3>
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{moduleName}s</h3>
                 <span className="text-xs text-slate-500">({records.length})</span>
               </div>
 
@@ -530,7 +554,7 @@ export function RelatedRecordsPanel({
       ) : (
         <div className="text-center py-12">
           <Link2 className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-white mb-1">No linked records yet</h3>
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-1">No linked records yet</h3>
           <p className="text-slate-400 max-w-md mx-auto px-4">
             Connect households and memberships: search for another lead, member, or contact — for
             example parent and child on separate memberships — choose a relationship, then jump

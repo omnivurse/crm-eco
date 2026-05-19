@@ -526,6 +526,20 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     for (const field of visibleFields) {
       let fieldSchema: z.ZodType;
 
+      // Carrier-typed fields render AdvisorCarrierField which accepts
+      // both UUIDs (carrier picked from list) and free-text (typed
+      // manually via the "Use X as text" fallback). The value must
+      // validate as any string, not just UUID.
+      if (field.metadata?.carrier_type) {
+        schemaShape[field.key] = field.required
+          ? z.string().min(1, `${field.label} is required`)
+          : z.preprocess(
+              (v) => (v === undefined || v === null || (typeof v === 'string' && !v.trim()) ? null : v),
+              z.string().nullable(),
+            );
+        continue;
+      }
+
       switch (field.type) {
         case 'text':
         case 'textarea':

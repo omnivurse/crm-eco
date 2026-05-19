@@ -34,6 +34,10 @@
     {
       "path": "/api/cron/follow-up-reminders",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/activate-pending-members",
+      "schedule": "0 6 * * *"
     }
   ]
 }

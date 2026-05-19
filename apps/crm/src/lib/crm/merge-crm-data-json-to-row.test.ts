@@ -67,6 +67,22 @@ describe('mergeCrmDataJsonIntoRowColumns', () => {
     expect(updates.tobacco_user).toBe(false);
   });
 
+  // Regression: when a carrier picker uses "Use as text" fallback,
+  // the free-text (e.g. "LifeX Co Pay PPO 500 ded") must NOT be synced
+  // to the UUID carrier_id column, or Postgres will return
+  // "invalid input syntax for type uuid: ...".
+  it('coerces non-UUID free-text to null for UUID-typed columns', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      carrier_id: 'LifeX Co Pay PPO 500 ded',
+      advisor_id: 'some-text-not-uuid',
+      territory_id: 'ABC Corp',
+    });
+
+    expect(updates.carrier_id).toBeNull();
+    expect(updates.advisor_id).toBeNull();
+    expect(updates.territory_id).toBeNull();
+  });
+
   it('still derives title from first / last / preferred name', () => {
     const updates = mergeCrmDataJsonIntoRowColumns(
       { first_name: 'Anne', last_name: 'Hamill' },

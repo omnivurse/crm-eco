@@ -55,6 +55,19 @@ const CANONICAL_DATE_KEYS = new Set<string>([
   'cancellation_date',
 ]);
 
+/** Subset of CANONICAL_TOP_LEVEL_KEYS that map to UUID columns. */
+const CANONICAL_UUID_KEYS = new Set<string>([
+  'carrier_id',
+  'canonical_advisor_id',
+  'advisor_id',
+  'territory_id',
+  'source_record_id',
+  'import_batch_id',
+]);
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Single implementation of CRM record PATCH logic (workflows, scoring, PHI, revalidation).
  * Used by `PATCH /api/crm/records/[id]` and server-side `updateRecord()`.
@@ -182,9 +195,17 @@ export async function executeCrmRecordPatch(params: {
 
   for (const key of CANONICAL_TOP_LEVEL_KEYS) {
     if (body[key] !== undefined) {
-      (updates as Record<string, unknown>)[key] = CANONICAL_DATE_KEYS.has(key)
-        ? normalizeDateColumnValue(body[key])
-        : normalizeRowColumnValue(body[key]);
+      if (CANONICAL_DATE_KEYS.has(key)) {
+        (updates as Record<string, unknown>)[key] = normalizeDateColumnValue(body[key]);
+      } else if (CANONICAL_UUID_KEYS.has(key)) {
+        // UUID columns reject non-UUID text. Free-text carrier/advisor
+        // values must stay in JSONB only.
+        const v = normalizeRowColumnValue(body[key]);
+        (updates as Record<string, unknown>)[key] =
+          v === null || (typeof v === 'string' && UUID_RE.test(v)) ? v : null;
+      } else {
+        (updates as Record<string, unknown>)[key] = normalizeRowColumnValue(body[key]);
+      }
     }
   }
 

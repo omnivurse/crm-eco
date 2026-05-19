@@ -75,9 +75,13 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { supabase } from '@/lib/supabase-client';
+import { sanitizeNoteHtml } from '@/lib/crm/note-sanitize';
+import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
+import { RecordToolbarGlobalSearch } from './RecordToolbarGlobalSearch';
 import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
+import { ConvertLeadButton } from '@/components/crm/records/ConvertLeadButton';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
   MarketTypeBadge,
@@ -115,6 +119,7 @@ import { KeyboardShortcutsDialog } from './v2/KeyboardShortcutsDialog';
 import { PresenceStack } from './v2/PresenceStack';
 import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
+import { MembershipChangeHistory } from './v2/MembershipChangeHistory';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
@@ -455,10 +460,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   }, [record.id]);
 
   const isLeads = module.key === 'leads';
+  const isContacts = module.key === 'contacts';
   const isDeals = module.key === 'deals';
   const isAlreadyConverted =
     record.status === 'Converted' || (record.data as Record<string, unknown>)?.is_converted === true;
   const canConvertToContact = isLeads && !isAlreadyConverted;
+  // "Convert to Member" is available from both Leads and Contacts
+  const canConvertToMember = (isLeads || isContacts) && !isAlreadyConverted;
 
   const backUrl = `/crm/modules/${module.key}`;
 
@@ -905,17 +913,30 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // -------------------------------------------------------------------------
   // Render helpers
   // -------------------------------------------------------------------------
+  const recordMarketType = (record as any).market_type as string | undefined;
+  const showChangeHistory =
+    recordMarketType === 'healthshare' || recordMarketType === 'traditional_insurance';
+
   const renderOverviewPane = (): React.ReactNode => {
     switch (overviewPane) {
       case 'details':
         return (
-          <CollapsibleSection
-            title={<span>Lead Information</span>}
-            persistKey={`record.${record.id}.details`}
-            action={null}
-          >
-            {children.overview}
-          </CollapsibleSection>
+          <>
+            <CollapsibleSection
+              title={<span>Lead Information</span>}
+              persistKey={`record.${record.id}.details`}
+              action={null}
+            >
+              {children.overview}
+            </CollapsibleSection>
+
+            {showChangeHistory && (
+              <MembershipChangeHistory
+                data={(record.data ?? null) as Record<string, unknown> | null}
+                className="mt-4"
+              />
+            )}
+          </>
         );
       case 'notes':
         return (
@@ -978,7 +999,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   {getRecordDisplayName(record)}
                 </span>
               </div>
-              <div className="hidden md:block">
+              <div className="hidden md:flex items-center gap-3">
+                <RecordToolbarGlobalSearch currentRecordId={record.id} />
                 <InlineRecordSearch
                   record={record}
                   fields={_fields}
@@ -1169,6 +1191,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
                     <span className="text-xs sm:text-sm">Convert</span>
                   </Button>
+                )}
+                {canConvertToMember && (
+                  <ConvertLeadButton
+                    recordId={record.id}
+                    recordTitle={getRecordDisplayName(record)}
+                  />
                 )}
 
                 <Button
@@ -1381,6 +1409,17 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         >
                           <UserCheck className="w-4 h-4 mr-2" />
                           Convert to Contact
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {canConvertToMember && !canConvertToContact && (
+                      <>
+                        <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                        <DropdownMenuItem className="text-emerald-600 dark:text-emerald-400 p-0">
+                          <ConvertLeadButton
+                            recordId={record.id}
+                            recordTitle={getRecordDisplayName(record)}
+                          />
                         </DropdownMenuItem>
                       </>
                     )}
@@ -1708,9 +1747,16 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                    {note.body}
-                  </p>
+                  {/<[a-z][\s\S]*>/i.test(note.body) ? (
+                    <div
+                      className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed prose prose-sm max-w-none dark:prose-invert [&_table]:border-collapse [&_table]:w-full [&_td]:border [&_td]:border-slate-200 dark:[&_td]:border-slate-700 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-slate-200 dark:[&_th]:border-slate-700 [&_th]:px-2 [&_th]:py-1 [&_th]:font-semibold [&_th]:bg-slate-100 dark:[&_th]:bg-slate-800 [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md"
+                      dangerouslySetInnerHTML={{ __html: sanitizeNoteHtml(note.body) }}
+                    />
+                  ) : (
+                    <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                      {note.body}
+                    </p>
+                  )}
                 </div>
               ))
             ) : (
@@ -1787,19 +1833,21 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       </Dialog>
 
       <Dialog open={showNoteModal} onOpenChange={setShowNoteModal}>
-        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
+        <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-2xl w-[90vw]">
           <DialogHeader>
             <DialogTitle className="text-slate-900 dark:text-white">Add Note</DialogTitle>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              You can paste formatted text, tables, and images directly.
+            </p>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <Textarea
+          <div className="space-y-4 mt-2">
+            <NoteRichArea
               value={noteContent}
-              onChange={(e) => setNoteContent(e.target.value)}
-              placeholder="Enter your note..."
-              rows={12}
-              className="bg-white dark:bg-slate-800 border-slate-200 dark:border-white/10 min-h-[240px] resize-y"
+              onChange={setNoteContent}
+              placeholder="Write a note… Paste formatted enrollment details, tables, etc."
+              className="min-h-[320px]"
             />
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
                 onClick={() => setShowNoteModal(false)}
@@ -2044,6 +2092,14 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       <UserCheck className="w-4 h-4 mr-2" />
                       Convert to Contact
                     </Button>
+                  )}
+                  {canConvertToMember && (
+                    <div className="w-full">
+                      <ConvertLeadButton
+                        recordId={record.id}
+                        recordTitle={getRecordDisplayName(record)}
+                      />
+                    </div>
                   )}
                 </div>
               }
