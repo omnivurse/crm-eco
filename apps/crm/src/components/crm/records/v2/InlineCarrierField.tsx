@@ -70,15 +70,39 @@ function loadCarriers(carrierType: string): Promise<CarrierListEntry[]> {
         const name = row.carrier?.carrier_name;
         if (name) list.push({ id: row.carrier_id, name });
       }
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      listCache.set(carrierType, list);
-      inFlight.delete(carrierType);
       return list;
+    })
+    .then(async (list) => {
+      // If the advisor has carriers in their personal list, use that.
+      // Otherwise fall back to the full org directory so users who
+      // haven't curated a personal list can still pick carriers.
+      if (list.length > 0) {
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        listCache.set(carrierType, list);
+        return list;
+      }
+      // Fallback: org-wide directory
+      const res = await fetch(
+        `/api/crm/carriers?carrier_type=${encodeURIComponent(carrierType)}&limit=500`,
+      );
+      if (!res.ok) return [];
+      const json = (await res.json()) as {
+        data?: { id: string; carrier_name: string }[];
+      };
+      const orgList: CarrierListEntry[] = (json.data || []).map((c) => ({
+        id: c.id,
+        name: c.carrier_name,
+      }));
+      orgList.sort((a, b) => a.name.localeCompare(b.name));
+      listCache.set(carrierType, orgList);
+      return orgList;
     })
     .catch((err) => {
       console.warn('[InlineCarrierField] load failed', err);
-      inFlight.delete(carrierType);
       return [];
+    })
+    .finally(() => {
+      inFlight.delete(carrierType);
     });
 
   inFlight.set(carrierType, p);

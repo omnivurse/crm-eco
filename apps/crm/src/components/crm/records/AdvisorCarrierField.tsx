@@ -98,15 +98,39 @@ function loadPersonalCarriers(
         const name = row.carrier?.carrier_name;
         if (name) list.push({ id: row.carrier_id, name });
       }
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      personalCache.set(carrierType, list);
-      personalInFlight.delete(carrierType);
       return list;
+    })
+    .then(async (list) => {
+      // If the advisor has carriers in their personal list, use that.
+      // Otherwise fall back to the full org directory so users who
+      // haven't curated a personal list can still pick carriers.
+      if (list.length > 0) {
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        personalCache.set(carrierType, list);
+        return list;
+      }
+      // Fallback: org-wide directory
+      const res = await fetch(
+        `/api/crm/carriers?carrier_type=${encodeURIComponent(carrierType)}&limit=500`,
+      );
+      if (!res.ok) return [];
+      const json = (await res.json()) as {
+        data?: { id: string; carrier_name: string }[];
+      };
+      const orgList: PersonalEntry[] = (json.data || []).map((c) => ({
+        id: c.id,
+        name: c.carrier_name,
+      }));
+      orgList.sort((a, b) => a.name.localeCompare(b.name));
+      personalCache.set(carrierType, orgList);
+      return orgList;
     })
     .catch((err) => {
       console.warn('[AdvisorCarrierField] personal load failed', err);
-      personalInFlight.delete(carrierType);
       return [];
+    })
+    .finally(() => {
+      personalInFlight.delete(carrierType);
     });
 
   personalInFlight.set(carrierType, p);

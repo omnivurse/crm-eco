@@ -75,7 +75,7 @@ const createCarrierSchema = z.object({
   naic_code: z.string().max(20).optional(),
   website: z.string().url().optional(),
   logo_url: z.string().url().optional(),
-  carrier_type: z.enum(['insurance', 'healthshare', 'medicaid', 'short_term']).default('insurance'),
+  carrier_type: z.enum(['insurance', 'healthshare', 'medicaid', 'short_term', 'dental', 'vision', 'life', 'other']).default('insurance'),
   phone: z.string().max(20).optional(),
   email: z.string().email().optional(),
 });

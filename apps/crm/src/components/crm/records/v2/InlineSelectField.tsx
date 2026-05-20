@@ -12,7 +12,7 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { AlertTriangle, Check, ChevronDown, Loader2 } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, Loader2, X } from 'lucide-react';
 import { useRecordFieldSave, type FieldSaveTarget } from '@/hooks/useRecordFieldSave';
 import { useRecordFieldLocks, useFieldLockOwner } from '@/hooks/useRecordFieldLocks';
 import { LockedFieldBadge } from './LockedFieldBadge';
@@ -112,6 +112,16 @@ export const InlineSelectField = memo(function InlineSelectField({
     );
   }
 
+  const handleClear = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setPick(null);
+      await save(field, null, target ? { target } : undefined);
+    },
+    [save, field, target],
+  );
+
   return (
     <span
       className={cn(
@@ -130,6 +140,17 @@ export const InlineSelectField = memo(function InlineSelectField({
         </Badge>
       ) : (
         <span className="text-sm text-slate-400 italic pointer-events-none">{placeholder}</span>
+      )}
+      {/* Clear button — visible when a value is set */}
+      {pick && (
+        <button
+          type="button"
+          onClick={handleClear}
+          className="relative z-10 rounded p-0.5 text-slate-400 hover:text-rose-500 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+          aria-label="Clear selection"
+        >
+          <X className="w-3 h-3" />
+        </button>
       )}
       <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none" />
       <select
