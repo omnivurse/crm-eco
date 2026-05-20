@@ -5,10 +5,50 @@
 import type {
   CrmField,
   CrmLayout,
+  FieldCarrierType,
   LayoutSection,
   LayoutConfig,
   LayoutSectionAccent,
 } from '@/lib/crm/types';
+
+// ---------------------------------------------------------------------------
+// Carrier / Ministry terminology helper
+// ---------------------------------------------------------------------------
+
+export interface CarrierTerms {
+  /** e.g. "Carrier" or "Ministry" */
+  singular: string;
+  /** e.g. "Carriers" or "Ministries" */
+  plural: string;
+  /** Lowercase singular, e.g. "carrier" or "ministry" */
+  singularLower: string;
+  /** Lowercase plural, e.g. "carriers" or "ministries" */
+  pluralLower: string;
+}
+
+/**
+ * Return the correct user-facing noun for a given carrier type.
+ *
+ * - `healthshare` → **Ministry / Ministries** (health sharing organizations
+ *   like Sedera, Zion, MPB are ministries, not carriers)
+ * - everything else → **Carrier / Carriers**
+ */
+export function getCarrierTerms(carrierType?: FieldCarrierType | string | null): CarrierTerms {
+  if (carrierType === 'healthshare') {
+    return {
+      singular: 'Ministry',
+      plural: 'Ministries',
+      singularLower: 'ministry',
+      pluralLower: 'ministries',
+    };
+  }
+  return {
+    singular: 'Carrier',
+    plural: 'Carriers',
+    singularLower: 'carrier',
+    pluralLower: 'carriers',
+  };
+}
 
 /** Fired when the user taps an Overview section pill; accordion expands before scroll targets `#section-{key}`. */
 export const CRM_SECTION_NAV_EVENT = 'crm-record-section-navigate' as const;

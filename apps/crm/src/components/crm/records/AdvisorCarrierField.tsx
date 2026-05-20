@@ -48,6 +48,7 @@ import type {
   FieldCarrierType,
   InsuranceCarrier,
 } from '@/lib/crm/types';
+import { getCarrierTerms } from '@/components/crm/records/section-utils';
 
 interface AdvisorCarrierFieldProps {
   field: CrmField;
@@ -159,6 +160,7 @@ export function AdvisorCarrierField({
   const carrierType = field.metadata?.carrier_type as
     | FieldCarrierType
     | undefined;
+  const terms = getCarrierTerms(carrierType);
 
   const [personal, setPersonal] = useState<PersonalEntry[]>(
     carrierType ? personalCache.get(carrierType) ?? [] : [],
@@ -443,7 +445,7 @@ export function AdvisorCarrierField({
                   if (trimmedQuery) commit(trimmedQuery);
                 }
               }}
-              placeholder={`Search ${carrierType} carriers…`}
+              placeholder={`Search ${terms.pluralLower}…`}
               className="flex-1 bg-transparent text-sm placeholder:text-slate-400 focus:outline-none"
             />
             {(directoryLoading || !personalLoaded) && (
@@ -460,7 +462,7 @@ export function AdvisorCarrierField({
           ) : personalMatches.length > 0 ? (
             <div>
               <div className="px-2 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                My carriers
+                My {terms.pluralLower}
               </div>
               {personalMatches.map((c) => (
                 <button
@@ -488,11 +490,11 @@ export function AdvisorCarrierField({
             </div>
           ) : personal.length === 0 ? (
             <div className="px-2 pb-1 pt-0.5 text-[11px] text-slate-500">
-              No {carrierType} carriers in your list yet.
+              No {terms.pluralLower} in your list yet.
             </div>
           ) : (
             <div className="px-2 pb-1 pt-0.5 text-[11px] text-slate-500">
-              No carriers in your list match "{trimmedQuery}".
+              No {terms.pluralLower} in your list match "{trimmedQuery}".
             </div>
           )}
 
@@ -565,7 +567,7 @@ export function AdvisorCarrierField({
               onClick={close}
             >
               <Sparkles className="h-3 w-3" />
-              Manage my carriers
+              Manage my {terms.pluralLower}
               <ExternalLink className="h-3 w-3" />
             </Link>
           </div>

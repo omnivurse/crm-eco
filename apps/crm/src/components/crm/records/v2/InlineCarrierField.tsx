@@ -24,6 +24,7 @@ import {
   X,
 } from 'lucide-react';
 import type { FieldCarrierType } from '@/lib/crm/types';
+import { getCarrierTerms } from '@/components/crm/records/section-utils';
 import {
   useRecordFieldSave,
   type FieldSaveTarget,
@@ -105,12 +106,14 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   carrierType,
   target,
   readOnly,
-  placeholder = 'Select carrier',
+  placeholder: placeholderOverride,
   onEditStart,
   onEditEnd,
   className,
   ariaLabel,
 }: InlineCarrierFieldProps) {
+  const terms = getCarrierTerms(carrierType);
+  const placeholder = placeholderOverride ?? `Select ${terms.singularLower}`;
   const { save, fields } = useRecordFieldSave();
   const state = fields[field];
   const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
@@ -252,16 +255,16 @@ export const InlineCarrierField = memo(function InlineCarrierField({
         <div className="absolute left-0 top-full z-50 mt-1 min-w-[16rem] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-1 max-h-72 overflow-y-auto">
           {!loaded ? (
             <div className="p-3 text-xs text-slate-500 text-center inline-flex items-center gap-1.5 justify-center w-full">
-              <Loader2 className="w-3 h-3 animate-spin" /> Loading carriers…
+              <Loader2 className="w-3 h-3 animate-spin" /> Loading {terms.pluralLower}…
             </div>
           ) : carriers.length === 0 ? (
             <div className="p-3 text-xs text-slate-500 text-center">
-              <div>No {carrierType} carriers in your list yet.</div>
+              <div>No {terms.pluralLower} in your list yet.</div>
               <Link
                 href="/crm/settings/my-carriers"
                 className="mt-1 inline-flex items-center gap-1 text-teal-600 hover:underline"
               >
-                Set up my carriers <ExternalLink className="w-3 h-3" />
+                Set up my {terms.pluralLower} <ExternalLink className="w-3 h-3" />
               </Link>
             </div>
           ) : (

@@ -46,7 +46,7 @@ interface Carrier {
 
 const CARRIER_TYPES = [
   { value: 'insurance', label: 'Insurance', icon: Shield, color: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30' },
-  { value: 'healthshare', label: 'HealthShare', icon: Heart, color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30' },
+  { value: 'healthshare', label: 'Health Sharing Ministry', icon: Heart, color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30' },
   { value: 'medicaid', label: 'Medicaid', icon: Building2, color: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/20 dark:text-violet-400 dark:border-violet-500/30' },
   { value: 'short_term', label: 'Short Term', icon: Shield, color: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' },
 ];
@@ -68,6 +68,9 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  const isMinistry = (type: string) => type === 'healthshare';
+  const termForType = (type: string) => isMinistry(type) ? 'Ministry' : 'Carrier';
+
   const supabase = createClient();
 
   const refresh = useCallback(async () => {
@@ -86,11 +89,11 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
       if (editingCarrier) {
         const { error } = await supabase.from('insurance_carriers').update(form).eq('id', editingCarrier.id);
         if (error) throw error;
-        toast.success('Carrier updated');
+        toast.success(`${termForType(editingCarrier.carrier_type)} updated`);
       } else {
         const { error } = await supabase.from('insurance_carriers').insert({ ...form, organization_id: orgId });
         if (error) throw error;
-        toast.success('Carrier created');
+        toast.success(`${termForType(form.carrier_type)} created`);
       }
       setDialogOpen(false);
       setEditingCarrier(null);
@@ -150,7 +153,7 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
           <Archive className="w-4 h-4 mr-1.5" />{showArchived ? 'Active' : 'Archived'}
         </Button>
         <Button size="sm" onClick={() => { setEditingCarrier(null); setForm(emptyForm); setDialogOpen(true); }}>
-          <Plus className="w-4 h-4 mr-1.5" />Add Carrier
+          <Plus className="w-4 h-4 mr-1.5" />{typeFilter === 'healthshare' ? 'Add Ministry' : typeFilter === 'all' ? 'Add Carrier / Ministry' : 'Add Carrier'}
         </Button>
       </div>
 
@@ -205,7 +208,7 @@ export function CarrierManagement({ initialCarriers, orgId }: Props) {
       {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editingCarrier ? 'Edit Carrier' : 'Add Carrier'}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editingCarrier ? `Edit ${termForType(editingCarrier.carrier_type)}` : `Add ${termForType(form.carrier_type)}`}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><label className="text-sm font-medium mb-1 block">Name *</label><Input value={form.carrier_name} onChange={e => setForm(f => ({ ...f, carrier_name: e.target.value }))} /></div>
             <div><label className="text-sm font-medium mb-1 block">Type</label>

@@ -35,6 +35,7 @@ import type {
   FieldCarrierType,
   InsuranceCarrier,
 } from '@/lib/crm/types';
+import { getCarrierTerms } from '@/components/crm/records/section-utils';
 
 // ---------------------------------------------------------------------------
 // Tab definitions — must match the carrier_type values in the DB
@@ -60,7 +61,7 @@ const TABS: TabDef[] = [
     label: 'Health Share',
     icon: Heart,
     accent: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
-    description: 'Health sharing organizations (Sedera, Zion, MPB, …).',
+    description: 'Health sharing ministries you represent (Sedera, Zion, MPB, …).',
   },
   {
     value: 'dental',
@@ -107,13 +108,13 @@ export default function MyCarriersPage() {
             <Settings className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Carriers</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Carriers & Ministries</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-              Curate the carriers you actively write business with. The list you build here drives
-              the dropdowns on every record (Lead, Contact, Member). Carriers come from the
+              Curate the carriers and ministries you actively write business with. The list you build here drives
+              the dropdowns on every record (Lead, Contact, Member). Options come from the
               org&rsquo;s shared{' '}
               <Link href="/crm/settings/carriers" className="text-teal-600 hover:underline">
-                Carrier Management
+                Carrier & Ministry Directory
               </Link>{' '}
               directory.
             </p>
@@ -160,6 +161,7 @@ interface CarrierTabProps {
 }
 
 function CarrierTab({ tab }: CarrierTabProps) {
+  const terms = getCarrierTerms(tab.value);
   const [myList, setMyList] = useState<AdvisorCarrierWithCarrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -270,7 +272,7 @@ function CarrierTab({ tab }: CarrierTabProps) {
         ) : myList.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-300 dark:border-slate-600 p-8 text-center bg-white/60 dark:bg-slate-900/40">
             <p className="text-sm text-slate-600 dark:text-slate-400">
-              You haven&rsquo;t added any {tab.label.toLowerCase()} carriers yet.
+              You haven&rsquo;t added any {terms.pluralLower} yet.
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
               Search above to pick from the org directory.
@@ -323,11 +325,11 @@ function CarrierTab({ tab }: CarrierTabProps) {
       </div>
 
       <p className="mt-6 text-xs text-slate-500 dark:text-slate-400">
-        Carrier missing from the directory?{' '}
+        {terms.singular} missing from the directory?{' '}
         <Link href="/crm/settings/carriers" className="text-teal-600 hover:underline">
-          Open Carrier Management
+          Open Carrier & Ministry Directory
         </Link>{' '}
-        (admins can add new carriers).
+        (admins can add new {terms.pluralLower}).
       </p>
     </div>
   );
@@ -385,7 +387,7 @@ function CarrierTypeahead({ carrierType, excludeIds, onPick, savingId }: Typeahe
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
         <Input
-          placeholder={`Search ${carrierType === 'healthshare' ? 'health share' : carrierType} carriers…`}
+          placeholder={`Search ${carrierType === 'healthshare' ? 'ministries' : carrierType + ' carriers'}…`}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query && setOpen(true)}
