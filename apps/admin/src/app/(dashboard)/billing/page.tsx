@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { formatDistanceToNow, format } from 'date-fns';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { getActiveTenant } from '@/lib/tenant';
+import { BillingAutomationCard, JobRunHistoryCard } from '@/components/billing/BillingAutomation';
 
 interface BillingStats {
   totalCollected: number;
@@ -163,6 +164,37 @@ export default async function BillingPage() {
   ]);
   const stats = statsResult.status === 'fulfilled' ? statsResult.value : null;
   const recentTransactions = recentTransactionsResult.status === 'fulfilled' ? recentTransactionsResult.value : [];
+
+  // Fetch automation config and recent job runs
+  const supabase = await createServerSupabaseClient();
+  const tenant = await getActiveTenant();
+  const db = supabase as any;
+  let automationConfig = null;
+  let jobRuns: any[] = [];
+
+  if (tenant) {
+    const [configResult, runsResult] = await Promise.allSettled([
+      db
+        .from('billing_automation_config')
+        .select('*')
+        .eq('organization_id', tenant.organizationId)
+        .single(),
+      db
+        .from('billing_job_runs')
+        .select('*')
+        .eq('organization_id', tenant.organizationId)
+        .in('job_type', ['billing', 'commission'])
+        .order('started_at', { ascending: false })
+        .limit(20),
+    ]);
+
+    if (configResult.status === 'fulfilled' && configResult.value.data) {
+      automationConfig = configResult.value.data;
+    }
+    if (runsResult.status === 'fulfilled' && runsResult.value.data) {
+      jobRuns = runsResult.value.data;
+    }
+  }
 
   const statCards = [
     {
@@ -377,6 +409,10 @@ export default async function BillingPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Billing Automation & Job History */}
+      <BillingAutomationCard config={automationConfig} />
+      <JobRunHistoryCard jobRuns={jobRuns} />
     </div>
   );
 }

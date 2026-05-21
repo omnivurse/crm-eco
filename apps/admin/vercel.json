@@ -2,5 +2,10 @@
   "installCommand": "cd ../.. && rm -rf node_modules/.package-lock.json && npm install --legacy-peer-deps",
   "buildCommand": "cd ../.. && npm run build:admin",
   "outputDirectory": ".next",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "crons": [
+    { "path": "/api/cron/process-billing", "schedule": "0 * * * *" },
+    { "path": "/api/cron/process-commissions", "schedule": "30 3 * * *" },
+    { "path": "/api/cron/send-scheduled-emails", "schedule": "*/5 * * * *" }
+  ]
 }
