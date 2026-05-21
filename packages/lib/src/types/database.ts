@@ -3556,6 +3556,86 @@ export type Database = {
         }
         Relationships: []
       }
+      agreement_signatures: {
+        Row: {
+          agreement_type: string
+          created_at: string
+          enrollment_id: string
+          id: string
+          legal_document_id: string | null
+          metadata: Json | null
+          organization_id: string
+          pdf_generated_at: string | null
+          pdf_storage_path: string | null
+          signature_png: string | null
+          signed_at: string
+          signer_ip: unknown
+          signer_name: string
+          signer_user_agent: string | null
+        }
+        Insert: {
+          agreement_type: string
+          created_at?: string
+          enrollment_id: string
+          id?: string
+          legal_document_id?: string | null
+          metadata?: Json | null
+          organization_id: string
+          pdf_generated_at?: string | null
+          pdf_storage_path?: string | null
+          signature_png?: string | null
+          signed_at?: string
+          signer_ip?: unknown
+          signer_name: string
+          signer_user_agent?: string | null
+        }
+        Update: {
+          agreement_type?: string
+          created_at?: string
+          enrollment_id?: string
+          id?: string
+          legal_document_id?: string | null
+          metadata?: Json | null
+          organization_id?: string
+          pdf_generated_at?: string | null
+          pdf_storage_path?: string | null
+          signature_png?: string | null
+          signed_at?: string
+          signer_ip?: unknown
+          signer_name?: string
+          signer_user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agreement_signatures_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agreement_signatures_legal_document_id_fkey"
+            columns: ["legal_document_id"]
+            isOneToOne: false
+            referencedRelation: "legal_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agreement_signatures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agreement_signatures_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_snapshots: {
         Row: {
           active_advisors: number | null
@@ -4660,8 +4740,10 @@ export type Database = {
           enrollment_id: string
           frequency: string
           id: string
+          idempotency_key: string | null
           last_billed_date: string | null
           last_billing_status: string | null
+          last_failure_id: string | null
           max_retries: number | null
           member_id: string
           next_billing_date: string
@@ -4691,8 +4773,10 @@ export type Database = {
           enrollment_id: string
           frequency?: string
           id?: string
+          idempotency_key?: string | null
           last_billed_date?: string | null
           last_billing_status?: string | null
+          last_failure_id?: string | null
           max_retries?: number | null
           member_id: string
           next_billing_date: string
@@ -4722,8 +4806,10 @@ export type Database = {
           enrollment_id?: string
           frequency?: string
           id?: string
+          idempotency_key?: string | null
           last_billed_date?: string | null
           last_billing_status?: string | null
+          last_failure_id?: string | null
           max_retries?: number | null
           member_id?: string
           next_billing_date?: string
@@ -4746,6 +4832,13 @@ export type Database = {
             columns: ["enrollment_id"]
             isOneToOne: false
             referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_schedules_last_failure_id_fkey"
+            columns: ["last_failure_id"]
+            isOneToOne: false
+            referencedRelation: "billing_failures"
             referencedColumns: ["id"]
           },
           {
@@ -17170,13 +17263,17 @@ export type Database = {
           coverage_end_date: string | null
           coverage_start_date: string | null
           created_at: string | null
+          custom_fields: Json | null
           dependent_id: string
           dependent_product_fee: number | null
           enrollment_id: string
           has_pre_existing_conditions: boolean | null
           id: string
+          inactive_date: string | null
+          inactive_reason: string | null
           is_primary: boolean | null
           is_smoker: boolean | null
+          organization_id: string | null
           relationship: string
           removal_reason: string | null
           status: string | null
@@ -17187,13 +17284,17 @@ export type Database = {
           coverage_end_date?: string | null
           coverage_start_date?: string | null
           created_at?: string | null
+          custom_fields?: Json | null
           dependent_id: string
           dependent_product_fee?: number | null
           enrollment_id: string
           has_pre_existing_conditions?: boolean | null
           id?: string
+          inactive_date?: string | null
+          inactive_reason?: string | null
           is_primary?: boolean | null
           is_smoker?: boolean | null
+          organization_id?: string | null
           relationship: string
           removal_reason?: string | null
           status?: string | null
@@ -17204,13 +17305,17 @@ export type Database = {
           coverage_end_date?: string | null
           coverage_start_date?: string | null
           created_at?: string | null
+          custom_fields?: Json | null
           dependent_id?: string
           dependent_product_fee?: number | null
           enrollment_id?: string
           has_pre_existing_conditions?: boolean | null
           id?: string
+          inactive_date?: string | null
+          inactive_reason?: string | null
           is_primary?: boolean | null
           is_smoker?: boolean | null
+          organization_id?: string | null
           relationship?: string
           removal_reason?: string | null
           status?: string | null
@@ -17229,6 +17334,27 @@ export type Database = {
             columns: ["enrollment_id"]
             isOneToOne: false
             referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_dependents_inactive_reason_fkey"
+            columns: ["inactive_reason"]
+            isOneToOne: false
+            referencedRelation: "inactive_reasons"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "enrollment_dependents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollment_dependents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -18081,6 +18207,7 @@ export type Database = {
           hold_return_date: string | null
           household_size: number | null
           id: string
+          inactive_reason: string | null
           initial_payment_amount: number | null
           initial_payment_date: string | null
           initial_payment_paid: boolean | null
@@ -18088,6 +18215,7 @@ export type Database = {
           is_paid: boolean | null
           iua_fee: number | null
           iua_id: string | null
+          last_modified_by: string | null
           last_payment_date: string | null
           last_status_change_at: string | null
           lead_id: string | null
@@ -18221,6 +18349,7 @@ export type Database = {
           hold_return_date?: string | null
           household_size?: number | null
           id?: string
+          inactive_reason?: string | null
           initial_payment_amount?: number | null
           initial_payment_date?: string | null
           initial_payment_paid?: boolean | null
@@ -18228,6 +18357,7 @@ export type Database = {
           is_paid?: boolean | null
           iua_fee?: number | null
           iua_id?: string | null
+          last_modified_by?: string | null
           last_payment_date?: string | null
           last_status_change_at?: string | null
           lead_id?: string | null
@@ -18361,6 +18491,7 @@ export type Database = {
           hold_return_date?: string | null
           household_size?: number | null
           id?: string
+          inactive_reason?: string | null
           initial_payment_amount?: number | null
           initial_payment_date?: string | null
           initial_payment_paid?: boolean | null
@@ -18368,6 +18499,7 @@ export type Database = {
           is_paid?: boolean | null
           iua_fee?: number | null
           iua_id?: string | null
+          last_modified_by?: string | null
           last_payment_date?: string | null
           last_status_change_at?: string | null
           lead_id?: string | null
@@ -18485,6 +18617,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "pricing_lookup_mv"
             referencedColumns: ["benefit_tier_id"]
+          },
+          {
+            foreignKeyName: "enrollments_inactive_reason_fkey"
+            columns: ["inactive_reason"]
+            isOneToOne: false
+            referencedRelation: "inactive_reasons"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "enrollments_last_modified_by_fkey"
+            columns: ["last_modified_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "enrollments_lead_id_fkey"
@@ -20691,6 +20837,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      inactive_reasons: {
+        Row: {
+          category: string | null
+          code: string
+          description: string
+        }
+        Insert: {
+          category?: string | null
+          code: string
+          description: string
+        }
+        Update: {
+          category?: string | null
+          code?: string
+          description?: string
+        }
+        Relationships: []
       }
       inbox_assignments: {
         Row: {
@@ -23330,6 +23494,87 @@ export type Database = {
           },
         ]
       }
+      legal_documents: {
+        Row: {
+          content_html: string
+          created_at: string
+          created_by: string | null
+          document_name: string
+          document_type: string
+          effective_date: string | null
+          id: string
+          organization_id: string
+          product_id: string | null
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          content_html: string
+          created_at?: string
+          created_by?: string | null
+          document_name: string
+          document_type: string
+          effective_date?: string | null
+          id?: string
+          organization_id: string
+          product_id?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          content_html?: string
+          created_at?: string
+          created_by?: string | null
+          document_name?: string
+          document_type?: string
+          effective_date?: string | null
+          id?: string
+          organization_id?: string
+          product_id?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_documents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_documents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_lookup_mv"
+            referencedColumns: ["plan_id"]
+          },
+        ]
+      }
       medical_procedures: {
         Row: {
           avg_national_price: number | null
@@ -23430,6 +23675,160 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "team_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_change_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          id: string
+          member_id: string
+          organization_id: string
+          payload: Json
+          request_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          id?: string
+          member_id: string
+          organization_id: string
+          payload?: Json
+          request_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          id?: string
+          member_id?: string
+          organization_id?: string
+          payload?: Json
+          request_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_change_requests_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_change_requests_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_change_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_change_requests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          issued_at: string
+          issued_by: string | null
+          member_id: string
+          metadata: Json
+          mime_type: string | null
+          organization_id: string
+          size_bytes: number | null
+          storage_path: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          issued_at?: string
+          issued_by?: string | null
+          member_id: string
+          metadata?: Json
+          mime_type?: string | null
+          organization_id: string
+          size_bytes?: number | null
+          storage_path: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          issued_at?: string
+          issued_by?: string | null
+          member_id?: string
+          metadata?: Json
+          mime_type?: string | null
+          organization_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_documents_issued_by_fkey"
+            columns: ["issued_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_documents_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_documents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -23546,6 +23945,73 @@ export type Database = {
           },
           {
             foreignKeyName: "member_lifecycle_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_notifications: {
+        Row: {
+          action_url: string | null
+          body: string | null
+          category: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_read: boolean
+          member_id: string
+          organization_id: string
+          priority: string
+          read_at: string | null
+          title: string
+        }
+        Insert: {
+          action_url?: string | null
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          member_id: string
+          organization_id: string
+          priority?: string
+          read_at?: string | null
+          title: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_read?: boolean
+          member_id?: string
+          organization_id?: string
+          priority?: string
+          read_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_notifications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notifications_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_notifications_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -24198,6 +24664,71 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      need_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          need_id: string
+          organization_id: string
+          size_bytes: number | null
+          storage_path: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          need_id: string
+          organization_id: string
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          need_id?: string
+          organization_id?: string
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "need_attachments_need_id_fkey"
+            columns: ["need_id"]
+            isOneToOne: false
+            referencedRelation: "needs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "need_attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "need_attachments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "need_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -26154,6 +26685,60 @@ export type Database = {
             columns: ["payment_profile_id"]
             isOneToOne: false
             referencedRelation: "payment_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_webhooks: {
+        Row: {
+          created_at: string
+          event_id: string
+          event_type: string
+          id: string
+          organization_id: string | null
+          payload: Json
+          processed: boolean
+          processed_at: string | null
+          processing_error: string | null
+          signature_valid: boolean
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          event_type: string
+          id?: string
+          organization_id?: string | null
+          payload: Json
+          processed?: boolean
+          processed_at?: string | null
+          processing_error?: string | null
+          signature_valid: boolean
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          event_type?: string
+          id?: string
+          organization_id?: string | null
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          processing_error?: string | null
+          signature_valid?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_webhooks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_webhooks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -28199,6 +28784,190 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "presentation_templates"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_change_audit: {
+        Row: {
+          applied_at: string
+          billing_schedule_id: string | null
+          change_reason: string | null
+          enrollment_id: string
+          id: string
+          new_amount: number | null
+          notification_sent: boolean | null
+          notification_sent_at: string | null
+          old_amount: number | null
+          organization_id: string
+          schedule_id: string
+        }
+        Insert: {
+          applied_at?: string
+          billing_schedule_id?: string | null
+          change_reason?: string | null
+          enrollment_id: string
+          id?: string
+          new_amount?: number | null
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          old_amount?: number | null
+          organization_id: string
+          schedule_id: string
+        }
+        Update: {
+          applied_at?: string
+          billing_schedule_id?: string | null
+          change_reason?: string | null
+          enrollment_id?: string
+          id?: string
+          new_amount?: number | null
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
+          old_amount?: number | null
+          organization_id?: string
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_change_audit_billing_schedule_id_fkey"
+            columns: ["billing_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "billing_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_audit_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_audit_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_audit_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "price_change_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_change_schedules: {
+        Row: {
+          affected_enrollments_count: number | null
+          created_at: string
+          created_by: string | null
+          error_log: Json | null
+          executed_at: string | null
+          executed_by: string | null
+          failed_count: number | null
+          id: string
+          new_pricing_snapshot: Json | null
+          notes: string | null
+          notify_members: boolean | null
+          old_pricing_snapshot: Json | null
+          organization_id: string
+          plan_id: string
+          processed_count: number | null
+          scheduled_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          affected_enrollments_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          error_log?: Json | null
+          executed_at?: string | null
+          executed_by?: string | null
+          failed_count?: number | null
+          id?: string
+          new_pricing_snapshot?: Json | null
+          notes?: string | null
+          notify_members?: boolean | null
+          old_pricing_snapshot?: Json | null
+          organization_id: string
+          plan_id: string
+          processed_count?: number | null
+          scheduled_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          affected_enrollments_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          error_log?: Json | null
+          executed_at?: string | null
+          executed_by?: string | null
+          failed_count?: number | null
+          id?: string
+          new_pricing_snapshot?: Json | null
+          notes?: string | null
+          notify_members?: boolean | null
+          old_pricing_snapshot?: Json | null
+          organization_id?: string
+          plan_id?: string
+          processed_count?: number | null
+          scheduled_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_change_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_schedules_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_schedules_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_change_schedules_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_lookup_mv"
+            referencedColumns: ["plan_id"]
           },
         ]
       }
@@ -31610,6 +32379,72 @@ export type Database = {
             columns: ["sent_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_providers: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          external_url: string
+          id: string
+          is_active: boolean
+          logo_url: string | null
+          name: string
+          organization_id: string
+          plan_filters: Json
+          sort_order: number
+          sso_config: Json
+          sso_kind: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          external_url: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name: string
+          organization_id: string
+          plan_filters?: Json
+          sort_order?: number
+          sso_config?: Json
+          sso_kind?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          external_url?: string
+          id?: string
+          is_active?: boolean
+          logo_url?: string | null
+          name?: string
+          organization_id?: string
+          plan_filters?: Json
+          sort_order?: number
+          sso_config?: Json
+          sso_kind?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_providers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_providers_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -37231,6 +38066,10 @@ export type Database = {
         }
         Returns: string
       }
+      compute_first_billing_date: {
+        Args: { p_effective_date: string }
+        Returns: string
+      }
       convert_lead_to_contact: {
         Args: {
           p_lead_record_id: string
@@ -37252,6 +38091,10 @@ export type Database = {
           p_ticket_id: string
         }
         Returns: string
+      }
+      create_enrollment_tx: {
+        Args: { p_org_id: string; p_payload: Json }
+        Returns: Json
       }
       create_franchise_relationship: {
         Args: {

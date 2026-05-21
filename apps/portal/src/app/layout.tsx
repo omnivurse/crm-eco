@@ -4,6 +4,8 @@ import './globals.css';
 import { PortalHeader } from '@/components/PortalHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { UpdateToast } from '@/components/pwa/UpdateToast';
 import { PinLockOverlay } from '@crm-eco/ui';
 
 const inter = Inter({
@@ -79,6 +81,8 @@ export default function RootLayout({
             </div>
           </footer>
           <BottomNav />
+          <InstallPrompt />
+          <UpdateToast />
         </div>
       </body>
     </html>

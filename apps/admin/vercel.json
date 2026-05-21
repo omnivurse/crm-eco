@@ -6,6 +6,9 @@
   "crons": [
     { "path": "/api/cron/process-billing", "schedule": "0 * * * *" },
     { "path": "/api/cron/process-commissions", "schedule": "30 3 * * *" },
-    { "path": "/api/cron/send-scheduled-emails", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/send-scheduled-emails", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/billing-retry", "schedule": "0 16 * * *" },
+    { "path": "/api/cron/price-change", "schedule": "0 10 * * *" },
+    { "path": "/api/cron/commissions-accrual", "schedule": "0 2 1 * *" }
   ]
 }

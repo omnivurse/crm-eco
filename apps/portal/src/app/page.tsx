@@ -54,17 +54,49 @@ export default async function MemberDashboard() {
   }
 
   // Fetch all dashboard data in parallel
-  const [memberships, latestEnrollment, needs, tickets] = await Promise.all([
+  const [memberships, latestEnrollment, needs, tickets, billingSchedule, openFailures, advisorEnrollment] = await Promise.all([
     getMemberMemberships(supabase, member.id, member.organization_id),
     getLatestSelfServeEnrollment(supabase, member.id, member.organization_id),
     getMemberNeeds(supabase, member.id, member.organization_id, 5),
     getMemberTickets(supabase, member.id, member.organization_id, 5),
+    supabase
+      .from('billing_schedules')
+      .select('amount, next_billing_date, frequency')
+      .eq('member_id', member.id)
+      .eq('status', 'active')
+      .order('next_billing_date', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from('billing_failures')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_id', member.id)
+      .eq('resolved', false),
+    supabase
+      .from('enrollments')
+      .select('advisor_id')
+      .eq('primary_member_id', member.id)
+      .not('advisor_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   // Find active or pending membership
   const activeMembership = memberships.find(
     (m: { status: string }) => m.status === 'active' || m.status === 'pending'
   ) || null;
+
+  // Resolve advisor (single round-trip when available)
+  let advisor = null;
+  if (advisorEnrollment?.data?.advisor_id) {
+    const { data } = await supabase
+      .from('advisors')
+      .select('first_name, last_name, email, phone')
+      .eq('id', advisorEnrollment.data.advisor_id)
+      .maybeSingle();
+    advisor = data ?? null;
+  }
 
   return (
     <MemberDashboardShell
@@ -77,6 +109,9 @@ export default async function MemberDashboard() {
       enrollment={latestEnrollment}
       needs={needs}
       tickets={tickets}
+      billingSchedule={billingSchedule.data}
+      openFailureCount={openFailures.count ?? 0}
+      advisor={advisor}
     />
   );
 }

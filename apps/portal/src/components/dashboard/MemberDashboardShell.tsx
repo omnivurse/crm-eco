@@ -5,6 +5,9 @@ import { MembershipCard } from './MembershipCard';
 import { EnrollmentPanel } from './EnrollmentPanel';
 import { NeedsOverviewCard } from './NeedsOverviewCard';
 import { TicketsOverviewCard } from './TicketsOverviewCard';
+import { NextBillingCard } from './NextBillingCard';
+import { FailureBanner } from './FailureBanner';
+import { AdvisorCard } from './AdvisorCard';
 
 // Types matching the data from page.tsx
 interface MemberData {
@@ -57,12 +60,29 @@ interface TicketSummary {
   created_at: string;
 }
 
+interface BillingScheduleSummary {
+  amount: number | null;
+  next_billing_date: string | null;
+  frequency?: string | null;
+}
+
+interface AdvisorSummary {
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  avatar_url?: string | null;
+}
+
 interface MemberDashboardShellProps {
   member: MemberData;
   membership: MembershipWithPlan | null;
   enrollment: LatestEnrollment | null;
   needs: NeedSummary[];
   tickets: TicketSummary[];
+  billingSchedule?: BillingScheduleSummary | null;
+  openFailureCount?: number;
+  advisor?: AdvisorSummary | null;
 }
 
 export function MemberDashboardShell({
@@ -71,6 +91,9 @@ export function MemberDashboardShell({
   enrollment,
   needs,
   tickets,
+  billingSchedule = null,
+  openFailureCount = 0,
+  advisor = null,
 }: MemberDashboardShellProps) {
   const hasActiveMembership = membership?.status === 'active' || membership?.status === 'pending';
   const hasInProgressEnrollment = enrollment?.status === 'draft' || enrollment?.status === 'in_progress';
@@ -85,17 +108,21 @@ export function MemberDashboardShell({
         inProgressEnrollmentId={hasInProgressEnrollment ? enrollment?.id : undefined}
       />
 
+      <FailureBanner count={openFailureCount} />
+
       {/* Main Grid - 2 columns on desktop */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
           <MembershipCard membership={membership} />
+          <NextBillingCard schedule={billingSchedule} />
           <NeedsOverviewCard needs={needs} />
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
           <EnrollmentPanel enrollment={enrollment} />
+          <AdvisorCard advisor={advisor} />
           <TicketsOverviewCard tickets={tickets} />
         </div>
       </div>

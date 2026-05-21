@@ -60,5 +60,11 @@
   ],
   "categories": ["health", "medical", "finance"],
   "screenshots": [],
-  "prefer_related_applications": false
+  "prefer_related_applications": false,
+  "shortcuts": [
+    { "name": "Submit a Need", "short_name": "Need", "url": "/needs/new" },
+    { "name": "Billing", "short_name": "Billing", "url": "/billing" },
+    { "name": "Telehealth", "short_name": "Telehealth", "url": "/services/telehealth" },
+    { "name": "Documents", "short_name": "Docs", "url": "/documents" }
+  ]
 }
