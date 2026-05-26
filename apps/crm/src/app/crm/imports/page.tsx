@@ -44,11 +44,13 @@ interface ImportModule {
 
 interface ImportJob {
   id: string;
+  /** Derived from `stats.module_key` (no DB column). */
   module_key: string;
   file_name: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   total_rows: number;
   processed_rows: number;
+  /** Combined inserted_count + updated_count (the DB has no success_count). */
   success_count: number;
   error_count: number;
   created_at: string;
@@ -112,7 +114,19 @@ export default function ImportsPage() {
         .order('created_at', { ascending: false })
         .limit(20);
 
-      setImportJobs(jobs || []);
+      // Adapt live DB rows to the UI shape: derive module_key from stats
+      // and success_count from inserted+updated counters.
+      const adapted = (jobs ?? []).map((j: Record<string, unknown>) => {
+        const stats = (j.stats as { module_key?: string } | null) ?? null;
+        return {
+          ...j,
+          module_key: stats?.module_key ?? '',
+          success_count:
+            ((j.inserted_count as number | null) ?? 0) +
+            ((j.updated_count as number | null) ?? 0),
+        } as ImportJob;
+      });
+      setImportJobs(adapted);
     } catch (error) {
       console.error('Failed to load import jobs:', error);
     } finally {
@@ -177,19 +191,40 @@ export default function ImportsPage() {
     setUploading(true);
 
     try {
-      // Create import job record
+      // crm_import_jobs uses module_id (uuid) — resolve from the selected
+      // module key against crm_modules first.
+      const { data: moduleRow, error: moduleErr } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('org_id', authProfile.organization_id)
+        .eq('key', selectedModule)
+        .maybeSingle();
+
+      if (moduleErr || !moduleRow) {
+        toast.error('Selected module is unavailable');
+        setUploading(false);
+        return;
+      }
+
+      // Create import job record. There are no `module_key`, `success_count`
+      // or `file_path` columns in the live schema — module_key + file_path
+      // are preserved inside the JSONB `stats` field for diagnostics; row
+      // counters live in inserted_count/updated_count/error_count.
       const { data: job, error: jobError } = await supabase
         .from('crm_import_jobs')
         .insert({
           org_id: authProfile.organization_id,
-          module_key: selectedModule,
+          module_id: moduleRow.id,
           file_name: file.name,
           status: 'pending',
+          source_type: 'csv_upload',
           total_rows: 0,
           processed_rows: 0,
-          success_count: 0,
+          inserted_count: 0,
+          updated_count: 0,
           error_count: 0,
           created_by: authUser.id,
+          stats: { module_key: selectedModule },
         })
         .select()
         .single();
@@ -204,10 +239,14 @@ export default function ImportsPage() {
 
       if (uploadError) throw uploadError;
 
-      // Update job with file path
+      // Stash the storage path inside stats (no dedicated column) and
+      // move the job to processing.
       await supabase
         .from('crm_import_jobs')
-        .update({ file_path: filePath, status: 'processing' })
+        .update({
+          status: 'processing',
+          stats: { module_key: selectedModule, file_path: filePath },
+        })
         .eq('id', job.id);
 
       toast.success('Import started! Processing will continue in the background.');

@@ -179,10 +179,11 @@ export function AdminTopNav({
     };
   }, [userId, supabase, fetchNotifications]);
 
+  // admin_notifications has no `read_at` column — only `is_read` (boolean).
   const handleMarkAsRead = async (notificationId: string) => {
     await supabase
       .from('admin_notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true })
       .eq('id', notificationId);
 
     setNotifications((prev) =>
@@ -194,7 +195,7 @@ export function AdminTopNav({
   const handleMarkAllAsRead = async () => {
     await supabase
       .from('admin_notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true })
       .eq('user_id', userId)
       .eq('is_read', false);
 

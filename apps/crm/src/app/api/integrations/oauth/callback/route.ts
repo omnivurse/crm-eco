@@ -152,16 +152,18 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Log successful connection
+    // Log successful connection.
+    // integration_logs has no event_type_detail column — encode the
+    // detail inside metadata so the schema check passes.
     await supabase.from('integration_logs').insert({
       org_id,
       connection_id: existingConnection?.id, // May be null for new connections
       provider,
       event_type: 'auth_refresh',
-      event_type_detail: 'oauth_connected',
       direction: 'internal',
       status: 'success',
       metadata: {
+        event_type_detail: 'oauth_connected',
         user_email: userInfo?.email,
         scopes: connectionData.scopes,
       },

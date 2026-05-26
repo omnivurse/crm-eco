@@ -511,37 +511,10 @@ export async function getUnifiedMessages(
     
     return { messages, total: count || 0 };
   }
-  
-  // Fallback: try to get from communications table
-  const { data: comms, count: commsCount } = await supabase
-    .from('communications')
-    .select('*', { count: 'exact' })
-    .eq('organization_id', profile.organization_id)
-    .order('created_at', { ascending: false })
-    .range((page - 1) * limit, page * limit - 1);
-  
-  if (comms) {
-    const messages: UnifiedMessage[] = comms.map((c: Record<string, unknown>) => ({
-      id: c.id as string,
-      channel: (c.channel as InboxChannel) || 'email',
-      from: (c.from_email as string) || (c.from_phone as string) || 'Unknown',
-      to: (c.to_email as string) || (c.to_phone as string) || 'Me',
-      subject: c.subject as string | undefined,
-      preview: ((c.body as string) || '').slice(0, 200),
-      status: (c.inbox_status as string) || 'open',
-      direction: (c.direction as MessageDirection) || 'inbound',
-      lastAt: c.created_at as string,
-      unreadCount: (c.unread_count as number) || 1,
-      assignedTo: c.assigned_to as string | undefined,
-      entityLinks: {
-        contact_id: c.contact_id as string | undefined,
-        lead_id: c.lead_id as string | undefined,
-        deal_id: c.deal_id as string | undefined,
-      },
-    }));
-    
-    return { messages, total: commsCount || 0 };
-  }
-  
+
+  // No conversations yet for this org — return empty inbox.
+  // (The legacy `communications` fallback was removed because that table
+  // is not part of the live PIFH schema; `inbox_conversations` is the
+  // canonical source.)
   return { messages: [], total: 0 };
 }

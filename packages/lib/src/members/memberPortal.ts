@@ -17,11 +17,17 @@ export interface MemberPortalContext {
 
 /**
  * Resolve the member record for an authenticated profile.
- * 
- * Resolution strategy:
- * 1. Try profiles.member_id if that column exists (future enhancement)
- * 2. Fallback: Match members.email = profile.email within same org
- * 
+ *
+ * Resolution strategy (preferred → fallback):
+ * 1. profiles.member_id (populated by migration 202605220009 and backfilled
+ *    from email match — O(1) lookup, never wrong if both rows still exist).
+ * 2. Fallback: members.email = profile.email within the same organization.
+ *    Used for profiles that haven't been backfilled yet or where the
+ *    member row was recreated after the backfill ran.
+ *
+ * When a member is resolved via the email fallback, we opportunistically
+ * persist the linkage on the profile so future lookups hit the fast path.
+ *
  * @param supabase - Supabase client instance
  * @param userId - The authenticated user's ID (from auth.users)
  * @returns MemberPortalContext if found, null if not resolvable
@@ -31,7 +37,6 @@ export async function getMemberForUser(
   supabase: any,
   userId: string
 ): Promise<MemberPortalContext | null> {
-  // Get the profile for this user
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('*')
@@ -43,17 +48,38 @@ export async function getMemberForUser(
     return null;
   }
 
-  // Try to find the member by email within the same organization
+  // Fast path: profiles.member_id is already populated.
+  if (profile.member_id) {
+    const { data: member } = await supabase
+      .from('members')
+      .select('*')
+      .eq('id', profile.member_id)
+      .maybeSingle();
+
+    if (member) {
+      return { profile, member };
+    }
+    // Linked member was deleted — fall through to the email fallback.
+  }
+
+  // Fallback: match members.email within the same organization.
   const { data: member, error: memberError } = await supabase
     .from('members')
     .select('*')
     .eq('organization_id', profile.organization_id)
     .eq('email', profile.email)
-    .single();
+    .maybeSingle();
 
   if (memberError || !member) {
-    // Member not found - this might be a staff user without a member record
     return null;
+  }
+
+  // Self-heal: write the linkage back so the next call hits the fast path.
+  if (!profile.member_id) {
+    await supabase
+      .from('profiles')
+      .update({ member_id: member.id })
+      .eq('id', profile.id);
   }
 
   return { profile, member };
@@ -318,14 +344,14 @@ export async function getEnrollmentSteps(
   // Define step order for consistent display
   const stepOrder = ['intake', 'household', 'plan_selection', 'compliance', 'payment', 'confirmation'];
 
-  const { data: steps, error } = await supabase
+  const { data: rawSteps, error } = await supabase
     .from('enrollment_steps')
     .select(`
       id,
       step_key,
-      status,
+      is_completed,
       completed_at,
-      data,
+      payload,
       created_at,
       updated_at
     `)
@@ -336,8 +362,22 @@ export async function getEnrollmentSteps(
     return [];
   }
 
+  // Adapt DB shape (is_completed, payload) to the legacy API shape (status, data)
+  // that the wizard and admin UIs expect.
+  const steps = (rawSteps ?? []).map(
+    (s: { id: string; step_key: string; is_completed: boolean; completed_at: string | null; payload: unknown; created_at: string; updated_at: string }) => ({
+      id: s.id,
+      step_key: s.step_key,
+      status: s.is_completed ? 'completed' : 'pending',
+      completed_at: s.completed_at,
+      data: s.payload,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
+    })
+  );
+
   // Sort steps by our defined order
-  const sortedSteps = (steps || []).sort((a: { step_key: string }, b: { step_key: string }) => {
+  const sortedSteps = steps.sort((a: { step_key: string }, b: { step_key: string }) => {
     const aIndex = stepOrder.indexOf(a.step_key);
     const bIndex = stepOrder.indexOf(b.step_key);
     return aIndex - bIndex;
@@ -363,7 +403,7 @@ export async function getEnrollmentAuditLog(
       message,
       data_before,
       data_after,
-      user_id,
+      actor_profile_id,
       created_at
     `)
     .eq('enrollment_id', enrollmentId)
@@ -375,7 +415,13 @@ export async function getEnrollmentAuditLog(
     return [];
   }
 
-  return logs || [];
+  // Map actor_profile_id to user_id for legacy callers expecting that field.
+  return (logs ?? []).map(
+    (log: { actor_profile_id: string | null; [k: string]: unknown }) => ({
+      ...log,
+      user_id: log.actor_profile_id,
+    })
+  );
 }
 
 /**

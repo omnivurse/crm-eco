@@ -21,15 +21,16 @@ export async function GET(request: NextRequest) {
     const includeInactive = searchParams.get('includeInactive') === 'true';
     const crmOnly = searchParams.get('crmOnly') === 'true';
 
-    // Get all team members
+    // Get all team members. profiles tracks active state via the
+    // boolean `is_active` column (no `status` text column).
     let query = supabase
       .from('profiles')
-      .select('id, user_id, full_name, email, role, crm_role, status, avatar_url')
+      .select('id, user_id, full_name, email, role, crm_role, is_active, avatar_url')
       .eq('organization_id', profile.organization_id)
       .order('full_name', { ascending: true });
 
     if (!includeInactive) {
-      query = query.eq('status', 'active');
+      query = query.eq('is_active', true);
     }
 
     if (crmOnly) {

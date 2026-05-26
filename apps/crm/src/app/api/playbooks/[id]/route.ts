@@ -22,6 +22,43 @@ const updatePlaybookSchema = z.object({
 });
 
 /**
+ * Adapt the DB row (title/content_json/status) to the API shape
+ * (name/content/is_active) that the frontend uses. See ../route.ts for
+ * the parallel mapping on list/create.
+ */
+type PlaybookRow = {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  content_json: unknown;
+  status: string | null;
+  target_modules: string[] | null;
+  category: string | null;
+  sort_order: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function rowToApi(row: PlaybookRow) {
+  return {
+    id: row.id,
+    organization_id: row.organization_id,
+    name: row.title,
+    description: row.description,
+    content: row.content_json,
+    target_modules: row.target_modules ?? [],
+    is_active: row.status === 'active',
+    category: row.category,
+    sort_order: row.sort_order,
+    created_by: row.created_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+/**
  * GET /api/playbooks/[id]
  * Get a single playbook by ID
  */
@@ -41,14 +78,14 @@ export async function GET(
       .from('advisor_playbooks')
       .select('*')
       .eq('id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('organization_id', profile.organization_id)
       .single();
 
     if (error || !playbook) {
       return NextResponse.json({ error: 'Playbook not found' }, { status: 404 });
     }
 
-    return NextResponse.json(playbook);
+    return NextResponse.json(rowToApi(playbook as PlaybookRow));
   } catch (error) {
     console.error('Failed to fetch playbook:', error);
     return NextResponse.json(
@@ -86,19 +123,22 @@ export async function PUT(
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
     }
 
+    // Map API field names → DB column names.
     const updateData: Record<string, unknown> = {};
-    if (parsed.data.name !== undefined) updateData.name = parsed.data.name;
+    if (parsed.data.name !== undefined) updateData.title = parsed.data.name;
     if (parsed.data.description !== undefined) updateData.description = parsed.data.description;
-    if (parsed.data.content !== undefined) updateData.content = parsed.data.content;
+    if (parsed.data.content !== undefined) updateData.content_json = parsed.data.content;
     if (parsed.data.target_modules !== undefined) updateData.target_modules = parsed.data.target_modules;
-    if (parsed.data.is_active !== undefined) updateData.is_active = parsed.data.is_active;
+    if (parsed.data.is_active !== undefined) {
+      updateData.status = parsed.data.is_active ? 'active' : 'inactive';
+    }
     updateData.updated_at = new Date().toISOString();
 
     const { data: playbook, error } = await supabase
       .from('advisor_playbooks')
       .update(updateData)
       .eq('id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('organization_id', profile.organization_id)
       .select()
       .single();
 
@@ -107,7 +147,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Failed to update playbook' }, { status: 500 });
     }
 
-    return NextResponse.json(playbook);
+    return NextResponse.json(rowToApi(playbook as PlaybookRow));
   } catch (error) {
     console.error('Failed to update playbook:', error);
     return NextResponse.json(
@@ -142,7 +182,7 @@ export async function DELETE(
       .from('advisor_playbooks')
       .delete()
       .eq('id', id)
-      .eq('org_id', profile.organization_id);
+      .eq('organization_id', profile.organization_id);
 
     if (error) {
       console.error('Failed to delete playbook:', error);

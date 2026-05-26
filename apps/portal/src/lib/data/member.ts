@@ -89,12 +89,18 @@ export const getMemberAdvisor = cache(async () => {
     .maybeSingle();
   if (!enroll?.advisor_id) return null;
 
+  // advisors has no avatar_url column — the avatar lives on the linked
+  // profile via advisors.profile_id.
   const { data: advisor } = await supabase
     .from('advisors')
-    .select('id, first_name, last_name, email, phone, avatar_url')
+    .select('id, first_name, last_name, email, phone, profile:profiles!advisors_profile_id_fkey(avatar_url)')
     .eq('id', enroll.advisor_id)
     .maybeSingle();
-  return advisor;
+  if (!advisor) return null;
+  return {
+    ...advisor,
+    avatar_url: (advisor as { profile?: { avatar_url?: string | null } }).profile?.avatar_url ?? null,
+  };
 });
 
 export const listMemberNotifications = cache(async () => {

@@ -56,3 +56,12 @@ pnpm-lock.yaml
 
 # Nested accidental clone/copy of this repo (has its own .git; huge + wrong to commit)
 /crm-eco/
+
+# Hawkeye audit — schema/code dumps + reports are LARGE and machine-generated.
+# Ignore the generated subdirs explicitly; the scripts + baseline + prompts
+# stay tracked so CI and new clones can run the audit out-of-the-box.
+.audit/schema/
+.audit/code/
+.audit/reports/
+.audit/repo_migration_versions.txt
+.audit/pifh_migration_versions.txt

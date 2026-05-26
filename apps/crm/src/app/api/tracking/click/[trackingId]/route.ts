@@ -80,12 +80,13 @@ export async function GET(
           })
           .eq('id', recipientId);
 
-        // Log tracking event
+        // Log tracking event. The dedicated column is `clicked_url`
+        // (the table has no `metadata` jsonb).
         await supabase.from('campaign_tracking_events').insert({
           campaign_id: campaignId,
           recipient_id: recipientId,
           event_type: 'click',
-          metadata: { url: targetUrl },
+          clicked_url: targetUrl,
           ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
           user_agent: request.headers.get('user-agent'),
         });

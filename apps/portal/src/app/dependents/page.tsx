@@ -157,7 +157,8 @@ export default function DependentsPage() {
         fetchDependents();
       }
     } else {
-      // Create
+      // Create. The dependents table tracks coverage via the
+      // `included_in_enrollment` boolean (there is no `is_covered` column).
       const { error } = await (supabase as any)
         .from('dependents')
         .insert({
@@ -168,7 +169,7 @@ export default function DependentsPage() {
           date_of_birth: formData.date_of_birth || null,
           gender: formData.gender || null,
           relationship: formData.relationship,
-          is_covered: true,
+          included_in_enrollment: true,
         });
 
       if (error) {

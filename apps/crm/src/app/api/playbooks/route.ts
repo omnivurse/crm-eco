@@ -22,6 +22,47 @@ const createPlaybookSchema = z.object({
 });
 
 /**
+ * DB ↔ API mapping for advisor_playbooks.
+ *
+ * The frontend has historically used the field names `name`, `content`,
+ * `is_active`, and `target_modules`. The DB columns are `title`,
+ * `content_json`, `status` (text), and `target_modules` (added in migration
+ * 202605220009). We adapt in both directions so the API contract stays
+ * the same and old clients keep working.
+ */
+type PlaybookRow = {
+  id: string;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  content_json: unknown;
+  status: string | null;
+  target_modules: string[] | null;
+  category: string | null;
+  sort_order: number | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+function rowToApi(row: PlaybookRow) {
+  return {
+    id: row.id,
+    organization_id: row.organization_id,
+    name: row.title,
+    description: row.description,
+    content: row.content_json,
+    target_modules: row.target_modules ?? [],
+    is_active: row.status === 'active',
+    category: row.category,
+    sort_order: row.sort_order,
+    created_by: row.created_by,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+}
+
+/**
  * GET /api/playbooks
  * List all playbooks for the current organization
  */
@@ -37,7 +78,7 @@ export async function GET() {
     const { data: playbooks, error } = await supabase
       .from('advisor_playbooks')
       .select('*')
-      .eq('org_id', profile.organization_id)
+      .eq('organization_id', profile.organization_id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -45,7 +86,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to fetch playbooks' }, { status: 500 });
     }
 
-    return NextResponse.json(playbooks || []);
+    return NextResponse.json((playbooks ?? []).map((p) => rowToApi(p as PlaybookRow)));
   } catch (error) {
     console.error('Failed to fetch playbooks:', error);
     return NextResponse.json(
@@ -82,12 +123,12 @@ export async function POST(request: NextRequest) {
     const { data: playbook, error } = await supabase
       .from('advisor_playbooks')
       .insert({
-        org_id: profile.organization_id,
-        name: parsed.data.name,
+        organization_id: profile.organization_id,
+        title: parsed.data.name,
         description: parsed.data.description || null,
-        content: parsed.data.content,
-        target_modules: parsed.data.target_modules || ['Deals'],
-        is_active: parsed.data.is_active ?? true,
+        content_json: parsed.data.content,
+        target_modules: parsed.data.target_modules ?? ['Deals'],
+        status: (parsed.data.is_active ?? true) ? 'active' : 'inactive',
       })
       .select()
       .single();
@@ -97,7 +138,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create playbook' }, { status: 500 });
     }
 
-    return NextResponse.json(playbook, { status: 201 });
+    return NextResponse.json(rowToApi(playbook as PlaybookRow), { status: 201 });
   } catch (error) {
     console.error('Failed to create playbook:', error);
     return NextResponse.json(

@@ -191,9 +191,12 @@ async function executeEmailStep(
     console.error('Error creating email send record:', sendError);
   }
 
-  // Queue email for sending (actual sending handled by email service)
-  await supabase.from('email_queue').insert({
-    org_id: enrollment.sequence.org_id,
+  // Queue email for sending via the live `sent_emails` table.
+  // The email send worker picks up rows where status='queued'.
+  // Sequence/step linkage is preserved in metadata for replay/audit.
+  await supabase.from('sent_emails').insert({
+    organization_id: enrollment.sequence.org_id,
+    enrollment_id: enrollment.id,
     recipient_email: enrollment.email,
     recipient_name: `${record.data?.first_name || ''} ${record.data?.last_name || ''}`.trim(),
     from_email: step.from_email,
@@ -201,11 +204,14 @@ async function executeEmailStep(
     subject,
     body_html: bodyHtml,
     body_text: bodyText,
-    sequence_id: enrollment.sequence_id,
-    enrollment_id: enrollment.id,
-    step_id: step.id,
-    record_id: enrollment.record_id,
     status: 'queued',
+    email_type: 'sequence',
+    metadata: {
+      sequence_id: enrollment.sequence_id,
+      step_id: step.id,
+      record_id: enrollment.record_id,
+      module_key: enrollment.module_key,
+    },
   });
 
   // Log the step execution
@@ -240,30 +246,53 @@ async function evaluateCondition(
 
   let conditionMet = false;
 
+  // The tracking model for sequence sends is:
+  //   sent_emails (has enrollment_id)  →  email_events (has sent_email_id, event_type)
+  // The legacy code queried `email_tracking_events.enrollment_id` directly
+  // but neither column existed. Resolve sent_email ids for this enrollment
+  // first, then check email_events for the relevant event type.
+  const fetchSentEmailIds = async (): Promise<string[]> => {
+    const { data: rows } = await supabase
+      .from('sent_emails')
+      .select('id')
+      .eq('enrollment_id', enrollment.id);
+    return ((rows as { id: string }[] | null) ?? []).map((r) => r.id);
+  };
+
   switch (config.type) {
-    case 'email_opened':
-      // Check if previous email was opened
+    case 'email_opened': {
+      const sentEmailIds = await fetchSentEmailIds();
+      if (sentEmailIds.length === 0) {
+        conditionMet = false;
+        break;
+      }
       const { data: openEvent } = await supabase
-        .from('email_tracking_events')
+        .from('email_events')
         .select('id')
-        .eq('enrollment_id', enrollment.id)
+        .in('sent_email_id', sentEmailIds)
         .eq('event_type', 'open')
         .limit(1)
-        .single();
+        .maybeSingle();
       conditionMet = !!openEvent;
       break;
+    }
 
-    case 'link_clicked':
-      // Check if any link was clicked
+    case 'link_clicked': {
+      const sentEmailIds = await fetchSentEmailIds();
+      if (sentEmailIds.length === 0) {
+        conditionMet = false;
+        break;
+      }
       const { data: clickEvent } = await supabase
-        .from('email_tracking_events')
+        .from('email_events')
         .select('id')
-        .eq('enrollment_id', enrollment.id)
+        .in('sent_email_id', sentEmailIds)
         .eq('event_type', 'click')
         .limit(1)
-        .single();
+        .maybeSingle();
       conditionMet = !!clickEvent;
       break;
+    }
 
     case 'field_value':
       // Check record field value
@@ -280,7 +309,8 @@ async function evaluateCondition(
       break;
   }
 
-  // Store the condition result for routing
+  // Store the condition result for routing. The table has no `result`
+  // column — use `metadata` (jsonb) which is the documented extension point.
   await supabase
     .from('email_sequence_step_executions')
     .insert({
@@ -288,7 +318,7 @@ async function evaluateCondition(
       step_id: step.id,
       executed_at: new Date().toISOString(),
       status: 'executed',
-      result: { condition_met: conditionMet },
+      metadata: { condition_met: conditionMet },
     });
 }
 
@@ -350,29 +380,39 @@ async function checkExitConditions(
     return null;
   }
 
-  // Check settings-based exit conditions
-  if (settings?.stop_on_reply) {
-    const { data: reply } = await supabase
-      .from('email_tracking_events')
+  // Check settings-based exit conditions. As above: query email_events
+  // (which has sent_email_id) after first resolving the sent_emails for
+  // this enrollment.
+  const sentEmailIdsForExit = await (async () => {
+    const { data: rows } = await supabase
+      .from('sent_emails')
       .select('id')
-      .eq('enrollment_id', enrollment.id)
+      .eq('enrollment_id', enrollment.id);
+    return ((rows as { id: string }[] | null) ?? []).map((r) => r.id);
+  })();
+
+  if (settings?.stop_on_reply && sentEmailIdsForExit.length > 0) {
+    const { data: reply } = await supabase
+      .from('email_events')
+      .select('id')
+      .in('sent_email_id', sentEmailIdsForExit)
       .eq('event_type', 'reply')
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (reply) {
       return 'Reply received';
     }
   }
 
-  if (settings?.stop_on_bounce) {
+  if (settings?.stop_on_bounce && sentEmailIdsForExit.length > 0) {
     const { data: bounce } = await supabase
-      .from('email_tracking_events')
+      .from('email_events')
       .select('id')
-      .eq('enrollment_id', enrollment.id)
+      .in('sent_email_id', sentEmailIdsForExit)
       .eq('event_type', 'bounce')
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (bounce) {
       return 'Email bounced';
@@ -398,13 +438,17 @@ async function checkExitConditions(
 
         case 'tag_added':
           if (condition.tag) {
+            // Tags live in the JSONB `data` blob (data.tags: string[]) — see
+            // apps/crm/src/components/crm/records/v2/RecordTagsRow.tsx for the
+            // shape. There is no top-level `tags` column on crm_records.
             const { data: record } = await supabase
               .from('crm_records')
-              .select('tags')
+              .select('data')
               .eq('id', enrollment.record_id)
               .single();
 
-            if (record?.tags?.includes(condition.tag)) {
+            const tags = (record?.data as { tags?: string[] } | null)?.tags;
+            if (Array.isArray(tags) && tags.includes(condition.tag)) {
               return `Tag "${condition.tag}" added`;
             }
           }

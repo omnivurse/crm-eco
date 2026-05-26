@@ -9,7 +9,7 @@ interface Task {
   status: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   due_date?: string;
-  assigned_to?: string;
+  assignee_id?: string;
 }
 
 interface TasksPanelProps {
@@ -34,9 +34,10 @@ export function TasksPanel({ data }: TasksPanelProps) {
 
       setLoading(true);
       try {
+        // `tasks` table uses `assignee_id` (not `assigned_to`).
         const { data: taskData, error } = await supabase
           .from('tasks')
-          .select('id, title, status, priority, due_date, assigned_to')
+          .select('id, title, status, priority, due_date, assignee_id')
           .neq('status', 'completed')
           .order('priority', { ascending: false })
           .order('due_date', { ascending: true })

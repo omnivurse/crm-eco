@@ -55,11 +55,12 @@ export default function AgentDownlinePage() {
 
     setAgentId(advisor.id);
 
-    // Get downline agents (agents whose parent is this agent)
+    // Get downline agents (agents whose parent is this agent).
+    // The DB column is parent_advisor_id (not parent_agent_id).
     const { data: agents, error } = await supabase
       .from('advisors')
       .select('*')
-      .eq('parent_agent_id', advisor.id)
+      .eq('parent_advisor_id', advisor.id)
       .eq('organization_id', advisor.organization_id)
       .order('created_at', { ascending: false });
 

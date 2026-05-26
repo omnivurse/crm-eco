@@ -156,11 +156,11 @@ export function MergeMembersModal({
           .update({ member_id: primaryMemberId })
           .eq('member_id', secondary.id);
 
-        // Update enrollments
+        // Update enrollments (column on enrollments is `primary_member_id`)
         await sb
           .from('enrollments')
-          .update({ member_id: primaryMemberId })
-          .eq('member_id', secondary.id);
+          .update({ primary_member_id: primaryMemberId })
+          .eq('primary_member_id', secondary.id);
 
         // Update notes/activities if they exist
         await sb

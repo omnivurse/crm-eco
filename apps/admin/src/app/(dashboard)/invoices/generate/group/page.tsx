@@ -218,7 +218,7 @@ export default function GenerateGroupInvoicePage() {
             member_id: (member as { id: string }).id,
             status: 'draft',
             subtotal: invoiceTotal,
-            discount_amount: 0,
+            discount_value: 0,
             tax_amount: 0,
             total: invoiceTotal,
             amount_paid: 0,

@@ -63,13 +63,13 @@ export default function AgentReportsPage() {
 
     if (!advisor) return;
 
-    // Get enrollments
+    // Get enrollments (column is `total_monthly_cost`, not `monthly_cost`)
     const { data: enrollments } = await supabase
       .from('enrollments')
       .select(`
         id,
         status,
-        monthly_cost,
+        total_monthly_cost,
         created_at,
         plans (name)
       `)
@@ -88,7 +88,7 @@ export default function AgentReportsPage() {
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         
         monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + 1);
-        revenueMap.set(monthKey, (revenueMap.get(monthKey) || 0) + (e.monthly_cost || 0));
+        revenueMap.set(monthKey, (revenueMap.get(monthKey) || 0) + (e.total_monthly_cost || 0));
         statusMap.set(e.status, (statusMap.get(e.status) || 0) + 1);
         
         const planName = e.plans?.name || 'Unknown';

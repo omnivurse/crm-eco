@@ -43,10 +43,13 @@ export async function GET(
     }
 
     // Fetch the actual records for these member IDs (org-scoped; RLS also applies)
+    // contact_type is not a real column on crm_records — it lives in the
+    // JSONB `data` blob (e.g. data->>'contact_type'). Select `data` so the
+    // caller can read it from there if they need it.
     const recordIds = members.map((m) => m.record_id);
     const { data: records, error: recError } = await supabase
       .from('crm_records')
-      .select('id, title, email, phone, status, contact_type, advisor_id, created_at')
+      .select('id, title, email, phone, status, data, advisor_id, created_at')
       .in('id', recordIds)
       .eq('org_id', profile.organization_id);
 

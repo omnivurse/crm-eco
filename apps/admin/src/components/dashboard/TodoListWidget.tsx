@@ -268,7 +268,7 @@ export function TodoListWidget({ profileId, organizationId }: TodoListWidgetProp
                 <Plus className="w-4 h-4 mr-1" />
                 Add
               </Button>
-              <Link href="/tasks">
+              <Link href="/ops/jobs">
                 <Button size="sm" variant="ghost">
                   View all
                   <ChevronRight className="w-4 h-4 ml-1" />

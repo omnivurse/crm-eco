@@ -76,20 +76,23 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Process the webhook
     const result = await processWebhook(provider, rawBody, headers, context);
 
-    // Log the webhook event
+    // Log the webhook event. integration_logs has no event_type_detail
+    // column — fold the per-provider detail into metadata.
     await supabase.from('integration_logs').insert({
       org_id: context.orgId,
       connection_id: context.connectionId,
       provider,
       event_type: 'webhook_received',
-      event_type_detail: result.eventType,
       direction: 'inbound',
       status: result.success ? 'success' : 'error',
       request_body: rawBody.length < 10000 ? JSON.parse(rawBody) : { truncated: true },
       error_message: result.error,
       entity_type: result.entityType,
       entity_id: result.entityId,
-      metadata: result.data,
+      metadata: {
+        ...(result.data ?? {}),
+        event_type_detail: result.eventType,
+      },
     });
 
     if (!result.success) {
@@ -106,14 +109,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error(`Webhook error for ${provider}:`, error);
 
-    // Log the error
+    // Log the error. event_type_detail goes inside metadata since
+    // integration_logs only has event_type.
     await supabase.from('integration_logs').insert({
       provider,
       event_type: 'webhook_received',
-      event_type_detail: 'error',
       direction: 'inbound',
       status: 'error',
       error_message: error instanceof Error ? error.message : 'Unknown error',
+      metadata: { event_type_detail: 'error' },
     });
 
     // Return 200 to prevent retries for unrecoverable errors

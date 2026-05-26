@@ -64,8 +64,8 @@ interface Advisor {
 interface Enrollment {
   id: string;
   advisor_id: string | null;
-  member_id: string | null;
-  premium: number | null;
+  primary_member_id: string | null;
+  total_monthly_cost: number | null;
   status: string;
   created_at: string;
 }
@@ -314,12 +314,17 @@ export class CommissionService {
    * Creates commission for the direct agent and generates overrides
    */
   async processEnrollmentCommissions(enrollmentId: string): Promise<CommissionTransaction[]> {
-    // Get enrollment details
+    // Get enrollment details (DB columns: primary_member_id, total_monthly_cost)
     const { data: enrollment } = await (this.supabase as any)
       .from('enrollments')
-      .select('id, advisor_id, member_id, premium, status, created_at')
+      .select('id, advisor_id, primary_member_id, total_monthly_cost, status, created_at')
       .eq('id', enrollmentId)
-      .single() as { data: Pick<Enrollment, 'id' | 'advisor_id' | 'member_id' | 'premium' | 'status' | 'created_at'> | null };
+      .single() as {
+        data: Pick<
+          Enrollment,
+          'id' | 'advisor_id' | 'primary_member_id' | 'total_monthly_cost' | 'status' | 'created_at'
+        > | null;
+      };
 
     if (!enrollment || !enrollment.advisor_id) {
       console.error('Enrollment not found or no advisor assigned');
@@ -330,7 +335,7 @@ export class CommissionService {
     periodStart.setDate(1); // First of current month
     const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + 1, 0); // Last day of month
 
-    const grossAmount = enrollment.premium || 0;
+    const grossAmount = enrollment.total_monthly_cost || 0;
     const transactions: CommissionTransaction[] = [];
 
     // Check if advisor is commission eligible
@@ -356,7 +361,7 @@ export class CommissionService {
         directInput,
         directCalculation,
         enrollmentId,
-        enrollment.member_id || undefined
+        enrollment.primary_member_id || undefined
       );
 
       if (directTransaction) {

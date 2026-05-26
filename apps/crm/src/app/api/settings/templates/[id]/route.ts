@@ -152,18 +152,24 @@ export async function POST(
     const supabase = await createClient();
     const { id } = await params;
 
-    // Increment usage count using RPC or direct update
+    // Increment usage count using RPC if available, else a fetch-then-update
+    // fallback. The previous fallback used `.rpc('coalesce', …)` which isn't
+    // a valid RPC — it stored an unresolved Promise object on `usage_count`
+    // and silently corrupted the row.
     const { error } = await supabase.rpc('increment_template_usage', {
       template_id: id,
     });
 
-    // If RPC doesn't exist, fall back to direct update
     if (error) {
+      const { data: current } = await supabase
+        .from('crm_message_templates')
+        .select('usage_count')
+        .eq('id', id)
+        .single();
+
       await supabase
         .from('crm_message_templates')
-        .update({
-          usage_count: supabase.rpc('coalesce', { val: 'usage_count', default_val: 0 }) as unknown as number,
-        })
+        .update({ usage_count: (current?.usage_count ?? 0) + 1 })
         .eq('id', id);
     }
 

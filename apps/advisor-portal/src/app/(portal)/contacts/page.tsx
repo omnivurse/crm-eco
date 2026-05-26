@@ -19,11 +19,12 @@ async function getContacts(organizationId: string, advisorId: string) {
 
     // Fetch leads assigned to this advisor
     // Use `as any` on client to avoid TS2589 deep type instantiation from Supabase generics
+    // leads table uses `advisor_id` (not `owner_advisor_id`).
     const { data: leads } = await (supabase as any)
         .from('leads')
         .select('id, first_name, last_name, email, phone, status, created_at')
         .eq('organization_id', organizationId)
-        .eq('owner_advisor_id', advisorId)
+        .eq('advisor_id', advisorId)
         .order('created_at', { ascending: false })
         .limit(50) as { data: ContactRecord[] | null };
 

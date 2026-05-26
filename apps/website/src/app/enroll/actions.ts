@@ -128,7 +128,7 @@ export async function createSelfServeEnrollment(
       .insert({
         enrollment_id: enrollment.id,
         event_type: 'status_change',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: `Self-serve enrollment started from ${source}`,
         data_after: {
           status: 'draft',
@@ -180,9 +180,9 @@ export async function completeSelfServeIntakeStep(
       .upsert({
         enrollment_id: enrollmentId,
         step_key: 'intake',
-        status: 'completed',
+        is_completed: true,
         completed_at: new Date().toISOString(),
-        data: data,
+        payload: data,
       }, { onConflict: 'enrollment_id,step_key' });
 
     await (supabase as any)
@@ -190,7 +190,7 @@ export async function completeSelfServeIntakeStep(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'step_completed',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: 'Intake step completed',
         data_after: { step: 'intake' },
       });
@@ -232,9 +232,9 @@ export async function completeSelfServeHouseholdStep(
       .upsert({
         enrollment_id: enrollmentId,
         step_key: 'household',
-        status: 'completed',
+        is_completed: true,
         completed_at: new Date().toISOString(),
-        data: { members },
+        payload: { members },
       }, { onConflict: 'enrollment_id,step_key' });
 
     await (supabase as any)
@@ -242,7 +242,7 @@ export async function completeSelfServeHouseholdStep(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'step_completed',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: `Household step completed with ${members.length} additional member(s)`,
         data_after: { step: 'household', memberCount: members.length },
       });
@@ -297,9 +297,9 @@ export async function completeSelfServePlanSelectionStep(
       .upsert({
         enrollment_id: enrollmentId,
         step_key: 'plan_selection',
-        status: 'completed',
+        is_completed: true,
         completed_at: new Date().toISOString(),
-        data: { plan_id: data.selected_plan_id, effective_date: data.requested_effective_date },
+        payload: { plan_id: data.selected_plan_id, effective_date: data.requested_effective_date },
       }, { onConflict: 'enrollment_id,step_key' });
 
     await (supabase as any)
@@ -307,7 +307,7 @@ export async function completeSelfServePlanSelectionStep(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'step_completed',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: 'Plan selection completed',
         data_after: { step: 'plan_selection', plan_id: data.selected_plan_id },
       });
@@ -363,7 +363,7 @@ export async function runSelfServeRxPricing(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'note',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: `Rx pricing estimated for ${medications.length} medication(s)`,
         data_after: { medications_count: medications.length },
       });
@@ -415,9 +415,9 @@ export async function completeSelfServeComplianceStep(
       .upsert({
         enrollment_id: enrollmentId,
         step_key: 'compliance',
-        status: 'completed',
+        is_completed: true,
         completed_at: new Date().toISOString(),
-        data: { signed_at: new Date().toISOString() },
+        payload: { signed_at: new Date().toISOString() },
       }, { onConflict: 'enrollment_id,step_key' });
 
     await (supabase as any)
@@ -425,7 +425,7 @@ export async function completeSelfServeComplianceStep(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'step_completed',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: 'Compliance acknowledgments signed',
         data_after: { step: 'compliance' },
       });
@@ -470,9 +470,9 @@ export async function completeSelfServePaymentStep(
       .upsert({
         enrollment_id: enrollmentId,
         step_key: 'payment',
-        status: 'completed',
+        is_completed: true,
         completed_at: new Date().toISOString(),
-        data: { payment_method: data.payment_method },
+        payload: { payment_method: data.payment_method },
       }, { onConflict: 'enrollment_id,step_key' });
 
     await (supabase as any)
@@ -480,7 +480,7 @@ export async function completeSelfServePaymentStep(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'step_completed',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: 'Payment information collected',
         data_after: { step: 'payment', method: data.payment_method },
       });
@@ -506,13 +506,13 @@ export async function submitSelfServeEnrollment(
 
     const { data: steps } = await (supabase as any)
       .from('enrollment_steps')
-      .select('step_key, status')
+      .select('step_key, is_completed')
       .eq('enrollment_id', enrollmentId);
 
     const requiredSteps = ['intake', 'household', 'plan_selection', 'compliance', 'payment'];
     const completedSteps = new Set(
       (steps || [])
-        .filter((s: { status: string }) => s.status === 'completed')
+        .filter((s: { is_completed: boolean }) => s.is_completed === true)
         .map((s: { step_key: string }) => s.step_key)
     );
 
@@ -563,9 +563,9 @@ export async function submitSelfServeEnrollment(
       .upsert({
         enrollment_id: enrollmentId,
         step_key: 'confirmation',
-        status: 'completed',
+        is_completed: true,
         completed_at: new Date().toISOString(),
-        data: { submitted: true },
+        payload: { submitted: true },
       }, { onConflict: 'enrollment_id,step_key' });
 
     await (supabase as any)
@@ -573,7 +573,7 @@ export async function submitSelfServeEnrollment(
       .insert({
         enrollment_id: enrollmentId,
         event_type: 'status_change',
-        user_id: user.id,
+        actor_profile_id: user.id,
         message: 'Enrollment submitted for review (from website)',
         data_before: { status: enrollment.status },
         data_after: { status: 'submitted', membership_id: membershipId },

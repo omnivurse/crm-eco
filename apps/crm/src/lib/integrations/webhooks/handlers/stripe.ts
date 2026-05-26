@@ -171,6 +171,23 @@ class StripeWebhookHandler implements WebhookHandler {
     const subAny = subscription as unknown as Record<string, unknown>;
     const currentPeriodEnd = (subAny.current_period_end as number) || Math.floor(Date.now() / 1000);
 
+    // Persist the Stripe IDs + initial status onto the member row so future
+    // webhooks (and dashboard queries) can look the member up by stripe_customer_id.
+    if (member_id && context.supabase) {
+      await context.supabase
+        .from('members')
+        .update({
+          stripe_customer_id: typeof subscription.customer === 'string'
+            ? subscription.customer
+            : subscription.customer?.id ?? null,
+          stripe_subscription_id: subscription.id,
+          subscription_status: subscription.status,
+          subscription_current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', member_id);
+    }
+
     return {
       success: true,
       eventType: 'customer.subscription.created',
@@ -195,16 +212,24 @@ class StripeWebhookHandler implements WebhookHandler {
     const subAny = subscription as unknown as Record<string, unknown>;
     const currentPeriodEnd = (subAny.current_period_end as number) || Math.floor(Date.now() / 1000);
 
-    // Update member subscription status if linked
-    if (member_id && context.supabase) {
-      await context.supabase
-        .from('members')
-        .update({
-          subscription_status: subscription.status,
-          subscription_current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', member_id);
+    // Prefer metadata member_id but fall back to stripe_customer_id lookup so
+    // we still update the right member if metadata was dropped (e.g. legacy subs).
+    if (context.supabase) {
+      const update = {
+        subscription_status: subscription.status,
+        subscription_current_period_end: new Date(currentPeriodEnd * 1000).toISOString(),
+        stripe_subscription_id: subscription.id,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (member_id) {
+        await context.supabase.from('members').update(update).eq('id', member_id);
+      } else if (typeof subscription.customer === 'string') {
+        await context.supabase
+          .from('members')
+          .update(update)
+          .eq('stripe_customer_id', subscription.customer);
+      }
     }
 
     return {
@@ -224,15 +249,20 @@ class StripeWebhookHandler implements WebhookHandler {
     context: WebhookContext
   ): Promise<WebhookResult> {
     const { member_id } = subscription.metadata;
+    const cancelled = {
+      subscription_status: 'canceled' as const,
+      updated_at: new Date().toISOString(),
+    };
 
-    if (member_id && context.supabase) {
-      await context.supabase
-        .from('members')
-        .update({
-          subscription_status: 'canceled',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', member_id);
+    if (context.supabase) {
+      if (member_id) {
+        await context.supabase.from('members').update(cancelled).eq('id', member_id);
+      } else if (typeof subscription.customer === 'string') {
+        await context.supabase
+          .from('members')
+          .update(cancelled)
+          .eq('stripe_customer_id', subscription.customer);
+      }
     }
 
     return {

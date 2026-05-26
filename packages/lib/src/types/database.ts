@@ -887,6 +887,13 @@ export type Database = {
             foreignKeyName: "activities_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "activities_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -1650,6 +1657,13 @@ export type Database = {
             foreignKeyName: "advisor_achievements_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "advisor_achievements_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -1745,6 +1759,13 @@ export type Database = {
             foreignKeyName: "advisor_commission_summary_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "advisor_commission_summary_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -1813,6 +1834,13 @@ export type Database = {
             foreignKeyName: "advisor_milestone_progress_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: true
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "advisor_milestone_progress_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: true
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -1864,6 +1892,7 @@ export type Database = {
           organization_id: string
           sort_order: number | null
           status: string | null
+          target_modules: string[] | null
           title: string
           updated_at: string | null
         }
@@ -1877,6 +1906,7 @@ export type Database = {
           organization_id: string
           sort_order?: number | null
           status?: string | null
+          target_modules?: string[] | null
           title: string
           updated_at?: string | null
         }
@@ -1890,6 +1920,7 @@ export type Database = {
           organization_id?: string
           sort_order?: number | null
           status?: string | null
+          target_modules?: string[] | null
           title?: string
           updated_at?: string | null
         }
@@ -1958,6 +1989,13 @@ export type Database = {
           product_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "advisor_product_access_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "advisor_product_access_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -2065,6 +2103,13 @@ export type Database = {
           total_enrollments?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "advisor_rankings_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "advisor_rankings_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -2279,6 +2324,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "advisor_scorecards_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "advisor_scorecards_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -2544,6 +2596,13 @@ export type Database = {
             foreignKeyName: "advisors_parent_advisor_id_fkey"
             columns: ["parent_advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "advisors_parent_advisor_id_fkey"
+            columns: ["parent_advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -2552,6 +2611,13 @@ export type Database = {
             columns: ["parent_advisor_id"]
             isOneToOne: false
             referencedRelation: "mv_advisor_monthly_performance"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "advisors_producer_owner_id_fkey"
+            columns: ["producer_owner_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
             referencedColumns: ["advisor_id"]
           },
           {
@@ -2574,6 +2640,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisors_referring_affiliate_id_fkey"
+            columns: ["referring_affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
           },
           {
             foreignKeyName: "advisors_referring_affiliate_id_fkey"
@@ -2825,6 +2898,13 @@ export type Database = {
             foreignKeyName: "agencies_owner_advisor_id_fkey"
             columns: ["owner_advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "agencies_owner_advisor_id_fkey"
+            columns: ["owner_advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -2935,6 +3015,13 @@ export type Database = {
             foreignKeyName: "agency_users_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "agency_users_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -3016,6 +3103,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agent_appointments_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "agent_appointments_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -3152,6 +3246,13 @@ export type Database = {
             foreignKeyName: "agent_bill_group_members_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "agent_bill_group_members_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -3226,6 +3327,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agent_bill_groups_manager_advisor_id_fkey"
+            columns: ["manager_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "agent_bill_groups_manager_advisor_id_fkey"
             columns: ["manager_advisor_id"]
@@ -3487,6 +3595,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "agent_licenses_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "agent_licenses_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -4903,6 +5018,7 @@ export type Database = {
           invoice_number: string | null
           member_id: string
           metadata: Json | null
+          nacha_job_id: string | null
           net_amount: number | null
           organization_id: string
           original_transaction_id: string | null
@@ -4941,6 +5057,7 @@ export type Database = {
           invoice_number?: string | null
           member_id: string
           metadata?: Json | null
+          nacha_job_id?: string | null
           net_amount?: number | null
           organization_id: string
           original_transaction_id?: string | null
@@ -4979,6 +5096,7 @@ export type Database = {
           invoice_number?: string | null
           member_id?: string
           metadata?: Json | null
+          nacha_job_id?: string | null
           net_amount?: number | null
           organization_id?: string
           original_transaction_id?: string | null
@@ -6715,6 +6833,13 @@ export type Database = {
             foreignKeyName: "commission_adjustments_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "commission_adjustments_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -6938,6 +7063,13 @@ export type Database = {
             foreignKeyName: "commission_ledger_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "commission_ledger_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -7149,6 +7281,13 @@ export type Database = {
             foreignKeyName: "commission_payouts_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "commission_payouts_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -7353,12 +7492,16 @@ export type Database = {
         Row: {
           advisor_id: string
           agent_level_at_time: string | null
+          bonus_reason: string | null
+          bonus_type_id: string | null
           commission_amount: number
           created_at: string | null
+          effective_date: string | null
           enrollment_id: string | null
           gross_amount: number
           id: string
           idempotency_key: string | null
+          is_bonus: boolean
           member_id: string | null
           meta: Json | null
           notes: string | null
@@ -7377,12 +7520,16 @@ export type Database = {
         Insert: {
           advisor_id: string
           agent_level_at_time?: string | null
+          bonus_reason?: string | null
+          bonus_type_id?: string | null
           commission_amount?: number
           created_at?: string | null
+          effective_date?: string | null
           enrollment_id?: string | null
           gross_amount?: number
           id?: string
           idempotency_key?: string | null
+          is_bonus?: boolean
           member_id?: string | null
           meta?: Json | null
           notes?: string | null
@@ -7401,12 +7548,16 @@ export type Database = {
         Update: {
           advisor_id?: string
           agent_level_at_time?: string | null
+          bonus_reason?: string | null
+          bonus_type_id?: string | null
           commission_amount?: number
           created_at?: string | null
+          effective_date?: string | null
           enrollment_id?: string | null
           gross_amount?: number
           id?: string
           idempotency_key?: string | null
+          is_bonus?: boolean
           member_id?: string | null
           meta?: Json | null
           notes?: string | null
@@ -7423,6 +7574,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "commission_transactions_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "commission_transactions_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -7464,6 +7622,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_transactions_source_advisor_id_fkey"
+            columns: ["source_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
           },
           {
             foreignKeyName: "commission_transactions_source_advisor_id_fkey"
@@ -7592,6 +7757,13 @@ export type Database = {
             foreignKeyName: "commissions_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "commissions_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -7650,6 +7822,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_source_advisor_id_fkey"
+            columns: ["source_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
           },
           {
             foreignKeyName: "commissions_source_advisor_id_fkey"
@@ -10389,13 +10568,15 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           created_by: string | null
+          download_url: string | null
           error_count: number | null
           error_message: string | null
+          expires_at: string | null
           file_name: string | null
           id: string
           inserted_count: number | null
           mapping_id: string | null
-          module_id: string
+          module_id: string | null
           org_id: string
           processed_rows: number | null
           skipped_count: number | null
@@ -10410,13 +10591,15 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          download_url?: string | null
           error_count?: number | null
           error_message?: string | null
+          expires_at?: string | null
           file_name?: string | null
           id?: string
           inserted_count?: number | null
           mapping_id?: string | null
-          module_id: string
+          module_id?: string | null
           org_id: string
           processed_rows?: number | null
           skipped_count?: number | null
@@ -10431,13 +10614,15 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string | null
+          download_url?: string | null
           error_count?: number | null
           error_message?: string | null
+          expires_at?: string | null
           file_name?: string | null
           id?: string
           inserted_count?: number | null
           mapping_id?: string | null
-          module_id?: string
+          module_id?: string | null
           org_id?: string
           processed_rows?: number | null
           skipped_count?: number | null
@@ -10754,6 +10939,73 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_login_history: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          event_type: string
+          id: string
+          ip_address: unknown
+          location: Json | null
+          metadata: Json | null
+          organization_id: string
+          profile_id: string | null
+          risk_score: number | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: unknown
+          location?: Json | null
+          metadata?: Json | null
+          organization_id: string
+          profile_id?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: unknown
+          location?: Json | null
+          metadata?: Json | null
+          organization_id?: string
+          profile_id?: string | null
+          risk_score?: number | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_login_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_login_history_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_login_history_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -11582,6 +11834,39 @@ export type Database = {
           },
         ]
       }
+      crm_permissions: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          key: string
+          module: string | null
+          name: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          key: string
+          module?: string | null
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          key?: string
+          module?: string | null
+          name?: string
+        }
+        Relationships: []
+      }
       crm_recent_views: {
         Row: {
           id: string
@@ -11977,6 +12262,7 @@ export type Database = {
           search: unknown
           source_record_id: string | null
           stage: string | null
+          stage_updated_at: string | null
           status: string | null
           system: Json | null
           territory_id: string | null
@@ -12020,6 +12306,7 @@ export type Database = {
           search?: unknown
           source_record_id?: string | null
           stage?: string | null
+          stage_updated_at?: string | null
           status?: string | null
           system?: Json | null
           territory_id?: string | null
@@ -12063,6 +12350,7 @@ export type Database = {
           search?: unknown
           source_record_id?: string | null
           stage?: string | null
+          stage_updated_at?: string | null
           status?: string | null
           system?: Json | null
           territory_id?: string | null
@@ -12077,6 +12365,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "crm_advisors"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_records_canonical_advisor_id_fkey"
+            columns: ["canonical_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
           },
           {
             foreignKeyName: "crm_records_canonical_advisor_id_fkey"
@@ -12536,6 +12831,90 @@ export type Database = {
           },
           {
             foreignKeyName: "crm_reports_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_role_permissions: {
+        Row: {
+          granted_at: string | null
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          granted_at?: string | null
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          granted_at?: string | null
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "crm_permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "crm_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system: boolean | null
+          key: string
+          name: string
+          organization_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          key: string
+          name: string
+          organization_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system?: boolean | null
+          key?: string
+          name?: string
+          organization_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_roles_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -13055,6 +13434,76 @@ export type Database = {
           },
         ]
       }
+      crm_sso_config: {
+        Row: {
+          allowed_domains: string[] | null
+          client_id: string | null
+          config: Json
+          created_at: string | null
+          created_by: string | null
+          display_name: string | null
+          enforce_sso: boolean | null
+          id: string
+          is_enabled: boolean | null
+          metadata_url: string | null
+          organization_id: string
+          provider: string
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_domains?: string[] | null
+          client_id?: string | null
+          config?: Json
+          created_at?: string | null
+          created_by?: string | null
+          display_name?: string | null
+          enforce_sso?: boolean | null
+          id?: string
+          is_enabled?: boolean | null
+          metadata_url?: string | null
+          organization_id: string
+          provider: string
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_domains?: string[] | null
+          client_id?: string | null
+          config?: Json
+          created_at?: string | null
+          created_by?: string | null
+          display_name?: string | null
+          enforce_sso?: boolean | null
+          id?: string
+          is_enabled?: boolean | null
+          metadata_url?: string | null
+          organization_id?: string
+          provider?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sso_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sso_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sso_config_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_stage_history: {
         Row: {
           approval_id: string | null
@@ -13477,6 +13926,61 @@ export type Database = {
           },
         ]
       }
+      crm_trusted_domains: {
+        Row: {
+          added_by: string | null
+          auto_approve: boolean | null
+          created_at: string | null
+          domain: string
+          id: string
+          is_verified: boolean | null
+          organization_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          auto_approve?: boolean | null
+          created_at?: string | null
+          domain: string
+          id?: string
+          is_verified?: boolean | null
+          organization_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          auto_approve?: boolean | null
+          created_at?: string | null
+          domain?: string
+          id?: string
+          is_verified?: boolean | null
+          organization_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_trusted_domains_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_trusted_domains_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_trusted_domains_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_user_preferences: {
         Row: {
           created_at: string | null
@@ -13525,6 +14029,45 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_user_roles: {
+        Row: {
+          created_at: string | null
+          granted_by: string | null
+          id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          granted_by?: string | null
+          id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_user_roles_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "crm_roles"
             referencedColumns: ["id"]
           },
         ]
@@ -14319,10 +14862,12 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          edges: Json | null
           id: string
           is_enabled: boolean | null
           module_id: string
           name: string
+          nodes: Json | null
           org_id: string
           priority: number | null
           trigger_config: Json
@@ -14336,10 +14881,12 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          edges?: Json | null
           id?: string
           is_enabled?: boolean | null
           module_id: string
           name: string
+          nodes?: Json | null
           org_id: string
           priority?: number | null
           trigger_config?: Json
@@ -14353,10 +14900,12 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          edges?: Json | null
           id?: string
           is_enabled?: boolean | null
           module_id?: string
           name?: string
+          nodes?: Json | null
           org_id?: string
           priority?: number | null
           trigger_config?: Json
@@ -15687,6 +16236,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           delivered_count: number | null
+          error_message: string | null
           failed_count: number | null
           filter_config: Json | null
           from_email: string | null
@@ -15717,6 +16267,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           delivered_count?: number | null
+          error_message?: string | null
           failed_count?: number | null
           filter_config?: Json | null
           from_email?: string | null
@@ -15747,6 +16298,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           delivered_count?: number | null
+          error_message?: string | null
           failed_count?: number | null
           filter_config?: Json | null
           from_email?: string | null
@@ -15941,6 +16493,8 @@ export type Database = {
           error_message: string | null
           id: string
           last_verification_at: string | null
+          last_verified_at: string | null
+          mx_verified: boolean | null
           org_id: string
           sendgrid_domain_id: string | null
           spf_value: string | null
@@ -15965,6 +16519,8 @@ export type Database = {
           error_message?: string | null
           id?: string
           last_verification_at?: string | null
+          last_verified_at?: string | null
+          mx_verified?: boolean | null
           org_id: string
           sendgrid_domain_id?: string | null
           spf_value?: string | null
@@ -15989,6 +16545,8 @@ export type Database = {
           error_message?: string | null
           id?: string
           last_verification_at?: string | null
+          last_verified_at?: string | null
+          mx_verified?: boolean | null
           org_id?: string
           sendgrid_domain_id?: string | null
           spf_value?: string | null
@@ -16696,11 +17254,14 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          from_email: string | null
+          from_name: string | null
           id: string
           is_active: boolean | null
           is_system: boolean | null
           name: string
           organization_id: string | null
+          reply_to: string | null
           slug: string | null
           subject: string
           template_type: string
@@ -16715,11 +17276,14 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          from_email?: string | null
+          from_name?: string | null
           id?: string
           is_active?: boolean | null
           is_system?: boolean | null
           name: string
           organization_id?: string | null
+          reply_to?: string | null
           slug?: string | null
           subject: string
           template_type: string
@@ -16734,11 +17298,14 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          from_email?: string | null
+          from_name?: string | null
           id?: string
           is_active?: boolean | null
           is_system?: boolean | null
           name?: string
           organization_id?: string | null
+          reply_to?: string | null
           slug?: string | null
           subject?: string
           template_type?: string
@@ -17048,6 +17615,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "engagement_events_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
           },
           {
             foreignKeyName: "engagement_events_advisor_id_fkey"
@@ -17446,6 +18020,13 @@ export type Database = {
             foreignKeyName: "enrollment_link_analytics_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "enrollment_link_analytics_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -17535,6 +18116,13 @@ export type Database = {
           visits_before_conversion?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "enrollment_link_conversions_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "enrollment_link_conversions_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -17719,6 +18307,13 @@ export type Database = {
             foreignKeyName: "enrollment_link_visits_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "enrollment_link_visits_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -17836,6 +18431,13 @@ export type Database = {
             foreignKeyName: "enrollment_links_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "enrollment_links_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -17931,6 +18533,13 @@ export type Database = {
           user_agent?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "enrollment_logs_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "enrollment_logs_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -18115,6 +18724,13 @@ export type Database = {
             foreignKeyName: "enrollment_wizard_state_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "enrollment_wizard_state_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -18185,6 +18801,7 @@ export type Database = {
           contract_length: number | null
           contract_number: string | null
           created_at: string | null
+          created_by: string | null
           custom_fields: Json | null
           effective_date: string | null
           end_date: string | null
@@ -18217,6 +18834,7 @@ export type Database = {
           iua_id: string | null
           last_modified_by: string | null
           last_payment_date: string | null
+          last_payment_error: string | null
           last_status_change_at: string | null
           lead_id: string | null
           metadata: Json | null
@@ -18226,7 +18844,11 @@ export type Database = {
           note_date: string | null
           notes: string | null
           organization_id: string
+          paid_at: string | null
           pay_type: string | null
+          payment_amount: number | null
+          payment_profile_id: string | null
+          payment_status: string | null
           period_label: string | null
           permanent_bill_day: number | null
           plan_type: string | null
@@ -18282,6 +18904,7 @@ export type Database = {
           start_date: string | null
           status: string
           status_reason: string | null
+          stripe_payment_id: string | null
           submitted_at: string | null
           system_id: string | null
           termination_date: string | null
@@ -18327,6 +18950,7 @@ export type Database = {
           contract_length?: number | null
           contract_number?: string | null
           created_at?: string | null
+          created_by?: string | null
           custom_fields?: Json | null
           effective_date?: string | null
           end_date?: string | null
@@ -18359,6 +18983,7 @@ export type Database = {
           iua_id?: string | null
           last_modified_by?: string | null
           last_payment_date?: string | null
+          last_payment_error?: string | null
           last_status_change_at?: string | null
           lead_id?: string | null
           metadata?: Json | null
@@ -18368,7 +18993,11 @@ export type Database = {
           note_date?: string | null
           notes?: string | null
           organization_id: string
+          paid_at?: string | null
           pay_type?: string | null
+          payment_amount?: number | null
+          payment_profile_id?: string | null
+          payment_status?: string | null
           period_label?: string | null
           permanent_bill_day?: number | null
           plan_type?: string | null
@@ -18424,6 +19053,7 @@ export type Database = {
           start_date?: string | null
           status?: string
           status_reason?: string | null
+          stripe_payment_id?: string | null
           submitted_at?: string | null
           system_id?: string | null
           termination_date?: string | null
@@ -18469,6 +19099,7 @@ export type Database = {
           contract_length?: number | null
           contract_number?: string | null
           created_at?: string | null
+          created_by?: string | null
           custom_fields?: Json | null
           effective_date?: string | null
           end_date?: string | null
@@ -18501,6 +19132,7 @@ export type Database = {
           iua_id?: string | null
           last_modified_by?: string | null
           last_payment_date?: string | null
+          last_payment_error?: string | null
           last_status_change_at?: string | null
           lead_id?: string | null
           metadata?: Json | null
@@ -18510,7 +19142,11 @@ export type Database = {
           note_date?: string | null
           notes?: string | null
           organization_id?: string
+          paid_at?: string | null
           pay_type?: string | null
+          payment_amount?: number | null
+          payment_profile_id?: string | null
+          payment_status?: string | null
           period_label?: string | null
           permanent_bill_day?: number | null
           plan_type?: string | null
@@ -18566,6 +19202,7 @@ export type Database = {
           start_date?: string | null
           status?: string
           status_reason?: string | null
+          stripe_payment_id?: string | null
           submitted_at?: string | null
           system_id?: string | null
           termination_date?: string | null
@@ -18583,6 +19220,13 @@ export type Database = {
           utm_term?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "enrollments_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "enrollments_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -18619,6 +19263,13 @@ export type Database = {
             referencedColumns: ["benefit_tier_id"]
           },
           {
+            foreignKeyName: "enrollments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "enrollments_inactive_reason_fkey"
             columns: ["inactive_reason"]
             isOneToOne: false
@@ -18651,6 +19302,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "enrollments_payment_profile_id_fkey"
+            columns: ["payment_profile_id"]
+            isOneToOne: false
+            referencedRelation: "payment_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -22668,6 +23326,7 @@ export type Database = {
           internal_notes: string | null
           invoice_number: string
           is_retro: boolean | null
+          member_id: string | null
           notes: string | null
           organization_id: string
           original_invoice_id: string | null
@@ -22701,6 +23360,7 @@ export type Database = {
           internal_notes?: string | null
           invoice_number: string
           is_retro?: boolean | null
+          member_id?: string | null
           notes?: string | null
           organization_id: string
           original_invoice_id?: string | null
@@ -22734,6 +23394,7 @@ export type Database = {
           internal_notes?: string | null
           invoice_number?: string
           is_retro?: boolean | null
+          member_id?: string | null
           notes?: string | null
           organization_id?: string
           original_invoice_id?: string | null
@@ -22834,6 +23495,13 @@ export type Database = {
             columns: ["generation_job_id"]
             isOneToOne: false
             referencedRelation: "invoice_generation_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
@@ -23362,6 +24030,13 @@ export type Database = {
             foreignKeyName: "landing_pages_default_advisor_id_fkey"
             columns: ["default_advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "landing_pages_default_advisor_id_fkey"
+            columns: ["default_advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -23464,6 +24139,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "leads_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -23884,6 +24566,13 @@ export type Database = {
             foreignKeyName: "member_lifecycle_events_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "member_lifecycle_events_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -24065,9 +24754,12 @@ export type Database = {
           is_smoker: boolean | null
           last_name: string
           marital_status: string | null
+          market_type: string | null
           member_number: string
           member_type: string | null
           member_type2: string | null
+          merged_at: string | null
+          merged_into_id: string | null
           monthly_share: number | null
           next_step: string | null
           next_step_date: string | null
@@ -24102,6 +24794,10 @@ export type Database = {
           stage: string | null
           state: string | null
           status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_current_period_end: string | null
+          subscription_status: string | null
           termination_date: string | null
           termination_reason: string | null
           tobacco_use_date: string | null
@@ -24153,9 +24849,12 @@ export type Database = {
           is_smoker?: boolean | null
           last_name: string
           marital_status?: string | null
+          market_type?: string | null
           member_number: string
           member_type?: string | null
           member_type2?: string | null
+          merged_at?: string | null
+          merged_into_id?: string | null
           monthly_share?: number | null
           next_step?: string | null
           next_step_date?: string | null
@@ -24190,6 +24889,10 @@ export type Database = {
           stage?: string | null
           state?: string | null
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           termination_date?: string | null
           termination_reason?: string | null
           tobacco_use_date?: string | null
@@ -24241,9 +24944,12 @@ export type Database = {
           is_smoker?: boolean | null
           last_name?: string
           marital_status?: string | null
+          market_type?: string | null
           member_number?: string
           member_type?: string | null
           member_type2?: string | null
+          merged_at?: string | null
+          merged_into_id?: string | null
           monthly_share?: number | null
           next_step?: string | null
           next_step_date?: string | null
@@ -24278,6 +24984,10 @@ export type Database = {
           stage?: string | null
           state?: string | null
           status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           termination_date?: string | null
           termination_reason?: string | null
           tobacco_use_date?: string | null
@@ -24285,6 +24995,13 @@ export type Database = {
           weight?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "members_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "members_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -24298,6 +25015,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mv_advisor_monthly_performance"
             referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "members_merged_into_id_fkey"
+            columns: ["merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "members_organization_id_fkey"
@@ -24341,6 +25065,7 @@ export type Database = {
           custom_fields: Json | null
           effective_date: string
           end_date: string | null
+          enrollment_id: string | null
           external_vendor_membership_id: string | null
           funding_type: string | null
           id: string
@@ -24363,6 +25088,7 @@ export type Database = {
           custom_fields?: Json | null
           effective_date: string
           end_date?: string | null
+          enrollment_id?: string | null
           external_vendor_membership_id?: string | null
           funding_type?: string | null
           id?: string
@@ -24385,6 +25111,7 @@ export type Database = {
           custom_fields?: Json | null
           effective_date?: string
           end_date?: string | null
+          enrollment_id?: string | null
           external_vendor_membership_id?: string | null
           funding_type?: string | null
           id?: string
@@ -24401,6 +25128,13 @@ export type Database = {
             foreignKeyName: "memberships_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "memberships_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -24410,6 +25144,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mv_advisor_monthly_performance"
             referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "memberships_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "enrollments"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "memberships_member_id_fkey"
@@ -25025,6 +25766,13 @@ export type Database = {
             foreignKeyName: "needs_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "needs_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -25492,6 +26240,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_queue_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "notification_queue_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -27061,6 +27816,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payout_fraud_flags_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "payout_fraud_flags_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -29355,6 +30117,7 @@ export type Database = {
           max_dependents: number | null
           name: string
           organization_id: string
+          plan_id: string | null
           sort_order: number | null
           updated_at: string | null
         }
@@ -29369,6 +30132,7 @@ export type Database = {
           max_dependents?: number | null
           name: string
           organization_id: string
+          plan_id?: string | null
           sort_order?: number | null
           updated_at?: string | null
         }
@@ -29383,6 +30147,7 @@ export type Database = {
           max_dependents?: number | null
           name?: string
           organization_id?: string
+          plan_id?: string | null
           sort_order?: number | null
           updated_at?: string | null
         }
@@ -29400,6 +30165,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_benefit_types_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_benefit_types_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_lookup_mv"
+            referencedColumns: ["plan_id"]
           },
         ]
       }
@@ -30145,6 +30924,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_super_admin: boolean | null
+          member_id: string | null
           organization_id: string
           phone: string | null
           role: string
@@ -30167,6 +30947,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_super_admin?: boolean | null
+          member_id?: string | null
           organization_id: string
           phone?: string | null
           role?: string
@@ -30189,6 +30970,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_super_admin?: boolean | null
+          member_id?: string | null
           organization_id?: string
           phone?: string | null
           role?: string
@@ -30203,6 +30985,13 @@ export type Database = {
             foreignKeyName: "profiles_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "profiles_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -30212,6 +31001,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mv_advisor_monthly_performance"
             referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "profiles_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "profiles_organization_id_fkey"
@@ -30759,6 +31555,13 @@ export type Database = {
             foreignKeyName: "quote_snapshots_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "quote_snapshots_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -31226,9 +32029,10 @@ export type Database = {
           filters_used: Json | null
           id: string
           organization_id: string
-          report_id: string
+          report_id: string | null
           row_count: number | null
           status: string
+          template_key: string | null
         }
         Insert: {
           created_at?: string
@@ -31240,9 +32044,10 @@ export type Database = {
           filters_used?: Json | null
           id?: string
           organization_id: string
-          report_id: string
+          report_id?: string | null
           row_count?: number | null
           status?: string
+          template_key?: string | null
         }
         Update: {
           created_at?: string
@@ -31254,9 +32059,10 @@ export type Database = {
           filters_used?: Json | null
           id?: string
           organization_id?: string
-          report_id?: string
+          report_id?: string | null
           row_count?: number | null
           status?: string
+          template_key?: string | null
         }
         Relationships: [
           {
@@ -31913,6 +32719,95 @@ export type Database = {
           },
         ]
       }
+      scheduling_bookings: {
+        Row: {
+          created_at: string | null
+          custom_answers: Json | null
+          end_time: string
+          host_id: string | null
+          id: string
+          invitee_email: string
+          invitee_name: string
+          invitee_phone: string | null
+          invitee_timezone: string | null
+          link_id: string
+          location: string | null
+          meeting_type: string | null
+          notes: string | null
+          org_id: string
+          start_time: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          custom_answers?: Json | null
+          end_time: string
+          host_id?: string | null
+          id?: string
+          invitee_email: string
+          invitee_name: string
+          invitee_phone?: string | null
+          invitee_timezone?: string | null
+          link_id: string
+          location?: string | null
+          meeting_type?: string | null
+          notes?: string | null
+          org_id: string
+          start_time: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          custom_answers?: Json | null
+          end_time?: string
+          host_id?: string | null
+          id?: string
+          invitee_email?: string
+          invitee_name?: string
+          invitee_phone?: string | null
+          invitee_timezone?: string | null
+          link_id?: string
+          location?: string | null
+          meeting_type?: string | null
+          notes?: string | null
+          org_id?: string
+          start_time?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduling_bookings_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_bookings_link_id_fkey"
+            columns: ["link_id"]
+            isOneToOne: false
+            referencedRelation: "scheduling_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_bookings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduling_bookings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduling_links: {
         Row: {
           availability: Json
@@ -32156,6 +33051,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sent_emails_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
           {
             foreignKeyName: "sent_emails_advisor_id_fkey"
             columns: ["advisor_id"]
@@ -34996,6 +35898,13 @@ export type Database = {
             foreignKeyName: "tickets_advisor_id_fkey"
             columns: ["advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "tickets_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -36941,6 +37850,36 @@ export type Database = {
       }
     }
     Views: {
+      advisor_contact_summary: {
+        Row: {
+          advisor_active: boolean | null
+          advisor_id: string | null
+          email: string | null
+          full_name: string | null
+          last_contact_at: string | null
+          organization_id: string | null
+          state: string | null
+          total_contacts: number | null
+          total_leads: number | null
+          total_members: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_identity_bridge: {
         Row: {
           advisor_email: string | null
@@ -37311,6 +38250,13 @@ export type Database = {
             foreignKeyName: "advisor_rankings_advisor_id_fkey"
             columns: ["top_advisor_id"]
             isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
+          },
+          {
+            foreignKeyName: "advisor_rankings_advisor_id_fkey"
+            columns: ["top_advisor_id"]
+            isOneToOne: false
             referencedRelation: "advisors"
             referencedColumns: ["id"]
           },
@@ -37557,6 +38503,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisors_parent_advisor_id_fkey"
+            columns: ["parent_advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_contact_summary"
+            referencedColumns: ["advisor_id"]
           },
           {
             foreignKeyName: "advisors_parent_advisor_id_fkey"
@@ -39399,6 +40352,10 @@ export type Database = {
           total_vendors: number
         }[]
       }
+      has_crm_permission: {
+        Args: { p_permission_key: string; p_user_id: string }
+        Returns: boolean
+      }
       has_crm_role: {
         Args: { p_org_id: string; p_roles: string[] }
         Returns: boolean
@@ -39437,6 +40394,14 @@ export type Database = {
           imported: number
           skipped: number
         }[]
+      }
+      increment_landing_page_views: {
+        Args: { page_id: string }
+        Returns: undefined
+      }
+      increment_recently_viewed_count: {
+        Args: { _record_id: string; _user_id: string }
+        Returns: undefined
       }
       increment_report_run_count: {
         Args: { p_report_id: string }

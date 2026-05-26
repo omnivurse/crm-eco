@@ -62,7 +62,7 @@ export async function GET(
         executed_by_profile:profiles!report_run_history_executed_by_fkey(full_name)
       `)
       .eq('report_id', id)
-      .eq('org_id', profile.organization_id)
+      .eq('organization_id', profile.organization_id)
       .order('executed_at', { ascending: false })
       .limit(limit);
 
@@ -105,7 +105,7 @@ export async function POST(
       .from('report_run_history')
       .insert({
         report_id: id,
-        org_id: profile.organization_id,
+        organization_id: profile.organization_id,
         executed_by: profile.id,
         duration_ms: body.duration_ms || null,
         row_count: body.row_count || null,

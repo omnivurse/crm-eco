@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import { verifyCaptcha, getClientIp } from '@crm-eco/lib/security/captcha';
 
-// Force dynamic rendering - this route uses env vars at runtime
 export const dynamic = 'force-dynamic';
 
-// Create Supabase client lazily to avoid build-time errors
 function getSupabaseClient() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for scheduling routes');
   }
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey
-  );
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey);
 }
 
 const bookingSchema = z.object({
@@ -26,14 +23,32 @@ const bookingSchema = z.object({
   start_time: z.string().datetime(),
   notes: z.string().optional(),
   custom_answers: z.record(z.string()).optional(),
+  // Captcha token from Turnstile/reCAPTCHA widget. Validated server-side.
+  captcha_token: z.string().optional(),
 });
 
 /**
  * POST /api/scheduling/book
- * Create a new booking (public, no auth required)
+ *
+ * Public booking endpoint — no auth required, but defended at three layers:
+ *   1. Per-IP rate limit (5 attempts / 60s) — blunts script floods.
+ *   2. Server-side captcha verification (Cloudflare Turnstile or
+ *      reCAPTCHA v3 if configured) — blocks headless bots.
+ *   3. RLS policy `scheduling_bookings_public_insert` — verifies the
+ *      `link_id` points to an active scheduling link in the same org.
  */
 export async function POST(request: NextRequest) {
-  // Use service role for public access
+  const clientIp = getClientIp(request) ?? 'unknown';
+
+  // Layer 1: rate-limit before doing any expensive work.
+  const rl = rateLimit(`scheduling-book:${clientIp}`, { limit: 5, windowMs: 60_000 });
+  if (!rl.success) {
+    return NextResponse.json(
+      { error: 'rate_limited' },
+      { status: 429, headers: getRateLimitHeaders(rl) },
+    );
+  }
+
   const supabase = getSupabaseClient();
   try {
     const body = await request.json();
@@ -41,6 +56,23 @@ export async function POST(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
+    }
+
+    // Layer 2: captcha verification (dev-bypass when no secret is configured).
+    const captcha = await verifyCaptcha({
+      token: parsed.data.captcha_token,
+      expectedAction: 'scheduling_book',
+      remoteIp: clientIp === 'unknown' ? null : clientIp,
+    });
+    if (!captcha.success) {
+      return NextResponse.json(
+        {
+          error: 'captcha_failed',
+          provider: captcha.provider,
+          codes: captcha.errorCodes,
+        },
+        { status: 400 },
+      );
     }
 
     // Get the scheduling link

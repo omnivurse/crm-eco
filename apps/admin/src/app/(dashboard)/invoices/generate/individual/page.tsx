@@ -243,7 +243,7 @@ export default function GenerateIndividualInvoicePage() {
           member_id: selectedMember.id,
           status: 'draft',
           subtotal: subtotal,
-          discount_amount: 0,
+          discount_value: 0,
           tax_amount: 0,
           total: total,
           amount_paid: 0,

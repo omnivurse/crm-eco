@@ -80,12 +80,13 @@ export default function EmailTemplatesPage() {
       .from('email_templates')
       .select('*')
       .eq('organization_id', profile.organization_id)
-      .order('category')
+      .order('template_type')
       .order('name');
 
     if (data) {
-      setTemplates(data);
-      setFilteredTemplates(data);
+      const mapped = data.map((t: any) => ({ ...t, category: t.template_type || 'general' }));
+      setTemplates(mapped);
+      setFilteredTemplates(mapped);
     }
 
     setLoading(false);
@@ -138,7 +139,9 @@ export default function EmailTemplatesPage() {
         // eslint-disable-next-line react-hooks/purity -- Date.now() in event handler is correct
         slug: `${template.slug}-copy-${Date.now()}`,
         description: template.description,
-        category: template.category,
+        // DB column is template_type; the local UI type still exposes
+        // `category` for legacy code paths so map both directions.
+        template_type: template.category,
         subject: template.subject,
         body_html: template.body_html,
         is_active: false,

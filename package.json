@@ -22,7 +22,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "db:generate-types": "supabase gen types typescript --project-id sffisarikcreyyjzdjvb > packages/lib/src/types/database.ts",
+    "db:generate-types": "supabase gen types typescript --project-id sffisarikcreyyjzdjvb 2>/dev/null | sed -n '1,/^} as const$/p' > packages/lib/src/types/database.ts && echo \"  ✓ wrote packages/lib/src/types/database.ts ($(wc -l < packages/lib/src/types/database.ts) lines)\"",
     "workspace:hygiene": "sh scripts/workspace-hygiene.sh",
     "db:audit:records": "node scripts/run-db-audit-records.mjs",
     "db:audit:records:strict": "node scripts/run-db-audit-records.mjs --strict",

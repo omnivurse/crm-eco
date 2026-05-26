@@ -186,47 +186,19 @@ export async function PUT(request: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // PATCH /api/crm/segmentations — recompute segment membership
+// PHASE 2A — DEFERRED: dynamic membership compute requires the
+// `fn_compute_segment_membership` RPC which is not yet deployed. The
+// client elected to keep static segments only until signals/segmentation
+// is built out post-enrollment. Endpoint returns 501 so the UI can show
+// "Membership recompute coming soon" rather than 500.
 // ---------------------------------------------------------------------------
-export async function PATCH(request: NextRequest) {
-  try {
-    const supabase = await createClient();
-    const profile = await getAuthProfile();
-    if (!profile) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    if (!['crm_admin', 'crm_manager'].includes(profile.crm_role || '')) {
-      return NextResponse.json({ error: 'Forbidden — admin/manager only' }, { status: 403 });
-    }
-
-    const body = await request.json();
-    const schema = z.object({ id: z.string().uuid() });
-    const parsed = schema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
-
-    // Verify segment belongs to this org
-    const { data: segment } = await supabase
-      .from('crm_segmentations')
-      .select('id')
-      .eq('id', parsed.data.id)
-      .eq('organization_id', profile.organization_id)
-      .single();
-
-    if (!segment) {
-      return NextResponse.json({ error: 'Segment not found' }, { status: 404 });
-    }
-
-    const { data, error } = await supabase.rpc('fn_compute_segment_membership', {
-      p_segment_id: parsed.data.id,
-    });
-
-    if (error) {
-      console.error('[Segmentations] Compute error:', error);
-      return NextResponse.json({ error: 'Failed to recompute membership' }, { status: 500 });
-    }
-
-    return NextResponse.json({ member_count: data });
-  } catch (error) {
-    console.error('[Segmentations] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
+export async function PATCH() {
+  return NextResponse.json(
+    {
+      error: 'Dynamic segment membership compute is not yet enabled for this tenant.',
+    },
+    { status: 501 }
+  );
 }
 
 // ---------------------------------------------------------------------------

@@ -43,13 +43,13 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
         first_name: string;
         last_name: string;
         email: string;
-        authorize_customer_profile_id: string | null;
       } | null;
       billing_schedule: {
         id: string;
         payment_profile_id: string;
         payment_profile: {
           id: string;
+          authorize_customer_profile_id: string;
           authorize_payment_profile_id: string;
         } | null;
       } | null;
@@ -63,14 +63,14 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
           id,
           first_name,
           last_name,
-          email,
-          authorize_customer_profile_id
+          email
         ),
         billing_schedule:billing_schedules(
           id,
           payment_profile_id,
           payment_profile:payment_profiles(
             id,
+            authorize_customer_profile_id,
             authorize_payment_profile_id
           )
         )
@@ -87,15 +87,17 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       return { success: false, error: 'This failure has already been resolved' };
     }
 
-    // Get payment profile info
+    // Get payment profile info — Authorize.Net customer profile id lives on
+    // `payment_profiles`, NOT on `members`. The earlier code read it off the
+    // members row, which always returned null and silently failed.
     const member = failure.member;
     const paymentProfile = failure.billing_schedule?.payment_profile;
 
-    if (!member?.authorize_customer_profile_id) {
+    if (!paymentProfile?.authorize_customer_profile_id) {
       return { success: false, error: 'Member does not have a payment profile configured' };
     }
 
-    if (!paymentProfile?.authorize_payment_profile_id) {
+    if (!paymentProfile.authorize_payment_profile_id) {
       return { success: false, error: 'No payment profile found for this billing schedule' };
     }
 
@@ -104,7 +106,7 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
 
     // Attempt to charge the customer profile
     const chargeResult = await authNet.chargeCustomerProfile({
-      customerProfileId: member.authorize_customer_profile_id,
+      customerProfileId: paymentProfile.authorize_customer_profile_id,
       paymentProfileId: paymentProfile.authorize_payment_profile_id,
       amount: failure.amount,
       invoiceNumber: `RETRY-${failure.id.substring(0, 8)}`,

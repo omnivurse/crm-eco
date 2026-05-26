@@ -2,6 +2,7 @@ import { createClient } from './supabase/client';
 import type { Database } from './types';
 
 type Json = Database['public']['Tables']['activities']['Row']['metadata'];
+type ActivityInsert = Database['public']['Tables']['activities']['Insert'];
 
 export interface ActivityLogParams {
   organizationId: string;
@@ -10,6 +11,19 @@ export interface ActivityLogParams {
   subject: string;
   description?: string;
   metadata?: Json;
+}
+
+/**
+ * Safely merge caller metadata with extra key/value pairs. `metadata`
+ * is typed as Json (which permits primitives) so we only spread when
+ * it is actually a plain object — primitives are dropped.
+ */
+function mergeMetadata(metadata: Json | undefined, extra: Record<string, unknown>): Record<string, unknown> {
+  const base =
+    metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+      ? (metadata as Record<string, unknown>)
+      : {};
+  return { ...base, ...extra };
 }
 
 export interface MemberActivityParams extends ActivityLogParams {
@@ -45,13 +59,16 @@ export async function logActivityForMember(params: MemberActivityParams) {
   const { error } = await supabase.from('activities').insert({
     organization_id: params.organizationId,
     created_by_profile_id: params.createdByProfileId,
+    entity_type: 'member',
+    entity_id: params.memberId,
+    action: params.type,
     member_id: params.memberId,
     type: params.type,
     subject: params.subject,
     description: params.description || null,
     metadata: params.metadata || {},
     occurred_at: new Date().toISOString(),
-  } as any);
+  } satisfies ActivityInsert);
 
   if (error) {
     console.error('Failed to log member activity:', error);
@@ -69,13 +86,16 @@ export async function logActivityForAdvisor(params: AdvisorActivityParams) {
   const { error } = await supabase.from('activities').insert({
     organization_id: params.organizationId,
     created_by_profile_id: params.createdByProfileId,
+    entity_type: 'advisor',
+    entity_id: params.advisorId,
+    action: params.type,
     advisor_id: params.advisorId,
     type: params.type,
     subject: params.subject,
     description: params.description || null,
     metadata: params.metadata || {},
     occurred_at: new Date().toISOString(),
-  } as any);
+  } satisfies ActivityInsert);
 
   if (error) {
     console.error('Failed to log advisor activity:', error);
@@ -93,13 +113,16 @@ export async function logActivityForLead(params: LeadActivityParams) {
   const { error } = await supabase.from('activities').insert({
     organization_id: params.organizationId,
     created_by_profile_id: params.createdByProfileId,
+    entity_type: 'lead',
+    entity_id: params.leadId,
+    action: params.type,
     lead_id: params.leadId,
     type: params.type,
     subject: params.subject,
     description: params.description || null,
     metadata: params.metadata || {},
     occurred_at: new Date().toISOString(),
-  } as any);
+  } satisfies ActivityInsert);
 
   if (error) {
     console.error('Failed to log lead activity:', error);
@@ -109,23 +132,29 @@ export async function logActivityForLead(params: LeadActivityParams) {
 }
 
 /**
- * Log an activity for a ticket
+ * Log an activity for a ticket.
+ *
+ * The `activities` table does not have a dedicated `ticket_id` column —
+ * tickets are tracked via the generic (entity_type, entity_id) pair, with
+ * the ticket id also mirrored into metadata for legacy callers.
  */
 export async function logActivityForTicket(params: TicketActivityParams) {
   const supabase = createClient();
-  
+
   const { error } = await supabase.from('activities').insert({
     organization_id: params.organizationId,
     created_by_profile_id: params.createdByProfileId,
-    ticket_id: params.ticketId,
+    entity_type: 'ticket',
+    entity_id: params.ticketId,
+    action: params.type,
     member_id: params.memberId || null,
     advisor_id: params.advisorId || null,
     type: params.type,
     subject: params.subject,
     description: params.description || null,
-    metadata: params.metadata || {},
+    metadata: mergeMetadata(params.metadata, { ticket_id: params.ticketId }),
     occurred_at: new Date().toISOString(),
-  } as any);
+  } satisfies ActivityInsert);
 
   if (error) {
     console.error('Failed to log ticket activity:', error);
@@ -135,23 +164,29 @@ export async function logActivityForTicket(params: TicketActivityParams) {
 }
 
 /**
- * Log an activity for a need
+ * Log an activity for a member need.
+ *
+ * Like tickets, `need_id` is not a dedicated column on `activities`; we
+ * use the generic (entity_type, entity_id) shortcut and copy the id into
+ * metadata for callers that still expect it.
  */
 export async function logActivityForNeed(params: NeedActivityParams) {
   const supabase = createClient();
-  
+
   const { error } = await supabase.from('activities').insert({
     organization_id: params.organizationId,
     created_by_profile_id: params.createdByProfileId,
-    need_id: params.needId,
+    entity_type: 'need',
+    entity_id: params.needId,
+    action: params.type,
     member_id: params.memberId || null,
     advisor_id: params.advisorId || null,
     type: params.type,
     subject: params.subject,
     description: params.description || null,
-    metadata: params.metadata || {},
+    metadata: mergeMetadata(params.metadata, { need_id: params.needId }),
     occurred_at: new Date().toISOString(),
-  } as any);
+  } satisfies ActivityInsert);
 
   if (error) {
     console.error('Failed to log need activity:', error);

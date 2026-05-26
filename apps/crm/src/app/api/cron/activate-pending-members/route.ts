@@ -67,13 +67,13 @@ export async function GET(request: NextRequest) {
   const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
   // Find records with a pending status whose start date has arrived
+  // (column is `org_id` in crm_records, not `organization_id`)
   const { data: pendingRecords, error: fetchError } = await supabase
     .from('crm_records')
-    .select('id, status, market_type, current_year_start_date, original_start_date, organization_id')
+    .select('id, status, market_type, current_year_start_date, original_start_date, org_id')
     .in('status', PENDING_STATUSES)
     .in('market_type', ['healthshare', 'traditional_insurance'])
     .or(`current_year_start_date.lte.${today},original_start_date.lte.${today}`)
-    .is('deleted_at', null)
     .limit(500);
 
   if (fetchError) {
@@ -111,14 +111,14 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
-    // Log stage history for the timeline
+    // Log stage history for the timeline (both crm_records and
+    // crm_stage_history use `org_id`, not `organization_id`).
     await supabase.from('crm_stage_history').insert({
       record_id: record.id,
-      organization_id: record.organization_id,
+      org_id: record.org_id,
       from_stage: oldStatus,
       to_stage: newStatus,
       reason: `Auto-activated: start date ${startDate} has arrived`,
-      // No user — system automation
     });
 
     activated++;

@@ -146,7 +146,6 @@ export const COMMUNICATIONS_NAV_ITEMS: NavItem[] = [
     { key: 'sec-channels', separator: true, sectionTitle: 'Channels' },
     { key: 'call-logs', label: 'Call Logs', icon: 'phone', href: '/crm/activities?type=calls' },
     { key: 'notifications', label: 'Notifications', icon: 'bell', href: '/crm/settings/comms' },
-    { key: 'channels-config', label: 'Channel Config', icon: 'radio', href: '/crm/settings/channels' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -194,7 +193,6 @@ export const OPERATIONS_NAV_ITEMS: NavItem[] = [
     { key: 'sec-data', separator: true, sectionTitle: 'Data Management' },
     { key: 'import', label: 'Import / Export', icon: 'upload', href: '/crm/import' },
     { key: 'data-jobs', label: 'Data Jobs', icon: 'database', href: '/crm/settings/system-health?tab=jobs', badge: 'new' },
-    { key: 'signals', label: 'Signals', icon: 'zap', href: '/crm/settings/system-health?tab=signals', badge: 'new' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -259,7 +257,6 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
     { key: 'fields', label: 'Fields', icon: 'list', href: '/crm/settings/fields' },
     { key: 'layouts', label: 'Layouts', icon: 'layout', href: '/crm/settings/layouts' },
     { key: 'blueprints', label: 'Blueprints', icon: 'git-branch', href: '/crm/settings/blueprints' },
-    { key: 'pipelines', label: 'Pipelines', icon: 'kanban', href: '/crm/settings/configuration?tab=pipelines', badge: 'new' },
     { key: 'validation', label: 'Validation Rules', icon: 'shield-check', href: '/crm/settings/customization' },
 
     { key: 'sec-automation', separator: true, sectionTitle: 'Automation' },
@@ -273,7 +270,6 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-comm', separator: true, sectionTitle: 'Communication' },
     { key: 'templates', label: 'Templates', icon: 'file-text', href: '/crm/settings/templates' },
-    { key: 'channels', label: 'Channels', icon: 'radio', href: '/crm/settings/channels', badge: 'new' },
     { key: 'signatures', label: 'Signatures', icon: 'file-signature', href: '/crm/settings/signatures' },
     { key: 'email-domains', label: 'Email Domains', icon: 'globe', href: '/crm/settings/email-domains' },
     { key: 'notifications', label: 'Notifications', icon: 'bell', href: '/crm/settings/comms' },

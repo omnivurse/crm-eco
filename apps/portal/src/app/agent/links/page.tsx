@@ -64,12 +64,14 @@ export default function AgentLinksPage() {
       const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
       setEnrollmentLink(`${baseUrl}/enroll/${advisor.enrollment_code}`);
 
-      // Try to get link stats
+      // Try to get link stats. landing_page_events has no advisor_id —
+      // filter via the landing pages owned by this advisor's organization
+      // and (best-effort) created by them.
       try {
         const { data: events } = await (supabase as any)
           .from('landing_page_events')
-          .select('event_type')
-          .eq('advisor_id', advisor.id);
+          .select('event_type, landing_page:landing_pages!inner(organization_id)')
+          .eq('landing_page.organization_id', advisor.organization_id);
 
         if (events) {
           const visits = events.filter((e: any) => e.event_type === 'view').length;

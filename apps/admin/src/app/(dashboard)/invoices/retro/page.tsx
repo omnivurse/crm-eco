@@ -81,8 +81,7 @@ interface AuditEntry {
   performed_at: string;
   details: Record<string, unknown>;
   performer?: {
-    first_name: string;
-    last_name: string;
+    full_name: string;
   } | null;
 }
 
@@ -181,7 +180,7 @@ export default function RetroInvoicingPage() {
           entity_id,
           performed_at,
           details,
-          performer:profiles(first_name, last_name)
+          performer:profiles(full_name)
         `
         )
         .eq('organization_id', organizationId)
@@ -655,7 +654,7 @@ export default function RetroInvoicingPage() {
                         </p>
                         {entry.performer && (
                           <p className="text-xs text-muted-foreground">
-                            by {entry.performer.first_name} {entry.performer.last_name}
+                            by {entry.performer.full_name}
                           </p>
                         )}
                       </div>

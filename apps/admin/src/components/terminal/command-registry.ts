@@ -68,17 +68,19 @@ async function globalSearch(query: string, context: CommandContext): Promise<Com
   const results: string[] = [];
   let totalFound = 0;
 
-  // Search members
+  // Search members. profiles uses is_active (boolean) — there is no
+  // `status` text column.
   const { data: members } = await context.supabase
     .from('profiles')
-    .select('id, full_name, email, role, status')
+    .select('id, full_name, email, role, is_active')
     .or(`full_name.ilike.%${query}%,email.ilike.%${query}%`)
     .limit(5) as any;
   if (members?.length) {
     totalFound += members.length;
     results.push(`\n◈ MEMBERS (${members.length} found)`);
     members.forEach((m: any) => {
-      results.push(`  ${m.full_name || 'N/A'} — ${m.email || '—'} [${m.role || '—'}] → open member ${m.id}`);
+      const statusLabel = m.is_active === false ? 'inactive' : 'active';
+      results.push(`  ${m.full_name || 'N/A'} — ${m.email || '—'} [${m.role || '—'}] (${statusLabel}) → open member ${m.id}`);
     });
   }
 
@@ -110,31 +112,34 @@ async function globalSearch(query: string, context: CommandContext): Promise<Com
     });
   }
 
-  // Search products
+  // Search products — DB columns are `name`, `provider`, `category`,
+  // `is_active` (the old plan_name/carrier/plan_type/status columns never
+  // existed on plans).
   const { data: products } = await context.supabase
     .from('plans')
-    .select('id, plan_name, carrier, plan_type, status')
-    .or(`plan_name.ilike.%${query}%,carrier.ilike.%${query}%`)
+    .select('id, name, provider, category, is_active')
+    .or(`name.ilike.%${query}%,provider.ilike.%${query}%`)
     .limit(5) as any;
   if (products?.length) {
     totalFound += products.length;
     results.push(`\n◈ PRODUCTS (${products.length} found)`);
     products.forEach((p: any) => {
-      results.push(`  ${p.plan_name || 'N/A'} — ${p.carrier || '—'} [${p.plan_type || '—'}] → open product ${p.id}`);
+      const statusLabel = p.is_active ? 'active' : 'inactive';
+      results.push(`  ${p.name || 'N/A'} — ${p.provider || '—'} [${p.category || '—'}] (${statusLabel}) → open product ${p.id}`);
     });
   }
 
-  // Search enrollments
+  // Search enrollments (DB columns: enrollment_number, primary_member_id)
   const { data: enrollments } = await context.supabase
     .from('enrollments')
-    .select('id, enrollment_code, status, effective_date, member_id')
-    .or(`enrollment_code.ilike.%${query}%,status.ilike.%${query}%`)
+    .select('id, enrollment_number, status, effective_date, primary_member_id')
+    .or(`enrollment_number.ilike.%${query}%,status.ilike.%${query}%`)
     .limit(5) as any;
   if (enrollments?.length) {
     totalFound += enrollments.length;
     results.push(`\n◈ ENROLLMENTS (${enrollments.length} found)`);
     enrollments.forEach((e: any) => {
-      results.push(`  ${e.enrollment_code || e.id.slice(0, 8)} — Status: ${e.status || '—'} [Eff: ${formatDate(e.effective_date)}] → open enrollment ${e.id}`);
+      results.push(`  ${e.enrollment_number || e.id.slice(0, 8)} — Status: ${e.status || '—'} [Eff: ${formatDate(e.effective_date)}] → open enrollment ${e.id}`);
     });
   }
 
@@ -177,7 +182,11 @@ async function searchEntity(type: string, query: string, context: CommandContext
 }
 
 async function searchMembers(query: string, context: CommandContext): Promise<CommandResult> {
-  let qb = context.supabase.from('profiles').select('id, full_name, email, phone, role, status, created_at').limit(15);
+  // profiles uses `is_active` (boolean) — there is no `status` column.
+  let qb = context.supabase
+    .from('profiles')
+    .select('id, full_name, email, phone, role, is_active, created_at')
+    .limit(15);
   if (query) {
     qb = qb.or(`full_name.ilike.%${query}%,email.ilike.%${query}%,phone.ilike.%${query}%`);
   }
@@ -192,7 +201,7 @@ async function searchMembers(query: string, context: CommandContext): Promise<Co
       truncate(m.email, 30),
       truncate(m.phone, 15),
       m.role || '—',
-      m.status || '—',
+      m.is_active === false ? 'inactive' : 'active',
       m.id?.slice(0, 8) || '—',
     ]),
   };
@@ -261,22 +270,26 @@ async function searchVendors(query: string, context: CommandContext): Promise<Co
 }
 
 async function searchProducts(query: string, context: CommandContext): Promise<CommandResult> {
-  let qb = context.supabase.from('plans').select('id, plan_name, carrier, plan_type, status, monthly_premium').limit(15);
+  // DB columns: name, provider, category, monthly_share, is_active.
+  let qb = context.supabase
+    .from('plans')
+    .select('id, name, provider, category, is_active, monthly_share')
+    .limit(15);
   if (query) {
-    qb = qb.or(`plan_name.ilike.%${query}%,carrier.ilike.%${query}%,plan_type.ilike.%${query}%`);
+    qb = qb.or(`name.ilike.%${query}%,provider.ilike.%${query}%,category.ilike.%${query}%`);
   }
   const { data, error } = await qb as any;
   if (error) return { type: 'error', message: `Search failed: ${error.message}` };
   if (!data?.length) return { type: 'warning', message: query ? `No products found matching "${query}"` : 'No products found' };
 
   const tableData: TableData = {
-    headers: ['Plan Name', 'Carrier', 'Type', 'Premium', 'Status', 'ID'],
+    headers: ['Plan Name', 'Provider', 'Category', 'Monthly Share', 'Status', 'ID'],
     rows: data.map((p: any) => [
-      truncate(p.plan_name, 30),
-      truncate(p.carrier, 20),
-      p.plan_type || '—',
-      formatCurrency(p.monthly_premium),
-      p.status || '—',
+      truncate(p.name, 30),
+      truncate(p.provider, 20),
+      p.category || '—',
+      formatCurrency(p.monthly_share),
+      p.is_active === false ? 'inactive' : 'active',
       p.id?.slice(0, 8) || '—',
     ]),
   };
@@ -289,9 +302,19 @@ async function searchProducts(query: string, context: CommandContext): Promise<C
 }
 
 async function searchEnrollments(query: string, context: CommandContext): Promise<CommandResult> {
-  let qb = context.supabase.from('enrollments').select('id, enrollment_code, status, effective_date, termination_date, member_id, plan_id, created_at').order('created_at', { ascending: false }).limit(15);
+  // DB columns: enrollment_number, primary_member_id, selected_plan_id (the
+  // original code used pre-rename names that never existed in PIFH).
+  // `termination_date` also doesn't exist on enrollments — fall back to
+  // the lifecycle column we *do* have (cancelled_at) for the End Date column.
+  let qb = context.supabase
+    .from('enrollments')
+    .select(
+      'id, enrollment_number, status, effective_date, cancelled_at, primary_member_id, selected_plan_id, created_at'
+    )
+    .order('created_at', { ascending: false })
+    .limit(15);
   if (query) {
-    qb = qb.or(`enrollment_code.ilike.%${query}%,status.ilike.%${query}%`);
+    qb = qb.or(`enrollment_number.ilike.%${query}%,status.ilike.%${query}%`);
   }
   const { data, error } = await qb as any;
   if (error) return { type: 'error', message: `Search failed: ${error.message}` };
@@ -300,10 +323,10 @@ async function searchEnrollments(query: string, context: CommandContext): Promis
   const tableData: TableData = {
     headers: ['Code', 'Status', 'Effective', 'End Date', 'Created', 'ID'],
     rows: data.map((e: any) => [
-      e.enrollment_code || '—',
+      e.enrollment_number || '—',
       e.status || '—',
       formatDate(e.effective_date),
-      formatDate(e.termination_date),
+      formatDate(e.cancelled_at),
       formatDate(e.created_at),
       e.id?.slice(0, 8) || '—',
     ]),
@@ -317,7 +340,13 @@ async function searchEnrollments(query: string, context: CommandContext): Promis
 }
 
 async function searchInvoices(query: string, context: CommandContext): Promise<CommandResult> {
-  let qb = context.supabase.from('invoices').select('id, invoice_number, status, amount_due, amount_paid, due_date, created_at').order('created_at', { ascending: false }).limit(15);
+  // invoices.balance_due is the live column; the legacy alias `amount_due`
+  // never existed in the DB.
+  let qb = context.supabase
+    .from('invoices')
+    .select('id, invoice_number, status, balance_due, amount_paid, due_date, created_at')
+    .order('created_at', { ascending: false })
+    .limit(15);
   if (query) {
     qb = qb.or(`invoice_number.ilike.%${query}%,status.ilike.%${query}%`);
   }
@@ -330,7 +359,7 @@ async function searchInvoices(query: string, context: CommandContext): Promise<C
     rows: data.map((i: any) => [
       i.invoice_number || '—',
       i.status || '—',
-      formatCurrency(i.amount_due),
+      formatCurrency(i.balance_due),
       formatCurrency(i.amount_paid),
       formatDate(i.due_date),
       i.id?.slice(0, 8) || '—',
@@ -345,9 +374,14 @@ async function searchInvoices(query: string, context: CommandContext): Promise<C
 }
 
 async function searchCommissions(query: string, context: CommandContext): Promise<CommandResult> {
-  let qb = context.supabase.from('commission_transactions').select('id, advisor_id, enrollment_id, commission_amount, status, payment_type, created_at').order('created_at', { ascending: false }).limit(15);
+  // commission_transactions uses `transaction_type` (not `payment_type`).
+  let qb = context.supabase
+    .from('commission_transactions')
+    .select('id, advisor_id, enrollment_id, commission_amount, status, transaction_type, created_at')
+    .order('created_at', { ascending: false })
+    .limit(15);
   if (query) {
-    qb = qb.or(`status.ilike.%${query}%,payment_type.ilike.%${query}%`);
+    qb = qb.or(`status.ilike.%${query}%,transaction_type.ilike.%${query}%`);
   }
   const { data, error } = await qb as any;
   if (error) return { type: 'error', message: `Search failed: ${error.message}` };
@@ -358,7 +392,7 @@ async function searchCommissions(query: string, context: CommandContext): Promis
     rows: data.map((c: any) => [
       formatCurrency(c.commission_amount),
       c.status || '—',
-      c.payment_type || '—',
+      c.transaction_type || '—',
       c.advisor_id?.slice(0, 8) || '—',
       formatDate(c.created_at),
       c.id?.slice(0, 8) || '—',
@@ -373,9 +407,17 @@ async function searchCommissions(query: string, context: CommandContext): Promis
 }
 
 async function searchEmails(query: string, context: CommandContext): Promise<CommandResult> {
-  let qb = context.supabase.from('sent_emails').select('id, to_email, subject, status, template_name, sent_at, created_at').order('created_at', { ascending: false }).limit(15);
+  // sent_emails uses recipient_email (not to_email) and joins to
+  // email_templates(name) instead of having a template_name column.
+  let qb = context.supabase
+    .from('sent_emails')
+    .select(
+      'id, recipient_email, subject, status, sent_at, created_at, template:email_templates!sent_emails_template_id_fkey(name)'
+    )
+    .order('created_at', { ascending: false })
+    .limit(15);
   if (query) {
-    qb = qb.or(`to_email.ilike.%${query}%,subject.ilike.%${query}%`);
+    qb = qb.or(`recipient_email.ilike.%${query}%,subject.ilike.%${query}%`);
   }
   const { data, error } = await qb as any;
   if (error) return { type: 'error', message: `Search failed: ${error.message}` };
@@ -384,9 +426,9 @@ async function searchEmails(query: string, context: CommandContext): Promise<Com
   const tableData: TableData = {
     headers: ['To', 'Subject', 'Template', 'Status', 'Sent', 'ID'],
     rows: data.map((e: any) => [
-      truncate(e.to_email, 25),
+      truncate(e.recipient_email, 25),
       truncate(e.subject, 30),
-      truncate(e.template_name, 15),
+      truncate(e.template?.name ?? '—', 15),
       e.status || '—',
       formatDate(e.sent_at || e.created_at),
       e.id?.slice(0, 8) || '—',

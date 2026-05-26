@@ -62,11 +62,12 @@ async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
   const cancelledRes = cancelledSettled.status === 'fulfilled' ? cancelledSettled.value : { count: null };
 
   // Get enrollments by plan (using plans table)
+  // (column is `selected_plan_id`, not `plan_id`)
   const { data: byPlanData } = await (supabase as any)
     .from('enrollments')
-    .select('plan_id, plans(name)')
+    .select('selected_plan_id, plans:plans!enrollments_selected_plan_id_fkey(name)')
     .eq('organization_id', orgId)
-    .not('plan_id', 'is', null);
+    .not('selected_plan_id', 'is', null);
 
   const planCounts: Record<string, number> = {};
   (byPlanData || []).forEach((e: any) => {

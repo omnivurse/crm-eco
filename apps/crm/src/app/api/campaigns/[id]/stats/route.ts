@@ -57,16 +57,17 @@ export async function GET(
       unsubscribe_rate: stats.delivered > 0 ? Math.round((stats.unsubscribed / stats.delivered) * 100) : 0,
     };
 
-    // Get top clicked links (from tracking events)
+    // Get top clicked links (from tracking events). The URL lives in the
+    // dedicated `clicked_url` column.
     const { data: clickEvents } = await supabase
       .from('campaign_tracking_events')
-      .select('metadata')
+      .select('clicked_url')
       .eq('campaign_id', id)
       .eq('event_type', 'click');
 
     const linkCounts: Record<string, number> = {};
     (clickEvents || []).forEach(event => {
-      const url = (event.metadata as Record<string, unknown>)?.url as string;
+      const url = event.clicked_url as string | null;
       if (url) {
         linkCounts[url] = (linkCounts[url] || 0) + 1;
       }

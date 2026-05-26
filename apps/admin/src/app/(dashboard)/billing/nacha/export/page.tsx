@@ -49,10 +49,15 @@ interface PendingTransaction {
   id: string;
   member_id: string;
   amount: number;
-  type: 'debit' | 'credit';
+  /** Mirrors `billing_transactions.transaction_type`. */
+  transaction_type: 'debit' | 'credit' | string;
   status: string;
-  routing_number: string | null;
+  /** Pulled from joined `payment_profiles.account_last4`. */
   account_number_last4: string | null;
+  /** FK to `payment_profiles`; used to hydrate routing_number from Authorize.net at export time. */
+  payment_profile_id: string | null;
+  /** Routing number is never stored locally — hydrated by the export job from Authorize.net before file generation. */
+  routing_number?: string | null;
   member: {
     first_name: string;
     last_name: string;
@@ -122,29 +127,51 @@ export default function NachaExportPage() {
     if (!organizationId) return;
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('billing_transactions')
         .select(
           `
           id,
           member_id,
           amount,
-          type,
+          transaction_type,
           status,
-          routing_number,
-          account_number_last4,
+          payment_profile_id,
+          payment_profile:payment_profiles!inner(account_last4, payment_type),
           member:members(first_name, last_name, email)
         `
         )
         .eq('organization_id', organizationId)
         .eq('status', 'pending')
-        .eq('payment_method', 'ach')
+        .eq('payment_profile.payment_type', 'ach')
         .order('created_at', { ascending: false })
         .limit(200);
 
       if (error && error.code !== '42P01') throw error;
 
-      setPendingTransactions((data || []) as unknown as PendingTransaction[]);
+      const rows = (data || []) as Array<{
+        id: string;
+        member_id: string;
+        amount: number;
+        transaction_type: string;
+        status: string;
+        payment_profile_id: string | null;
+        payment_profile?: { account_last4: string | null; payment_type: string } | null;
+        member: PendingTransaction['member'];
+      }>;
+
+      setPendingTransactions(
+        rows.map((r) => ({
+          id: r.id,
+          member_id: r.member_id,
+          amount: r.amount,
+          transaction_type: r.transaction_type,
+          status: r.status,
+          payment_profile_id: r.payment_profile_id,
+          account_number_last4: r.payment_profile?.account_last4 ?? null,
+          member: r.member,
+        })),
+      );
     } catch (error) {
       console.error('Error fetching pending transactions:', error);
     } finally {
@@ -188,7 +215,7 @@ export default function NachaExportPage() {
       txn.member?.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       txn.member?.email?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesType = typeFilter === 'all' || txn.type === typeFilter;
+    const matchesType = typeFilter === 'all' || txn.transaction_type === typeFilter;
 
     return matchesSearch && matchesType;
   });
@@ -245,7 +272,7 @@ export default function NachaExportPage() {
       const routingNumber = txn.routing_number || '000000000';
       const amount = Math.round(txn.amount * 100); // Convert to cents
 
-      if (txn.type === 'debit') {
+      if (txn.transaction_type === 'debit') {
         totalDebitAmount += amount;
       } else {
         totalCreditAmount += amount;
@@ -255,7 +282,7 @@ export default function NachaExportPage() {
 
       lines.push(
         '6' + // Record Type Code
-          (txn.type === 'debit' ? '27' : '22') + // Transaction Code (27=debit, 22=credit)
+          (txn.transaction_type === 'debit' ? '27' : '22') + // Transaction Code (27=debit, 22=credit)
           routingNumber.slice(0, 8) + // Receiving DFI Identification
           routingNumber.slice(8, 9) + // Check Digit
           (txn.account_number_last4 || '0000').padStart(17) + // DFI Account Number
@@ -614,8 +641,8 @@ export default function NachaExportPage() {
                       <p className="text-xs text-slate-500">{txn.member?.email}</p>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={txn.type === 'debit' ? 'default' : 'secondary'}>
-                        {txn.type}
+                      <Badge variant={txn.transaction_type === 'debit' ? 'default' : 'secondary'}>
+                        {txn.transaction_type}
                       </Badge>
                     </TableCell>
                     <TableCell>

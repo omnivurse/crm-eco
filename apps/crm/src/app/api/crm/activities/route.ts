@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (type) {
-      query = query.eq('type', type);
+      query = query.eq('activity_type', type);
     }
 
     const { data, error } = await query;
@@ -86,19 +86,25 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createCrmClient();
 
+    // crm_activities stores call-log specific fields (outcome, direction,
+    // contact_method) inside the JSONB `metadata` column — the DB never had
+    // dedicated columns for them.
+    const direction = parsed.data.direction || 'outbound';
     const { data: activity, error } = await supabase
       .from('crm_activities')
       .insert({
         org_id: profile.organization_id,
         record_id: parsed.data.record_id,
-        type: parsed.data.type,
-        outcome: parsed.data.outcome || null,
+        activity_type: parsed.data.type,
         subject: parsed.data.subject || (parsed.data.type === 'call' ? 'Call logged' : null),
         description: parsed.data.description || null,
         duration_minutes: parsed.data.duration_minutes || null,
-        direction: parsed.data.direction || 'outbound',
-        contact_method: parsed.data.contact_method || null,
         created_by: profile.id,
+        metadata: {
+          outcome: parsed.data.outcome || null,
+          direction,
+          contact_method: parsed.data.contact_method || null,
+        },
       })
       .select()
       .single();

@@ -416,22 +416,46 @@ export default function CommissionsListPage() {
 
     setCopying(true);
     try {
-      // Get source agent's commission rates/structure
+      // Get source agent's commission rates/structure. commission_rates
+      // is keyed by agent_level_id (not advisor_id) — copy by resolving
+      // the source agent's level first, then fetching rates for that level.
+      const { data: sourceAgent } = await (supabase as any)
+        .from('advisors')
+        .select('agent_level_id')
+        .eq('id', copyForm.sourceAgentId)
+        .single();
+
+      const sourceLevelId = (sourceAgent as { agent_level_id?: string | null } | null)?.agent_level_id ?? null;
+
       const { data: sourceRates, error: ratesError } = await (supabase as any)
         .from('commission_rates')
         .select('*')
-        .eq('advisor_id', copyForm.sourceAgentId);
+        .eq('agent_level_id', sourceLevelId);
 
       if (ratesError && ratesError.code !== '42P01') throw ratesError;
 
       let itemsCopied = 0;
 
       if (sourceRates && sourceRates.length > 0) {
-        // Copy rates to target agent
+        // Copy rates to target agent. commission_rates is per agent_level,
+        // so resolve the target agent's level and rewrite agent_level_id
+        // (rather than advisor_id which doesn't exist on this table).
+        const { data: targetAgent } = await (supabase as any)
+          .from('advisors')
+          .select('agent_level_id')
+          .eq('id', copyForm.targetAgentId)
+          .single();
+
+        const targetLevelId = (targetAgent as { agent_level_id?: string | null } | null)?.agent_level_id ?? null;
+
+        if (!targetLevelId) {
+          throw new Error('Target agent has no commission tier configured');
+        }
+
         const newRates = sourceRates.map((rate: any) => ({
           ...rate,
           id: undefined,
-          advisor_id: copyForm.targetAgentId,
+          agent_level_id: targetLevelId,
           created_at: undefined,
           updated_at: undefined,
         }));

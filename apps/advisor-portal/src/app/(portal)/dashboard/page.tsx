@@ -13,13 +13,12 @@ export const dynamic = 'force-dynamic';
 async function getDashboardStats(organizationId: string, advisorId: string) {
     const supabase = await createServerSupabaseClient();
 
-    // Get contact counts
-    // @ts-expect-error -- TS2589: Supabase generic depth exceeded with 300+ table schema; runtime-safe
+    // Get contact counts. leads.advisor_id (not owner_advisor_id).
     const leadsResult = await supabase
         .from('leads')
         .select('id', { count: 'exact', head: true })
         .eq('organization_id', organizationId)
-        .eq('owner_advisor_id', advisorId);
+        .eq('advisor_id', advisorId);
     const membersResult = await supabase
         .from('members')
         .select('id', { count: 'exact', head: true })

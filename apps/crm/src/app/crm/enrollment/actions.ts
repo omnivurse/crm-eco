@@ -789,12 +789,12 @@ export async function saveSignature(data: SaveSignatureData): Promise<ActionResu
 
     const existingSnapshot = (enrollment.snapshot as WizardSnapshot) || {};
 
-    // Update enrollment with signature
+    // Update enrollment with signature (DB column is `signature_timestamp`)
     await supabase
       .from('enrollments')
       .update({
         signature_data: data.signatureData,
-        signature_date: data.signedAt,
+        signature_timestamp: data.signedAt,
         snapshot: {
           ...existingSnapshot,
           confirmation: {
@@ -807,13 +807,14 @@ export async function saveSignature(data: SaveSignatureData): Promise<ActionResu
       })
       .eq('id', data.enrollmentId);
 
-    // If there's a contract, update it as well
+    // If there's a contract, update it as well. The DB column is
+    // `signature_ip` (not `signer_ip`).
     await supabase
       .from('enrollment_contracts')
       .update({
         signature_data: data.signatureData,
         signed_at: data.signedAt,
-        signer_ip: null, // Would need to capture from request
+        signature_ip: null, // TODO: capture from request
       })
       .eq('enrollment_id', data.enrollmentId)
       .is('signed_at', null);
@@ -1073,7 +1074,7 @@ export async function getEnrollmentWizardData(enrollmentId: string): Promise<Act
       .from('enrollments')
       .select('*, members:primary_member_id (state, date_of_birth)')
       .eq('id', enrollmentId)
-      .eq('org_id', profile.organization_id)
+      .eq('organization_id', profile.organization_id)
       .single();
 
     if (enrollmentError || !enrollment) {

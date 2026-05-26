@@ -29,12 +29,28 @@ import { toast } from 'sonner';
 
 interface BillingRecord {
   id: string;
-  description: string;
+  description: string | null;
   amount: number;
   status: string;
   due_date: string | null;
   paid_at: string | null;
   billing_type: string;
+  created_at: string;
+}
+
+/**
+ * Live row shape from `billing_transactions`. We project it to the
+ * display-friendly `BillingRecord` shape so the rest of the page never
+ * needs to know about the underlying column names.
+ */
+interface BillingTransactionRow {
+  id: string;
+  description: string | null;
+  amount: number;
+  status: string;
+  billing_period_end: string | null;
+  settled_at: string | null;
+  transaction_type: string;
   created_at: string;
 }
 
@@ -76,16 +92,29 @@ export default function BillingPage() {
 
     setMemberId(profile.member_id);
 
-    // Fetch billing history
-    const { data: billing } = await (supabase as any)
-      .from('billing')
-      .select('*')
+    const { data: billing } = await supabase
+      .from('billing_transactions')
+      .select(
+        'id, description, amount, status, billing_period_end, settled_at, transaction_type, created_at'
+      )
       .eq('member_id', profile.member_id)
       .order('created_at', { ascending: false })
-      .limit(50);
+      .limit(50)
+      .returns<BillingTransactionRow[]>();
 
     if (billing) {
-      setBillingHistory(billing);
+      setBillingHistory(
+        billing.map((row) => ({
+          id: row.id,
+          description: row.description,
+          amount: row.amount,
+          status: row.status,
+          due_date: row.billing_period_end,
+          paid_at: row.settled_at,
+          billing_type: row.transaction_type,
+          created_at: row.created_at,
+        }))
+      );
     }
 
     // Fetch payment profiles

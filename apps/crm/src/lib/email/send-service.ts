@@ -229,16 +229,30 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
       });
     }
 
-    // Create CRM activity
+    // Create CRM activity.
+    // crm_activities uses `org_id` (not `organization_id`) and references
+    // crm_modules.id via `module_id` (the legacy `module_key` text column
+    // never existed). Resolve the module by key for the tenant; fall back
+    // to null so the activity still saves if the module is missing.
     if (result.success && (params.linked_contact_id || params.linked_lead_id || params.linked_deal_id)) {
+      const moduleKey = params.linked_contact_id ? 'Contacts' : params.linked_lead_id ? 'Leads' : 'Deals';
+
+      const { data: moduleRow } = await supabase
+        .from('crm_modules')
+        .select('id')
+        .eq('org_id', profile.organization_id)
+        .eq('key', moduleKey)
+        .maybeSingle();
+
       const { error: activityError } = await supabase.from('crm_activities').insert({
-        organization_id: profile.organization_id,
+        org_id: profile.organization_id,
         record_id: params.linked_contact_id || params.linked_lead_id || params.linked_deal_id,
-        module_key: params.linked_contact_id ? 'Contacts' : params.linked_lead_id ? 'Leads' : 'Deals',
+        module_id: moduleRow?.id ?? null,
         activity_type: 'email',
         description: `Email sent: ${params.subject}`,
         created_by: profile.id,
         metadata: {
+          module_key: moduleKey,
           to: toEmails,
           subject: params.subject,
           provider: provider,

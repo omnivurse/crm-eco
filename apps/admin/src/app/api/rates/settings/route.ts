@@ -96,20 +96,24 @@ export async function PUT(request: NextRequest) {
     }
 
     // Write audit log (requires service role — audit table is not writable by authenticated users)
+    // Column map vs legacy aliases:
+    //   entity_type/entity_id → target_entity_type/target_entity_id
+    //   metadata              → details (jsonb)
+    //   actor_name            → stored inside details (no dedicated column)
     const serviceClient = createServiceRoleClient();
     await (serviceClient as any).from('unified_audit_logs').insert({
       organization_id: tenant.organizationId,
       actor_id: user.id,
       actor_email: user.email,
-      actor_name: profile.full_name,
       action: 'rate_set_override_changed',
       action_category: 'configuration',
       app_source: 'admin',
       risk_level: 'medium',
-      entity_type: 'system_setting',
-      entity_id: 'active_rate_set',
+      target_entity_type: 'system_setting',
+      target_entity_id: 'active_rate_set',
       description: `Active rate set changed from "${oldValue || 'auto'}" to "${newValue || 'auto'}"`,
-      metadata: {
+      details: {
+        actor_name: profile.full_name,
         old_value: oldValue,
         new_value: newValue,
       },

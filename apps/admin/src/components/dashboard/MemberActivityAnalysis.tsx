@@ -52,7 +52,7 @@ export function MemberActivityAnalysis({ data }: MemberActivityAnalysisProps) {
             </div>
           </div>
           <Link
-            href="/reports/members"
+            href="/members"
             className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
           >
             Full report

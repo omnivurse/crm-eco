@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       const { data: tasks } = await supabase
         .from('crm_tasks')
         .select('*')
-        .eq('organization_id', profile.organization_id)
+        .eq('org_id', profile.organization_id)
         .in('activity_type', ['meeting', 'call'])
         .gte('due_at', startDate)
         .lte('due_at', endDate)
@@ -237,11 +237,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create as CRM task (meeting)
+    // Create as CRM task (meeting) — table uses org_id (not organization_id).
     const { data: task, error: taskError } = await supabase
       .from('crm_tasks')
       .insert({
-        organization_id: profile.organization_id,
+        org_id: profile.organization_id,
         title,
         description,
         activity_type: 'meeting',
@@ -301,7 +301,7 @@ export async function DELETE(request: NextRequest) {
         .from('crm_tasks')
         .update({ status: 'cancelled' })
         .eq('id', taskId)
-        .eq('organization_id', profile.organization_id);
+        .eq('org_id', profile.organization_id);
 
       return NextResponse.json({ success: true });
     }

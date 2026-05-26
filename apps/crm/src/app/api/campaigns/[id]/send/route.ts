@@ -98,12 +98,13 @@ export async function POST(
         message: `Campaign scheduled for ${scheduledAt!.toISOString()}`,
       });
     } else {
-      // Send immediately - mark as sending
+      // Send immediately - mark as sending. The table tracks send
+      // lifecycle via `started_at` / `completed_at` (no `sent_at` column).
       const { error: updateError } = await supabase
         .from('email_campaigns')
         .update({
           status: 'sending',
-          sent_at: new Date().toISOString(),
+          started_at: new Date().toISOString(),
           total_recipients: recipientCount,
           updated_at: new Date().toISOString(),
         })

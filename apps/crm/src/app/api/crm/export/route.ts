@@ -1,15 +1,89 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { z } from 'zod';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Export-jobs admin endpoint — exports CRM data as CSV / JSON / XLSX.
+ *
+ * Persistence: rides on top of `crm_import_jobs` with
+ * `source_type = 'export'` and the export-specific fields (export_type,
+ * format, columns, column_labels, filters, sort, file_size_bytes)
+ * stashed inside the `stats` JSONB. The `download_url` + `expires_at`
+ * columns (added by migration 010) are first-class on the row so the
+ * UI can hand them straight to the browser.
+ */
+
 const EXPORT_TYPES = ['records', 'report', 'audit_logs', 'analytics', 'backup'] as const;
 const EXPORT_FORMATS = ['csv', 'json', 'xlsx'] as const;
+const SOURCE_TYPE = 'export';
+
+type ExportFormat = (typeof EXPORT_FORMATS)[number];
+
+interface ExportJobApi {
+  id: string;
+  name: string | null;
+  export_type: string;
+  format: ExportFormat;
+  status: string;
+  total_rows: number | null;
+  processed_rows: number | null;
+  file_name: string | null;
+  file_url: string | null;
+  file_size_bytes: number | null;
+  error_message: string | null;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  expires_at: string | null;
+}
+
+interface ImportJobRow {
+  id: string;
+  org_id: string;
+  module_id: string | null;
+  source_type: string;
+  file_name: string | null;
+  status: string | null;
+  total_rows: number | null;
+  processed_rows: number | null;
+  error_message: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string | null;
+  created_by: string | null;
+  download_url: string | null;
+  expires_at: string | null;
+  stats: Record<string, unknown> | null;
+}
+
+function rowToApi(row: ImportJobRow): ExportJobApi {
+  const stats = (row.stats || {}) as Record<string, unknown>;
+  return {
+    id: row.id,
+    name: (stats.name as string | null) ?? null,
+    export_type: (stats.export_type as string) || 'records',
+    format: ((stats.format as ExportFormat) || 'csv'),
+    status: row.status || 'pending',
+    total_rows: row.total_rows,
+    processed_rows: row.processed_rows,
+    file_name: row.file_name,
+    file_url: row.download_url,
+    file_size_bytes: (stats.file_size_bytes as number | null) ?? null,
+    error_message: row.error_message,
+    created_at: row.created_at ?? new Date().toISOString(),
+    started_at: row.started_at,
+    completed_at: row.completed_at,
+    expires_at: row.expires_at,
+  };
+}
+
+const ROW_COLUMNS =
+  'id, org_id, module_id, source_type, file_name, status, total_rows, processed_rows, error_message, started_at, completed_at, created_at, created_by, download_url, expires_at, stats';
 
 // ---------------------------------------------------------------------------
 // GET /api/crm/export?status=completed&limit=20
-// List export jobs for the current organization
 // ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
@@ -22,21 +96,25 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0', 10);
 
     let query = supabase
-      .from('crm_export_jobs')
-      .select('*', { count: 'exact' })
-      .eq('organization_id', profile.organization_id)
+      .from('crm_import_jobs')
+      .select(ROW_COLUMNS, { count: 'exact' })
+      .eq('org_id', profile.organization_id)
+      .eq('source_type', SOURCE_TYPE)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (status) query = query.eq('status', status);
 
-    const { data, error, count } = await query;
+    const { data, error, count } = await query.returns<ImportJobRow[]>();
     if (error) {
       console.error('[Export] Query error:', error);
       return NextResponse.json({ error: 'Failed to fetch export jobs' }, { status: 500 });
     }
 
-    return NextResponse.json({ exports: data || [], total: count || 0 });
+    return NextResponse.json({
+      exports: (data || []).map(rowToApi),
+      total: count || 0,
+    });
   } catch (error) {
     console.error('[Export] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -44,8 +122,7 @@ export async function GET(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/crm/export — create an export job
-// The actual export processing runs asynchronously (background worker)
+// POST /api/crm/export — create + (inline) process an export job
 // ---------------------------------------------------------------------------
 const createExportSchema = z.object({
   module_id: z.string().uuid().optional().nullable(),
@@ -68,11 +145,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden — admin/manager only' }, { status: 403 });
     }
 
-    const body = await request.json();
-    const parsed = createExportSchema.safeParse(body);
+    const parsed = createExportSchema.safeParse(await request.json());
     if (!parsed.success) return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
 
-    // Generate filename
+    // Derive a friendly file name; fall back to the module name if available.
     let fileName = parsed.data.name;
     if (!fileName && parsed.data.module_id) {
       const { data: mod } = await supabase
@@ -84,51 +160,54 @@ export async function POST(request: NextRequest) {
     }
     fileName = fileName || `export_${new Date().toISOString().slice(0, 10)}`;
 
-    const format = parsed.data.format || 'csv';
+    const format: ExportFormat = parsed.data.format || 'csv';
     const fileNameWithExt = `${fileName}.${format}`;
 
     const { data, error } = await supabase
-      .from('crm_export_jobs')
+      .from('crm_import_jobs')
       .insert({
-        organization_id: profile.organization_id,
+        org_id: profile.organization_id,
         module_id: parsed.data.module_id || null,
-        name: parsed.data.name || fileName,
-        export_type: parsed.data.export_type || 'records',
-        format,
-        columns: parsed.data.columns || null,
-        column_labels: parsed.data.column_labels || {},
-        filters: parsed.data.filters || {},
-        sort_by: parsed.data.sort_by || null,
-        sort_order: parsed.data.sort_order || 'asc',
+        source_type: SOURCE_TYPE,
         status: 'pending',
         file_name: fileNameWithExt,
         created_by: profile.id,
+        stats: {
+          name: parsed.data.name || fileName,
+          export_type: parsed.data.export_type || 'records',
+          format,
+          columns: parsed.data.columns || null,
+          column_labels: parsed.data.column_labels || {},
+          filters: parsed.data.filters || {},
+          sort_by: parsed.data.sort_by || null,
+          sort_order: parsed.data.sort_order || 'asc',
+        },
       })
-      .select()
-      .single();
+      .select(ROW_COLUMNS)
+      .single()
+      .returns<ImportJobRow>();
 
     if (error) {
       console.error('[Export] Insert error:', error);
       return NextResponse.json({ error: 'Failed to create export job' }, { status: 500 });
     }
 
-    // In production, this would trigger a background worker via Edge Function / cron
-    // For now, perform inline export for small datasets
+    // Inline-process small datasets. Large ones can be picked up by a
+    // background worker that polls source_type='export', status='pending'.
     try {
       await processExportInline(supabase, data, profile.organization_id);
     } catch (processError) {
       console.error('[Export] Process error:', processError);
-      // Job is created; background worker can retry
     }
 
-    // Re-fetch to get updated status
     const { data: updated } = await supabase
-      .from('crm_export_jobs')
-      .select('*')
+      .from('crm_import_jobs')
+      .select(ROW_COLUMNS)
       .eq('id', data.id)
-      .single();
+      .single()
+      .returns<ImportJobRow>();
 
-    return NextResponse.json({ export: updated || data }, { status: 201 });
+    return NextResponse.json({ export: rowToApi(updated || data) }, { status: 201 });
   } catch (error) {
     console.error('[Export] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -136,50 +215,49 @@ export async function POST(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Inline export processor (for small datasets; large exports use workers)
+// Inline export processor — for small datasets (< 10k rows)
 // ---------------------------------------------------------------------------
 async function processExportInline(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  job: { id: string; module_id: string | null; format: string; columns: string[] | null; filters: Record<string, unknown>; sort_by: string | null; sort_order: string },
+  job: ImportJobRow,
   orgId: string
-) {
-  // Mark as processing
+): Promise<void> {
   await supabase
-    .from('crm_export_jobs')
+    .from('crm_import_jobs')
     .update({ status: 'processing', started_at: new Date().toISOString() })
     .eq('id', job.id);
+
+  const stats = (job.stats || {}) as Record<string, unknown>;
+  const format = (stats.format as ExportFormat) || 'csv';
+  const columns = (stats.columns as string[] | null) || null;
+  const filters = (stats.filters as Record<string, unknown>) || {};
+  const sortBy = (stats.sort_by as string | null) || null;
+  const sortOrder = (stats.sort_order as 'asc' | 'desc') || 'desc';
 
   try {
     if (!job.module_id) {
       throw new Error('module_id is required for record exports');
     }
 
-    // Fetch records for the module
     let query = supabase
       .from('crm_records')
       .select('id, title, status, stage, owner_id, data, created_at, updated_at')
       .eq('org_id', orgId)
       .eq('module_id', job.module_id);
 
-    // Apply filters
-    if (job.filters && typeof job.filters === 'object') {
-      const filters = job.filters as Record<string, unknown>;
-      if (filters.status && typeof filters.status === 'string') {
-        query = query.eq('status', filters.status);
-      }
-      if (filters.stage && typeof filters.stage === 'string') {
-        query = query.eq('stage', filters.stage);
-      }
+    if (filters.status && typeof filters.status === 'string') {
+      query = query.eq('status', filters.status);
+    }
+    if (filters.stage && typeof filters.stage === 'string') {
+      query = query.eq('stage', filters.stage);
     }
 
-    // Apply sorting
-    if (job.sort_by) {
-      query = query.order(job.sort_by, { ascending: job.sort_order !== 'desc' });
+    if (sortBy) {
+      query = query.order(sortBy, { ascending: sortOrder !== 'desc' });
     } else {
       query = query.order('created_at', { ascending: false });
     }
 
-    // Limit to 10k for inline processing
     query = query.limit(10000);
 
     const { data: records, error: fetchError } = await query;
@@ -187,34 +265,29 @@ async function processExportInline(
 
     const totalRows = records?.length || 0;
 
-    // Build export content
-    let content: string;
-    if (job.format === 'json') {
-      const rows = (records || []).map((r) => flattenRecord(r, job.columns));
-      content = JSON.stringify(rows, null, 2);
-    } else {
-      // CSV
-      content = recordsToCsv(records || [], job.columns);
-    }
+    const content =
+      format === 'json'
+        ? JSON.stringify((records || []).map((r) => flattenRecord(r, columns)), null, 2)
+        : recordsToCsv(records || [], columns);
 
-    // For now, store as data URL (in production, upload to storage)
-    const fileUrl = `data:text/${job.format};base64,${Buffer.from(content).toString('base64')}`;
+    const fileUrl = `data:text/${format};base64,${Buffer.from(content).toString('base64')}`;
+    const sizeBytes = Buffer.byteLength(content);
 
     await supabase
-      .from('crm_export_jobs')
+      .from('crm_import_jobs')
       .update({
         status: 'completed',
         total_rows: totalRows,
         processed_rows: totalRows,
-        file_url: fileUrl,
-        file_size_bytes: Buffer.byteLength(content),
+        download_url: fileUrl,
+        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         completed_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        stats: { ...stats, file_size_bytes: sizeBytes },
       })
       .eq('id', job.id);
   } catch (err) {
     await supabase
-      .from('crm_export_jobs')
+      .from('crm_import_jobs')
       .update({
         status: 'failed',
         error_message: err instanceof Error ? err.message : 'Unknown error',
@@ -225,7 +298,15 @@ async function processExportInline(
 }
 
 function flattenRecord(
-  record: { id: string; title: string | null; status: string | null; stage: string | null; data: Record<string, unknown>; created_at: string; updated_at: string },
+  record: {
+    id: string;
+    title: string | null;
+    status: string | null;
+    stage: string | null;
+    data: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  },
   columns: string[] | null
 ): Record<string, unknown> {
   const flat: Record<string, unknown> = {
@@ -250,22 +331,26 @@ function flattenRecord(
 }
 
 function recordsToCsv(
-  records: Array<{ id: string; title: string | null; status: string | null; stage: string | null; data: Record<string, unknown>; created_at: string; updated_at: string }>,
+  records: Array<{
+    id: string;
+    title: string | null;
+    status: string | null;
+    stage: string | null;
+    data: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  }>,
   columns: string[] | null
 ): string {
   if (records.length === 0) return '';
 
   const rows = records.map((r) => flattenRecord(r, columns));
+  const keys =
+    columns && columns.length > 0
+      ? columns
+      : [...new Set(rows.flatMap((r) => Object.keys(r)))];
 
-  // Collect all unique keys
-  const keys = columns && columns.length > 0
-    ? columns
-    : [...new Set(rows.flatMap((r) => Object.keys(r)))];
-
-  // Header
   const header = keys.map(escapeCsvField).join(',');
-
-  // Rows
   const csvRows = rows.map((row) =>
     keys.map((k) => escapeCsvField(String(row[k] ?? ''))).join(',')
   );
@@ -296,10 +381,11 @@ export async function DELETE(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'Missing export id' }, { status: 400 });
 
     const { error } = await supabase
-      .from('crm_export_jobs')
+      .from('crm_import_jobs')
       .delete()
       .eq('id', id)
-      .eq('organization_id', profile.organization_id);
+      .eq('org_id', profile.organization_id)
+      .eq('source_type', SOURCE_TYPE);
 
     if (error) {
       console.error('[Export] Delete error:', error);

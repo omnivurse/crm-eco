@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
         name: parsed.data.name,
         slug: parsed.data.slug,
         description: parsed.data.description || null,
-        category: parsed.data.category,
+        // DB column is template_type; API accepts the legacy `category` name.
+        template_type: parsed.data.category,
         subject: parsed.data.subject,
         body_html: parsed.data.body_html,
         body_text: parsed.data.body_text || null,

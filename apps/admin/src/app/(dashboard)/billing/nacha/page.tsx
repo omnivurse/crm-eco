@@ -70,10 +70,13 @@ interface PendingTransaction {
   id: string;
   member_id: string;
   amount: number;
-  type: 'debit' | 'credit';
+  /** Maps to `billing_transactions.transaction_type`. ACH-only file slices are filtered via the joined `payment_profile.payment_type`. */
+  transaction_type: 'debit' | 'credit' | string;
   status: string;
-  routing_number: string | null;
+  /** Last-4 of the ACH account — pulled from the joined `payment_profiles.account_last4`. */
   account_number_last4: string | null;
+  /** Pointer to `payment_profiles` row used to retrieve routing details from Authorize.net at export time. */
+  payment_profile_id: string | null;
   member: {
     first_name: string;
     last_name: string;
@@ -166,27 +169,53 @@ export default function NachaPage() {
     if (!organizationId) return;
 
     try {
+      // Filter ACH transactions by joining payment_profiles.payment_type='ach'.
+      // Routing numbers are NEVER stored in our DB (PCI/NACHA constraint); the
+      // export job hydrates them from Authorize.net at file-generation time
+      // using `payment_profile_id`.
       const { data, error } = await supabase
         .from('billing_transactions')
         .select(`
           id,
           member_id,
           amount,
-          type,
+          transaction_type,
           status,
-          routing_number,
-          account_number_last4,
+          payment_profile_id,
+          payment_profile:payment_profiles!inner(account_last4, payment_type),
           member:members(first_name, last_name, email)
         `)
         .eq('organization_id', organizationId)
         .eq('status', 'pending')
-        .eq('payment_method', 'ach')
+        .eq('payment_profile.payment_type', 'ach')
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (error && error.code !== '42P01') throw error;
 
-      setPendingTransactions((data || []) as unknown as PendingTransaction[]);
+      const rows = (data || []) as Array<{
+        id: string;
+        member_id: string;
+        amount: number;
+        transaction_type: string;
+        status: string;
+        payment_profile_id: string | null;
+        payment_profile?: { account_last4: string | null; payment_type: string } | null;
+        member: PendingTransaction['member'];
+      }>;
+
+      setPendingTransactions(
+        rows.map((r) => ({
+          id: r.id,
+          member_id: r.member_id,
+          amount: r.amount,
+          transaction_type: r.transaction_type,
+          status: r.status,
+          account_number_last4: r.payment_profile?.account_last4 ?? null,
+          payment_profile_id: r.payment_profile_id,
+          member: r.member,
+        })),
+      );
     } catch (error) {
       console.error('Error fetching pending transactions:', error);
     } finally {
@@ -250,10 +279,15 @@ export default function NachaPage() {
 
     transactions.forEach((txn, index) => {
       const traceNumber = `12345678${String(index + 1).padStart(7, '0')}`;
-      const routingNumber = txn.routing_number || '000000000';
+      // Routing number is never stored locally — caller of this NACHA
+      // generator is expected to hydrate `routing_number` from Authorize.net
+      // via `payment_profile_id` before invoking. Fallback prints zeros so a
+      // misconfigured environment fails the bank reconciliation visibly
+      // rather than silently posting bogus debits.
+      const routingNumber = (txn as { routing_number?: string }).routing_number || '000000000';
       const amount = Math.round(txn.amount * 100); // Convert to cents
 
-      if (txn.type === 'debit') {
+      if (txn.transaction_type === 'debit') {
         totalDebitAmount += amount;
       } else {
         totalCreditAmount += amount;
@@ -263,7 +297,7 @@ export default function NachaPage() {
 
       lines.push(
         '6' + // Record Type Code
-        (txn.type === 'debit' ? '27' : '22') + // Transaction Code (27=debit, 22=credit)
+        (txn.transaction_type === 'debit' ? '27' : '22') + // Transaction Code (27=debit, 22=credit)
         routingNumber.slice(0, 8) + // Receiving DFI Identification
         routingNumber.slice(8, 9) + // Check Digit
         (txn.account_number_last4 || '0000').padStart(17) + // DFI Account Number
@@ -574,8 +608,8 @@ export default function NachaPage() {
                             <p className="text-xs text-slate-500">{txn.member?.email}</p>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={txn.type === 'debit' ? 'default' : 'secondary'}>
-                              {txn.type}
+                            <Badge variant={txn.transaction_type === 'debit' ? 'default' : 'secondary'}>
+                              {txn.transaction_type}
                             </Badge>
                           </TableCell>
                           <TableCell>

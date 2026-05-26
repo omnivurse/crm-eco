@@ -18,7 +18,7 @@ async function getEnrollment(id: string) {
       *,
       primary_member:members!enrollments_primary_member_id_fkey(
         id, first_name, last_name, email, phone, date_of_birth, status,
-        address_line1, address_line2, city, state, zip_code
+        address_line1, address_line2, city, state, postal_code
       ),
       plan:plans(id, name, code, monthly_share, iua_amount),
       advisor:advisors(id, first_name, last_name, email)
@@ -188,7 +188,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
                         )}
                         <br />
                         {enrollment.primary_member.city}, {enrollment.primary_member.state}{' '}
-                        {enrollment.primary_member.zip_code}
+                        {enrollment.primary_member.postal_code}
                       </p>
                     </div>
                   )}

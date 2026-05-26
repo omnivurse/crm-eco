@@ -388,13 +388,15 @@ export async function POST(req: NextRequest) {
     .insert({
       org_id: orgId,
       module_id: moduleRow.id,
-      module_key: moduleKey,
       source_type: 'csv_update',
       file_name: fileName ?? 'csv-update.csv',
       total_rows: updateRows.length,
       status: 'processing',
       started_at: new Date().toISOString(),
       created_by: profile.id,
+      // crm_import_jobs has no module_key column; preserve it inside the
+      // JSONB stats field for the history UI / debugging.
+      stats: { module_key: moduleKey },
     })
     .select('id')
     .single();
@@ -453,7 +455,8 @@ export async function POST(req: NextRequest) {
     .update({
       status: errors.length === writes.length ? 'failed' : 'completed',
       processed_rows: writes.length,
-      success_count: updated,
+      // CSV update jobs only update existing records — use updated_count.
+      updated_count: updated,
       error_count: errors.length,
       skipped_count: unchanged + (updateRows.length - resolutions.size),
       completed_at: new Date().toISOString(),

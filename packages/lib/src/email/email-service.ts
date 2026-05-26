@@ -243,7 +243,9 @@ export class EmailService {
   }
 
   /**
-   * Get all templates
+   * Get all templates. The `category` argument is kept for backwards
+   * compatibility but maps to the live DB column `template_type` (the
+   * generic `category` column was never created in PIFH).
    */
   async getTemplates(category?: string): Promise<EmailTemplate[]> {
     let query = this.db
@@ -251,11 +253,11 @@ export class EmailService {
       .select('*')
       .eq('organization_id', this.organizationId)
       .eq('is_active', true)
-      .order('category')
+      .order('template_type')
       .order('name');
 
     if (category) {
-      query = query.eq('category', category);
+      query = query.eq('template_type', category);
     }
 
     const { data } = await query;

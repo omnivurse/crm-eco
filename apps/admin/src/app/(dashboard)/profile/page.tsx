@@ -213,7 +213,7 @@ export default function ProfilePage() {
       const { data: settingsData } = await (supabase.from('admin_settings') as any)
         .select('company_name, default_logo_url, admin_notification_email, billing_notification_email')
         .eq('organization_id', p.organization_id)
-        .single();
+        .maybeSingle();
 
       if (settingsData) {
         setAdminSettings(settingsData as unknown as AdminSettingsData);

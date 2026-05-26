@@ -148,14 +148,22 @@ export async function POST(request: NextRequest) {
       { onConflict: 'org_id,cache_key' }
     );
 
-    // Log to report_run_history
-    await supabase.from('report_run_history').insert({
-      org_id: orgId,
-      user_id: profile.id,
-      report_type: templateKey,
-      parameters: { advisorIds, includeDownline, dateStart, dateEnd, states, planNames, planTypes, statuses },
-      row_count: rowCount,
-    }).then(() => {}, () => {}); // fire-and-forget
+    // Log to report_run_history. Fire-and-forget: a logging failure must
+    // never bubble up to the user-facing report response.
+    // Template-based reports have no row in crm_reports, so report_id is null
+    // (allowed by migration 202605220009) and template_key carries the route.
+    await supabase
+      .from('report_run_history')
+      .insert({
+        organization_id: orgId,
+        report_id: null,
+        template_key: templateKey,
+        executed_by: profile.id,
+        filters_used: { advisorIds, includeDownline, dateStart, dateEnd, states, planNames, planTypes, statuses },
+        row_count: rowCount,
+        status: 'completed',
+      })
+      .then(() => {}, () => {});
 
     return NextResponse.json({
       data: rows,

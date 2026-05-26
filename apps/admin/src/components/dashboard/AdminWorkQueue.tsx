@@ -43,7 +43,7 @@ const typeConfig: Record<
     icon: Clock,
     label: 'Task',
     badgeClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/20',
-    href: '/tasks',
+    href: '/ops/jobs',
   },
 };
 

@@ -154,15 +154,21 @@ export async function POST(request: NextRequest) {
       { onConflict: 'org_id,cache_key' }
     );
 
-    // Log in report_run_history
-    await supabase.from('report_run_history').insert({
-      organization_id: profile.organization_id,
-      run_by: profile.id,
-      template_key: templateKey,
-      filters,
-      row_count: data.length,
-      status: 'completed',
-    }).then(() => {});
+    // Log in report_run_history (fire-and-forget). Template reports do not
+    // have a row in crm_reports; rely on the nullable report_id column from
+    // migration 202605220009 and store the template name in template_key.
+    await supabase
+      .from('report_run_history')
+      .insert({
+        organization_id: profile.organization_id,
+        report_id: null,
+        template_key: templateKey,
+        executed_by: profile.id,
+        filters_used: filters,
+        row_count: data.length,
+        status: 'completed',
+      })
+      .then(() => {});
 
     return NextResponse.json({
       data,

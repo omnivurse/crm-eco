@@ -151,12 +151,19 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
       if (!context?.member || enrollment.primary_member_id === context.member.id) {
         existingEnrollment = enrollment;
 
-        const { data: steps } = await (supabase as any)
+        const { data: rawSteps } = await (supabase as any)
           .from('enrollment_steps')
-          .select('step_key, status, data')
+          .select('step_key, is_completed, payload')
           .eq('enrollment_id', resolvedSearchParams.resume);
 
-        enrollmentSteps = steps || [];
+        // Adapt DB shape to wizard's expected {status, data} shape.
+        enrollmentSteps = (rawSteps ?? []).map(
+          (s: { step_key: string; is_completed: boolean; payload: unknown }) => ({
+            step_key: s.step_key,
+            status: s.is_completed ? 'completed' : 'pending',
+            data: s.payload,
+          })
+        );
       }
     }
   }

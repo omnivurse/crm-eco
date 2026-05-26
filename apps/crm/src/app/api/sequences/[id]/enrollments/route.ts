@@ -225,15 +225,26 @@ export async function POST(
       });
     }
 
-    // Update sequence stats (use actual enrolled count from result)
+    // Update sequence stats. We previously tried to express
+    //   total_enrolled = total_enrolled + enrolledCount
+    // by passing a `.rpc('increment', { x })` call as the new value — that
+    // never worked. Postgres just received the unresolved promise object as
+    // the value. Use a fetch-then-update instead. Two queries, but it's
+    // a low-volume admin path and gets the math right.
     const enrolledCount = enrollments?.length || 0;
-    
+
     if (enrolledCount > 0) {
+      const { data: current } = await supabase
+        .from('email_sequences')
+        .select('total_enrolled')
+        .eq('id', id)
+        .single();
+
+      const newTotal = (current?.total_enrolled ?? 0) + enrolledCount;
+
       await supabase
         .from('email_sequences')
-        .update({
-          total_enrolled: supabase.rpc('increment', { x: enrolledCount }) as unknown as number,
-        })
+        .update({ total_enrolled: newTotal })
         .eq('id', id);
     }
 

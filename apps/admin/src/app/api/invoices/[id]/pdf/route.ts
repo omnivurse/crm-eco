@@ -31,7 +31,7 @@ export async function GET(
         *,
         members (
           id, first_name, last_name, email,
-          address_line1, address_line2, city, state, zip_code
+          address_line1, address_line2, city, state, postal_code
         ),
         organizations (
           id, name, slug, branding

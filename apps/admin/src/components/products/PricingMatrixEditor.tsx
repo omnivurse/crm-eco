@@ -54,6 +54,11 @@ interface BenefitType {
   sort_order: number;
 }
 
+/**
+ * UI-facing pricing tier shape. The live table is `product_pricing_matrix`
+ * — we keep the legacy names in the React state and translate at the DB
+ * boundary (loadData / updatePricingTier).
+ */
 interface PricingTier {
   id: string;
   product_id: string;
@@ -62,6 +67,16 @@ interface PricingTier {
   household_size: number;
   monthly_amount: number;
   enrollment_fee: number | null;
+}
+
+interface ProductPricingMatrixRow {
+  id: string;
+  plan_id: string;
+  product_id: string | null;
+  iua_id: string | null;
+  age_bracket_id: string | null;
+  household_tier: number | null;
+  price: number;
 }
 
 interface PricingMatrixEditorProps {
@@ -101,13 +116,27 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
         supabase.from('product_iua').select('*').eq('plan_id', productId).order('sort_order'),
         supabase.from('product_age_brackets').select('*').eq('plan_id', productId).order('sort_order'),
         supabase.from('product_benefit_types').select('*').eq('plan_id', productId).order('sort_order'),
-        supabase.from('pricing_tiers').select('*').eq('product_id', productId),
+        supabase
+          .from('product_pricing_matrix')
+          .select('id, plan_id, product_id, iua_id, age_bracket_id, household_tier, price')
+          .eq('plan_id', productId)
+          .returns<ProductPricingMatrixRow[]>(),
       ]);
 
       setIuaLevels(iuaRes.data || []);
       setAgeBrackets(ageRes.data || []);
       setBenefitTypes(benefitRes.data || []);
-      setPricingTiers(pricingRes.data || []);
+      setPricingTiers(
+        (pricingRes.data || []).map((row) => ({
+          id: row.id,
+          product_id: row.plan_id,
+          iua_level_id: row.iua_id ?? '',
+          age_bracket_id: row.age_bracket_id ?? '',
+          household_size: row.household_tier ?? 1,
+          monthly_amount: row.price,
+          enrollment_fee: null,
+        }))
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
     } finally {
@@ -242,16 +271,18 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
 
       if (existing) {
         await supabase
-          .from('pricing_tiers')
-          .update({ monthly_amount: monthlyAmount })
+          .from('product_pricing_matrix')
+          .update({ price: monthlyAmount })
           .eq('id', existing.id);
       } else {
-        await supabase.from('pricing_tiers').insert({
+        await supabase.from('product_pricing_matrix').insert({
+          organization_id: organizationId,
+          plan_id: productId,
           product_id: productId,
-          iua_level_id: iuaId,
+          iua_id: iuaId,
           age_bracket_id: ageId,
-          household_size: householdSize,
-          monthly_amount: monthlyAmount,
+          household_tier: householdSize,
+          price: monthlyAmount,
         });
       }
       await loadData();

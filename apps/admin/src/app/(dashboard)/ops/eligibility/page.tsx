@@ -49,7 +49,7 @@ interface Vendor {
   vendor_type: string;
   status: string;
   last_sync_at: string | null;
-  sync_status: string | null;
+  last_sync_status: string | null;
   member_count: number;
 }
 
@@ -106,8 +106,8 @@ export default function EligibilityPage() {
 
     try {
       const { data, error } = await (supabase.from('vendors') as any)
-        .select('id, name, vendor_type, status, last_sync_at, sync_status')
-        .eq('organization_id', organizationId)
+        .select('id, name, vendor_type, status, last_sync_at, last_sync_status')
+        .eq('org_id', organizationId)
         .eq('status', 'active')
         .order('name');
 

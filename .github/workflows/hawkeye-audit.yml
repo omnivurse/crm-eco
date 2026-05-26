@@ -1,0 +1,112 @@
+# Hawkeye schema/code audit.
+#
+# Pulls a fresh schema snapshot from PIFH, regenerates the frontend
+# code inventory, runs the cross-reference engine, and compares the
+# resulting findings against the locked-in baseline. Fails the build
+# only when NEW HIGH-or-higher findings appear (LOW/MEDIUM are
+# reported but non-blocking by default).
+#
+# Secrets reused:
+#   PIFH_SUPABASE_DB_URL  → same one used by crm-health.yml / pifh-deploy-gate.yml
+#
+# Tuning:
+#   AUDIT_FAIL_AT          (defaults to HIGH; set to BLOCKER to be more lenient)
+#
+# Local invocation (matches the CI steps exactly):
+#   PIFH_SUPABASE_DB_URL="..."  .audit/scripts/refresh-schema.sh
+#   node .audit/scripts/inventory.mjs
+#   node .audit/scripts/crossref.mjs
+#   node .audit/scripts/check-baseline.mjs
+
+name: Hawkeye audit
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - 'supabase/migrations/**'
+      - '.audit/**'
+      - '.github/workflows/hawkeye-audit.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      refresh_baseline:
+        description: 'If true, overwrite .audit/baseline.json with current findings and commit it.'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hawkeye-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hawkeye:
+    name: Schema↔code cross-reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Verify PIFH connection secret
+        env:
+          PIFH_SUPABASE_DB_URL: ${{ secrets.PIFH_SUPABASE_DB_URL }}
+        run: |
+          if [ -z "${PIFH_SUPABASE_DB_URL}" ]; then
+            echo "::error::PIFH_SUPABASE_DB_URL Actions secret is missing — set it (reuse from pifh-deploy-gate.yml)."
+            exit 1
+          fi
+          echo "PIFH_SUPABASE_DB_URL is set (length: ${#PIFH_SUPABASE_DB_URL})."
+
+      - name: Refresh schema snapshot from PIFH
+        env:
+          PIFH_SUPABASE_DB_URL: ${{ secrets.PIFH_SUPABASE_DB_URL }}
+        run: bash .audit/scripts/refresh-schema.sh
+
+      - name: Inventory frontend Supabase calls
+        run: node .audit/scripts/inventory.mjs
+
+      - name: Cross-reference code against schema
+        run: node .audit/scripts/crossref.mjs
+
+      - name: Diff findings against baseline
+        env:
+          AUDIT_FAIL_AT: HIGH
+        run: node .audit/scripts/check-baseline.mjs
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hawkeye-audit-${{ github.run_id }}
+          path: |
+            .audit/reports/
+            .audit/code/
+            .audit/schema/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Refresh baseline (manual trigger only)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.refresh_baseline == 'true'
+        env:
+          AUDIT_UPDATE_BASE: '1'
+        run: |
+          node .audit/scripts/check-baseline.mjs
+          if [ -n "$(git status --porcelain .audit/baseline.json)" ]; then
+            echo "::notice::baseline.json updated — review the diff and commit it on a follow-up PR."
+            git diff --stat .audit/baseline.json
+          fi
