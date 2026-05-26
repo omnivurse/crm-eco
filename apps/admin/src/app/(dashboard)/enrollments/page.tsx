@@ -151,7 +151,7 @@ export default async function EnrollmentsPage() {
                         {format(new Date(enrollment.created_at), 'MMM d, yyyy')}
                       </td>
                       <td className="py-3">
-                        <Link href={`/enrollments/${enrollment.id}`}>
+                        <Link href={`/enrollments/${enrollment.id}`} prefetch={false}>
                           <Button variant="ghost" size="sm">
                             <Eye className="h-4 w-4" />
                           </Button>

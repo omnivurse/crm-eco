@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 9;
+const CACHE_VERSION = 11;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
@@ -113,23 +113,65 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle different request types
-  // `/_next/static/*` must NOT be cache-first: after a deploy, cached webpack
-  // chunks + fresh HTML (or vice versa) yields mismatched module factories and
-  // runtime errors like "Cannot read properties of undefined (reading 'call')".
-  // Network-first still caches successful responses for offline replay.
+  // Skip Next.js flight/router requests and CRM navigations — browser only.
+  if (isNextDataRequest(request) || isCrmAppDocumentRequest(url, request)) {
+    return;
+  }
+
+  // `/_next/static/*` must never be cache-first or cached offline: after a deploy,
+  // stale webpack chunks + fresh HTML yields 404 CSS/JS and ChunkLoadError.
   if (url.pathname.includes('/_next/static/')) {
-    event.respondWith(networkFirst(request, STATIC_CACHE_NAME));
-  } else if (isStaticAsset(url.pathname)) {
+    event.respondWith(
+      fetch(request).catch(() =>
+        new Response('Asset unavailable offline', { status: 503 })
+      )
+    );
+    return;
+  }
+
+  // Handle different request types
+  if (isStaticAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, STATIC_CACHE_NAME));
   } else if (isApiRequest(url)) {
     event.respondWith(networkFirst(request, API_CACHE_NAME));
   } else if (request.mode === 'navigate') {
     event.respondWith(networkFirstWithOfflineFallback(request));
   } else {
-    event.respondWith(staleWhileRevalidate(request, CACHE_NAME));
+    // Network-only fallback — avoids stale HTML/RSC after deploy.
+    event.respondWith(
+      fetch(request).catch(() => new Response('Offline', { status: 503 }))
+    );
   }
 });
+
+/**
+ * Next.js App Router RSC / router prefetch requests must never be cached.
+ * Serving a stale flight payload after deploy causes HTML to reference
+ * webpack chunks from the previous deployment (404 + ChunkLoadError).
+ */
+function isNextDataRequest(request) {
+  const headers = request.headers;
+  return (
+    headers.get('RSC') === '1' ||
+    headers.get('Next-Router-Prefetch') === '1' ||
+    headers.get('Next-Router-State-Tree') != null ||
+    (headers.get('Accept') || '').includes('text/x-component')
+  );
+}
+
+/**
+ * CRM app routes (except static/API) should bypass the SW entirely for
+ * document-like GETs so post-deploy navigation always hits the network.
+ */
+function isCrmAppDocumentRequest(url, request) {
+  if (url.pathname.startsWith('/crm/api')) return false;
+  if (url.pathname.includes('/_next/')) return false;
+  const isAppRoute =
+    url.pathname.startsWith('/crm') ||
+    url.pathname.startsWith('/enrollments');
+  if (!isAppRoute) return false;
+  return request.mode === 'navigate' || isNextDataRequest(request);
+}
 
 /**
  * Check if URL is for a static asset
@@ -197,7 +239,13 @@ async function cacheFirst(request, cacheName) {
 async function networkFirst(request, cacheName) {
   try {
     const networkResponse = await fetch(request);
-    safeCachePut(cacheName, request, networkResponse);
+    if (networkResponse.ok) {
+      safeCachePut(cacheName, request, networkResponse);
+    } else if (networkResponse.status === 404) {
+      // Purge stale chunk after deploy so we never replay a prior dpl's asset.
+      const cache = await caches.open(cacheName);
+      await cache.delete(request);
+    }
     return networkResponse;
   } catch (error) {
     const cachedResponse = await caches.match(request);
@@ -219,11 +267,7 @@ async function networkFirst(request, cacheName) {
 async function networkFirstWithOfflineFallback(request) {
   try {
     const networkResponse = await fetch(request);
-    // Only cache successful HTML responses, not redirects (3xx) which
-    // cause cross-origin errors when replayed from cache.
-    if (networkResponse.status < 300) {
-      safeCachePut(CACHE_NAME, request, networkResponse);
-    }
+    // Never cache navigation HTML — stale shell references old _next/static hashes.
     return networkResponse;
   } catch (error) {
     const cachedResponse = await caches.match(request);
@@ -243,29 +287,6 @@ async function networkFirstWithOfflineFallback(request) {
     // page with a Retry button instead of bare "Offline" plaintext.
     return inlineOfflineResponse();
   }
-}
-
-/**
- * Stale While Revalidate Strategy
- * Returns cached response immediately, then updates the cache in the background.
- */
-async function staleWhileRevalidate(request, cacheName) {
-  const cachedResponse = await caches.match(request);
-
-  const fetchPromise = fetch(request)
-    .then((networkResponse) => {
-      safeCachePut(cacheName, request, networkResponse);
-      return networkResponse;
-    })
-    .catch(() => null);
-
-  return (
-    cachedResponse ||
-    (await fetchPromise) ||
-    (request.mode === 'navigate'
-      ? inlineOfflineResponse()
-      : new Response('Offline', { status: 503 }))
-  );
 }
 
 /**

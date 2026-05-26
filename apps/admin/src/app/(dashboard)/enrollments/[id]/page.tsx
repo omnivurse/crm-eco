@@ -120,7 +120,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link href="/enrollments">
+          <Link href="/enrollments" prefetch={false}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -195,6 +195,7 @@ export default async function EnrollmentDetailPage({ params }: { params: Promise
                   <div className="col-span-2">
                     <Link
                       href={`/members/${enrollment.primary_member.id}`}
+                      prefetch={false}
                       className="text-blue-600 hover:underline text-sm"
                     >
                       View Full Member Profile →

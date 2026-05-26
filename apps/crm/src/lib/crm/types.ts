@@ -1269,6 +1269,7 @@ export interface CrmProfile {
   avatar_url: string | null;
   role: string;
   crm_role: CrmRole | null;
+  advisor_id?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

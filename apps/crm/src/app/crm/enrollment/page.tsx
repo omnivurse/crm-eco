@@ -21,6 +21,11 @@ import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { getCurrentProfile } from '@/lib/crm/queries';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import {
+  EnrollmentWizardShell,
+  loadEnrollmentWizardBootstrap,
+  loadEnrollmentWizardResume,
+} from '@/lib/enrollment/wizard-bootstrap';
 
 // Enrollment status configuration
 const ENROLLMENT_STATUSES: Record<string, { label: string; color: string; bg: string; border: string }> = {
@@ -41,9 +46,9 @@ interface Enrollment {
   created_at: string;
   primary_member?: {
     id: string;
-    title: string;
+    first_name: string;
+    last_name: string;
     email: string | null;
-    data: Record<string, unknown>;
   } | null;
   plan?: {
     id: string;
@@ -52,14 +57,17 @@ interface Enrollment {
   } | null;
   advisor?: {
     id: string;
-    full_name: string | null;
+    first_name: string;
+    last_name: string;
   } | null;
 }
 
 function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
   const status = ENROLLMENT_STATUSES[enrollment.status] || ENROLLMENT_STATUSES.draft;
-  const memberName = enrollment.primary_member?.title || 'Unknown';
-  const memberEmail = enrollment.primary_member?.email || enrollment.primary_member?.data?.email as string || '';
+  const memberName = enrollment.primary_member
+    ? `${enrollment.primary_member.first_name} ${enrollment.primary_member.last_name}`.trim()
+    : 'Unknown';
+  const memberEmail = enrollment.primary_member?.email || '';
   const planName = enrollment.plan?.name || 'No plan selected';
 
   return (
@@ -105,7 +113,7 @@ function EnrollmentCard({ enrollment }: { enrollment: Enrollment }) {
             size="sm"
             className="h-8 text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-500/10"
            asChild>
-          <Link href={`/crm/enrollment/${enrollment.id}`}>
+          <Link href={`/crm/enrollment?id=${enrollment.id}`} prefetch={false}>
             Review
             <ArrowRight className="w-4 h-4 ml-1" />
           </Link>
@@ -145,10 +153,39 @@ function WizardStep({
   );
 }
 
-async function EnrollmentContent() {
+async function EnrollmentContent({
+  searchParams,
+}: {
+  searchParams: { new?: string; id?: string };
+}) {
   const profile = await getCurrentProfile();
   if (!profile) {
     redirect('/crm-login');
+  }
+
+  const isNewWizard = searchParams.new === 'true';
+  const resumeId = searchParams.id;
+
+  if (isNewWizard || resumeId) {
+    const bootstrap = await loadEnrollmentWizardBootstrap({
+      id: profile.id,
+      organization_id: profile.organization_id,
+      crm_role: profile.crm_role,
+      advisor_id: profile.advisor_id ?? null,
+    });
+    const resume = resumeId ? (await loadEnrollmentWizardResume(resumeId)) ?? undefined : undefined;
+
+    if (resumeId && !resume) {
+      redirect('/crm/enrollment');
+    }
+
+    return (
+      <EnrollmentWizardShell
+        isNew={isNewWizard}
+        resume={resume}
+        {...bootstrap}
+      />
+    );
   }
 
   const supabase = await createServerSupabaseClient();
@@ -163,9 +200,9 @@ async function EnrollmentContent() {
       household_size,
       effective_date,
       created_at,
-      primary_member:crm_records!enrollments_primary_member_id_fkey(id, title, email, data),
+      primary_member:members!enrollments_primary_member_id_fkey(id, first_name, last_name, email),
       plan:plans!enrollments_selected_plan_id_fkey(id, name, product_line),
-      advisor:profiles!enrollments_advisor_id_fkey(id, full_name)
+      advisor:advisors!enrollments_advisor_id_fkey(id, first_name, last_name)
     `)
     .eq('organization_id', profile.organization_id)
     .order('created_at', { ascending: false })
@@ -233,7 +270,7 @@ async function EnrollmentContent() {
           <Button
               className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white glow-sm hover:glow-md"
              asChild>
-            <Link href="/crm/enrollment?new=true">
+            <Link href="/crm/enrollment?new=true" prefetch={false}>
               <Plus className="w-4 h-4 mr-2" />
               New Enrollment
             </Link>
@@ -316,7 +353,7 @@ async function EnrollmentContent() {
                 <p className="text-slate-900 dark:text-white font-medium mb-1">No enrollments yet</p>
                 <p className="text-slate-500 dark:text-slate-500 text-sm mb-4">New enrollment applications will appear here.</p>
                 <Button className="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white" asChild>
-                  <Link href="/crm/enrollment?new=true">
+                  <Link href="/crm/enrollment?new=true" prefetch={false}>
                     <Plus className="w-4 h-4 mr-2" />
                     Start First Enrollment
                   </Link>
@@ -377,7 +414,7 @@ async function EnrollmentContent() {
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                  asChild>
-                <Link href="/members">
+                <Link href="/crm/modules/members" prefetch={false}>
                   <Users className="w-4 h-4 mr-2" />
                   View All Members
                 </Link>
@@ -386,7 +423,7 @@ async function EnrollmentContent() {
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                  asChild>
-                <Link href="/crm/documents">
+                <Link href="/crm/documents" prefetch={false}>
                   <FileText className="w-4 h-4 mr-2" />
                   Pending Documents
                 </Link>
@@ -395,7 +432,7 @@ async function EnrollmentContent() {
                   variant="outline"
                   className="w-full justify-start border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                  asChild>
-                <Link href="/crm/approvals">
+                <Link href="/crm/approvals" prefetch={false}>
                   <AlertCircle className="w-4 h-4 mr-2" />
                   Review Exceptions
                 </Link>
@@ -408,10 +445,15 @@ async function EnrollmentContent() {
   );
 }
 
-export default function EnrollmentPage() {
+export default async function EnrollmentPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new?: string; id?: string }>;
+}) {
+  const params = await searchParams;
   return (
     <Suspense fallback={<EnrollmentSkeleton />}>
-      <EnrollmentContent />
+      <EnrollmentContent searchParams={params} />
     </Suspense>
   );
 }

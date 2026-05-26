@@ -30,8 +30,15 @@ export function ServiceWorkerRegistration() {
       // Detect the runtime error, unregister all SWs, drop all caches, then reload
       // once. The reload guard prevents a loop if the error has another cause.
       const RECOVERY_KEY = '__crm_sw_chunk_recovery__';
+      const shouldRecoverFromStaleDeploy = (message: string) =>
+        message.includes("undefined (reading 'call')") ||
+        message.includes('ChunkLoadError') ||
+        /Loading CSS chunk .* failed/i.test(message) ||
+        /Failed to fetch dynamically imported module/i.test(message) ||
+        (message.includes('net::ERR_ABORTED') && message.includes('/_next/static/'));
+
       const handleChunkError = (message: string) => {
-        if (!message.includes("undefined (reading 'call')") && !message.includes('ChunkLoadError')) return;
+        if (!shouldRecoverFromStaleDeploy(message)) return;
         if (sessionStorage.getItem(RECOVERY_KEY)) return;
         sessionStorage.setItem(RECOVERY_KEY, '1');
         Promise.all([
@@ -41,6 +48,38 @@ export function ServiceWorkerRegistration() {
       };
       window.addEventListener('error', (e) => handleChunkError(e.message || String(e.error?.message || '')));
       window.addEventListener('unhandledrejection', (e) => handleChunkError(String(e.reason?.message || e.reason || '')));
+
+      const watchStylesheetFailures = () => {
+        const onStylesheetError = (link: HTMLLinkElement) => {
+          if (link.href.includes('/_next/static/')) {
+            handleChunkError(`Loading CSS chunk failed: ${link.href}`);
+          }
+        };
+
+        document.querySelectorAll('link[rel="stylesheet"]').forEach((node) => {
+          node.addEventListener('error', () => onStylesheetError(node as HTMLLinkElement));
+        });
+
+        const observer = new MutationObserver((mutations) => {
+          for (const mutation of mutations) {
+            mutation.addedNodes.forEach((node) => {
+              if (node instanceof HTMLLinkElement && node.rel === 'stylesheet') {
+                node.addEventListener('error', () => onStylesheetError(node));
+              }
+            });
+          }
+        });
+        observer.observe(document.head, { childList: true });
+      };
+      watchStylesheetFailures();
+
+      // When a new SW activates after deploy, reload once so clients pick up fresh chunks.
+      const RELOAD_KEY = '__crm_sw_controller_reload__';
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (sessionStorage.getItem(RELOAD_KEY)) return;
+        sessionStorage.setItem(RELOAD_KEY, '1');
+        window.location.reload();
+      });
     } else if (!swEnabled && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       // If a previous build registered a SW, unregister it in dev so stale
       // caches don't interfere with HMR.

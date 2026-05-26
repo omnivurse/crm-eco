@@ -257,7 +257,7 @@ export function AdminSidebar({
       {(forMobile || !isCollapsed) && (
         <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
+            <Link href="/dashboard" prefetch={false} className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
               <Image
                 src="/logo.svg"
                 alt="Double Helix Hub"
@@ -283,7 +283,7 @@ export function AdminSidebar({
       {/* Collapsed logo */}
       {!forMobile && isCollapsed && (
         <div className="flex justify-center py-3 border-b border-slate-200 dark:border-white/5">
-          <Link href="/dashboard" className="flex items-center" onClick={handleLinkClick}>
+          <Link href="/dashboard" prefetch={false} className="flex items-center" onClick={handleLinkClick}>
             <Image
               src="/favicon.svg"
               alt="DHH"
@@ -356,6 +356,7 @@ export function AdminSidebar({
                     <Link
                       key={item.href}
                       href={item.href}
+                      prefetch={false}
                       onClick={handleLinkClick}
                       title={(!forMobile && isCollapsed) ? item.label : undefined}
                       className={cn(
