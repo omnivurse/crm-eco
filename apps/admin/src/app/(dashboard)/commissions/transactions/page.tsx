@@ -113,8 +113,8 @@ export default function CommissionTransactionsPage() {
         .from('commission_transactions') as any)
         .select(`
           *,
-          advisor:advisors(first_name, last_name),
-          member:members(first_name, last_name)
+          advisor:advisors!commission_transactions_advisor_id_fkey(first_name, last_name),
+          member:members!commission_transactions_member_id_fkey(first_name, last_name)
         `)
         .eq('organization_id', profile.organization_id)
         .order('created_at', { ascending: false })

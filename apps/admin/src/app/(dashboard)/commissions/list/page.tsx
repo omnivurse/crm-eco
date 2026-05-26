@@ -170,8 +170,8 @@ export default function CommissionsListPage() {
           is_bonus,
           bonus_reason,
           created_at,
-          advisor:advisors(id, first_name, last_name, email),
-          member:members(first_name, last_name)
+          advisor:advisors!commission_transactions_advisor_id_fkey(id, first_name, last_name, email),
+          member:members!commission_transactions_member_id_fkey(first_name, last_name)
         `
         )
         .eq('organization_id', organizationId)

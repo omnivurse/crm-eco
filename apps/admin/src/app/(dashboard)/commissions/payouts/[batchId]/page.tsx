@@ -41,7 +41,7 @@ async function getPayout(id: string): Promise<PayoutRow | null> {
   if (!tenant) return null;
 
   const { data } = await (supabase.from('commission_payouts') as any)
-    .select(`*, advisor:advisors(first_name, last_name, email)`)
+    .select(`*, advisor:advisors!commission_payouts_advisor_id_fkey(first_name, last_name, email)`)
     .eq('id', id)
     .eq('organization_id', tenant.organizationId)
     .single();

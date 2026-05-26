@@ -39,9 +39,6 @@ interface BillingFailure {
     last_name: string;
     email: string;
   };
-  billing_schedule?: {
-    payment_profile_id?: string;
-  };
 }
 
 export default function FailedPaymentsPage() {
@@ -72,8 +69,7 @@ export default function FailedPaymentsPage() {
         .from('billing_failures') as any)
         .select(`
           *,
-          member:members!billing_failures_member_id_fkey(first_name, last_name, email),
-          billing_schedule:billing_schedules!billing_failures_billing_schedule_id_fkey(payment_profile_id)
+          member:members!billing_failures_member_id_fkey(first_name, last_name, email)
         `)
         .eq('organization_id', profile.organization_id)
         .eq('resolved', false)

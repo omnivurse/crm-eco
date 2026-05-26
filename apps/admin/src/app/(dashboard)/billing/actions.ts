@@ -226,7 +226,7 @@ export async function sendFailureNotification(failureId: string): Promise<{ succ
       .from('billing_failures') as any)
       .select(`
         *,
-        member:members(first_name, last_name, email)
+        member:members!billing_failures_member_id_fkey(first_name, last_name, email)
       `)
       .eq('id', failureId)
       .eq('organization_id', tenant.organizationId)

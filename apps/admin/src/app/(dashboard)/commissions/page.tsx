@@ -101,7 +101,7 @@ async function getRecentCommissions(): Promise<RecentCommission[]> {
       status,
       transaction_type,
       created_at,
-      advisor:advisors(first_name, last_name)
+      advisor:advisors!commission_transactions_advisor_id_fkey(first_name, last_name)
     `)
     .eq('organization_id', tenant.organizationId)
     .order('created_at', { ascending: false })

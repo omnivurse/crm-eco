@@ -125,7 +125,7 @@ export default function CommissionsSummaryPage() {
           status,
           is_bonus,
           created_at,
-          advisor:advisors(first_name, last_name)
+          advisor:advisors!commission_transactions_advisor_id_fkey(first_name, last_name)
         `
         )
         .eq('organization_id', organizationId)

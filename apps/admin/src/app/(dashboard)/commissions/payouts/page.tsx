@@ -107,7 +107,7 @@ export default function CommissionPayoutsPage() {
         .from('commission_payouts') as any)
         .select(`
           *,
-          advisor:advisors(first_name, last_name)
+          advisor:advisors!commission_payouts_advisor_id_fkey(first_name, last_name)
         `)
         .eq('organization_id', profile.organization_id)
         .order('created_at', { ascending: false })
