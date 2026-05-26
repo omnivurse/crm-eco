@@ -61,8 +61,11 @@ serve(async (req) => {
       .select(`
         id, organization_id, billing_schedule_id, retry_count, first_failed_at, last_attempted_at,
         error_message, member_id,
-        billing_schedules!inner(*, payment_profiles(*)),
-        members(id, email, first_name, last_name)
+        billing_schedules!billing_failures_billing_schedule_id_fkey!inner(
+          *,
+          payment_profiles!billing_schedules_payment_profile_id_fkey(*)
+        ),
+        members!billing_failures_member_id_fkey(id, email, first_name, last_name)
       `)
       .eq('organization_id', organization_id)
       .eq('resolved', false)

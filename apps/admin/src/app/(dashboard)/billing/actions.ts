@@ -59,16 +59,16 @@ export async function retryFailedPayment(failureId: string): Promise<RetryPaymen
       .from('billing_failures')
       .select(`
         *,
-        member:members(
+        member:members!billing_failures_member_id_fkey(
           id,
           first_name,
           last_name,
           email
         ),
-        billing_schedule:billing_schedules(
+        billing_schedule:billing_schedules!billing_failures_billing_schedule_id_fkey(
           id,
           payment_profile_id,
-          payment_profile:payment_profiles(
+          payment_profile:payment_profiles!billing_schedules_payment_profile_id_fkey(
             id,
             authorize_customer_profile_id,
             authorize_payment_profile_id

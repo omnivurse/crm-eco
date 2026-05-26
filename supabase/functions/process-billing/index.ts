@@ -414,9 +414,9 @@ serve(async (req) => {
         .from('billing_failures')
         .select(`
           *,
-          billing_schedules (
+          billing_schedules!billing_failures_billing_schedule_id_fkey (
             *,
-            payment_profiles (
+            payment_profiles!billing_schedules_payment_profile_id_fkey (
               id,
               authorize_customer_profile_id,
               authorize_payment_profile_id,
