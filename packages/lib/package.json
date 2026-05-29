@@ -19,6 +19,10 @@
     "./rate-limit": "./src/rate-limit.ts",
     "./security/captcha": "./src/security/captcha.ts"
   },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.81.1",
