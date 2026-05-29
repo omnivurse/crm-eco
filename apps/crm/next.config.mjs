@@ -57,6 +57,16 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
 
+  // Safety net for cached/installed clients from before the DHH rebrand:
+  // the old app shell still requests the removed SVG assets. Serve the new
+  // PNGs under the old URLs so those clients don't 404 until they refresh.
+  async rewrites() {
+    return [
+      { source: '/logo.svg', destination: '/logo.png' },
+      { source: '/favicon.svg', destination: '/favicon-32.png' },
+    ];
+  },
+
   // Headers for static asset caching
   async headers() {
     return [
