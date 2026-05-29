@@ -21,7 +21,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:db": "vitest run --config vitest.db.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
