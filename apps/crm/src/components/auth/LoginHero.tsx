@@ -1,3 +1,4 @@
+import { BrandLogo } from '@crm-eco/ui';
 import GradientMeshHero from './GradientMeshHero';
 import QuoteRotator from './QuoteRotator';
 
@@ -28,9 +29,7 @@ export default function LoginHero() {
 
       {/* Bottom branding */}
       <div className="absolute bottom-12 left-12 xl:left-16 z-10">
-        <p className="text-white/40 text-sm font-medium tracking-wider uppercase">
-          Double Helix Hub
-        </p>
+        <BrandLogo variant="full" size="sm" tone="white" />
       </div>
     </div>
   );

@@ -2,10 +2,10 @@
 
 import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
 import { Button } from '@crm-eco/ui/components/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@crm-eco/ui/components/avatar';
 import {
@@ -160,16 +160,7 @@ export const CrmTopBar = memo(function CrmTopBar({
 
       {/* Left Section: Logo */}
       <Link prefetch={false} href="/crm" className="flex items-center gap-2 group flex-shrink-0">
-        <Image
-          src="/logo.svg"
-          alt="Double Helix Hub"
-          width={140}
-          height={38}
-          className="h-7 lg:h-8 w-auto object-contain"
-          priority={false}
-          loading="lazy"
-          quality={80}
-        />
+        <BrandLogo variant="full" size="sm" priority />
       </Link>
 
       {/* Center Section: Module Tabs - hidden on mobile */}

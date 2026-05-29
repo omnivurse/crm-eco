@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
-import { cn } from '@crm-eco/ui';
+import { cn, BrandLogo } from '@crm-eco/ui';
 import {
   LayoutDashboard,
   Users,
@@ -258,14 +257,7 @@ export function AdminSidebar({
         <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5">
           <div className="flex items-center justify-between">
             <Link href="/dashboard" prefetch={false} className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
-              <Image
-                src="/logo.svg"
-                alt="Double Helix Hub"
-                width={180}
-                height={44}
-                className="object-contain h-9 w-auto"
-                priority
-              />
+              <BrandLogo variant="full" size="md" priority />
             </Link>
             {forMobile && (
               <button
@@ -284,14 +276,7 @@ export function AdminSidebar({
       {!forMobile && isCollapsed && (
         <div className="flex justify-center py-3 border-b border-slate-200 dark:border-white/5">
           <Link href="/dashboard" prefetch={false} className="flex items-center" onClick={handleLinkClick}>
-            <Image
-              src="/favicon.svg"
-              alt="DHH"
-              width={32}
-              height={32}
-              className="object-contain"
-              priority
-            />
+            <BrandLogo variant="icon" size="xs" priority />
           </Link>
         </div>
       )}

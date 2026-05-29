@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { cn } from '@crm-eco/ui';
+import { cn, BrandLogo } from '@crm-eco/ui';
 import {
   LayoutDashboard,
   Users,
@@ -122,15 +121,8 @@ export function Sidebar({ role }: SidebarProps) {
 
           <div className="h-16 flex items-center px-3 border-b border-white/10">
             <Link href="/dashboard" className="flex items-center group">
-              <div className="bg-white rounded-lg p-1.5 shadow-sm">
-                <Image
-                  src="/logo.svg"
-                  alt="Double Helix Hub"
-                  width={160}
-                  height={44}
-                  className="object-contain h-9 w-auto"
-                  priority
-                />
+              <div className="bg-white rounded-lg px-2.5 py-1.5 shadow-sm">
+                <BrandLogo variant="full" size="md" tone="color" priority />
               </div>
             </Link>
           </div>

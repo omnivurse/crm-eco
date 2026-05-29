@@ -2,9 +2,9 @@
 
 import { useState, memo, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { ScrollArea } from '@crm-eco/ui/components/scroll-area';
@@ -351,16 +351,8 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
       {/* Logo / Org Name */}
       <div className="flex items-center h-16 px-4 border-b border-slate-200 dark:border-white/5">
         <Link prefetch={false} href="/crm" className="flex items-center gap-3 min-w-0 group">
-          <div className="relative flex-shrink-0 w-8 h-8 rounded-lg overflow-hidden group-hover:shadow-lg transition-all duration-300">
-            <Image
-              src="/logo.svg"
-              alt="Double Helix Hub"
-              width={32}
-              height={32}
-              className="w-full h-full object-contain"
-              loading="lazy"
-              quality={80}
-            />
+          <div className="relative flex-shrink-0 w-8 h-8 group-hover:scale-105 transition-all duration-300">
+            <BrandLogo variant="icon" size="xs" />
           </div>
           {!collapsed && (
             <div className="min-w-0" style={{ animationDuration: '0.2s' }}>

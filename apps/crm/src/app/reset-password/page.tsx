@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase-client';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
 import { Mail, ArrowLeft, ArrowRight, Loader2, Check, Heart } from 'lucide-react';
-import Image from 'next/image';
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
@@ -62,14 +62,7 @@ export default function ResetPasswordPage() {
         {/* Logo */}
         <div className="text-center">
           <div className="flex justify-center mb-6">
-            <Image
-              src="/logo.svg"
-              alt="Double Helix Hub"
-              width={200}
-              height={80}
-              className="h-16 w-auto object-contain"
-              priority
-            />
+            <BrandLogo variant="full" size="lg" tone="color" priority />
           </div>
           <h2 className="text-3xl font-bold tracking-tight text-brand-navy-800">
             Reset Password

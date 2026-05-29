@@ -2,27 +2,8 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
 import './landing.css';
-
-// --- SVG Helix Logo ---
-function HelixLogo({ size = 36 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 40 40" fill="none" width={size} height={size}>
-      <path d="M20 2 C12 8, 12 16, 20 20 C28 24, 28 32, 20 38" stroke="url(#lg1)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <path d="M20 2 C28 8, 28 16, 20 20 C12 24, 12 32, 20 38" stroke="url(#lg2)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-      <circle cx="14" cy="10" r="2.5" fill="#06b6d4"/>
-      <circle cx="26" cy="10" r="2.5" fill="#8b5cf6"/>
-      <circle cx="26" cy="20" r="2.5" fill="#06b6d4"/>
-      <circle cx="14" cy="20" r="2.5" fill="#8b5cf6"/>
-      <circle cx="14" cy="30" r="2.5" fill="#06b6d4"/>
-      <circle cx="26" cy="30" r="2.5" fill="#8b5cf6"/>
-      <defs>
-        <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
-        <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
-      </defs>
-    </svg>
-  );
-}
 
 // --- Arrow Icon ---
 function ArrowIcon() {
@@ -290,11 +271,7 @@ export default function CrmLandingPage() {
       {/* Nav */}
       <nav id="lp-navbar" className="lp-nav">
         <Link href="/" className="lp-nav-brand">
-          <HelixLogo />
-          <span className="lp-nav-wordmark">
-            Double Helix
-            <span className="lp-nav-wordmark-sub">CRM</span>
-          </span>
+          <BrandLogo variant="full" size="md" tone="white" priority />
         </Link>
         <div className="lp-nav-links">
           <a href="#features">Features</a>

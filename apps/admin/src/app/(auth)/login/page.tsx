@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserClient } from '@supabase/ssr';
-import { Button, Input, Label } from '@crm-eco/ui';
+import { Button, Input, Label, BrandLogo } from '@crm-eco/ui';
 import {
   Shield,
   Activity,
@@ -113,6 +113,9 @@ export default function LoginPage() {
         <div className="flex items-center justify-center p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100">
           <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:text-left">
+              <div className="flex justify-center lg:justify-start mb-6">
+                <BrandLogo variant="full" size="lg" tone="color" priority />
+              </div>
               <h2 className="text-3xl font-bold tracking-tight text-slate-800">
                 Welcome back
               </h2>

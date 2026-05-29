@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
 import {
   BookOpen,
   HelpCircle,
@@ -27,15 +27,7 @@ export function Footer() {
           {/* Logo & Tagline - optimized with Next.js Image */}
           <div className="flex items-center gap-3">
             <Link prefetch={false} href="/crm" className="flex items-center gap-2 flex-shrink-0">
-              <Image
-                src="/logo.svg"
-                alt="Double Helix Hub"
-                width={180}
-                height={48}
-                className="h-12 w-auto object-contain"
-                loading="lazy"
-                quality={80}
-              />
+              <BrandLogo variant="full" size="md" />
             </Link>
             <span className="hidden md:inline text-slate-400 dark:text-slate-600">|</span>
             <span className="hidden md:inline text-sm text-slate-500 dark:text-slate-400">

@@ -28,8 +28,8 @@ export const metadata: Metadata = {
   description: 'Modern management platform for health sharing and insurance organizations',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.svg',
-    apple: '/favicon.svg',
+    icon: [{ url: '/favicon-32.png', type: 'image/png', sizes: '32x32' }],
+    apple: [{ url: '/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }],
   },
   appleWebApp: {
     capable: true,

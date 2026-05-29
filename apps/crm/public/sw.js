@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 11;
+const CACHE_VERSION = 12;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
@@ -16,7 +16,11 @@ const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
   OFFLINE_URL,
   '/manifest.json',
-  '/favicon.svg',
+  '/favicon-32.png',
+  '/apple-touch-icon.png',
+  '/logo-icon.png',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 // Last-resort offline shell. Inlined so a broken precache (or first navigation

@@ -22,7 +22,8 @@ export const metadata: Metadata = {
   title: 'Admin Portal | Double Helix Hub',
   description: 'Manage members, agents, products, and enrollments.',
   icons: {
-    icon: '/favicon.svg',
+    icon: [{ url: '/favicon-32.png', type: 'image/png', sizes: '32x32' }],
+    apple: [{ url: '/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }],
   },
 };
 

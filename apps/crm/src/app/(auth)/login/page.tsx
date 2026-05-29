@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
 import Link from 'next/link';
 import {
   Loader2,
@@ -71,19 +72,8 @@ export default function LoginPage() {
     <div className="space-y-8">
       {/* Brand */}
       <div className="text-center lg:text-left">
-        <Link href="/" className="inline-flex items-center gap-3 mb-6 group">
-          <svg viewBox="0 0 40 40" fill="none" className="w-10 h-10">
-            <path d="M20 2 C12 8, 12 16, 20 20 C28 24, 28 32, 20 38" stroke="url(#loginG1)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-            <path d="M20 2 C28 8, 28 16, 20 20 C12 24, 12 32, 20 38" stroke="url(#loginG2)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-            <circle cx="14" cy="10" r="2.5" fill="#06b6d4"/><circle cx="26" cy="10" r="2.5" fill="#8b5cf6"/>
-            <circle cx="26" cy="20" r="2.5" fill="#06b6d4"/><circle cx="14" cy="20" r="2.5" fill="#8b5cf6"/>
-            <circle cx="14" cy="30" r="2.5" fill="#06b6d4"/><circle cx="26" cy="30" r="2.5" fill="#8b5cf6"/>
-            <defs>
-              <linearGradient id="loginG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#06b6d4"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
-              <linearGradient id="loginG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6"/><stop offset="100%" stopColor="#3b82f6"/></linearGradient>
-            </defs>
-          </svg>
-          <span className="text-lg font-bold text-white tracking-tight">Double Helix Hub</span>
+        <Link href="/" className="inline-flex items-center mb-6 group">
+          <BrandLogo variant="full" size="lg" tone="white" priority />
         </Link>
         <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent">
           Welcome Back
