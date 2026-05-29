@@ -227,7 +227,7 @@ BEGIN
   VALUES
     (v_org_id, v_leads_module_id, 'lead_status', 'Lead Status', 'select', false, true, 10, 'main',
      '["New", "Contacted", "Hot Prospect - ready to move", "Qualified", "Working", "Converted", "Lost", "Unqualified"]'::jsonb),
-    (v_org_id, v_leads_module_id, 'lead_source', 'Lead Source', 'select', false, true, 11, 'main',
+    (v_org_id, v_leads_module_id, 'lead_source', 'Lead Source', 'select', false, false, 11, 'main',
      '["Member Referral", "Non-Member Referral", "Liberty Healthshare", "Sedera Generated Lead", "Website", "Social Media", "Email Campaign", "Outside Advisor", "Event", "Other"]'::jsonb),
     (v_org_id, v_leads_module_id, 'owner_id', 'Lead Owner', 'user', false, true, 12, 'main', '[]'::jsonb),
     (v_org_id, v_leads_module_id, 'producer_id', 'Producer', 'user', false, false, 13, 'main', '[]'::jsonb)

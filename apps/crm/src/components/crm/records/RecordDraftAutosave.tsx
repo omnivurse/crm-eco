@@ -12,8 +12,11 @@
  *     stays scoped to the current tab/session and never leaks across users
  *     on shared devices.
  *   - Drafts older than `MAX_AGE_MS` (24h) are ignored on restore.
- *   - When the host `<form>` submits, we clear the draft so a successful
- *     creation doesn't reload stale values next time.
+ *   - When the host `<form>` successfully submits AND navigates away, we
+ *     clear the draft. We no longer clear on the raw `submit` DOM event
+ *     because Next.js server actions may fail after the DOM event fires,
+ *     leaving the form in a broken state (stale data in React memory, but
+ *     draft already erased from sessionStorage).
  *   - A small banner notifies the user when a draft was restored, with a
  *     "Start over" affordance.
  *
@@ -126,6 +129,10 @@ export function RecordDraftAutosave({
     useState<Record<string, unknown> | null>(null);
   const [restored, setRestored] = useState(false);
 
+  // formKey forces DynamicRecordForm to fully remount (and thus re-snapshot
+  // defaultValues) when the user clicks "Start over".
+  const [formKey, setFormKey] = useState(0);
+
   useEffect(() => {
     const draft = readDraft(storageKey);
     if (draft) {
@@ -153,15 +160,50 @@ export function RecordDraftAutosave({
     [storageKey],
   );
 
-  // Auto-attach to the nearest <form> so a successful submit clears the draft.
-  // We use bubbling capture so we win against nested submit handlers.
+  // Clear draft when the page navigates away after a successful form submit.
+  // We listen for `beforeunload` + `pagehide` + Next.js `popstate` which fire
+  // AFTER a successful redirect. This is safer than clearing on the `submit`
+  // DOM event which fires BEFORE the server action completes — if the action
+  // throws, the form would be left in a broken state (stale data in memory,
+  // draft erased from sessionStorage).
+  //
+  // We track whether a submit was attempted via `submitFired` ref. On
+  // successful navigation away, we clear. If the user stays on the page
+  // (server action error), the ref resets and the draft is preserved.
+  const submitFired = useRef(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const form = wrapperRef.current?.closest('form');
     if (!form) return;
-    const onSubmit = () => clearDraft(storageKey);
+
+    const onSubmit = () => {
+      submitFired.current = true;
+    };
+
+    // Clear the draft when navigating away (only if a submit was attempted).
+    // This covers both successful server-action redirects and full page navs.
+    const onNavigateAway = () => {
+      if (submitFired.current) {
+        clearDraft(storageKey);
+      }
+    };
+
     form.addEventListener('submit', onSubmit);
-    return () => form.removeEventListener('submit', onSubmit);
+    window.addEventListener('beforeunload', onNavigateAway);
+    window.addEventListener('pagehide', onNavigateAway);
+
+    return () => {
+      form.removeEventListener('submit', onSubmit);
+      window.removeEventListener('beforeunload', onNavigateAway);
+      window.removeEventListener('pagehide', onNavigateAway);
+      // If this component is unmounting (e.g. redirect after successful save),
+      // and a submit was fired, clear the draft. This catches the common case
+      // of Next.js SPA navigation after a server action redirect().
+      if (submitFired.current) {
+        clearDraft(storageKey);
+      }
+    };
   }, [storageKey]);
 
   const handleStartOver = useCallback(() => {
@@ -169,6 +211,9 @@ export function RecordDraftAutosave({
     clearDraft(storageKey);
     setRestored(false);
     setResolvedDefaults({ ...(initialDefaults ?? {}) });
+    // Increment formKey to force DynamicRecordForm to remount with clean
+    // defaultValues — react-hook-form only reads defaultValues on mount.
+    setFormKey((k) => k + 1);
   }, [initialDefaults, storageKey]);
 
   if (resolvedDefaults === null) {
@@ -208,6 +253,7 @@ export function RecordDraftAutosave({
       )}
 
       <DynamicRecordForm
+        key={formKey}
         fields={fields}
         layout={layout || undefined}
         readOnly={false}

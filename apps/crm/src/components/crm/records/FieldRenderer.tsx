@@ -66,7 +66,20 @@ function loadAdvisorCarriers(carrierType: string): Promise<Map<string, string>> 
   return p;
 }
 
-/** Look up a carrier name from the advisor's personal list. */
+/** Look up a single carrier by ID from the org directory (fallback). */
+async function lookupCarrierById(id: string): Promise<string | undefined> {
+  try {
+    const res = await fetch(`/api/crm/carriers/${encodeURIComponent(id)}`);
+    if (!res.ok) return undefined;
+    const json = await res.json();
+    const name = json.data?.carrier_name ?? json.carrier_name;
+    return name || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Look up a carrier name from the advisor's personal list, falling back to the org directory. */
 function CarrierName({ carrierType, value }: { carrierType: string; value: string }) {
   const initial = carrierCache.get(carrierType)?.get(value);
   const [name, setName] = useState<string | undefined>(initial);
@@ -75,20 +88,36 @@ function CarrierName({ carrierType, value }: { carrierType: string; value: strin
   useEffect(() => {
     if (loaded) return;
     let cancelled = false;
-    loadAdvisorCarriers(carrierType).then((map) => {
-      if (cancelled) return;
-      setName(map.get(value));
-      setLoaded(true);
-    });
+    loadAdvisorCarriers(carrierType)
+      .then(async (map) => {
+        if (cancelled) return;
+        const resolved = map.get(value);
+        if (resolved) {
+          setName(resolved);
+          setLoaded(true);
+          return;
+        }
+        // Not in advisor's personal list — try org directory by ID
+        if (UUID_RE.test(value)) {
+          const orgName = await lookupCarrierById(value);
+          if (cancelled) return;
+          if (orgName) {
+            // Cache it for future lookups
+            map.set(value, orgName);
+            setName(orgName);
+          }
+        }
+        setLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
   }, [carrierType, value, loaded]);
 
-  // While loading we display the raw value. If it's a UUID we abbreviate so it
-  // doesn't blow up the layout; non-UUID values are legacy text we can show as-is.
+  // While loading we display a placeholder. Once loaded, show the resolved
+  // name or the raw value as a fallback (legacy free-text).
   const display =
-    name ?? (UUID_RE.test(value) ? (loaded ? value : `${value.slice(0, 8)}…`) : value);
+    name ?? (UUID_RE.test(value) ? (loaded ? value : '…') : value);
 
   return (
     <Badge variant="secondary" className="font-normal">

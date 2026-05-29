@@ -39,7 +39,7 @@ async function NewRecordContent({ params }: PageProps) {
     'use server';
 
     const profile = await getCurrentProfile();
-    if (!profile) throw new Error('Not authenticated');
+    if (!profile) redirect(`/crm-login?error=session_expired&return=/crm/modules/${moduleKey}/new`);
 
     const crmMod = await getModuleByKey(profile.organization_id, moduleKey);
     if (!crmMod) throw new Error('Module not found');

@@ -144,7 +144,24 @@ export async function PUT(
     }
 
     if (existingField.is_system) {
-      return NextResponse.json({ error: 'Cannot modify system field' }, { status: 400 });
+      // System fields: only allow updating dropdown options (not label, key, etc.)
+      const { options: optionsUpdate } = body;
+      if (optionsUpdate === undefined) {
+        return NextResponse.json({ error: 'Cannot modify system field (only dropdown options can be changed)' }, { status: 400 });
+      }
+
+      const { data: field, error } = await supabase
+        .from('crm_fields')
+        .update({ options: optionsUpdate })
+        .eq('id', id)
+        .eq('org_id', profile.organization_id)
+        .select()
+        .single();
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json(field);
     }
 
     // Allowed update fields

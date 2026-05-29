@@ -251,6 +251,15 @@ function FieldRow({
                         </button>
                     </>
                 )}
+                {field.is_system && ['select', 'multiselect', 'picklist'].includes(field.type) && (
+                    <button
+                        onClick={() => onEdit(field)}
+                        className="p-1.5 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 rounded-md hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
+                        title="Edit dropdown options"
+                    >
+                        <Pencil className="w-4 h-4" />
+                    </button>
+                )}
             </div>
         </div>
     );
@@ -777,36 +786,50 @@ export function FieldsManagerClient({
             <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
                 <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900">
                     <DialogHeader>
-                        <DialogTitle>Edit Field</DialogTitle>
+                        <DialogTitle>
+                            {editingField?.is_system ? 'Edit Dropdown Options' : 'Edit Field'}
+                        </DialogTitle>
                     </DialogHeader>
                     {editingField && (
                         <div className="space-y-4 py-4">
-                            <div>
-                                <Label>Field Label</Label>
-                                <Input
-                                    value={editingField.label}
-                                    onChange={(e) => setEditingField(prev => prev ? { ...prev, label: e.target.value } : null)}
-                                    className="mt-1"
-                                />
-                            </div>
-                            <div>
-                                <Label>Field Key</Label>
-                                <Input
-                                    value={editingField.key}
-                                    disabled
-                                    className="mt-1 font-mono text-sm bg-slate-100 dark:bg-slate-800"
-                                />
-                                <p className="text-xs text-slate-500 mt-1">Key cannot be changed</p>
-                            </div>
-                            <div>
-                                <Label>Type</Label>
-                                <Input
-                                    value={FIELD_TYPE_LABELS[editingField.type] || editingField.type}
-                                    disabled
-                                    className="mt-1 bg-slate-100 dark:bg-slate-800"
-                                />
-                            </div>
-                            {['select', 'multiselect'].includes(editingField.type) && (
+                            {!editingField.is_system && (
+                                <>
+                                    <div>
+                                        <Label>Field Label</Label>
+                                        <Input
+                                            value={editingField.label}
+                                            onChange={(e) => setEditingField(prev => prev ? { ...prev, label: e.target.value } : null)}
+                                            className="mt-1"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label>Field Key</Label>
+                                        <Input
+                                            value={editingField.key}
+                                            disabled
+                                            className="mt-1 font-mono text-sm bg-slate-100 dark:bg-slate-800"
+                                        />
+                                        <p className="text-xs text-slate-500 mt-1">Key cannot be changed</p>
+                                    </div>
+                                    <div>
+                                        <Label>Type</Label>
+                                        <Input
+                                            value={FIELD_TYPE_LABELS[editingField.type] || editingField.type}
+                                            disabled
+                                            className="mt-1 bg-slate-100 dark:bg-slate-800"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            {editingField.is_system && (
+                                <div className="rounded-lg border border-teal-200 bg-teal-50 dark:border-teal-700/40 dark:bg-teal-500/10 px-3 py-2">
+                                    <p className="text-sm text-teal-800 dark:text-teal-200">
+                                        <strong>{editingField.label}</strong> is a system field.
+                                        You can customize the dropdown options below.
+                                    </p>
+                                </div>
+                            )}
+                            {['select', 'multiselect', 'picklist'].includes(editingField.type) && (
                                 <div>
                                     <Label>Options (one per line)</Label>
                                     <Textarea
@@ -815,27 +838,35 @@ export function FieldsManagerClient({
                                             ...prev,
                                             options: e.target.value.split('\n').map(o => o.trim()).filter(Boolean)
                                         } : null)}
-                                        rows={4}
+                                        rows={6}
                                         className="mt-1"
+                                        placeholder="Enter each option on a new line"
                                     />
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        Add your custom sources — referral partners, events, marketing channels, etc.
+                                    </p>
                                 </div>
                             )}
-                            <div>
-                                <Label>Tooltip</Label>
-                                <Input
-                                    value={editingField.tooltip || ''}
-                                    onChange={(e) => setEditingField(prev => prev ? { ...prev, tooltip: e.target.value } : null)}
-                                    className="mt-1"
-                                />
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <Switch
-                                    id="edit-required"
-                                    checked={editingField.required}
-                                    onCheckedChange={(checked) => setEditingField(prev => prev ? { ...prev, required: checked } : null)}
-                                />
-                                <Label htmlFor="edit-required">Required field</Label>
-                            </div>
+                            {!editingField.is_system && (
+                                <>
+                                    <div>
+                                        <Label>Tooltip</Label>
+                                        <Input
+                                            value={editingField.tooltip || ''}
+                                            onChange={(e) => setEditingField(prev => prev ? { ...prev, tooltip: e.target.value } : null)}
+                                            className="mt-1"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Switch
+                                            id="edit-required"
+                                            checked={editingField.required}
+                                            onCheckedChange={(checked) => setEditingField(prev => prev ? { ...prev, required: checked } : null)}
+                                        />
+                                        <Label htmlFor="edit-required">Required field</Label>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
                     <DialogFooter>

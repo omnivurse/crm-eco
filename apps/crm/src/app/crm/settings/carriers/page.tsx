@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { CarrierContactsPanel } from '@/components/crm/carriers/CarrierContactsPanel';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
@@ -38,6 +40,7 @@ import {
   Globe,
   Phone,
   Mail,
+  ArrowLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -72,6 +75,14 @@ const emptyForm = {
 };
 
 export default function CarrierManagementPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <CarrierManagementContent />
+    </Suspense>
+  );
+}
+
+function CarrierManagementContent() {
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -81,6 +92,8 @@ export default function CarrierManagementPage() {
   const [editingCarrier, setEditingCarrier] = useState<Carrier | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
 
   // Context-aware terminology: 'Ministry' for healthshare, 'Carrier' for everything else
   const activeType = editingCarrier?.carrier_type ?? form.carrier_type;
@@ -200,6 +213,22 @@ export default function CarrierManagementPage() {
 
   return (
     <div className="space-y-6">
+      {/* Back-to-record banner when navigated from a Contact/Lead */}
+      {returnTo && (
+        <div className="flex items-center gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 dark:border-teal-700/40 dark:bg-teal-500/10">
+          <Link
+            href={returnTo}
+            className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-teal-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Record
+          </Link>
+          <span className="text-sm text-teal-700 dark:text-teal-300">
+            Add carriers here, then go back to finish editing your record.
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

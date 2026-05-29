@@ -48,7 +48,7 @@ const DEFAULT_FIELDS: Record<string, Array<{ key: string; label: string; type: s
     { key: 'email', label: 'Email', type: 'email', is_system: true, display_order: 3, section: 'main' },
     { key: 'phone', label: 'Phone', type: 'phone', is_system: true, display_order: 4, section: 'main' },
     { key: 'lead_status', label: 'Lead Status', type: 'select', is_system: true, display_order: 5, section: 'main', options: ['New', 'Contacted', 'Qualified', 'Converted', 'Lost'] },
-    { key: 'lead_source', label: 'Lead Source', type: 'select', display_order: 6, section: 'main', options: ['Website', 'Referral', 'Social Media', 'Event', 'Other'] },
+    { key: 'lead_source', label: 'Lead Source', type: 'select', display_order: 6, section: 'main', options: ['Member Referral', 'Non-Member Referral', 'Website', 'Social Media', 'Email Campaign', 'Event', 'Other'] },
     { key: 'company', label: 'Company', type: 'text', display_order: 7, section: 'main' },
     { key: 'agency', label: 'Agency', type: 'text', display_order: 8, section: 'relationships' },
     { key: 'partners', label: 'Partners', type: 'textarea', display_order: 9, section: 'relationships' },

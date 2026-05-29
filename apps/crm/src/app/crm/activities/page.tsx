@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -125,6 +125,14 @@ function ActivityRow({ activity }: { activity: Activity }) {
 }
 
 export default function ActivitiesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <ActivitiesPageContent />
+    </Suspense>
+  );
+}
+
+function ActivitiesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activityType = searchParams.get('type') || '';

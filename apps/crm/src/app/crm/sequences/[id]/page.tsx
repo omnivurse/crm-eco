@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui/components/button';
@@ -214,6 +214,14 @@ function StepCard({
 }
 
 export default function SequenceDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <SequenceDetailPageContent />
+    </Suspense>
+  );
+}
+
+function SequenceDetailPageContent() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();

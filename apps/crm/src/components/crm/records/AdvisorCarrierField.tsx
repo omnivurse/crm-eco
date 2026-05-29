@@ -27,6 +27,7 @@ import {
   useState,
 } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   AlertTriangle,
   Check,
@@ -201,6 +202,7 @@ export function AdvisorCarrierField({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pathname = usePathname();
 
   // Initial load of the personal list for this carrier type.
   useEffect(() => {
@@ -586,7 +588,7 @@ export function AdvisorCarrierField({
           {/* Footer — manage list link */}
           <div className="mt-1 border-t border-slate-100 px-2 py-1.5 dark:border-slate-800">
             <Link
-              href="/crm/settings/my-carriers"
+              href={`/crm/settings/my-carriers${pathname ? `?returnTo=${encodeURIComponent(pathname)}` : ''}`}
               className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:underline dark:text-teal-400"
               onClick={close}
             >

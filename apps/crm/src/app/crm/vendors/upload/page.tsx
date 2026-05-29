@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { Suspense, useState, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -51,6 +51,14 @@ const DUPLICATE_STRATEGIES = [
 type UploadStatus = 'idle' | 'uploading' | 'success' | 'error';
 
 export default function VendorUploadPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <VendorUploadPageContent />
+    </Suspense>
+  );
+}
+
+function VendorUploadPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedVendorId = searchParams.get('vendor');

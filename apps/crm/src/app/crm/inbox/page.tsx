@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -31,6 +31,14 @@ import { ComposeModal } from './_components/ComposeModal';
 type FilterType = 'all' | 'unread' | 'assigned_to_me' | 'unassigned';
 
 export default function InboxPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <InboxPageContent />
+    </Suspense>
+  );
+}
+
+function InboxPageContent() {
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();
   const searchParams = useSearchParams();
 

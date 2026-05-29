@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   DollarSign,
@@ -135,6 +135,14 @@ function HierarchyNode({ node, level = 0 }: { node: AdvisorNode; level?: number 
 }
 
 export default function CommissionsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <CommissionsPageContent />
+    </Suspense>
+  );
+}
+
+function CommissionsPageContent() {
   const searchParams = useSearchParams();
   const urlTab = searchParams.get('tab');
   const [hierarchy, setHierarchy] = useState<AdvisorNode[]>([]);

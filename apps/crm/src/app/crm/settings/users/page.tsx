@@ -14,7 +14,7 @@
  * - View and manage pending invitations
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -287,6 +287,14 @@ function UserRow({
 // ============================================================================
 
 export default function UsersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <UsersPageContent />
+    </Suspense>
+  );
+}
+
+function UsersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();

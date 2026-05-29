@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -92,6 +92,14 @@ const IMPORT_MODULES: ImportModule[] = [
 ];
 
 export default function ImportsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <ImportsPageContent />
+    </Suspense>
+  );
+}
+
+function ImportsPageContent() {
   const searchParams = useSearchParams();
   const preselectedModule = searchParams.get('module');
   const { user: authUser, profile: authProfile, loading: authLoading } = useClientAuth();

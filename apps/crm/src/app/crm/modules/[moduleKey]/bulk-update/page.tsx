@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -74,6 +74,14 @@ interface Profile {
 type UpdateType = 'owner' | 'status' | 'stage' | 'field';
 
 export default function BulkUpdatePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <BulkUpdatePageContent />
+    </Suspense>
+  );
+}
+
+function BulkUpdatePageContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();

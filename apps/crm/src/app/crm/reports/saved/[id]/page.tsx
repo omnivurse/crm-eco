@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -69,6 +69,14 @@ interface RunHistory {
 }
 
 export default function SavedReportDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <SavedReportDetailPageContent />
+    </Suspense>
+  );
+}
+
+function SavedReportDetailPageContent() {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();

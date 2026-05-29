@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
@@ -466,6 +466,14 @@ function findUnresolvedMergeFields(content: string): string[] {
 // ============================================================================
 
 export default function ComposePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <ComposePageContent />
+    </Suspense>
+  );
+}
+
+function ComposePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 

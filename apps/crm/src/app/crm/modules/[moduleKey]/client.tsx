@@ -49,6 +49,9 @@ export function ModuleListClient({
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  // Counter to force DynamicRecordForm remount on each dialog open,
+  // ensuring stale form data from a previous session is never shown.
+  const [dialogFormKey, setDialogFormKey] = useState(0);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -310,12 +313,16 @@ export function ModuleListClient({
       )}
 
       {/* Create Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+          if (open) setDialogFormKey((k) => k + 1);
+          setShowCreateDialog(open);
+        }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create New {module.name}</DialogTitle>
           </DialogHeader>
           <DynamicRecordForm
+            key={dialogFormKey}
             fields={fields}
             layout={defaultLayout}
             onSubmit={handleCreateRecord}

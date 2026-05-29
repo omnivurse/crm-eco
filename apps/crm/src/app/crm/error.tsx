@@ -2,10 +2,18 @@
 
 /**
  * CRM Error Handler
- * Catches errors specifically in the /crm route tree
+ * Catches errors specifically in the /crm route tree.
+ *
+ * Improvements:
+ * - "Try again" now attempts a Supabase session refresh before calling
+ *   reset(), giving the re-render a real chance of succeeding.
+ * - "Go to Login" uses a hard page navigation (window.location) instead of
+ *   an SPA link so middleware re-runs the full auth check and doesn't
+ *   short-circuit back to the dashboard.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getSupabaseBrowserClient } from '@/lib/supabase-client';
 
 export default function CrmError({
   error,
@@ -14,6 +22,8 @@ export default function CrmError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [retrying, setRetrying] = useState(false);
+
   useEffect(() => {
     // Log error for debugging
     console.error('CRM route error:', {
@@ -22,6 +32,33 @@ export default function CrmError({
       name: error.name,
     });
   }, [error]);
+
+  const handleTryAgain = async () => {
+    setRetrying(true);
+    try {
+      // Attempt to refresh the Supabase session before re-rendering.
+      // If the JWT expired while the user was away, this gives the
+      // server-side render a valid token to work with.
+      const supabase = getSupabaseBrowserClient();
+      if (supabase) {
+        await supabase.auth.refreshSession();
+      }
+    } catch (err) {
+      console.warn('[CrmError] Session refresh failed:', err);
+    }
+    // Always call reset — the refresh may or may not have helped,
+    // but the user asked to try again.
+    reset();
+    setRetrying(false);
+  };
+
+  const handleGoToLogin = () => {
+    // Hard navigation bypasses SPA routing so middleware runs a full
+    // auth check. Without this, the middleware may see a stale cookie
+    // and redirect right back to the dashboard — never letting the
+    // user actually re-authenticate.
+    window.location.href = '/crm-login';
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-900">
@@ -44,17 +81,18 @@ export default function CrmError({
         )}
         <div className="space-y-3">
           <button
-            onClick={() => reset()}
-            className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+            onClick={handleTryAgain}
+            disabled={retrying}
+            className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Try again
+            {retrying ? 'Retrying…' : 'Try again'}
           </button>
-          <a
-            href="/crm-login"
+          <button
+            onClick={handleGoToLogin}
             className="block w-full px-6 py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             Go to Login
-          </a>
+          </button>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -102,6 +102,14 @@ function parseInputValue(raw: string): unknown {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function SystemConfigurationPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <SystemConfigurationPageContent />
+    </Suspense>
+  );
+}
+
+function SystemConfigurationPageContent() {
   const searchParams = useSearchParams();
   const urlTab = searchParams.get('tab');
   const [settings, setSettings] = useState<SystemSetting[]>([]);

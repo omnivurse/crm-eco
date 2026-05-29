@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase-client';
@@ -208,6 +208,14 @@ function getTimeAgo(dateString: string): string {
 // ============================================================================
 
 export default function CommunicationsPage() {
+  return (
+    <Suspense fallback={<CommunicationsSkeleton />}>
+      <CommunicationsPageContent />
+    </Suspense>
+  );
+}
+
+function CommunicationsPageContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
 

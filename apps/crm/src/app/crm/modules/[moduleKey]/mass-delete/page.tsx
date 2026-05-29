@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -47,6 +47,14 @@ interface CrmModule {
 }
 
 export default function MassDeletePage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <MassDeletePageContent />
+    </Suspense>
+  );
+}
+
+function MassDeletePageContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   BarChart3,
@@ -178,6 +178,14 @@ const TAB_COMPONENTS: Record<string, React.ComponentType> = {
 };
 
 export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <AnalyticsPageContent />
+    </Suspense>
+  );
+}
+
+function AnalyticsPageContent() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab');
 

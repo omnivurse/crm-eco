@@ -9,13 +9,15 @@
  * (e.g. Insurance Carrier, Health Share, Dental, Vision, Other, Life).
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@crm-eco/ui/components/tabs';
 import {
+  ArrowLeft,
   Building2,
   Heart,
   Plus,
@@ -98,10 +100,35 @@ const TABS: TabDef[] = [
 // Page
 // ---------------------------------------------------------------------------
 export default function MyCarriersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <MyCarriersContent />
+    </Suspense>
+  );
+}
+
+function MyCarriersContent() {
   const [activeTab, setActiveTab] = useState<FieldCarrierType>('insurance');
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
 
   return (
     <div className="space-y-6">
+      {/* Back-to-record banner when navigated from a Contact/Lead */}
+      {returnTo && (
+        <div className="flex items-center gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 dark:border-teal-700/40 dark:bg-teal-500/10">
+          <Link
+            href={returnTo}
+            className="inline-flex items-center gap-2 rounded-md bg-teal-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-teal-700 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Record
+          </Link>
+          <span className="text-sm text-teal-700 dark:text-teal-300">
+            Add carriers here, then go back to finish editing your record.
+          </span>
+        </div>
+      )}
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
           <div className="p-3 bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-300 rounded-lg">
@@ -145,7 +172,7 @@ export default function MyCarriersPage() {
 
         {TABS.map((tab) => (
           <TabsContent key={tab.value} value={tab.value} className="mt-6">
-            <CarrierTab tab={tab} />
+            <CarrierTab tab={tab} returnTo={returnTo} />
           </TabsContent>
         ))}
       </Tabs>
@@ -158,9 +185,10 @@ export default function MyCarriersPage() {
 // ---------------------------------------------------------------------------
 interface CarrierTabProps {
   tab: TabDef;
+  returnTo: string | null;
 }
 
-function CarrierTab({ tab }: CarrierTabProps) {
+function CarrierTab({ tab, returnTo }: CarrierTabProps) {
   const terms = getCarrierTerms(tab.value);
   const [myList, setMyList] = useState<AdvisorCarrierWithCarrier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -326,7 +354,7 @@ function CarrierTab({ tab }: CarrierTabProps) {
 
       <p className="mt-6 text-xs text-slate-500 dark:text-slate-400">
         {terms.singular} missing from the directory?{' '}
-        <Link href="/crm/settings/carriers" className="text-teal-600 hover:underline">
+        <Link href={`/crm/settings/carriers${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`} className="text-teal-600 hover:underline">
           Open Carrier & Ministry Directory
         </Link>{' '}
         (admins can add new {terms.pluralLower}).

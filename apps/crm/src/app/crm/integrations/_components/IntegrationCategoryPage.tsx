@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, ReactNode } from 'react';
+import { Suspense, useState, useEffect, useCallback, ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -343,7 +343,15 @@ function ConnectModal({
 // Main Component
 // ============================================================================
 
-export default function IntegrationCategoryPage({
+export default function IntegrationCategoryPage(props: IntegrationCategoryPageProps) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
+      <IntegrationCategoryPageContent {...props} />
+    </Suspense>
+  );
+}
+
+function IntegrationCategoryPageContent({
   connectionType,
   title,
   description,
