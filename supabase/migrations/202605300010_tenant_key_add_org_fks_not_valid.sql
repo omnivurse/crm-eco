@@ -1,0 +1,131 @@
+-- Phase 1 (tenant-key standardization): ADD parallel FK constraints on
+-- organization_id, mirroring the existing org_id FKs (additive, reversible).
+-- 119 tables that have an org_id FK but no organization_id FK yet. Every existing
+-- org_id FK is uniform: FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE
+-- CASCADE. organization_id == org_id on every row (sync-locked) and the org_id FK
+-- is already validated, so the new FKs are guaranteed satisfiable.
+--
+-- Added NOT VALID here (instant, metadata-only, brief ACCESS EXCLUSIVE) and
+-- VALIDATEd in the companion migration 202605300011 (SHARE UPDATE EXCLUSIVE,
+-- concurrent DML allowed) so the table scan does not block writes.
+-- Rollback: DROP CONSTRAINT <table>_organization_id_fkey.
+
+ALTER TABLE public.advisor_milestone_progress ADD CONSTRAINT advisor_milestone_progress_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.approval_blocks ADD CONSTRAINT approval_blocks_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.approval_guard_rules ADD CONSTRAINT approval_guard_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.automation_rule_runs ADD CONSTRAINT automation_rule_runs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.automation_rules ADD CONSTRAINT automation_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.calendar_events ADD CONSTRAINT calendar_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.campaign_tracking_events ADD CONSTRAINT campaign_tracking_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.change_events ADD CONSTRAINT change_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.change_subscriptions ADD CONSTRAINT change_subscriptions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_activities ADD CONSTRAINT crm_activities_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_age_65_cancellation_outbox ADD CONSTRAINT crm_age_65_cancellation_outbox_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_approval_actions ADD CONSTRAINT crm_approval_actions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_approval_decisions ADD CONSTRAINT crm_approval_decisions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_approval_processes ADD CONSTRAINT crm_approval_processes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_approval_rules ADD CONSTRAINT crm_approval_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_approvals ADD CONSTRAINT crm_approvals_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_assignment_rules ADD CONSTRAINT crm_assignment_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_attachments ADD CONSTRAINT crm_attachments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_audit_log ADD CONSTRAINT crm_audit_log_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_automation_runs ADD CONSTRAINT crm_automation_runs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_blueprints ADD CONSTRAINT crm_blueprints_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_cadence_enrollments ADD CONSTRAINT crm_cadence_enrollments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_cadences ADD CONSTRAINT crm_cadences_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_contact_preferences ADD CONSTRAINT crm_contact_preferences_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_deal_stage_history ADD CONSTRAINT crm_deal_stage_history_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_deal_stages ADD CONSTRAINT crm_deal_stages_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_duplicate_dismissals ADD CONSTRAINT crm_duplicate_dismissals_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_fields ADD CONSTRAINT crm_fields_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_import_jobs ADD CONSTRAINT crm_import_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_import_mappings ADD CONSTRAINT crm_import_mappings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_import_sources ADD CONSTRAINT crm_import_sources_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_layouts ADD CONSTRAINT crm_layouts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_macro_runs ADD CONSTRAINT crm_macro_runs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_macros ADD CONSTRAINT crm_macros_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_message_events ADD CONSTRAINT crm_message_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_message_providers ADD CONSTRAINT crm_message_providers_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_message_templates ADD CONSTRAINT crm_message_templates_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_message_threads ADD CONSTRAINT crm_message_threads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_messages ADD CONSTRAINT crm_messages_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_modules ADD CONSTRAINT crm_modules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_notes ADD CONSTRAINT crm_notes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_notifications ADD CONSTRAINT crm_notifications_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_recent_views ADD CONSTRAINT crm_recent_views_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_record_links ADD CONSTRAINT crm_record_links_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_record_tags ADD CONSTRAINT crm_record_tags_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_records ADD CONSTRAINT crm_records_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_relations ADD CONSTRAINT crm_relations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_report_filters ADD CONSTRAINT crm_report_filters_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_report_results_cache ADD CONSTRAINT crm_report_results_cache_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_scheduled_reports ADD CONSTRAINT crm_scheduled_reports_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_scheduler_jobs ADD CONSTRAINT crm_scheduler_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_scoring_rules ADD CONSTRAINT crm_scoring_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_sla_policies ADD CONSTRAINT crm_sla_policies_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_stage_history ADD CONSTRAINT crm_stage_history_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_tags ADD CONSTRAINT crm_tags_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_tasks ADD CONSTRAINT crm_tasks_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_territories ADD CONSTRAINT crm_territories_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_user_preferences ADD CONSTRAINT crm_user_preferences_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_validation_rule_runs ADD CONSTRAINT crm_validation_rule_runs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_validation_rules ADD CONSTRAINT crm_validation_rules_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_views ADD CONSTRAINT crm_views_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_visitor_sessions ADD CONSTRAINT crm_visitor_sessions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_webforms ADD CONSTRAINT crm_webforms_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.crm_workflows ADD CONSTRAINT crm_workflows_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.deal_blockers ADD CONSTRAINT deal_blockers_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.deal_war_room_notes ADD CONSTRAINT deal_war_room_notes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.doc_folders ADD CONSTRAINT doc_folders_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.document_audit_log ADD CONSTRAINT document_audit_log_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.document_favorites ADD CONSTRAINT document_favorites_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.document_links ADD CONSTRAINT document_links_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.document_templates ADD CONSTRAINT document_templates_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.documents ADD CONSTRAINT documents_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_assets ADD CONSTRAINT email_assets_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_attachments ADD CONSTRAINT email_attachments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_campaigns ADD CONSTRAINT email_campaigns_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_connections ADD CONSTRAINT email_connections_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_domains ADD CONSTRAINT email_domains_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_messages ADD CONSTRAINT email_messages_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_sender_addresses ADD CONSTRAINT email_sender_addresses_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_sequences ADD CONSTRAINT email_sequences_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_signatures ADD CONSTRAINT email_signatures_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_threads ADD CONSTRAINT email_threads_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_tracking_events ADD CONSTRAINT email_tracking_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.email_unsubscribes ADD CONSTRAINT email_unsubscribes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.esign_connections ADD CONSTRAINT esign_connections_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.esign_envelopes ADD CONSTRAINT esign_envelopes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.forecasts ADD CONSTRAINT forecasts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.inbox_assignments ADD CONSTRAINT inbox_assignments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.inbox_conversations ADD CONSTRAINT inbox_conversations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.inbox_drafts ADD CONSTRAINT inbox_drafts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.inbox_messages ADD CONSTRAINT inbox_messages_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.inbox_quick_actions ADD CONSTRAINT inbox_quick_actions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.inbox_views ADD CONSTRAINT inbox_views_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.integration_events ADD CONSTRAINT integration_events_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.integration_jobs ADD CONSTRAINT integration_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.integration_logs ADD CONSTRAINT integration_logs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.integration_sync_jobs ADD CONSTRAINT integration_sync_jobs_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.integration_webhooks ADD CONSTRAINT integration_webhooks_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.oauth_states ADD CONSTRAINT oauth_states_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.playbook_checklists ADD CONSTRAINT playbook_checklists_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.playbook_progress ADD CONSTRAINT playbook_progress_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.playbooks ADD CONSTRAINT playbooks_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.report_alerts ADD CONSTRAINT report_alerts_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.report_segments ADD CONSTRAINT report_segments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.scheduled_appointments ADD CONSTRAINT scheduled_appointments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.scheduling_bookings ADD CONSTRAINT scheduling_bookings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.scheduling_links ADD CONSTRAINT scheduling_links_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.sent_emails_log ADD CONSTRAINT sent_emails_log_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.sent_sms_log ADD CONSTRAINT sent_sms_log_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.slack_connections ADD CONSTRAINT slack_connections_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.slack_messages_log ADD CONSTRAINT slack_messages_log_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.slack_subscriptions ADD CONSTRAINT slack_subscriptions_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.user_domain_assignments ADD CONSTRAINT user_domain_assignments_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.user_email_settings ADD CONSTRAINT user_email_settings_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.vendor_changes ADD CONSTRAINT vendor_changes_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.vendor_connectors ADD CONSTRAINT vendor_connectors_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.vendor_file_rows ADD CONSTRAINT vendor_file_rows_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.vendor_files ADD CONSTRAINT vendor_files_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE public.vendors ADD CONSTRAINT vendors_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES public.organizations(id) ON DELETE CASCADE NOT VALID;
