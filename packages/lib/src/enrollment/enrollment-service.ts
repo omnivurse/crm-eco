@@ -22,6 +22,14 @@ export interface CreateEnrollmentPayload {
   channel?: string;
   customFields?: { [key: string]: Json | undefined };
   actorProfileId?: string;
+  /**
+   * Idempotency key for exactly-once enrollment creation. When supplied, a repeated
+   * submit with the same (organization, key) returns the existing enrollment instead
+   * of creating a duplicate (enforced by create_enrollment_tx + a partial unique index,
+   * migration 202605300013). Derive from a stable per-submit token (wizard draft id,
+   * etc.) — NOT from a fresh random value per call.
+   */
+  idempotencyKey?: string;
 }
 
 export interface ChangePlanPayload {
@@ -68,6 +76,7 @@ export class EnrollmentService {
         enrollment_source: payload.enrollmentSource || 'admin',
         channel: payload.channel || 'direct',
         custom_fields: payload.customFields || {},
+        idempotency_key: payload.idempotencyKey ?? null,
       },
     });
 
@@ -146,6 +155,8 @@ export class EnrollmentService {
       enrollmentSource: 'plan_change',
       channel: oldEnrollment.channel || 'direct',
       actorProfileId: payload.actorProfileId,
+      // A retried plan-change to the same target plan must not spawn duplicate new enrollments.
+      idempotencyKey: `plan_change_${payload.enrollmentId}_${payload.newPlanId}_${payload.effectiveDate}`,
     });
 
     return { oldEnrollmentId: payload.enrollmentId, newEnrollment: newEnrollmentResult.enrollment };

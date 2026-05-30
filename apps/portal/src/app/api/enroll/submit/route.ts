@@ -62,33 +62,50 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
 
-  // 1. Create member record
-  const memberNumber = `M-${Date.now().toString(36).toUpperCase()}`;
-  const { data: memberRow, error: memberErr } = await supabase
-    .from('members')
-    .insert({
-      organization_id: orgId,
-      member_number: memberNumber,
-      first_name: member.first_name,
-      last_name: member.last_name,
-      email: member.email,
-      phone: member.phone ?? null,
-      date_of_birth: member.date_of_birth ?? null,
-      address_line1: member.address_line1 ?? null,
-      city: member.city ?? null,
-      state: member.state ?? null,
-      postal_code: member.zip_code ?? null,
-      status: 'pending',
-      source: 'public_wizard',
-    })
-    .select('id')
-    .single();
+  // 1. Find-or-create member (C2: dedup by org + normalized email so a double-submit /
+  //    retry reuses the existing member instead of creating a duplicate).
+  const normalizedEmail = member.email.toLowerCase().trim();
+  let memberId: string;
 
-  if (memberErr || !memberRow) {
-    return NextResponse.json(
-      { error: 'member_create_failed', message: memberErr?.message },
-      { status: 500 },
-    );
+  const { data: existingMember } = await supabase
+    .from('members')
+    .select('id')
+    .eq('organization_id', orgId)
+    .eq('email', normalizedEmail)
+    .limit(1)
+    .maybeSingle();
+
+  if (existingMember) {
+    memberId = existingMember.id;
+  } else {
+    const memberNumber = `M-${Date.now().toString(36).toUpperCase()}`;
+    const { data: memberRow, error: memberErr } = await supabase
+      .from('members')
+      .insert({
+        organization_id: orgId,
+        member_number: memberNumber,
+        first_name: member.first_name,
+        last_name: member.last_name,
+        email: normalizedEmail,
+        phone: member.phone ?? null,
+        date_of_birth: member.date_of_birth ?? null,
+        address_line1: member.address_line1 ?? null,
+        city: member.city ?? null,
+        state: member.state ?? null,
+        postal_code: member.zip_code ?? null,
+        status: 'pending',
+        source: 'public_wizard',
+      })
+      .select('id')
+      .single();
+
+    if (memberErr || !memberRow) {
+      return NextResponse.json(
+        { error: 'member_create_failed', message: memberErr?.message },
+        { status: 500 },
+      );
+    }
+    memberId = memberRow.id;
   }
 
   // 2. Get plan price
@@ -110,7 +127,7 @@ export async function POST(request: NextRequest) {
   const { data: enrollResult, error: enrollErr } = await supabase.rpc('create_enrollment_tx', {
     p_org_id: orgId,
     p_payload: {
-      primary_member_id: memberRow.id,
+      primary_member_id: memberId,
       selected_plan_id: selected_plan_id ?? null,
       effective_date: effective_date ?? defaultEffective,
       household_size: 1 + (household?.length ?? 0),
@@ -118,6 +135,9 @@ export async function POST(request: NextRequest) {
       permanent_bill_day: 20,
       enrollment_source: 'public_wizard',
       channel: 'web',
+      // C1: stable per-submit key so a retry/double-click of this wizard draft
+      // returns the same enrollment instead of creating a duplicate.
+      idempotency_key: `enroll_${draft.draftId}`,
       custom_fields: {
         landing_slug: draft.slug,
         draft_id: draft.draftId,
