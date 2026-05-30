@@ -73,18 +73,15 @@ describe.skipIf(!RUN)('enrollment Layer 3 — authenticated cross-tenant isolati
   describe('admin-role users (role=admin)', () => {
     beforeAll(async () => { await seedOrg('A', 'admin'); await seedOrg('B', 'admin'); });
 
-    // KNOWN C3 LEAK (confirmed 2026-05-30): org-A admin CAN currently read org-B
-    // enrollments because the "Staff can read enrollments" policy is
-    // USING (is_staff_or_admin()) with no organization_id filter, and RLS policies
-    // are OR'd. This is one of 15 such non-org-scoped is_staff_or_admin() policies
-    // across 13 tables (members, commissions, advisors, products, ...). it.fails =
-    // the suite stays green while the gap exists; when the policies are org-scoped
-    // this flips to FAILING — that is the signal to delete `.fails`.
-    it.fails('org-A admin must NOT see org-B enrollments [EXPECTED-FAIL: non-org-scoped Staff RLS leaks cross-tenant]', async () => {
+    // C3 cross-tenant isolation. The leak (org-A admin reading org-B enrollments via
+    // the non-org-scoped "Staff can read enrollments" policy) is closed by migration
+    // 202605300012, which org-scopes all 15 is_staff_or_admin() policies across 11
+    // tables. This now asserts proper isolation (passes once 300012 is applied).
+    it('org-A admin must NOT see org-B enrollments [C3 cross-tenant isolation]', async () => {
       const { data, error } = await authed.A.from('enrollments').select('id, organization_id');
       expect(error).toBeNull();
       const foreign = (data ?? []).filter(r => r.organization_id === orgs.B.orgId);
-      expect(foreign).toHaveLength(0); // correct behavior; currently fails (leak)
+      expect(foreign).toHaveLength(0);
     });
 
     it('org-A admin can still see its OWN org enrollment (sanity)', async () => {
