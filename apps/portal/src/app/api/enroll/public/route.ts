@@ -78,13 +78,21 @@ export async function POST(request: NextRequest) {
       // RPC might not exist, ignore error
     }
 
-    // Check if member already exists
-    const { data: existingMember } = await supabase
+    // Check if member already exists. Match on email + NAME, not email alone: family
+    // members legitimately share one email in health-benefits, so an email-only match
+    // (esp. with .single(), which throws on >1) would mis-attach or error.
+    const emailLc = data.email.toLowerCase().trim();
+    const firstLc = (data.firstName ?? '').trim().toLowerCase();
+    const lastLc = (data.lastName ?? '').trim().toLowerCase();
+    const { data: emailMatches } = await supabase
       .from('members')
-      .select('id')
+      .select('id, first_name, last_name')
       .eq('organization_id', landingPage.organization_id)
-      .eq('email', data.email.toLowerCase())
-      .single();
+      .eq('email', emailLc)
+      .limit(50);
+    const existingMember = (emailMatches ?? []).find(
+      (m) => (m.first_name ?? '').trim().toLowerCase() === firstLc && (m.last_name ?? '').trim().toLowerCase() === lastLc,
+    );
 
     let memberId: string;
 

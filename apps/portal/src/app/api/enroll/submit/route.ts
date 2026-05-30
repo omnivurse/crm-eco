@@ -62,18 +62,25 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
 
-  // 1. Find-or-create member (C2: dedup by org + normalized email so a double-submit /
-  //    retry reuses the existing member instead of creating a duplicate).
+  // 1. Find-or-create member (C2: dedup by org + email + NAME so a double-submit / retry
+  //    reuses the existing member. NOTE: email alone is NOT unique for members — in
+  //    health-benefits, family members legitimately share one email — so we match on
+  //    (email, first_name, last_name) to avoid mis-attaching a relative's enrollment.)
   const normalizedEmail = member.email.toLowerCase().trim();
+  const fn = member.first_name.trim().toLowerCase();
+  const ln = member.last_name.trim().toLowerCase();
   let memberId: string;
 
-  const { data: existingMember } = await supabase
+  const { data: emailMatches } = await supabase
     .from('members')
-    .select('id')
+    .select('id, first_name, last_name')
     .eq('organization_id', orgId)
     .eq('email', normalizedEmail)
-    .limit(1)
-    .maybeSingle();
+    .limit(50);
+
+  const existingMember = (emailMatches ?? []).find(
+    (m) => (m.first_name ?? '').trim().toLowerCase() === fn && (m.last_name ?? '').trim().toLowerCase() === ln,
+  );
 
   if (existingMember) {
     memberId = existingMember.id;
