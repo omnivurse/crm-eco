@@ -16,13 +16,16 @@ describe.skipIf(!hasTestDb)('enrollment DB harness connectivity', () => {
 });
 
 /**
- * Decision-INDEPENDENT Layer 2/3 cases to implement once staging is wired.
- * (Payment double-charge + anonymous public-link RLS cases are deferred until
- * the payment-processor and anon-self-enroll decisions land.)
+ * Layer 2/3 backlog — now IMPLEMENTED in sibling specs (2026-05-30):
+ *   C1 idempotency           -> idempotency.db.spec.ts
+ *   C2 member dedup (gap)     -> tenant-and-dedup.db.spec.ts
+ *   C3 anon-surface lockdown  -> tenant-and-dedup.db.spec.ts
+ *   C3 authenticated isolation-> cross-tenant.db.spec.ts (drove the org-scoping fix, 202605300012)
+ *   trigger idempotency       -> trigger-idempotency.db.spec.ts
+ * Still open: C2 dedup FIX (unique partial index + dedup-or-merge in create paths);
+ * payment double-charge (H5) once the processor-abstraction layer (H3) exists.
  */
-describe('enrollment DB/RLS backlog (planned)', () => {
-  it.todo('C1 — create_enrollment_tx: a repeated idempotency key creates no duplicate enrollment');
-  it.todo('C2 — member dedup: same (email, organization_id) does not create a duplicate member');
-  it.todo('C3 — cross-tenant isolation: a user in org A cannot read or write org B enrollments');
-  it.todo('triggers — re-running activation does not double-insert billing_schedules / commissions');
+describe('enrollment DB/RLS backlog (remaining)', () => {
+  it.todo('C2 FIX — a unique partial index on (lower(email), organization_id) rejects/merges duplicate members');
+  it.todo('H5 — payment webhook double-charge detection (after the processor-abstraction layer lands)');
 });
