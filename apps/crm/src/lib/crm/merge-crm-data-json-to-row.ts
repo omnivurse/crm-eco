@@ -62,8 +62,44 @@ const UUID_COLUMN_KEYS = new Set([
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** JSONB keys that store calendar dates (DOB, spouse/child DOBs, *_date fields). */
+const CRM_JSONB_DATE_FIELD_KEY_RE = /(?:^date_of_birth$|_date$|_dob$)/i;
+
 function isUuidValue(value: unknown): boolean {
   return typeof value === 'string' && UUID_RE.test(value);
+}
+
+export function isCrmJsonbDateFieldKey(key: string): boolean {
+  return CRM_JSONB_DATE_FIELD_KEY_RE.test(key);
+}
+
+/** True when month/day form a real calendar date (rejects 01/00, 0000-00-00, etc.). */
+function isValidCalendarDateParts(year: number, month: number, day: number): boolean {
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+  const probe = new Date(year, month - 1, day);
+  return (
+    probe.getFullYear() === year &&
+    probe.getMonth() === month - 1 &&
+    probe.getDate() === day
+  );
+}
+
+/**
+ * Normalize date-like keys in a JSONB patch before merge/save.
+ * Blank, sentinel, and invalid legacy values (e.g. `01/00/2000`) become `null`
+ * so reps can clear DOB and still save the rest of the lead.
+ */
+export function sanitizeCrmDataJsonPatch(
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) continue;
+    out[key] = isCrmJsonbDateFieldKey(key)
+      ? normalizeDateColumnValue(value)
+      : value;
+  }
+  return out;
 }
 
 /**
@@ -95,7 +131,9 @@ export function normalizeDateColumnValue(value: unknown): string | null {
     trimmed === '' ||
     trimmed.toLowerCase() === 'null' ||
     trimmed.toLowerCase() === 'undefined' ||
-    trimmed === '0000-00-00'
+    trimmed === '0000-00-00' ||
+    trimmed === '00/00/0000' ||
+    trimmed === '0/0/0000'
   ) {
     return null;
   }
@@ -104,19 +142,22 @@ export function normalizeDateColumnValue(value: unknown): string | null {
   // portion — strip any T-suffix to keep DATE columns happy).
   const isoMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (isoMatch) {
-    const yr = Number(isoMatch[1]);
-    if (yr >= 1900 && yr <= 2100) return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
-    if (yr >= 0 && yr <= 29) return `${(2000 + yr).toString().padStart(4, '0')}-${isoMatch[2]}-${isoMatch[3]}`;
-    if (yr >= 30 && yr <= 99) return `${(1900 + yr).toString().padStart(4, '0')}-${isoMatch[2]}-${isoMatch[3]}`;
-    return null;
+    const month = Number(isoMatch[2]);
+    const day = Number(isoMatch[3]);
+    let yr = Number(isoMatch[1]);
+    if (yr >= 0 && yr <= 29) yr = 2000 + yr;
+    else if (yr >= 30 && yr <= 99) yr = 1900 + yr;
+    if (yr < 1900 || yr > 2100) return null;
+    if (!isValidCalendarDateParts(yr, month, day)) return null;
+    return `${yr.toString().padStart(4, '0')}-${isoMatch[2]}-${isoMatch[3]}`;
   }
 
   // M/D/YYYY or M/D/YY (US-format) — the format historically present in CSVs.
   const slashMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
   if (slashMatch) {
     const [, mm, dd, yPart] = slashMatch;
-    const month = mm.padStart(2, '0');
-    const day = dd.padStart(2, '0');
+    const month = Number(mm);
+    const day = Number(dd);
     let year: number;
     if (yPart.length === 4) {
       year = Number(yPart);
@@ -125,7 +166,8 @@ export function normalizeDateColumnValue(value: unknown): string | null {
       const twoDigit = Number(yPart);
       year = twoDigit <= 29 ? 2000 + twoDigit : 1900 + twoDigit;
     }
-    return `${year.toString().padStart(4, '0')}-${month}-${day}`;
+    if (!isValidCalendarDateParts(year, month, day)) return null;
+    return `${year.toString().padStart(4, '0')}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
   }
 
   return null;

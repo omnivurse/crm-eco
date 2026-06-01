@@ -7,8 +7,9 @@
  * text + select inline editors.
  */
 
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { format, parseISO } from 'date-fns';
+import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { AlertTriangle, CalendarDays, Check, Loader2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
@@ -37,12 +38,13 @@ export interface InlineDateFieldProps {
 
 function toInputValue(value: string | null | undefined, mode: 'date' | 'datetime'): string {
   if (!value) return '';
+  if (mode === 'date') {
+    return normalizeDateColumnValue(value) ?? '';
+  }
   try {
     const d = typeof value === 'string' ? parseISO(value) : new Date(value);
     if (isNaN(d.getTime())) return '';
-    return mode === 'date'
-      ? format(d, 'yyyy-MM-dd')
-      : format(d, "yyyy-MM-dd'T'HH:mm");
+    return format(d, "yyyy-MM-dd'T'HH:mm");
   } catch {
     return '';
   }
@@ -50,14 +52,23 @@ function toInputValue(value: string | null | undefined, mode: 'date' | 'datetime
 
 function toDisplay(value: string | null | undefined, mode: 'date' | 'datetime'): string | null {
   if (!value) return null;
+  if (mode === 'date') {
+    const iso = normalizeDateColumnValue(value);
+    if (!iso) return null;
+    try {
+      const d = parseISO(iso);
+      if (isNaN(d.getTime())) return null;
+      return format(d, 'MMM d, yyyy');
+    } catch {
+      return null;
+    }
+  }
   try {
     const d = typeof value === 'string' ? parseISO(value) : new Date(value);
-    if (isNaN(d.getTime())) return String(value);
-    return mode === 'date'
-      ? format(d, 'MMM d, yyyy')
-      : format(d, 'MMM d, yyyy h:mm a');
+    if (isNaN(d.getTime())) return null;
+    return format(d, 'MMM d, yyyy h:mm a');
   } catch {
-    return String(value);
+    return null;
   }
 }
 
@@ -78,6 +89,10 @@ export const InlineDateField = memo(function InlineDateField({
   const { acquireFieldLock, releaseFieldLock } = useRecordFieldLocks();
   const lockOwner = useFieldLockOwner(field);
   const [draft, setDraft] = useState<string>(toInputValue(value, mode));
+
+  useEffect(() => {
+    setDraft(toInputValue(value, mode));
+  }, [value, mode]);
 
   const commit = useCallback(
     async (nextRaw: string) => {

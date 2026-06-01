@@ -3,6 +3,7 @@ import {
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
   normalizeDateColumnValue,
+  sanitizeCrmDataJsonPatch,
 } from './merge-crm-data-json-to-row';
 
 describe('normalizeRowColumnValue', () => {
@@ -221,13 +222,37 @@ describe('normalizeDateColumnValue', () => {
     expect(normalizeDateColumnValue('   ')).toBeNull();
     expect(normalizeDateColumnValue('null')).toBeNull();
     expect(normalizeDateColumnValue('0000-00-00')).toBeNull();
+    expect(normalizeDateColumnValue('00/00/0000')).toBeNull();
     expect(normalizeDateColumnValue('not a date')).toBeNull();
     expect(normalizeDateColumnValue(null)).toBeNull();
     expect(normalizeDateColumnValue(undefined)).toBeNull();
   });
 
+  it('returns null for invalid month/day (legacy Zoho DOB placeholders)', () => {
+    expect(normalizeDateColumnValue('1990-01-00')).toBeNull();
+    expect(normalizeDateColumnValue('1990-00-15')).toBeNull();
+    expect(normalizeDateColumnValue('01/00/2000')).toBeNull();
+    expect(normalizeDateColumnValue('1/0/2000')).toBeNull();
+  });
+
   it('handles Date instances by formatting in UTC', () => {
     expect(normalizeDateColumnValue(new Date('2026-06-01T00:00:00Z'))).toBe('2026-06-01');
     expect(normalizeDateColumnValue(new Date('invalid'))).toBeNull();
+  });
+});
+
+describe('sanitizeCrmDataJsonPatch', () => {
+  it('clears invalid DOB and leaves other fields untouched', () => {
+    expect(
+      sanitizeCrmDataJsonPatch({
+        first_name: 'Jane',
+        date_of_birth: '01/00/2000',
+        spouse_dob: '',
+      }),
+    ).toEqual({
+      first_name: 'Jane',
+      date_of_birth: null,
+      spouse_dob: null,
+    });
   });
 });

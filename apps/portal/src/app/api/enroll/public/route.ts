@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { pickActiveMemberByName } from '@crm-eco/lib';
 import {
   sendEnrollmentConfirmationEmail,
   sendAdvisorNotificationEmail,
@@ -82,16 +83,18 @@ export async function POST(request: NextRequest) {
     // members legitimately share one email in health-benefits, so an email-only match
     // (esp. with .single(), which throws on >1) would mis-attach or error.
     const emailLc = data.email.toLowerCase().trim();
-    const firstLc = (data.firstName ?? '').trim().toLowerCase();
-    const lastLc = (data.lastName ?? '').trim().toLowerCase();
     const { data: emailMatches } = await supabase
       .from('members')
-      .select('id, first_name, last_name')
+      .select('id, first_name, last_name, merged_into_id')
       .eq('organization_id', landingPage.organization_id)
       .eq('email', emailLc)
-      .limit(50);
-    const existingMember = (emailMatches ?? []).find(
-      (m) => (m.first_name ?? '').trim().toLowerCase() === firstLc && (m.last_name ?? '').trim().toLowerCase() === lastLc,
+      .is('merged_into_id', null)
+      .order('id', { ascending: true })
+      .limit(200);
+    const existingMember = pickActiveMemberByName(
+      emailMatches ?? [],
+      data.firstName,
+      data.lastName,
     );
 
     let memberId: string;
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
           organization_id: landingPage.organization_id,
           first_name: data.firstName,
           last_name: data.lastName,
-          email: data.email.toLowerCase(),
+          email: emailLc,
           phone: data.phone,
           state: data.state,
           status: 'pending',
@@ -115,11 +118,34 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single();
 
-      if (memberError) {
-        return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
+      if (memberError || !newMember) {
+        // A concurrent submit, or a returning member outside the lookup window above,
+        // can collide with members_org_email_name_active_uniq. Recover by reusing the
+        // existing active member instead of failing the enrollment.
+        if (memberError?.code === '23505') {
+          const { data: retryMatches } = await supabase
+            .from('members')
+            .select('id, first_name, last_name, merged_into_id')
+            .eq('organization_id', landingPage.organization_id)
+            .eq('email', emailLc)
+            .is('merged_into_id', null)
+            .order('id', { ascending: true })
+            .limit(1000);
+          const recovered = pickActiveMemberByName(
+            retryMatches ?? [],
+            data.firstName,
+            data.lastName,
+          );
+          if (!recovered) {
+            return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
+          }
+          memberId = recovered.id;
+        } else {
+          return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
+        }
+      } else {
+        memberId = newMember.id;
       }
-
-      memberId = newMember.id;
     }
 
     // Create the lead record for tracking
@@ -144,16 +170,44 @@ export async function POST(request: NextRequest) {
       // Don't fail the request, member was created
     }
 
-    // Create the enrollment record
-    const { data: enrollment, error: enrollmentError } = await supabase
-      .from('enrollments')
-      .insert({
-        organization_id: landingPage.organization_id,
+    // Create the enrollment via the atomic, idempotent RPC so a retry / double-submit of
+    // the same landing-page form (same member + plan) reuses the existing enrollment
+    // instead of creating a duplicate — a duplicate would later double-bill / double-pay
+    // commission once both are approved.
+    const idempotencyKey = `landing_${landingPage.id}_${memberId}_${data.planId ?? 'none'}`;
+    const { data: enrollResult, error: enrollmentError } = await supabase.rpc('create_enrollment_tx', {
+      p_org_id: landingPage.organization_id,
+      p_payload: {
         primary_member_id: memberId,
-        selected_plan_id: data.planId || null,
-        advisor_id: landingPage.default_advisor_id,
-        status: 'draft',
+        advisor_id: landingPage.default_advisor_id ?? null,
+        selected_plan_id: data.planId ?? null,
         enrollment_source: 'landing_page',
+        channel: 'web',
+        idempotency_key: idempotencyKey,
+        custom_fields: { landing_page_id: landingPage.id },
+        dependents: [],
+      },
+    });
+
+    if (enrollmentError || !enrollResult) {
+      return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
+    }
+
+    const enrollmentId = (enrollResult as { enrollment_id: string }).enrollment_id;
+    const idempotentReplay =
+      (enrollResult as { idempotent_replay?: boolean }).idempotent_replay === true;
+
+    // Retry / double-submit: the enrollment already exists. Don't duplicate it, re-fire the
+    // confirmation/advisor emails, or re-log the enrollment_created event.
+    if (idempotentReplay) {
+      return NextResponse.json({ success: true, enrollmentId });
+    }
+
+    // create_enrollment_tx doesn't set the wizard snapshot, but the rest of the portal
+    // reads enrollment.snapshot.intake — preserve it on first creation.
+    await supabase
+      .from('enrollments')
+      .update({
         snapshot: {
           landing_page_id: landingPage.id,
           intake: {
@@ -165,12 +219,7 @@ export async function POST(request: NextRequest) {
           },
         },
       })
-      .select('id')
-      .single();
-
-    if (enrollmentError) {
-      return NextResponse.json({ error: 'Failed to create enrollment' }, { status: 500 });
-    }
+      .eq('id', enrollmentId);
 
     // Track successful enrollment event
     await supabase.from('landing_page_events').insert({
@@ -178,7 +227,7 @@ export async function POST(request: NextRequest) {
       organization_id: landingPage.organization_id,
       event_type: 'enrollment_created',
       lead_id: lead?.id,
-      enrollment_id: enrollment.id,
+      enrollment_id: enrollmentId,
     });
 
     // Get organization info for emails
@@ -208,7 +257,7 @@ export async function POST(request: NextRequest) {
       lastName: data.lastName,
       phone: data.phone,
       planName,
-      enrollmentId: enrollment.id,
+      enrollmentId,
       organizationName,
     });
 
@@ -232,7 +281,7 @@ export async function POST(request: NextRequest) {
           memberLastName: data.lastName,
           memberEmail: data.email.toLowerCase(),
           memberPhone: data.phone,
-          enrollmentId: enrollment.id,
+          enrollmentId,
           organizationName,
         });
 
@@ -244,7 +293,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      enrollmentId: enrollment.id,
+      enrollmentId,
     });
   } catch (error) {
     console.error('Public enrollment error:', error);

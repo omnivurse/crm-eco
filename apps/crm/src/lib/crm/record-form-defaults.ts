@@ -1,3 +1,8 @@
+import {
+  isCrmJsonbDateFieldKey,
+  normalizeDateColumnValue,
+} from '@/lib/crm/merge-crm-data-json-to-row';
+
 /**
  * CRM record forms primarily edit JSONB `data`, but many important fields live on
  * `crm_records` as indexed columns (market_type, carrier_id, normalization_*, etc.).
@@ -91,6 +96,14 @@ export function mergeCrmRecordRowIntoFormDefaults(
   if (row.status != null && row.status !== '') {
     if (base.contact_status == null && base.lead_status == null) {
       base.contact_status = row.status;
+    }
+  }
+
+  // Legacy imports may store invalid DOB strings (e.g. 01/00/2000). Normalize
+  // so date inputs start empty and reps can clear the field without blocking save.
+  for (const key of Object.keys(base)) {
+    if (isCrmJsonbDateFieldKey(key)) {
+      base[key] = normalizeDateColumnValue(base[key]);
     }
   }
 

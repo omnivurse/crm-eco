@@ -1,0 +1,49 @@
+{
+  "$schema": "https://omnivurse.dev/qa-agent-kit/config.schema.json",
+  "project": "REPLACE_ME",
+  "framework": "nextjs-app-router",
+  "monorepo": false,
+  "apps": [
+    {
+      "name": "web",
+      "path": ".",
+      "dev_url": "http://localhost:3000",
+      "preview_url": null
+    }
+  ],
+  "supabase": {
+    "mode": "test_project",
+    "test_project_ref": "REPLACE_ME",
+    "local_url": "http://localhost:54321",
+    "test_tenants": [
+      {
+        "label": "tenant_a",
+        "org_id": "REPLACE_ME_UUID",
+        "email": "qa-tenant-a@example.com",
+        "password_env": "QA_TENANT_A_PASSWORD"
+      },
+      {
+        "label": "tenant_b",
+        "org_id": "REPLACE_ME_UUID",
+        "email": "qa-tenant-b@example.com",
+        "password_env": "QA_TENANT_B_PASSWORD"
+      }
+    ]
+  },
+  "integrations": {
+    "stripe": { "enabled": false, "mode": "test" },
+    "resend": { "enabled": false, "mode": "sandbox", "to_override": "qa-sink@example.com" },
+    "twilio": { "enabled": false, "mode": "test" },
+    "authorize_net": { "enabled": false, "mode": "sandbox" },
+    "goto": { "enabled": false, "mode": "skip" }
+  },
+  "skip_routes": [],
+  "skip_specialists": [],
+  "tier_0_only": false,
+  "_safety": {
+    "production_urls_blocklist": [],
+    "refuse_if_supabase_mode_is": ["production", "prod"],
+    "max_writes_per_run": 100,
+    "max_run_duration_seconds": 1800
+  }
+}

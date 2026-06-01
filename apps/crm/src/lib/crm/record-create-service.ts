@@ -2,7 +2,10 @@ import { revalidatePath } from 'next/cache';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { executeMatchingWorkflows, applyScoring } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
-import { mergeCrmDataJsonIntoRowColumns } from '@/lib/crm/merge-crm-data-json-to-row';
+import {
+  mergeCrmDataJsonIntoRowColumns,
+  sanitizeCrmDataJsonPatch,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 import type { CrmPatchAuthProfile } from '@/lib/crm/record-patch-service';
 
 export interface ExecuteCrmRecordCreateInput {
@@ -69,14 +72,14 @@ export async function executeCrmRecordCreate(params: {
     }
   }
 
-  const d = input.data as Record<string, unknown>;
+  const d = sanitizeCrmDataJsonPatch(input.data as Record<string, unknown>);
   const rowFromData = mergeCrmDataJsonIntoRowColumns(d, { moduleKey: moduleRow.key });
 
   const insertRow: Record<string, unknown> = {
     org_id: profile.organization_id,
     module_id: input.module_id,
     owner_id: input.owner_id || profile.id,
-    data: input.data,
+    data: d,
     created_by: profile.id,
     ...rowFromData,
   };

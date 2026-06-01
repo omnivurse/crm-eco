@@ -1,0 +1,58 @@
+---
+description: Standing operating rules for all coding work — discovery, complete delivery, DB/RLS/security discipline, verification, and self-audit. Pairs with the Production Change Playbook.
+alwaysApply: true
+---
+
+# Agent Operating Rules
+
+Apply on every substantive coding task. The **Production Change Playbook** (separate rule) governs production-sensitive changes; these govern *all* coding work. When unsure, follow the stricter of the two.
+
+## 1. No-Assumptions Discovery
+Inspect the real repo before implementing. Never assume file paths, framework version, routing, DB schema, component library, auth model, env vars, API contracts, existing utilities, styling, package manager, or deploy target. Locate and read existing similar implementations first; identify the test/build/lint/typecheck commands; state what's confirmed vs unknown. Prefer extending the existing architecture over inventing a parallel one.
+
+## 2. Implementation Contract — ship complete
+Deliver a complete, fully-wired implementation across every layer the feature touches: frontend, backend/API, DB/migrations, RLS/policies, types, validation, error/loading/empty states, permissions, and verification. Don't stop at UI if backend wiring is needed, or vice-versa. No mock-only functionality unless asked. If blocked by missing info, state exactly what's blocked and ship the safest partial.
+
+## 3. Database Reality Over Migration Files
+Migration files are history, not the source of truth — the live schema drifts. Inspect actual tables/columns/indexes/constraints/functions/triggers/RLS on the running DB before designing DB changes. Never assume a migration applied because the file exists, nor that a column is absent because no migration mentions it. Make migrations idempotent; include rollback.
+
+## 4. RLS & Tenant Isolation First
+For any multi-tenant / Supabase / PHI/PII / CRM / billing / admin feature, access control is first-class. Confirm RLS is enabled and policies cover SELECT/INSERT/UPDATE/DELETE. **Never authorize off `user_metadata`** (user-editable) — use `auth.uid()`, membership/role tables, server-side helpers. **Fail closed.** Test as authorized / unauthorized / different-tenant / anon users and prove cross-tenant reads AND writes are blocked. Not done until isolation is verified.
+
+## 5. No Duplicate Systems
+Search for an existing equivalent before adding any table/component/hook/route/edge-function/util/auth-helper/role-system/notification/billing/audit-log/bucket/env-var. Reuse > extend > refactor > replace (with migration path). Justify why the existing system can't be reused.
+
+## 6. Migration Minimization
+Before creating a migration, rule out non-schema causes: existing structure, frontend mapping, stale generated types, RLS/policy, query/join, seed data, naming mismatch, stale cache/build. Migrate only when the live schema truly lacks the structure. When needed: idempotent, additive, with indexes + policies + rollback notes; no destructive changes without explicit approval.
+
+## 7. Frontend Reflects Backend Truth
+For read/write UI, trace the full lifecycle: form state → validation → submit → payload → server handler → DB write → DB read → cache invalidation → UI refresh → display → RLS → error/loading states. When a field saves but displays wrong, check BOTH write and read paths (often wired to different sources). Never use mock data when real data exists.
+
+## 8. Integration Safety
+Treat every third-party call (Stripe, Authorize.Net, Resend, GoTo, webhooks, SFTP, eligibility files) as production-impacting. Separate sandbox from prod; add dry-run/no-op mode; validate payloads; log safe metadata only; retry idempotently; prevent duplicate sends/charges/tickets; store response IDs; verify with a test recipient. Never send real emails/SMS/webhooks/payments/member-data without explicit approval.
+
+## 9. Secrets & Security
+Never expose/log/hardcode/commit secrets (API/service-role keys, DB URLs, JWT/OAuth/webhook secrets, SMTP/SFTP creds, encryption keys, PHI/PII payloads). Env vars only; validate at runtime; mask in debug output. Never put secrets or service-role keys in client-side code. Privileged ops run server-side / in edge functions. Audit-log sensitive actions. Fail closed.
+
+## 10. Performance Budget
+Assume production scale from the start. No client-side full-table loads; paginate; debounce expensive filters; index common filters/joins; avoid N+1; don't block render on non-critical data; add skeletons; cache safely; use materialized views for heavy reporting. A feature that only works on tiny test data is not done.
+
+## 11. UX Completeness
+Ship every state: loading, empty, error, success, disabled/pending, permission-denied, mobile-responsive, long-text/overflow, accessible labels, clear primary + cancel/back actions, toast/confirmation. No raw forms, clipped text, broken mobile, or dead-end modals. Use the existing design system.
+
+## 12. Quality Gate Before Done
+Never mark complete without verification evidence. Run the relevant: typecheck, lint, unit/integration tests, build, DB validation query, API smoke test, UI route test, auth/RLS test, error-log review, before/after comparison. State: what changed · files changed · commands run · their actual results · known limitations · follow-up risks. Don't say "should work" — say what was verified.
+
+## 13. Testing Matrix
+Define a matrix before claiming done: happy path · empty · invalid input · unauthorized · different tenant/role · network/API failure · loading · existing-data regression · mobile (if UI) · production-like volume. For bug fixes: the original broken case + a regression case + one adjacent flow that must stay unchanged. Don't rely on visual inspection alone.
+
+## 14. Surgical Fix Before Rewrite
+Prefer the smallest safe change that fixes the root cause. Don't rewrite large modules unless the design is proven unsalvageable, there's a clear migration plan, it's safer than a targeted repair, and the user approves. Bugfix sequence: reproduce/locate → trace data/control flow → identify root cause → patch the narrowest responsible layer → add regression protection → verify the fix → verify no adjacent flow broke. Don't "modernize" unrelated code during a bugfix.
+
+## 15. Self-Audit Before Final Answer
+Before responding, check: solved the actual request? inspected before changing? avoided unnecessary migrations? preserved auth/RLS/security? avoided duplicate systems? updated all affected layers? ran verification? documented risks? provided rollback guidance? left the repo cleaner? If any answer is "no," fix it or clearly disclose the gap.
+
+---
+
+### Required response shape for non-trivial tasks
+Executive Summary · Discovery · Root Cause (for bugs) · Proposed Fix · Files to Change · Implementation · Verification (commands + results) · Risk/Rollback · Final Status (what's complete, what's verified, what remains).

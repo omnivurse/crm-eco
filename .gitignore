@@ -65,3 +65,8 @@ pnpm-lock.yaml
 .audit/reports/
 .audit/repo_migration_versions.txt
 .audit/pifh_migration_versions.txt
+
+# QA Agent Kit
+.claude/qa/reports/
+.claude/qa/manifest.json
+.claude/qa/PAUSE

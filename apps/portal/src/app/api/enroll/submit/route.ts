@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { pickActiveMemberByName } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { readDraftFromRequest, clearDraftCookie } from '@/lib/enroll/draft-cookie';
 import { verifyRecaptchaToken } from '@/lib/enroll/recaptcha';
@@ -67,19 +68,21 @@ export async function POST(request: NextRequest) {
   //    health-benefits, family members legitimately share one email — so we match on
   //    (email, first_name, last_name) to avoid mis-attaching a relative's enrollment.)
   const normalizedEmail = member.email.toLowerCase().trim();
-  const fn = member.first_name.trim().toLowerCase();
-  const ln = member.last_name.trim().toLowerCase();
   let memberId: string;
 
   const { data: emailMatches } = await supabase
     .from('members')
-    .select('id, first_name, last_name')
+    .select('id, first_name, last_name, merged_into_id')
     .eq('organization_id', orgId)
     .eq('email', normalizedEmail)
-    .limit(50);
+    .is('merged_into_id', null)
+    .order('id', { ascending: true })
+    .limit(200);
 
-  const existingMember = (emailMatches ?? []).find(
-    (m) => (m.first_name ?? '').trim().toLowerCase() === fn && (m.last_name ?? '').trim().toLowerCase() === ln,
+  const existingMember = pickActiveMemberByName(
+    emailMatches ?? [],
+    member.first_name,
+    member.last_name,
   );
 
   if (existingMember) {
@@ -107,12 +110,40 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (memberErr || !memberRow) {
-      return NextResponse.json(
-        { error: 'member_create_failed', message: memberErr?.message },
-        { status: 500 },
-      );
+      // A concurrent submit, or a returning member whose row fell outside the lookup
+      // window above (>200 members on one email), can collide with
+      // members_org_email_name_active_uniq. Rather than 500 a legitimate returning
+      // member, recover by reusing the existing active member.
+      if (memberErr?.code === '23505') {
+        const { data: retryMatches } = await supabase
+          .from('members')
+          .select('id, first_name, last_name, merged_into_id')
+          .eq('organization_id', orgId)
+          .eq('email', normalizedEmail)
+          .is('merged_into_id', null)
+          .order('id', { ascending: true })
+          .limit(1000);
+        const recovered = pickActiveMemberByName(
+          retryMatches ?? [],
+          member.first_name,
+          member.last_name,
+        );
+        if (!recovered) {
+          return NextResponse.json(
+            { error: 'member_create_failed', message: memberErr.message },
+            { status: 500 },
+          );
+        }
+        memberId = recovered.id;
+      } else {
+        return NextResponse.json(
+          { error: 'member_create_failed', message: memberErr?.message },
+          { status: 500 },
+        );
+      }
+    } else {
+      memberId = memberRow.id;
     }
-    memberId = memberRow.id;
   }
 
   // 2. Get plan price
@@ -163,6 +194,21 @@ export async function POST(request: NextRequest) {
   }
 
   const enrollmentId = (enrollResult as unknown as { enrollment_id: string }).enrollment_id;
+  const idempotentReplay =
+    (enrollResult as unknown as { idempotent_replay?: boolean }).idempotent_replay === true;
+
+  // A retry / double-click of the same wizard draft replays the existing enrollment
+  // (create_enrollment_tx returns it unchanged). Don't re-run the status transition —
+  // which would overwrite submitted_at with a fresh timestamp — or append a duplicate
+  // 'submitted' row to enrollment_audit_log (which has no uniqueness guard).
+  if (idempotentReplay) {
+    const replayResponse = NextResponse.json({
+      enrollment_id: enrollmentId,
+      redirect: `/enroll/${draft.slug}/done?id=${enrollmentId}`,
+    });
+    clearDraftCookie(replayResponse);
+    return replayResponse;
+  }
 
   // 4. Move enrollment to 'submitted' so admins see it in the queue
   await supabase

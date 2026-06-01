@@ -42,6 +42,7 @@ import type {
 } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
+import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
 import { AdvisorCarrierField } from './AdvisorCarrierField';
@@ -337,17 +338,15 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       break;
 
     case 'date': {
-      // Sanitize: ISO timestamps (e.g. "2026-02-05T00:00:00.000Z") must be
-      // truncated to "yyyy-MM-dd" for <input type="date">
-      const dateValue = typeof value === 'string' && value
-        ? value.slice(0, 10)
-        : (value as string) || '';
+      const dateValue = normalizeDateColumnValue(value) ?? '';
       input = (
         <Input
           {...commonProps}
           type="date"
           value={dateValue}
-          onChange={(e) => setValue(field.key, e.target.value)}
+          onChange={(e) =>
+            setValue(field.key, e.target.value ? e.target.value : null)
+          }
         />
       );
       break;
@@ -576,8 +575,30 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           break;
 
         case 'date':
+          fieldSchema = z.preprocess(
+            (v) => normalizeDateColumnValue(v),
+            field.required
+              ? z
+                  .string({ required_error: `${field.label} is required` })
+                  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date')
+              : z
+                  .string()
+                  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a valid date')
+                  .nullable(),
+          );
+          break;
+
         case 'datetime':
-          fieldSchema = z.string();
+          fieldSchema = z.preprocess(
+            (v) => {
+              if (v === undefined || v === null) return null;
+              if (typeof v === 'string' && v.trim() === '') return null;
+              return v;
+            },
+            field.required
+              ? z.string().min(1, `${field.label} is required`)
+              : z.string().nullable(),
+          );
           break;
 
         case 'boolean':

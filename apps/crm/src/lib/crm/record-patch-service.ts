@@ -9,6 +9,7 @@ import {
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
   normalizeDateColumnValue,
+  sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
 
@@ -125,7 +126,7 @@ export async function executeCrmRecordPatch(params: {
   const moduleKey = (previousRecord as RecordWithModule).module?.key ?? null;
 
   if (body.data !== undefined) {
-    const patch = body.data as Record<string, unknown>;
+    const patch = sanitizeCrmDataJsonPatch(body.data as Record<string, unknown>);
     const prevData =
       previousRecord.data && typeof previousRecord.data === 'object'
         ? { ...(previousRecord.data as Record<string, unknown>) }
