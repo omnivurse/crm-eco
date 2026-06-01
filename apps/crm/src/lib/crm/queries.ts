@@ -37,6 +37,7 @@ import type {
 import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
 import { applyCrmRecordTextSearch } from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
+import { resolveCrmRecordFilterField } from './report-field-path';
 
 // ============================================================================
 // Date Range Helper Functions
@@ -696,9 +697,9 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   // ── Apply field-based filters ──
   for (const filter of fieldFilters) {
-    // Determine the field path - system fields vs custom fields in data jsonb
-    const isSystemField = ['title', 'status', 'stage', 'email', 'phone', 'created_at', 'updated_at', 'owner_id', 'market_type', 'normalization_status', 'normalized_advisor_name', 'normalized_agent_name', 'canonical_advisor_id', 'import_source', 'source_record_id', 'estimated_age', 'age_range', 'age_is_estimated', 'carrier_id', 'record_type', 'tobacco_user', 'original_start_date', 'current_year_start_date', 'cancellation_date', 'group_name'].includes(filter.field);
-    const fieldPath = isSystemField ? filter.field : `data->>${filter.field}`;
+    const fieldPath =
+      resolveCrmRecordFilterField(filter.field, 'crm_records') ??
+      `data->>${filter.field}`;
 
     // Boolean system columns: convert string 'true'/'false' to actual boolean
     const isBooleanColumn = ['tobacco_user', 'age_is_estimated'].includes(filter.field);
@@ -812,41 +813,12 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   }
 
   // Apply sorting — real columns on crm_records vs JSONB `data` paths
-  const SORTABLE_SYSTEM_COLUMNS = [
-    'title',
-    'status',
-    'stage',
-    'email',
-    'phone',
-    'created_at',
-    'updated_at',
-    'owner_id',
-    'market_type',
-    'normalization_status',
-    'normalized_advisor_name',
-    'normalized_agent_name',
-    'canonical_advisor_id',
-    'carrier_id',
-    'record_type',
-    'tobacco_user',
-    'advisor_id',
-    'contact_type',
-    'territory_id',
-    'import_source',
-    'original_start_date',
-    'current_year_start_date',
-    'cancellation_date',
-    'group_name',
-  ];
-
   if (sort.length > 0) {
     for (const s of sort) {
-      if (SORTABLE_SYSTEM_COLUMNS.includes(s.field)) {
-        query = query.order(s.field, { ascending: s.direction === 'asc' });
-      } else {
-        // Custom / blueprint fields stored in JSONB
-        query = query.order(`data->>${s.field}`, { ascending: s.direction === 'asc' });
-      }
+      const fieldPath =
+        resolveCrmRecordFilterField(s.field, 'crm_records') ??
+        `data->>${s.field}`;
+      query = query.order(fieldPath, { ascending: s.direction === 'asc' });
     }
   } else {
     query = query.order('created_at', { ascending: false });

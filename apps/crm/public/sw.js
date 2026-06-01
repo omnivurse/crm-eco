@@ -3,7 +3,7 @@
  * Handles caching for offline support and faster loads
  */
 
-const CACHE_VERSION = 12;
+const CACHE_VERSION = 13;
 const CACHE_NAME = `dhh-v${CACHE_VERSION}`;
 const STATIC_CACHE_NAME = `dhh-static-v${CACHE_VERSION}`;
 const API_CACHE_NAME = `dhh-api-v${CACHE_VERSION}`;
@@ -118,7 +118,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Skip Next.js flight/router requests and CRM navigations — browser only.
-  if (isNextDataRequest(request) || isCrmAppDocumentRequest(url, request)) {
+  if (isNextDataRequest(request) || isCrmAppDocumentRequest(url)) {
     return;
   }
 
@@ -165,16 +165,16 @@ function isNextDataRequest(request) {
 
 /**
  * CRM app routes (except static/API) should bypass the SW entirely for
- * document-like GETs so post-deploy navigation always hits the network.
+ * all GETs so post-deploy navigation and App Router fetches always hit
+ * the network (router.push RSC requests are not always `navigate` mode).
  */
-function isCrmAppDocumentRequest(url, request) {
+function isCrmAppDocumentRequest(url) {
   if (url.pathname.startsWith('/crm/api')) return false;
   if (url.pathname.includes('/_next/')) return false;
-  const isAppRoute =
+  return (
     url.pathname.startsWith('/crm') ||
-    url.pathname.startsWith('/enrollments');
-  if (!isAppRoute) return false;
-  return request.mode === 'navigate' || isNextDataRequest(request);
+    url.pathname.startsWith('/enrollments')
+  );
 }
 
 /**

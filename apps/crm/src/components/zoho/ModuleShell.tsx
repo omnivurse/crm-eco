@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
 import type { ComboboxOption } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Search, Loader2, Users, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Users, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ModuleHeader } from './ModuleHeader';
@@ -23,6 +23,7 @@ import { QuickFilterChips } from '@/components/crm/records/v2/QuickFilterChips';
 import { ViewModeSwitcher } from '@/components/crm/views/ViewModeSwitcher';
 import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
 import { MobileToolbarDrawer } from './MobileToolbarDrawer';
+import { ModuleLiveSearchDropdown, type ModuleLiveSearchResult } from './ModuleLiveSearchDropdown';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Density } from './ViewPreferencesContext';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
@@ -73,16 +74,7 @@ export const ModuleShell = memo(function ModuleShell({
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
   // Live smart-search dropdown — same /api/crm/search backend the header
   // uses, scoped to the current module so results don't leak across modules.
-  // The toolbar still URL-filters the list on Enter/300 ms-debounce; this
-  // dropdown is the "spotlight" path: fuzzy hit → click to open record.
-  type LiveResult = {
-    id: string;
-    title: string;
-    subtitle?: string;
-    moduleKey: string;
-    matchType?: 'exact' | 'fuzzy';
-  };
-  const [liveResults, setLiveResults] = useState<LiveResult[]>([]);
+  const [liveResults, setLiveResults] = useState<ModuleLiveSearchResult[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveOpen, setLiveOpen] = useState(false);
   const [liveSelectedIdx, setLiveSelectedIdx] = useState(0);
@@ -943,124 +935,39 @@ export const ModuleShell = memo(function ModuleShell({
               onCreateView={handleCreateView}
             />
 
-            <form
+            <ModuleLiveSearchDropdown
+              open={liveOpen}
+              onOpenChange={setLiveOpen}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
               onSubmit={handleSearch}
-              className="relative flex-1 min-w-[12rem] max-w-md group"
-            >
-              <Search className={cn(
-                'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none z-[1]',
-                'text-slate-500 dark:text-slate-400',
-                'group-focus-within:text-teal-600 dark:group-focus-within:text-teal-400',
-              )} />
-              <Input
-                type="search"
-                placeholder={`Search ${module.name_plural?.toLowerCase() || 'records'}...`}
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setLiveOpen(true);
-                }}
-                onFocus={() => {
-                  setLiveOpen(true);
-                }}
-                onBlur={() => {
-                  // Delay close so click on a dropdown item registers first.
-                  window.setTimeout(() => setLiveOpen(false), 150);
-                }}
-                onKeyDown={(e) => {
-                  if (!liveOpen || liveResults.length === 0) return;
-                  if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    setLiveSelectedIdx((i) => Math.min(i + 1, liveResults.length - 1));
-                  } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    setLiveSelectedIdx((i) => Math.max(i - 1, 0));
-                  } else if (e.key === 'Enter' && liveResults[liveSelectedIdx]) {
-                    e.preventDefault();
-                    const target = liveResults[liveSelectedIdx];
-                    setLiveOpen(false);
-                    router.push(`/crm/r/${target.id}`);
-                  } else if (e.key === 'Escape') {
-                    setLiveOpen(false);
-                  }
-                }}
-                className={cn(
-                  'pl-9 h-10 rounded-lg text-sm shadow-sm',
-                  'bg-white dark:bg-slate-900',
-                  'border-slate-300 dark:border-slate-700',
-                  'hover:border-slate-400 dark:hover:border-slate-600',
-                  'text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400',
-                  // Tie accent ring to real focus — avoids stale teal border when React state desyncs from :focus
-                  'focus-visible:border-teal-500 focus-visible:ring-teal-500/25 focus-visible:ring-offset-0',
-                )}
-                autoComplete="off"
-                spellCheck={false}
-              />
-
-              {/* Spotlight-style dropdown: fuzzy hits via crm_smart_search.
-                  Same backend the top-header search uses, just module-scoped.
-                  Click → open record. URL filter (Enter / 300ms-debounce) is
-                  unchanged and still narrows the list view as before.
-                  z-50 + min-w on dropdown so it floats above the toolbar's
-                  glass-card backdrop-filter (which creates a new stacking
-                  context that traps low z-index children). */}
-              {liveOpen && searchQuery.trim().length >= 2 && (
-                <div
-                  className="absolute left-0 right-0 top-full z-50 mt-1 min-w-[20rem] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden"
-                  // Keep dropdown alive while user clicks a result.
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  {liveLoading && liveResults.length === 0 ? (
-                    <div className="px-3 py-3 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Searching…
-                    </div>
-                  ) : liveResults.length === 0 ? (
-                    <div className="px-3 py-3 text-xs text-slate-500 dark:text-slate-400">
-                      No matches. Press Enter to filter the list anyway.
-                    </div>
-                  ) : (
-                    <ul className="max-h-80 overflow-auto py-1 text-sm">
-                      {liveResults.map((r, i) => (
-                        <li key={r.id}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setLiveOpen(false);
-                              router.push(`/crm/r/${r.id}`);
-                            }}
-                            onMouseEnter={() => setLiveSelectedIdx(i)}
-                            className={cn(
-                              'w-full text-left px-3 py-2 flex items-start gap-2 transition-colors',
-                              i === liveSelectedIdx
-                                ? 'bg-teal-50 dark:bg-teal-500/10'
-                                : 'hover:bg-slate-50 dark:hover:bg-slate-800/60',
-                            )}
-                          >
-                            <Search className="w-3.5 h-3.5 mt-0.5 text-slate-400 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="truncate text-slate-900 dark:text-white">
-                                {r.title || 'Untitled'}
-                              </div>
-                              {r.subtitle && (
-                                <div className="truncate text-xs text-slate-500 dark:text-slate-400">
-                                  {r.subtitle}
-                                </div>
-                              )}
-                            </div>
-                            {r.matchType === 'fuzzy' && (
-                              <span className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 flex-shrink-0">
-                                fuzzy
-                              </span>
-                            )}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </form>
+              placeholder={`Search ${module.name_plural?.toLowerCase() || 'records'}...`}
+              results={liveResults}
+              loading={liveLoading}
+              selectedIndex={liveSelectedIdx}
+              onSelectedIndexChange={setLiveSelectedIdx}
+              onSelectResult={(target) => {
+                setLiveOpen(false);
+                router.push(`/crm/r/${target.id}`);
+              }}
+              onKeyDown={(e) => {
+                if (!liveOpen || liveResults.length === 0) return;
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  setLiveSelectedIdx((i) => Math.min(i + 1, liveResults.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  setLiveSelectedIdx((i) => Math.max(i - 1, 0));
+                } else if (e.key === 'Enter' && liveResults[liveSelectedIdx]) {
+                  e.preventDefault();
+                  const target = liveResults[liveSelectedIdx];
+                  setLiveOpen(false);
+                  router.push(`/crm/r/${target.id}`);
+                } else if (e.key === 'Escape') {
+                  setLiveOpen(false);
+                }
+              }}
+            />
           </div>
 
           {/* Scope + Territory Filters (hidden on mobile — lives in the sheet) */}
