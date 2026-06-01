@@ -169,10 +169,17 @@ export function mergeCrmDataJsonIntoRowColumns(
   // was omitted from a patch payload.
   const personContactStyleModule =
     ctx.moduleKey === 'contacts' || ctx.moduleKey === 'members';
-  if (!personContactStyleModule && d.lead_status !== undefined) {
-    updates.status = d.lead_status || null;
+  if (!personContactStyleModule) {
+    // Leads/deals/etc.: lead_status wins over stale contact_status so converted
+    // leads are not re-opened to "In Process" on partial saves.
+    if (d.lead_status !== undefined) {
+      updates.status = d.lead_status || null;
+    } else if (d.contact_status !== undefined) {
+      updates.status = d.contact_status || null;
+    }
+  } else if (d.contact_status !== undefined) {
+    updates.status = d.contact_status || null;
   }
-  if (d.contact_status !== undefined) updates.status = d.contact_status || null;
   if (d.status !== undefined) updates.status = d.status || null;
 
   for (const key of CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH) {
@@ -188,6 +195,32 @@ export function mergeCrmDataJsonIntoRowColumns(
         updates[key] = v === null || isUuidValue(v) ? v : null;
       } else {
         updates[key] = normalizeRowColumnValue(d[key]);
+      }
+    }
+  }
+
+  // Legacy insurance-section `start_date` lives in JSONB only; mirror it to
+  // `original_start_date` so the daily pending→active cron can find it.
+  if (d.start_date !== undefined && d.original_start_date === undefined) {
+    const mirrored = normalizeDateColumnValue(d.start_date);
+    if (mirrored) {
+      updates.original_start_date = mirrored;
+      if (d.current_year_start_date === undefined) {
+        updates.current_year_start_date = mirrored;
+      }
+    }
+  }
+
+  if (
+    d.health_insurance_start_date !== undefined &&
+    d.original_start_date === undefined &&
+    updates.original_start_date === undefined
+  ) {
+    const mirrored = normalizeDateColumnValue(d.health_insurance_start_date);
+    if (mirrored) {
+      updates.original_start_date = mirrored;
+      if (d.current_year_start_date === undefined && updates.current_year_start_date === undefined) {
+        updates.current_year_start_date = mirrored;
       }
     }
   }
