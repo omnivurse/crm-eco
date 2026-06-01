@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { isCrmRecordsTable, resolveCrmRecordFilterField } from '@/lib/crm/report-field-path';
 
 export const dynamic = 'force-dynamic';
 
@@ -272,12 +273,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Apply filters
-    query = applyFilters(query, filters);
+    query = applyFilters(query, filters, table);
 
     // Apply sorting
     if (sorting.length > 0) {
       for (const sort of sorting) {
-        query = query.order(sort.column, { ascending: sort.direction === 'asc' });
+        const rawColumn = sort.column || '';
+        if (!rawColumn) continue;
+        const column = isCrmRecordsTable(table)
+          ? resolveCrmRecordFilterField(rawColumn, table)
+          : rawColumn;
+        if (!column) continue;
+        query = query.order(column, { ascending: sort.direction === 'asc' });
       }
     } else {
       query = query.order('created_at', { ascending: false });
@@ -306,9 +313,13 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function applyFilters(query: any, filters: ReportFilter[]): any {
+function applyFilters(query: any, filters: ReportFilter[], table: string): any {
   for (const filter of filters) {
-    const column = filter.field || filter.column || '';
+    const rawColumn = filter.field || filter.column || '';
+    if (!rawColumn) continue;
+    const column = isCrmRecordsTable(table)
+      ? resolveCrmRecordFilterField(rawColumn, table)
+      : rawColumn;
     if (!column) continue;
     const { operator, value, value2 } = filter;
     switch (operator) {
