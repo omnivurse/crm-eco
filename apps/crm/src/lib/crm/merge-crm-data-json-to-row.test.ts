@@ -113,9 +113,17 @@ describe('mergeCrmDataJsonIntoRowColumns', () => {
     expect(updates.status).toBeUndefined();
   });
 
-  it('leads module: lead_status maps to row, contact_status can override', () => {
+  it('leads module: lead_status wins over contact_status when both are present', () => {
     const updates = mergeCrmDataJsonIntoRowColumns(
-      { lead_status: 'Hot', contact_status: 'Pending' },
+      { lead_status: 'Converted', contact_status: 'In Process' },
+      { moduleKey: 'leads' }
+    );
+    expect(updates.status).toBe('Converted');
+  });
+
+  it('leads module: contact_status maps when lead_status is omitted', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { contact_status: 'Pending' },
       { moduleKey: 'leads' }
     );
     expect(updates.status).toBe('Pending');
@@ -140,6 +148,38 @@ describe('mergeCrmDataJsonIntoRowColumns', () => {
       original_start_date: '2024-03-15',
     });
     expect(updates.original_start_date).toBe('2024-03-15');
+  });
+
+  it('mirrors legacy start_date JSONB into original_start_date for the activation cron', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      start_date: '7/1/2026',
+    });
+    expect(updates.original_start_date).toBe('2026-07-01');
+    expect(updates.current_year_start_date).toBe('2026-07-01');
+  });
+
+  it('does not overwrite explicit original_start_date when start_date is also sent', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      start_date: '7/1/2026',
+      original_start_date: '2026-08-01',
+    });
+    expect(updates.original_start_date).toBe('2026-08-01');
+    expect(updates.current_year_start_date).toBeUndefined();
+  });
+
+  it('prefers lead_status over contact_status on lead modules (converted-lead drift guard)', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { lead_status: 'Converted', contact_status: 'In Process' },
+      { moduleKey: 'leads' },
+    );
+    expect(updates.status).toBe('Converted');
+  });
+
+  it('mirrors health_insurance_start_date to original_start_date', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      health_insurance_start_date: '2026-07-01',
+    });
+    expect(updates.original_start_date).toBe('2026-07-01');
   });
 
   it('rejects un-pivotable garbage in DATE columns by returning null', () => {

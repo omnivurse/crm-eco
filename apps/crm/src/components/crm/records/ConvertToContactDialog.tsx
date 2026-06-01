@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -15,6 +15,7 @@ import {
 } from '@crm-eco/ui/components/alert-dialog';
 import { UserCheck, Loader2, CheckCircle, AlertCircle, ArrowRight, GitMerge } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { resolveEffectiveStartDate } from '@/lib/crm/resolve-effective-start-date';
 
 interface ConvertToContactDialogProps {
   open: boolean;
@@ -106,6 +107,17 @@ export function ConvertToContactDialog({
 
   const email = (recordData?.email as string) || '';
   const company = (recordData?.company as string) || '';
+  const effectiveStartDate = useMemo(
+    () => resolveEffectiveStartDate({ data: recordData }),
+    [recordData],
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  const willBePending =
+    effectiveStartDate != null && effectiveStartDate > today;
+  const targetStatusLabel = willBePending ? 'Pending Contact' : 'Active Contact';
+  const targetStatusClass = willBePending
+    ? 'text-amber-600 dark:text-amber-400'
+    : 'text-emerald-600 dark:text-emerald-400';
 
   return (
     <AlertDialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
@@ -142,15 +154,28 @@ export function ConvertToContactDialog({
                         <span className="text-slate-700 dark:text-slate-300">{company}</span>
                       </div>
                     )}
+                    {effectiveStartDate && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Start Date</span>
+                        <span className="text-slate-700 dark:text-slate-300">{effectiveStartDate}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-white/10">
                       <span className="text-slate-500">Status</span>
                       <span className="flex items-center gap-1.5">
                         <span className="text-slate-400">Lead</span>
                         <ArrowRight className="w-3 h-3 text-slate-400" />
-                        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Active Contact</span>
+                        <span className={`${targetStatusClass} font-medium`}>{targetStatusLabel}</span>
                       </span>
                     </div>
                   </div>
+
+                  {willBePending && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400/90">
+                      Coverage starts in the future — the new contact will stay Pending until{' '}
+                      {effectiveStartDate}, then auto-activate daily.
+                    </p>
+                  )}
 
                   <p className="text-xs text-slate-400">
                     All matching fields (name, email, phone, address, family, etc.) and all notes
