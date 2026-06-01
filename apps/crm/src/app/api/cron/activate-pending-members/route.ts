@@ -320,6 +320,17 @@ export async function GET(request: NextRequest) {
     'notifications@doublehelixhub.com';
   const fromEmail = `${fromName} <${fromAddress}>`;
 
+  // ── Recipient hard-lock (client request, 2026-06-01) ────────────────────────
+  // While activation notifications are piloted, EVERY email is routed to this one
+  // address regardless of the record's owner — so no other rep can receive one
+  // (contacts are never recipients in any case). Records with no owner still send
+  // nothing, keeping the backlog silent. To return to owner-based routing later
+  // (once Wendy owns the org/tenant), set ACTIVATION_NOTIFICATION_TO_OVERRIDE=""
+  // in the crm-core env and remove the literal default below.
+  const toOverride = (
+    process.env.ACTIVATION_NOTIFICATION_TO_OVERRIDE ?? 'wendy@payitforwardstrategies.com'
+  ).trim();
+
   if (!resendKey && rows.length > 0) {
     console.warn('[activate-pending-members] RESEND_API_KEY not set — skipping email send');
     return NextResponse.json({
@@ -353,11 +364,14 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
+    // Owner presence gates whether we notify (keeps the backlog silent); the
+    // recipient is then forced to the hard-lock address when set.
+    const recipient = toOverride || row.rep_email;
     const { subject, html, text } = buildEmail(row);
     try {
       const result = await resend!.emails.send({
         from: fromEmail,
-        to: row.rep_email,
+        to: recipient,
         subject,
         html,
         text,
