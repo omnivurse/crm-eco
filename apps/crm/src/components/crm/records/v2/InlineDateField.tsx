@@ -10,6 +10,11 @@
 import { memo, useCallback, useEffect, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
+import {
+  CRM_DATE_INPUT_MAX,
+  CRM_DATE_INPUT_MIN,
+  isCompleteIsoDateInputValue,
+} from '@/lib/crm/date-field-bounds';
 import { AlertTriangle, CalendarDays, Check, Loader2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import {
@@ -97,14 +102,26 @@ export const InlineDateField = memo(function InlineDateField({
   const commit = useCallback(
     async (nextRaw: string) => {
       const normalized = nextRaw.trim();
-      // For dates, keep the yyyy-MM-dd shape; for datetime, let the browser's
-      // value be the canonical ISO-like form (Postgres accepts it).
-      const payload = normalized ? normalized : null;
+      if (!normalized) {
+        onEditEnd?.();
+        void releaseFieldLock(field);
+        await save(field, null, target ? { target } : undefined);
+        return;
+      }
+
+      const iso = normalizeDateColumnValue(normalized);
+      if (!iso) {
+        setDraft(toInputValue(value, mode));
+        onEditEnd?.();
+        void releaseFieldLock(field);
+        return;
+      }
+
       onEditEnd?.();
       void releaseFieldLock(field);
-      await save(field, payload, target ? { target } : undefined);
+      await save(field, iso, target ? { target } : undefined);
     },
-    [save, field, target, onEditEnd, releaseFieldLock],
+    [save, field, target, onEditEnd, releaseFieldLock, value, mode],
   );
 
   if (readOnly || lockOwner) {
@@ -157,17 +174,28 @@ export const InlineDateField = memo(function InlineDateField({
         type={mode === 'datetime' ? 'datetime-local' : 'date'}
         className="absolute inset-0 opacity-0 cursor-pointer"
         value={draft}
+        min={mode === 'date' ? CRM_DATE_INPUT_MIN : undefined}
+        max={mode === 'date' ? CRM_DATE_INPUT_MAX : undefined}
         onChange={(e) => {
-          setDraft(e.target.value);
-          void commit(e.target.value);
+          const next = e.target.value;
+          setDraft(next);
+          // Calendar / spinner selections emit a full yyyy-MM-dd in one shot.
+          if (mode === 'date' && isCompleteIsoDateInputValue(next) && normalizeDateColumnValue(next)) {
+            void commit(next);
+          }
         }}
         onFocus={() => {
           onEditStart?.();
           void acquireFieldLock(field);
         }}
         onBlur={() => {
-          onEditEnd?.();
-          void releaseFieldLock(field);
+          void commit(draft);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            void commit(draft);
+          }
         }}
         aria-label={ariaLabel ?? field}
       />

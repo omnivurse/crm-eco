@@ -43,6 +43,7 @@ import type {
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
+import { CRM_DATE_INPUT_MAX, CRM_DATE_INPUT_MIN } from '@/lib/crm/date-field-bounds';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
 import { AdvisorCarrierField } from './AdvisorCarrierField';
@@ -343,6 +344,8 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
         <Input
           {...commonProps}
           type="date"
+          min={CRM_DATE_INPUT_MIN}
+          max={CRM_DATE_INPUT_MAX}
           value={dateValue}
           onChange={(e) =>
             setValue(field.key, e.target.value ? e.target.value : null)

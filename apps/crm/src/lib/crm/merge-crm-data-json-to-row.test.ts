@@ -228,6 +228,17 @@ describe('normalizeDateColumnValue', () => {
     expect(normalizeDateColumnValue(undefined)).toBeNull();
   });
 
+  it('passes through historical ISO DOB years without Y2K pivot', () => {
+    expect(normalizeDateColumnValue('1965-03-15')).toBe('1965-03-15');
+    expect(normalizeDateColumnValue('1920-01-01')).toBe('1920-01-01');
+    expect(normalizeDateColumnValue('1999-12-31')).toBe('1999-12-31');
+  });
+
+  it('pivots zero-padded legacy ISO import years only when year < 100', () => {
+    expect(normalizeDateColumnValue('0026-06-01')).toBe('2026-06-01');
+    expect(normalizeDateColumnValue('0068-04-15')).toBe('1968-04-15');
+  });
+
   it('returns null for invalid month/day (legacy Zoho DOB placeholders)', () => {
     expect(normalizeDateColumnValue('1990-01-00')).toBeNull();
     expect(normalizeDateColumnValue('1990-00-15')).toBeNull();

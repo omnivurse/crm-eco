@@ -145,8 +145,13 @@ export function normalizeDateColumnValue(value: unknown): string | null {
     const month = Number(isoMatch[2]);
     const day = Number(isoMatch[3]);
     let yr = Number(isoMatch[1]);
-    if (yr >= 0 && yr <= 29) yr = 2000 + yr;
-    else if (yr >= 30 && yr <= 99) yr = 1900 + yr;
+    // Only zero-padded *legacy import* years (0026, 0068) get the Y2K pivot.
+    // Full years like 1965 must pass through unchanged — applying the pivot to
+    // every ISO year made typed DOB entry snap to 2000+ mid-edit.
+    if (yr < 100) {
+      if (yr >= 0 && yr <= 29) yr = 2000 + yr;
+      else if (yr >= 30 && yr <= 99) yr = 1900 + yr;
+    }
     if (yr < 1900 || yr > 2100) return null;
     if (!isValidCalendarDateParts(yr, month, day)) return null;
     return `${yr.toString().padStart(4, '0')}-${isoMatch[2]}-${isoMatch[3]}`;
