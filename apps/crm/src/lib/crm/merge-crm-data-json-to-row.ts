@@ -1,4 +1,9 @@
 import { CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH } from '@/lib/crm/record-form-defaults';
+import {
+  HEALTH_SHARING_DATA_KEYS,
+  leadHasHealthSharingData,
+  sharingEntityAsCarrierId,
+} from '@/lib/crm/lead-contact-sharing-fields';
 
 export interface MergeCrmDataJsonContext {
   /** For PATCH: previous row title when first/last clear. */
@@ -278,6 +283,29 @@ export function mergeCrmDataJsonIntoRowColumns(
   }
   if (d.name !== undefined && updates.title === undefined) {
     updates.title = ((d.name as string) || ctx.previousTitle) ?? null;
+  }
+
+  const sharingTouched = HEALTH_SHARING_DATA_KEYS.some((key) => d[key] !== undefined);
+  if (sharingTouched && leadHasHealthSharingData(d)) {
+    const carrierFromSharing = sharingEntityAsCarrierId(d.sharing_entity);
+    if (
+      carrierFromSharing &&
+      (updates.carrier_id === undefined || updates.carrier_id === null)
+    ) {
+      updates.carrier_id = carrierFromSharing;
+    }
+    if (updates.market_type === undefined || updates.market_type === null) {
+      updates.market_type = 'healthshare';
+    }
+    if (d.sharing_effective_date !== undefined && updates.original_start_date === undefined) {
+      const mirrored = normalizeDateColumnValue(d.sharing_effective_date);
+      if (mirrored) {
+        updates.original_start_date = mirrored;
+        if (updates.current_year_start_date === undefined) {
+          updates.current_year_start_date = mirrored;
+        }
+      }
+    }
   }
 
   return updates;

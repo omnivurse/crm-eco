@@ -21,6 +21,7 @@ import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsSectionClient } from '@/components/crm/records/AttachmentsSectionClient';
 import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecordsPanelClient';
 import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
+import { InlineEditableRecordForm } from '@/components/crm/records/InlineEditableRecordForm';
 import { getSectionMeta } from '@/components/crm/records/section-utils';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
@@ -174,7 +175,8 @@ async function RecordDetailContent({ params }: PageProps) {
       email?: string | null;
       phone?: string | null;
       status?: string | null;
-    }
+    },
+    { moduleKey: module.key },
   );
 
   // Compute section metadata on the server for the section navigator. Pass
@@ -230,14 +232,22 @@ async function RecordDetailContent({ params }: PageProps) {
             sections={sectionMeta}
             fieldContent={
               <>
-                <DynamicRecordForm
-                  record={record}
-                  fields={fields}
-                  layout={layout}
-                  defaultValues={defaultValues}
-                  readOnly
-                  inlineEditable={useLayoutV2}
-                />
+                {useLayoutV2 ? (
+                  <InlineEditableRecordForm
+                    record={record}
+                    fields={fields}
+                    layout={layout}
+                    defaultValues={defaultValues}
+                  />
+                ) : (
+                  <DynamicRecordForm
+                    record={record}
+                    fields={fields}
+                    layout={layout}
+                    defaultValues={defaultValues}
+                    readOnly
+                  />
+                )}
                 {/* Legacy Notes History (imported from Zoho) — below fields */}
                 {legacyNotes && (
                   <div className="mt-4">

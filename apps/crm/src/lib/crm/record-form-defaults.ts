@@ -2,6 +2,7 @@ import {
   isCrmJsonbDateFieldKey,
   normalizeDateColumnValue,
 } from '@/lib/crm/merge-crm-data-json-to-row';
+import { bridgeSharingEntityReadPaths } from '@/lib/crm/lead-contact-sharing-fields';
 
 /**
  * CRM record forms primarily edit JSONB `data`, but many important fields live on
@@ -72,7 +73,8 @@ export function mergeCrmRecordRowIntoFormDefaults(
     email?: string | null;
     phone?: string | null;
     status?: string | null;
-  }
+  },
+  options?: { moduleKey?: string | null },
 ): Record<string, unknown> {
   const raw = row.data;
   const base =
@@ -106,6 +108,8 @@ export function mergeCrmRecordRowIntoFormDefaults(
       base[key] = normalizeDateColumnValue(base[key]);
     }
   }
+
+  bridgeSharingEntityReadPaths(base, options?.moduleKey);
 
   return base;
 }

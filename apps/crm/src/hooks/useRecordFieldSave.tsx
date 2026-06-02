@@ -39,6 +39,8 @@ export interface FieldSaveState {
   error?: string;
   /** Most recent successful save time. */
   savedAt?: number;
+  /** Value last persisted successfully (for optimistic overview UI). */
+  lastValue?: unknown;
 }
 
 /** Where a field value lives in the `crm_records` row. */
@@ -278,6 +280,7 @@ export function RecordFieldSaveProvider({
               status: 'saved',
               error: undefined,
               savedAt: Date.now(),
+              lastValue: value,
             });
             onSaved?.(field, value);
             return;
@@ -364,6 +367,7 @@ export function RecordFieldSaveProvider({
           status: 'saved',
           error: undefined,
           savedAt: Date.now(),
+          lastValue: value,
         });
         onSaved?.(field, value);
       } finally {

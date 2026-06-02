@@ -399,7 +399,8 @@ export default function EditRecordPage() {
   const defaultValues = useMemo(() => {
     if (!record) return {} as Record<string, unknown>;
     const merged = mergeCrmRecordRowIntoFormDefaults(
-      record as unknown as Parameters<typeof mergeCrmRecordRowIntoFormDefaults>[0]
+      record as unknown as Parameters<typeof mergeCrmRecordRowIntoFormDefaults>[0],
+      { moduleKey: record.module?.key ?? null },
     );
     initialValuesRef.current = merged;
     latestValuesRef.current = merged;

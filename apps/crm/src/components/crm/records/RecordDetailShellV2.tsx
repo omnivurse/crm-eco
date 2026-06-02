@@ -459,6 +459,28 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     }
   }, [record.id]);
 
+  // Inline field saves update the DB immediately; debounce RSC refresh so
+  // rapid edits across Health Sharing fields do not race and flash stale values.
+  const recordRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleRecordRefresh = useCallback(() => {
+    if (recordRefreshTimerRef.current) {
+      clearTimeout(recordRefreshTimerRef.current);
+    }
+    recordRefreshTimerRef.current = setTimeout(() => {
+      recordRefreshTimerRef.current = null;
+      router.refresh();
+      void refreshInsights();
+    }, 900);
+  }, [router, refreshInsights]);
+
+  useEffect(() => {
+    return () => {
+      if (recordRefreshTimerRef.current) {
+        clearTimeout(recordRefreshTimerRef.current);
+      }
+    };
+  }, []);
+
   const isLeads = module.key === 'leads';
   const isContacts = module.key === 'contacts';
   const isDeals = module.key === 'deals';
@@ -960,8 +982,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       recordId={record.id}
       initialUpdatedAt={record.updated_at ?? null}
       onSaved={() => {
-        router.refresh();
-        void refreshInsights();
+        scheduleRecordRefresh();
       }}
       onConflict={({ field }) => {
         toast.error('This record was updated by someone else', {
