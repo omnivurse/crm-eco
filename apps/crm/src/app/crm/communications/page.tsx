@@ -470,7 +470,7 @@ function CommunicationsPageContent() {
             </Link>
 
             <Link
-              href="/crm/activities?type=calls"
+              href="/crm/activities?type=call"
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
             >
               <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />

@@ -132,10 +132,28 @@ export default function ActivitiesPage() {
   );
 }
 
+// Some nav links pass a plural type param (e.g. ?type=tasks), but the API/DB
+// activity_type enum is singular (task, call, meeting, email, follow_up).
+// Normalize so the filter matches — otherwise the list silently returns 0 rows
+// (and the empty state read "No taskss match your filters").
+function normalizeActivityType(value: string | null): string {
+  const aliases: Record<string, string> = {
+    tasks: 'task',
+    calls: 'call',
+    meetings: 'meeting',
+    emails: 'email',
+    notes: 'note',
+    'follow-ups': 'follow_up',
+    follow_ups: 'follow_up',
+  };
+  const v = value || '';
+  return aliases[v] ?? v;
+}
+
 function ActivitiesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activityType = searchParams.get('type') || '';
+  const activityType = normalizeActivityType(searchParams.get('type'));
   const statusFilter = searchParams.get('status') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = 25;

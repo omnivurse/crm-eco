@@ -16,6 +16,12 @@ interface ModuleShellContextValue {
   moduleKey: string;
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
+  /**
+   * Open the delete-confirmation dialog for the given record IDs. This is the
+   * single entry point row-level views use so per-row Delete reuses the same
+   * working bulk-delete flow (DELETE /api/crm/records/bulk).
+   */
+  requestDelete: (ids: string[]) => void;
 }
 
 const ModuleShellContext = createContext<ModuleShellContextValue | null>(null);

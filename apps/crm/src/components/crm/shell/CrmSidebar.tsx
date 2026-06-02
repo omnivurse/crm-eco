@@ -270,7 +270,7 @@ export const CrmSidebar = memo(function CrmSidebar({ modules, organizationName }
         { name: 'Pipeline', href: '/crm/pipeline', icon: KanbanSquare },
         { name: 'Deals', href: '/crm/deals', icon: Briefcase },
         { name: 'Activities', href: '/crm/activities', icon: Activity },
-        { name: 'Tasks', href: '/crm/activities?type=tasks', icon: CheckCircle2 },
+        { name: 'Tasks', href: '/crm/activities?type=task', icon: CheckCircle2 },
         { name: 'Calendar', href: '/crm/calendar', icon: CalendarDays },
       ],
     },
