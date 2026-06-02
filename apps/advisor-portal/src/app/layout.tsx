@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'sonner';
-import { PinLockOverlay } from '@crm-eco/ui';
-
 const inter = Inter({ subsets: ['latin'], display: 'swap', preload: false });
 
 export const metadata: Metadata = {
@@ -19,7 +17,6 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.className}>
-                <PinLockOverlay pin="012049" appName="Secure Access" />
                 {children}
                 <Toaster position="top-right" richColors />
             </body>

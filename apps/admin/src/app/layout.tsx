@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
-import { PinLockOverlay } from '@crm-eco/ui';
 import './globals.css';
 
 const inter = Inter({
@@ -35,7 +34,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
-        <PinLockOverlay pin="012049" appName="Secure Access" />
         {children}
       </body>
     </html>

@@ -3,8 +3,6 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
-import { PinLockOverlay } from '@crm-eco/ui';
-
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-body',
@@ -71,7 +69,6 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}
       >
-        <PinLockOverlay pin="012049" appName="Secure Access" />
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
           <main className="flex-1">{children}</main>

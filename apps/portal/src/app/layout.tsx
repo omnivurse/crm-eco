@@ -6,8 +6,6 @@ import { BottomNav } from '@/components/BottomNav';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 import { UpdateToast } from '@/components/pwa/UpdateToast';
-import { PinLockOverlay } from '@crm-eco/ui';
-
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-body',
@@ -65,7 +63,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <PinLockOverlay pin="012049" appName="Secure Access" />
         <ServiceWorkerRegistration />
         <div className="min-h-screen bg-slate-50">
           <PortalHeader />

@@ -12,10 +12,22 @@ interface PinLockOverlayProps {
 }
 
 /**
+ * Site-wide PIN gate is opt-in only. Disabled by default so testers and
+ * staging can reach login flows without a shared PIN.
+ *
+ * Re-enable before a restricted preview: set `NEXT_PUBLIC_ENABLE_PIN_LOCK=true`
+ * in the deployment environment and rebuild.
+ */
+export function isPinLockEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_PIN_LOCK === 'true';
+}
+
+/**
  * Full-screen PIN gate that blocks access until the correct PIN is entered.
  * Persists unlock state in sessionStorage for SESSION_HOURS hours.
  */
 export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayProps) {
+  const pinLockEnabled = isPinLockEnabled();
   const [locked, setLocked] = React.useState(true);
   const [entered, setEntered] = React.useState('');
   const [error, setError] = React.useState(false);
@@ -104,7 +116,7 @@ export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayP
     [pin, handleUnlock]
   );
 
-  if (!mounted || !locked) return null;
+  if (!pinLockEnabled || !mounted || !locked) return null;
 
   return (
     <div
