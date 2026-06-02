@@ -72,6 +72,9 @@ jobs:
           fi
           echo "PIFH_SUPABASE_DB_URL is set (length: ${#PIFH_SUPABASE_DB_URL})."
 
+      - name: Ensure audit output dirs exist
+        run: mkdir -p .audit/code .audit/reports .audit/schema
+
       - name: Refresh schema snapshot from PIFH
         env:
           PIFH_SUPABASE_DB_URL: ${{ secrets.PIFH_SUPABASE_DB_URL }}
