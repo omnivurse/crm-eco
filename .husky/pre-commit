@@ -29,4 +29,10 @@ if ! command -v npx >/dev/null 2>&1; then
   exit 127
 fi
 
-npx lint-staged
+# --no-stash: never let lint-staged create a backup stash or auto-revert.
+# Its stash/revert machinery has hard-reset HEAD across rapid sequential
+# commits and silently dropped commits; disabling it (implies --no-revert)
+# keeps lint-staged from ever rewriting git history. Trade-off: partially
+# staged files (staged + unstaged edits to the same file) may be committed
+# whole — acceptable vs. losing commits.
+npx lint-staged --no-stash
