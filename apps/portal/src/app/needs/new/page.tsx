@@ -23,8 +23,8 @@ export default async function SubmitNeedPage() {
         <p className="text-slate-600 mb-8">
           You must be a registered member to submit a need.
         </p>
-        <Link href="/login">
-          <Button>Login</Button>
+        <Link href="/enroll">
+          <Button>Enroll Now</Button>
         </Link>
       </div>
     );
