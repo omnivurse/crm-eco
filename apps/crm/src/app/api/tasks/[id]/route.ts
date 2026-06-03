@@ -18,10 +18,7 @@ const updateTaskSchema = z.object({
  * PATCH /api/tasks/[id]
  * Update a task (status, due_at, etc.)
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: taskId } = await params;
     const supabase = await createClient();
@@ -87,10 +84,7 @@ export async function PATCH(
  * GET /api/tasks/[id]
  * Get a single task by ID
  */
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: taskId } = await params;
     const supabase = await createClient();
@@ -105,7 +99,7 @@ export async function GET(
       .select(
         `*,
          assignee:profiles!crm_tasks_assigned_to_fkey(id, full_name, avatar_url),
-         created_by_profile:profiles!crm_tasks_created_by_fkey(id, full_name, avatar_url)`,
+         created_by_profile:profiles!crm_tasks_created_by_fkey(id, full_name, avatar_url)`
       )
       .eq('id', taskId)
       .eq('org_id', profile.organization_id)
@@ -123,6 +117,54 @@ export async function GET(
     return NextResponse.json(task);
   } catch (error) {
     console.error('Get task error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/tasks/[id]
+ * Permanently delete a task/activity. Org-scoped so a task can only be removed
+ * within the caller's organization.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id: taskId } = await params;
+    const supabase = await createClient();
+    const profile = await getAuthProfile();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (
+      !profile.crm_role ||
+      !['crm_admin', 'crm_manager', 'crm_agent'].includes(profile.crm_role)
+    ) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { data: deleted, error } = await supabase
+      .from('crm_tasks')
+      .delete()
+      .eq('id', taskId)
+      .eq('org_id', profile.organization_id)
+      .select('id');
+
+    if (error) {
+      console.error('Delete task error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!deleted || deleted.length === 0) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, id: taskId });
+  } catch (error) {
+    console.error('Delete task error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
