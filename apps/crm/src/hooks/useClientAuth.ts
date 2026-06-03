@@ -63,9 +63,16 @@ export function useClientAuth(): UseClientAuthResult {
       return;
     }
 
-    // If a fetch is already in progress, wait for it
+    // If a fetch is already in progress, wait for it. Swallow rejections so an
+    // aborted/failed shared fetch (e.g. getUser() cancelled by a navigation)
+    // reflects cached state instead of throwing an uncaught "Failed to fetch"
+    // out of this deduplicated path.
     if (fetchPromise) {
-      await fetchPromise;
+      try {
+        await fetchPromise;
+      } catch {
+        // ignore — fall through to reflect whatever is cached
+      }
       setUser(cachedUser);
       setProfile(cachedProfile);
       setLoading(false);
@@ -125,7 +132,11 @@ export function useClientAuth(): UseClientAuthResult {
   }, [fetchAuth]);
 
   useEffect(() => {
-    fetchAuth();
+    // Swallow rejections from an in-flight getUser() that gets aborted when this
+    // hook (mounted globally via ThemeProvider) unmounts during a navigation or
+    // redirect — otherwise it surfaces as an uncaught "TypeError: Failed to
+    // fetch" in the console and can flash a transient logged-out state.
+    fetchAuth().catch(() => {});
   }, [fetchAuth]);
 
   // Listen for auth state changes

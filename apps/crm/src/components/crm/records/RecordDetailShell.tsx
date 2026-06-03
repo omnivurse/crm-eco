@@ -556,7 +556,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     onClick={() => setShowConvertDialog(true)}
                   >
                     <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
-                    <span className="text-xs font-medium sm:text-sm">Convert</span>
+                    <span className="text-xs font-medium sm:text-sm">Convert to Contact</span>
                   </Button>
                 )}
                 <Button

@@ -202,12 +202,18 @@ export const CrmTopBar = memo(function CrmTopBar({
           <SplitCreateButton />
         </div>
 
-        {/* Theme Toggle - hidden on small mobile */}
-        <div className="hidden xs:block">
+        {/* Theme Toggle - hidden on the narrowest mobile widths.
+            (`xs` is not a defined breakpoint, so the old `xs:block` never
+            applied and the toggle was hidden at every width.) */}
+        <div className="hidden sm:block">
           <ThemeToggle variant="icon" />
         </div>
 
-        <ConnectivityModeToggle className="hidden xs:flex" />
+        {/* The connectivity/offline simulator is a dev-only testing aid —
+            don't ship it in production builds. */}
+        {process.env.NODE_ENV !== 'production' && (
+          <ConnectivityModeToggle className="hidden sm:flex" />
+        )}
 
         {/* Pending changes pill — auto-hides when the mutation queue
             is empty, so it only appears when the user actually has

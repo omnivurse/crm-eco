@@ -1210,7 +1210,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     className="inline-flex shrink-0 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 font-medium"
                   >
                     <UserCheck className="w-4 h-4 shrink-0 sm:mr-1.5" />
-                    <span className="text-xs sm:text-sm">Convert</span>
+                    <span className="text-xs sm:text-sm">Convert to Contact</span>
                   </Button>
                 )}
                 {canConvertToMember && (
