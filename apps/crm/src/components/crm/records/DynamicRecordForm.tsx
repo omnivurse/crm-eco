@@ -1002,9 +1002,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         // module) because it always shows the right-hand summary.
         if (sectionFields.length === 0 && !isHero) return null;
 
-        // In readOnly mode, omit full cards where every field is empty — keep a
-        // cross-column anchor so section pills still scroll (IDs match Overview nav).
-        if (readOnly && !isHero) {
+        // In static read-only mode, omit full cards where every field is empty —
+        // keep a cross-column anchor so section pills still scroll (IDs match
+        // Overview nav). In inline-edit mode we ALWAYS render the full card so
+        // reps can fill blank fields (e.g. Address) without the whole section
+        // disappearing as they type or clear the last value.
+        if (readOnly && !inlineEditable && !isHero) {
           const hasAnyValue = sectionFields.some(
             (f) =>
               defaultValues[f.key] !== null &&

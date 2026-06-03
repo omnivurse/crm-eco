@@ -89,8 +89,11 @@ export function RecordDrawer() {
   useEffect(() => {
     setLocalRecordData(null);
   }, [recordId]);
-  // Toggle to show all fields including empty sections
-  const [showAllFields, setShowAllFields] = useState(false);
+  // Toggle to show all fields including empty sections. Defaults to true so
+  // empty sections (e.g. Address) stay visible and editable instead of
+  // disappearing — keeping the quick drawer consistent with the always-visible
+  // record detail view. Reps can still collapse empties via "Hide empty fields".
+  const [showAllFields, setShowAllFields] = useState(true);
 
   const handleFieldUpdate = async (fieldKey: string, value: unknown) => {
     if (!data?.record) return;
