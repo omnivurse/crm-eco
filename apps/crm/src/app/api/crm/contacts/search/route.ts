@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthProfile, createClient } from '@/lib/supabase-server';
+import { isConvertedLeadRow } from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,7 +103,7 @@ async function fuzzyContactSearch(
     if (!phoneErr && Array.isArray(phoneRows)) {
       const rows = phoneRows as SmartSearchRow[];
       const filtered = rows
-        .filter((r) => !!r.email)
+        .filter((r) => !!r.email && !isConvertedLeadRow(r))
         .slice(0, 10)
         .map((r) => ({
           id: r.id,
@@ -134,7 +135,7 @@ async function fuzzyContactSearch(
   if (!error && Array.isArray(data)) {
     const rows = data as SmartSearchRow[];
     return rows
-      .filter((r) => !!r.email)
+      .filter((r) => !!r.email && !isConvertedLeadRow(r))
       .slice(0, 10)
       .map((r) => ({
         id: r.id,
