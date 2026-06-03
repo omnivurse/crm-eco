@@ -144,7 +144,7 @@ export const COMMUNICATIONS_NAV_ITEMS: NavItem[] = [
     { key: 'domains', label: 'Email Domains', icon: 'globe', href: '/crm/settings/email-domains' },
 
     { key: 'sec-channels', separator: true, sectionTitle: 'Channels' },
-    { key: 'call-logs', label: 'Call Logs', icon: 'phone', href: '/crm/activities?type=calls' },
+    { key: 'call-logs', label: 'Call Logs', icon: 'phone', href: '/crm/activities?type=call' },
     { key: 'notifications', label: 'Notifications', icon: 'bell', href: '/crm/settings/comms' },
 ];
 

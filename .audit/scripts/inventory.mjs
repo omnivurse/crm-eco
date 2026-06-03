@@ -21,7 +21,7 @@
  * in `findings.csv` as "dynamic" so a human can sanity check them.
  */
 
-import { readFileSync, writeFileSync, statSync, readdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, statSync, readdirSync, mkdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = process.cwd();
@@ -676,6 +676,8 @@ for (const fpath of allFiles) {
 function writeCsv(file, header, rows) {
   const out = [header.join(',')];
   for (const r of rows) out.push(r.map(csvEscape).join(','));
+  // .audit/code/ is generated, not committed — create it before writing.
+  mkdirSync(file.slice(0, file.lastIndexOf('/')) || '.', { recursive: true });
   writeFileSync(file, out.join('\n') + '\n');
 }
 

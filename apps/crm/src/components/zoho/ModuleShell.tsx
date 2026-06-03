@@ -698,6 +698,16 @@ export const ModuleShell = memo(function ModuleShell({
     setShowDeleteDialog(true);
   }, []);
 
+  // Row-level delete entry point: select the given record(s) and open the same
+  // confirmation dialog the bulk-delete flow uses, so a per-row Delete reuses
+  // the working DELETE /api/crm/records/bulk path (handleConfirmDelete) instead
+  // of dropping its click on an unwired callback.
+  const requestDelete = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    setSelectedIds(new Set(ids));
+    setShowDeleteDialog(true);
+  }, []);
+
   const handleConfirmDelete = useCallback(async () => {
     setIsProcessing(true);
     const count = selectedIds.size;
@@ -909,7 +919,8 @@ export const ModuleShell = memo(function ModuleShell({
     moduleKey: module.key,
     viewMode: effectiveViewMode,
     setViewMode: handleViewModeChange,
-  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, effectiveViewMode, handleViewModeChange]);
+    requestDelete,
+  }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, effectiveViewMode, handleViewModeChange, requestDelete]);
 
   return (
     <div className={cn('w-full space-y-4', className)}>

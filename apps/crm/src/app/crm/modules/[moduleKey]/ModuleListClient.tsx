@@ -102,6 +102,7 @@ function ModuleViewContent({
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
           onRowClick={handleRowClick}
+          onBulkDelete={shellContext?.requestDelete}
         />
       );
 
@@ -113,6 +114,7 @@ function ModuleViewContent({
           moduleKey={moduleKey}
           onRowClick={handleRowClick}
           stages={dealStages}
+          onBulkDelete={shellContext?.requestDelete}
         />
       );
 
@@ -156,6 +158,7 @@ function ModuleViewContent({
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
           onRowClick={handleRowClick}
+          onBulkDelete={shellContext?.requestDelete}
         />
       );
 
@@ -186,6 +189,7 @@ function ModuleViewContent({
           onSelectionChange={setSelectedIds}
           onSort={handleSort}
           currentSort={currentSort}
+          onBulkDelete={shellContext?.requestDelete}
         />
       );
   }

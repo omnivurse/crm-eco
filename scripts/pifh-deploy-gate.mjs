@@ -170,7 +170,14 @@ async function query(sql) {
           'Run `npm i -D pg` at the repo root or unset SUPABASE_DB_URL.',
       );
     });
-    const client = new Client({ connectionString: process.env.SUPABASE_DB_URL });
+    // Supabase's pooler presents a cert that isn't in Node's default CA bundle, and the
+    // current pg-connection-string treats `sslmode=require` as strict verify-full — which
+    // makes `new Client` reject it ("self-signed certificate in certificate chain"). Force
+    // `sslmode=no-verify` so this Node gate connects. The psql-based gates keep using
+    // `sslmode=require`, which libpq accepts (encrypt without cert verification).
+    const gateUrl = new URL(process.env.SUPABASE_DB_URL);
+    gateUrl.searchParams.set('sslmode', 'no-verify');
+    const client = new Client({ connectionString: gateUrl.toString() });
     await client.connect();
     try {
       const { rows } = await client.query(sql);
