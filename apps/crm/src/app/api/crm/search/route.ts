@@ -3,6 +3,7 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import {
   buildPhoneSearchOrFilter,
   escapeIlikePattern,
+  isConvertedLeadRow,
   phoneFormatVariants,
 } from '@/lib/crm/record-search';
 
@@ -139,7 +140,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const results: SearchResult[] = rows.map((record) => {
+    // Converted leads are intentionally kept as an audit trail, but they must
+    // not surface in search beside the Contact they became — that pairing is
+    // exactly what looks like a duplicate to reps. Drop them here; the lead
+    // stays reachable from the contact's "converted from" link.
+    const visibleRows = rows.filter((record) => !isConvertedLeadRow(record));
+
+    const results: SearchResult[] = visibleRows.map((record) => {
       const data = record.data || {};
       const subtitleParts: string[] = [];
       if (record.email) subtitleParts.push(record.email);
