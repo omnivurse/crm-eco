@@ -169,37 +169,6 @@ async function PipelineContent({
     ];
   }
 
-  // Surface stage values that exist on records but aren't in the configured
-  // stage set. The "deals" module is repurposed as "Members" with enrollment
-  // stages (Application / Under Review / Approved / Active / Terminated) that
-  // don't match the classic deal stages, so those records would otherwise be
-  // grouped into a column that's never rendered and vanish from the board.
-  // Append a lightweight column for each unconfigured stage so nothing is lost.
-  {
-    const knownKeys = new Set(stages.map((s) => s.key));
-    const seen = new Set<string>();
-    for (const deal of deals) {
-      const key = deal.stage;
-      if (key && !knownKeys.has(key) && !seen.has(key)) {
-        seen.add(key);
-        stages.push({
-          id: `derived-${key}`,
-          org_id: profile.organization_id,
-          key,
-          name: key,
-          color: '#94a3b8',
-          probability: 0,
-          is_won: false,
-          is_lost: false,
-          display_order: stages.length + 1,
-          is_active: true,
-          created_at: '',
-          updated_at: '',
-        });
-      }
-    }
-  }
-
   // Create stage lookup map for O(1) access
   const stageMap = stages.reduce((acc, stage) => {
     acc[stage.key] = stage;
