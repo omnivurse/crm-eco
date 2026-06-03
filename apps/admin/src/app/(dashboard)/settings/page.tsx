@@ -80,11 +80,14 @@ export default function SettingsPage() {
 
         if (!profile) return;
 
+        // maybeSingle() returns null for 0 rows instead of throwing a 406
+        // (PGRST116) — a fresh org has no admin_settings row yet, which is
+        // expected, so fall through to defaults rather than logging an error.
         const { data: existingSettings } = await supabase
           .from('admin_settings')
           .select('*')
           .eq('organization_id', profile.organization_id)
-          .single() as { data: AdminSettings | null };
+          .maybeSingle() as { data: AdminSettings | null };
 
         if (existingSettings) {
           setSettings({
