@@ -12,9 +12,9 @@ export default function NewTaskPage() {
     const [form, setForm] = useState({
         title: '',
         description: '',
-        priority: 'medium',
+        priority: 'normal',
         due_date: '',
-        status: 'pending',
+        status: 'open',
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -107,7 +107,7 @@ export default function NewTaskPage() {
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                             >
                                 <option value="low">Low</option>
-                                <option value="medium">Medium</option>
+                                <option value="normal">Normal</option>
                                 <option value="high">High</option>
                                 <option value="urgent">Urgent</option>
                             </select>
@@ -121,7 +121,7 @@ export default function NewTaskPage() {
                                 onChange={(e) => setForm({ ...form, status: e.target.value })}
                                 className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                             >
-                                <option value="pending">Pending</option>
+                                <option value="open">Open</option>
                                 <option value="in_progress">In Progress</option>
                                 <option value="completed">Completed</option>
                                 <option value="cancelled">Cancelled</option>
