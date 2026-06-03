@@ -18,17 +18,13 @@ import {
   Clock,
   Loader2,
   X,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { Badge } from '@crm-eco/ui/components/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@crm-eco/ui/components/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@crm-eco/ui/components/dialog';
 import {
   Select,
   SelectContent,
@@ -78,7 +74,13 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-red-500/10 text-red-400 border-red-500/30',
 };
 
-function ActivityRow({ activity }: { activity: Activity }) {
+function ActivityRow({
+  activity,
+  onDelete,
+}: {
+  activity: Activity;
+  onDelete: (activity: Activity) => void;
+}) {
   const activityType = (activity.activity_type || 'task') as ActivityType;
   const Icon = ACTIVITY_ICONS[activityType] || ACTIVITY_ICONS.task;
   const colorClass = ACTIVITY_COLORS[activityType] || ACTIVITY_COLORS.task;
@@ -86,9 +88,7 @@ function ActivityRow({ activity }: { activity: Activity }) {
 
   return (
     <div className="flex items-center gap-4 p-4 border-b border-slate-200 dark:border-white/5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors">
-      <div className={`p-2 rounded-lg ${colorClass}`}>
-        {Icon}
-      </div>
+      <div className={`p-2 rounded-lg ${colorClass}`}>{Icon}</div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -120,6 +120,17 @@ function ActivityRow({ activity }: { activity: Activity }) {
       <div className="text-sm text-slate-500" suppressHydrationWarning>
         {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
       </div>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onDelete(activity)}
+        className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10"
+        aria-label="Delete activity"
+        title="Delete"
+      >
+        <Trash2 className="w-4 h-4" />
+      </Button>
     </div>
   );
 }
@@ -162,9 +173,15 @@ function ActivitiesPageContent() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Activity | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Live search with debounce
-  const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery } = useDebouncedSearch({ delay: 200 });
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    debouncedQuery,
+  } = useDebouncedSearch({ delay: 200 });
 
   // Form state
   const [formData, setFormData] = useState({
@@ -214,17 +231,39 @@ function ActivitiesPageContent() {
   }, [activities, debouncedQuery]);
   const total = filteredActivities.length;
   const totalPages = Math.ceil(total / pageSize);
-  const paginatedActivities = filteredActivities.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
+  const paginatedActivities = filteredActivities.slice((page - 1) * pageSize, page * pageSize);
 
   // Get counts by type
-  const countByType = activities.reduce((acc, a) => {
-    const type = a.activity_type || 'task';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const countByType = activities.reduce(
+    (acc, a) => {
+      const type = a.activity_type || 'task';
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  // Delete a task/activity after confirmation
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/tasks/${target.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(typeof err?.error === 'string' ? err.error : 'Delete failed');
+      }
+      setActivities((cur) => cur.filter((a) => a.id !== target.id));
+      toast.success('Activity deleted');
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error('Delete activity error:', error);
+      toast.error('Failed to delete activity');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -375,7 +414,11 @@ function ActivitiesPageContent() {
       <div className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden">
         {paginatedActivities.length > 0 ? (
           paginatedActivities.map((activity) => (
-            <ActivityRow key={activity.id} activity={activity} />
+            <ActivityRow
+              key={activity.id}
+              activity={activity}
+              onDelete={(a) => setDeleteTarget(a)}
+            />
           ))
         ) : (
           <div className="p-12 text-center">
@@ -398,6 +441,37 @@ function ActivitiesPageContent() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this activity?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            This permanently deletes{' '}
+            <span className="font-medium text-slate-900 dark:text-white">
+              {deleteTarget?.title}
+            </span>
+            . This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Pagination */}
       {totalPages > 1 && (
