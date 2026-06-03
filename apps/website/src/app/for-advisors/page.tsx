@@ -19,10 +19,6 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-const ADVISOR_PORTAL_URL =
-  process.env.NEXT_PUBLIC_ADVISOR_PORTAL_URL ||
-  'https://advisors.doublehelixhub.com';
-
 export const metadata: Metadata = {
   title: 'For Advisors',
   description:
@@ -135,7 +131,7 @@ export default function ForAdvisorsPage() {
               network of advisors who are making a difference in their communities.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href={`${ADVISOR_PORTAL_URL}/signup`}>
+              <a href="/contact">
                 <Button
                   size="lg"
                   className="bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-600/20 gap-2 w-full sm:w-auto"
@@ -282,7 +278,7 @@ export default function ForAdvisorsPage() {
           </div>
 
           <div className="text-center mt-12">
-            <a href={`${ADVISOR_PORTAL_URL}/signup`}>
+            <a href="/contact">
               <Button
                 size="lg"
                 className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
@@ -352,7 +348,7 @@ export default function ForAdvisorsPage() {
             find affordable health sharing.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href={`${ADVISOR_PORTAL_URL}/signup`}>
+            <a href="/contact">
               <Button
                 size="lg"
                 className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg gap-2 w-full sm:w-auto"
