@@ -5,10 +5,6 @@ const PORTAL_URL =
   process.env.NEXT_PUBLIC_PORTAL_URL ||
   'https://members.doublehelixhub.com';
 
-const ADVISOR_PORTAL_URL =
-  process.env.NEXT_PUBLIC_ADVISOR_PORTAL_URL ||
-  'https://advisors.doublehelixhub.com';
-
 const footerColumns = {
   company: {
     heading: 'Company',
@@ -32,7 +28,6 @@ const footerColumns = {
     heading: 'Advisors',
     links: [
       { name: 'Become an Advisor', href: '/for-advisors' },
-      { name: 'Advisor Portal', href: ADVISOR_PORTAL_URL, external: true },
     ],
   },
   legal: {
