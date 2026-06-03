@@ -132,7 +132,7 @@ export default function AdminSavedReportsPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link href="/reports/new">
+          <Link href="/reports/templates">
             <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
               <Plus className="w-4 h-4 mr-2" />
               New Report
@@ -308,7 +308,7 @@ export default function AdminSavedReportsPage() {
             <Link href="/reports/templates">
               <Button variant="outline">Browse Templates</Button>
             </Link>
-            <Link href="/reports/new">
+            <Link href="/reports/templates">
               <Button className="bg-[#0891b2] hover:bg-[#0e7490] text-white">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Report
