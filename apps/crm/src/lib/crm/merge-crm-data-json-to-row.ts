@@ -67,6 +67,30 @@ const UUID_COLUMN_KEYS = new Set([
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/**
+ * Modules whose record display-name (`crm_records.title`) is derived from the
+ * person's name fields (preferred / first / last). For these, the JSONB `title`
+ * field is a **job title** (e.g. "Minister", "Outside Sales", "HR Director"),
+ * NOT the display name — syncing it onto the `title` column made the job title
+ * appear in the record heading instead of the person's name (the regression
+ * this guard fixes). Entity modules (accounts → account_name, deals →
+ * member_name, custom modules → title/name) are intentionally excluded so their
+ * JSONB display name still flows through.
+ */
+const PERSON_DISPLAY_NAME_MODULE_KEYS = new Set([
+  'contacts',
+  'leads',
+  'members',
+  'prospects',
+]);
+
+function isPersonDisplayNameModule(moduleKey?: string | null): boolean {
+  return (
+    typeof moduleKey === 'string' &&
+    PERSON_DISPLAY_NAME_MODULE_KEYS.has(moduleKey.toLowerCase())
+  );
+}
+
 /** JSONB keys that store calendar dates (DOB, spouse/child DOBs, *_date fields). */
 const CRM_JSONB_DATE_FIELD_KEY_RE = /(?:^date_of_birth$|_date$|_dob$)/i;
 
@@ -277,12 +301,22 @@ export function mergeCrmDataJsonIntoRowColumns(
     }
   }
 
-  // Deals / accounts: display name only in JSONB
-  if (d.title !== undefined) {
-    updates.title = ((d.title as string) || ctx.previousTitle) ?? null;
-  }
-  if (d.name !== undefined && updates.title === undefined) {
-    updates.title = ((d.name as string) || ctx.previousTitle) ?? null;
+  // Entity / custom modules (deals, accounts, …): the display name lives in the
+  // JSONB `title` / `name` field, so mirror it onto the `title` column.
+  //
+  // PERSON modules (contacts, leads, members, prospects) are skipped here: their
+  // title is name-derived above, and their JSONB `title` field is a *job title*
+  // (e.g. "Minister") that must never clobber the display name. The
+  // `updates.title === undefined` guard is belt-and-suspenders — if the name
+  // block above already produced a title, a stray `data.title` can't override it
+  // even for callers that omit `moduleKey`.
+  if (!isPersonDisplayNameModule(ctx.moduleKey)) {
+    if (d.title !== undefined && updates.title === undefined) {
+      updates.title = ((d.title as string) || ctx.previousTitle) ?? null;
+    }
+    if (d.name !== undefined && updates.title === undefined) {
+      updates.title = ((d.name as string) || ctx.previousTitle) ?? null;
+    }
   }
 
   const sharingTouched = HEALTH_SHARING_DATA_KEYS.some((key) => d[key] !== undefined);

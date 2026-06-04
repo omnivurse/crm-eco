@@ -92,6 +92,70 @@ describe('mergeCrmDataJsonIntoRowColumns', () => {
     expect(updates.title).toBe('Anne Hamill');
   });
 
+  // Regression (Thomas Boyd): on a CONTACT, the JSONB `title` field is a *job
+  // title* (e.g. "Minister"). It must never overwrite the name-derived display
+  // title, which previously showed the job title in the record heading.
+  it('contacts module: job-title `title` field never overwrites the name-derived display title', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { first_name: 'Thomas', last_name: 'Boyd', title: 'Minister' },
+      { moduleKey: 'contacts', previousTitle: 'Thomas Boyd' }
+    );
+    expect(updates.title).toBe('Thomas Boyd');
+  });
+
+  it('contacts module: a title-only patch keeps the existing name-derived title (merged data carries the name)', () => {
+    // PATCH merges prevData; the merged payload still contains the name fields.
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { first_name: 'Thomas', last_name: 'Boyd', title: 'Senior Minister' },
+      { moduleKey: 'contacts', previousTitle: 'Thomas Boyd' }
+    );
+    expect(updates.title).toBe('Thomas Boyd');
+  });
+
+  it('leads module: job-title `title` field never overwrites the name-derived display title', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { first_name: 'Dana', last_name: 'Cole', title: 'Outside Sales' },
+      { moduleKey: 'leads' }
+    );
+    expect(updates.title).toBe('Dana Cole');
+  });
+
+  it('contacts module: prefers preferred_name even when a job-title `title` is present', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { first_name: 'Thomas', preferred_name: 'Tom', last_name: 'Boyd', title: 'Minister' },
+      { moduleKey: 'contacts' }
+    );
+    expect(updates.title).toBe('Tom Boyd');
+  });
+
+  // Defense-in-depth: even if a caller forgets to pass moduleKey, a job title
+  // can't clobber a title the name block already produced.
+  it('does not let data.title override a title already derived from name fields (no moduleKey)', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns({
+      first_name: 'Thomas',
+      last_name: 'Boyd',
+      title: 'Minister',
+    });
+    expect(updates.title).toBe('Thomas Boyd');
+  });
+
+  // Entity/custom modules must keep their JSONB display name behavior.
+  it('entity module (deals): data.title still drives the display title', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { title: 'Q3 Renewal — Acme' },
+      { moduleKey: 'deals' }
+    );
+    expect(updates.title).toBe('Q3 Renewal — Acme');
+  });
+
+  it('entity module: data.name drives the display title when title is absent', () => {
+    const updates = mergeCrmDataJsonIntoRowColumns(
+      { name: 'Acme Holdings' },
+      { moduleKey: 'accounts' }
+    );
+    expect(updates.title).toBe('Acme Holdings');
+  });
+
   it('coerces blank email / phone to null (pre-existing behavior, unchanged)', () => {
     const updates = mergeCrmDataJsonIntoRowColumns({ email: '', phone: '' });
     expect(updates.email).toBeNull();
