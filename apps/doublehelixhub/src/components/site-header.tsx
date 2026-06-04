@@ -22,7 +22,7 @@ export function SiteHeader() {
             Sign in
           </Link>
           <Link
-            href="#request-access"
+            href="/#request-access"
             className="inline-flex h-9 items-center rounded-md gradient-helix px-4 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
           >
             Request access

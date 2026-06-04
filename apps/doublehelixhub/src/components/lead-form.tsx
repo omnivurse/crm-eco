@@ -22,6 +22,8 @@ export function LeadForm() {
       phone: String(formData.get('phone') ?? ''),
       productInterest: String(formData.get('productInterest') ?? 'both'),
       notes: String(formData.get('notes') ?? ''),
+      // Honeypot — real users never fill this hidden field; bots do.
+      website: String(formData.get('website') ?? ''),
     };
 
     try {
@@ -57,6 +59,14 @@ export function LeadForm() {
 
   return (
     <form onSubmit={handleSubmit} className="grid gap-4">
+      {/* Honeypot — hidden from humans; bots that fill it are dropped server-side. */}
+      <div
+        className="pointer-events-none absolute left-[-9999px] top-[-9999px] h-0 w-0 overflow-hidden"
+        aria-hidden="true"
+      >
+        <label htmlFor="website">Website</label>
+        <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="First name" name="firstName" required />
         <Field label="Last name" name="lastName" required />
