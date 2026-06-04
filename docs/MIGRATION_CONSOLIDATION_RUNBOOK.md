@@ -444,8 +444,17 @@ Result: `DELETE 368`, ledger now = 2. **Verification:** `supabase db push --dry-
 status remains `MIGRATIONS_FAILED` until the **next** merge to `main`, which will deploy green
 (Migrate → "All migrations are up to date") now that the ledger matches the repo.
 
-**Lesson for future squashes:** skip the additive half-step. After validating the baseline, write the
-baseline row(s) **and** revert the old versions in the same change so `ledger == repo` from the start.
+**Downstream fix — version-pinned deploy gate.** `scripts/pifh-deploy-gate.mjs` asserted 8 specific
+feature-migration versions (`202604260001…202604270001`) were present in the ledger as a proxy for
+"multi-tenancy schema deployed." The reconcile removed those rows, so the gate failed `8/17` on the
+next PR. **Fix:** repoint `REQUIRED_MIGRATIONS` at the two baseline versions — the multi-tenancy
+schema itself is already verified directly by the gate's count/backfill/autosync-trigger/owner
+probes, so the version check now just confirms the squashed baseline is recorded.
+
+**Lesson for future squashes:** (1) skip the additive half-step — after validating the baseline,
+write the baseline row(s) **and** revert the old versions in the same change so `ledger == repo` from
+the start; (2) grep for **version-pinned checks** (deploy gates, health probes, CI asserts that
+reference specific migration versions) and repoint them at the baseline before squashing.
 
 ## Appendix A — `object_counts.sql` (parity check)
 ```sql
