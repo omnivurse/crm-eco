@@ -28841,7 +28841,7 @@ COMMENT ON COLUMN public.crm_tasks.follow_up_note IS 'Short context for the foll
 -- Name: crm_probable_duplicates_all; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE VIEW public.crm_probable_duplicates_all WITH (security_invoker='true') AS
+CREATE VIEW public.crm_probable_duplicates_all AS
  WITH candidates AS (
          SELECT r.id,
             r.organization_id AS org_id,
@@ -28925,8 +28925,10 @@ CREATE VIEW public.crm_probable_duplicates_all WITH (security_invoker='true') AS
     right_updated_at,
     match_signals,
         CASE
-            WHEN (cardinality(match_signals) >= 2) THEN 'high'::text
-            WHEN (('email'::text = ANY (match_signals)) OR ('dob'::text = ANY (match_signals))) THEN 'medium'::text
+            WHEN (('email'::text = ANY (match_signals)) AND ('dob'::text = ANY (match_signals))) THEN 'high'::text
+            WHEN (('email'::text = ANY (match_signals)) AND ('phone'::text = ANY (match_signals))) THEN 'high'::text
+            WHEN ('email'::text = ANY (match_signals)) THEN 'medium'::text
+            WHEN (('phone'::text = ANY (match_signals)) AND ('dob'::text = ANY (match_signals))) THEN 'medium'::text
             ELSE 'low'::text
         END AS confidence
    FROM pairs p;
@@ -28943,7 +28945,7 @@ COMMENT ON VIEW public.crm_probable_duplicates_all IS 'All probable-duplicate pa
 -- Name: crm_probable_duplicates; Type: VIEW; Schema: public; Owner: -
 --
 
-CREATE VIEW public.crm_probable_duplicates WITH (security_invoker='true') AS
+CREATE VIEW public.crm_probable_duplicates AS
  SELECT left_id,
     right_id,
     org_id,
@@ -89697,6 +89699,7 @@ GRANT ALL ON TABLE public.crm_tasks TO service_role;
 -- Name: TABLE crm_probable_duplicates_all; Type: ACL; Schema: public; Owner: -
 --
 
+GRANT ALL ON TABLE public.crm_probable_duplicates_all TO anon;
 GRANT ALL ON TABLE public.crm_probable_duplicates_all TO authenticated;
 GRANT ALL ON TABLE public.crm_probable_duplicates_all TO service_role;
 
@@ -89705,6 +89708,7 @@ GRANT ALL ON TABLE public.crm_probable_duplicates_all TO service_role;
 -- Name: TABLE crm_probable_duplicates; Type: ACL; Schema: public; Owner: -
 --
 
+GRANT ALL ON TABLE public.crm_probable_duplicates TO anon;
 GRANT ALL ON TABLE public.crm_probable_duplicates TO authenticated;
 GRANT ALL ON TABLE public.crm_probable_duplicates TO service_role;
 
