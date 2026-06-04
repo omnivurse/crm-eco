@@ -1,7 +1,11 @@
 # Migration Consolidation Runbook (Squash 368 → 1 Baseline)
 
-> **Status:** EXECUTING — baseline built + cut over on `chore/squash-migrations` (2026-06-04);
-> validating via the PR's Supabase Preview check; prod ledger write pending approval (Phase 4).
+> **Status:** EXECUTING — baseline + companion built & cut over on `chore/squash-migrations`
+> (2026-06-04, PR #23). The first Preview run caught two issues (see §10): a replay blocker
+> (`ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin`, now stripped) and a cross-schema gap (auth
+> trigger / storage policies / cron jobs missing from a `--schema=public` dump). Fixed by stripping
+> the privilege lines and adding companion migration `00000000000001_baseline_cross_schema.sql`
+> (built from LIVE prod). Re-validating via Preview; prod ledger write (TWO rows) pending approval.
 > **Author:** DB consolidation audit, 2026-06-03 (updated 2026-06-04).
 > **Live production project:** `sffisarikcreyyjzdjvb` ("PIF-ECO-V2", org `khhfyzojnmmjplgeroug`).
 > **Staging project:** `cammurefjywnzxnmuyfv` ("crm-eco-staging", org `bmfqoyiitfeiiqzobeou`) —
@@ -18,10 +22,12 @@
 
 We have **368 migrations** that are **100% applied and in-sync** with production (zero drift, zero
 duplicate prefixes). The problem is *volume*, not correctness. We will replace the 368 historical
-files with **one schema baseline** generated from the live database, archive the originals, and
-make `supabase db push` a clean no-op by adding **one additive row** to the migration ledger
-(Option A — keep the 368 history rows). No tables are dropped (see §2.2 — there are no
-provably-dead tables). No data is touched.
+files with **a schema baseline + a small companion migration** generated from the live database,
+archive the originals, and make `supabase db push` a clean no-op by adding **two additive rows**
+(`00000000000000` baseline + `00000000000001` companion) to the migration ledger (Option A — keep
+the 368 history rows). The companion restores the app's non-`public` objects (auth signup trigger,
+storage RLS policies, cron jobs) that a `--schema=public` dump can't capture. No tables are dropped
+(see §2.2 — there are no provably-dead tables). No data is touched.
 
 > **Extensions note (2026-06-04):** the baseline is `pg_dump --schema=public`, which omits
 > `CREATE EXTENSION`. One extension is a hard replay dependency — **`pg_trgm` in schema `public`**
@@ -278,27 +284,31 @@ correctly apply only the pending `2026...` migrations.)
 ### 7.1 Rehearse first (safe — rolled back)
 ```sql
 BEGIN;
-SELECT count(*) AS before_count FROM supabase_migrations.schema_migrations;
-INSERT INTO supabase_migrations.schema_migrations(version, name)
-VALUES ('00000000000000','baseline') ON CONFLICT (version) DO NOTHING;
-SELECT count(*) AS after_insert FROM supabase_migrations.schema_migrations;  -- before+1
+SELECT count(*) AS before_count FROM supabase_migrations.schema_migrations;  -- expect 368
+INSERT INTO supabase_migrations.schema_migrations(version, name) VALUES
+  ('00000000000000','baseline'),
+  ('00000000000001','baseline_cross_schema')
+ON CONFLICT (version) DO NOTHING;
+SELECT count(*) AS after_insert FROM supabase_migrations.schema_migrations;  -- before+2 = 370
 ROLLBACK;
-SELECT count(*) AS after_rollback FROM supabase_migrations.schema_migrations; -- == before
+SELECT count(*) AS after_rollback FROM supabase_migrations.schema_migrations; -- == before (368)
 ```
 
 ### 7.2 Commit (only after explicit approval)
 ```sql
 BEGIN;
-INSERT INTO supabase_migrations.schema_migrations(version, name)
-VALUES ('00000000000000','baseline') ON CONFLICT (version) DO NOTHING;
-SELECT count(*) FILTER (WHERE version='00000000000000') AS baseline_present,
+INSERT INTO supabase_migrations.schema_migrations(version, name) VALUES
+  ('00000000000000','baseline'),
+  ('00000000000001','baseline_cross_schema')
+ON CONFLICT (version) DO NOTHING;
+SELECT count(*) FILTER (WHERE version IN ('00000000000000','00000000000001')) AS baseline_rows,
        count(*) AS total
 FROM supabase_migrations.schema_migrations;
--- verify baseline_present = 1, total = 369, THEN:
+-- verify baseline_rows = 2, total = 370, THEN:
 COMMIT;
 ```
-Run against `PROD_DB_URL`. **Blast-radius guard:** expect exactly 1 row inserted; if `total`
-diverges from `prior + 1` (i.e. ≠ 369), `ROLLBACK` and investigate.
+Run against `PROD_DB_URL`. **Blast-radius guard:** expect exactly 2 rows inserted; if `total`
+diverges from `prior + 2` (i.e. ≠ 370), `ROLLBACK` and investigate.
 
 ### 7.3 Staging — follow-up (not blocking)
 Staging (`cammurefjywnzxnmuyfv`) is in a different org and unreachable by the Supabase MCP token; its
@@ -355,6 +365,25 @@ Fully reversible at every stage:
 
 ---
 
+## 10. Validation findings (PR #23 Supabase Preview, 2026-06-04)
+
+The first fresh-branch replay **failed fast (33s)** and proved the gate's value before any prod write:
+
+1. **Replay blocker — `permission denied to change default privileges` (SQLSTATE 42501).** The
+   `pg_dump` tail emits 24 `ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin|postgres IN SCHEMA
+   public …` statements; a non-superuser migration role can't run them. *Everything before them
+   replayed cleanly* (the error was at statement #10650, the very end), confirming the 486 tables /
+   433 functions / 1307 policies / 2870 grants / `pg_trgm` all build. **Fix:** strip the 24 lines
+   (Supabase pre-configures public-schema default privileges on every fresh project/branch).
+2. **Cross-schema gap (Codex P1 + design review).** `--schema=public` omits app objects in other
+   schemas: the `on_auth_user_created` trigger on `auth.users`, **27** `storage.objects` RLS
+   policies, and **7** `cron.job` schedules. **Fix:** companion migration
+   `00000000000001_baseline_cross_schema.sql`, generated from **live prod** (not migration history),
+   idempotent + guarded (`SET search_path=public` for unqualified refs; cron wrapped in a
+   `pg_cron`-existence check so a branch without it skips cleanly instead of failing).
+
+Neither issue touched prod — prod already has every object; the baseline is never run against it.
+
 ## Appendix A — `object_counts.sql` (parity check)
 ```sql
 SELECT 'tables'   AS k, count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')
@@ -410,5 +439,13 @@ ORDER BY 1;
   (8 `public.gin_trgm_ops` indexes); pgvector/btree_gin/hypopg/pg_cron not required at replay.
 - Cutover: archived all **368** applied migrations to `supabase/migrations_archive/` (moved=368,
   missing=0, 0 stragglers); `supabase/migrations/` now holds only the baseline.
-- Next: push → PR → **Supabase Preview check (Phase 2 validation)** → rehearse + **approval gate** →
-  prod ledger row (Phase 4, before merge) → merge + verify (Phase 5).
+- Pushed → **PR #23** (https://github.com/omnivurse/crm-eco/pull/23).
+
+**2026-06-04 — PR #23 Preview validation (v1 fail → v2 fix):**
+- Supabase Preview replayed the baseline on a fresh branch and **failed at the `ALTER DEFAULT
+  PRIVILEGES` tail** (perm denied) — everything before it built. Codex review also flagged the
+  missing `auth.users` trigger (P1). See §10.
+- **v2:** stripped the 24 `ALTER DEFAULT PRIVILEGES` lines from the baseline; added companion
+  `00000000000001_baseline_cross_schema.sql` (1 auth trigger + 27 storage policies + 7 cron jobs,
+  captured from live prod, idempotent/guarded). Verified all companion deps (tables/functions)
+  exist in the baseline. Ledger plan updated to **two** additive rows. Re-pushed for re-validation.
