@@ -16,7 +16,7 @@
  *     Available column). This keeps Zoho-parity parity honest.
  */
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { ArrowUp, ArrowDown, Plus, Minus, RotateCcw } from 'lucide-react';
 import {
   Dialog,
@@ -45,7 +45,7 @@ export interface CustomizeRelatedListsDialogProps {
   /** Full catalog of panels this module could render, in default order. */
   catalog: CustomizeRelatedListsItem[];
   /**
-   * IDs that should never be hidden (e.g. "overview" for the Details pane).
+   * IDs that should never be hidden (e.g. "details" for the Details pane).
    * They stay pinned and are not reorderable past the top.
    */
   lockedIds?: string[];
@@ -67,11 +67,16 @@ export function CustomizeRelatedListsDialog({
   // changes before committing.
   const [draft, setDraft] = useState<string[]>(stored ?? defaultOrder);
 
-  useEffect(() => {
-    if (open) {
-      setDraft(stored ?? defaultOrder);
-    }
-  }, [open, stored, defaultOrder]);
+  // Re-sync the working copy to the latest saved order each time the dialog
+  // opens. Uses React's "adjust state during render" pattern instead of an
+  // effect: it avoids the cascading post-commit re-render (and the
+  // set-state-in-effect lint), and it no longer clobbers an in-progress edit
+  // if `stored` changes while the dialog is already open.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setDraft(stored ?? defaultOrder);
+  }
 
   const byId = useMemo(() => {
     const m = new Map<string, CustomizeRelatedListsItem>();
