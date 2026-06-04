@@ -51,6 +51,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
+  // Honeypot: real users never fill the hidden "website" field. If it's set,
+  // silently accept (so bots can't tell they were caught) but record nothing.
+  const honeypot = (json as { website?: unknown }).website;
+  if (typeof honeypot === 'string' && honeypot.trim() !== '') {
+    return NextResponse.json({ ok: true });
+  }
+
   const result = validate(json);
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: 400 });
