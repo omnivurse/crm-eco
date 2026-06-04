@@ -32,9 +32,13 @@
  *   4. profiles ↔ organization_members are 1:1 for every PIFH user
  *   5. Both PIFH owners are still in `my_organizations` with role=owner
  *   6. The autosync trigger `profiles_sync_to_org_members` exists
- *   7. None of the multi-tenancy migrations have been rolled back
- *      (every expected migration version exists in
- *       supabase_migrations.schema_migrations)
+ *   7. The squashed migration baseline is recorded as applied
+ *      (the 00000000000000 + 00000000000001 baseline versions exist in
+ *       supabase_migrations.schema_migrations). The multi-tenancy schema the
+ *       old per-feature migrations created is verified directly by checks 1–6
+ *       above; after the 2026-06-04 squash (see
+ *       docs/MIGRATION_CONSOLIDATION_RUNBOOK.md) the per-feature version rows
+ *       no longer exist, so this check tracks the baseline instead.
  *
  * The gate is idempotent and safe to re-run as often as you like.
  */
@@ -89,9 +93,17 @@ const FLOORS = {
   enrollments: 1098,
 };
 
+// Migration-ledger sanity check. The 368 historical migrations were squashed
+// into a single validated baseline on 2026-06-04 (see
+// docs/MIGRATION_CONSOLIDATION_RUNBOOK.md), so the prod ledger now holds only
+// the two baseline versions. The multi-tenancy schema the old per-feature
+// migrations (202604260001…202604270001) created — org_members, the autosync
+// trigger/function, owner rows — is verified directly by the count/backfill/
+// autosync/owner probes above; this check just confirms the squashed baseline
+// is recorded as applied (catches a wiped/rolled-back ledger).
 const REQUIRED_MIGRATIONS = [
-  '202604260001', '202604260002', '202604260003', '202604260004',
-  '202604260005', '202604260006', '202604260007', '202604270001',
+  '00000000000000', // baseline (full public schema)
+  '00000000000001', // baseline_cross_schema (auth trigger + storage RLS + cron jobs)
 ];
 
 const PROBES = {
@@ -148,7 +160,7 @@ const PROBES = {
     order by user_id
   `,
 
-  // Every required migration is recorded in supabase_migrations.schema_migrations.
+  // The squashed baseline versions are recorded in supabase_migrations.schema_migrations.
   migrations: `
     select version
     from supabase_migrations.schema_migrations
@@ -269,7 +281,7 @@ async function main() {
     );
   }
 
-  // 5. Migration set
+  // 5. Migration ledger — squashed baseline recorded as applied
   const applied = (await query(PROBES.migrations)).map((r) => r.version);
   for (const required of REQUIRED_MIGRATIONS) {
     record(

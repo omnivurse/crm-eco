@@ -1,11 +1,17 @@
 # Migration Consolidation Runbook (Squash 368 → 1 Baseline)
 
-> **Status:** EXECUTING — baseline + companion built & cut over on `chore/squash-migrations`
-> (2026-06-04, PR #23). The first Preview run caught two issues (see §10): a replay blocker
-> (`ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin`, now stripped) and a cross-schema gap (auth
-> trigger / storage policies / cron jobs missing from a `--schema=public` dump). Fixed by stripping
-> the privilege lines and adding companion migration `00000000000001_baseline_cross_schema.sql`
-> (built from LIVE prod). Re-validating via Preview; prod ledger write (TWO rows) pending approval.
+> **Status:** ✅ COMPLETE — PR #23 merged to `main` 2026-06-04 14:49 UTC (merge commit `08ce538`).
+> Baseline + companion are the only two migrations in the repo; prod ledger reconciled to match
+> (now exactly 2 rows). The first Preview run caught two issues (see §10): a replay blocker
+> (`ALTER DEFAULT PRIVILEGES FOR ROLE supabase_admin`, stripped) and a cross-schema gap (auth
+> trigger / storage policies / cron jobs missing from a `--schema=public` dump), fixed by adding
+> companion migration `00000000000001_baseline_cross_schema.sql` (built from LIVE prod).
+> **Post-merge correction (see §11):** the *additive* ledger (368 history rows + 2 baselines = 370)
+> made the manual `supabase db push` guard AND the Supabase GitHub **deploy Migrate step** fail with
+> *"Remote migration versions not found in local migrations directory."* The fix was the canonical
+> squash completion — **delete the 368 remote-only ledger rows** (keep the 2 baselines). After that,
+> `supabase db push --dry-run` → *"Remote database is up to date."* (exit 0). Reversible from
+> `.backups/baseline/ledger_pre_reconcile_*.txt`.
 > **Author:** DB consolidation audit, 2026-06-03 (updated 2026-06-04).
 > **Live production project:** `sffisarikcreyyjzdjvb` ("PIF-ECO-V2", org `khhfyzojnmmjplgeroug`).
 > **Staging project:** `cammurefjywnzxnmuyfv` ("crm-eco-staging", org `bmfqoyiitfeiiqzobeou`) —
@@ -23,11 +29,19 @@
 We have **368 migrations** that are **100% applied and in-sync** with production (zero drift, zero
 duplicate prefixes). The problem is *volume*, not correctness. We will replace the 368 historical
 files with **a schema baseline + a small companion migration** generated from the live database,
-archive the originals, and make `supabase db push` a clean no-op by adding **two additive rows**
-(`00000000000000` baseline + `00000000000001` companion) to the migration ledger (Option A — keep
-the 368 history rows). The companion restores the app's non-`public` objects (auth signup trigger,
-storage RLS policies, cron jobs) that a `--schema=public` dump can't capture. No tables are dropped
-(see §2.2 — there are no provably-dead tables). No data is touched.
+archive the originals, and reconcile the migration ledger so it contains **exactly the two baseline
+rows** (`00000000000000` baseline + `00000000000001` companion). The companion restores the app's
+non-`public` objects (auth signup trigger, storage RLS policies, cron jobs) that a `--schema=public`
+dump can't capture. No tables are dropped (see §2.2 — there are no provably-dead tables). No data is
+touched.
+
+> **⚠️ Ledger reconciliation — what actually worked (corrected 2026-06-04, see §11):** the original
+> plan kept all 368 history rows and *added* the 2 baselines (370 total, "Option A — additive").
+> **That left both `supabase db push` and the Supabase deploy Migrate step failing** the remote-ahead
+> guard (*"Remote migration versions not found in local migrations directory"*). The working end-state
+> is the **canonical** one: ledger == repo == the 2 baseline rows only. We got there by first
+> inserting the 2 baselines (Phase 4) and then **deleting the 368 now-archived versions** (Phase 4b)
+> once the merge proved the additive state breaks the deploy.
 
 > **Extensions note (2026-06-04):** the baseline is `pg_dump --schema=public`, which omits
 > `CREATE EXTENSION`. One extension is a hard replay dependency — **`pg_trgm` in schema `public`**
@@ -36,9 +50,12 @@ storage RLS policies, cron jobs) that a `--schema=public` dump can't capture. No
 > `extensions`). `pg_cron`/`hypopg`/`vector` are intentionally omitted — no public object depends on
 > them at DDL time (function-body refs are safe because the dump sets `check_function_bodies=false`).
 
-The only production write in the entire procedure is a single
-`INSERT ... ON CONFLICT DO NOTHING` into `supabase_migrations.schema_migrations`, already
-rehearsed and rolled back successfully.
+The production writes in the entire procedure are confined to the
+`supabase_migrations.schema_migrations` bookkeeping table — **no app schema or data is touched**:
+(1) an additive `INSERT` of the 2 baseline rows (Phase 4), then (2) a guarded `DELETE` of the 368
+now-archived versions to reconcile the ledger to the repo (Phase 4b). Both were rehearsed
+rolled-back first, run inside a single transaction with abort-on-divergence guards, and are
+reversible from the captured ledger snapshots in `.backups/baseline/`.
 
 ---
 
@@ -384,6 +401,61 @@ The first fresh-branch replay **failed fast (33s)** and proved the gate's value 
 
 Neither issue touched prod — prod already has every object; the baseline is never run against it.
 
+## 11. Post-merge finding — additive ledger breaks the deploy (corrected to canonical squash)
+
+**What happened.** After the Phase-4 *additive* ledger write (368 history rows + 2 baselines = 370)
+and the PR #23 merge to `main`, the Supabase GitHub **production deploy** ran its DAG
+(Clone → Pull → Health → Configure → **Migrate** → Seed → Deploy) and **failed at Migrate**:
+
+```
+2026/06/04 14:49:51  Remote migration versions not found in local migrations directory.
+```
+
+Branch status went `MIGRATIONS_FAILED`; the "Supabase Preview" check on the merge commit reported
+`failure`. **Prod DB stayed 100% healthy** — the guard fires *before* any apply, so nothing ran;
+ledger was still 370 and all data counts unchanged. (Vercel × 4 and all GitHub Actions were green.)
+
+**Root cause.** Both the local CLI `supabase db push` *and* the platform's deploy Migrate step run a
+history-consistency guard that **refuses when the remote ledger contains versions absent from the
+repo's `supabase/migrations/` dir**. The docs' "only applies new migrations" is true for *forward*
+application, but the guard is checked first. The additive approach left 368 versions remote-only, so
+the guard tripped on every deploy and would **not** self-clear (those files are permanently archived).
+The same error is visible transiently in the branch-action logs on 2026-06-03 21:0x (ledger briefly
+ahead of the repo before PR #21 merged) and cleared once the repo caught up — confirming the mechanism.
+
+**Fix (canonical squash completion).** Reconcile the ledger to the repo: keep the 2 baselines, delete
+the 368 now-archived versions — exactly what the CLI itself recommends
+(`supabase migration repair --status reverted <versions…>`). Executed as a guarded transaction:
+
+```sql
+BEGIN;
+DELETE FROM supabase_migrations.schema_migrations
+ WHERE version NOT IN ('00000000000000','00000000000001');
+-- guard: abort unless before=370, after=2, baselines_remaining=2
+COMMIT;
+```
+
+Result: `DELETE 368`, ledger now = 2. **Verification:** `supabase db push --dry-run` →
+*"Remote database is up to date."* (exit 0); data counts unchanged
+(`members/advisors/enrollments` = 1062/693/1098). Rollback reference:
+`.backups/baseline/ledger_pre_reconcile_20260604_105641.txt` (all 370 `version|name` rows).
+
+**Status note.** Per operator choice, no empty re-trigger commit was pushed, so the prod branch
+status remains `MIGRATIONS_FAILED` until the **next** merge to `main`, which will deploy green
+(Migrate → "All migrations are up to date") now that the ledger matches the repo.
+
+**Downstream fix — version-pinned deploy gate.** `scripts/pifh-deploy-gate.mjs` asserted 8 specific
+feature-migration versions (`202604260001…202604270001`) were present in the ledger as a proxy for
+"multi-tenancy schema deployed." The reconcile removed those rows, so the gate failed `8/17` on the
+next PR. **Fix:** repoint `REQUIRED_MIGRATIONS` at the two baseline versions — the multi-tenancy
+schema itself is already verified directly by the gate's count/backfill/autosync-trigger/owner
+probes, so the version check now just confirms the squashed baseline is recorded.
+
+**Lesson for future squashes:** (1) skip the additive half-step — after validating the baseline,
+write the baseline row(s) **and** revert the old versions in the same change so `ledger == repo` from
+the start; (2) grep for **version-pinned checks** (deploy gates, health probes, CI asserts that
+reference specific migration versions) and repoint them at the baseline before squashing.
+
 ## Appendix A — `object_counts.sql` (parity check)
 ```sql
 SELECT 'tables'   AS k, count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')
@@ -449,3 +521,23 @@ ORDER BY 1;
   `00000000000001_baseline_cross_schema.sql` (1 auth trigger + 27 storage policies + 7 cron jobs,
   captured from live prod, idempotent/guarded). Verified all companion deps (tables/functions)
   exist in the baseline. Ledger plan updated to **two** additive rows. Re-pushed for re-validation.
+
+**2026-06-04 ~14:40 UTC — Phase 4 ledger write (additive):** guarded `INSERT` of `00000000000000`
++ `00000000000001` into the prod ledger (rehearsed rolled-back: 368→369→ROLLBACK). Result: ledger
+366→368→**370**. All Hawkeye/DB-integrity/cross-ref CI re-ran green; PR #23 went CLEAN/MERGEABLE.
+
+**2026-06-04 14:49 UTC — merged PR #23 → `main`** (merge commit `08ce538`). Vercel × 4 deployed
+green; PIFH deploy gate / CRM health / Hawkeye audit all green; ephemeral preview branch
+`jeslveuykewqbrtdpcnm` auto-deleted. **But** the Supabase prod deploy **Migrate step FAILED**:
+*"Remote migration versions not found in local migrations directory"* (branch status
+`MIGRATIONS_FAILED`; "Supabase Preview" check on merge commit = `failure`). Prod DB untouched
+(ledger still 370, data intact). See §11 for root cause.
+
+**2026-06-04 ~14:57 UTC — Phase 4b ledger reconcile (canonical squash completion, APPROVED):**
+captured full snapshot → `.backups/baseline/ledger_pre_reconcile_20260604_105641.txt` (370 rows);
+rehearsed rolled-back (370→DELETE 368→2→ROLLBACK→370); then guarded committed
+`DELETE … WHERE version NOT IN (2 baselines)` → `DELETE 368`, ledger **370→2**. Verified:
+`supabase db push --dry-run` → *"Remote database is up to date."* (exit 0); data unchanged
+(crm_records 15255 [live churn — no DML run], members 1062, advisors 693, enrollments 1098).
+Operator opted **not** to push an empty re-trigger commit, so prod branch status clears to green on
+the next merge to `main`. **Squash COMPLETE: repo = 2 migrations, prod ledger = 2 rows, in sync.**
