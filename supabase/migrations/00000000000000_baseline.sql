@@ -78160,6 +78160,16 @@ ALTER TABLE public.crm_record_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.crm_records ENABLE ROW LEVEL SECURITY;
 
 --
+-- Name: crm_records; Type: FORCE ROW SECURITY; Schema: public; Owner: -
+-- Defense-in-depth: enforce RLS even for the table owner so that no
+-- privileged path can read or write across tenants without a matching
+-- policy. SECURITY DEFINER functions remain owned by postgres (BYPASSRLS)
+-- and are unaffected; service_role retains USING(true)/WITH CHECK(true).
+--
+
+ALTER TABLE public.crm_records FORCE ROW LEVEL SECURITY;
+
+--
 -- Name: crm_relations; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
