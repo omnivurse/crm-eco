@@ -42,6 +42,50 @@ function extractCanonicalNames(data: Record<string, unknown>, marketType: string
   return { advisorName: advisorRaw, agentName: agentRaw };
 }
 
+/**
+ * Normalize a date-of-birth value to a canonical `YYYY-MM-DD` string for
+ * duplicate comparison. Applied identically to both stored and incoming
+ * values so the two sides always normalize consistently (even if the raw
+ * formats differ, e.g. `01/15/1990` vs `1990-01-15`). Returns `null` when the
+ * value is empty or unparseable, in which case the row is NOT matched on DOB.
+ */
+function normalizeDobForMatch(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (!s || s === '0000-00-00') return null;
+
+  // ISO `YYYY-MM-DD` (optionally with a time component)
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+  // US `M/D/YYYY` or `MM/DD/YYYY`
+  const us = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (us) {
+    return `${us[3]}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`;
+  }
+
+  // Fallback: parse and read UTC parts to avoid timezone drift.
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(
+    d.getUTCDate(),
+  ).padStart(2, '0')}`;
+}
+
+/**
+ * Build a stable identity key from first name + last name + DOB. Returns
+ * `null` unless all three are present, so records missing a DOB fall through
+ * to the existing email/phone duplicate checks and are never blocked on an
+ * incomplete signal.
+ */
+function nameDobKey(first: unknown, last: unknown, dob: unknown): string | null {
+  const f = String(first ?? '').trim().toLowerCase();
+  const l = String(last ?? '').trim().toLowerCase();
+  const d = normalizeDobForMatch(dob);
+  if (!f || !l || !d) return null;
+  return `${f}|${l}|${d}`;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   
@@ -115,6 +159,7 @@ export async function POST(request: NextRequest) {
       title: string | null;
       status: string | null;
       error?: string;
+      dupReason?: 'email' | 'phone' | 'name_dob';
     }
 
     const transformedRows: TransformedRow[] = data.map((row, i) => {
@@ -155,6 +200,7 @@ export async function POST(request: NextRequest) {
     // PHASE 2: Batch duplicate check (single query instead of N queries)
     let duplicateEmails = new Set<string>();
     let duplicatePhones = new Set<string>();
+    const duplicateNameDob = new Set<string>();
 
     if (skipDuplicates) {
       // Normalize emails to lowercase for case-insensitive matching
@@ -194,21 +240,61 @@ export async function POST(request: NextRequest) {
           duplicatePhones = new Set(existingByPhone.map(r => r.phone).filter((p): p is string => !!p));
         }
       }
+
+      // Batch check name + DOB (dedup-on-import guard). Catches re-imported
+      // records that share a person's name and date of birth even when the
+      // email/phone differ or are blank — the dominant historical duplicate
+      // class. Only runs if at least one incoming row carries a full name+DOB.
+      const hasNameDobCandidates = transformedRows.some(
+        r => nameDobKey(r.recordData.first_name, r.recordData.last_name, r.recordData.date_of_birth) !== null,
+      );
+
+      if (hasNameDobCandidates) {
+        const { data: existingByNameDob, error: nameDobError } = await supabase
+          .from('crm_records')
+          .select('fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
+          .eq('org_id', organizationId)
+          .eq('module_id', moduleId);
+
+        if (nameDobError) {
+          // Surface rather than swallow: a PostgREST/schema regression here must
+          // not silently disable the name+DOB guard and let duplicates back in.
+          console.error('Import name+DOB dedup lookup failed:', nameDobError.message);
+        } else if (existingByNameDob) {
+          for (const r of existingByNameDob as Array<{ fn: string | null; ln: string | null; dob: string | null }>) {
+            const key = nameDobKey(r.fn, r.ln, r.dob);
+            if (key) duplicateNameDob.add(key);
+          }
+        }
+      }
     }
 
     // PHASE 3: Categorize rows into duplicates, valid, and errors
     const duplicateRows: TransformedRow[] = [];
     const validRows: TransformedRow[] = [];
+    const seenNameDob = new Set<string>();
 
     for (const row of transformedRows) {
       if (skipDuplicates) {
-        const isDuplicateByEmail = row.email && duplicateEmails.has(row.email.toLowerCase());
-        const isDuplicateByPhone = !row.email && row.phone && duplicatePhones.has(row.phone);
+        const ndKey = nameDobKey(
+          row.recordData.first_name,
+          row.recordData.last_name,
+          row.recordData.date_of_birth,
+        );
+        const isDuplicateByEmail = !!(row.email && duplicateEmails.has(row.email.toLowerCase()));
+        const isDuplicateByPhone = !!(!row.email && row.phone && duplicatePhones.has(row.phone));
+        // Match against existing DB records AND earlier rows in this same file.
+        const isDuplicateByNameDob = !!ndKey && (duplicateNameDob.has(ndKey) || seenNameDob.has(ndKey));
 
-        if (isDuplicateByEmail || isDuplicateByPhone) {
+        if (isDuplicateByEmail || isDuplicateByPhone || isDuplicateByNameDob) {
+          row.dupReason = isDuplicateByEmail ? 'email' : isDuplicateByPhone ? 'phone' : 'name_dob';
           duplicateRows.push(row);
           continue;
         }
+
+        // Remember this identity so a later identical row in the same upload
+        // is also caught (the email/phone sets only reflect pre-existing rows).
+        if (ndKey) seenNameDob.add(ndKey);
       }
       validRows.push(row);
     }
@@ -324,7 +410,10 @@ export async function POST(request: NextRequest) {
         raw: row.raw,
         normalized: row.recordData,
         status: 'skipped' as const,
-        match_type: 'duplicate',
+        // `match_type` is constrained to new|exact_match|fuzzy_match|duplicate;
+        // all dedup hits (email, phone, name+DOB) record as 'duplicate'. The
+        // per-reason breakdown is surfaced in the API response instead.
+        match_type: 'duplicate' as const,
       })),
       // Successfully inserted rows
       ...insertedRecords.map(({ rowIndex, recordId, row }) => ({
@@ -398,9 +487,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Per-reason breakdown of skipped duplicates so the UI can show *why*
+    // rows were skipped (e.g. "5 by email, 3 by name+DOB") instead of an
+    // opaque total. Rows skipped before dupReason was set count as email.
+    const skippedByReason = {
+      email: duplicateRows.filter(r => r.dupReason === 'email').length,
+      phone: duplicateRows.filter(r => r.dupReason === 'phone').length,
+      name_dob: duplicateRows.filter(r => r.dupReason === 'name_dob').length,
+    };
+
     return NextResponse.json({
       success,
       skipped,
+      skippedByReason,
       errors,
       total: data.length,
       jobId: importJob.id,

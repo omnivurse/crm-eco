@@ -81,6 +81,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     skipped: number;
     errors: number;
     total: number;
+    skippedByReason?: { email: number; phone: number; name_dob: number };
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -305,6 +306,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       let totalSuccess = 0;
       let totalSkipped = 0;
       let totalErrors = 0;
+      const totalSkippedByReason = { email: 0, phone: 0, name_dob: 0 };
       let lastJobId: string | null = null;
       let savedMappingId: string | null = null;
 
@@ -339,6 +341,11 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         totalSuccess += result.success || 0;
         totalSkipped += result.skipped || 0;
         totalErrors += result.errors || 0;
+        if (result.skippedByReason) {
+          totalSkippedByReason.email += result.skippedByReason.email || 0;
+          totalSkippedByReason.phone += result.skippedByReason.phone || 0;
+          totalSkippedByReason.name_dob += result.skippedByReason.name_dob || 0;
+        }
         lastJobId = result.jobId;
         if (result.savedMappingId) savedMappingId = result.savedMappingId;
       }
@@ -349,6 +356,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         skipped: totalSkipped,
         errors: totalErrors,
         total: totalRows,
+        skippedByReason: totalSkippedByReason,
       });
 
       setTimeout(() => {
@@ -662,7 +670,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 />
                 <div>
                   <span className="text-slate-900 dark:text-white font-medium">Skip duplicate records</span>
-                  <p className="text-slate-500 text-xs">Records with matching email or phone will be skipped to avoid duplicates</p>
+                  <p className="text-slate-500 text-xs">Records matching an existing email, phone, or name + date of birth will be skipped to avoid duplicates</p>
                 </div>
               </label>
 
@@ -751,6 +759,15 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 <div className="px-6 py-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
                   <span className="text-3xl font-bold text-amber-600 dark:text-amber-400">{importResult.skipped.toLocaleString()}</span>
                   <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Duplicates Skipped</p>
+                  {importResult.skippedByReason && (importResult.skippedByReason.name_dob > 0 || importResult.skippedByReason.phone > 0) && (
+                    <p className="text-xs text-slate-500 dark:text-slate-500 mt-1">
+                      {[
+                        importResult.skippedByReason.email > 0 ? `${importResult.skippedByReason.email.toLocaleString()} email` : null,
+                        importResult.skippedByReason.phone > 0 ? `${importResult.skippedByReason.phone.toLocaleString()} phone` : null,
+                        importResult.skippedByReason.name_dob > 0 ? `${importResult.skippedByReason.name_dob.toLocaleString()} name + DOB` : null,
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                 </div>
               )}
               {importResult.errors > 0 && (
