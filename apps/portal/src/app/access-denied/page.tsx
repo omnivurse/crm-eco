@@ -18,10 +18,15 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
         return 'Your agent account has not been activated yet. Please wait for an administrator to approve your account.';
       case 'not_authenticated':
         return 'You need to sign in to access this page.';
+      case 'no_member':
+      case 'no_membership':
+        return 'You need an active membership to view this page. Enroll to get started — or contact support if you believe this is an error.';
       default:
         return 'You do not have permission to access this page.';
     }
   };
+
+  const isMemberGate = reason === 'no_member' || reason === 'no_membership';
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -48,6 +53,12 @@ export default async function AccessDeniedPage({ searchParams }: PageProps) {
             <Link href="/signin">
               <Button className="gap-2 w-full sm:w-auto">
                 Sign In
+              </Button>
+            </Link>
+          ) : isMemberGate ? (
+            <Link href="/enroll">
+              <Button className="gap-2 w-full sm:w-auto">
+                Enroll Now
               </Button>
             </Link>
           ) : (
