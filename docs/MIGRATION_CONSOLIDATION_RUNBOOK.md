@@ -1,9 +1,12 @@
-# Migration Consolidation Runbook (Squash 366 → 1 Baseline)
+# Migration Consolidation Runbook (Squash 368 → 1 Baseline)
 
-> **Status:** DRAFT — discovery + rehearsal complete, awaiting validation env + execution approval.
-> **Author:** DB consolidation audit, 2026-06-03.
+> **Status:** EXECUTING — baseline built + cut over on `chore/squash-migrations` (2026-06-04);
+> validating via the PR's Supabase Preview check; prod ledger write pending approval (Phase 4).
+> **Author:** DB consolidation audit, 2026-06-03 (updated 2026-06-04).
 > **Live production project:** `sffisarikcreyyjzdjvb` ("PIF-ECO-V2", org `khhfyzojnmmjplgeroug`).
-> **Staging project:** `cammurefjywnzxnmuyfv` ("crm-eco-staging", org `bmfqoyiitfeiiqzobeou`).
+> **Staging project:** `cammurefjywnzxnmuyfv` ("crm-eco-staging", org `bmfqoyiitfeiiqzobeou`) —
+> *different org, NOT reachable by the Supabase MCP token (which sees only the prod org). Staging
+> ledger reconciliation is a follow-up; see §7.3.*
 > **Golden rule for this work:** zero data loss, zero drift, nothing breaks. Read-only discovery →
 > design additive/reversible → rehearse (rolled-back) → validate on a non-prod replica →
 > cut over → verify → keep a one-command rollback ready. **No production write happens without
@@ -13,12 +16,19 @@
 
 ## 0. TL;DR
 
-We have **366 migrations** that are **100% applied and in-sync** with production (zero drift, zero
-duplicate prefixes). The problem is *volume*, not correctness. We will replace the 366 historical
+We have **368 migrations** that are **100% applied and in-sync** with production (zero drift, zero
+duplicate prefixes). The problem is *volume*, not correctness. We will replace the 368 historical
 files with **one schema baseline** generated from the live database, archive the originals, and
 make `supabase db push` a clean no-op by adding **one additive row** to the migration ledger
-(Option A — keep the 366 history rows). No tables are dropped (see §2.2 — there are no
+(Option A — keep the 368 history rows). No tables are dropped (see §2.2 — there are no
 provably-dead tables). No data is touched.
+
+> **Extensions note (2026-06-04):** the baseline is `pg_dump --schema=public`, which omits
+> `CREATE EXTENSION`. One extension is a hard replay dependency — **`pg_trgm` in schema `public`**
+> (8 indexes use `public.gin_trgm_ops`). The baseline therefore prepends an idempotent
+> `CREATE EXTENSION IF NOT EXISTS` block (pg_trgm + btree_gin in `public`; pgcrypto + uuid-ossp in
+> `extensions`). `pg_cron`/`hypopg`/`vector` are intentionally omitted — no public object depends on
+> them at DDL time (function-body refs are safe because the dump sets `check_function_bodies=false`).
 
 The only production write in the entire procedure is a single
 `INSERT ... ON CONFLICT DO NOTHING` into `supabase_migrations.schema_migrations`, already
@@ -119,12 +129,24 @@ sed -E \
 
 # 3. Prepend a header banner
 {
-  echo "-- Squashed baseline — represents the full public schema as of $(date -u +%Y-%m-%dT%H:%M:%SZ)."
-  echo "-- Generated from live project sffisarikcreyyjzdjvb. Historical migrations archived in"
-  echo "-- supabase/migrations_archive/. See docs/MIGRATION_CONSOLIDATION_RUNBOOK.md."
+  echo "-- Squashed baseline — full public schema of prod (sffisarikcreyyjzdjvb) as of <ts>."
+  echo "-- Replaces 368 historical migrations (archived in supabase/migrations_archive/)."
+  echo "-- See docs/MIGRATION_CONSOLIDATION_RUNBOOK.md. Generated via pg_dump --schema=public --schema-only."
   echo ""
   cat /tmp/baseline.massaged.sql
 } > /tmp/00000000000000_baseline.sql
+
+# 4. Insert the extension bootstrap right after `CREATE SCHEMA IF NOT EXISTS public;`
+#    (pg_dump --schema=public omits CREATE EXTENSION; pg_trgm is a HARD replay dependency).
+#    Idempotent; schemas match prod (pg_trgm/btree_gin live in public on this project).
+awk '
+  { print }
+  /^CREATE SCHEMA IF NOT EXISTS public;$/ && !d {
+    print "\nCREATE EXTENSION IF NOT EXISTS pg_trgm     WITH SCHEMA public;"
+    print "CREATE EXTENSION IF NOT EXISTS btree_gin   WITH SCHEMA public;"
+    print "CREATE EXTENSION IF NOT EXISTS pgcrypto    WITH SCHEMA extensions;"
+    print "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" WITH SCHEMA extensions;"; d=1
+  }' /tmp/00000000000000_baseline.sql > /tmp/b.tmp && mv /tmp/b.tmp /tmp/00000000000000_baseline.sql
 ```
 
 **Sanity checks before trusting it** (expected values verified against the 2026-06-03 dump):
@@ -146,9 +168,18 @@ grep -c 'CREATE SCHEMA public;' /tmp/00000000000000_baseline.sql  # expect 0 aft
 ## 5. Phase 2 — Validate the baseline rebuilds the schema (NON-PROD)
 
 Goal: prove the baseline recreates the schema **bit-for-bit** on an empty Supabase-compatible DB.
-Pick **one** path. All are non-production.
 
-### Path A — Supabase preview branch (preferred; no creds to wire)
+### Path 0 — PR Supabase Preview check (CHOSEN 2026-06-04; zero cost, zero creds)
+This repo has the Supabase GitHub integration enabled (PRs get a **"Supabase Preview"** check that
+provisions a fresh branch DB and applies the `supabase/migrations/` dir). After the Phase-3 cutover
+that dir contains **only the baseline**, so the Preview check *is* the fresh-env replay validation —
+in the real target environment, for free. **Gate everything on this check being green.** If it
+fails, fix the baseline (most likely a missing `CREATE EXTENSION`) on the branch and re-push; prod
+is never touched. A 2.9 MB baseline can't go through the MCP `execute_sql`/`apply_migration` payload
+limit, which is why we use the CI preview rather than an MCP replay. Paths A–C below remain as
+manual fallbacks.
+
+### Path A — Supabase preview branch (manual fallback; no creds to wire)
 A branch is an ephemeral DB seeded with Supabase scaffolding (auth/extensions/roles), so the
 baseline's `auth.uid()` etc. resolve.
 ```bash
@@ -160,8 +191,10 @@ export VALIDATE_DB_URL="<branch postgres url from /tmp/branch.env>"
 # ...replay + compare (below)...
 supabase branches delete baseline-validate --project-ref cammurefjywnzxnmuyfv   # tear down when done
 ```
-> Alternatively create the branch from the Dashboard, or via the Supabase MCP `create_branch` tool
-> (the MCP is authenticated to the staging org).
+> Alternatively create the branch from the Dashboard, or via the Supabase MCP `create_branch` tool.
+> **Correction (2026-06-04):** the Supabase MCP token is authenticated to the **prod** org
+> (`khhfyzojnmmjplgeroug`, sole project `sffisarikcreyyjzdjvb`), **not** staging. A branch created
+> via MCP would therefore branch *prod*; it also costs $/hr (`get_cost` → `confirm_cost`).
 
 ### Path B — Throwaway Supabase project (free tier)
 Create a new empty project, then:
@@ -195,17 +228,16 @@ massage step and re-validate. Do not proceed to Phase 3.
 
 Do this on a dedicated branch; **commit so the moves are isolated** from unrelated WIP.
 
-> ⚠️ **Archive ONLY migrations that are applied on prod** (the 366 versions in the captured
-> ledger). Any **un-applied / pending** migrations — e.g. the 2026-06-03 work
-> `202606030001_fix_contact_titles_clobbered_by_job_title.sql` and
-> `202606030002_add_contact_type_classification_field.sql` — must **stay** in `supabase/migrations/`
-> so they apply on top of the baseline. The baseline represents prod-as-captured; pending
-> migrations ride on top (their timestamps sort after `00000000000000`). Confirm the pending set
-> right before cutover: `comm -23 <(ls supabase/migrations | sed -E 's/_.*//' | sort -u) <(sort "$LEDGER")`.
+> ✅ **As of 2026-06-04 there are NO pending migrations** — repo (368 files) == prod ledger (368).
+> The two 2026-06-03 migrations are now applied, so **all 368 are archived** and only the baseline
+> remains. The loop is ledger-driven (archives only versions present in the captured ledger); a
+> straggler check after the move must show an empty `supabase/migrations/` before the baseline is
+> dropped in. If a future run *does* have pending migrations, they must **stay** in
+> `supabase/migrations/` so they apply on top of the baseline (timestamps sort after `00000000000000`).
 
 ```bash
 git checkout -b chore/squash-migrations
-LEDGER=$(ls -t .backups/baseline/applied_ledger_*.txt | head -1)   # the 366 applied versions
+LEDGER=$(ls -t .backups/baseline/applied_ledger_*.txt | head -1)   # the 368 applied versions
 mkdir -p supabase/migrations_archive
 
 # Archive exactly the applied versions; leave pending/un-applied migrations in place.
@@ -234,8 +266,14 @@ correctly apply only the pending `2026...` migrations.)
 
 > **PROD WRITE RISK: YES** — single additive metadata row, no data/schema change. Reversible.
 > **Rehearsed result (2026-06-03):** `before=366 → INSERT 0 1 → 367 → ROLLBACK → 366`.
+> Re-rehearse on the current ledger before committing; expected `before=368 → 369 → ROLLBACK → 368`.
 
-Apply to **prod and staging** so both treat the baseline as already applied.
+> **⚠️ Ordering — ledger write BEFORE merge.** Write the baseline row to the prod ledger *before*
+> merging the PR. The Supabase GitHub integration *may* deploy migrations to prod on merge to `main`;
+> with `00000000000000` already in the ledger, that deploy is a guaranteed no-op (and a manual
+> `supabase db push` is too). If the row were missing at merge time, an auto-deploy could try to
+> *run* the baseline against prod (which already has every object) and error. Safe sequence:
+> Preview check green → rehearse → **approval gate** → INSERT row on prod → merge.
 
 ### 7.1 Rehearse first (safe — rolled back)
 ```sql
@@ -256,11 +294,19 @@ VALUES ('00000000000000','baseline') ON CONFLICT (version) DO NOTHING;
 SELECT count(*) FILTER (WHERE version='00000000000000') AS baseline_present,
        count(*) AS total
 FROM supabase_migrations.schema_migrations;
--- verify baseline_present = 1, total = 367, THEN:
+-- verify baseline_present = 1, total = 369, THEN:
 COMMIT;
 ```
-Run against `PROD_DB_URL`, then `STAGING_*`/`VALIDATE_DB_URL` for staging. **Blast-radius guard:**
-expect exactly 1 row inserted; if `total` diverges from `prior + 1`, `ROLLBACK` and investigate.
+Run against `PROD_DB_URL`. **Blast-radius guard:** expect exactly 1 row inserted; if `total`
+diverges from `prior + 1` (i.e. ≠ 369), `ROLLBACK` and investigate.
+
+### 7.3 Staging — follow-up (not blocking)
+Staging (`cammurefjywnzxnmuyfv`) is in a different org and unreachable by the Supabase MCP token; its
+DB creds are not wired here. It is also where the CLI is currently linked (§2.3), so a stray
+`supabase db push` against staging post-cutover would try to *run* the baseline there. Follow-ups:
+(1) add the same `00000000000000` ledger row to staging once creds are available, **or** (2) re-link
+the CLI to prod and treat staging as disposable. Until then, **do not run `supabase db push` while
+linked to staging.**
 
 ---
 
@@ -328,14 +374,17 @@ ORDER BY 1;
 - `.audit/scripts/refresh-schema.sh`, `inventory.mjs`, `crossref.mjs` — the audit engine.
 
 ## Appendix C — Open items before execution
-- [ ] Choose validation path (A branch / B throwaway / C staging) and run Phase 2.
-- [ ] Confirm managed backups/PITR enabled on prod + staging.
+- [x] **Validation path chosen** — Path 0 (PR Supabase Preview check); see §5.
+- [ ] Confirm managed backups/PITR enabled on prod (Dashboard → Database → Backups).
 - [x] **Pending un-applied migrations applied to prod** — done 2026-06-03 (see Execution Log).
-      `202606030001` + `202606030002` are now in the prod ledger (368 total), so the final baseline
-      capture will include them and the tree is clean.
-- [ ] Approve the Phase 4 production ledger write (the squash baseline row).
+      `202606030001` + `202606030002` are in the prod ledger (368 total); the baseline capture
+      includes them and the tree is clean.
+- [x] **Baseline built + cut over** — 2026-06-04 on `chore/squash-migrations` (see Execution Log).
+- [ ] **Supabase Preview check green on the PR** (the fresh-env replay validation — Phase 2).
+- [ ] Approve the Phase 4 production ledger write (the squash baseline row) — **before merge**.
 - [ ] After squash: decide the canonical CLI link and update the two stale runbooks
       (`docs/PIFH_DEPLOY_SAFETY.md` §3 step 1, `docs/_clean/supabase/pipeline/README.md` step 0).
+- [ ] Staging ledger reconciliation (§7.3) — non-blocking follow-up.
 
 ## Appendix D — Execution Log
 **2026-06-03 ~20:48 UTC — applied 2 pending migrations to prod (`sffisarikcreyyjzdjvb`):**
@@ -346,4 +395,20 @@ ORDER BY 1;
 - `202606030002_add_contact_type_classification_field` — field `contact_category` already existed
   (created 19:53 UTC, exact match), so the migration body was a verified 0-row no-op; recorded in ledger.
 - Ledger: 366 → **368** applied. Both versions present.
-- Repo follow-up (pending): commit the two migration files + related app WIP, then proceed to squash.
+- Repo follow-up (done): the two migration files + app WIP shipped via PR #21 to `main`.
+
+**2026-06-04 — baseline built + repo cutover (branch `chore/squash-migrations`):**
+- Captured fresh prod schema (`pg_dump --schema=public --schema-only`, pg18) →
+  `.backups/baseline/prod_public_schema_20260604_083115.sql` (92,890 lines, 2.9 MB) +
+  ledger snapshot (368 versions). Sanity: 486 tables / 1307 policies / 433 functions, 0 data rows —
+  identical to the 2026-06-03 dump (the 2 data-only migrations changed no schema).
+- Massaged → `00000000000000_baseline.sql`: stripped pg18 `\restrict`/`\unrestrict`,
+  `CREATE SCHEMA public;` → `IF NOT EXISTS`, header banner, and prepended the 4-line extension
+  bootstrap (pg_trgm/btree_gin in `public`; pgcrypto/uuid-ossp in `extensions`). Verified
+  `check_function_bodies=false` preserved (line 20) so function-body refs to `extensions.*`/`cron.*`
+  don't block replay. Dependency scan confirmed **pg_trgm is the only hard DDL-time dep**
+  (8 `public.gin_trgm_ops` indexes); pgvector/btree_gin/hypopg/pg_cron not required at replay.
+- Cutover: archived all **368** applied migrations to `supabase/migrations_archive/` (moved=368,
+  missing=0, 0 stragglers); `supabase/migrations/` now holds only the baseline.
+- Next: push → PR → **Supabase Preview check (Phase 2 validation)** → rehearse + **approval gate** →
+  prod ledger row (Phase 4, before merge) → merge + verify (Phase 5).
