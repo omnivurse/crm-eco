@@ -813,7 +813,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     const counts = insights?.counts;
     const noteTotal = counts?.notes ?? noteCount ?? notesProp.length;
     return [
-      { id: 'overview', label: 'Details', count: null, available: true },
+      // NOTE: id must match the `OverviewPane` value rendered by
+      // `renderOverviewPane()` ('details'). It was historically 'overview',
+      // which collided with the top-tab name and rendered an empty pane.
+      { id: 'details', label: 'Details', count: null, available: true },
       { id: 'notes', label: 'Notes', count: noteTotal, available: !!children.notes },
       {
         id: 'emails',
@@ -863,19 +866,29 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   /**
    * Visible nav items = user's saved order (if any) ∩ default set. Unknown
    * IDs in the saved order are dropped silently — forward-compatible with
-   * future panels. "overview" is always pinned to the top so users can't
+   * future panels. "details" is always pinned to the top so users can't
    * accidentally hide the Details pane.
    */
   const navItems: RelatedListNavItem[] = useMemo(() => {
     const byId = new Map(defaultNavItems.map((item) => [item.id, item]));
     if (!customOrder || customOrder.length === 0) return defaultNavItems;
+    // Back-compat: the Details pane id used to be persisted as 'overview'.
+    // Normalize legacy saved orders so the Details pane still resolves.
+    const normalized = customOrder.map((id) => (id === 'overview' ? 'details' : id));
     const ordered: RelatedListNavItem[] = [];
-    if (byId.has('overview') && !customOrder.includes('overview')) {
-      ordered.push(byId.get('overview')!);
+    const seen = new Set<string>();
+    // Details is always pinned to the top regardless of saved order.
+    if (byId.has('details')) {
+      ordered.push(byId.get('details')!);
+      seen.add('details');
     }
-    for (const id of customOrder) {
+    for (const id of normalized) {
+      if (seen.has(id)) continue;
       const it = byId.get(id);
-      if (it) ordered.push(it);
+      if (it) {
+        ordered.push(it);
+        seen.add(id);
+      }
     }
     return ordered;
   }, [defaultNavItems, customOrder]);
@@ -1508,6 +1521,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
                   <TabsTrigger
                     value="overview"
+                    onClick={() => setOverviewPane('details')}
                     className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
                   >
                     Overview
@@ -1539,7 +1553,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         <RecordRelatedListChips
           items={navItems}
           activeId={overviewPane}
-          onSelect={(id) => setOverviewPane(id as OverviewPane)}
+          onSelect={(id) => {
+            // The chip rail lives outside the top <Tabs>, so a section tap
+            // must also return to the Overview tab — otherwise the pane
+            // changes invisibly while Timeline/Privacy stays on screen.
+            setTopTab('overview');
+            setOverviewPane(id as OverviewPane);
+          }}
           onMore={() => setShowCustomizeDialog(true)}
           className="lg:hidden sticky top-[64px] z-[5]"
         />
@@ -2008,7 +2028,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         onOpenChange={setShowCustomizeDialog}
         moduleKey={module.key}
         catalog={customizeCatalog}
-        lockedIds={['overview']}
+        lockedIds={['details']}
       />
 
       <KeyboardShortcutsDialog

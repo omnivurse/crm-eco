@@ -51,6 +51,7 @@ export interface RecordRelatedListNavProps {
 }
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  details: FileText,
   overview: FileText,
   notes: StickyNote,
   emails: Mail,

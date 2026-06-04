@@ -29,6 +29,7 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import type { RelatedListNavItem } from './RecordRelatedListNav';
 
 const ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  details: FileText,
   overview: FileText,
   notes: StickyNote,
   emails: Mail,
