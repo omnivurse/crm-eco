@@ -16,7 +16,7 @@ import {
   CRM_DATE_INPUT_MIN,
   dateValueToMaskedDraft,
   isCompleteIsoDateInputValue,
-  maskDateTypingWithCaret,
+  maskDateTyping,
 } from '@/lib/crm/date-field-bounds';
 import { AlertTriangle, CalendarDays, Check, Loader2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -128,7 +128,7 @@ export const InlineDateField = memo(function InlineDateField({
 
       const iso =
         mode === 'date'
-          ? normalizeDateColumnValue(normalized)
+          ? normalizeDateColumnValue(maskDateTyping(normalized))
           : normalized;
 
       if (!iso) {
@@ -218,21 +218,9 @@ export const InlineDateField = memo(function InlineDateField({
             placeholder="MM/DD/YYYY"
             value={draft}
             onChange={(e) => {
-              if (mode === 'date') {
-                const el = e.currentTarget;
-                const { value, caret } = maskDateTypingWithCaret(
-                  el.value,
-                  el.selectionStart ?? el.value.length,
-                );
-                setDraft(value);
-                requestAnimationFrame(() => {
-                  if (document.activeElement === el) {
-                    el.setSelectionRange(caret, caret);
-                  }
-                });
-              } else {
-                setDraft(e.target.value);
-              }
+              // Store raw keystrokes; formatting to MM/DD/YYYY happens on
+              // commit (blur/Enter) to avoid caret jumps during typing.
+              setDraft(e.target.value);
               setLocalError(null);
             }}
             onBlur={() => {
