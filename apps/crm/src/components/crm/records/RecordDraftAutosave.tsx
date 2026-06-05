@@ -31,6 +31,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useFormStatus } from 'react-dom';
 import { RotateCcw, Save } from 'lucide-react';
 import { DynamicRecordForm } from './DynamicRecordForm';
 import type { CrmField, CrmLayout } from '@/lib/crm/types';
@@ -148,10 +149,13 @@ export function RecordDraftAutosave({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]);
 
-  // Debounced save on every value change.
+  // Debounced save on every value change. Suppressed once a submit is in
+  // flight so a late debounce can't resurrect the draft after we clear it.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submittingRef = useRef(false);
   const handleValuesChange = useCallback(
     (values: Record<string, unknown>) => {
+      if (submittingRef.current) return;
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         writeDraft(storageKey, values);
@@ -160,49 +164,37 @@ export function RecordDraftAutosave({
     [storageKey],
   );
 
-  // Clear draft when the page navigates away after a successful form submit.
-  // We listen for `beforeunload` + `pagehide` + Next.js `popstate` which fire
-  // AFTER a successful redirect. This is safer than clearing on the `submit`
-  // DOM event which fires BEFORE the server action completes — if the action
-  // throws, the form would be left in a broken state (stale data in memory,
-  // draft erased from sessionStorage).
-  //
-  // We track whether a submit was attempted via `submitFired` ref. On
-  // successful navigation away, we clear. If the user stays on the page
-  // (server action error), the ref resets and the draft is preserved.
-  const submitFired = useRef(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
+  // Detect the host <form>'s submission via React's official signal rather than
+  // a hand-rolled `submit` DOM listener. The form posts a Next.js server action
+  // (`<form action={…}>`) whose success path is `redirect()` — an SPA
+  // navigation that fires NO `beforeunload`/`pagehide`, so the old heuristic
+  // never cleared the draft and the next "New record" restored the just-saved
+  // one. `useFormStatus().pending` is true for the whole action:
+  //   - pending=true → a submit is in flight: stop autosaving, cancel pending writes.
+  //   - success      → redirect() unmounts us → the unmount effect clears the draft.
+  //   - pending→false while still mounted → the action returned WITHOUT
+  //     navigating (validation/permission error): keep the draft, resume autosave.
+  const { pending } = useFormStatus();
   useEffect(() => {
-    const form = wrapperRef.current?.closest('form');
-    if (!form) return;
-
-    const onSubmit = () => {
-      submitFired.current = true;
-    };
-
-    // Clear the draft when navigating away (only if a submit was attempted).
-    // This covers both successful server-action redirects and full page navs.
-    const onNavigateAway = () => {
-      if (submitFired.current) {
-        clearDraft(storageKey);
+    if (pending) {
+      submittingRef.current = true;
+      if (saveTimer.current) {
+        clearTimeout(saveTimer.current);
+        saveTimer.current = null;
       }
-    };
+    } else if (submittingRef.current) {
+      // Action finished but we're still mounted → it did not redirect (error).
+      // Preserve the draft and let autosave resume.
+      submittingRef.current = false;
+    }
+  }, [pending]);
 
-    form.addEventListener('submit', onSubmit);
-    window.addEventListener('beforeunload', onNavigateAway);
-    window.addEventListener('pagehide', onNavigateAway);
-
+  // On unmount: cancel any pending write, and if a submit was in flight when we
+  // were torn down (the success redirect), clear the draft.
+  useEffect(() => {
     return () => {
-      form.removeEventListener('submit', onSubmit);
-      window.removeEventListener('beforeunload', onNavigateAway);
-      window.removeEventListener('pagehide', onNavigateAway);
-      // If this component is unmounting (e.g. redirect after successful save),
-      // and a submit was fired, clear the draft. This catches the common case
-      // of Next.js SPA navigation after a server action redirect().
-      if (submitFired.current) {
-        clearDraft(storageKey);
-      }
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (submittingRef.current) clearDraft(storageKey);
     };
   }, [storageKey]);
 
@@ -228,7 +220,7 @@ export function RecordDraftAutosave({
   }
 
   return (
-    <div ref={wrapperRef} className="space-y-3">
+    <div className="space-y-3">
       {restored && (
         <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700/40 dark:bg-amber-500/10 dark:text-amber-200">
           <div className="flex items-start gap-2">
