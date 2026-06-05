@@ -19,7 +19,7 @@ export default async function MemberDashboard() {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    redirect('/login');
+    redirect('/signin');
   }
 
   // Resolve member from profile

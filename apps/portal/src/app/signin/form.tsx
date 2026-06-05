@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
   Heart,
@@ -49,7 +49,6 @@ const trustPoints = [
 ];
 
 export function SignInForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/';
 
@@ -163,10 +162,13 @@ export function SignInForm() {
             setLoading(false);
             return;
           }
-          router.push('/agent');
+          window.location.assign('/agent');
         } else {
-          router.push(redirectTo);
+          // Full navigation so middleware receives auth cookies (client router.push alone races SSR)
+          const destination = redirectTo.startsWith('/') ? redirectTo : '/';
+          window.location.assign(destination);
         }
+        return;
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');

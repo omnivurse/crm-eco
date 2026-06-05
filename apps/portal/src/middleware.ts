@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // If authenticated and trying to access auth routes
-  if (user && (pathname === '/signin' || pathname === '/signup')) {
+  if (user && (pathname === '/signin' || pathname === '/signup' || pathname === '/login')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 

@@ -26,6 +26,15 @@ const navItems = [
   { label: 'Support', href: '/support' },
 ];
 
+const AUTH_ROUTE_PREFIXES = [
+  '/signin',
+  '/signup',
+  '/login',
+  '/reset-password',
+  '/update-password',
+  '/access-denied',
+];
+
 export function PortalHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -34,6 +43,10 @@ export function PortalHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
+  const isAuthRoute = AUTH_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -71,7 +84,7 @@ export function PortalHeader() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/login');
+    window.location.assign('/signin');
   };
 
   const getInitials = (name: string) => {
@@ -82,6 +95,10 @@ export function PortalHeader() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  if (isAuthRoute) {
+    return null;
+  }
 
   return (
     <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
@@ -176,7 +193,7 @@ export function PortalHeader() {
               </DropdownMenu>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/login">
+                <Link href="/signin">
                   <Button variant="ghost" size="sm" className="text-[#003560] hover:bg-slate-100">Sign In</Button>
                 </Link>
                 <Link href="/enroll">
@@ -270,7 +287,7 @@ export function PortalHeader() {
               ) : (
                 <>
                   <Link 
-                    href="/login" 
+                    href="/signin" 
                     className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
                     onClick={() => setMobileMenuOpen(false)}
                   >
