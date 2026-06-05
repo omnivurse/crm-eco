@@ -337,6 +337,14 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
           {...commonProps}
           type="number"
           step={field.type === 'currency' ? '0.01' : '1'}
+          value={value === null || value === undefined ? '' : String(value)}
+          onChange={(e) => {
+            // Controlled via setValue (like select/date/boolean) so the typed
+            // value reaches the submitted form state. Without this, number /
+            // currency fields (e.g. Monthly Contribution, IUA) saved empty.
+            const raw = e.target.value;
+            setValue(field.key, raw === '' ? null : Number(raw));
+          }}
         />
       );
       break;
