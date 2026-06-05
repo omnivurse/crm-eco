@@ -122,10 +122,17 @@ serve(async (req) => {
     const organizationId = profile.organization_id;
     const body: PaymentRequest = await req.json();
 
-    // Get Authorize.Net credentials
-    const apiLoginId = Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID');
-    const transactionKey = Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY');
-    const environment = Deno.env.get('AUTHORIZE_NET_ENVIRONMENT') || 'sandbox';
+    // Get Authorize.Net credentials (supports RUNBOOK AUTHNET_* aliases)
+    const apiLoginId =
+      Deno.env.get('AUTHORIZE_NET_API_LOGIN_ID') ||
+      Deno.env.get('AUTHNET_API_LOGIN_ID');
+    const transactionKey =
+      Deno.env.get('AUTHORIZE_NET_TRANSACTION_KEY') ||
+      Deno.env.get('AUTHNET_TRANSACTION_KEY');
+    const environment =
+      Deno.env.get('AUTHORIZE_NET_ENVIRONMENT') ||
+      (Deno.env.get('AUTHNET_API_ENDPOINT')?.includes('apitest') ? 'sandbox' : null) ||
+      'sandbox';
 
     if (!apiLoginId || !transactionKey) {
       return new Response(

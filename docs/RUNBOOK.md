@@ -58,7 +58,15 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENROLL_DRAFT_SECRET               # 32-byte random; HMAC for public draft cookies
 RECAPTCHA_SECRET                  # reCAPTCHA v3 secret (omit in dev to bypass)
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY    # reCAPTCHA v3 site key (client-side)
+
+# Authorize.Net Accept.js (member add payment method — public client key only)
+NEXT_PUBLIC_AUTHORIZE_NET_API_LOGIN_ID
+NEXT_PUBLIC_AUTHORIZE_NET_CLIENT_KEY
+NEXT_PUBLIC_AUTHORIZE_NET_ENVIRONMENT   # sandbox | production
 ```
+
+Until Accept.js vars are set, `/billing/methods/new` shows a friendly
+"not configured" message. Deploy checklist: `./scripts/ready-acceptjs-billing.sh`
 
 ### Supabase — Edge Function secrets
 
@@ -67,6 +75,8 @@ AUTHNET_API_LOGIN_ID
 AUTHNET_TRANSACTION_KEY
 AUTHNET_API_ENDPOINT              # https://api.authorize.net/xml/v1/request.api (or apitest)
 AUTHNET_SIGNATURE_KEY             # HMAC-SHA512 secret from Authorize.Net portal
+# process-payment also accepts AUTHORIZE_NET_API_LOGIN_ID, AUTHORIZE_NET_TRANSACTION_KEY,
+# AUTHORIZE_NET_ENVIRONMENT (sandbox | production)
 RESEND_API_KEY
 RESEND_FROM_EMAIL
 RESEND_FROM_NAME
