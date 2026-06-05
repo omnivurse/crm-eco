@@ -14,8 +14,9 @@ import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import {
   CRM_DATE_INPUT_MAX,
   CRM_DATE_INPUT_MIN,
-  dateValueToTypedEntryDraft,
+  dateValueToMaskedDraft,
   isCompleteIsoDateInputValue,
+  maskDateTyping,
 } from '@/lib/crm/date-field-bounds';
 import { AlertTriangle, CalendarDays, Check, Loader2 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
@@ -100,13 +101,13 @@ export const InlineDateField = memo(function InlineDateField({
   const lockOwner = useFieldLockOwner(field);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<string>(() =>
-    mode === 'date' ? dateValueToTypedEntryDraft(value) : toInputValue(value, mode),
+    mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode),
   );
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!editing) {
-      setDraft(mode === 'date' ? dateValueToTypedEntryDraft(value) : toInputValue(value, mode));
+      setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
       setLocalError(null);
     }
   }, [value, mode, editing]);
@@ -148,7 +149,7 @@ export const InlineDateField = memo(function InlineDateField({
   );
 
   const startEditing = useCallback(() => {
-    setDraft(mode === 'date' ? dateValueToTypedEntryDraft(value) : toInputValue(value, mode));
+    setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
     setLocalError(null);
     setEditing(true);
     onEditStart?.();
@@ -157,7 +158,7 @@ export const InlineDateField = memo(function InlineDateField({
   }, [acquireFieldLock, field, mode, onEditStart, value]);
 
   const cancelEditing = useCallback(() => {
-    setDraft(mode === 'date' ? dateValueToTypedEntryDraft(value) : toInputValue(value, mode));
+    setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
     setLocalError(null);
     setEditing(false);
     onEditEnd?.();
@@ -217,7 +218,7 @@ export const InlineDateField = memo(function InlineDateField({
             placeholder="MM/DD/YYYY"
             value={draft}
             onChange={(e) => {
-              setDraft(e.target.value);
+              setDraft(mode === 'date' ? maskDateTyping(e.target.value) : e.target.value);
               setLocalError(null);
             }}
             onBlur={() => {
@@ -264,7 +265,7 @@ export const InlineDateField = memo(function InlineDateField({
                 onChange={(e) => {
                   const next = e.target.value;
                   if (!isCompleteIsoDateInputValue(next)) return;
-                  setDraft(dateValueToTypedEntryDraft(next));
+                  setDraft(dateValueToMaskedDraft(next));
                   void commit(next);
                 }}
               />

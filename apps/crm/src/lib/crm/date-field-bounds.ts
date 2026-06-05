@@ -23,3 +23,34 @@ export function dateValueToTypedEntryDraft(value: string | null | undefined): st
   if (iso) return isoDateToTypedEntryDisplay(iso);
   return value.trim();
 }
+
+/** Format ISO yyyy-MM-dd as zero-padded MM/DD/YYYY (round-trips with maskDateTyping). */
+export function isoDateToMaskedDisplay(iso: string): string {
+  const match = iso.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return iso;
+  return `${match[2]}/${match[3]}/${match[1]}`;
+}
+
+/**
+ * Mask free-typed date entry toward MM/DD/YYYY as the user types: strips
+ * non-digits, caps at 8 digits (MMDDYYYY), and auto-inserts "/" after the month
+ * and day. Idempotent on already-masked MM/DD/YYYY input, so editing an existing
+ * value does not corrupt it. The result is still parseable by
+ * normalizeDateColumnValue (e.g. "02/05/1982" -> 1982-02-05 on save).
+ */
+export function maskDateTyping(input: string | null | undefined): string {
+  const digits = String(input ?? '').replace(/\D/g, '').slice(0, 8);
+  if (!digits) return '';
+  const parts = [digits.slice(0, 2)];
+  if (digits.length > 2) parts.push(digits.slice(2, 4));
+  if (digits.length > 4) parts.push(digits.slice(4, 8));
+  return parts.join('/');
+}
+
+/** Seed a masked text editor (zero-padded MM/DD/YYYY) from any stored CRM date value. */
+export function dateValueToMaskedDraft(value: string | null | undefined): string {
+  if (!value) return '';
+  const iso = String(value).match(/^(\d{4}-\d{2}-\d{2})/)?.[1] ?? null;
+  if (iso) return isoDateToMaskedDisplay(iso);
+  return maskDateTyping(value);
+}

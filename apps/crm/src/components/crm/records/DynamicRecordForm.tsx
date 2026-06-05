@@ -43,7 +43,7 @@ import type {
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
-import { isoDateToTypedEntryDisplay } from '@/lib/crm/date-field-bounds';
+import { isoDateToMaskedDisplay, maskDateTyping } from '@/lib/crm/date-field-bounds';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
 import { AdvisorCarrierField } from './AdvisorCarrierField';
@@ -341,9 +341,9 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
     case 'date': {
       const iso = normalizeDateColumnValue(value);
       const dateValue = iso
-        ? isoDateToTypedEntryDisplay(iso)
+        ? isoDateToMaskedDisplay(iso)
         : typeof value === 'string'
-          ? value
+          ? maskDateTyping(value)
           : '';
       input = (
         <Input
@@ -352,9 +352,10 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
           inputMode="numeric"
           placeholder="MM/DD/YYYY"
           value={dateValue}
-          onChange={(e) =>
-            setValue(field.key, e.target.value ? e.target.value : null)
-          }
+          onChange={(e) => {
+            const masked = maskDateTyping(e.target.value);
+            setValue(field.key, masked ? masked : null);
+          }}
         />
       );
       break;
