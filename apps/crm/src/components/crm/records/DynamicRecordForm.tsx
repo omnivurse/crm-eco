@@ -46,7 +46,6 @@ import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
 import {
   isoDateToMaskedDisplay,
   maskDateTyping,
-  maskDateTypingWithCaret,
 } from '@/lib/crm/date-field-bounds';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
@@ -347,7 +346,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       const dateValue = iso
         ? isoDateToMaskedDisplay(iso)
         : typeof value === 'string'
-          ? maskDateTyping(value)
+          ? value
           : '';
       input = (
         <Input
@@ -356,18 +355,15 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
           inputMode="numeric"
           placeholder="MM/DD/YYYY"
           value={dateValue}
-          onChange={(e) => {
-            const el = e.currentTarget;
-            const { value: masked, caret } = maskDateTypingWithCaret(
-              el.value,
-              el.selectionStart ?? el.value.length,
-            );
+          onChange={(e) =>
+            setValue(field.key, e.target.value ? e.target.value : null)
+          }
+          onBlur={(e) => {
+            // Format to MM/DD/YYYY when leaving the field. Doing this on blur
+            // (rather than each keystroke) avoids caret jumps from the form's
+            // re-renders. Storage still normalizes to ISO on save.
+            const masked = maskDateTyping(e.target.value);
             setValue(field.key, masked ? masked : null);
-            requestAnimationFrame(() => {
-              if (document.activeElement === el) {
-                el.setSelectionRange(caret, caret);
-              }
-            });
           }}
         />
       );
