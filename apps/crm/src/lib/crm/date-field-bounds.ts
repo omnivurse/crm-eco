@@ -47,6 +47,28 @@ export function maskDateTyping(input: string | null | undefined): string {
   return parts.join('/');
 }
 
+/**
+ * Mask a date input AND compute where the caret should sit afterward, so a
+ * controlled input does not scramble digits when the value is re-rendered.
+ * `caretOffset` is the caret position in the raw (pre-mask) value; the returned
+ * caret lands just after the same number of digits in the masked value.
+ */
+export function maskDateTypingWithCaret(
+  rawValue: string,
+  caretOffset: number,
+): { value: string; caret: number } {
+  const value = maskDateTyping(rawValue);
+  const digitsBefore = rawValue.slice(0, Math.max(0, caretOffset)).replace(/\D/g, '').length;
+  if (digitsBefore === 0) return { value, caret: 0 };
+  let seen = 0;
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code >= 48 && code <= 57) seen += 1;
+    if (seen >= digitsBefore) return { value, caret: i + 1 };
+  }
+  return { value, caret: value.length };
+}
+
 /** Seed a masked text editor (zero-padded MM/DD/YYYY) from any stored CRM date value. */
 export function dateValueToMaskedDraft(value: string | null | undefined): string {
   if (!value) return '';
