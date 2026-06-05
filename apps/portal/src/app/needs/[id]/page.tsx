@@ -8,7 +8,10 @@ import {
   NeedStatusCard,
   NeedAmountsCard,
   NeedTimelineCard,
+  NeedAttachmentsCard,
+  NeedAddDocumentsPanel,
 } from '../../../components/needs';
+import { listNeedAttachmentsForMember } from '@/lib/data/need-attachments';
 
 export default async function NeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -59,8 +62,11 @@ export default async function NeedDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  // Fetch related events
-  const events = await getNeedEvents(supabase, needId);
+  // Fetch related events and attachments
+  const [events, attachments] = await Promise.all([
+    getNeedEvents(supabase, needId),
+    listNeedAttachmentsForMember(needId),
+  ]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
@@ -84,6 +90,10 @@ export default async function NeedDetailPage({ params }: { params: Promise<{ id:
 
       {/* Amounts & Reimbursement Card */}
       <NeedAmountsCard need={need} />
+
+      <NeedAttachmentsCard attachments={attachments} />
+
+      <NeedAddDocumentsPanel needId={needId} status={need.status} />
 
       {/* Activity Timeline Card */}
       <NeedTimelineCard events={events} />

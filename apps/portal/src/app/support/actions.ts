@@ -131,6 +131,87 @@ export async function createMemberTicket(formData: {
   }
 }
 
+const CLOSED_TICKET_STATUSES = new Set(['resolved', 'closed']);
+
+/**
+ * Add a member reply to an existing support ticket.
+ */
+export async function addMemberTicketComment(
+  ticketId: string,
+  body: string,
+): Promise<ActionResult> {
+  try {
+    const trimmed = body.trim();
+    if (!trimmed) {
+      return { success: false, error: 'Message is required' };
+    }
+
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const context = await getMemberForUser(supabase, user.id);
+    if (!context?.member.organization_id) {
+      return { success: false, error: 'Member account not found' };
+    }
+
+    const { profile, member } = context;
+
+    const { data: ticket, error: ticketError } = await supabase
+      .from('tickets')
+      .select('id, status, member_id, organization_id')
+      .eq('id', ticketId)
+      .eq('member_id', member.id)
+      .eq('organization_id', member.organization_id)
+      .maybeSingle();
+
+    if (ticketError || !ticket) {
+      return { success: false, error: 'Ticket not found' };
+    }
+
+    if (CLOSED_TICKET_STATUSES.has(ticket.status)) {
+      return { success: false, error: 'This ticket is closed and cannot receive new replies.' };
+    }
+
+    const { error: commentError } = await supabase.from('ticket_comments').insert({
+      ticket_id: ticketId,
+      created_by_profile_id: profile.id,
+      body: trimmed,
+      is_internal: false,
+    });
+
+    if (commentError) {
+      return { success: false, error: 'Failed to send reply' };
+    }
+
+    // Re-open waiting tickets when member replies
+    if (ticket.status === 'waiting') {
+      await supabase
+        .from('tickets')
+        .update({ status: 'open', updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+    } else {
+      await supabase
+        .from('tickets')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', ticketId);
+    }
+
+    revalidatePath('/support');
+    revalidatePath(`/support/${ticketId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('addMemberTicketComment error:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
 /**
  * Get tickets for the current member (for revalidation)
  */

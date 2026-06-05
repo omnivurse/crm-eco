@@ -616,7 +616,7 @@ export const TicketsBoardShell = memo(function TicketsBoardShell({
                 {filteredTickets.map((ticket) => (
                   <TableRow key={ticket.id} className="cursor-pointer hover:bg-slate-50">
                     <TableCell>
-                      <Link href={`/tickets/${ticket.id}`} className="block">
+                      <Link href={`/crm/tickets/${ticket.id}`} className="block">
                         <div className="font-medium text-blue-600 hover:text-blue-800 hover:underline max-w-[250px] truncate">
                           {ticket.subject}
                         </div>
@@ -637,7 +637,7 @@ export const TicketsBoardShell = memo(function TicketsBoardShell({
                     <TableCell className="text-slate-600">
                       {ticket.members ? (
                         <Link
-                          href={`/members/${ticket.members.id}`}
+                          href={`/crm/members/${ticket.members.id}`}
                           className="text-blue-600 hover:underline"
                         >
                           {ticket.members.first_name} {ticket.members.last_name}

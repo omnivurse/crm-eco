@@ -43,7 +43,7 @@ interface RefundRequest {
 interface CreateProfileRequest {
   action: 'create_profile';
   memberId: string;
-  paymentMethod: {
+  paymentMethod?: {
     type: 'credit_card' | 'bank_account';
     cardNumber?: string;
     expirationDate?: string;
@@ -53,6 +53,13 @@ interface CreateProfileRequest {
     accountType?: 'checking' | 'savings';
     nameOnAccount?: string;
   };
+  /** Accept.js opaque token — PCI-safe alternative to raw card data */
+  opaqueData?: {
+    dataDescriptor: string;
+    dataValue: string;
+  };
+  /** YYYY-MM expiration for opaque card tokenization flow */
+  expirationDate?: string;
   billingAddress?: {
     firstName: string;
     lastName: string;
@@ -142,7 +149,7 @@ serve(async (req) => {
         return await processRefund(supabase, organizationId, body, merchantAuth, apiEndpoint);
       }
       case 'create_profile': {
-        return await createPaymentProfile(supabase, organizationId, body, merchantAuth, apiEndpoint);
+        return await createPaymentProfile(supabase, organizationId, user.id, body, merchantAuth, apiEndpoint, environment);
       }
       default:
         return new Response(
@@ -434,14 +441,58 @@ async function processRefund(
 async function createPaymentProfile(
   supabase: any,
   organizationId: string,
+  userId: string,
   input: CreateProfileRequest,
   merchantAuth: { name: string; transactionKey: string },
-  apiEndpoint: string
+  apiEndpoint: string,
+  environment: string,
 ) {
+  const usesOpaque = Boolean(input.opaqueData?.dataDescriptor && input.opaqueData?.dataValue);
+  const usesRaw = Boolean(input.paymentMethod?.type);
+
+  if (!usesOpaque && !usesRaw) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Payment method or opaque token is required' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (usesOpaque && usesRaw) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Provide either opaqueData or paymentMethod, not both' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verify caller may create a profile for this member
+  const { data: callerProfile } = await supabase
+    .from('profiles')
+    .select('id, role, member_id, organization_id')
+    .eq('user_id', userId)
+    .single();
+
+  if (!callerProfile) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Profile not found' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const staffRoles = ['owner', 'admin', 'staff', 'advisor'];
+  const isStaff = callerProfile.role && staffRoles.includes(callerProfile.role);
+  const isOwnMember = callerProfile.member_id === input.memberId;
+
+  if (!isStaff && !isOwnMember) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Not authorized to add payment method for this member' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   // Get member
   const { data: member, error: memberError } = await supabase
     .from('members')
-    .select('id, email, first_name, last_name, customer_profile_id')
+    .select('id, email, first_name, last_name, customer_profile_id, organization_id')
     .eq('id', input.memberId)
     .single();
 
@@ -449,6 +500,13 @@ async function createPaymentProfile(
     return new Response(
       JSON.stringify({ success: false, error: 'Member not found' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  if (member.organization_id !== organizationId) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Member not found in organization' }),
+      { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -495,24 +553,45 @@ async function createPaymentProfile(
 
   // Build payment data
   let payment: any;
-  if (input.paymentMethod.type === 'credit_card') {
+  let paymentType: 'credit_card' | 'bank_account' = 'credit_card';
+  let lastFour: string | undefined;
+  let cardType: string | null = null;
+  let expirationStored: string | null = null;
+  let accountType: string | null = null;
+
+  if (usesOpaque) {
     payment = {
-      creditCard: {
-        cardNumber: input.paymentMethod.cardNumber,
-        expirationDate: input.paymentMethod.expirationDate,
-        cardCode: input.paymentMethod.cvv,
+      opaqueData: {
+        dataDescriptor: input.opaqueData!.dataDescriptor,
+        dataValue: input.opaqueData!.dataValue,
       },
     };
+    paymentType = 'credit_card';
+    if (input.expirationDate) {
+      expirationStored = input.expirationDate.replace('-', '/').substring(2);
+    }
+  } else if (input.paymentMethod!.type === 'credit_card') {
+    payment = {
+      creditCard: {
+        cardNumber: input.paymentMethod!.cardNumber,
+        expirationDate: input.paymentMethod!.expirationDate,
+        cardCode: input.paymentMethod!.cvv,
+      },
+    };
+    paymentType = 'credit_card';
   } else {
     payment = {
       bankAccount: {
-        accountType: input.paymentMethod.accountType,
-        routingNumber: input.paymentMethod.routingNumber,
-        accountNumber: input.paymentMethod.accountNumber,
-        nameOnAccount: input.paymentMethod.nameOnAccount,
+        accountType: input.paymentMethod!.accountType,
+        routingNumber: input.paymentMethod!.routingNumber,
+        accountNumber: input.paymentMethod!.accountNumber,
+        nameOnAccount: input.paymentMethod!.nameOnAccount,
       },
     };
+    paymentType = 'bank_account';
   }
+
+  const validationMode = environment === 'production' ? 'liveMode' : 'testMode';
 
   // Create payment profile
   const createPaymentResponse = await fetch(apiEndpoint, {
@@ -535,7 +614,7 @@ async function createPaymentProfile(
           payment,
           defaultPaymentProfile: input.setAsDefault,
         },
-        validationMode: 'liveMode',
+        validationMode,
       },
     }),
   });
@@ -554,20 +633,37 @@ async function createPaymentProfile(
   }
 
   const paymentProfileId = response.customerPaymentProfileId;
+  const responsePayment = response.paymentProfile?.payment;
 
-  // Get last 4 digits
-  const lastFour = input.paymentMethod.type === 'credit_card'
-    ? input.paymentMethod.cardNumber?.slice(-4)
-    : input.paymentMethod.accountNumber?.slice(-4);
-
-  // Detect card type if credit card
-  let cardType: string | null = null;
-  if (input.paymentMethod.type === 'credit_card' && input.paymentMethod.cardNumber) {
-    const cardNum = input.paymentMethod.cardNumber;
+  // Derive masked card/account details from Authorize.Net response when possible
+  if (usesOpaque) {
+    const maskedCard = responsePayment?.creditCard?.cardNumber as string | undefined;
+    if (maskedCard) {
+      lastFour = maskedCard.replace(/\D/g, '').slice(-4) || undefined;
+      const digits = maskedCard.replace(/\D/g, '');
+      if (digits.startsWith('4')) cardType = 'Visa';
+      else if (/^5[1-5]/.test(digits)) cardType = 'Mastercard';
+      else if (/^3[47]/.test(digits)) cardType = 'Amex';
+      else if (/^6(?:011|5)/.test(digits)) cardType = 'Discover';
+    }
+    if (!expirationStored && responsePayment?.creditCard?.expirationDate) {
+      expirationStored = String(responsePayment.creditCard.expirationDate).replace('-', '/').substring(2);
+    }
+  } else if (input.paymentMethod!.type === 'credit_card') {
+    lastFour = input.paymentMethod!.cardNumber?.slice(-4);
+    const cardNum = input.paymentMethod!.cardNumber || '';
     if (cardNum.startsWith('4')) cardType = 'Visa';
     else if (/^5[1-5]/.test(cardNum)) cardType = 'Mastercard';
     else if (/^3[47]/.test(cardNum)) cardType = 'Amex';
     else if (/^6(?:011|5)/.test(cardNum)) cardType = 'Discover';
+    expirationStored = input.paymentMethod!.expirationDate?.replace('-', '/').substring(2) ?? null;
+  } else {
+    lastFour = input.paymentMethod!.accountNumber?.slice(-4);
+    accountType = input.paymentMethod!.accountType ?? null;
+  }
+
+  if (!lastFour) {
+    lastFour = '0000';
   }
 
   // If setting as default, unset other defaults
@@ -587,11 +683,12 @@ async function createPaymentProfile(
       member_id: input.memberId,
       authorize_customer_profile_id: customerProfileId,
       authorize_payment_profile_id: paymentProfileId,
-      payment_type: input.paymentMethod.type,
+      payment_type: paymentType,
       last_four: lastFour,
+      card_last4: lastFour,
       card_type: cardType,
-      expiration_date: input.paymentMethod.expirationDate?.replace('-', '/').substring(2),
-      account_type: input.paymentMethod.accountType,
+      expiration_date: expirationStored,
+      account_type: accountType,
       billing_first_name: input.billingAddress?.firstName,
       billing_last_name: input.billingAddress?.lastName,
       billing_address: input.billingAddress?.address,
@@ -600,6 +697,7 @@ async function createPaymentProfile(
       billing_zip: input.billingAddress?.zip,
       is_default: input.setAsDefault || false,
       is_active: true,
+      status: 'active',
     })
     .select('id')
     .single();

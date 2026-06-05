@@ -81,7 +81,7 @@ export async function createTicketsSavedView(params: {
       throw new Error(`Failed to create saved view: ${error.message}`);
     }
 
-    revalidatePath('/tickets');
+    revalidatePath('/crm/tickets');
     return { success: true, viewId: data?.id };
   } catch (error) {
     console.error('createTicketsSavedView error:', error);
@@ -130,7 +130,7 @@ export async function setTicketsSavedViewDefault(viewId: string): Promise<Action
       throw new Error(`Failed to set default view: ${updateError.message}`);
     }
 
-    revalidatePath('/tickets');
+    revalidatePath('/crm/tickets');
     return { success: true };
   } catch (error) {
     console.error('setTicketsSavedViewDefault error:', error);
@@ -155,7 +155,7 @@ export async function clearTicketsSavedViewDefault(): Promise<ActionResult> {
       .eq('owner_profile_id', profile.id)
       .eq('context', TICKETS_BOARD_CONTEXT);
 
-    revalidatePath('/tickets');
+    revalidatePath('/crm/tickets');
     return { success: true };
   } catch (error) {
     console.error('clearTicketsSavedViewDefault error:', error);
@@ -185,7 +185,7 @@ export async function deleteTicketsSavedView(viewId: string): Promise<ActionResu
       throw new Error(`Failed to delete saved view: ${error.message}`);
     }
 
-    revalidatePath('/tickets');
+    revalidatePath('/crm/tickets');
     return { success: true };
   } catch (error) {
     console.error('deleteTicketsSavedView error:', error);

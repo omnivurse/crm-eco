@@ -15,9 +15,9 @@ export const listPaymentProfiles = cache(async () => {
   const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from('payment_profiles')
-    .select('id, card_last4, card_type, expiration_date, is_default, status, account_type, bank_name')
+    .select('id, card_last4, last_four, card_type, expiration_date, is_default, status, account_type, bank_name')
     .eq('member_id', ctx.member.id)
-    .eq('status', 'active')
+    .eq('is_active', true)
     .order('is_default', { ascending: false });
   return data ?? [];
 });

@@ -50,7 +50,7 @@ const navSections: NavSection[] = [
   {
     title: 'Service',
     items: [
-      { name: 'Tickets', href: '/crm', icon: Ticket },
+      { name: 'Tickets', href: '/crm/tickets', icon: Ticket },
     ],
   },
   {

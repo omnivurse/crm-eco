@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   CreditCard, 
@@ -57,6 +58,7 @@ interface BillingTransactionRow {
 interface PaymentProfile {
   id: string;
   card_last4: string | null;
+  last_four?: string | null;
   card_type: string | null;
   expiration_date: string | null;
   is_default: boolean;
@@ -122,7 +124,7 @@ export default function BillingPage() {
       .from('payment_profiles')
       .select('*')
       .eq('member_id', profile.member_id)
-      .eq('status', 'active')
+      .eq('is_active', true)
       .order('is_default', { ascending: false });
 
     if (profiles) {
@@ -334,9 +336,11 @@ export default function BillingPage() {
                 <CardTitle>Payment Methods</CardTitle>
                 <CardDescription>Manage your saved payment methods</CardDescription>
               </div>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Add Method
+              <Button className="gap-2" asChild>
+                <Link href="/billing/methods/new">
+                  <Plus className="h-4 w-4" />
+                  Add Method
+                </Link>
               </Button>
             </CardHeader>
             <CardContent>
@@ -344,9 +348,11 @@ export default function BillingPage() {
                 <div className="text-center py-8">
                   <CreditCard className="h-12 w-12 mx-auto mb-4 text-slate-300" />
                   <p className="text-slate-500 mb-4">No payment methods on file</p>
-                  <Button variant="outline" className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Payment Method
+                  <Button variant="outline" className="gap-2" asChild>
+                    <Link href="/billing/methods/new">
+                      <Plus className="h-4 w-4" />
+                      Add Payment Method
+                    </Link>
                   </Button>
                 </div>
               ) : (
@@ -362,7 +368,7 @@ export default function BillingPage() {
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">
-                            {profile.card_type || 'Card'} •••• {profile.card_last4}
+                            {profile.card_type || 'Card'} •••• {profile.card_last4 || profile.last_four}
                           </p>
                           <p className="text-sm text-slate-500">
                             Expires {profile.expiration_date || 'N/A'}

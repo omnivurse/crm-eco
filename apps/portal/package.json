@@ -6,7 +6,8 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --max-warnings 0"
+    "lint": "eslint . --max-warnings 0",
+    "seed:lab-providers": "node scripts/seed-lab-providers.mjs"
   },
   "dependencies": {
     "@crm-eco/enrollment": "*",

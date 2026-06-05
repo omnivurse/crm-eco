@@ -37,7 +37,20 @@ export async function GET(
     .eq('need_id', needId)
     .order('created_at', { ascending: false });
 
-  return NextResponse.json({ attachments: data ?? [] });
+  const attachments = await Promise.all(
+    (data ?? []).map(async (row) => {
+      let download_url: string | null = null;
+      if (row.storage_path) {
+        const { data: signed } = await supabase.storage
+          .from('member-needs')
+          .createSignedUrl(row.storage_path, 3600);
+        download_url = signed?.signedUrl ?? null;
+      }
+      return { ...row, download_url };
+    }),
+  );
+
+  return NextResponse.json({ attachments });
 }
 
 export async function POST(
@@ -94,6 +107,14 @@ export async function POST(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await supabase.from('need_events').insert({
+    need_id: needId,
+    organization_id: ctx.member.organization_id,
+    event_type: 'document_uploaded',
+    description: `Member uploaded ${file.name}`,
+    created_by_profile_id: ctx.profile.id,
+  });
 
   return NextResponse.json({ attachment: data });
 }

@@ -136,7 +136,7 @@ export function ActivityTable({
       {showEntity && (
         <TableCell className={style ? 'flex-shrink-0 w-24' : ''}>
           {activity.ticket_id && (
-            <Link href={`/tickets/${activity.ticket_id}`} className="text-blue-600 hover:underline">
+            <Link href={`/crm/tickets/${activity.ticket_id}`} className="text-blue-600 hover:underline">
               Ticket
             </Link>
           )}

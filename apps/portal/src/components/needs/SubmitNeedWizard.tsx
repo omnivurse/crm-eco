@@ -37,6 +37,8 @@ import {
   updateNeedConsentAndDocs,
   submitNeedForReview,
 } from '../../app/needs/new/actions';
+import { NeedDocumentUpload } from './NeedDocumentUpload';
+import type { NeedAttachmentRecord } from '@/lib/needs/attachment-client';
 
 // ============================================================================
 // Types
@@ -67,6 +69,7 @@ interface WizardState {
   basics: NeedBasicsData;
   bills: BillsAndCashPayData;
   consent: ConsentData;
+  attachments: NeedAttachmentRecord[];
   isSubmitting: boolean;
   error: string | null;
   isComplete: boolean;
@@ -309,7 +312,14 @@ function Step2Bills({ state, setState, onNext, onBack }: StepProps) {
         <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-blue-800">
-            <strong>Tip:</strong> Keep your receipts and bills handy. You may need to upload them later.
+            <strong>Tip:</strong> You can upload receipts and itemized bills in the next step (e.g. from{' '}
+            <a
+              href="/services/labs"
+              className="font-medium underline-offset-2 hover:underline"
+            >
+              Own Your Labs
+            </a>
+            ).
           </p>
         </div>
       </CardContent>
@@ -374,16 +384,19 @@ function Step3Consent({ state, setState, onNext, onBack }: StepProps) {
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
           <h4 className="font-medium text-slate-900 mb-2">Supporting Documents</h4>
           <p className="text-sm text-slate-600 mb-4">
-            You can upload receipts, itemized bills, or EOBs to help us process your Need faster.
+            Upload receipts, itemized bills, or EOBs (PDF or images) to help us process your Need faster.
           </p>
-          <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
-            <p className="text-sm text-slate-500">
-              Document upload will be available in a future update.
-            </p>
-            <p className="text-xs text-slate-400 mt-2">
-              For now, we&apos;ll reach out if we need additional documents.
-            </p>
-          </div>
+          <NeedDocumentUpload
+            needId={state.needId}
+            attachments={state.attachments}
+            disabled={state.isSubmitting}
+            onAttachmentUploaded={(attachment) =>
+              setState((prev) => ({
+                ...prev,
+                attachments: [...prev.attachments, attachment],
+              }))
+            }
+          />
         </div>
       </CardContent>
       <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
@@ -496,6 +509,21 @@ function Step4Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
           </p>
         </div>
 
+        {state.attachments.length > 0 && (
+          <div className="p-4 bg-slate-50 rounded-lg">
+            <h4 className="font-medium text-slate-900 mb-3">
+              Supporting documents ({state.attachments.length})
+            </h4>
+            <ul className="space-y-1 text-sm text-slate-700">
+              {state.attachments.map((a) => (
+                <li key={a.id} className="truncate">
+                  {a.file_name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <p className="text-sm text-blue-800">
@@ -523,7 +551,7 @@ function Step4Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
   );
 }
 
-function SuccessScreen({ needId }: { needId: string }) {
+function SuccessScreen({ needId, attachmentCount }: { needId: string; attachmentCount: number }) {
   const router = useRouter();
 
   return (
@@ -537,7 +565,11 @@ function SuccessScreen({ needId }: { needId: string }) {
         </h2>
         <p className="text-slate-600 mb-8 max-w-md mx-auto">
           Thank you for submitting your Need. Our team will review it and reach out if we need
-          any additional information. You can track the status in your Needs list.
+          any additional information.
+          {attachmentCount > 0
+            ? ` ${attachmentCount} supporting document${attachmentCount === 1 ? '' : 's'} attached.`
+            : ''}{' '}
+          You can track the status in your Needs list.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button onClick={() => router.push(`/needs/${needId}`)}>
@@ -576,6 +608,7 @@ export function SubmitNeedWizard() {
     consent: {
       hasConsent: false,
     },
+    attachments: [],
     isSubmitting: false,
     error: null,
     isComplete: false,
@@ -674,7 +707,7 @@ export function SubmitNeedWizard() {
 
   // Render success screen if complete
   if (state.isComplete && state.needId) {
-    return <SuccessScreen needId={state.needId} />;
+    return <SuccessScreen needId={state.needId} attachmentCount={state.attachments.length} />;
   }
 
   // Progress indicator

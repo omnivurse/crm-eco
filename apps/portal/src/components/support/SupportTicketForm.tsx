@@ -46,16 +46,18 @@ export function SupportTicketForm({ onTicketCreated }: SupportTicketFormProps) {
         return;
       }
 
-      // Success
+      // Success — go to the ticket thread
       setSuccess(true);
       setSubject('');
       setCategory('');
       setMessage('');
-
-      // Notify parent
       onTicketCreated?.();
 
-      // Refresh the page data
+      if (result.data?.ticketId) {
+        router.push(`/support/${result.data.ticketId}`);
+        return;
+      }
+
       router.refresh();
 
       // Clear success after 5 seconds
