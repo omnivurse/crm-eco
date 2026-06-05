@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { User, LogOut, Menu, X, ChevronDown, FileText, Users, Settings, CreditCard, LifeBuoy } from 'lucide-react';
-import { Button, AppSwitcher, cn } from '@crm-eco/ui';
+import { User, LogOut, Menu, X, ChevronDown, FileText, Users, Settings } from 'lucide-react';
+import { Button, cn } from '@crm-eco/ui';
 import { useState, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
@@ -39,7 +39,6 @@ export function PortalHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [memberName, setMemberName] = useState<string>('');
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -57,13 +56,9 @@ export function PortalHeader() {
         // Get member name
         const { data: profile } = await supabase
           .from('profiles')
-          .select('member_id, role')
+          .select('member_id')
           .eq('user_id', user.id)
-          .single() as { data: { member_id: string; role: string } | null };
-
-        if (profile?.role && ['owner', 'super_admin', 'admin'].includes(profile.role)) {
-          setIsSuperAdmin(true);
-        }
+          .single() as { data: { member_id: string } | null };
 
         if (profile?.member_id) {
           const { data: member } = await supabase
@@ -104,10 +99,8 @@ export function PortalHeader() {
     <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
       <div className="w-full px-3 sm:px-4 lg:px-6 xl:px-8 2xl:px-10">
         <div className="flex items-center justify-between h-16">
-          {/* Left side - App Switcher + Logo */}
+          {/* Left side - Logo */}
           <div className="flex items-center gap-3">
-            {isSuperAdmin && <AppSwitcher currentApp="portal" />}
-            {isSuperAdmin && <div className="h-6 w-px bg-slate-200 hidden sm:block" />}
             <Link href="/" className="flex items-center gap-2.5">
               <Image
                 src="/logo.png"
