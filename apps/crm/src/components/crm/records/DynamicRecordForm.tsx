@@ -356,9 +356,16 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
         : typeof value === 'string'
           ? value
           : '';
+      // Render fully controlled. Spreading register()'s `ref` lets RHF
+      // imperatively write the raw stored value (ISO yyyy-MM-dd) into the DOM on
+      // mount, visually overriding our masked `value` until the field is edited —
+      // so a saved DOB displayed as "1982-02-25" instead of "02/25/1982". Drop
+      // the ref; the field stays in form state via setValue (below) + register().
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { ref: _dateRef, ...dateCommon } = commonProps;
       input = (
         <Input
-          {...commonProps}
+          {...dateCommon}
           type="text"
           inputMode="numeric"
           placeholder="MM/DD/YYYY"
