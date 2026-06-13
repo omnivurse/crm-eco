@@ -172,3 +172,20 @@ export const listAgreementSignatures = cache(async () => {
     .order('signed_at', { ascending: false });
   return data ?? [];
 });
+
+/**
+ * Returns coverage periods for all dependents of the current member.
+ * Used by the Dependents page (and can be used by dashboard widgets) to show
+ * add/remove dates and historical on/off tracking (school, summer work, etc.).
+ */
+export const listDependentCoveragePeriods = cache(async () => {
+  const ctx = await requireActiveMembership();
+  const supabase = await createServerSupabaseClient();
+  const { data } = await (supabase as any)
+    .from('dependent_coverage_periods')
+    .select('*')
+    .eq('member_id', ctx.member.id)
+    .eq('organization_id', ctx.member.organization_id)
+    .order('effective_from', { ascending: false });
+  return data ?? [];
+});

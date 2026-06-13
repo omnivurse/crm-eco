@@ -34,6 +34,7 @@ import type {
   CrmAttachmentWithAuthor,
   CrmAuditLogWithActor,
 } from '@/lib/crm/types';
+import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 
 interface RecordTimelineProps {
   events: TimelineEvent[];
@@ -302,7 +303,7 @@ function TimelineItem({ event }: { event: TimelineEvent }) {
   } else if (event.type === 'activity') {
     userName = (event.data as CrmTaskWithAssignee).assignee?.full_name || null;
   } else if (event.type === 'note') {
-    userName = (event.data as CrmNoteWithAuthor).author?.full_name || null;
+    userName = getNoteAuthorDisplay(event.data as CrmNoteWithAuthor, { showHistorical: true });
   } else if (event.type === 'attachment') {
     userName = (event.data as CrmAttachmentWithAuthor).author?.full_name || null;
   } else if (event.type === 'audit') {

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
-import { sanitizeNoteHtml } from '@/lib/crm/note-sanitize';
+import { sanitizeNoteHtml, getNoteAuthorDisplay, getNoteAuthorName, stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { formatDistanceToNow } from 'date-fns';
@@ -51,7 +51,7 @@ function NotePreviewItem({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const plainPreview = stripNotePlain(note.body);
+  const plainPreview = stripLegacyAuthorAttribution(stripNotePlain(note.body));
   const isTruncated = plainPreview.length > TRUNCATE_LENGTH;
 
   const handleDelete = async () => {
@@ -79,8 +79,22 @@ function NotePreviewItem({
             <User className="w-3 h-3 text-slate-400" />
           )}
         </div>
-        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
-          {note.author?.full_name || 'Unknown'}
+        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate flex items-center gap-1">
+          {(() => {
+            const display = getNoteAuthorDisplay(note, { showHistorical: true });
+            const isHist = display.startsWith('Historical • ');
+            const name = isHist ? display.slice('Historical • '.length) : display;
+            return isHist ? (
+              <>
+                <span className="inline-flex items-center rounded bg-amber-100 dark:bg-amber-500/20 px-1 py-px text-[9px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                  Hist
+                </span>
+                <span className="truncate">{name}</span>
+              </>
+            ) : (
+              display
+            );
+          })()}
         </span>
         <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
           {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
@@ -189,7 +203,7 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       (n) =>
         stripNotePlain(n.body).toLowerCase().includes(q) ||
         n.body.toLowerCase().includes(q) ||
-        (n.author?.full_name || '').toLowerCase().includes(q)
+        getNoteAuthorName(n).toLowerCase().includes(q)
     );
   }, [sortedNotes, search]);
 

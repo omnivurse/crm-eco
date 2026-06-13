@@ -30199,6 +30199,30 @@ COMMENT ON COLUMN public.dependents.external_ref IS 'External system reference I
 
 
 --
+-- Name: dependent_coverage_periods; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.dependent_coverage_periods (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    organization_id uuid NOT NULL,
+    member_id uuid NOT NULL,
+    dependent_id uuid NOT NULL,
+    effective_from date NOT NULL,
+    effective_to date,
+    reason text,
+    notes text,
+    source text DEFAULT 'portal'::text,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    created_by uuid,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+COMMENT ON TABLE public.dependent_coverage_periods IS
+  'Historical and current coverage periods for dependents/family members on a membership. '
+  'Enables explicit add/remove dates (with back-dating support) for scenarios like school, summer work, etc. '
+  'Current coverage is any row with effective_from <= today AND (effective_to IS NULL OR effective_to >= today).';
+
+--
 -- Name: doc_folders; Type: TABLE; Schema: public; Owner: -
 --
 

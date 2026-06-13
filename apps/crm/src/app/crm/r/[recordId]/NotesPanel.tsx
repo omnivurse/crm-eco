@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
-import { sanitizeNoteHtml } from '@/lib/crm/note-sanitize';
+import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -63,8 +63,22 @@ function NoteCard({
             )}
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-900 dark:text-white">
-              {note.author?.full_name || 'Unknown'}
+            <p className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
+              {(() => {
+                const display = getNoteAuthorDisplay(note, { showHistorical: true });
+                const isHist = display.startsWith('Historical • ');
+                const name = isHist ? display.slice('Historical • '.length) : display;
+                return isHist ? (
+                  <>
+                    <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-500/20 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                      Historical
+                    </span>
+                    <span>{name}</span>
+                  </>
+                ) : (
+                  display
+                );
+              })()}
             </p>
             <p className="text-xs text-slate-500">
               {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}

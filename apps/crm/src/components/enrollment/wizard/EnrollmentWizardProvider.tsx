@@ -27,7 +27,7 @@ export interface HouseholdMember {
   firstName: string;
   lastName: string;
   dateOfBirth: string;
-  gender: 'male' | 'female' | 'other' | '';
+  gender: 'male' | 'female' | '';
   tobaccoUse: boolean;
   isStudent: boolean;
 }

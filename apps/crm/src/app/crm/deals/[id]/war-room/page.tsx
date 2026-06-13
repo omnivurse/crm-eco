@@ -24,6 +24,7 @@ import { useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase-client';
 import { resolveNoteSourceRecordIdsWithClient } from '@/lib/crm/note-aggregate';
+import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 
 // ============================================================================
 // Types
@@ -303,7 +304,7 @@ export default function DealWarRoomPage() {
       title: 'Note added',
       description: n.body.length > 120 ? n.body.substring(0, 120) + '...' : n.body,
       timestamp: n.created_at,
-      user: n.author?.full_name || 'Unknown',
+      user: getNoteAuthorDisplay(n as any, { showHistorical: true }),
     })),
     ...stageHistory.map((s) => ({
       id: `stage_${s.id}`,

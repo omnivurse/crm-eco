@@ -75,7 +75,7 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { supabase } from '@/lib/supabase-client';
-import { sanitizeNoteHtml } from '@/lib/crm/note-sanitize';
+import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { RecordToolbarGlobalSearch } from './RecordToolbarGlobalSearch';
 import { StageSelector } from '@/components/crm/blueprints';
@@ -1779,7 +1779,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 >
                   <div className="flex items-center gap-2 mb-1.5">
                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
-                      {note.author?.full_name || 'Unknown'}
+                      {getNoteAuthorDisplay(note, { showHistorical: true })}
                     </span>
                     <span
                       className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0"

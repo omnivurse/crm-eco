@@ -66,6 +66,7 @@ import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContac
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
+import { getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 
@@ -980,7 +981,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       <UserCircle className="w-4 h-4 text-slate-400" />
                     </div>
                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
-                      {note.author?.full_name || 'Unknown'}
+                      {getNoteAuthorDisplay(note, { showHistorical: true })}
                     </span>
                     <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0" suppressHydrationWarning>
                       {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}

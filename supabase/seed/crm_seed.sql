@@ -120,8 +120,8 @@ BEGIN
   UPDATE crm_fields SET options = '["Mr.", "Mrs.", "Ms.", "Dr.", "Prof."]'::jsonb
   WHERE module_id = v_contacts_module_id AND key = 'salutation';
 
-  -- Update gender options
-  UPDATE crm_fields SET options = '["Male", "Female", "Other", "Prefer not to say"]'::jsonb
+  -- Update gender options (medical/biological: Male or Female only)
+  UPDATE crm_fields SET options = '["Male", "Female"]'::jsonb
   WHERE module_id = v_contacts_module_id AND key = 'gender';
 
   -- Status & Ownership
