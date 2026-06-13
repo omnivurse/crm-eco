@@ -57,7 +57,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(data);
+    const result = data as {
+      success?: boolean;
+      contact_id?: string;
+      error?: string;
+    };
+
+    // Belt-and-suspenders: copy any insurance / health-sharing keys the RPC may have missed.
+    if (result?.success && result.contact_id) {
+      const { data: repairData, error: repairError } = await adminClient.rpc(
+        'repair_converted_contact_insurance_data',
+        { p_contact_id: result.contact_id },
+      );
+
+      if (repairError) {
+        console.warn(
+          'Lead conversion succeeded but insurance repair failed:',
+          repairError.message,
+        );
+      } else if (repairData && typeof repairData === 'object') {
+        Object.assign(result, { insurance_repair: repairData });
+      }
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Lead to contact conversion error:', error);
     return NextResponse.json(
