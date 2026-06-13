@@ -370,7 +370,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION public.convert_lead_to_contact(uuid, uuid, uuid) TO authenticated;
 
--- Repair a single converted contact by copying missing insurance keys from its linked lead.
+-- Repair a single converted contact by copying missing fields from its linked lead.
 CREATE OR REPLACE FUNCTION public.repair_converted_contact_insurance_data(p_contact_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -384,6 +384,7 @@ DECLARE
   v_lead_data   jsonb;
   v_contact_data jsonb;
   v_patch       jsonb;
+  v_full_patch  jsonb;
   v_insurance_keys text[] := ARRAY[
     'carrier', 'sharing_entity', 'group_name', 'tobacco_user',
     'iua_amount', 'monthly_contribution', 'member_tier',
@@ -394,6 +395,9 @@ DECLARE
     'health_insurance_plan_name', 'health_insurance_premium',
     'health_insurance_status', 'health_insurance_deductible',
     'sharing_effective_date', 'insurance_effective_date'
+  ];
+  v_lead_only_keys text[] := ARRAY[
+    'is_converted', 'converted_date', 'converted_contact_id', 'lead_status'
   ];
   v_sharing_carrier_id uuid;
 BEGIN
@@ -425,11 +429,43 @@ BEGIN
 
   v_lead_data := COALESCE(v_lead.data, '{}'::jsonb);
 
+  -- Insurance / health-sharing keys first (explicit list for indexed-column side effects below).
   SELECT COALESCE(jsonb_object_agg(k, v), '{}'::jsonb) INTO v_patch
   FROM jsonb_each(v_lead_data) e(k, v)
   WHERE k = ANY(v_insurance_keys)
     AND NOT public._crm_jsonb_value_is_blank(v)
     AND public._crm_jsonb_value_is_blank(v_contact_data -> k);
+
+  -- Also backfill any other lead keys the old conversion whitelist dropped (address, family, etc.).
+  SELECT COALESCE(jsonb_object_agg(k, v), '{}'::jsonb) INTO v_full_patch
+  FROM jsonb_each(v_lead_data) e(k, v)
+  WHERE NOT (k = ANY(v_lead_only_keys))
+    AND NOT public._crm_jsonb_value_is_blank(v)
+    AND public._crm_jsonb_value_is_blank(v_contact_data -> k);
+
+  -- Normalize lead address keys to contact mailing_* when contact side is blank.
+  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_street')
+     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'street') THEN
+    v_full_patch := v_full_patch || jsonb_build_object('mailing_street', v_lead_data -> 'street');
+  END IF;
+  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_city')
+     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'city') THEN
+    v_full_patch := v_full_patch || jsonb_build_object('mailing_city', v_lead_data -> 'city');
+  END IF;
+  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_state')
+     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'state') THEN
+    v_full_patch := v_full_patch || jsonb_build_object('mailing_state', v_lead_data -> 'state');
+  END IF;
+  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_zip')
+     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'zip_code') THEN
+    v_full_patch := v_full_patch || jsonb_build_object('mailing_zip', v_lead_data -> 'zip_code');
+  END IF;
+  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'product')
+     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'product_type') THEN
+    v_full_patch := v_full_patch || jsonb_build_object('product', v_lead_data -> 'product_type');
+  END IF;
+
+  v_full_patch := v_full_patch || v_patch;
 
   IF (v_patch->>'sharing_entity') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
     v_sharing_carrier_id := (v_patch->>'sharing_entity')::uuid;
@@ -437,7 +473,7 @@ BEGIN
     v_sharing_carrier_id := (v_contact_data->>'sharing_entity')::uuid;
   END IF;
 
-  IF v_patch = '{}'::jsonb
+  IF v_full_patch = '{}'::jsonb
      AND v_contact.carrier_id IS NOT NULL
      AND v_contact.market_type IS NOT NULL
      AND v_contact.group_name IS NOT NULL THEN
@@ -445,13 +481,13 @@ BEGIN
       'success', true,
       'contact_id', p_contact_id,
       'lead_id', v_lead_id,
-      'added_keys', v_patch,
+      'added_keys', v_full_patch,
       'message', 'Nothing to repair'
     );
   END IF;
 
   UPDATE crm_records c
-  SET data = c.data || v_patch,
+  SET data = c.data || v_full_patch,
       market_type = COALESCE(
         c.market_type,
         v_lead.market_type,
@@ -487,7 +523,7 @@ BEGIN
     'success', true,
     'contact_id', p_contact_id,
     'lead_id', v_lead_id,
-    'added_keys', v_patch
+    'added_keys', v_full_patch
   );
 END;
 $$;
