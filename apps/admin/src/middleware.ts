@@ -87,13 +87,18 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  const isLandingPage = pathname === '/';
+  const isPublicRoute =
+    isLandingPage ||
+    PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
+
   // ──────────────────────────────────────────────────────────────────
-  //  Public routes
+  //  Public routes (landing + auth)
   // ──────────────────────────────────────────────────────────────────
-  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (isPublicRoute) {
     const { data: { user } } = await supabase.auth.getUser();
 
-    if (user && pathname === '/login') {
+    if (user && (pathname === '/login' || pathname === '/')) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('role, is_active')

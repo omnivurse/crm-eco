@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@crm-eco/ui/components/brand-logo';
-import './landing.css';
+import '@crm-eco/ui/styles/landing.css';
 
 // --- Arrow Icon ---
 function ArrowIcon() {

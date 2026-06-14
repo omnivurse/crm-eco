@@ -103,7 +103,7 @@ export default function LoginPage() {
           <BrandLogo variant="full" size="lg" tone="white" priority />
         </Link>
         <h2 className={authForm.title}>Welcome back</h2>
-        <p className={authForm.subtitle}>Sign in to access your admin dashboard</p>
+        <p className={authForm.subtitle}>Sign in to MMS — Member Management System</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-6">
@@ -181,7 +181,7 @@ export default function LoginPage() {
             </span>
           ) : (
             <span className="flex items-center justify-center">
-              Sign in to Admin
+              Sign in to MMS
               <span className="ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
             </span>
           )}
@@ -192,7 +192,7 @@ export default function LoginPage() {
             <div className={authForm.dividerLine} />
           </div>
           <div className="relative flex justify-center">
-            <span className={authForm.dividerText}>Need Admin Access?</span>
+            <span className={authForm.dividerText}>Need MMS Access?</span>
           </div>
         </div>
 

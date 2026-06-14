@@ -256,8 +256,11 @@ export function AdminSidebar({
       {(forMobile || !isCollapsed) && (
         <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5">
           <div className="flex items-center justify-between">
-            <Link href="/dashboard" prefetch={false} className="flex items-center group flex-1 min-w-0" onClick={handleLinkClick}>
+            <Link href="/dashboard" prefetch={false} className="flex flex-col group flex-1 min-w-0" onClick={handleLinkClick}>
               <BrandLogo variant="full" size="md" priority />
+              <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
+                MMS · Member Management System
+              </span>
             </Link>
             {forMobile && (
               <button

@@ -29,7 +29,7 @@ export function AdminFooter() {
             </Link>
             <span className="hidden md:inline text-slate-400 dark:text-slate-600">|</span>
             <span className="hidden md:inline text-sm text-slate-500 dark:text-slate-400">
-              Admin Portal
+              MMS — Member Management System
             </span>
           </div>
 
@@ -69,10 +69,10 @@ export function AdminFooter() {
             </a>
           </nav>
 
-          {/* Admin Portal Badge */}
+          {/* MMS Badge */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10">
             <div className="w-2 h-2 rounded-full bg-[#0891b2]" />
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Admin Portal v1.0</span>
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-400">MMS v1.0</span>
           </div>
         </div>
 
