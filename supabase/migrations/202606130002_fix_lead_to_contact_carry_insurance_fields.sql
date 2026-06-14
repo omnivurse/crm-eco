@@ -545,7 +545,7 @@ DECLARE
   v_result       jsonb;
 BEGIN
   FOR v_contact_id IN
-    SELECT DISTINCT c.id
+    SELECT c.id
     FROM crm_records c
     INNER JOIN crm_modules mc ON mc.id = c.module_id AND mc.key = 'contacts'
     WHERE c.data->>'converted_from_lead_id' IS NOT NULL
@@ -555,7 +555,8 @@ BEGIN
          WHERE rl.link_type = 'lead_to_contact'
            AND rl.target_record_id = c.id
        )
-    ORDER BY c.updated_at DESC NULLS LAST
+    GROUP BY c.id
+    ORDER BY MAX(c.updated_at) DESC NULLS LAST
     LIMIT p_limit
   LOOP
     BEGIN
@@ -585,97 +586,10 @@ $$;
 GRANT EXECUTE ON FUNCTION public.backfill_all_converted_contact_insurance_data(integer) TO authenticated;
 
 -- One-time backfill at deploy time (non-destructive; only fills blank contact fields).
-WITH lead_contact_pairs AS (
-  SELECT
-    c.id AS contact_id,
-    l.id AS lead_id,
-    l.data AS lead_data,
-    l.market_type AS lead_market_type,
-    l.carrier_id AS lead_carrier_id
-  FROM crm_records c
-  INNER JOIN crm_modules mc ON mc.id = c.module_id AND mc.key = 'contacts'
-  INNER JOIN crm_records l ON (
-    l.id::text = c.data->>'converted_from_lead_id'
-    OR EXISTS (
-      SELECT 1
-      FROM crm_record_links rl
-      WHERE rl.link_type = 'lead_to_contact'
-        AND rl.source_record_id = l.id
-        AND rl.target_record_id = c.id
-    )
-  )
-  INNER JOIN crm_modules ml ON ml.id = l.module_id AND ml.key = 'leads'
-  WHERE c.organization_id = l.organization_id
-),
-sharing_patch AS (
-  SELECT
-    p.contact_id,
-    p.lead_market_type,
-    p.lead_carrier_id,
-    COALESCE(
-      (
-        SELECT jsonb_object_agg(t.k, t.v)
-        FROM jsonb_each(p.lead_data) AS t(k, v)
-        INNER JOIN crm_records c ON c.id = p.contact_id
-        WHERE t.k IN (
-          'carrier', 'sharing_entity', 'group_name', 'tobacco_user',
-          'member_tier', 'monthly_contribution', 'iua_amount',
-          'sharing_effective_date', 'sharing_status', 'sharing_member_id',
-          'previous_membership', 'previous_product', 'add_on_product',
-          'vision', 'dental',
-          'health_insurance_carrier', 'insurance_carrier', 'carrier_name',
-          'health_insurance_start_date', 'health_insurance_end_date',
-          'health_insurance_plan_name', 'health_insurance_premium',
-          'health_insurance_status', 'health_insurance_deductible',
-          'insurance_effective_date'
-        )
-          AND NOT public._crm_jsonb_value_is_blank(t.v)
-          AND public._crm_jsonb_value_is_blank(c.data -> t.k)
-      ),
-      '{}'::jsonb
-    ) AS patch
-  FROM lead_contact_pairs p
-)
-UPDATE crm_records c
-SET
-  data = c.data || sp.patch,
-  market_type = COALESCE(
-    c.market_type,
-    sp.lead_market_type,
-    CASE
-      WHEN NOT public._crm_jsonb_value_is_blank(sp.patch -> 'sharing_entity')
-        OR NOT public._crm_jsonb_value_is_blank(sp.patch -> 'carrier')
-      THEN 'healthshare'
-      ELSE NULL
-    END
-  ),
-  carrier_id = COALESCE(
-    c.carrier_id,
-    sp.lead_carrier_id,
-    CASE
-      WHEN (sp.patch->>'sharing_entity') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      THEN (sp.patch->>'sharing_entity')::uuid
-      ELSE NULL
-    END
-  ),
-  tobacco_user = COALESCE(
-    c.tobacco_user,
-    CASE
-      WHEN lower(btrim(sp.patch->>'tobacco_user')) IN ('true', 't', 'yes', '1') THEN true
-      WHEN lower(btrim(sp.patch->>'tobacco_user')) IN ('false', 'f', 'no', '0') THEN false
-      ELSE NULL
-    END
-  ),
-  group_name = COALESCE(c.group_name, sp.patch->>'group_name'),
-  original_start_date = COALESCE(
-    c.original_start_date,
-    public._parse_import_date(sp.patch->>'sharing_effective_date')
-  ),
-  current_year_start_date = COALESCE(
-    c.current_year_start_date,
-    public._parse_import_date(sp.patch->>'sharing_effective_date')
-  ),
-  updated_at = now()
-FROM sharing_patch sp
-WHERE c.id = sp.contact_id
-  AND sp.patch <> '{}'::jsonb;
+-- Uses the batched repair function above instead of a single monolithic UPDATE, which
+-- can exceed statement_timeout on large lead→contact conversion sets.
+DO $$
+BEGIN
+  PERFORM set_config('statement_timeout', '0', true);
+  PERFORM public.backfill_all_converted_contact_insurance_data(NULL);
+END $$;

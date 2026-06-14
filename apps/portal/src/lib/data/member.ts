@@ -3,6 +3,12 @@ import 'server-only';
 import { cache } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
+import {
+  countCurrentlyCoveredDependents,
+  summarizeRecentCoverageChanges,
+  type DependentCoveragePeriod,
+  type DependentWithCoverage,
+} from '@crm-eco/lib';
 
 /**
  * Server-only data accessors for the member portal.
@@ -49,6 +55,25 @@ export const getActiveMembership = cache(async () => {
   return data;
 });
 
+/** All dependents on the membership (person records), regardless of current coverage. */
+export const listMemberDependents = cache(async (): Promise<DependentWithCoverage[]> => {
+  const ctx = await requireActiveMembership();
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('dependents')
+    .select(
+      'id, first_name, last_name, date_of_birth, gender, relationship, included_in_enrollment, created_at, updated_at',
+    )
+    .eq('member_id', ctx.member.id)
+    .eq('organization_id', ctx.member.organization_id)
+    .order('created_at', { ascending: false });
+  return (data ?? []) as DependentWithCoverage[];
+});
+
+/**
+ * @deprecated Prefer listMemberDependents + listDependentCoveragePeriods.
+ * Kept for enrollment snapshot views that still need enrollment_dependents joins.
+ */
 export const listDependentsForMember = cache(async () => {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
@@ -89,8 +114,6 @@ export const getMemberAdvisor = cache(async () => {
     .maybeSingle();
   if (!enroll?.advisor_id) return null;
 
-  // advisors has no avatar_url column — the avatar lives on the linked
-  // profile via advisors.profile_id.
   const { data: advisor } = await supabase
     .from('advisors')
     .select('id, first_name, last_name, email, phone, profile:profiles!advisors_profile_id_fkey(avatar_url)')
@@ -174,18 +197,36 @@ export const listAgreementSignatures = cache(async () => {
 });
 
 /**
- * Returns coverage periods for all dependents of the current member.
- * Used by the Dependents page (and can be used by dashboard widgets) to show
- * add/remove dates and historical on/off tracking (school, summer work, etc.).
+ * Coverage periods for all dependents on the membership.
+ * Source of truth for add/remove dates (school, summer work, back-dated history).
  */
-export const listDependentCoveragePeriods = cache(async () => {
+export const listDependentCoveragePeriods = cache(async (): Promise<DependentCoveragePeriod[]> => {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
-  const { data } = await (supabase as any)
+  const { data } = await supabase
     .from('dependent_coverage_periods')
     .select('*')
     .eq('member_id', ctx.member.id)
     .eq('organization_id', ctx.member.organization_id)
     .order('effective_from', { ascending: false });
-  return data ?? [];
+  return (data ?? []) as DependentCoveragePeriod[];
+});
+
+/** Dependents + periods + covered count + recent changes — for plan/billing/dashboard surfaces. */
+export const getFamilyCoverageSummary = cache(async () => {
+  const [dependents, periods] = await Promise.all([
+    listMemberDependents(),
+    listDependentCoveragePeriods(),
+  ]);
+
+  const coveredCount = countCurrentlyCoveredDependents(dependents, periods);
+  const recentChanges = summarizeRecentCoverageChanges(dependents, periods, 5);
+
+  return {
+    dependents,
+    periods,
+    coveredCount,
+    totalDependents: dependents.length,
+    recentChanges,
+  };
 });

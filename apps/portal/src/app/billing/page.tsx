@@ -27,6 +27,13 @@ import {
   TabsTrigger,
 } from '@crm-eco/ui/components/tabs';
 import { toast } from 'sonner';
+import {
+  countCurrentlyCoveredDependents,
+  summarizeRecentCoverageChanges,
+  formatCoverageDateRange,
+  formatCoverageReason,
+} from '@crm-eco/lib';
+import type { DependentCoveragePeriod, DependentWithCoverage, CoverageChangeSummary } from '@crm-eco/lib';
 
 interface BillingRecord {
   id: string;
@@ -71,6 +78,8 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [nextPayment, setNextPayment] = useState<{ amount: number; date: string } | null>(null);
+  const [familyCoveredCount, setFamilyCoveredCount] = useState(0);
+  const [familyRecentChanges, setFamilyRecentChanges] = useState<CoverageChangeSummary[]>([]);
   
   const supabase = createClient();
 
@@ -145,6 +154,28 @@ export default function BillingPage() {
         date: schedule.next_billing_date,
       });
     }
+
+    const [{ data: deps }, { data: periods }] = await Promise.all([
+      supabase
+        .from('dependents')
+        .select('id, first_name, last_name, included_in_enrollment')
+        .eq('member_id', profile.member_id),
+      supabase
+        .from('dependent_coverage_periods')
+        .select('*')
+        .eq('member_id', profile.member_id)
+        .order('created_at', { ascending: false }),
+    ]);
+
+    const dependentList = (deps ?? []) as Pick<
+      DependentWithCoverage,
+      'id' | 'first_name' | 'last_name' | 'included_in_enrollment'
+    >[];
+    const periodList = (periods ?? []) as DependentCoveragePeriod[];
+    setFamilyCoveredCount(countCurrentlyCoveredDependents(dependentList, periodList));
+    setFamilyRecentChanges(
+      summarizeRecentCoverageChanges(dependentList, periodList, 3),
+    );
 
     setLoading(false);
   }, [supabase]);
@@ -258,6 +289,44 @@ export default function BillingPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Family on your plan</CardTitle>
+          <CardDescription>
+            Coverage changes can affect your household share amount
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-slate-700">
+            <span className="font-semibold text-slate-900">{familyCoveredCount}</span> family
+            member{familyCoveredCount === 1 ? '' : 's'} currently covered.
+          </p>
+          {familyRecentChanges.length > 0 ? (
+            <ul className="space-y-2">
+              {familyRecentChanges.map((change) => (
+                <li
+                  key={change.id}
+                  className="flex items-center justify-between rounded-lg border p-3 text-sm"
+                >
+                  <div>
+                    <p className="font-medium text-slate-900">{change.dependent_name}</p>
+                    <p className="text-xs text-slate-500">
+                      {formatCoverageDateRange(change.effective_from, change.effective_to)}
+                      {change.reason ? ` · ${formatCoverageReason(change.reason)}` : ''}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-slate-500">No recent family coverage changes.</p>
+          )}
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/dependents">Manage family members</Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="history" className="space-y-6">
         <TabsList>

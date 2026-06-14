@@ -1,18 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
-import { listDependentsForMember } from '@/lib/data/member';
+import {
+  getFamilyCoverageSummary,
+} from '@/lib/data/member';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Returns dependents with coverage periods for the authenticated member.
+ * Mutations (add/start/end/log) use server actions in /dependents/actions.ts.
+ */
 export async function GET() {
-  const dependents = await listDependentsForMember();
-  return NextResponse.json({ dependents });
+  const summary = await getFamilyCoverageSummary();
+  return NextResponse.json({
+    dependents: summary.dependents,
+    periods: summary.periods,
+    covered_count: summary.coveredCount,
+    total_dependents: summary.totalDependents,
+    recent_changes: summary.recentChanges,
+  });
 }
 
 /**
- * Members do not directly add dependents; they create a `member_change_requests`
- * row of type='add_dependent'. Admin approval moves it onto the enrollment.
+ * Optional: submit an add-dependent change request for admin review.
+ * Direct self-service add is available at /dependents via server actions.
  */
 export async function POST(request: NextRequest) {
   const ctx = await requireActiveMembership();
@@ -22,10 +34,21 @@ export async function POST(request: NextRequest) {
     date_of_birth?: string;
     relationship?: string;
     notes?: string;
+    request_review?: boolean;
   };
 
   if (!body.first_name || !body.last_name || !body.date_of_birth || !body.relationship) {
     return NextResponse.json({ error: 'missing_fields' }, { status: 400 });
+  }
+
+  if (!body.request_review) {
+    return NextResponse.json(
+      {
+        error: 'use_server_actions',
+        message: 'Use /dependents to add family members directly, or set request_review=true.',
+      },
+      { status: 400 },
+    );
   }
 
   const supabase = await createServerSupabaseClient();

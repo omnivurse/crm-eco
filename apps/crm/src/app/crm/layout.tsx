@@ -6,12 +6,11 @@ import { CrmShell } from '@/components/crm/shell';
 import {
   getCachedCurrentProfile,
   getCachedModules,
-  getCachedOrganization,
   getModules,
 } from '@/lib/crm/queries';
 import { ensureDefaultModules } from '@/lib/crm/seed';
 import { ClientProviders } from '@/components/providers/ClientProviders';
-import { getActiveTenant, listMyTenants } from '@/lib/tenant';
+import { getActiveTenant } from '@/lib/tenant';
 
 export default async function CrmLayout({
   children,
@@ -51,18 +50,12 @@ export default async function CrmLayout({
   ) {
     redirect('/crm-login?error=no_organization');
   }
-  let organization = null;
   let modules: Awaited<ReturnType<typeof getCachedModules>> = [];
-  let memberships: Awaited<ReturnType<typeof listMyTenants>> = [];
 
   try {
-    [organization, modules, memberships] = await Promise.all([
-      getCachedOrganization(organizationId),
-      getCachedModules(organizationId),
-      listMyTenants(),
-    ]);
+    modules = await getCachedModules(organizationId);
   } catch (error) {
-    console.error('[CRM Layout] Failed to fetch org/modules/memberships:', error);
+    console.error('[CRM Layout] Failed to fetch org/modules:', error);
     // Continue with empty modules - the shell can still render
   }
 
@@ -84,13 +77,7 @@ export default async function CrmLayout({
       userEmail={profile.email || ''}
       organizationId={organizationId}
     >
-      <CrmShell
-        modules={activeModules}
-        profile={profile}
-        organizationName={organization?.name}
-        tenants={memberships}
-        activeTenantId={organizationId}
-      >
+      <CrmShell modules={activeModules} profile={profile}>
         {children}
       </CrmShell>
     </ClientProviders>

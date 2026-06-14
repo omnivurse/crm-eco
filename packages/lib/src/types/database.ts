@@ -15527,6 +15527,87 @@ export type Database = {
           },
         ]
       }
+      dependent_coverage_periods: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dependent_id: string
+          effective_from: string
+          effective_to: string | null
+          id: string
+          member_id: string
+          notes: string | null
+          organization_id: string
+          reason: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dependent_id: string
+          effective_from: string
+          effective_to?: string | null
+          id?: string
+          member_id: string
+          notes?: string | null
+          organization_id: string
+          reason?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dependent_id?: string
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          member_id?: string
+          notes?: string | null
+          organization_id?: string
+          reason?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependent_coverage_periods_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependent_coverage_periods_dependent_id_fkey"
+            columns: ["dependent_id"]
+            isOneToOne: false
+            referencedRelation: "dependents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependent_coverage_periods_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependent_coverage_periods_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "my_organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dependent_coverage_periods_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doc_folders: {
         Row: {
           created_at: string

@@ -1,7 +1,13 @@
 import Link from 'next/link';
 import { ChevronLeft, FileText, Users, Edit3, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
-import { getActiveMembership, listAgreementSignatures, listChangeRequests } from '@/lib/data/member';
+import {
+  getActiveMembership,
+  getFamilyCoverageSummary,
+  listAgreementSignatures,
+  listChangeRequests,
+} from '@/lib/data/member';
+import { formatCoverageDateRange, formatCoverageReason } from '@crm-eco/lib';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
 
@@ -11,8 +17,9 @@ export default async function PlanOverviewPage() {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
 
-  const [membership, signatures, changeRequests, planDocs] = await Promise.all([
+  const [membership, familyCoverage, signatures, changeRequests, planDocs] = await Promise.all([
     getActiveMembership(),
+    getFamilyCoverageSummary(),
     listAgreementSignatures(),
     listChangeRequests(),
     supabase
@@ -80,7 +87,9 @@ export default async function PlanOverviewPage() {
         >
           <Users className="mb-3 h-6 w-6 text-blue-600" />
           <p className="font-semibold text-slate-900">Dependents</p>
-          <p className="mt-1 text-xs text-slate-500">Manage who&apos;s on your plan</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {familyCoverage.coveredCount} of {familyCoverage.totalDependents} currently on plan
+          </p>
         </Link>
         <Link
           href="/plan/change"
@@ -99,6 +108,42 @@ export default async function PlanOverviewPage() {
           <p className="mt-1 text-xs text-slate-500">Submit a cancellation request</p>
         </Link>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Users className="h-4 w-4 text-blue-600" />
+            Family coverage
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          <p className="text-slate-600">
+            <span className="font-semibold text-slate-900">{familyCoverage.coveredCount}</span>{' '}
+            family member{familyCoverage.coveredCount === 1 ? '' : 's'} currently covered on your
+            membership.
+          </p>
+          {familyCoverage.recentChanges.length > 0 ? (
+            <ul className="space-y-2">
+              {familyCoverage.recentChanges.map((change) => (
+                <li key={change.id} className="rounded-lg border p-3">
+                  <p className="font-medium text-slate-900">{change.dependent_name}</p>
+                  <p className="text-xs text-slate-500">
+                    {formatCoverageDateRange(change.effective_from, change.effective_to)}
+                    {change.reason ? ` · ${formatCoverageReason(change.reason)}` : ''}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-xs text-slate-500">
+              No coverage changes logged yet.{' '}
+              <Link href="/dependents" className="text-blue-600 hover:underline">
+                Manage dependents
+              </Link>
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-3">

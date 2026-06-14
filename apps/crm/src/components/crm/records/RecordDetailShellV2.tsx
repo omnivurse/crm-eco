@@ -120,6 +120,7 @@ import { PresenceStack } from './v2/PresenceStack';
 import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
 import { MembershipChangeHistory } from './v2/MembershipChangeHistory';
+import { DependentCoverageHistory } from './v2/DependentCoverageHistory';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
@@ -951,6 +952,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const recordMarketType = (record as any).market_type as string | undefined;
   const showChangeHistory =
     recordMarketType === 'healthshare' || recordMarketType === 'traditional_insurance';
+  const linkedMemberId = (record.data as Record<string, unknown> | null)?.linked_member_id as
+    | string
+    | undefined;
 
   const renderOverviewPane = (): React.ReactNode => {
     switch (overviewPane) {
@@ -970,6 +974,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 data={(record.data ?? null) as Record<string, unknown> | null}
                 className="mt-4"
               />
+            )}
+
+            {linkedMemberId && (
+              <DependentCoverageHistory memberId={linkedMemberId} className="mt-4" />
             )}
           </>
         );
