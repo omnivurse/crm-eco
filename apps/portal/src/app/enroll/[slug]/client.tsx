@@ -111,7 +111,7 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-teal-50 to-blue-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-50 to-blue-50 p-4">
         <Card className="max-w-md w-full">
           <CardContent className="pt-8 text-center">
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -134,7 +134,7 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-cyan-50">
       {/* Hero Section */}
       <div
         className="relative py-20 px-4"
@@ -244,7 +244,7 @@ export function PublicEnrollmentPage({ landingPage, plans }: PublicEnrollmentPag
                   {plans.slice(0, 3).map((plan) => (
                     <div
                       key={plan.id}
-                      className="p-4 rounded-lg border border-gray-200 bg-white hover:border-teal-300 transition-colors"
+                      className="p-4 rounded-lg border border-gray-200 bg-white hover:border-cyan-300 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div>

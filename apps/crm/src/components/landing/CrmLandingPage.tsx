@@ -287,8 +287,8 @@ export default function CrmLandingPage() {
           >
             Platform <span aria-hidden="true">↗</span>
           </a>
-          <Link href="/login" className="lp-nav-link-login">Log In</Link>
-          <Link href="/login" className="lp-nav-cta">Get Started</Link>
+          <Link href="/crm-login" className="lp-nav-link-login">Log In</Link>
+          <Link href="/crm-login" className="lp-nav-cta">Get Started</Link>
         </div>
       </nav>
 
@@ -322,7 +322,7 @@ export default function CrmLandingPage() {
             for end-to-end member operations.
           </p>
           <div className="lp-hero-actions">
-            <Link href="/login" className="lp-btn-primary"><ArrowIcon /> Start Free Trial</Link>
+            <Link href="/crm-login" className="lp-btn-primary"><ArrowIcon /> Start Free Trial</Link>
             <a href="#demo" className="lp-btn-secondary"><PlayIcon /> Watch Demo</a>
           </div>
         </div>
@@ -534,7 +534,7 @@ export default function CrmLandingPage() {
           <h2>Ready to <span className="lp-gradient">Transform</span><br/>Your Agency?</h2>
           <p>Join the agencies already running their entire operation on Double Helix CRM.</p>
           <div className="lp-hero-actions">
-            <Link href="/login" className="lp-btn-primary">Start Free Trial <ArrowIcon /></Link>
+            <Link href="/crm-login" className="lp-btn-primary">Start Free Trial <ArrowIcon /></Link>
             <a href="#" className="lp-btn-secondary">Schedule a Demo</a>
           </div>
         </div>

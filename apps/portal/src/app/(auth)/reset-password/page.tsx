@@ -1,17 +1,15 @@
 'use client';
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@crm-eco/lib/supabase/client';
 import { AuthResetPasswordForm } from '@crm-eco/ui';
 
-export default function AdminResetPasswordPage() {
+export default function ResetPasswordPage() {
+  const supabase = createClient();
+
   return (
     <AuthResetPasswordForm
-      backHref="/login"
+      backHref="/signin"
       onResetPassword={async (email) => {
-        const supabase = createBrowserClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL!,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        );
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/update-password`,
         });

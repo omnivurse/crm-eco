@@ -182,7 +182,7 @@ export function PricingSearch({ memberZip, procedures }: PricingSearchProps) {
               onClick={handleSearch}
               disabled={loading}
               className="gap-2"
-              style={{ backgroundColor: '#047474' }}
+              style={{ backgroundColor: 'var(--hub-accent, #06b6d4)' }}
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -199,7 +199,7 @@ export function PricingSearch({ memberZip, procedures }: PricingSearchProps) {
       {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
 
@@ -261,7 +261,7 @@ export function PricingSearch({ memberZip, procedures }: PricingSearchProps) {
                           {r.address && `${r.address}, `}{r.city}, {r.state} {r.zip}
                         </p>
                         {r.distance_miles != null && (
-                          <p className="text-sm text-teal-700 mt-0.5 flex items-center gap-1">
+                          <p className="text-sm text-cyan-700 mt-0.5 flex items-center gap-1">
                             <MapPin className="h-3.5 w-3.5" />
                             {r.distance_miles} miles away
                           </p>
@@ -279,7 +279,7 @@ export function PricingSearch({ memberZip, procedures }: PricingSearchProps) {
                           {r.phone && (
                             <a
                               href={`tel:${r.phone.replace(/\D/g, '')}`}
-                              className="inline-flex items-center gap-1 text-sm text-teal-700 hover:underline"
+                              className="inline-flex items-center gap-1 text-sm text-cyan-700 hover:underline"
                             >
                               <Phone className="h-3.5 w-3.5" />
                               {r.phone}
@@ -297,7 +297,7 @@ export function PricingSearch({ memberZip, procedures }: PricingSearchProps) {
                           {formatPrice(r.cash_price)}
                         </p>
                         {r.discounted_price && r.discounted_price < r.cash_price && (
-                          <p className="text-sm font-medium text-teal-700 flex items-center sm:justify-end gap-1">
+                          <p className="text-sm font-medium text-cyan-700 flex items-center sm:justify-end gap-1">
                             <ShieldCheck className="h-3.5 w-3.5" />
                             Member: {formatPrice(r.discounted_price)}
                           </p>

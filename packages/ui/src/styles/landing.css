@@ -18,7 +18,8 @@
 /* ===== NAVIGATION ===== */
 .lp-nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 0 40px; height: 72px;
+  padding: max(0px, env(safe-area-inset-top)) 40px 0;
+  height: calc(72px + env(safe-area-inset-top, 0px)); min-height: 72px;
   display: flex; align-items: center; justify-content: space-between;
   background: rgba(3, 7, 18, 0.8);
   backdrop-filter: blur(20px) saturate(180%);
@@ -577,7 +578,10 @@
   .lp-workflow-steps { grid-template-columns: 1fr; gap: 32px; }
   .lp-workflow-steps::before { display: none; }
   .lp-footer-grid { grid-template-columns: 1fr 1fr; }
-  .lp-nav { padding: 0 20px; }
+  .lp-nav { padding: max(0px, env(safe-area-inset-top)) 20px 0; height: calc(72px + env(safe-area-inset-top, 0px)); }
+  .lp-hero { padding: calc(100px + env(safe-area-inset-top, 0px)) 20px 60px; }
+  .lp-hero-actions { flex-direction: column; align-items: stretch; }
+  .lp-hero-actions .lp-btn-primary, .lp-hero-actions .lp-btn-secondary { justify-content: center; }
   .lp-section { padding: 80px 20px; }
   .lp-dashboard-preview { padding: 0 20px; }
   .lp-dash-chart-row { grid-template-columns: 1fr; }

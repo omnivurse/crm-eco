@@ -68,7 +68,7 @@ const CATEGORY_CONFIG: Record<string, { label: string; Icon: typeof Stethoscope;
   vision:          { label: 'Vision',           Icon: Eye,          color: 'bg-amber-100 text-amber-700' },
   pharmacy:        { label: 'Pharmacy',         Icon: Pill,         color: 'bg-green-100 text-green-700' },
   lab:             { label: 'Lab & Diagnostics', Icon: FlaskConical, color: 'bg-orange-100 text-orange-700' },
-  imaging:         { label: 'Imaging',          Icon: Scan,         color: 'bg-teal-100 text-teal-700' },
+  imaging:         { label: 'Imaging',          Icon: Scan,         color: 'bg-teal-100 text-cyan-700' },
   physical_therapy: { label: 'Physical Therapy', Icon: Activity,    color: 'bg-lime-100 text-lime-700' },
   wellness:        { label: 'Wellness',         Icon: Heart,        color: 'bg-rose-100 text-rose-700' },
 };
@@ -163,7 +163,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
               onClick={handleSearch}
               disabled={loading}
               className="gap-2"
-              style={{ backgroundColor: '#047474' }}
+              style={{ backgroundColor: 'var(--hub-accent, #06b6d4)' }}
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -180,7 +180,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
       {/* Results */}
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       )}
 
@@ -230,7 +230,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                           className={cn(
                             'w-full text-left p-3 rounded-lg border transition-colors',
                             isExpanded
-                              ? 'bg-teal-50 border-teal-200'
+                              ? 'bg-cyan-50 border-cyan-200'
                               : 'bg-slate-50 border-transparent hover:bg-slate-100'
                           )}
                         >
@@ -285,7 +285,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                                         {loc.phone && (
                                           <a
                                             href={`tel:${loc.phone.replace(/\D/g, '')}`}
-                                            className="inline-flex items-center gap-1 text-sm text-teal-700 hover:underline"
+                                            className="inline-flex items-center gap-1 text-sm text-cyan-700 hover:underline"
                                             onClick={(e) => e.stopPropagation()}
                                           >
                                             <Phone className="h-3.5 w-3.5" />

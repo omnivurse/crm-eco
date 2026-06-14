@@ -3,12 +3,12 @@
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { AuthUpdatePasswordForm } from '@crm-eco/ui';
 
-export default function AdvisorUpdatePasswordPage() {
+export default function UpdatePasswordPage() {
   const supabase = createClient();
 
   return (
     <AuthUpdatePasswordForm
-      backHref="/login"
+      backHref="/signin"
       onSessionReady={async () => {
         return new Promise((resolve) => {
           const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {

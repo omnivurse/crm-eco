@@ -3,3 +3,7 @@ export { AuthHeroPanel } from './auth-hero-panel';
 export { AuthGradientMesh } from './auth-gradient-mesh';
 export { AuthQuoteRotator } from './auth-quote-rotator';
 export { authForm } from './auth-form-styles';
+export { AuthFormHeader } from './auth-form-header';
+export { AuthSuccessPanel } from './auth-success-panel';
+export { AuthResetPasswordForm } from './auth-reset-password-form';
+export { AuthUpdatePasswordForm } from './auth-update-password-form';

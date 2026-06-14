@@ -8,7 +8,7 @@ import {
   Heart,
   MessageSquare,
   Stethoscope,
-  DollarSign,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 
@@ -16,7 +16,7 @@ const navItems = [
   { label: 'Home', href: '/', icon: LayoutDashboard },
   { label: 'Coverage', href: '/coverage', icon: Shield },
   { label: 'Services', href: '/services', icon: Stethoscope },
-  { label: 'Pricing', href: '/pricing', icon: DollarSign },
+  { label: 'Billing', href: '/billing', icon: CreditCard },
   { label: 'Needs', href: '/needs', icon: Heart },
   { label: 'Support', href: '/support', icon: MessageSquare },
 ];
@@ -64,14 +64,14 @@ export function BottomNav() {
                 'flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5',
                 'text-xs font-medium transition-colors',
                 isActive
-                  ? 'text-teal-700'
+                  ? 'text-primary'
                   : 'text-slate-400 active:text-slate-600'
               )}
             >
               <item.icon
                 className={cn(
                   'w-5 h-5',
-                  isActive ? 'text-teal-700' : 'text-slate-400'
+                  isActive ? 'text-primary' : 'text-slate-400'
                 )}
               />
               <span>{item.label}</span>

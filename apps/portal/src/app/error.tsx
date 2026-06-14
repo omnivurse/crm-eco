@@ -38,7 +38,7 @@ export default function Error({
           </button>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-cyan-600 text-white rounded-lg"
           >
             <Home className="w-4 h-4" />
             Go Home

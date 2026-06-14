@@ -11,7 +11,7 @@ export function AuthSplitLayout({ hero, children }: AuthSplitLayoutProps) {
         {hero}
       </div>
 
-      <div className="w-full lg:w-[45%] xl:w-[42%] flex items-center justify-center p-8 bg-[var(--auth-panel,#0a1628)]">
+      <div className="w-full lg:w-[45%] xl:w-[42%] flex items-center justify-center px-6 py-8 sm:p-8 bg-[var(--auth-panel,#0a1628)] pt-[max(2rem,env(safe-area-inset-top))] pb-[max(2rem,env(safe-area-inset-bottom))]">
         <div className="w-full max-w-md">{children}</div>
       </div>
     </div>
