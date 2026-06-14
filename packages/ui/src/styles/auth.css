@@ -1,0 +1,78 @@
+/**
+ * Double Helix Hub — shared auth page styling
+ * Matches crm.doublehelixhub.com landing palette (#030712 / #0a1628 / cyan)
+ */
+
+:root {
+  --auth-bg: #030712;
+  --auth-panel: #0a1628;
+  --auth-text: #f1f5f9;
+  --auth-muted: #94a3b8;
+  --auth-accent: #06b6d4;
+  --auth-accent-highlight: #3dd6ff;
+  --auth-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+}
+
+/* Animated mesh blobs */
+.login-blob,
+.login-quote-transition {
+  will-change: transform, opacity;
+}
+
+.login-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+@keyframes login-blob-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes login-blob-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-25px, 20px) scale(1.08); }
+  66% { transform: translate(15px, -25px) scale(0.92); }
+}
+
+@keyframes login-blob-drift-3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(20px, -15px); }
+}
+
+@keyframes login-blob-drift-4 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-15px, 20px) scale(1.06); }
+}
+
+.login-blob-drift-1 { animation: login-blob-drift-1 14s ease-in-out infinite; }
+.login-blob-drift-2 { animation: login-blob-drift-2 18s ease-in-out infinite; }
+.login-blob-drift-3 { animation: login-blob-drift-3 12s ease-in-out infinite; }
+.login-blob-drift-4 { animation: login-blob-drift-4 20s ease-in-out infinite; }
+
+.login-quote-transition {
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.login-quote-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.login-quote-inactive {
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-blob {
+    animation: none !important;
+  }
+  .login-quote-transition {
+    transition: none;
+  }
+}

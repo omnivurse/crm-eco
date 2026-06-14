@@ -1,5 +1,6 @@
 /* Admin Portal Styles */
 @import '@crm-eco/ui/styles/theme.css';
+@import '@crm-eco/ui/styles/auth.css';
 
 @tailwind base;
 @tailwind components;

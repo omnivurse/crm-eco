@@ -75,14 +75,14 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
   const sidebarContent = (
     <>
       {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#003560] via-[#003560] to-[#002848] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-dhh-ink via-dhh-ink to-dhh-panel pointer-events-none" />
       
       {/* Content wrapper */}
       <div className="relative z-10 flex flex-col h-full">
         {/* Logo with gradient accent stripe */}
         <div className="relative">
           {/* Gradient top stripe */}
-          <div className="h-1 bg-gradient-to-r from-[#047474] via-[#069B9A] to-[#027343]" />
+          <div className="h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500" />
           
           <div className="h-16 flex items-center justify-between px-5 border-b border-white/10">
             <Link href="/agent" className="flex items-center gap-3 group" onClick={handleLinkClick}>
@@ -94,7 +94,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
                   className="w-10 h-10 rounded-xl object-contain bg-white/10 p-1"
                 />
               ) : (
-                <div className="w-10 h-10 bg-gradient-to-br from-[#047474] to-[#069B9A] rounded-xl flex items-center justify-center shadow-lg shadow-teal-900/30 group-hover:shadow-teal-800/40 transition-shadow">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-cyan-900/30 group-hover:shadow-cyan-800/40 transition-shadow">
                   <Heart className="w-5 h-5 text-white" />
                 </div>
               )}
@@ -130,7 +130,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-[#047474] text-white shadow-lg shadow-teal-900/20'
+                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20'
                     : 'text-white/70 hover:bg-[#002848] hover:text-white'
                 )}
               >
@@ -162,7 +162,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'bg-[#047474] text-white shadow-lg shadow-teal-900/20'
+                    ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-900/20'
                     : 'text-white/70 hover:bg-[#002848] hover:text-white'
                 )}
               >
@@ -200,7 +200,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
         {agent && (
           <div className="p-4 border-t border-white/10">
             <div className="flex items-center gap-3 px-3 py-3 bg-[#002848] rounded-xl border border-white/5">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center text-white font-semibold shadow-lg">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-semibold shadow-lg">
                 {agent.first_name.charAt(0)}{agent.last_name.charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
@@ -222,7 +222,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
   return (
     <>
       {/* Desktop Sidebar - always visible */}
-      <aside className="hidden lg:flex w-64 bg-[#003560] text-white flex-col min-h-screen relative overflow-hidden">
+      <aside className="hidden lg:flex w-64 bg-dhh-ink text-white flex-col min-h-screen relative overflow-hidden">
         {sidebarContent}
       </aside>
 
@@ -230,7 +230,7 @@ export function AgentSidebar({ agent, mobileMenuOpen = false, onMobileClose }: A
       <aside
         className={cn(
           'lg:hidden fixed top-0 left-0 bottom-0 w-[280px] max-w-[85vw] z-50',
-          'bg-[#003560] text-white flex flex-col overflow-hidden',
+          'bg-dhh-ink text-white flex flex-col overflow-hidden',
           'transform transition-transform duration-300 ease-in-out',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}

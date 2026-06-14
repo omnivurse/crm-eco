@@ -59,6 +59,14 @@ const preset: Partial<Config> = {
           foreground: 'hsl(var(--warning-foreground))',
         },
 
+        /* CRM landing palette */
+        dhh: {
+          ink: '#030712',
+          panel: '#0a1628',
+          surface: '#0f172a',
+          highlight: '#3dd6ff',
+        },
+
         /* Brand color scales — Double Helix Hub */
         brand: {
           navy: {

@@ -11,6 +11,8 @@
     "./components/sonner": "./src/components/sonner.tsx",
     "./lib/utils": "./src/lib/utils.ts",
     "./styles/theme.css": "./src/styles/theme.css",
+    "./styles/auth.css": "./src/styles/auth.css",
+    "./components/auth": "./src/components/auth/index.ts",
     "./tailwind.preset": "./tailwind.preset.ts"
   },
   "dependencies": {

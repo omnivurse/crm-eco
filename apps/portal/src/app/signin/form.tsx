@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import {
-  Heart,
   Mail,
   Lock,
   Eye,
@@ -18,9 +17,7 @@ import {
   Users,
   FileCheck,
 } from 'lucide-react';
-import { Button } from '@crm-eco/ui/components/button';
-import { Input } from '@crm-eco/ui/components/input';
-import { Label } from '@crm-eco/ui/components/label';
+import { AuthSplitLayout, AuthHeroPanel, BrandLogo, authForm } from '@crm-eco/ui';
 
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MS = 60_000;
@@ -178,240 +175,173 @@ export function SignInForm() {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex">
-      {/* Left Panel - Branding & Trust */}
-      <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] relative overflow-hidden flex-col justify-between">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#003560] via-[#04545c] to-[#047474]" />
-
-        {/* Subtle pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-            backgroundSize: '32px 32px',
-          }}
-        />
-
-        {/* Glowing orbs for depth */}
-        <div className="absolute top-1/4 -left-20 w-64 h-64 bg-[#047474]/30 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-[#069B9A]/20 rounded-full blur-3xl" />
-
-        <div className="relative z-10 flex flex-col justify-between h-full p-10 xl:p-12">
-          {/* Logo */}
-          <div>
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <span className="font-bold text-white text-lg leading-tight block">Double Helix Hub</span>
-                <span className="text-[#69d1d1] text-xs font-semibold tracking-wider uppercase">Health</span>
-              </div>
-            </Link>
-          </div>
-
-          {/* Hero text */}
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl xl:text-4xl font-bold text-white leading-tight">
-                Your health sharing<br />community awaits.
-              </h1>
-              <p className="text-white/60 mt-4 text-base leading-relaxed max-w-sm">
-                Access your dashboard, manage your needs, and stay connected with your health sharing family.
-              </p>
-            </div>
-
-            {/* Trust points */}
-            <div className="space-y-4">
-              {trustPoints.map((point) => (
-                <div key={point.title} className="flex items-start gap-3.5 group">
-                  <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-colors">
-                    <point.icon className="w-4 h-4 text-[#69d1d1]" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">{point.title}</p>
-                    <p className="text-white/45 text-xs mt-0.5 leading-relaxed">{point.description}</p>
-                  </div>
+    <AuthSplitLayout
+      hero={
+        <AuthHeroPanel
+          headline={
+            <>
+              <span className="block">Your health sharing</span>
+              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-transparent">
+                community awaits
+              </span>
+            </>
+          }
+          subtitle="Access your dashboard, manage your needs, and stay connected with your health sharing family."
+          badge="Member Portal"
+          showQuotes={false}
+        >
+          <div className="space-y-4 mb-6">
+            {trustPoints.map((point) => (
+              <div key={point.title} className="flex items-start gap-3.5 group">
+                <div className="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center flex-shrink-0 group-hover:bg-white/15 transition-colors">
+                  <point.icon className="w-4 h-4 text-cyan-300" />
                 </div>
-              ))}
+                <div>
+                  <p className="text-white font-medium text-sm">{point.title}</p>
+                  <p className="text-white/45 text-xs mt-0.5 leading-relaxed">{point.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </AuthHeroPanel>
+      }
+    >
+      <div
+        className={`space-y-8 transition-all duration-500 ${
+          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+        }`}
+      >
+        <div className="text-center lg:text-left">
+          <Link href="/" className="inline-flex items-center mb-6 lg:hidden">
+            <BrandLogo variant="full" size="md" tone="white" />
+          </Link>
+          <Link href="/" className="hidden lg:inline-flex items-center mb-6">
+            <BrandLogo variant="full" size="lg" tone="white" priority />
+          </Link>
+          <h2 className={authForm.title}>Welcome back</h2>
+          <p className={authForm.subtitle}>Sign in to your account to continue.</p>
+        </div>
+
+        <form onSubmit={handleSignIn} className="space-y-6">
+          {error && (
+            <div className={`${authForm.error} flex items-start gap-3`}>
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {isLockedOut && (
+            <div className="flex items-center gap-3 p-3.5 text-sm bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-200">
+              <Lock className="w-4 h-4 flex-shrink-0" />
+              <span>
+                Account temporarily locked. Try again in{' '}
+                <span className="font-semibold tabular-nums">{lockoutSeconds}s</span>
+              </span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="signin-email" className={authForm.label}>Email address</label>
+              <div className="relative group">
+                <div className={authForm.inputGlow} />
+                <Mail className={authForm.inputIcon} />
+                <input
+                  id="signin-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  autoComplete="email"
+                  disabled={isLockedOut}
+                  className={`${authForm.input} disabled:opacity-50`}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label htmlFor="signin-password" className={authForm.label}>Password</label>
+                <Link href="/reset-password" className={authForm.link}>Forgot password?</Link>
+              </div>
+              <div className="relative group">
+                <div className={authForm.inputGlow} />
+                <Lock className={authForm.inputIcon} />
+                <input
+                  id="signin-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  autoComplete="current-password"
+                  disabled={isLockedOut}
+                  className={`${authForm.input} pr-12 disabled:opacity-50`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 z-10"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <p className="text-white/30 text-xs">
-            &copy; {new Date().getFullYear()} Double Helix Hub Health. All rights reserved.
+          <button type="submit" className={authForm.submitBtn} disabled={loading || isLockedOut}>
+            <div className={authForm.submitShimmer} />
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Signing in...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                Sign In
+                <ArrowRight className="w-4 h-4" />
+              </span>
+            )}
+          </button>
+
+          <div className="pt-4 border-t border-slate-700 text-center">
+            <p className="text-slate-400 text-sm">
+              Are you an agent?{' '}
+              <Link href="/signup" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">
+                Register here
+              </Link>
+            </p>
+          </div>
+        </form>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-center gap-4 text-xs text-slate-500 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+              <span>SSL Secured</span>
+            </div>
+            <div className="w-1 h-1 rounded-full bg-slate-600" />
+            <div className="flex items-center gap-1.5">
+              <Shield className="w-3 h-3 text-cyan-400" />
+              <span>HIPAA Compliant</span>
+            </div>
+            <div className="w-1 h-1 rounded-full bg-slate-600" />
+            <div className="flex items-center gap-1.5">
+              <Lock className="w-3 h-3 text-cyan-400" />
+              <span>Encrypted</span>
+            </div>
+          </div>
+          <p className="text-center text-xs text-slate-500">
+            By signing in you agree to our{' '}
+            <Link href="/terms" className="text-cyan-400 hover:underline">Terms</Link>
+            {' '}and{' '}
+            <Link href="/privacy" className="text-cyan-400 hover:underline">Privacy Policy</Link>
           </p>
         </div>
       </div>
-
-      {/* Right Panel - Sign In Form */}
-      <div className="flex-1 flex items-center justify-center bg-slate-50 p-6 sm:p-8">
-        <div
-          className={`w-full max-w-[420px] transition-all duration-500 ${
-            mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-          }`}
-        >
-          {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#047474] to-[#069B9A] flex items-center justify-center shadow-md">
-                <Heart className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex flex-col items-start">
-                <span className="font-bold text-[#003560] leading-tight">Double Helix Hub</span>
-                <span className="text-xs text-[#047474] font-semibold">Health</span>
-              </div>
-            </Link>
-          </div>
-
-          {/* Form header */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-slate-900">Welcome back</h2>
-            <p className="text-slate-500 mt-1.5 text-sm">
-              Sign in to your account to continue.
-            </p>
-          </div>
-
-          {/* Form card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 sm:p-8">
-            <form onSubmit={handleSignIn} className="space-y-5">
-              {/* Error message */}
-              {error && (
-                <div className="flex items-start gap-3 p-3.5 text-sm bg-red-50 border border-red-200/80 rounded-xl">
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <span className="text-red-700 leading-relaxed">{error}</span>
-                </div>
-              )}
-
-              {/* Lockout warning */}
-              {isLockedOut && (
-                <div className="flex items-center gap-3 p-3.5 text-sm bg-amber-50 border border-amber-200/80 rounded-xl">
-                  <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                  <span className="text-amber-800">
-                    Account temporarily locked. Try again in{' '}
-                    <span className="font-semibold tabular-nums">{lockoutSeconds}s</span>
-                  </span>
-                </div>
-              )}
-
-              {/* Email field */}
-              <div className="space-y-2">
-                <Label htmlFor="signin-email" className="text-sm font-medium text-slate-700">
-                  Email address
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    autoComplete="email"
-                    disabled={isLockedOut}
-                    className="h-11 pl-10 bg-slate-50/50 border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#047474] focus:ring-[#047474]/20 transition-colors disabled:opacity-50"
-                  />
-                </div>
-              </div>
-
-              {/* Password field */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="signin-password" className="text-sm font-medium text-slate-700">
-                    Password
-                  </Label>
-                  <Link
-                    href="/reset-password"
-                    className="text-xs font-medium text-[#047474] hover:text-[#035f5f] transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  <Input
-                    id="signin-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                    autoComplete="current-password"
-                    disabled={isLockedOut}
-                    className="h-11 pl-10 pr-11 bg-slate-50/50 border-slate-200 rounded-xl text-sm focus:bg-white focus:border-[#047474] focus:ring-[#047474]/20 transition-colors disabled:opacity-50"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-0.5"
-                    tabIndex={-1}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Submit */}
-              <Button
-                type="submit"
-                className="w-full h-11 text-sm font-semibold rounded-xl bg-[#047474] hover:bg-[#035f5f] active:bg-[#025050] text-white border-0 transition-all duration-200 shadow-sm hover:shadow-md hover:shadow-[#047474]/15 disabled:opacity-50"
-                disabled={loading || isLockedOut}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Signing in...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    Sign In
-                    <ArrowRight className="w-4 h-4" />
-                  </span>
-                )}
-              </Button>
-            </form>
-
-            {/* Agent link */}
-            <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-              <p className="text-slate-500 text-sm">
-                Are you an agent?{' '}
-                <Link href="/signup" className="text-[#047474] hover:text-[#035f5f] font-medium transition-colors">
-                  Register here
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          {/* Security footer */}
-          <div className="mt-6 space-y-3">
-            <div className="flex items-center justify-center gap-4 text-xs text-slate-400">
-              <div className="flex items-center gap-1.5">
-                <CheckCircle2 className="w-3 h-3 text-green-500" />
-                <span>SSL Secured</span>
-              </div>
-              <div className="w-1 h-1 rounded-full bg-slate-300" />
-              <div className="flex items-center gap-1.5">
-                <Shield className="w-3 h-3 text-green-500" />
-                <span>HIPAA Compliant</span>
-              </div>
-              <div className="w-1 h-1 rounded-full bg-slate-300" />
-              <div className="flex items-center gap-1.5">
-                <Lock className="w-3 h-3 text-green-500" />
-                <span>Encrypted</span>
-              </div>
-            </div>
-            <p className="text-center text-xs text-slate-400">
-              By signing in you agree to our{' '}
-              <Link href="/terms" className="text-[#047474] hover:underline">Terms</Link>
-              {' '}and{' '}
-              <Link href="/privacy" className="text-[#047474] hover:underline">Privacy Policy</Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    </AuthSplitLayout>
   );
 }

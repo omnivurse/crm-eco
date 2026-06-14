@@ -4,138 +4,153 @@ import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, ShieldCheck } from 'lucide-react';
+import { Loader2, Lock, Eye, EyeOff, Mail } from 'lucide-react';
+import { AuthSplitLayout, AuthHeroPanel, BrandLogo, authForm } from '@crm-eco/ui';
 
 function LoginForm() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const redirectTo = searchParams.get('redirect') || '/dashboard';
-    const errorParam = searchParams.get('error');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/dashboard';
+  const errorParam = searchParams.get('error');
 
-    const handleLogin = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        const supabase = createClient();
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-        if (signInError) {
-            setError(signInError.message);
-            setLoading(false);
-            return;
-        }
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
 
-        router.push(redirectTo);
-        router.refresh();
-    };
+    router.push(redirectTo);
+    router.refresh();
+  };
 
-    return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
-            {/* Logo */}
-            <div className="flex items-center justify-center mb-8">
-                <div className="w-14 h-14 bg-gradient-to-br from-advisor-500 to-advisor-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <ShieldCheck className="w-8 h-8 text-white" />
-                </div>
+  const displayError =
+    error || (errorParam === 'no_advisor_access' ? 'You do not have advisor access.' : errorParam ? 'An error occurred.' : null);
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center lg:text-left">
+        <Link href="/" className="inline-flex items-center mb-6">
+          <BrandLogo variant="full" size="lg" tone="white" priority />
+        </Link>
+        <h2 className={authForm.title}>Advisor Portal</h2>
+        <p className={authForm.subtitle}>Sign in to access your dashboard</p>
+      </div>
+
+      <form onSubmit={handleLogin} className="space-y-6">
+        {displayError && <div className={authForm.error}>{displayError}</div>}
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="email" className={authForm.label}>Email Address</label>
+            <div className="relative group">
+              <div className={authForm.inputGlow} />
+              <Mail className={authForm.inputIcon} />
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                placeholder="you@company.com"
+                className={authForm.input}
+              />
             </div>
+          </div>
 
-            <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
-                Advisor Portal
-            </h1>
-            <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
-                Sign in to access your dashboard
-            </p>
-
-            {(error || errorParam) && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <p className="text-sm text-red-600 dark:text-red-400">
-                        {error || (errorParam === 'no_advisor_access' ? 'You do not have advisor access.' : 'An error occurred.')}
-                    </p>
-                </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-5">
-                <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                        Email Address
-                    </label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-advisor-500 focus:border-transparent transition-all"
-                        placeholder="you@company.com"
-                    />
-                </div>
-
-                <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                        <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Password
-                        </label>
-                        <Link
-                            href="/reset-password"
-                            className="text-sm text-advisor-600 hover:text-advisor-700 dark:text-advisor-400 dark:hover:text-advisor-300 transition-colors"
-                        >
-                            Forgot password?
-                        </Link>
-                    </div>
-                    <input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-advisor-500 focus:border-transparent transition-all"
-                        placeholder="••••••••"
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 px-4 bg-gradient-to-r from-advisor-500 to-advisor-600 hover:from-advisor-600 hover:to-advisor-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Signing in...
-                        </>
-                    ) : (
-                        'Sign In'
-                    )}
-                </button>
-            </form>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className={authForm.label}>Password</label>
+              <Link href="/reset-password" className={authForm.link}>Forgot password?</Link>
+            </div>
+            <div className="relative group">
+              <div className={authForm.inputGlow} />
+              <Lock className={authForm.inputIcon} />
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="Enter your password"
+                className={`${authForm.input} pr-12`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 z-10"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
         </div>
-    );
+
+        <button type="submit" disabled={loading} className={authForm.submitBtn}>
+          <div className={authForm.submitShimmer} />
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Signing in...
+            </span>
+          ) : (
+            <span className="flex items-center justify-center">
+              Sign In
+              <span className="ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
+            </span>
+          )}
+        </button>
+      </form>
+
+      <p className={authForm.footer}>Need help? Contact your administrator</p>
+    </div>
+  );
 }
 
 export default function LoginPage() {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-advisor-50 via-white to-advisor-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-            <div className="w-full max-w-md p-8">
-                <Suspense fallback={
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 flex items-center justify-center">
-                        <Loader2 className="w-8 h-8 animate-spin text-advisor-500" />
-                    </div>
-                }>
-                    <LoginForm />
-                </Suspense>
-
-                <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                    Need help? Contact your administrator
-                </p>
-            </div>
-        </div>
-    );
+  return (
+    <AuthSplitLayout
+      hero={
+        <AuthHeroPanel
+          headline={
+            <>
+              <span className="block">Grow your</span>
+              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-transparent">
+                Advisor Practice
+              </span>
+            </>
+          }
+          subtitle="Manage leads, presentations, and your team from one unified workspace."
+          badge="Advisor Portal"
+        />
+      }
+    >
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+          </div>
+        }
+      >
+        <LoginForm />
+      </Suspense>
+    </AuthSplitLayout>
+  );
 }
-

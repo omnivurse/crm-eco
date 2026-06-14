@@ -85,15 +85,21 @@
   --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
   --glass-blur: 16px;
 
-  /* Sidebar - Premium Dark Theme */
-  --sidebar-bg: #0f172a;
-  --sidebar-bg-dark: #0a1120;
+  /* Auth + shell — CRM landing palette */
+  --auth-bg: #030712;
+  --auth-panel: #0a1628;
+  --auth-accent: #06b6d4;
+  --auth-highlight: #3dd6ff;
+
+  /* Sidebar - Premium Dark Theme (aligned to landing) */
+  --sidebar-bg: #030712;
+  --sidebar-bg-dark: #0a1628;
   --sidebar-active: #06b6d4;
-  --sidebar-hover: #0a1120;
+  --sidebar-hover: #0a1628;
   --sidebar-text: rgba(255, 255, 255, 0.7);
   --sidebar-text-active: #ffffff;
-  --sidebar-accent: #f59e0b;
-  --sidebar-gradient: linear-gradient(135deg, #0f172a 0%, #0a1120 100%);
+  --sidebar-accent: #3dd6ff;
+  --sidebar-gradient: linear-gradient(135deg, #030712 0%, #0a1628 100%);
   --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
 }
 

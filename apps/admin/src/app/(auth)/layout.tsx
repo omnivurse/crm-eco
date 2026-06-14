@@ -11,13 +11,14 @@ export default function AuthLayout({
         <AuthHeroPanel
           headline={
             <>
-              <span className="block">Empowering</span>
-              <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
-                Healthier Lives
+              <span className="block">Community</span>
+              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-purple-300 bg-clip-text text-transparent">
+                Health Platform
               </span>
             </>
           }
-          subtitle="Building stronger communities through shared health and compassionate care."
+          subtitle="Administration and management console for Double Helix Hub."
+          badge="Admin Portal"
         />
       }
     >
