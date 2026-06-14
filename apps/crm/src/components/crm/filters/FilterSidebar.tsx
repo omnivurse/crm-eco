@@ -55,6 +55,12 @@ import type {
   RelatedFilterCondition,
 } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import {
+  CURRENCY_INPUT_STEP,
+  formatCurrencyInputValue,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 
 // ============================================================================
 // Operator config for field-based filters
@@ -309,23 +315,49 @@ function FieldFilterRow({
           ) : isBetween ? (
             <>
               <Input
-                type={['date', 'datetime'].includes(fieldType) ? 'date' : 'number'}
-                value={String(filter.value || '')}
-                onChange={(e) => onUpdate({
-                  ...filter,
-                  value: fieldType === 'number' ? e.target.valueAsNumber : e.target.value,
-                })}
+                type={fieldType === 'currency' ? 'text' : ['date', 'datetime'].includes(fieldType) ? 'date' : 'number'}
+                inputMode={fieldType === 'currency' ? 'decimal' : undefined}
+                step={fieldType === 'currency' ? CURRENCY_INPUT_STEP : undefined}
+                value={fieldType === 'currency' ? formatCurrencyInputValue(filter.value) : String(filter.value || '')}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (fieldType === 'currency') {
+                    if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+                    onUpdate({ ...filter, value: raw === '' ? null : raw });
+                    return;
+                  }
+                  onUpdate({
+                    ...filter,
+                    value: fieldType === 'number' ? e.target.valueAsNumber : raw,
+                  });
+                }}
+                onBlur={fieldType === 'currency' ? (e) => {
+                  onUpdate({ ...filter, value: parseCurrencyInput(e.target.value) });
+                } : undefined}
                 placeholder="Min"
                 className="h-7 text-xs flex-1 bg-white dark:bg-slate-900/50"
               />
               <span className="text-[10px] text-slate-400">to</span>
               <Input
-                type={['date', 'datetime'].includes(fieldType) ? 'date' : 'number'}
-                value={String(filter.secondValue || '')}
-                onChange={(e) => onUpdate({
-                  ...filter,
-                  secondValue: fieldType === 'number' ? e.target.valueAsNumber : e.target.value,
-                })}
+                type={fieldType === 'currency' ? 'text' : ['date', 'datetime'].includes(fieldType) ? 'date' : 'number'}
+                inputMode={fieldType === 'currency' ? 'decimal' : undefined}
+                step={fieldType === 'currency' ? CURRENCY_INPUT_STEP : undefined}
+                value={fieldType === 'currency' ? formatCurrencyInputValue(filter.secondValue) : String(filter.secondValue || '')}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (fieldType === 'currency') {
+                    if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+                    onUpdate({ ...filter, secondValue: raw === '' ? null : raw });
+                    return;
+                  }
+                  onUpdate({
+                    ...filter,
+                    secondValue: fieldType === 'number' ? e.target.valueAsNumber : raw,
+                  });
+                }}
+                onBlur={fieldType === 'currency' ? (e) => {
+                  onUpdate({ ...filter, secondValue: parseCurrencyInput(e.target.value) });
+                } : undefined}
                 placeholder="Max"
                 className="h-7 text-xs flex-1 bg-white dark:bg-slate-900/50"
               />
@@ -357,13 +389,42 @@ function FieldFilterRow({
                 <SelectItem value="false" className="text-xs">No</SelectItem>
               </SelectContent>
             </Select>
-          ) : (
+          ) : fieldType === 'currency' ? (
             <Input
-              type={['number', 'currency'].includes(fieldType) ? 'number' : ['date', 'datetime'].includes(fieldType) ? 'date' : 'text'}
+              type="text"
+              inputMode="decimal"
+              step={CURRENCY_INPUT_STEP}
+              value={formatCurrencyInputValue(filter.value)}
+              onChange={(e) => {
+                const raw = e.target.value;
+                if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+                onUpdate({ ...filter, value: raw === '' ? null : raw });
+              }}
+              onBlur={(e) => {
+                onUpdate({ ...filter, value: parseCurrencyInput(e.target.value) });
+              }}
+              placeholder="Value..."
+              className="h-7 text-xs bg-white dark:bg-slate-900/50"
+            />
+          ) : fieldType === 'number' ? (
+            <Input
+              type="number"
+              step="1"
               value={String(filter.value || '')}
               onChange={(e) => onUpdate({
                 ...filter,
-                value: ['number', 'currency'].includes(fieldType) ? e.target.valueAsNumber : e.target.value,
+                value: e.target.valueAsNumber,
+              })}
+              placeholder="Value..."
+              className="h-7 text-xs bg-white dark:bg-slate-900/50"
+            />
+          ) : (
+            <Input
+              type={['date', 'datetime'].includes(fieldType) ? 'date' : 'text'}
+              value={String(filter.value || '')}
+              onChange={(e) => onUpdate({
+                ...filter,
+                value: e.target.value,
               })}
               placeholder="Value..."
               className="h-7 text-xs bg-white dark:bg-slate-900/50"

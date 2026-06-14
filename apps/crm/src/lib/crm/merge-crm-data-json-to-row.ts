@@ -342,5 +342,35 @@ export function mergeCrmDataJsonIntoRowColumns(
     }
   }
 
+  // Mirror end / termination dates into indexed cancellation_date so the
+  // daily scheduled-cancellation cron can find them (same pattern as start dates).
+  if (d.end_date !== undefined && d.cancellation_date === undefined) {
+    const mirrored = normalizeDateColumnValue(d.end_date);
+    if (mirrored) updates.cancellation_date = mirrored;
+  }
+  if (d.termination_date !== undefined && updates.cancellation_date === undefined) {
+    const mirrored = normalizeDateColumnValue(d.termination_date);
+    if (mirrored) updates.cancellation_date = mirrored;
+  }
+  if (d.coverage_end_date !== undefined && updates.cancellation_date === undefined) {
+    const mirrored = normalizeDateColumnValue(d.coverage_end_date);
+    if (mirrored) updates.cancellation_date = mirrored;
+  }
+  if (d.insurance_end_date !== undefined && updates.cancellation_date === undefined) {
+    const mirrored = normalizeDateColumnValue(d.insurance_end_date);
+    if (mirrored) updates.cancellation_date = mirrored;
+  }
+  if (d.sharing_end_date !== undefined && updates.cancellation_date === undefined) {
+    const mirrored = normalizeDateColumnValue(d.sharing_end_date);
+    if (mirrored) updates.cancellation_date = mirrored;
+  }
+  if (
+    d.health_insurance_end_date !== undefined &&
+    updates.cancellation_date === undefined
+  ) {
+    const mirrored = normalizeDateColumnValue(d.health_insurance_end_date);
+    if (mirrored) updates.cancellation_date = mirrored;
+  }
+
   return updates;
 }

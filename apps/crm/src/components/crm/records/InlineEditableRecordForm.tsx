@@ -16,6 +16,7 @@ export interface InlineEditableRecordFormProps {
   fields: CrmField[];
   layout?: CrmLayout | null;
   defaultValues: Record<string, unknown>;
+  moduleKey?: string;
 }
 
 export function InlineEditableRecordForm({
@@ -23,6 +24,7 @@ export function InlineEditableRecordForm({
   fields,
   layout,
   defaultValues,
+  moduleKey,
 }: InlineEditableRecordFormProps) {
   const { fields: saveFields } = useRecordFieldSave();
   const [formValues, setFormValues] = useState(defaultValues);
@@ -58,6 +60,7 @@ export function InlineEditableRecordForm({
       fields={fields}
       layout={layout}
       defaultValues={formValues}
+      moduleKey={moduleKey}
       readOnly
       inlineEditable
     />

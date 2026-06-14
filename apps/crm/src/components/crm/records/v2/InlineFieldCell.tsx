@@ -24,6 +24,11 @@ import { InlineBooleanField } from './InlineBooleanField';
 import { InlineMultiSelectField } from './InlineMultiSelectField';
 import { InlineLookupField } from './InlineLookupField';
 import { InlineCarrierField } from './InlineCarrierField';
+import {
+  fieldUsesDecimalMoney,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 
 export interface InlineFieldCellProps {
   field: CrmField;
@@ -216,6 +221,35 @@ export const InlineFieldCell = memo(function InlineFieldCell({
       );
 
     case 'number':
+      if (fieldUsesDecimalMoney(field)) {
+        return (
+          <InlineFieldEditor
+            {...common}
+            value={value == null ? '' : String(value)}
+            type="text"
+            moneyDecimals={2}
+            placeholder={`Add ${field.label.toLowerCase()}`}
+            validate={(v) => {
+              if (v === '') return null;
+              if (!isValidCurrencyTyping(v)) return 'Enter up to 2 decimal places';
+              const n = parseCurrencyInput(v);
+              return n == null ? 'Must be a number' : null;
+            }}
+            display={(v) => {
+              const num = v == null ? NaN : Number(v);
+              if (Number.isNaN(num)) return null;
+              return (
+                <span className="font-medium">
+                  {new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                  }).format(num)}
+                </span>
+              );
+            }}
+          />
+        );
+      }
       return (
         <InlineFieldEditor
           {...common}
@@ -233,11 +267,15 @@ export const InlineFieldCell = memo(function InlineFieldCell({
         <InlineFieldEditor
           {...common}
           value={value == null ? '' : String(value)}
-          type="number"
+          type="text"
+          moneyDecimals={2}
           placeholder={`Add ${field.label.toLowerCase()}`}
-          validate={(v) =>
-            v === '' || !Number.isNaN(Number(v)) ? null : 'Must be a number'
-          }
+          validate={(v) => {
+            if (v === '') return null;
+            if (!isValidCurrencyTyping(v)) return 'Enter up to 2 decimal places';
+            const n = parseCurrencyInput(v);
+            return n == null ? 'Must be a number' : null;
+          }}
           display={(v) => {
             const num = v == null ? NaN : Number(v);
             if (Number.isNaN(num)) return null;

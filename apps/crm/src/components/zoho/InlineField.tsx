@@ -15,6 +15,12 @@ import { Check, X, Pencil, Loader2 } from 'lucide-react';
 import type { CrmField } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
+import {
+  CURRENCY_INPUT_STEP,
+  fieldUsesDecimalMoney,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 
 interface InlineFieldProps {
   field: CrmField;
@@ -51,7 +57,10 @@ export function InlineField({
   }
 
   function parseValue(val: string): unknown {
-    if (field.type === 'number' || field.type === 'currency') {
+    if (fieldUsesDecimalMoney(field)) {
+      return parseCurrencyInput(val);
+    }
+    if (field.type === 'number') {
       const num = parseFloat(val);
       return isNaN(num) ? null : num;
     }
@@ -150,8 +159,10 @@ export function InlineField({
       );
     }
 
-    const inputType = 
-      field.type === 'number' || field.type === 'currency' ? 'number' :
+    const usesDecimalMoney = fieldUsesDecimalMoney(field);
+    const inputType =
+      usesDecimalMoney ? 'text' :
+      field.type === 'number' ? 'number' :
       field.type === 'date' ? 'date' :
       field.type === 'datetime' ? 'datetime-local' :
       field.type === 'email' ? 'email' :
@@ -163,8 +174,14 @@ export function InlineField({
       <Input
         ref={inputRef}
         type={inputType}
+        inputMode={usesDecimalMoney ? 'decimal' : undefined}
+        step={usesDecimalMoney ? CURRENCY_INPUT_STEP : field.type === 'number' ? '1' : undefined}
         value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (usesDecimalMoney && raw !== '' && !isValidCurrencyTyping(raw)) return;
+          setEditValue(raw);
+        }}
         onKeyDown={handleKeyDown}
         className="h-8 text-sm"
       />

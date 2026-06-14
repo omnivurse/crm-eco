@@ -87,9 +87,50 @@ function titleCaseSectionKey(sectionKey: string): string {
   return sectionKey.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Modules where reps enter / edit coverage after lead conversion. */
+export const PERSON_MODULE_KEYS = ['contacts', 'leads', 'members'] as const;
+
+/**
+ * Sections that must stay visible (and editable) even when every field is blank.
+ * Without this, read-only detail views collapse empty cards to 1px anchors and
+ * reps cannot add insurance / HealthShare data on freshly converted contacts.
+ */
+export const PERSON_COVERAGE_SECTION_KEYS = [
+  'health_sharing',
+  'health_insurance',
+  'insurance',
+  'insurance_coverage',
+  'dental_coverage',
+  'vision_coverage',
+  'other_coverage',
+  'life_coverage',
+  'product',
+] as const;
+
+export function isPersonModuleKey(moduleKey?: string | null): boolean {
+  if (!moduleKey) return false;
+  return (PERSON_MODULE_KEYS as readonly string[]).includes(moduleKey);
+}
+
+export function isPersonCoverageSectionKey(sectionKey: string): boolean {
+  return (PERSON_COVERAGE_SECTION_KEYS as readonly string[]).includes(sectionKey);
+}
+
+/** Whether an empty section card should still render on the record detail view. */
+export function shouldAlwaysShowEmptySection(
+  moduleKey: string | undefined | null,
+  sectionKey: string,
+  inlineEditable: boolean,
+): boolean {
+  if (inlineEditable) return true;
+  return isPersonModuleKey(moduleKey) && isPersonCoverageSectionKey(sectionKey);
+}
+
 /** Default heading for extra sections inferred only from {@link CrmField.section}. */
 export function fallbackSectionHeadingFromFieldSection(sectionKey: string): string {
-  if (sectionKey === 'insurance') return 'HealthShare';
+  // Legacy Zoho `insurance` holds product / premium / date rows — not the same as `health_sharing`.
+  if (sectionKey === 'insurance') return 'Membership & Product';
+  if (sectionKey === 'health_sharing') return 'HealthShare';
   return titleCaseSectionKey(sectionKey);
 }
 

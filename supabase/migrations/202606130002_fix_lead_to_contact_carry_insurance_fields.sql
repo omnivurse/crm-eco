@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION public._crm_jsonb_value_is_blank(v jsonb)
 RETURNS boolean
 LANGUAGE sql
 IMMUTABLE
+SET search_path = public, pg_catalog
 AS $$
   SELECT v IS NULL
     OR v = 'null'::jsonb

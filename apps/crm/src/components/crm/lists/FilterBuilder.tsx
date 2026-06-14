@@ -27,6 +27,12 @@ import {
 } from 'lucide-react';
 import type { CrmField, FieldType } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import {
+  CURRENCY_INPUT_STEP,
+  formatCurrencyInputValue,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 
 // ============================================================================
 // Types
@@ -273,10 +279,37 @@ function ConditionRow({
             );
         }
 
-        if (selectedField.type === 'number' || selectedField.type === 'currency') {
+        if (selectedField.type === 'currency') {
+            const rawValue = Array.isArray(condition.value) ? condition.value[0] : condition.value;
+            return (
+                <Input
+                    type="text"
+                    inputMode="decimal"
+                    step={CURRENCY_INPUT_STEP}
+                    placeholder="Enter amount"
+                    value={formatCurrencyInputValue(rawValue)}
+                    onChange={(e) => {
+                        const raw = e.target.value;
+                        if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+                        onUpdate({ ...condition, value: raw });
+                    }}
+                    onBlur={(e) => {
+                        const parsed = parseCurrencyInput(e.target.value);
+                        onUpdate({
+                            ...condition,
+                            value: parsed == null ? '' : String(parsed),
+                        });
+                    }}
+                    className="w-[140px] h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                />
+            );
+        }
+
+        if (selectedField.type === 'number') {
             return (
                 <Input
                     type="number"
+                    step="1"
                     placeholder="Enter value"
                     value={Array.isArray(condition.value) ? condition.value[0] : condition.value}
                     onChange={(e) => onUpdate({ ...condition, value: e.target.value })}

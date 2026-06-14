@@ -68,6 +68,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MarketTypeBadge, NormalizationBadge, OwnershipDisplay } from '@/components/shared/crm-lane-badges';
+import {
+  formatCurrencyInputValue,
+  fieldUsesDecimalMoney,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+  CURRENCY_INPUT_STEP,
+} from '@/lib/crm/currency-input';
 
 interface RecordTableProps {
   records: CrmRecord[];
@@ -120,7 +127,11 @@ function InlineEditor({
     if (saving) return;
     setSaving(true);
     try {
-      await onSave(editValue);
+      let toSave: unknown = editValue;
+      if (field != null && fieldUsesDecimalMoney(field)) {
+        toSave = parseCurrencyInput(String(editValue ?? ''));
+      }
+      await onSave(toSave);
     } finally {
       setSaving(false);
     }
@@ -175,15 +186,27 @@ function InlineEditor({
     );
   }
 
-  // Number field
+  // Number / currency fields
   if (fieldType === 'number' || fieldType === 'currency') {
+    const usesDecimalMoney =
+      field != null && fieldUsesDecimalMoney({ type: fieldType, key: field.key });
     return (
       <div className="flex items-center gap-1">
         <Input
           ref={inputRef}
-          type="number"
-          value={String(editValue)}
-          onChange={(e) => setEditValue(e.target.value ? Number(e.target.value) : '')}
+          type={usesDecimalMoney ? 'text' : 'number'}
+          inputMode={usesDecimalMoney ? 'decimal' : undefined}
+          step={usesDecimalMoney ? CURRENCY_INPUT_STEP : '1'}
+          value={String(editValue ?? '')}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (usesDecimalMoney) {
+              if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+              setEditValue(raw);
+              return;
+            }
+            setEditValue(raw);
+          }}
           onKeyDown={handleKeyDown}
           onBlur={handleSave}
           className="h-8 text-sm w-full"

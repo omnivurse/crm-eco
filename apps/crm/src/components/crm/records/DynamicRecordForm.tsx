@@ -49,11 +49,18 @@ import {
 } from '@/lib/crm/date-field-bounds';
 import { FieldRenderer } from './FieldRenderer';
 import { InlineFieldCell } from './v2/InlineFieldCell';
+import {
+  formatCurrencyInputValue,
+  fieldUsesDecimalMoney,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 import { AdvisorCarrierField } from './AdvisorCarrierField';
 import {
   fallbackSectionHeadingFromFieldSection,
   normalizeLegacySectionHeading,
   CRM_SECTION_NAV_EVENT,
+  shouldAlwaysShowEmptySection,
 } from './section-utils';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
@@ -330,23 +337,65 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       input = <Textarea {...commonProps} rows={3} />;
       break;
 
-    case 'number':
     case 'currency':
       input = (
         <Input
-          {...commonProps}
-          type="number"
-          step={field.type === 'currency' ? '0.01' : '1'}
-          value={value === null || value === undefined ? '' : String(value)}
+          id={field.key}
+          className={cn(error && 'border-destructive')}
+          placeholder={field.tooltip || `Enter ${field.label.toLowerCase()}`}
+          type="text"
+          inputMode="decimal"
+          autoComplete="off"
+          value={formatCurrencyInputValue(value)}
           onChange={(e) => {
-            // Controlled via setValue (like select/date/boolean) so the typed
-            // value reaches the submitted form state. Without this, number /
-            // currency fields (e.g. Monthly Contribution, IUA) saved empty.
             const raw = e.target.value;
-            setValue(field.key, raw === '' ? null : Number(raw));
+            if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+            setValue(field.key, raw === '' ? null : raw);
           }}
+          onBlur={(e) => {
+            setValue(field.key, parseCurrencyInput(e.target.value));
+          }}
+          {...(field.required && { required: true })}
         />
       );
+      break;
+
+    case 'number':
+      if (fieldUsesDecimalMoney(field)) {
+        input = (
+          <Input
+            id={field.key}
+            className={cn(error && 'border-destructive')}
+            placeholder={field.tooltip || `Enter ${field.label.toLowerCase()}`}
+            type="text"
+            inputMode="decimal"
+            autoComplete="off"
+            value={formatCurrencyInputValue(value)}
+            onChange={(e) => {
+              const raw = e.target.value;
+              if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+              setValue(field.key, raw === '' ? null : raw);
+            }}
+            onBlur={(e) => {
+              setValue(field.key, parseCurrencyInput(e.target.value));
+            }}
+            {...(field.required && { required: true })}
+          />
+        );
+      } else {
+        input = (
+          <Input
+            {...commonProps}
+            type="number"
+            step="1"
+            value={value === null || value === undefined ? '' : String(value)}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setValue(field.key, raw === '' ? null : Number(raw));
+            }}
+          />
+        );
+      }
       break;
 
     case 'date': {
@@ -518,6 +567,8 @@ interface DynamicRecordFormProps {
    * carrier) fall back to the read-only renderer.
    */
   inlineEditable?: boolean;
+  /** Used to keep coverage sections visible on person modules after lead conversion. */
+  moduleKey?: string;
 }
 
 export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicRecordFormProps>(
@@ -536,6 +587,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       onDirtyChange,
       onValuesChange,
       inlineEditable = false,
+      moduleKey,
     },
     ref
   ) {
@@ -1032,7 +1084,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         // Overview nav). In inline-edit mode we ALWAYS render the full card so
         // reps can fill blank fields (e.g. Address) without the whole section
         // disappearing as they type or clear the last value.
-        if (readOnly && !inlineEditable && !isHero) {
+        // Person-module coverage sections (Health Share, Health Insurance, etc.)
+        // also stay visible so reps can add data right after lead → contact conversion.
+        if (
+          readOnly &&
+          !inlineEditable &&
+          !isHero &&
+          !shouldAlwaysShowEmptySection(moduleKey, section.key, inlineEditable)
+        ) {
           const hasAnyValue = sectionFields.some(
             (f) =>
               defaultValues[f.key] !== null &&

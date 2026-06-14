@@ -42,6 +42,10 @@ import {
 import { LockedFieldBadge } from './LockedFieldBadge';
 import { AiSuggestChip } from './AiSuggestChip';
 import { useRecordAiContext } from './RecordAiContext';
+import {
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 
 export type InlineFieldType =
   | 'text'
@@ -75,6 +79,8 @@ export interface InlineFieldEditorProps {
    * inline error and reject the save. Return null / undefined to accept.
    */
   validate?: (value: string) => string | null | undefined;
+  /** When set (e.g. 2 for USD), allows typing up to that many decimal places. */
+  moneyDecimals?: number;
   className?: string;
   inputClassName?: string;
   /** aria-label for the edit input. Defaults to the field key. */
@@ -92,6 +98,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   onEditStart,
   onEditEnd,
   validate,
+  moneyDecimals,
   className,
   inputClassName,
   ariaLabel,
@@ -179,19 +186,21 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
 
     // Coerce back to the input's logical type.
     const payload: unknown =
-      type === 'number'
-        ? trimmed === ''
-          ? null
-          : Number(trimmed)
-        : trimmed === ''
-          ? null
-          : trimmed;
+      moneyDecimals != null
+        ? parseCurrencyInput(trimmed)
+        : type === 'number'
+          ? trimmed === ''
+            ? null
+            : Number(trimmed)
+          : trimmed === ''
+            ? null
+            : trimmed;
 
     setEditing(false);
     onEditEnd?.();
     void releaseFieldLock(field);
     await save(field, payload, target ? { target } : undefined);
-  }, [draft, value, validate, type, save, field, onEditEnd, target, releaseFieldLock]);
+  }, [draft, value, validate, type, moneyDecimals, save, field, onEditEnd, target, releaseFieldLock]);
 
   const onKey = (
     e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -288,7 +297,9 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         | React.ChangeEvent<HTMLInputElement>
         | React.ChangeEvent<HTMLTextAreaElement>,
     ) => {
-      setDraft(e.target.value);
+      const next = e.target.value;
+      if (moneyDecimals != null && next !== '' && !isValidCurrencyTyping(next)) return;
+      setDraft(next);
       if (localError) setLocalError(null);
     },
     onBlur: () => {
@@ -322,7 +333,9 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
       ) : (
         <input
           ref={handleInputRef}
-          type={type}
+          type={moneyDecimals != null ? 'text' : type}
+          inputMode={moneyDecimals != null ? 'decimal' : undefined}
+          step={moneyDecimals != null ? '0.01' : undefined}
           {...sharedEditProps}
           className={cn(
             'min-w-0 rounded-md border border-teal-400 dark:border-teal-500/60 bg-white dark:bg-slate-900',

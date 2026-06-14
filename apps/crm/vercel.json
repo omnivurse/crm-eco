@@ -38,6 +38,10 @@
     {
       "path": "/api/cron/activate-pending-members",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/cancel-active-members",
+      "schedule": "15 6 * * *"
     }
   ]
 }

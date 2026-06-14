@@ -13,6 +13,7 @@ import {
 } from '@/lib/crm/queries';
 import { resolveRecordOrMergeDestination } from '@/lib/crm/resolve-record';
 import { applyAge65AutoCancelForRecord } from '@/lib/crm/age-65-auto-cancel';
+import { applyScheduledEndDateCancelForRecordView } from '@/lib/crm/scheduled-end-date-cancel-live';
 import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
 import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV2';
 import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';
@@ -20,11 +21,10 @@ import { getRecordInsights, emptyRecordInsights } from '@/lib/crm/record-insight
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsSectionClient } from '@/components/crm/records/AttachmentsSectionClient';
 import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecordsPanelClient';
-import { DynamicRecordForm } from '@/components/crm/records/DynamicRecordForm';
-import { InlineEditableRecordForm } from '@/components/crm/records/InlineEditableRecordForm';
 import { getSectionMeta } from '@/components/crm/records/section-utils';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
+import { RecordOverviewFields } from '@/components/crm/records/RecordOverviewFields';
 import { NotesPanel } from './NotesPanel';
 import { LegacyNotesCard } from './LegacyNotesCard';
 import { MergedFromToast } from '@/components/crm/records/MergedFromToast';
@@ -129,8 +129,14 @@ async function RecordDetailContent({ params }: PageProps) {
   // the post-cancellation state.
   let activeResult = result;
   if (result.module.key === 'contacts' || result.module.key === 'members') {
-    const applied = await applyAge65AutoCancelForRecord(result.record.id);
-    if (applied && applied.count > 0) {
+    const [age65Applied, scheduledCancelApplied] = await Promise.all([
+      applyAge65AutoCancelForRecord(result.record.id),
+      applyScheduledEndDateCancelForRecordView(result.record.id),
+    ]);
+    if (
+      (age65Applied && age65Applied.count > 0) ||
+      scheduledCancelApplied?.cancelled
+    ) {
       const refreshed = await getRecordWithModule(recordId);
       if (refreshed) {
         activeResult = refreshed;
@@ -232,22 +238,14 @@ async function RecordDetailContent({ params }: PageProps) {
             sections={sectionMeta}
             fieldContent={
               <>
-                {useLayoutV2 ? (
-                  <InlineEditableRecordForm
-                    record={record}
-                    fields={fields}
-                    layout={layout}
-                    defaultValues={defaultValues}
-                  />
-                ) : (
-                  <DynamicRecordForm
-                    record={record}
-                    fields={fields}
-                    layout={layout}
-                    defaultValues={defaultValues}
-                    readOnly
-                  />
-                )}
+                <RecordOverviewFields
+                  record={record}
+                  fields={fields}
+                  layout={layout}
+                  defaultValues={defaultValues}
+                  moduleKey={module.key}
+                  layoutV2Shell={useLayoutV2}
+                />
                 {/* Legacy Notes History (imported from Zoho) — below fields */}
                 {legacyNotes && (
                   <div className="mt-4">

@@ -78,9 +78,9 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
       event_type: 'page_view',
     });
 
-  // Increment views count
+  // Increment views count (service role — anon no longer has EXECUTE on DEFINER RPCs)
   try {
-    await (supabase as any).rpc('increment_landing_page_views', {
+    await (serviceClient as any).rpc('increment_landing_page_views', {
       page_id: landingPage.id,
     });
   } catch {

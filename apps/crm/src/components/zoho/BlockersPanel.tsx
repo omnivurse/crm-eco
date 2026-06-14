@@ -2,6 +2,11 @@
 
 import { useState } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import {
+  CURRENCY_INPUT_STEP,
+  fieldUsesDecimalMoney,
+  isValidCurrencyTyping,
+} from '@/lib/crm/currency-input';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   Select,
@@ -100,6 +105,9 @@ function BlockerItem({
   });
 
   const handleChange = (newValue: string) => {
+    if (fieldUsesDecimalMoney(blocker.field) && newValue !== '' && !isValidCurrencyTyping(newValue)) {
+      return;
+    }
     setValue(newValue);
     if (blocker.field.type === 'datetime' && newValue) {
       const d = new Date(newValue);
@@ -129,8 +137,10 @@ function BlockerItem({
       );
     }
 
-    const inputType = 
-      field.type === 'number' || field.type === 'currency' ? 'number' :
+    const usesDecimalMoney = fieldUsesDecimalMoney(field);
+    const inputType =
+      usesDecimalMoney ? 'text' :
+      field.type === 'number' ? 'number' :
       field.type === 'date' ? 'date' :
       field.type === 'datetime' ? 'datetime-local' :
       field.type === 'email' ? 'email' :
@@ -139,6 +149,8 @@ function BlockerItem({
     return (
       <Input
         type={inputType}
+        inputMode={usesDecimalMoney ? 'decimal' : undefined}
+        step={usesDecimalMoney ? CURRENCY_INPUT_STEP : field.type === 'number' ? '1' : undefined}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         placeholder={`Enter ${field.label.toLowerCase()}`}

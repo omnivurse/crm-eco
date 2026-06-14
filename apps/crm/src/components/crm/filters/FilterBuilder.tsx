@@ -19,6 +19,12 @@ import {
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmField, ViewFilter } from '@/lib/crm/types';
 import { getFieldOptions } from '@/lib/crm/utils';
+import {
+  CURRENCY_INPUT_STEP,
+  formatCurrencyInputValue,
+  isValidCurrencyTyping,
+  parseCurrencyInput,
+} from '@/lib/crm/currency-input';
 
 interface FilterBuilderProps {
   fields: CrmField[];
@@ -124,10 +130,33 @@ function FilterRow({
       );
     }
 
-    if (['number', 'currency'].includes(fieldType)) {
+    if (fieldType === 'currency') {
+      return (
+        <Input
+          type="text"
+          inputMode="decimal"
+          step={CURRENCY_INPUT_STEP}
+          value={formatCurrencyInputValue(filter.value)}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw !== '' && !isValidCurrencyTyping(raw)) return;
+            onUpdate({ ...filter, value: raw === '' ? null : raw });
+          }}
+          onBlur={(e) => {
+            const parsed = parseCurrencyInput(e.target.value);
+            onUpdate({ ...filter, value: parsed });
+          }}
+          placeholder="Enter amount"
+          className="h-9 bg-white dark:bg-slate-900/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500"
+        />
+      );
+    }
+
+    if (fieldType === 'number') {
       return (
         <Input
           type="number"
+          step="1"
           value={String(filter.value || '')}
           onChange={(e) => onUpdate({ ...filter, value: e.target.valueAsNumber || 0 })}
           placeholder="Enter value"
