@@ -325,6 +325,7 @@ export function ModuleListClient({
             key={dialogFormKey}
             fields={fields}
             layout={defaultLayout}
+            moduleKey={module.key}
             onSubmit={handleCreateRecord}
             onCancel={() => setShowCreateDialog(false)}
             isLoading={isCreating}

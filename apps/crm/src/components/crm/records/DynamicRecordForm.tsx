@@ -1075,9 +1075,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
         const isHero = section.variant === 'hero';
+        const forceCoverageSection = shouldAlwaysShowEmptySection(
+          moduleKey,
+          section.key,
+          inlineEditable,
+        );
         // Hero is allowed to render even with zero fields (e.g. lean Members
         // module) because it always shows the right-hand summary.
-        if (sectionFields.length === 0 && !isHero) return null;
+        // Person-module coverage sections must never disappear — reps add insurance
+        // here immediately after lead → contact conversion.
+        if (sectionFields.length === 0 && !isHero && !forceCoverageSection) return null;
 
         // In static read-only mode, omit full cards where every field is empty —
         // keep a cross-column anchor so section pills still scroll (IDs match
@@ -1198,6 +1205,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                       </div>
                     </div>
                   </div>
+                ) : sectionFields.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Coverage fields are not configured for this section. Ask an admin to
+                    run coverage field parity, or use Edit to add fields in Settings.
+                  </p>
                 ) : (
                   <div
                     className={cn(

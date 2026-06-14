@@ -188,7 +188,7 @@ async function RecordDetailContent({ params }: PageProps) {
   // Compute section metadata on the server for the section navigator. Pass
   // the merged form defaults so the pill numbers show *populated* fields,
   // not the configured-field total — reps want to see what's filled in.
-  const sectionMeta = getSectionMeta(fields, layout, defaultValues);
+  const sectionMeta = getSectionMeta(fields, layout, defaultValues, module.key);
 
   const recordData = record.data || {};
   const legacyNotes =

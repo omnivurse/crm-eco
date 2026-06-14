@@ -30,9 +30,13 @@ import { InlineField } from './InlineField';
 import { RecordMiniTimeline } from './RecordMiniTimeline';
 import { useRecordDrawerData } from '@/hooks/useRecordDrawerData';
 import { queryKeys } from '@/lib/query-keys';
-import type { CrmField } from '@/lib/crm/types';
+import type { CrmField, CrmRecord } from '@/lib/crm/types';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
 import { patchCrmRecord } from '@/lib/crm/patch-record-client';
+import {
+  isPersonCoverageSectionKey,
+  isPersonModuleKey,
+} from '@/components/crm/records/section-utils';
 
 // Readable labels for section keys
 const SECTION_LABELS: Record<string, string> = {
@@ -43,6 +47,13 @@ const SECTION_LABELS: Record<string, string> = {
   family_children: 'Children',
   family: 'Family',
   insurance: 'HealthShare',
+  health_sharing: 'Health Share',
+  health_insurance: 'Health Insurance',
+  dental_coverage: 'Dental Coverage',
+  vision_coverage: 'Vision Coverage',
+  other_coverage: 'Other Coverage',
+  life_coverage: 'Life Insurance',
+  product: 'Product Interest',
   commissions: 'Commissions & Referrals',
   payment: 'Payment Information',
   identifiers: 'Codes & Identifiers',
@@ -51,15 +62,15 @@ const SECTION_LABELS: Record<string, string> = {
   fulfillment: 'Welcome & Fulfillment',
   business: 'Business Information',
   preferences: 'Communication Preferences',
-  product: 'Product Interest',
   conversion: 'Conversion',
   system: 'System Information',
 };
 
 // Section display order
 const SECTION_ORDER = [
-  'core', 'management', 'address', 'insurance', 'business',
+  'core', 'management', 'address', 'health_sharing', 'health_insurance', 'insurance', 'business',
   'family_spouse', 'family', 'family_children', 'product',
+  'dental_coverage', 'vision_coverage', 'other_coverage', 'life_coverage',
   'commissions', 'payment', 'identifiers', 'portal',
   'compliance', 'fulfillment', 'preferences', 'conversion', 'system',
 ];
@@ -123,10 +134,11 @@ export function RecordDrawer() {
   const effectiveRecordData = useMemo(() => {
     if (!data?.record) return null;
     const dataOnly = localRecordData ?? (data.record.data as Record<string, unknown>) ?? {};
+    const recordRow = data.record as CrmRecord & { module?: { key: string } | null };
     return mergeCrmRecordRowIntoFormDefaults({
-      ...(data.record as unknown as Record<string, unknown>),
+      ...(recordRow as unknown as Record<string, unknown>),
       data: dataOnly,
-    });
+    }, { moduleKey: recordRow.module?.key });
   }, [data?.record, localRecordData]);
 
   // Build display name — prefer `preferred_name` (nickname) over legal first_name
@@ -187,6 +199,10 @@ export function RecordDrawer() {
       ...Array.from(grouped.keys()).filter(k => !SECTION_ORDER.includes(k)),
     ];
 
+    const recordRow = data.record as CrmRecord & { module?: { key: string } | null };
+    const moduleKey = recordRow.module?.key;
+    const alwaysShowCoverage = isPersonModuleKey(moduleKey);
+
     for (const sectionKey of orderedKeys) {
       const fields = grouped.get(sectionKey);
       if (!fields) continue;
@@ -196,8 +212,10 @@ export function RecordDrawer() {
       const withoutData = fields.filter(f => effectiveRecordData[f.key] == null);
       const sortedFields = [...withData, ...withoutData];
 
-      // Show the section if it has data, or if "show all fields" is enabled
-      if (withData.length > 0 || showAllFields) {
+      const isCoverageSection = isPersonCoverageSectionKey(sectionKey);
+      // Person modules: always show coverage sections so reps can add insurance
+      // after lead conversion, even when "Hide empty fields" is on.
+      if (withData.length > 0 || showAllFields || (alwaysShowCoverage && isCoverageSection)) {
         sections.push({
           key: sectionKey,
           label: getSectionLabel(sectionKey),
@@ -207,7 +225,7 @@ export function RecordDrawer() {
     }
 
     return sections;
-  }, [data?.fields, effectiveRecordData, showAllFields]);
+  }, [data?.fields, data?.record, effectiveRecordData, showAllFields]);
 
   return (
     <Sheet open={isOpen} onOpenChange={(open) => !open && closeDrawer()}>

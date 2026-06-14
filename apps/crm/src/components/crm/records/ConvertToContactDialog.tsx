@@ -40,6 +40,7 @@ export function ConvertToContactDialog({
     contactId?: string;
     contactTitle?: string;
     existingContactId?: string;
+    insuranceRepairWarning?: string;
   } | null>(null);
   const router = useRouter();
 
@@ -75,11 +76,16 @@ export function ConvertToContactDialog({
       }
 
       if (data.success) {
+        const repairWarning =
+          data.insurance_repair_failed
+            ? 'Contact created, but some coverage fields may need a manual review in Health Share / Health Insurance.'
+            : undefined;
         setResult({
           success: true,
           message: data.message || 'Lead converted to contact successfully!',
           contactId: data.contact_id,
           contactTitle: data.contact_title,
+          insuranceRepairWarning: repairWarning,
         });
         router.refresh();
       } else {
@@ -178,8 +184,9 @@ export function ConvertToContactDialog({
                   )}
 
                   <p className="text-xs text-slate-400">
-                    All matching fields (name, email, phone, address, family, etc.) and all notes
-                    will be moved to the contact record. The original lead will be preserved and linked.
+                    All matching fields (name, email, phone, address, family, Health Share,
+                    Health Insurance, etc.) and all notes will be moved to the contact record.
+                    The original lead will be preserved and linked.
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-400/90 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5">
                     <strong className="font-medium">Contact vs member:</strong> this action creates a{' '}
@@ -236,6 +243,11 @@ export function ConvertToContactDialog({
                     <AlertDialogDescription className="text-slate-500 mt-2">
                       {result.message}
                     </AlertDialogDescription>
+                    {result.insuranceRepairWarning && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400/90 mt-3 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5">
+                        {result.insuranceRepairWarning}
+                      </p>
+                    )}
                   </>
                 ) : (
                   <>

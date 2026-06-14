@@ -155,6 +155,7 @@ export function getSectionMeta(
   fields: CrmField[],
   layout?: CrmLayout | null,
   recordData?: Record<string, unknown> | null,
+  moduleKey?: string | null,
 ): SectionMeta[] {
   const layoutConfig: LayoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
 
@@ -182,7 +183,13 @@ export function getSectionMeta(
   }
 
   return allSections
-    .filter((s) => (grouped[s.key]?.length ?? 0) > 0)
+    .filter((s) => {
+      const fieldCount = grouped[s.key]?.length ?? 0;
+      if (fieldCount > 0) return true;
+      // Layout lists a coverage section but crm_fields are missing — still show
+      // nav pill so reps (and diagnostics) can see the gap instead of silent drop.
+      return isPersonModuleKey(moduleKey) && isPersonCoverageSectionKey(s.key);
+    })
     .map((s) => {
       const sectionFields = grouped[s.key] ?? [];
       const fieldCount = sectionFields.length;

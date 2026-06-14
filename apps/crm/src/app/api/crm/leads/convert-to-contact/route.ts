@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
       success?: boolean;
       contact_id?: string;
       error?: string;
+      insurance_repair?: Record<string, unknown>;
+      insurance_repair_failed?: boolean;
+      insurance_repair_error?: string;
     };
 
     // Belt-and-suspenders: copy any insurance / health-sharing keys the RPC may have missed.
@@ -75,8 +78,10 @@ export async function POST(request: NextRequest) {
           'Lead conversion succeeded but insurance repair failed:',
           repairError.message,
         );
+        result.insurance_repair_failed = true;
+        result.insurance_repair_error = repairError.message;
       } else if (repairData && typeof repairData === 'object') {
-        Object.assign(result, { insurance_repair: repairData });
+        result.insurance_repair = repairData as Record<string, unknown>;
       }
     }
 
