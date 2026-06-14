@@ -103,7 +103,7 @@ export default function LoginPage() {
           <BrandLogo variant="full" size="lg" tone="white" priority />
         </Link>
         <h2 className={authForm.title}>Welcome back</h2>
-        <p className={authForm.subtitle}>Sign in to MMS — Member Management System</p>
+        <p className={authForm.subtitle}>Sign in to MMS — benefits enrollment & member management</p>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-6">

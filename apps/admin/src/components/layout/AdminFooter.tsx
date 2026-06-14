@@ -29,7 +29,7 @@ export function AdminFooter() {
             </Link>
             <span className="hidden md:inline text-slate-400 dark:text-slate-600">|</span>
             <span className="hidden md:inline text-sm text-slate-500 dark:text-slate-400">
-              MMS — Member Management System
+              MMS — Benefits Enrollment & Member Management
             </span>
           </div>
 

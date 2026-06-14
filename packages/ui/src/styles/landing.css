@@ -146,6 +146,24 @@
   margin-bottom: 32px; animation: lpFadeUp 0.8s ease-out;
 }
 
+.lp-hero-pills {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  margin-bottom: 28px; animation: lpFadeUp 0.8s ease-out both;
+}
+.lp-hero-pills .lp-hero-badge { margin-bottom: 0; }
+.lp-hero-badge-enrollment {
+  background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.28); color: #fbbf24;
+}
+.lp-hero-badge-mms {
+  background: rgba(6, 182, 212, 0.1); border-color: rgba(6, 182, 212, 0.25); color: #67e8f9;
+}
+
+.lp-hero-subline {
+  font-size: 18px; font-weight: 500; color: #cbd5e1;
+  max-width: 720px; margin: 0 auto 16px;
+  animation: lpFadeUp 0.8s ease-out 0.15s both;
+}
+
 .lp-dot {
   width: 8px; height: 8px; border-radius: 50%;
   background: #10b981; display: inline-block;

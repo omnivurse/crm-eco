@@ -27,62 +27,62 @@ const featureIcons = {
 };
 
 const features = [
-  { icon: 'members', color: 'cyan', title: 'Member Operations', desc: 'Full lifecycle management — enrollment, coverage changes, dependents, terminations, and renewals. One source of truth for every member.' },
-  { icon: 'billing', color: 'blue', title: 'Billing Engine', desc: 'Automated billing runs, NACHA exports, payment processor integration, invoice generation, and failure recovery — all orchestrated from one console.' },
-  { icon: 'commissions', color: 'purple', title: 'Commission Operations', desc: 'Tier structures, accrual runs, payout batches, and agent bill groups. Real-time visibility into every dollar owed and paid.' },
-  { icon: 'products', color: 'emerald', title: 'Product & Carrier Catalog', desc: 'Manage products, carriers, rate tables, and pricing rules. Push rate changes across the platform with scheduled effective dates.' },
-  { icon: 'enrollment', color: 'amber', title: 'Enrollment Hub', desc: 'Track enrollments end-to-end, manage agent assignments, enrollment links with QR analytics, and contract regeneration.' },
-  { icon: 'compliance', color: 'rose', title: 'Compliance & Audit', desc: 'HIPAA-grade audit logs, role-based access control, encrypted PHI, and full activity tracing across every admin action.' },
+  { icon: 'enrollment', color: 'amber', title: 'Benefits Enrollment Engine', desc: 'Digital enrollment flows, e-signatures, plan selection, dependent capture, and carrier-ready submissions — from application to active member in one pipeline.' },
+  { icon: 'members', color: 'cyan', title: 'Member Management (MMS)', desc: 'The core MMS registry: coverage changes, dependents, terminations, renewals, and member communications — one auditable source of truth.' },
+  { icon: 'products', color: 'emerald', title: 'Benefits & Plan Catalog', desc: 'Configure health sharing products, carriers, rate tables, and enrollment rules. Launch new plans and price changes with scheduled effective dates.' },
+  { icon: 'billing', color: 'blue', title: 'Billing & Payments', desc: 'Automated billing runs, NACHA exports, payment processors, invoices, and failure recovery — tied directly to enrolled member coverage.' },
+  { icon: 'commissions', color: 'purple', title: 'Agent Commissions', desc: 'Enrollment-linked commission tiers, accrual runs, payout batches, and agent bill groups — every enrollment tied to compensation.' },
+  { icon: 'compliance', color: 'rose', title: 'HIPAA Compliance & Audit', desc: 'PHI-safe enrollment and member data handling with encrypted storage, role-based access, and full audit logs on every action.' },
 ];
 
 const showcaseModules = [
   {
+    id: 'enrollment',
+    title: 'Benefits Enrollment Pipeline',
+    desc: 'Guide applicants from quote to enrolled member — applications, underwriting review, plan binding, and welcome communications in one workflow.',
+    icon: featureIcons.enrollment,
+    stageTitle: 'Enrollment Pipeline — Live',
+  },
+  {
+    id: 'members',
+    title: 'Member Management (MMS)',
+    desc: 'Search, filter, and manage your entire member population with real-time coverage, billing, and enrollment history.',
+    icon: featureIcons.members,
+    stageTitle: 'MMS Member Directory',
+  },
+  {
     id: 'billing',
-    title: 'Billing Command Center',
-    desc: 'Orchestrate monthly billing runs, monitor failures, and export NACHA files — all from a single operations dashboard.',
+    title: 'Billing & Collections',
+    desc: 'Orchestrate monthly billing runs, monitor failures, and export NACHA files — synced to enrolled member plans.',
     icon: featureIcons.billing,
     stageTitle: 'Billing Run — March 2026',
   },
   {
     id: 'commissions',
-    title: 'Commission Operations',
-    desc: 'Accrue, review, and disburse agent commissions with tier-aware calculations and full payout audit trails.',
+    title: 'Enrollment-Linked Commissions',
+    desc: 'Accrue and disburse agent commissions automatically when enrollments bind — tier-aware with full payout audit trails.',
     icon: featureIcons.commissions,
     stageTitle: 'Commission Accrual — Q1 2026',
-  },
-  {
-    id: 'members',
-    title: 'Member Registry',
-    desc: 'Search, filter, and manage your entire member population with real-time status, coverage, and billing context.',
-    icon: featureIcons.members,
-    stageTitle: 'Member Directory',
-  },
-  {
-    id: 'analytics',
-    title: 'Analytics & Reporting',
-    desc: 'Demographics, actuarial insights, enrollment funnels, and custom reports — built for health sharing operators.',
-    icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
-    stageTitle: 'Operations Analytics',
   },
 ];
 
 const tickerItems = [
-  'Billing run completed — 2,847 members processed',
+  'New benefits enrollment submitted — Secure HSA 2024',
+  'Enrollment approved — Care Plus 2024 · 3 dependents',
+  'Member activated in MMS — James Morrison',
+  'Enrollment link conversion — 68% completion rate',
+  'Billing run completed — 2,847 enrolled members',
   'Commission accrual posted — $48,320.00',
-  'Enrollment approved — Secure HSA 2024',
+  'Plan catalog updated — Premium Care rates effective Apr 1',
   'NACHA export generated — 1,204 transactions',
-  'Agent tier updated — Premier Level 3',
-  'Price change scheduled — Care Plus effective Jul 1',
-  'Invoice batch sent — 892 members notified',
-  'Audit log entry — Role change: staff → admin',
 ];
 
 const activities = [
-  { text: 'Billing run initiated', color: '#3b82f6', time: '1m ago' },
-  { text: 'Commission accrual posted', color: '#8b5cf6', time: '4m ago' },
-  { text: 'Enrollment approved', color: '#10b981', time: '8m ago' },
-  { text: 'NACHA file exported', color: '#06b6d4', time: '14m ago' },
-  { text: 'Price change scheduled', color: '#f59e0b', time: '22m ago' },
+  { text: 'Benefits enrollment approved', color: '#10b981', time: '1m ago' },
+  { text: 'Member added to MMS registry', color: '#06b6d4', time: '3m ago' },
+  { text: 'Enrollment link submitted', color: '#f59e0b', time: '6m ago' },
+  { text: 'Billing run initiated', color: '#3b82f6', time: '12m ago' },
+  { text: 'Commission accrual posted', color: '#8b5cf6', time: '18m ago' },
 ];
 
 const members = [
@@ -94,15 +94,45 @@ const members = [
 ];
 
 const testimonials = [
-  { initials: 'JC', name: 'Jennifer Cole', role: 'VP Operations, Summit Health Share', text: '"MMS replaced six disconnected systems. Billing runs that took two days now finish in two hours — with zero manual reconciliation."' },
-  { initials: 'MP', name: 'Marcus Patel', role: 'Director of Finance, Unity Benefits', text: '"Commission accruals used to be a nightmare of spreadsheets. Now every agent sees exactly what they earned, when, and why."' },
-  { initials: 'LW', name: 'Laura Whitfield', role: 'COO, Heritage Health Sharing', text: '"The audit trail alone is worth it. Every action is logged, every change is traceable. Our compliance team finally sleeps at night."' },
+  { initials: 'JC', name: 'Jennifer Cole', role: 'VP Operations, Summit Health Share', text: '"MMS is our benefits enrollment and member management backbone. Applications that took a week now enroll in a day — and every member lands in one registry."' },
+  { initials: 'MP', name: 'Marcus Patel', role: 'Director of Enrollment, Unity Benefits', text: '"We finally have enrollment software that speaks benefits — plan selection, dependents, e-sign, and MMS member records without switching systems."' },
+  { initials: 'LW', name: 'Laura Whitfield', role: 'COO, Heritage Health Sharing', text: '"From enrollment to billing to commissions, MMS handles the full member lifecycle. Our ops team stopped living in spreadsheets."' },
 ];
 
 const barHeights = [52, 68, 45, 78, 61, 88, 55, 72, 80, 95, 64, 91];
 const SHOWCASE_INTERVAL = 5000;
 
 function ShowcasePanel({ moduleId, active }: { moduleId: string; active: boolean }) {
+  if (moduleId === 'enrollment') {
+    return (
+      <div className={`lp-showcase-panel${active ? ' active' : ''}`}>
+        <div className="lp-mock-progress-list">
+          {[
+            { label: 'Application submitted', value: '100%', width: '100%', status: 'Complete' },
+            { label: 'Plan & dependent review', value: '100%', width: '100%', status: 'Complete' },
+            { label: 'E-signature & binding', value: '86%', width: '86%', status: 'In progress' },
+            { label: 'MMS member activation', value: '42%', width: '42%', status: 'Pending' },
+          ].map((p) => (
+            <div key={p.label} className="lp-mock-progress-item">
+              <div className="lp-mock-progress-header">
+                <span className="lp-mock-progress-label">{p.label}</span>
+                <span className="lp-mock-progress-value">{p.status}</span>
+              </div>
+              <div className="lp-mock-progress-track">
+                <div className="lp-mock-progress-fill" style={{ width: active ? p.width : '0', background: p.width === '100%' ? 'linear-gradient(90deg, #10b981, #06b6d4)' : undefined }} />
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="lp-mock-stats" style={{ marginTop: 20 }}>
+          <div className="lp-mock-stat"><div className="lp-mock-stat-label">In Pipeline</div><div className="lp-mock-stat-value amber" style={{ color: '#f59e0b' }}>342</div></div>
+          <div className="lp-mock-stat"><div className="lp-mock-stat-label">Approved Today</div><div className="lp-mock-stat-value green">28</div></div>
+          <div className="lp-mock-stat"><div className="lp-mock-stat-label">Conversion</div><div className="lp-mock-stat-value cyan">68%</div></div>
+        </div>
+      </div>
+    );
+  }
+
   if (moduleId === 'billing') {
     return (
       <div className={`lp-showcase-panel${active ? ' active' : ''}`}>
@@ -181,32 +211,31 @@ function ShowcasePanel({ moduleId, active }: { moduleId: string; active: boolean
 
   return (
     <div className={`lp-showcase-panel${active ? ' active' : ''}`}>
-      <div className="lp-mock-ring">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle cx="70" cy="70" r="58" fill="none" stroke="rgba(148,163,184,0.1)" strokeWidth="10" />
-          <circle
-            cx="70" cy="70" r="58" fill="none"
-            stroke="url(#ringGrad)" strokeWidth="10" strokeLinecap="round"
-            strokeDasharray="364" strokeDashoffset={active ? '36' : '364'}
-            style={{ transition: 'stroke-dashoffset 1.5s ease-out' }}
-          />
-          <defs>
-            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="100%" stopColor="#8b5cf6" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <div className="lp-mock-ring-label">
-          <div className="lp-mock-ring-value">94.2%</div>
-          <div className="lp-mock-ring-sub">Retention</div>
-        </div>
-      </div>
       <div className="lp-mock-stats">
-        <div className="lp-mock-stat"><div className="lp-mock-stat-label">Enrollments</div><div className="lp-mock-stat-value cyan">+342</div></div>
-        <div className="lp-mock-stat"><div className="lp-mock-stat-label">Churn</div><div className="lp-mock-stat-value">2.1%</div></div>
-        <div className="lp-mock-stat"><div className="lp-mock-stat-label">Avg Premium</div><div className="lp-mock-stat-value green">$487</div></div>
+        <div className="lp-mock-stat"><div className="lp-mock-stat-label">Enrolled</div><div className="lp-mock-stat-value cyan">+342</div></div>
+        <div className="lp-mock-stat"><div className="lp-mock-stat-label">Retention</div><div className="lp-mock-stat-value green">94.2%</div></div>
+        <div className="lp-mock-stat"><div className="lp-mock-stat-label">Avg Premium</div><div className="lp-mock-stat-value">$487</div></div>
       </div>
+      <table className="lp-mock-table" style={{ marginTop: 16 }}>
+        <thead>
+          <tr><th>Enrollment</th><th>Plan</th><th>MMS Status</th></tr>
+        </thead>
+        <tbody>
+          {[
+            ['Secure HSA 2024', 'Individual + 2 deps', 'Active'],
+            ['Care Plus 2024', 'Family', 'Active'],
+            ['Premium Care', 'Individual', 'Review'],
+          ].map(([plan, type, status]) => (
+            <tr key={plan}>
+              <td style={{ color: '#f1f5f9', fontWeight: 600 }}>{plan}</td>
+              <td>{type}</td>
+              <td>
+                <span className={`lp-mock-badge ${status === 'Active' ? 'green' : 'amber'}`}>{status}</span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
@@ -419,11 +448,12 @@ export default function AdminLandingPage() {
         </Link>
         <div className="lp-nav-links">
           <a href="#features">Features</a>
-          <a href="#showcase">Platform</a>
+          <a href="#enrollment">Enrollment</a>
+          <a href="#enrollment">Platform</a>
           <a href="#how-it-works">How It Works</a>
           <a href="#testimonials">Testimonials</a>
           <a
-            href="https://doublehelix.com"
+            href="https://doublehelixhub.com"
             target="_blank"
             rel="noopener noreferrer"
             className="lp-nav-platform"
@@ -444,23 +474,31 @@ export default function AdminLandingPage() {
         <div className="lp-orb lp-orb-3" />
 
         <div className="lp-hero-content">
-          <div className="lp-hero-badge">
-            <span className="lp-dot" />
-            MMS — Member Management System
+          <div className="lp-hero-pills">
+            <div className="lp-hero-badge lp-hero-badge-enrollment">
+              <span className="lp-dot" />
+              Benefits Enrollment Software
+            </div>
+            <div className="lp-hero-badge lp-hero-badge-mms">
+              MMS — Member Management System
+            </div>
           </div>
-          <h1>The Member Management System for<br/><span className="lp-gradient">Health Sharing</span></h1>
+          <h1>Benefits Enrollment &<br/><span className="lp-gradient">Member Management</span></h1>
+          <p className="lp-hero-subline">
+            Double Helix MMS is purpose-built benefits enrollment and member management software
+            for health sharing organizations — enroll members, manage coverage, run billing, and
+            pay agent commissions from one platform.
+          </p>
           <p>
-            Double Helix MMS unifies members, billing, commissions, and compliance
-            into one intelligent Member Management System — purpose-built for health sharing
-            organizations, and engineered alongside{' '}
+            Engineered alongside{' '}
             <a href="https://crm.doublehelixhub.com" target="_blank" rel="noopener noreferrer" className="lp-inline-link">
               Double Helix CRM
             </a>{' '}
-            for end-to-end agency and member operations.
+            so agencies enroll on the front end and your operations team manages every member on MMS.
           </p>
           <div className="lp-hero-actions">
             <Link href="/login" className="lp-btn-primary"><ArrowIcon /> Sign In to MMS</Link>
-            <a href="#showcase" className="lp-btn-secondary"><PlayIcon /> Explore MMS</a>
+            <a href="#enrollment" className="lp-btn-secondary"><PlayIcon /> See Enrollment Flow</a>
           </div>
         </div>
       </section>
@@ -470,12 +508,12 @@ export default function AdminLandingPage() {
         <div className="lp-dashboard-frame">
           <div className="lp-dashboard-topbar">
             <span className="lp-dot-r" /><span className="lp-dot-y" /><span className="lp-dot-g" />
-            <span className="lp-dashboard-url">admin.doublehelixhub.com · MMS</span>
+            <span className="lp-dashboard-url">admin.doublehelixhub.com · Benefits Enrollment & MMS</span>
           </div>
           <div className="lp-dashboard-body">
             <div className="lp-dash-sidebar">
-              {['Dashboard', 'Members', 'Agents', 'Products', 'Enrollments', 'Billing', 'Commissions', 'Analytics'].map((item, i) => (
-                <div key={item} className={`lp-dash-sidebar-item${i === 0 ? ' active' : ''}`}>
+              {['Dashboard', 'Enrollments', 'Members', 'Products', 'Agents', 'Billing', 'Commissions', 'Analytics'].map((item, i) => (
+                <div key={item} className={`lp-dash-sidebar-item${i === 1 ? ' active' : ''}`}>
                   <span className="lp-dash-icon">{'■●◆★►□$◈'[i]}</span> {item}
                 </div>
               ))}
@@ -483,7 +521,12 @@ export default function AdminLandingPage() {
             <div className="lp-dash-main">
               <div className="lp-dash-stats" ref={statsRef}>
                 <div className="lp-dash-stat">
-                  <div className="lp-dash-stat-label">Active Members</div>
+                  <div className="lp-dash-stat-label">Enrollments This Month</div>
+                  <div className="lp-dash-stat-value" data-counter-target="342">0</div>
+                  <div className="lp-dash-stat-change up">+24.1% vs last month</div>
+                </div>
+                <div className="lp-dash-stat">
+                  <div className="lp-dash-stat-label">Active Members (MMS)</div>
                   <div className="lp-dash-stat-value" data-counter-target="28470">0</div>
                   <div className="lp-dash-stat-change up">+8.6% this month</div>
                 </div>
@@ -493,19 +536,14 @@ export default function AdminLandingPage() {
                   <div className="lp-dash-stat-change up">+6.3% this month</div>
                 </div>
                 <div className="lp-dash-stat">
-                  <div className="lp-dash-stat-label">Commission Payouts</div>
-                  <div className="lp-dash-stat-value" data-counter-target="48320" data-counter-prefix="$">$0</div>
-                  <div className="lp-dash-stat-change up">Q1 accrual posted</div>
-                </div>
-                <div className="lp-dash-stat">
-                  <div className="lp-dash-stat-label">Enrollment Rate</div>
-                  <div className="lp-dash-stat-value" data-counter-target="94" data-counter-suffix="%">0%</div>
-                  <div className="lp-dash-stat-change up">+2.1% vs last quarter</div>
+                  <div className="lp-dash-stat-label">Enrollment Conversion</div>
+                  <div className="lp-dash-stat-value" data-counter-target="68" data-counter-suffix="%">0%</div>
+                  <div className="lp-dash-stat-change up">+4.2% vs last quarter</div>
                 </div>
               </div>
               <div className="lp-dash-chart-row">
                 <div className="lp-dash-chart">
-                  <div className="lp-dash-chart-title">Billing Volume</div>
+                  <div className="lp-dash-chart-title">Enrollment Volume</div>
                   <div className="lp-chart-bars">
                     {barHeights.map((h, i) => (
                       <div key={i} className={`lp-chart-bar${i % 2 === 0 ? '' : ' alt'}`} style={{ height: `${h}%`, animationDelay: `${i * 0.08}s` }} />
@@ -539,11 +577,11 @@ export default function AdminLandingPage() {
       </div>
 
       {/* Animated feature showcase */}
-      <section id="showcase" className="lp-showcase-section">
+      <section id="enrollment" className="lp-showcase-section">
         <div className="lp-section-header lp-reveal">
-          <div className="lp-section-badge">MMS Platform</div>
-          <h2>See Every Module<br/><span className="lp-gradient">In Motion</span></h2>
-          <p>Auto-cycling showcase of the MMS modules that power your daily member operations.</p>
+          <div className="lp-section-badge">Benefits Enrollment + MMS</div>
+          <h2>Enroll Members.<br/><span className="lp-gradient">Manage Them for Life.</span></h2>
+          <p>From benefits application to active MMS member — enrollment, coverage, billing, and commissions in one continuous workflow.</p>
         </div>
         <div className="lp-showcase-wrap lp-reveal" data-delay="100">
           <div className="lp-showcase-nav">
@@ -587,9 +625,9 @@ export default function AdminLandingPage() {
 
       <section id="features" className="lp-section">
         <div className="lp-section-header lp-reveal">
-          <div className="lp-section-badge">Platform Features</div>
-          <h2>Operations at Scale.<br/><span className="lp-gradient">Control at Every Layer.</span></h2>
-          <p>Every MMS module your operations team needs — billing, commissions, members, and compliance — unified in one Member Management System.</p>
+          <div className="lp-section-badge">Benefits Enrollment & MMS</div>
+          <h2>Enrollment Software.<br/><span className="lp-gradient">Member Management System.</span></h2>
+          <p>Every capability your benefits operations team needs — digital enrollment, the MMS member registry, billing, commissions, and HIPAA compliance — unified in one platform.</p>
         </div>
         <div className="lp-features-grid">
           {features.map((f, i) => (
@@ -607,10 +645,10 @@ export default function AdminLandingPage() {
       <section className="lp-metrics-section lp-section">
         <div className="lp-metrics-grid">
           {[
+            { value: '50000', label: 'Members in MMS' },
+            { value: '12000', label: 'Enrollments / Year' },
             { value: '99.9', label: 'Uptime SLA' },
-            { value: '50000', label: 'Members Managed' },
-            { value: '1200', label: 'Billing Runs / Month' },
-            { value: '1.8', label: 'Avg Processing (sec)' },
+            { value: '12000', label: 'Enrollments / Year' },
           ].map((m, i) => (
             <div key={m.label} className="lp-metric" data-delay={i * 150}>
               <div className="lp-metric-value" data-count={m.value}>0</div>
@@ -623,14 +661,14 @@ export default function AdminLandingPage() {
       <section id="how-it-works" className="lp-section">
         <div className="lp-section-header lp-reveal">
           <div className="lp-section-badge">How It Works</div>
-          <h2>Three Steps to<br/><span className="lp-gradient">Operational Control</span></h2>
-          <p>Go from fragmented spreadsheets to a unified Member Management System in weeks, not months.</p>
+          <h2>Three Steps from<br/><span className="lp-gradient">Enrollment to MMS</span></h2>
+          <p>Launch benefits enrollment and member management in weeks — not a patchwork of spreadsheets and disconnected tools.</p>
         </div>
         <div className="lp-workflow-steps">
           {[
-            { n: '1', title: 'Configure & Import', desc: 'Set up products, carriers, rate tables, and commission tiers. Bulk import members and agents with field mapping and validation.' },
-            { n: '2', title: 'Automate & Operate', desc: 'Run billing cycles, process enrollments, accrue commissions, and generate NACHA exports — all on automated schedules.' },
-            { n: '3', title: 'Monitor & Scale', desc: 'Track KPIs in real-time, audit every action, and scale your member population without adding headcount.' },
+            { n: '1', title: 'Configure Benefits & Plans', desc: 'Set up health sharing products, carriers, rate tables, enrollment forms, and commission rules. Import existing members into MMS.' },
+            { n: '2', title: 'Enroll & Activate Members', desc: 'Run digital enrollment flows with e-signatures and dependent capture. Approved applications automatically land in the MMS member registry.' },
+            { n: '3', title: 'Bill, Pay & Scale', desc: 'Automate billing tied to enrolled coverage, accrue agent commissions on enrollment, and scale your population without adding headcount.' },
           ].map((s, i) => (
             <div key={s.n} className="lp-workflow-step" data-delay={i * 200}>
               <div className={`lp-step-number step-${s.n}`}>{s.n}</div>
@@ -646,14 +684,14 @@ export default function AdminLandingPage() {
       <section id="demo" className="lp-section">
         <div className="lp-demo-container">
           <div className="lp-demo-text lp-reveal">
-            <div className="lp-section-badge">Member Operations</div>
-            <h2>Every Member.<br/><span className="lp-gradient">One Registry.</span></h2>
-            <p>Real-time member status, coverage details, billing context, and enrollment history — all searchable, all auditable.</p>
+            <div className="lp-section-badge">MMS Member Registry</div>
+            <h2>Every Enrolled Member.<br/><span className="lp-gradient">One MMS Registry.</span></h2>
+            <p>When enrollment completes, members flow directly into MMS — coverage, dependents, billing, and enrollment history searchable in one place.</p>
             <div className="lp-demo-features">
               {[
-                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'HIPAA-Compliant Registry', desc: 'Encrypted member data with full audit trail on every view and edit' },
-                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>, title: 'Billing Context', desc: 'See payment status, invoice history, and billing failures inline' },
-                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>, title: 'Multi-Tenant Isolation', desc: 'Organization-scoped data with RLS enforcement at every layer' },
+                { icon: featureIcons.enrollment, title: 'Enrollment-to-MMS Handoff', desc: 'Approved enrollments auto-create member records with plan, dependents, and effective dates' },
+                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, title: 'HIPAA-Compliant Registry', desc: 'Encrypted member and enrollment data with full audit trail on every view and edit' },
+                { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>, title: 'Billing Linked to Coverage', desc: 'See payment status and invoice history inline with each enrolled member plan' },
               ].map((f) => (
                 <div key={f.title} className="lp-demo-feature">
                   <div className="lp-demo-feature-icon">{f.icon}</div>
@@ -665,7 +703,7 @@ export default function AdminLandingPage() {
 
           <div className="lp-demo-visual lp-reveal" data-delay="200">
             <div className="lp-demo-panel-header">
-              <span className="lp-demo-panel-title">Member Registry</span>
+              <span className="lp-demo-panel-title">MMS Member Registry</span>
               <span className="lp-demo-panel-badge">Live</span>
             </div>
             <div ref={memberPanelRef} className="lp-demo-panel-body">
@@ -686,8 +724,8 @@ export default function AdminLandingPage() {
 
       <section id="testimonials" className="lp-section">
         <div className="lp-section-header lp-reveal">
-          <div className="lp-section-badge">Trusted By Operators</div>
-          <h2>Built for Ops Teams.<br/><span className="lp-gradient">Proven at Scale.</span></h2>
+          <div className="lp-section-badge">Benefits Operators</div>
+          <h2>Enrollment + MMS.<br/><span className="lp-gradient">Proven at Scale.</span></h2>
         </div>
         <div className="lp-testimonials-grid">
           {testimonials.map((t, i) => (
@@ -708,8 +746,8 @@ export default function AdminLandingPage() {
 
       <section className="lp-cta-section">
         <div className="lp-reveal">
-          <h2>Ready to <span className="lp-gradient">Centralize</span><br/>Member Management?</h2>
-          <p>Join the health sharing organizations already running billing, commissions, and member ops on MMS.</p>
+          <h2>Ready to Run <span className="lp-gradient">Benefits Enrollment</span><br/>on MMS?</h2>
+          <p>Join health sharing organizations that enroll members digitally and manage every lifecycle stage in one Member Management System.</p>
           <div className="lp-hero-actions">
             <Link href="/login" className="lp-btn-primary">Sign In to MMS <ArrowIcon /></Link>
             <a href="mailto:support@doublehelixhub.com" className="lp-btn-secondary">Contact Sales</a>
@@ -720,46 +758,48 @@ export default function AdminLandingPage() {
       <footer className="lp-footer">
         <div className="lp-footer-grid">
           <div>
-            <div className="lp-footer-brand">MMS — Member Management System</div>
+            <div className="lp-footer-brand">MMS — Benefits Enrollment & Member Management</div>
             <div className="lp-footer-desc">
-              Double Helix MMS is the Member Management System strand of the{' '}
-              <a href="https://doublehelix.com" target="_blank" rel="noopener noreferrer" className="lp-inline-link">
+              Double Helix MMS is benefits enrollment and member management software for health sharing
+              organizations — enroll members, manage coverage in the MMS registry, run billing, and pay
+              commissions. Part of the{' '}
+              <a href="https://doublehelixhub.com" target="_blank" rel="noopener noreferrer" className="lp-inline-link">
                 Double Helix Software
               </a>{' '}
-              platform — paired with{' '}
+              platform, paired with{' '}
               <a href="https://crm.doublehelixhub.com" target="_blank" rel="noopener noreferrer" className="lp-inline-link">
                 CRM
               </a>{' '}
-              for end-to-end agency and member operations.
+              for agency-side enrollment and end-to-end member operations.
             </div>
           </div>
           <div className="lp-footer-col">
             <h4>Platform</h4>
-            <a href="https://doublehelix.com/admin" target="_blank" rel="noopener noreferrer">MMS Overview</a>
+            <a href="https://admin.doublehelixhub.com" target="_blank" rel="noopener noreferrer">MMS Overview</a>
             <a href="https://crm.doublehelixhub.com" target="_blank" rel="noopener noreferrer">CRM</a>
             <a href="#features">Features</a>
-            <a href="#showcase">Platform Demo</a>
+            <a href="#enrollment">Platform Demo</a>
           </div>
           <div className="lp-footer-col">
             <h4>Resources</h4>
-            <a href="https://doublehelix.com/security" target="_blank" rel="noopener noreferrer">Security</a>
-            <a href="https://doublehelix.com/integrations" target="_blank" rel="noopener noreferrer">Integrations</a>
+            <a href="https://doublehelixhub.com/security" target="_blank" rel="noopener noreferrer">Security</a>
+            <a href="https://doublehelixhub.com/integrations" target="_blank" rel="noopener noreferrer">Integrations</a>
             <a href="#how-it-works">How it works</a>
             <a href="#testimonials">Testimonials</a>
           </div>
           <div className="lp-footer-col">
             <h4>Company</h4>
-            <a href="https://doublehelix.com" target="_blank" rel="noopener noreferrer">About</a>
+            <a href="https://doublehelixhub.com" target="_blank" rel="noopener noreferrer">About</a>
             <a href="mailto:support@doublehelixhub.com">Contact</a>
-            <a href="https://doublehelix.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
-            <a href="https://doublehelix.com/legal/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+            <a href="https://doublehelixhub.com/legal/privacy" target="_blank" rel="noopener noreferrer">Privacy</a>
+            <a href="https://doublehelixhub.com/legal/terms" target="_blank" rel="noopener noreferrer">Terms</a>
           </div>
         </div>
         <div className="lp-footer-bottom">
           <span>&copy; 2026 Double Helix Software. All rights reserved.</span>
           <span>
-            <a href="https://doublehelix.com" target="_blank" rel="noopener noreferrer" className="lp-inline-link">
-              doublehelix.com
+            <a href="https://doublehelixhub.com" target="_blank" rel="noopener noreferrer" className="lp-inline-link">
+              doublehelixhub.com
             </a>
           </span>
         </div>

@@ -259,7 +259,7 @@ export function AdminSidebar({
             <Link href="/dashboard" prefetch={false} className="flex flex-col group flex-1 min-w-0" onClick={handleLinkClick}>
               <BrandLogo variant="full" size="md" priority />
               <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-600 dark:text-cyan-400">
-                MMS · Member Management System
+              MMS · Benefits Enrollment & Member Management
               </span>
             </Link>
             {forMobile && (

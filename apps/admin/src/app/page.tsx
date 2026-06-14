@@ -1,8 +1,8 @@
 import AdminLandingPage from '@/components/landing/AdminLandingPage';
 
 export const metadata = {
-  title: 'MMS | Member Management System | Double Helix Hub',
-  description: 'MMS — the Member Management System for health sharing operations. Members, billing, commissions, and compliance unified in one platform.',
+  title: 'MMS | Benefits Enrollment & Member Management System | Double Helix Hub',
+  description: 'MMS is benefits enrollment and member management software for health sharing — digital enrollment, the member registry, billing, and commissions in one platform.',
 };
 
 export default function Home() {

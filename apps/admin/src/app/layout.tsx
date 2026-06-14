@@ -18,8 +18,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'MMS | Member Management System | Double Helix Hub',
-  description: 'MMS — Member Management System for health sharing organizations.',
+  title: 'MMS | Benefits Enrollment & Member Management | Double Helix Hub',
+  description: 'MMS — benefits enrollment and member management software for health sharing organizations.',
   icons: {
     icon: [{ url: '/favicon-32.png', type: 'image/png', sizes: '32x32' }],
     apple: [{ url: '/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }],

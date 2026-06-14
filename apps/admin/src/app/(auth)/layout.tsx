@@ -17,8 +17,8 @@ export default function AuthLayout({
               </span>
             </>
           }
-          subtitle="Member Management System for health sharing organizations."
-          badge="MMS"
+          subtitle="Benefits enrollment and member management software for health sharing organizations."
+          badge="Benefits Enrollment · MMS"
         />
       }
     >

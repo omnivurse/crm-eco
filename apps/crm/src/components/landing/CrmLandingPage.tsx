@@ -312,7 +312,7 @@ export default function CrmLandingPage() {
             compliance into one intelligent platform — purpose-built for
             benefits advisors and agencies, and engineered alongside{' '}
             <a
-              href="https://doublehelix.com/admin"
+              href="https://admin.doublehelixhub.com"
               target="_blank"
               rel="noopener noreferrer"
               className="lp-inline-link"
@@ -557,7 +557,7 @@ export default function CrmLandingPage() {
               </a>{' '}
               platform — the CRM strand that pairs with{' '}
               <a
-                href="https://admin.doublehelix.com"
+                href="https://admin.doublehelixhub.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="lp-inline-link"
@@ -570,7 +570,7 @@ export default function CrmLandingPage() {
           <div className="lp-footer-col">
             <h4>Platform</h4>
             <a href="https://doublehelix.com/crm" target="_blank" rel="noopener noreferrer">CRM Overview</a>
-            <a href="https://doublehelix.com/admin" target="_blank" rel="noopener noreferrer">Admin</a>
+            <a href="https://admin.doublehelixhub.com" target="_blank" rel="noopener noreferrer">Admin</a>
             <a href="#features">Features</a>
             <a href="#how-it-works">How it works</a>
           </div>
