@@ -93,7 +93,7 @@ export function SiteFooter() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-[#0F1B2D]">
+    <footer className="bg-dhh-ink">
       {/* ─── Upper Section: Columns ─── */}
       <div className="container mx-auto px-4 pt-16 pb-12">
         <div className="grid grid-cols-2 gap-8 lg:grid-cols-12 lg:gap-12">

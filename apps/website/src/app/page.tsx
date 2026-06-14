@@ -7,17 +7,13 @@ import { HeroSection } from '@/components/HeroSection';
 export default function HomePage() {
   return (
     <>
-      {/* ── Hero Section ── */}
       <HeroSection />
 
-      {/* ── How Health Sharing Works ── */}
       <section className="py-20 md:py-28 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-sm uppercase tracking-widest text-teal-600 font-semibold mb-3">
-              How It Works
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-[family-name:var(--font-heading)]">
+            <p className="hub-eyebrow mb-3">How It Works</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-dhh-ink font-[family-name:var(--font-heading)]">
               A smarter way to manage healthcare costs
             </h2>
           </div>
@@ -44,12 +40,12 @@ export default function HomePage() {
               },
             ].map((item) => (
               <div key={item.step} className="text-center">
-                <div className="w-16 h-16 rounded-full bg-teal-600/20 flex items-center justify-center mx-auto mb-6">
-                  <span className="text-5xl font-bold text-teal-600 leading-none">
+                <div className="w-16 h-16 rounded-full hub-step-ring flex items-center justify-center mx-auto mb-6">
+                  <span className="text-5xl font-bold text-primary leading-none">
                     {item.step}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3 font-[family-name:var(--font-heading)]">
+                <h3 className="text-xl font-bold text-dhh-ink mb-3 font-[family-name:var(--font-heading)]">
                   {item.title}
                 </h3>
                 <p className="text-base text-slate-600 leading-relaxed font-[family-name:var(--font-body)]">
@@ -60,10 +56,7 @@ export default function HomePage() {
           </div>
 
           <div className="text-center mt-14">
-            <Link
-              href="/how-it-works"
-              className="inline-flex items-center gap-2 text-teal-700 font-semibold hover:text-teal-800 transition-colors text-base"
-            >
+            <Link href="/how-it-works" className="hub-link inline-flex items-center gap-2 text-base">
               Learn more about how it works
               <ArrowRight className="w-4 h-4" />
             </Link>
@@ -71,65 +64,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Plan Cards ── */}
       <HomePlanCards />
 
-      {/* ── Why Families Choose Us ── */}
-      <section className="py-20 md:py-28 bg-[#F0F7FA]">
+      <section className="py-20 md:py-28 hub-section-muted">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left — Image */}
             <div className="order-2 md:order-1">
               <img
                 src="https://images.unsplash.com/photo-1511895426328-dc8714191300?w=600&q=80"
                 alt="Happy family smiling together"
-                className="rounded-2xl shadow-xl w-full h-auto object-cover aspect-[4/3]"
+                className="rounded-2xl shadow-xl w-full h-auto object-cover aspect-[4/3] ring-1 ring-slate-200/80"
               />
             </div>
 
-            {/* Right — Stats */}
             <div className="order-1 md:order-2">
-              <p className="text-sm uppercase tracking-widest text-teal-600 font-semibold mb-3">
-                Why Families Choose Us
-              </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-10 font-[family-name:var(--font-heading)]">
+              <p className="hub-eyebrow mb-3">Why Families Choose Us</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-dhh-ink mb-10 font-[family-name:var(--font-heading)]">
                 Real results for real families
               </h2>
 
               <div className="space-y-8">
                 <div>
-                  <p className="text-4xl font-bold text-teal-700 font-[family-name:var(--font-heading)]">
+                  <p className="text-4xl font-bold gradient-text font-[family-name:var(--font-heading)]">
                     60%
                   </p>
-                  <p className="text-lg font-semibold text-slate-900 mt-1">
-                    Average savings
-                  </p>
+                  <p className="text-lg font-semibold text-dhh-ink mt-1">Average savings</p>
                   <p className="text-slate-600 font-[family-name:var(--font-body)]">
                     Members typically save up to 60% compared to traditional insurance premiums, keeping more money where it belongs.
                   </p>
                 </div>
 
                 <div className="border-t border-slate-200 pt-8">
-                  <p className="text-4xl font-bold text-teal-700 font-[family-name:var(--font-heading)]">
+                  <p className="text-4xl font-bold gradient-text font-[family-name:var(--font-heading)]">
                     48-hour
                   </p>
-                  <p className="text-lg font-semibold text-slate-900 mt-1">
-                    Processing time
-                  </p>
+                  <p className="text-lg font-semibold text-dhh-ink mt-1">Processing time</p>
                   <p className="text-slate-600 font-[family-name:var(--font-body)]">
                     Most eligible needs are reviewed and processed within 48 hours, so you never wait long for the support you need.
                   </p>
                 </div>
 
                 <div className="border-t border-slate-200 pt-8">
-                  <p className="text-4xl font-bold text-teal-700 font-[family-name:var(--font-heading)]">
+                  <p className="text-4xl font-bold gradient-text font-[family-name:var(--font-heading)]">
                     98%
                   </p>
-                  <p className="text-lg font-semibold text-slate-900 mt-1">
-                    Eligible needs shared
-                  </p>
+                  <p className="text-lg font-semibold text-dhh-ink mt-1">Eligible needs shared</p>
                   <p className="text-slate-600 font-[family-name:var(--font-body)]">
-                    Our community consistently comes through &mdash; 98% of eligible medical needs are successfully shared among members.
+                    Our community consistently comes through — 98% of eligible medical needs are successfully shared among members.
                   </p>
                 </div>
               </div>
@@ -138,14 +119,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Testimonials ── */}
       <section className="py-20 md:py-28 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-sm uppercase tracking-widest text-teal-600 font-semibold mb-3">
-              Member Stories
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 font-[family-name:var(--font-heading)]">
+            <p className="hub-eyebrow mb-3">Member Stories</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-dhh-ink font-[family-name:var(--font-heading)]">
               Hear from our community
             </h2>
           </div>
@@ -171,18 +149,15 @@ export default function HomePage() {
                 role: 'Individual plan member',
               },
             ].map((testimonial) => (
-              <div key={testimonial.name} className="flex flex-col">
-                <span
-                  className="text-5xl leading-none text-teal-200 font-serif select-none mb-4"
-                  aria-hidden="true"
-                >
+              <div key={testimonial.name} className="flex flex-col rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
+                <span className="text-5xl leading-none text-cyan-200 font-serif select-none mb-4" aria-hidden="true">
                   &ldquo;
                 </span>
                 <p className="text-lg text-slate-700 italic leading-relaxed flex-1 font-[family-name:var(--font-body)]">
                   {testimonial.quote}
                 </p>
                 <div className="mt-6 pt-6 border-t border-slate-200">
-                  <p className="font-bold text-slate-900">{testimonial.name}</p>
+                  <p className="font-bold text-dhh-ink">{testimonial.name}</p>
                   <p className="text-sm text-slate-500">{testimonial.role}</p>
                 </div>
               </div>
@@ -191,20 +166,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Health Sharing, Not Insurance — Dark Section ── */}
-      <section className="py-20 md:py-28 relative overflow-hidden bg-[#002B5C] bg-[radial-gradient(ellipse_at_30%_50%,rgba(255,255,255,0.04)_0%,transparent_60%)]">
+      <section className="py-20 md:py-28 relative overflow-hidden hub-section-dark">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <p className="text-sm uppercase tracking-widest text-teal-300 font-semibold mb-3">
-              A Different Model
-            </p>
+            <p className="hub-eyebrow mb-3 text-dhh-highlight">A Different Model</p>
             <h2 className="text-3xl md:text-4xl font-bold text-white font-[family-name:var(--font-heading)]">
               A different approach to healthcare
             </h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-12 lg:gap-20 items-center max-w-6xl mx-auto">
-            {/* Left — Benefit Points */}
             <div>
               <ul className="space-y-5">
                 {[
@@ -215,7 +186,7 @@ export default function HomePage() {
                   'Lower monthly costs than traditional plans',
                 ].map((point) => (
                   <li key={point} className="flex items-start gap-4">
-                    <span className="text-emerald-400 text-xl mt-0.5 flex-shrink-0 font-bold">
+                    <span className="text-cyan-400 text-xl mt-0.5 flex-shrink-0 font-bold">
                       &#10003;
                     </span>
                     <span className="text-white/90 text-lg leading-relaxed font-[family-name:var(--font-body)]">
@@ -231,26 +202,24 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Right — Image */}
             <div>
               <img
                 src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=600&q=80"
                 alt="Doctor consultation"
-                className="rounded-2xl shadow-2xl w-full h-auto object-cover aspect-[4/3]"
+                className="rounded-2xl shadow-2xl w-full h-auto object-cover aspect-[4/3] ring-1 ring-white/10"
               />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
-      <section className="py-20 md:py-28 bg-gradient-to-r from-teal-700 to-emerald-700 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]" />
+      <section className="py-20 md:py-28 hub-cta-band relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_70%)]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 font-[family-name:var(--font-heading)]">
             Ready to join a healthier community?
           </h2>
-          <p className="text-lg text-teal-100 mb-10 max-w-2xl mx-auto font-[family-name:var(--font-body)]">
+          <p className="text-lg text-white/85 mb-10 max-w-2xl mx-auto font-[family-name:var(--font-body)]">
             Take the first step today. Join thousands of families who are
             choosing transparency, community, and real savings for their
             healthcare.
@@ -259,7 +228,7 @@ export default function HomePage() {
             <Link href="/enroll">
               <Button
                 size="lg"
-                className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg gap-2 w-full sm:w-auto font-semibold"
+                className="bg-white text-dhh-ink hover:bg-slate-100 shadow-lg gap-2 w-full sm:w-auto font-semibold"
               >
                 Start Enrollment
                 <ArrowRight className="w-4 h-4" />

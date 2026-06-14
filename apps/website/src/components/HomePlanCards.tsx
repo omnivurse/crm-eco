@@ -89,7 +89,7 @@ export async function HomePlanCards() {
                 key={plan.id}
                 className={`rounded-2xl p-6 md:p-8 ${
                   isPopular
-                    ? 'bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-xl shadow-teal-600/20 ring-4 ring-teal-600/20 scale-[1.02]'
+                    ? 'bg-gradient-to-b from-dhh-ink to-dhh-panel text-white shadow-xl shadow-cyan-500/20 ring-4 ring-primary/20 scale-[1.02]'
                     : 'bg-white border shadow-sm'
                 }`}
               >
@@ -108,7 +108,7 @@ export async function HomePlanCards() {
                 </h3>
                 <p
                   className={`text-sm mt-1 ${
-                    isPopular ? 'text-teal-100' : 'text-slate-500'
+                    isPopular ? 'text-cyan-100' : 'text-slate-500'
                   }`}
                 >
                   {plan.description || 'Health sharing plan'}
@@ -130,7 +130,7 @@ export async function HomePlanCards() {
                         </span>
                         <span
                           className={`text-sm ${
-                            isPopular ? 'text-teal-100' : 'text-slate-500'
+                            isPopular ? 'text-cyan-100' : 'text-slate-500'
                           }`}
                         >
                           /mo starting
@@ -147,7 +147,7 @@ export async function HomePlanCards() {
                         </span>
                         <span
                           className={`text-sm ${
-                            isPopular ? 'text-teal-100' : 'text-slate-500'
+                            isPopular ? 'text-cyan-100' : 'text-slate-500'
                           }`}
                         >
                           /month
@@ -162,12 +162,12 @@ export async function HomePlanCards() {
                       <li key={benefit.id} className="flex items-start gap-2">
                         <CheckCircle2
                           className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                            isPopular ? 'text-teal-200' : 'text-teal-600'
+                            isPopular ? 'text-cyan-200' : 'text-primary'
                           }`}
                         />
                         <span
                           className={`text-sm ${
-                            isPopular ? 'text-teal-50' : 'text-slate-600'
+                            isPopular ? 'text-cyan-50' : 'text-slate-600'
                           }`}
                         >
                           {benefit.benefit_name}
@@ -180,8 +180,8 @@ export async function HomePlanCards() {
                   <Button
                     className={`w-full ${
                       isPopular
-                        ? 'bg-white text-teal-700 hover:bg-teal-50'
-                        : 'bg-teal-600 hover:bg-teal-700 text-white'
+                        ? 'bg-white text-cyan-700 hover:bg-cyan-50'
+                        : 'hub-btn-gradient text-white'
                     }`}
                   >
                     Get Started
@@ -194,7 +194,7 @@ export async function HomePlanCards() {
 
         <div className="text-center mt-10">
           <Link href="/plans">
-            <Button variant="link" className="text-teal-600 gap-2">
+            <Button variant="link" className="text-primary gap-2">
               View all plans and compare features
               <ArrowRight className="w-4 h-4" />
             </Button>

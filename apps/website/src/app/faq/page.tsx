@@ -131,13 +131,13 @@ export default function FAQPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20">
+      <section className="relative overflow-hidden hub-inner-page-hero">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
         <div className="container mx-auto px-4 py-20 md:py-32 relative">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
               Have questions?{' '}
-              <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+              <span className="gradient-text">
                 We have answers.
               </span>
             </h1>
@@ -175,7 +175,7 @@ export default function FAQPage() {
                   onClick={() => setActiveCategory(cat)}
                   className={
                     activeCategory === cat
-                      ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                      ? 'hub-btn-gradient text-white'
                       : ''
                   }
                 >
@@ -207,7 +207,7 @@ export default function FAQPage() {
                         className="w-full flex items-center justify-between text-left py-4 px-5 font-semibold text-slate-900 hover:bg-slate-50/50 transition-colors"
                       >
                         <span className="pr-4">{item.question}</span>
-                        <span className="flex-shrink-0 text-teal-600">
+                        <span className="flex-shrink-0 text-primary">
                           {isOpen ? (
                             <ChevronUp className="w-5 h-5" />
                           ) : (
@@ -220,7 +220,7 @@ export default function FAQPage() {
                           <p className="text-slate-600 leading-relaxed pt-4">
                             {item.answer}
                           </p>
-                          <span className="inline-block mt-3 text-xs font-medium text-teal-600">
+                          <span className="inline-block mt-3 text-xs font-medium text-primary">
                             {item.category}
                           </span>
                         </div>
@@ -235,20 +235,20 @@ export default function FAQPage() {
       </section>
 
       {/* CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-emerald-600 py-20">
+      <section className="relative overflow-hidden hub-cta-band py-20">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_70%)]" />
         <div className="container mx-auto px-4 relative text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Still have questions?
           </h2>
-          <p className="text-lg text-teal-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-cyan-100 mb-8 max-w-2xl mx-auto">
             Our team is here to help. Reach out and we&apos;ll get back to you as soon
             as possible.
           </p>
           <Link href="/contact">
             <Button
               size="lg"
-              className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg gap-2"
+              className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-lg gap-2"
             >
               <MessageCircle className="w-5 h-5" />
               Contact us

@@ -14,7 +14,7 @@ export default function TermsOfServicePage() {
       <div className="container mx-auto px-4 py-12 md:py-16 max-w-3xl">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-8 font-medium transition-colors"
+          className="inline-flex items-center gap-2 text-primary hover:text-cyan-700 mb-8 font-medium transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Home
@@ -213,7 +213,7 @@ export default function TermsOfServicePage() {
         <div className="mt-16 pt-8 border-t border-slate-200">
           <Link
             href="/legal/privacy"
-            className="text-teal-600 hover:text-teal-700 font-medium"
+            className="text-primary hover:text-cyan-700 font-medium"
           >
             View Privacy Policy →
           </Link>

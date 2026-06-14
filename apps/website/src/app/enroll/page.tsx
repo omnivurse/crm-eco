@@ -105,12 +105,12 @@ export default async function EnrollPage({ searchParams }: PageProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-teal-600 to-emerald-600 text-white py-12">
+      <section className="hub-cta-band text-white py-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-3xl md:text-4xl font-bold mb-3">
             Join Double Helix Hub
           </h1>
-          <p className="text-teal-100 text-lg max-w-2xl mx-auto">
+          <p className="text-cyan-100 text-lg max-w-2xl mx-auto">
             Complete the enrollment process below. It only takes a few minutes to
             join our health sharing community.
           </p>
@@ -122,7 +122,7 @@ export default async function EnrollPage({ searchParams }: PageProps) {
               { icon: Shield, text: 'Secure & private' },
               { icon: Heart, text: 'No obligation' },
             ].map((item) => (
-              <div key={item.text} className="flex items-center gap-2 text-sm text-teal-100">
+              <div key={item.text} className="flex items-center gap-2 text-sm text-cyan-100">
                 <item.icon className="w-4 h-4" />
                 <span>{item.text}</span>
               </div>

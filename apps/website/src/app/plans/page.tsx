@@ -99,7 +99,7 @@ export default async function PlansPage() {
   return (
     <>
       {/* Hero */}
-      <section className="bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20 py-16 md:py-24">
+      <section className="hub-inner-page-hero py-16 md:py-24">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
             Find the right plan for you
@@ -129,7 +129,7 @@ export default async function PlansPage() {
                     key={plan.id}
                     className={`rounded-2xl p-6 md:p-8 ${
                       isPopular
-                        ? 'bg-gradient-to-b from-teal-600 to-teal-700 text-white shadow-xl shadow-teal-600/20 ring-4 ring-teal-600/20 md:scale-[1.03]'
+                        ? 'bg-gradient-to-b from-dhh-ink to-dhh-panel text-white shadow-xl shadow-cyan-500/20 ring-4 ring-primary/20 md:scale-[1.03]'
                         : 'bg-white border-2 border-slate-200 shadow-sm'
                     }`}
                   >
@@ -148,7 +148,7 @@ export default async function PlansPage() {
                     </h3>
                     <p
                       className={`text-sm mt-1 ${
-                        isPopular ? 'text-teal-100' : 'text-slate-500'
+                        isPopular ? 'text-cyan-100' : 'text-slate-500'
                       }`}
                     >
                       {plan.description || 'Health sharing plan'}
@@ -170,7 +170,7 @@ export default async function PlansPage() {
                             </span>
                             <span
                               className={`text-sm ${
-                                isPopular ? 'text-teal-100' : 'text-slate-500'
+                                isPopular ? 'text-cyan-100' : 'text-slate-500'
                               }`}
                             >
                               /mo starting
@@ -187,7 +187,7 @@ export default async function PlansPage() {
                             </span>
                             <span
                               className={`text-sm ${
-                                isPopular ? 'text-teal-100' : 'text-slate-500'
+                                isPopular ? 'text-cyan-100' : 'text-slate-500'
                               }`}
                             >
                               /month
@@ -199,7 +199,7 @@ export default async function PlansPage() {
                     {plan.iua_amount !== null && (
                       <p
                         className={`text-xs mb-6 ${
-                          isPopular ? 'text-teal-200' : 'text-slate-400'
+                          isPopular ? 'text-cyan-200' : 'text-slate-400'
                         }`}
                       >
                         IUA: {formatCurrency(plan.iua_amount)} per incident
@@ -211,12 +211,12 @@ export default async function PlansPage() {
                           <li key={benefit.id} className="flex items-start gap-2">
                             <CheckCircle2
                               className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                                isPopular ? 'text-teal-200' : 'text-teal-600'
+                                isPopular ? 'text-cyan-200' : 'text-primary'
                               }`}
                             />
                             <span
                               className={`text-sm ${
-                                isPopular ? 'text-teal-50' : 'text-slate-600'
+                                isPopular ? 'text-cyan-50' : 'text-slate-600'
                               }`}
                             >
                               {benefit.benefit_name}
@@ -229,8 +229,8 @@ export default async function PlansPage() {
                       <Button
                         className={`w-full ${
                           isPopular
-                            ? 'bg-white text-teal-700 hover:bg-teal-50'
-                            : 'bg-teal-600 hover:bg-teal-700 text-white'
+                            ? 'bg-white text-cyan-700 hover:bg-cyan-50'
+                            : 'hub-btn-gradient text-white'
                         }`}
                       >
                         Enroll Now
@@ -270,7 +270,7 @@ export default async function PlansPage() {
                           key={plan.id}
                           className={`text-center p-4 text-sm font-semibold ${
                             idx === popularIndex
-                              ? 'text-teal-700 bg-teal-50'
+                              ? 'text-cyan-700 hub-icon-chip'
                               : 'text-slate-700'
                           }`}
                         >
@@ -286,9 +286,9 @@ export default async function PlansPage() {
                       {plans.map((plan, idx) => (
                         <td
                           key={plan.id}
-                          className={`text-center p-4 ${idx === popularIndex ? 'bg-teal-50/30' : ''}`}
+                          className={`text-center p-4 ${idx === popularIndex ? 'hub-icon-chip/30' : ''}`}
                         >
-                          <span className={`text-sm font-medium ${idx === popularIndex ? 'font-semibold text-teal-700' : 'text-slate-700'}`}>
+                          <span className={`text-sm font-medium ${idx === popularIndex ? 'font-semibold text-cyan-700' : 'text-slate-700'}`}>
                             {formatCurrency(plan.monthly_share)}
                           </span>
                         </td>
@@ -300,9 +300,9 @@ export default async function PlansPage() {
                       {plans.map((plan, idx) => (
                         <td
                           key={plan.id}
-                          className={`text-center p-4 ${idx === popularIndex ? 'bg-teal-50/30' : ''}`}
+                          className={`text-center p-4 ${idx === popularIndex ? 'hub-icon-chip/30' : ''}`}
                         >
-                          <span className={`text-sm font-medium ${idx === popularIndex ? 'font-semibold text-teal-700' : 'text-slate-700'}`}>
+                          <span className={`text-sm font-medium ${idx === popularIndex ? 'font-semibold text-cyan-700' : 'text-slate-700'}`}>
                             {formatCurrency(plan.iua_amount)}
                           </span>
                         </td>
@@ -322,10 +322,10 @@ export default async function PlansPage() {
                           {plans.map((plan, idx) => (
                             <td
                               key={plan.id}
-                              className={`text-center p-4 ${idx === popularIndex ? 'bg-teal-50/30' : ''}`}
+                              className={`text-center p-4 ${idx === popularIndex ? 'hub-icon-chip/30' : ''}`}
                             >
                               {planHasBenefit[idx] ? (
-                                <CheckCircle2 className="w-5 h-5 text-teal-600 mx-auto" />
+                                <CheckCircle2 className="w-5 h-5 text-primary mx-auto" />
                               ) : (
                                 <Minus className="w-5 h-5 text-slate-300 mx-auto" />
                               )}
@@ -347,8 +347,8 @@ export default async function PlansPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
             <div>
-              <div className="w-12 h-12 rounded-xl bg-teal-100 flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-teal-600" />
+              <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-primary" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">
                 What is the IUA?
@@ -366,8 +366,8 @@ export default async function PlansPage() {
             </div>
 
             <div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center mb-4">
-                <Heart className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center mb-4">
+                <Heart className="w-6 h-6 text-violet-600" />
               </div>
               <h3 className="text-xl font-bold text-slate-900 mb-3">
                 Monthly Share Amount
@@ -419,7 +419,7 @@ export default async function PlansPage() {
                 <details key={item.q} className="group bg-white rounded-xl border p-0">
                   <summary className="flex items-center justify-between p-5 cursor-pointer list-none">
                     <span className="font-medium text-slate-900 pr-4">{item.q}</span>
-                    <HelpCircle className="w-5 h-5 text-slate-400 flex-shrink-0 group-open:text-teal-600 transition-colors" />
+                    <HelpCircle className="w-5 h-5 text-slate-400 flex-shrink-0 group-open:text-primary transition-colors" />
                   </summary>
                   <div className="px-5 pb-5 text-sm text-slate-600 leading-relaxed">
                     {item.a}
@@ -432,12 +432,12 @@ export default async function PlansPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-teal-600 to-emerald-600 py-16">
+      <section className="hub-cta-band py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
             Ready to enroll?
           </h2>
-          <p className="text-teal-100 mb-8 max-w-xl mx-auto">
+          <p className="text-cyan-100 mb-8 max-w-xl mx-auto">
             Join thousands of families who trust Double Helix Hub for their
             healthcare sharing needs.
           </p>
@@ -445,7 +445,7 @@ export default async function PlansPage() {
             <Link href="/enroll">
               <Button
                 size="lg"
-                className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg gap-2 w-full sm:w-auto"
+                className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-lg gap-2 w-full sm:w-auto"
               >
                 Start Enrollment
                 <ArrowRight className="w-4 h-4" />

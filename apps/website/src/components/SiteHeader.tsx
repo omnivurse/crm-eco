@@ -52,7 +52,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full">
       {/* ─── Utility Bar ─── */}
       <div
-        className={`bg-[#002B5C] transition-all duration-300 overflow-hidden ${
+        className={`bg-dhh-ink transition-all duration-300 overflow-hidden ${
           scrolled ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100'
         }`}
       >
@@ -124,10 +124,10 @@ export function SiteHeader() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="relative px-3 py-2 text-sm font-medium text-slate-700 hover:text-teal-700 rounded-md transition-colors group"
+                  className="relative px-3 py-2 text-sm font-medium text-slate-700 hover:text-primary rounded-md transition-colors group"
                 >
                   {item.name}
-                  <span className="absolute inset-x-3 -bottom-px h-0.5 bg-teal-700 scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+                  <span className="absolute inset-x-3 -bottom-px h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
                 </Link>
               ))}
             </nav>
@@ -136,7 +136,7 @@ export function SiteHeader() {
             <div className="hidden lg:flex items-center gap-3">
               <Link href="/enroll">
                 <Button
-                  className="bg-teal-700 hover:bg-teal-800 text-white rounded-lg shadow-sm px-5"
+                  className="hub-btn-gradient rounded-lg px-5"
                   size="sm"
                 >
                   Get Started
@@ -178,7 +178,7 @@ export function SiteHeader() {
               <Link
                 key={link.name}
                 href={link.href}
-                className="text-xs font-medium text-slate-500 hover:text-teal-700 transition-colors"
+                className="text-xs font-medium text-slate-500 hover:text-primary transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {link.name}
@@ -191,7 +191,7 @@ export function SiteHeader() {
             <Link
               key={item.name}
               href={item.href}
-              className="block px-3 py-2.5 text-base font-medium text-slate-700 hover:text-teal-700 hover:bg-slate-50 rounded-md transition-colors"
+              className="block px-3 py-2.5 text-base font-medium text-slate-700 hover:text-primary hover:bg-slate-50 rounded-md transition-colors"
               onClick={() => setMobileMenuOpen(false)}
             >
               {item.name}
@@ -202,19 +202,19 @@ export function SiteHeader() {
           <div className="pt-4 mt-4 border-t border-slate-100 space-y-3">
             <a
               href={`${PORTAL_URL}/signin`}
-              className="block px-3 py-2.5 text-base font-medium text-slate-600 hover:text-teal-700 hover:bg-slate-50 rounded-md transition-colors"
+              className="block px-3 py-2.5 text-base font-medium text-slate-600 hover:text-cyan-700 hover:bg-slate-50 rounded-md transition-colors"
             >
               Member Sign In
             </a>
             <a
               href="tel:18005551234"
-              className="flex items-center gap-2 px-3 py-2.5 text-base font-medium text-slate-600 hover:text-teal-700 hover:bg-slate-50 rounded-md transition-colors"
+              className="flex items-center gap-2 px-3 py-2.5 text-base font-medium text-slate-600 hover:text-cyan-700 hover:bg-slate-50 rounded-md transition-colors"
             >
               <Phone className="w-4 h-4" />
               1-800-555-1234
             </a>
             <Link href="/enroll" onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full bg-teal-700 hover:bg-teal-800 text-white rounded-lg mt-1">
+              <Button className="w-full hub-btn-gradient rounded-lg mt-1">
                 Get Started
               </Button>
             </Link>

@@ -107,7 +107,7 @@ export default function ContactPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20">
+      <section className="relative overflow-hidden hub-inner-page-hero">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
         <div className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="max-w-2xl mx-auto text-center">
@@ -131,8 +131,8 @@ export default function ContactPage() {
                 <CardContent className="pt-6">
                   {submitted ? (
                     <div className="text-center py-12">
-                      <div className="w-16 h-16 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-4">
-                        <Mail className="w-8 h-8 text-teal-600" />
+                      <div className="w-16 h-16 rounded-full hub-icon-chip flex items-center justify-center mx-auto mb-4">
+                        <Mail className="w-8 h-8 text-primary" />
                       </div>
                       <h3 className="text-xl font-semibold text-slate-900 mb-2">
                         Thank you for reaching out!
@@ -231,7 +231,7 @@ export default function ContactPage() {
                       </div>
                       <Button
                         type="submit"
-                        className="w-full bg-teal-600 hover:bg-teal-700 text-white gap-2"
+                        className="w-full hub-btn-gradient text-white gap-2"
                       >
                         Send Message
                         <Send className="w-4 h-4" />
@@ -250,8 +250,8 @@ export default function ContactPage() {
                 </h2>
                 <div className="space-y-5">
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-6 h-6 text-teal-600" />
+                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">Phone</p>
@@ -259,22 +259,22 @@ export default function ContactPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-6 h-6 text-teal-600" />
+                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">Email</p>
                       <a
                         href="mailto:support@doublehelixhub.com"
-                        className="text-teal-600 hover:text-teal-700 hover:underline"
+                        className="text-primary hover:text-cyan-700 hover:underline"
                       >
                         support@doublehelixhub.com
                       </a>
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-teal-600" />
+                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">
@@ -286,8 +286,8 @@ export default function ContactPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-6 h-6 text-teal-600" />
+                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium text-slate-900">Address</p>
@@ -309,8 +309,8 @@ export default function ContactPage() {
                 <div className="grid gap-4">
                   <Card className="border shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="pt-4 pb-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-                        <Phone className="w-5 h-5 text-teal-600" />
+                      <div className="w-10 h-10 rounded-lg hub-icon-chip flex items-center justify-center flex-shrink-0">
+                        <Phone className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-900">
@@ -324,8 +324,8 @@ export default function ContactPage() {
                   </Card>
                   <Card className="border shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="pt-4 pb-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-                        <Mail className="w-5 h-5 text-teal-600" />
+                      <div className="w-10 h-10 rounded-lg hub-icon-chip flex items-center justify-center flex-shrink-0">
+                        <Mail className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <p className="font-medium text-slate-900">

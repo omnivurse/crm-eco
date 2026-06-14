@@ -83,19 +83,19 @@ export default function BlogPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-teal-50 via-emerald-50/50 to-slate-50">
+      <section className="relative overflow-hidden hub-inner-page-hero">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.15),transparent)]" />
         <div className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-full px-4 py-1.5 mb-6">
-              <BookOpen className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-medium text-teal-700">
+            <div className="inline-flex items-center gap-2 hub-icon-chip border rounded-full px-4 py-1.5 mb-6">
+              <BookOpen className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-cyan-700">
                 Blog & Resources
               </span>
             </div>
             <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
               Health & Wellness{' '}
-              <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+              <span className="gradient-text">
                 Resources
               </span>
             </h1>
@@ -118,7 +118,7 @@ export default function BlogPage() {
                 size="sm"
                 className={
                   cat === 'All'
-                    ? 'bg-teal-600 hover:bg-teal-700 text-white'
+                    ? 'hub-btn-gradient text-white'
                     : ''
                 }
               >
@@ -135,18 +135,18 @@ export default function BlogPage() {
           {PLACEHOLDER_POSTS.map((post) => (
             <Card
               key={post.slug}
-              className="group overflow-hidden border-slate-200 hover:border-teal-200 hover:shadow-lg hover:shadow-teal-500/5 transition-all duration-300"
+              className="group overflow-hidden border-slate-200 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-2 mb-3">
                   <Badge
                     variant="secondary"
-                    className="bg-teal-50 text-teal-700 border-teal-200"
+                    className="hub-icon-chip text-cyan-700 border-cyan-200"
                   >
                     {post.category}
                   </Badge>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2 group-hover:text-teal-700 transition-colors line-clamp-2">
+                <h2 className="text-xl font-semibold text-slate-900 mb-2 group-hover:text-cyan-700 transition-colors line-clamp-2">
                   {post.title}
                 </h2>
                 <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 mb-4">
@@ -168,7 +168,7 @@ export default function BlogPage() {
                 </div>
                 <Link
                   href={`/blog/${post.slug}`}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-teal-600 hover:text-teal-700 group/link"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-cyan-700 group/link"
                 >
                   Read More
                   <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />

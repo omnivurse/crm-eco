@@ -110,19 +110,19 @@ export default function ForAdvisorsPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20">
+      <section className="relative overflow-hidden hub-inner-page-hero">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
         <div className="container mx-auto px-4 py-20 md:py-32 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-medium text-teal-700">
+            <div className="inline-flex items-center gap-2 hub-icon-chip border rounded-full px-4 py-1.5 mb-6">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-cyan-700">
                 Advisor Partnership Program
               </span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
               Partner with{' '}
-              <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+              <span className="gradient-text">
                 Double Helix Hub
               </span>
             </h1>
@@ -134,7 +134,7 @@ export default function ForAdvisorsPage() {
               <a href="/contact">
                 <Button
                   size="lg"
-                  className="bg-teal-600 hover:bg-teal-700 text-white shadow-lg shadow-teal-600/20 gap-2 w-full sm:w-auto"
+                  className="hub-btn-gradient text-white shadow-lg shadow-cyan-500/20 gap-2 w-full sm:w-auto"
                 >
                   Apply Now
                   <ArrowRight className="w-4 h-4" />
@@ -173,7 +173,7 @@ export default function ForAdvisorsPage() {
                 className="border shadow-sm hover:shadow-md transition-shadow h-full"
               >
                 <CardContent className="pt-6">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 rounded-xl hub-gradient-icon flex items-center justify-center mb-4">
                     <benefit.icon className="w-6 h-6 text-white" />
                   </div>
                   <h3 className="text-xl font-semibold text-slate-900 mb-2">
@@ -206,13 +206,13 @@ export default function ForAdvisorsPage() {
               <Card
                 key={tier.level}
                 className={`border shadow-sm overflow-hidden ${
-                  tier.color === 'teal' ? 'ring-2 ring-teal-500' : ''
+                  tier.color === 'teal' ? 'ring-2 ring-primary' : ''
                 }`}
               >
                 <div
                   className={`h-1.5 ${
                     tier.color === 'teal'
-                      ? 'bg-gradient-to-r from-teal-500 to-emerald-600'
+                      ? 'hub-gradient-icon'
                       : tier.color === 'slate'
                         ? 'bg-slate-400'
                         : 'bg-amber-400'
@@ -224,12 +224,12 @@ export default function ForAdvisorsPage() {
                       {tier.level}
                     </h3>
                     {tier.color === 'teal' && (
-                      <Badge className="bg-teal-100 text-teal-700 hover:bg-teal-100">
+                      <Badge className="hub-icon-chip text-cyan-700 hover:bg-cyan-50">
                         Best Value
                       </Badge>
                     )}
                   </div>
-                  <p className="text-3xl font-bold text-teal-600 mb-1">
+                  <p className="text-3xl font-bold text-primary mb-1">
                     {tier.percent}
                   </p>
                   <p className="text-sm text-slate-500 mb-4">
@@ -261,7 +261,7 @@ export default function ForAdvisorsPage() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {steps.map((item) => (
               <div key={item.step} className="relative text-center">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-teal-600/20">
+                <div className="w-16 h-16 rounded-2xl hub-gradient-icon flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-500/20">
                   <item.icon className="w-7 h-7 text-white" />
                 </div>
                 <div className="absolute -top-1 -right-2 md:right-auto md:left-1/2 md:ml-6 w-8 h-8 rounded-full bg-slate-900 text-white text-sm font-bold flex items-center justify-center">
@@ -281,7 +281,7 @@ export default function ForAdvisorsPage() {
             <a href="/contact">
               <Button
                 size="lg"
-                className="bg-teal-600 hover:bg-teal-700 text-white gap-2"
+                className="hub-btn-gradient text-white gap-2"
               >
                 Start Your Application
                 <ArrowRight className="w-4 h-4" />
@@ -337,13 +337,13 @@ export default function ForAdvisorsPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-emerald-600 py-20">
+      <section className="relative overflow-hidden hub-cta-band py-20">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_70%)]" />
         <div className="container mx-auto px-4 relative text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to partner with us?
           </h2>
-          <p className="text-lg text-teal-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-cyan-100 mb-8 max-w-2xl mx-auto">
             Join our network of advisors and start earning while helping families
             find affordable health sharing.
           </p>
@@ -351,7 +351,7 @@ export default function ForAdvisorsPage() {
             <a href="/contact">
               <Button
                 size="lg"
-                className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg gap-2 w-full sm:w-auto"
+                className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-lg gap-2 w-full sm:w-auto"
               >
                 Apply Now
                 <ArrowRight className="w-4 h-4" />

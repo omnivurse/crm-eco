@@ -107,19 +107,19 @@ export default function HowItWorksPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-teal-50/30 to-emerald-50/20">
+      <section className="relative overflow-hidden hub-inner-page-hero">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
         <div className="container mx-auto px-4 py-20 md:py-32 relative">
           <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-medium text-teal-700">
+            <div className="inline-flex items-center gap-2 hub-icon-chip border rounded-full px-4 py-1.5 mb-6">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-cyan-700">
                 Simple & Transparent
               </span>
             </div>
             <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
               Understanding{' '}
-              <span className="bg-gradient-to-r from-teal-600 to-emerald-600 bg-clip-text text-transparent">
+              <span className="gradient-text">
                 Health Sharing
               </span>
             </h1>
@@ -160,16 +160,16 @@ export default function HowItWorksPage() {
                   <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row gap-6">
                       <div className="flex-shrink-0 flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white text-xl font-bold">
+                        <div className="w-14 h-14 rounded-2xl hub-gradient-icon flex items-center justify-center text-white text-xl font-bold">
                           {step.number}
                         </div>
-                        <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center md:hidden">
-                          <step.icon className="w-6 h-6 text-teal-600" />
+                        <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center md:hidden">
+                          <step.icon className="w-6 h-6 text-primary" />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="hidden md:flex w-12 h-12 rounded-xl bg-teal-50 items-center justify-center mb-3">
-                          <step.icon className="w-6 h-6 text-teal-600" />
+                        <div className="hidden md:flex w-12 h-12 rounded-xl hub-icon-chip items-center justify-center mb-3">
+                          <step.icon className="w-6 h-6 text-primary" />
                         </div>
                         <h3 className="text-xl font-semibold text-slate-900 mb-2">
                           {step.title}
@@ -192,7 +192,7 @@ export default function HowItWorksPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl hub-gradient-icon flex items-center justify-center">
                 <Heart className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
@@ -241,7 +241,7 @@ export default function HowItWorksPage() {
             <div className="hidden md:block border rounded-2xl overflow-hidden shadow-sm">
               <div className="grid grid-cols-3 bg-slate-50 border-b">
                 <div className="p-4 font-semibold text-slate-900">Category</div>
-                <div className="p-4 font-semibold text-teal-700 text-center">
+                <div className="p-4 font-semibold text-cyan-700 text-center">
                   Health Sharing
                 </div>
                 <div className="p-4 font-semibold text-slate-600 text-center">
@@ -257,7 +257,7 @@ export default function HowItWorksPage() {
                     {row.category}
                   </div>
                   <div className="p-4 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
                     <span className="text-slate-700 text-sm">
                       {row.sharing}
                     </span>
@@ -284,9 +284,9 @@ export default function HowItWorksPage() {
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-teal-600 flex-shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <span className="text-xs font-medium text-teal-700 block">
+                        <span className="text-xs font-medium text-cyan-700 block">
                           Health Sharing
                         </span>
                         <span className="text-sm text-slate-700">
@@ -318,7 +318,7 @@ export default function HowItWorksPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl hub-gradient-icon flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
@@ -332,7 +332,7 @@ export default function HowItWorksPage() {
             <ul className="space-y-3">
               {eligibilityItems.map((item, index) => (
                 <li key={index} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <span className="text-slate-700">{item}</span>
                 </li>
               ))}
@@ -346,20 +346,20 @@ export default function HowItWorksPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-teal-600 to-emerald-600 py-20">
+      <section className="relative overflow-hidden hub-cta-band py-20">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_70%)]" />
         <div className="container mx-auto px-4 relative text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Ready to Join?
           </h2>
-          <p className="text-lg text-teal-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg text-cyan-100 mb-8 max-w-2xl mx-auto">
             Start your enrollment today and become part of a community that shares
             healthcare costs — and cares for each other.
           </p>
           <Link href="/enroll">
             <Button
               size="lg"
-              className="bg-white text-teal-700 hover:bg-teal-50 shadow-lg gap-2"
+              className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-lg gap-2"
             >
               Enroll Now
               <ArrowRight className="w-4 h-4" />

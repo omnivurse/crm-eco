@@ -163,7 +163,7 @@ export default async function BlogPostPage({ params }: Props) {
       <div className="container mx-auto px-4 py-16">
         <Link
           href="/blog"
-          className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-8"
+          className="inline-flex items-center gap-2 text-primary hover:text-cyan-700 mb-8"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Blog
@@ -181,7 +181,7 @@ export default async function BlogPostPage({ params }: Props) {
       <article className="container mx-auto px-4 py-12 md:py-16 max-w-3xl">
         <Link
           href="/blog"
-          className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-8 font-medium transition-colors"
+          className="inline-flex items-center gap-2 text-primary hover:text-cyan-700 mb-8 font-medium transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Blog
@@ -190,7 +190,7 @@ export default async function BlogPostPage({ params }: Props) {
         <header className="mb-10">
           <Badge
             variant="secondary"
-            className="bg-teal-50 text-teal-700 border-teal-200 mb-4"
+            className="hub-icon-chip text-cyan-700 border-cyan-200 mb-4"
           >
             {post.category}
           </Badge>
@@ -219,7 +219,7 @@ export default async function BlogPostPage({ params }: Props) {
         {/* Author card */}
         <Card className="mt-12 border-slate-200">
           <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-full hub-gradient-icon flex items-center justify-center">
               <User className="w-7 h-7 text-white" />
             </div>
             <div>
@@ -237,12 +237,12 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="grid sm:grid-cols-2 gap-4">
             {post.related.map((related) => (
               <Link key={related.slug} href={`/blog/${related.slug}`}>
-                <Card className="h-full border-slate-200 hover:border-teal-200 hover:shadow-md transition-all">
+                <Card className="h-full border-slate-200 hover:border-cyan-200 hover:shadow-md transition-all">
                   <CardContent className="p-4">
-                    <p className="font-medium text-slate-900 group-hover:text-teal-700 line-clamp-2">
+                    <p className="font-medium text-slate-900 group-hover:text-cyan-700 line-clamp-2">
                       {related.title}
                     </p>
-                    <span className="text-sm text-teal-600 mt-2 inline-block">
+                    <span className="text-sm text-primary mt-2 inline-block">
                       Read article →
                     </span>
                   </CardContent>
