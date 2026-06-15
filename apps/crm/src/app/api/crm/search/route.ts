@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import {
+  applyCrmRecordTextSearch,
   buildPhoneSearchOrFilter,
-  escapeIlikePattern,
+  fetchOrgDataJsonKeysForSearch,
   isConvertedLeadRow,
-  phoneFormatVariants,
 } from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
@@ -298,7 +298,12 @@ async function phoneIlikeFallback(
     limit: number;
   },
 ): Promise<SmartSearchRow[]> {
-  const filter = buildPhoneSearchOrFilter(opts.rawQuery);
+  const dataJsonKeys = await fetchOrgDataJsonKeysForSearch(
+    supabase,
+    orgId,
+    opts.moduleFilter,
+  );
+  const filter = buildPhoneSearchOrFilter(opts.rawQuery, { dataJsonKeys });
   if (!filter) {
     return [];
   }
@@ -352,28 +357,11 @@ async function ilikeFallback(
   orgId: string,
   opts: { query: string; moduleFilter: string | null; limit: number },
 ): Promise<SmartSearchRow[]> {
-  const safe = escapeIlikePattern(opts.query);
-  const digits = opts.query.replace(/\D/g, '');
-
-  const orClauses = new Set<string>([
-    `title.ilike.%${safe}%`,
-    `email.ilike.%${safe}%`,
-    `phone.ilike.%${safe}%`,
-    `data::text.ilike.%${safe}%`,
-  ]);
-
-  // If the query contains enough digits to be phone-like, also widen to
-  // the common phone presentations.
-  if (digits.length >= 4 && digits.length <= 15) {
-    for (const v of phoneFormatVariants(digits)) {
-      orClauses.add(`phone.ilike.%${escapeIlikePattern(v)}%`);
-    }
-    orClauses.add(`data::text.ilike.%${escapeIlikePattern(digits)}%`);
-    const tail = digits.slice(-10);
-    if (tail && tail !== digits) {
-      orClauses.add(`data::text.ilike.%${escapeIlikePattern(tail)}%`);
-    }
-  }
+  const dataJsonKeys = await fetchOrgDataJsonKeysForSearch(
+    supabase,
+    orgId,
+    opts.moduleFilter,
+  );
 
   let qb = supabase
     .from('crm_records')
@@ -384,12 +372,13 @@ async function ilikeFallback(
     `,
     )
     .eq('org_id', orgId)
-    .or(Array.from(orClauses).join(','))
     .limit(opts.limit);
 
   if (opts.moduleFilter) {
     qb = qb.eq('crm_modules.key', opts.moduleFilter);
   }
+
+  qb = applyCrmRecordTextSearch(qb, opts.query, { dataJsonKeys });
 
   const { data, error } = await qb;
   if (error) {

@@ -44,6 +44,42 @@ export async function fetchModuleDataJsonKeysForSearch(
 }
 
 /**
+ * Field keys across all (or one) module(s) in an org — for global CRM search fallbacks.
+ */
+export async function fetchOrgDataJsonKeysForSearch(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  orgId: string,
+  moduleKey: string | null = null,
+  maxKeys = 120,
+): Promise<string[]> {
+  let moduleQuery = supabase.from('crm_modules').select('id').eq('org_id', orgId);
+  if (moduleKey) {
+    moduleQuery = moduleQuery.eq('key', moduleKey);
+  }
+  const { data: modules, error: moduleError } = await moduleQuery;
+  if (moduleError || !modules?.length) return [];
+
+  const moduleIds = (modules as { id: string }[]).map((m) => m.id);
+  const { data: fields, error: fieldError } = await supabase
+    .from('crm_fields')
+    .select('key')
+    .in('module_id', moduleIds);
+  if (fieldError || !fields) return [];
+
+  const seen = new Set<string>();
+  const keys: string[] = [];
+  for (const row of fields as { key: string }[]) {
+    const k = row.key;
+    if (!k || !SAFE_DATA_JSON_KEY.test(k) || seen.has(k)) continue;
+    seen.add(k);
+    keys.push(k);
+    if (keys.length >= maxKeys) break;
+  }
+  return keys;
+}
+
+/**
  * Common JSON paths that store phone-like values (substring digit search).
  * Kept in sync with `/api/crm/search` phone fallbacks.
  */

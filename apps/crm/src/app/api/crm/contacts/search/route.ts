@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthProfile, createClient } from '@/lib/supabase-server';
-import { isConvertedLeadRow } from '@/lib/crm/record-search';
+import {
+  applyCrmRecordTextSearch,
+  fetchOrgDataJsonKeysForSearch,
+  isConvertedLeadRow,
+} from '@/lib/crm/record-search';
 
 export const dynamic = 'force-dynamic';
 
@@ -160,86 +164,23 @@ async function ilikeFallback(
   orgId: string,
   query: string,
 ): Promise<ContactRow[]> {
-  const safeQuery = escapeIlike(query);
-  const digits = query.replace(/\D/g, '');
-  const isPhoneLike =
-    digits.length >= 4 && digits.length <= 15 && !query.includes('@');
+  const dataJsonKeys = await fetchOrgDataJsonKeysForSearch(supabase, orgId);
 
-  // Build a multi-format ilike OR clause so rows stored in mismatched phone
-  // formats still match (best-effort when RPCs aren't deployed).
-  const orClauses = new Set<string>([
-    `title.ilike.%${safeQuery}%`,
-    `email.ilike.%${safeQuery}%`,
-    `phone.ilike.%${safeQuery}%`,
-    `data::text.ilike.%${safeQuery}%`,
-  ]);
-  if (isPhoneLike) {
-    for (const v of phoneFormatVariants(digits)) {
-      orClauses.add(`phone.ilike.%${escapeIlike(v)}%`);
-    }
-    orClauses.add(`data::text.ilike.%${escapeIlike(digits)}%`);
-    const tail = digits.slice(-10);
-    if (tail && tail !== digits) {
-      orClauses.add(`data::text.ilike.%${escapeIlike(tail)}%`);
-    }
-  }
-
-  const { data, error } = await supabase
+  let qb = supabase
     .from('crm_records')
     .select('id, title, email, phone')
     .eq('org_id', orgId)
-    .or(Array.from(orClauses).join(','))
     .not('email', 'is', null)
     .order('updated_at', { ascending: false })
     .limit(10);
 
+  qb = applyCrmRecordTextSearch(qb, query, { dataJsonKeys });
+
+  const { data, error } = await qb;
   if (error) {
     console.error('[contacts/search] ilike fallback failed:', error);
     return [];
   }
 
   return (data || []) as ContactRow[];
-}
-
-function escapeIlike(value: string): string {
-  return value.replace(/[%_\\]/g, '\\$&');
-}
-
-/**
- * Common visual formats of a digit string. Mirrors the helper in
- * `/api/crm/search/route.ts` so both fallbacks behave identically.
- */
-function phoneFormatVariants(digits: string): string[] {
-  if (digits.length < 4) return [];
-  const out = new Set<string>();
-  const candidates: string[] = [digits];
-  if (digits.length === 11 && digits.startsWith('1')) {
-    candidates.push(digits.slice(1));
-  } else if (digits.length === 10) {
-    candidates.push('1' + digits);
-  }
-  for (const d of candidates) {
-    out.add(d);
-    if (d.length === 10) {
-      const a = d.slice(0, 3);
-      const b = d.slice(3, 6);
-      const c = d.slice(6);
-      out.add(`${a}-${b}-${c}`);
-      out.add(`(${a}) ${b}-${c}`);
-      out.add(`(${a})${b}-${c}`);
-      out.add(`(${a}) ${b} ${c}`);
-      out.add(`${a}.${b}.${c}`);
-      out.add(`${a} ${b} ${c}`);
-    } else if (d.length === 11 && d.startsWith('1')) {
-      const a = d.slice(1, 4);
-      const b = d.slice(4, 7);
-      const c = d.slice(7);
-      out.add(`1-${a}-${b}-${c}`);
-      out.add(`1 (${a}) ${b}-${c}`);
-      out.add(`+1 ${a} ${b} ${c}`);
-      out.add(`+1-${a}-${b}-${c}`);
-      out.add(`+1 (${a}) ${b}-${c}`);
-    }
-  }
-  return Array.from(out);
 }
