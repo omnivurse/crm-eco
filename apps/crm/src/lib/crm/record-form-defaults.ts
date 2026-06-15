@@ -3,6 +3,7 @@ import {
   normalizeDateColumnValue,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { bridgeSharingEntityReadPaths } from '@/lib/crm/lead-contact-sharing-fields';
+import { bridgeHealthInsuranceReadPaths } from '@/lib/crm/health-insurance-fields';
 
 /**
  * CRM record forms primarily edit JSONB `data`, but many important fields live on
@@ -110,6 +111,7 @@ export function mergeCrmRecordRowIntoFormDefaults(
   }
 
   bridgeSharingEntityReadPaths(base, options?.moduleKey);
+  bridgeHealthInsuranceReadPaths(base, options?.moduleKey);
 
   return base;
 }

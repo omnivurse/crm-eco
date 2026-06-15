@@ -19,6 +19,8 @@ export interface RecordOverviewFieldsProps {
   moduleKey: string;
   /** When true, {@link RecordDetailShellV2} already wraps the page in a save provider. */
   layoutV2Shell: boolean;
+  /** When true, {@link RecordOverviewPanel} already wraps the tree in a save provider. */
+  saveProviderWrapped?: boolean;
 }
 
 export function RecordOverviewFields({
@@ -28,6 +30,7 @@ export function RecordOverviewFields({
   defaultValues,
   moduleKey,
   layoutV2Shell,
+  saveProviderWrapped = false,
 }: RecordOverviewFieldsProps) {
   const inlineEditable = layoutV2Shell || isPersonModuleKey(moduleKey);
 
@@ -50,7 +53,7 @@ export function RecordOverviewFields({
     />
   );
 
-  if (inlineEditable && !layoutV2Shell) {
+  if (inlineEditable && !layoutV2Shell && !saveProviderWrapped) {
     return (
       <RecordFieldSaveProvider
         recordId={record.id}

@@ -21,10 +21,9 @@ import { getRecordInsights, emptyRecordInsights } from '@/lib/crm/record-insight
 import { RecordTimeline } from '@/components/crm/records/RecordTimeline';
 import { AttachmentsSectionClient } from '@/components/crm/records/AttachmentsSectionClient';
 import { RelatedRecordsPanelClient } from '@/components/crm/records/RelatedRecordsPanelClient';
-import { getSectionMeta } from '@/components/crm/records/section-utils';
+import { RecordOverviewPanel } from '@/components/crm/records/RecordOverviewPanel';
+import { CommunicationsTab } from '@/components/crm/records/CommunicationsTab';
 import { mergeCrmRecordRowIntoFormDefaults } from '@/lib/crm/record-form-defaults';
-import { OverviewLayout } from '@/components/crm/records/OverviewLayout';
-import { RecordOverviewFields } from '@/components/crm/records/RecordOverviewFields';
 import { NotesPanel } from './NotesPanel';
 import { LegacyNotesCard } from './LegacyNotesCard';
 import { MergedFromToast } from '@/components/crm/records/MergedFromToast';
@@ -185,10 +184,8 @@ async function RecordDetailContent({ params }: PageProps) {
     { moduleKey: module.key },
   );
 
-  // Compute section metadata on the server for the section navigator. Pass
-  // the merged form defaults so the pill numbers show *populated* fields,
-  // not the configured-field total — reps want to see what's filled in.
-  const sectionMeta = getSectionMeta(fields, layout, defaultValues, module.key);
+  // Section pill counts are computed client-side in RecordOverviewPanel so
+  // filled-count badges update as reps inline-save without a full refresh.
 
   const recordData = record.data || {};
   const legacyNotes =
@@ -234,26 +231,20 @@ async function RecordDetailContent({ params }: PageProps) {
     >
       {{
         overview: (
-          <OverviewLayout
+          <RecordOverviewPanel
             recordId={recordId}
-            sections={sectionMeta}
-            fieldContent={
-              <>
-                <RecordOverviewFields
-                  record={record}
-                  fields={fields}
-                  layout={layout}
-                  defaultValues={defaultValues}
-                  moduleKey={module.key}
-                  layoutV2Shell={useLayoutV2}
-                />
-                {/* Legacy Notes History (imported from Zoho) — below fields */}
-                {legacyNotes && (
-                  <div className="mt-4">
-                    <LegacyNotesCard notesHtml={legacyNotes} />
-                  </div>
-                )}
-              </>
+            record={record}
+            fields={fields}
+            layout={layout}
+            defaultValues={defaultValues}
+            moduleKey={module.key}
+            layoutV2Shell={useLayoutV2}
+            belowFields={
+              legacyNotes ? (
+                <div className="mt-4">
+                  <LegacyNotesCard notesHtml={legacyNotes} />
+                </div>
+              ) : undefined
             }
           />
         ),
@@ -297,6 +288,15 @@ async function RecordDetailContent({ params }: PageProps) {
               }
             />
           </Suspense>
+        ),
+
+        communications: (
+          <CommunicationsTab
+            recordId={recordId}
+            orgId={profile.organization_id}
+            email={record.email}
+            phone={record.phone}
+          />
         ),
       }}
       </Shell>

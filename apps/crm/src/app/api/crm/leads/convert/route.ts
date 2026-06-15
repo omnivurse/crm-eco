@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { ensureCrmMemberRecordFromLead } from '@/lib/crm/lead-conversion-sync';
 
 // Create admin client for conversion (bypasses RLS)
 function createAdminClient() {
@@ -59,8 +60,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // The function returns jsonb with success, member_id, etc.
-    return NextResponse.json(data);
+    const result = data as {
+      success?: boolean;
+      member_id?: string;
+      error?: string;
+      crm_member_record_id?: string;
+    };
+
+    if (result?.success && result.member_id) {
+      const crmMember = await ensureCrmMemberRecordFromLead(adminClient, {
+        orgId: profile.organization_id,
+        leadRecordId: recordId,
+        enrollmentMemberId: result.member_id,
+        userId: profile.id,
+      });
+      if (!crmMember.ok) {
+        console.warn('Lead→member enrollment succeeded but CRM member record failed:', crmMember.error);
+        result.error = result.error ?? crmMember.error;
+      } else if (crmMember.crmMemberRecordId) {
+        result.crm_member_record_id = crmMember.crmMemberRecordId;
+      }
+    }
+
+    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Lead conversion error:', error);
