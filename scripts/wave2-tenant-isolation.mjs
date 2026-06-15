@@ -95,6 +95,47 @@ function main() {
     { stdio: 'inherit' },
   );
 
+  section('Top tenant tables — RLS + org-scoped SELECT policies');
+  execSync(
+    `psql "${url}" -c "
+WITH org_tables AS (
+  SELECT c.table_name,
+         (SELECT count(*) FROM pg_policies p
+           WHERE p.schemaname='public' AND p.tablename=c.table_name AND p.cmd IN ('SELECT','ALL')) AS policies,
+         (SELECT count(*) FROM pg_policies p
+           WHERE p.schemaname='public' AND p.tablename=c.table_name AND p.cmd IN ('SELECT','ALL')
+             AND (p.qual ILIKE '%organization_id%' OR p.qual ILIKE '%org_id%'
+                  OR p.qual ILIKE '%get_user_organization%' OR p.qual ILIKE '%auth.uid()%'
+                  OR p.qual ILIKE '%owner_id%' OR p.qual ILIKE '%user_id%')) AS scoped
+  FROM information_schema.tables c
+  JOIN pg_class pc ON pc.relname = c.table_name
+  JOIN pg_namespace n ON n.oid = pc.relnamespace AND n.nspname = 'public'
+  WHERE c.table_schema = 'public' AND c.table_type = 'BASE TABLE'
+    AND pc.relkind = 'r' AND pc.relrowsecurity
+    AND EXISTS (
+      SELECT 1 FROM information_schema.columns col
+       WHERE col.table_schema='public' AND col.table_name=c.table_name
+         AND col.column_name IN ('organization_id','org_id')
+    )
+)
+SELECT table_name, policies, scoped,
+       CASE WHEN policies = 0 THEN 'NO_POLICIES'
+            WHEN scoped = 0 THEN 'REVIEW'
+            ELSE 'OK' END AS status
+FROM org_tables
+ORDER BY policies ASC, table_name
+LIMIT 50
+"`,
+    { stdio: 'inherit' },
+  );
+
+  section('crm_smart_search RPC health');
+  console.log(q(`
+    SELECT CASE WHEN proconfig::text ILIKE '%extensions%'
+      THEN 'OK' ELSE 'MISSING_EXTENSIONS_IN_SEARCH_PATH' END
+    FROM pg_proc WHERE proname = 'crm_smart_search' AND pronamespace = 'public'::regnamespace LIMIT 1
+  `));
+
   console.log('\nDone. See docs/audit/DHH-REPAIR-WAVE2-TENANT-DB.md');
 }
 

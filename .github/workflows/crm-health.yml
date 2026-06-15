@@ -58,3 +58,32 @@ jobs:
             exit 1
           fi
           node scripts/run-db-audit-records.mjs --strict
+
+  cross-tenant-db:
+    name: Cross-tenant RLS (staging DB)
+    needs: workspace-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Layer 2/3 DB specs (staging only)
+        env:
+          SUPABASE_TEST_URL: ${{ secrets.SUPABASE_TEST_URL }}
+          SUPABASE_TEST_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_TEST_SERVICE_ROLE_KEY }}
+          SUPABASE_TEST_ANON_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+        run: |
+          if [ -z "${SUPABASE_TEST_URL}" ] || [ -z "${SUPABASE_TEST_SERVICE_ROLE_KEY}" ] || [ -z "${SUPABASE_TEST_ANON_KEY}" ]; then
+            echo "SUPABASE_TEST_* secrets not configured — skipping Wave 2 cross-tenant CI gate."
+            echo "Add SUPABASE_TEST_URL, SUPABASE_TEST_SERVICE_ROLE_KEY, SUPABASE_TEST_ANON_KEY to enable."
+            exit 0
+          fi
+          npm run test:db --workspace=@crm-eco/lib

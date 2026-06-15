@@ -16,7 +16,8 @@
 | Enrollments cross-tenant | Staff policy org-scoped | ✅ `202605300012` live |
 | B1 shared email | Members visible in CRM members module | ✅ **Applied** `202606170001` — 988 backfilled |
 | Reference catalog HIGH | Document accept or tighten | ✅ **Accepted** (pricing catalogs) |
-| CI cross-tenant specs | Staging Layer 3 in CI | ⏳ Wave 2 follow-up |
+| CI cross-tenant specs | Staging Layer 3 in CI | ✅ Job added (skips until `SUPABASE_TEST_*` secrets set) |
+| Search RPC (`crm_smart_search`) | `similarity()` on search_path | ✅ **Fixed** `202606170002` + code fallback (2026-06-15) |
 
 ---
 
@@ -97,9 +98,11 @@ npm test --workspace=@crm-eco/lib -- cross-tenant.db.spec
 
 ## Remaining Wave 2 work
 
-1. Wire `cross-tenant.db.spec.ts` into CI against staging (`TEST_DB_URL` + `TEST_ANON_KEY`)
-2. Expand probes to top-50 tenant tables (automate in `wave2-tenant-isolation.mjs`)
+1. ~~Wire `cross-tenant.db.spec.ts` into CI~~ — job in `.github/workflows/crm-health.yml`; add GitHub secrets `SUPABASE_TEST_URL`, `SUPABASE_TEST_SERVICE_ROLE_KEY`, `SUPABASE_TEST_ANON_KEY` (staging project only) to activate
+2. ~~Expand probes to top-50 tenant tables~~ — in `scripts/wave2-tenant-isolation.mjs`
 3. Optional: allow second family Contact per email (explicit product decision — B2 stops ping-pong but contacts module still email-deduped)
+
+**Wave 2 gate:** Run `node scripts/wave2-tenant-isolation.mjs` — expect B1=0, RLS gaps=(none), crm_smart_search=OK.
 
 ---
 
