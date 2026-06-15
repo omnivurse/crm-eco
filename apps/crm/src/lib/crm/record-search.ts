@@ -79,10 +79,6 @@ export async function fetchOrgDataJsonKeysForSearch(
   return keys;
 }
 
-/**
- * Common JSON paths that store phone-like values (substring digit search).
- * Kept in sync with `/api/crm/search` phone fallbacks.
- */
 const JSON_PHONE_FIELD_KEYS = [
   'mobile',
   'work_phone',
@@ -95,6 +91,30 @@ const JSON_PHONE_FIELD_KEYS = [
   'secondary_phone',
   'fax',
 ];
+
+/** Fast path for global search fallbacks — avoids a modules+fields round trip. */
+export const CORE_GLOBAL_SEARCH_JSON_KEYS = [
+  'first_name',
+  'last_name',
+  'member_number',
+  'company_name',
+  'lead_status',
+  'contact_status',
+  ...JSON_PHONE_FIELD_KEYS,
+];
+
+/**
+ * Module-scoped search loads crm_fields keys; global spotlight uses a fixed core set.
+ */
+export async function resolveSearchDataJsonKeys(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  orgId: string,
+  moduleKey: string | null,
+): Promise<string[]> {
+  if (!moduleKey) return CORE_GLOBAL_SEARCH_JSON_KEYS;
+  return fetchOrgDataJsonKeysForSearch(supabase, orgId, moduleKey);
+}
 
 /**
  * Generate common visual phone formats for a digit string so ILIKE can match

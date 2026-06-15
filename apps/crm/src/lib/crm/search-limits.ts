@@ -8,4 +8,4 @@
  * `updated_at` realignment + common surnames); see
  * `supabase/migrations/202605020008_smart_search_deterministic_order.sql`.
  */
-export const CRM_SPOTLIGHT_SEARCH_LIMIT = 50;
+export const CRM_SPOTLIGHT_SEARCH_LIMIT = 25;

@@ -121,7 +121,7 @@ export function GlobalSearchOverlay({ open, onOpenChange }: GlobalSearchOverlayP
       } finally {
         if (!ctrl.signal.aborted) setLoading(false);
       }
-    }, 300);
+    }, 180);
 
     return () => {
       window.clearTimeout(handle);

@@ -3,7 +3,7 @@ import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import {
   applyCrmRecordTextSearch,
   buildPhoneSearchOrFilter,
-  fetchOrgDataJsonKeysForSearch,
+  resolveSearchDataJsonKeys,
   isConvertedLeadRow,
 } from '@/lib/crm/record-search';
 
@@ -298,7 +298,7 @@ async function phoneIlikeFallback(
     limit: number;
   },
 ): Promise<SmartSearchRow[]> {
-  const dataJsonKeys = await fetchOrgDataJsonKeysForSearch(
+  const dataJsonKeys = await resolveSearchDataJsonKeys(
     supabase,
     orgId,
     opts.moduleFilter,
@@ -357,7 +357,7 @@ async function ilikeFallback(
   orgId: string,
   opts: { query: string; moduleFilter: string | null; limit: number },
 ): Promise<SmartSearchRow[]> {
-  const dataJsonKeys = await fetchOrgDataJsonKeysForSearch(
+  const dataJsonKeys = await resolveSearchDataJsonKeys(
     supabase,
     orgId,
     opts.moduleFilter,
