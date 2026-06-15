@@ -224,11 +224,16 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
   const isSaving = fieldState?.status === 'saving';
   const isPending = fieldState?.status === 'pending';
   const isSaved = fieldState?.status === 'saved';
+  const displayValue: string | number | null | undefined =
+    fieldState?.lastValue !== undefined &&
+    (isSaving || isPending || isSaved)
+      ? (fieldState.lastValue as string | number | null)
+      : value;
 
   if (readOnly) {
     return (
       <span className={cn('inline-flex items-center', className)}>
-        {display ? display(value) : <DisplayValue value={value} placeholder={placeholder} />}
+        {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
       </span>
     );
   }
@@ -245,7 +250,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         data-locked-by={lockOwner.userId}
         title={`${lockOwner.fullName || lockOwner.email || 'Someone'} is editing this field`}
       >
-        {display ? display(value) : <DisplayValue value={value} placeholder={placeholder} />}
+        {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
         <LockedFieldBadge owner={lockOwner} />
       </span>
     );
@@ -275,7 +280,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         data-field={field}
         title={externalError ?? undefined}
       >
-        {display ? display(value) : <DisplayValue value={value} placeholder={placeholder} />}
+        {display ? display(displayValue) : <DisplayValue value={displayValue} placeholder={placeholder} />}
         {isSaving || isPending ? (
           <Loader2 className="w-3 h-3 text-teal-500 animate-spin shrink-0" />
         ) : externalError ? (

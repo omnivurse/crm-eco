@@ -1,16 +1,38 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { SectionNav, type SectionMeta } from './SectionNav';
+import {
+  getPersistedActiveSection,
+  persistActiveSection,
+} from '@/lib/crm/record-section-persistence';
 
 interface OverviewLayoutProps {
+  recordId: string;
   sections: SectionMeta[];
   fieldContent: React.ReactNode;
 }
 
-export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) {
-  const [activeSectionKey, setActiveSectionKey] = useState(sections[0]?.key ?? '');
+export function OverviewLayout({ recordId, sections, fieldContent }: OverviewLayoutProps) {
+  const [activeSectionKey, setActiveSectionKey] = useState(() => {
+    const persisted = getPersistedActiveSection(recordId);
+    if (persisted && sections.some((s) => s.key === persisted)) return persisted;
+    return sections[0]?.key ?? '';
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleSectionClick = useCallback(
+    (key: string) => {
+      setActiveSectionKey(key);
+      persistActiveSection(recordId, key);
+    },
+    [recordId],
+  );
+
+  useEffect(() => {
+    if (!activeSectionKey) return;
+    persistActiveSection(recordId, activeSectionKey);
+  }, [recordId, activeSectionKey]);
 
   // Observe which section is currently in view and update the active pill
   useEffect(() => {
@@ -34,7 +56,10 @@ export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) 
         }
         if (topEntry) {
           const key = topEntry.target.getAttribute('data-section');
-          if (key) setActiveSectionKey(key);
+          if (key) {
+            setActiveSectionKey(key);
+            persistActiveSection(recordId, key);
+          }
         }
       },
       {
@@ -45,7 +70,7 @@ export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) 
 
     for (const el of sectionEls) observer.observe(el);
     return () => observer.disconnect();
-  }, [sections]);
+  }, [sections, recordId]);
 
   return (
     <div ref={containerRef}>
@@ -53,7 +78,7 @@ export function OverviewLayout({ sections, fieldContent }: OverviewLayoutProps) 
       <SectionNav
         sections={sections}
         activeSectionKey={activeSectionKey}
-        onSectionClick={setActiveSectionKey}
+        onSectionClick={handleSectionClick}
       />
 
       {/* Full-width field sections */}

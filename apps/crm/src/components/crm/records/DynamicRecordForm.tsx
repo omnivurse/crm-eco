@@ -62,6 +62,10 @@ import {
   CRM_SECTION_NAV_EVENT,
   shouldAlwaysShowEmptySection,
 } from './section-utils';
+import {
+  getPersistedExpandedSections,
+  persistSectionExpanded,
+} from '@/lib/crm/record-section-persistence';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -595,13 +599,19 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   const visibleFields = useMemo(() => fields.filter(f => f.key !== 'notes_history'), [fields]);
 
   const layoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-    new Set(
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    const collapsed = new Set(
       (layoutConfig.sections || [])
         .filter((s: LayoutSection) => s.collapsed)
-        .map((s: LayoutSection) => s.key)
-    )
-  );
+        .map((s: LayoutSection) => s.key),
+    );
+    if (record?.id && typeof window !== 'undefined') {
+      for (const key of getPersistedExpandedSections(record.id)) {
+        collapsed.delete(key);
+      }
+    }
+    return collapsed;
+  });
 
   // Build dynamic Zod schema based on fields
   const schema = useMemo(() => {
@@ -785,13 +795,19 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   }, [watchedValues, onValuesChange, readOnly]);
 
   const toggleSection = (key: string) => {
-    const newCollapsed = new Set(collapsedSections);
-    if (newCollapsed.has(key)) {
-      newCollapsed.delete(key);
-    } else {
-      newCollapsed.add(key);
-    }
-    setCollapsedSections(newCollapsed);
+    setCollapsedSections((prev) => {
+      const newCollapsed = new Set(prev);
+      const willExpand = newCollapsed.has(key);
+      if (willExpand) {
+        newCollapsed.delete(key);
+      } else {
+        newCollapsed.add(key);
+      }
+      if (record?.id) {
+        persistSectionExpanded(record.id, key, willExpand);
+      }
+      return newCollapsed;
+    });
   };
 
   /** Overview section pills: expand accordion so `#section-{key}` scroll targets aren't height-zero. */
@@ -803,12 +819,13 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
         if (!prev.has(key)) return prev;
         const next = new Set(prev);
         next.delete(key);
+        if (record?.id) persistSectionExpanded(record.id, key, true);
         return next;
       });
     };
     window.addEventListener(CRM_SECTION_NAV_EVENT, onNav as EventListener);
     return () => window.removeEventListener(CRM_SECTION_NAV_EVENT, onNav as EventListener);
-  }, []);
+  }, [record?.id]);
 
   // Build the effective section list: start with layout sections, then append any
   // field-section keys that aren't covered (handles seed/migration section mismatch)

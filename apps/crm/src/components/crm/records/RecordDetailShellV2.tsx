@@ -128,6 +128,10 @@ import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
 import { RecordFieldLocksProvider } from '@/hooks/useRecordFieldLocks';
 import { RecordAiContextProvider } from './v2/RecordAiContext';
 import { useUiPreferences } from '@/hooks/useUiPreferences';
+import {
+  consumePersistedScrollTop,
+  persistRecordScrollTop,
+} from '@/lib/crm/record-section-persistence';
 import { useRecordHotkeys } from '@/hooks/useRecordHotkeys';
 import { useRecordPresence } from '@/hooks/useRecordPresence';
 import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
@@ -460,8 +464,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     }
   }, [record.id]);
 
-  // Inline field saves update the DB immediately; debounce RSC refresh so
-  // rapid edits across Health Sharing fields do not race and flash stale values.
+  // Inline field saves update the DB immediately. Avoid full RSC refresh on
+  // every blur — it reset scroll position and collapsed the Family section
+  // (layout default). Optimistic overlays in InlineEditableRecordForm keep
+  // the UI current; refresh insights only.
   const recordRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scheduleRecordRefresh = useCallback(() => {
     if (recordRefreshTimerRef.current) {
@@ -469,10 +475,20 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     }
     recordRefreshTimerRef.current = setTimeout(() => {
       recordRefreshTimerRef.current = null;
-      router.refresh();
       void refreshInsights();
     }, 900);
-  }, [router, refreshInsights]);
+  }, [refreshInsights]);
+
+  // Restore scroll if something upstream still triggered a route refresh.
+  useEffect(() => {
+    const scrollTop = consumePersistedScrollTop(record.id);
+    if (scrollTop == null) return;
+    const el = recordMainScrollRef.current;
+    if (!el) return;
+    requestAnimationFrame(() => {
+      el.scrollTop = scrollTop;
+    });
+  }, [record.id, record.updated_at]);
 
   useEffect(() => {
     return () => {
@@ -1003,6 +1019,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       recordId={record.id}
       initialUpdatedAt={record.updated_at ?? null}
       onSaved={() => {
+        const el = recordMainScrollRef.current;
+        if (el) persistRecordScrollTop(record.id, el.scrollTop);
         scheduleRecordRefresh();
       }}
       onConflict={({ field }) => {

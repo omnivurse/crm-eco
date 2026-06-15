@@ -5,7 +5,6 @@
  * the save provider when the classic shell is active (V2 shell already owns it).
  */
 
-import { useRouter } from 'next/navigation';
 import type { CrmField, CrmLayout, CrmRecord } from '@/lib/crm/types';
 import { RecordFieldSaveProvider } from '@/hooks/useRecordFieldSave';
 import { isPersonModuleKey } from './section-utils';
@@ -30,7 +29,6 @@ export function RecordOverviewFields({
   moduleKey,
   layoutV2Shell,
 }: RecordOverviewFieldsProps) {
-  const router = useRouter();
   const inlineEditable = layoutV2Shell || isPersonModuleKey(moduleKey);
 
   const form = inlineEditable ? (
@@ -58,7 +56,8 @@ export function RecordOverviewFields({
         recordId={record.id}
         initialUpdatedAt={record.updated_at ?? null}
         onSaved={() => {
-          router.refresh();
+          // Optimistic overlays handle display; avoid router.refresh() resetting
+          // section accordion + scroll while editing family fields.
         }}
       >
         {form}

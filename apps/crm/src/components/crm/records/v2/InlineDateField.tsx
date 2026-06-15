@@ -198,8 +198,19 @@ export const InlineDateField = memo(function InlineDateField({
     );
   }
 
-  const displayLabel = toDisplay(value, mode);
-  const pickerValue = normalizeDateColumnValue(value) ?? '';
+  const displayLabel = toDisplay(
+    state?.lastValue !== undefined &&
+      (state.status === 'saved' || state.status === 'pending' || state.status === 'saving')
+      ? (state.lastValue as string | null)
+      : value,
+    mode,
+  );
+  const pickerValue = normalizeDateColumnValue(
+    state?.lastValue !== undefined &&
+      (state.status === 'saved' || state.status === 'pending' || state.status === 'saving')
+      ? (state.lastValue as string | null)
+      : value,
+  ) ?? '';
 
   if (editing) {
     return (

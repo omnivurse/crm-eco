@@ -235,6 +235,7 @@ async function RecordDetailContent({ params }: PageProps) {
       {{
         overview: (
           <OverviewLayout
+            recordId={recordId}
             sections={sectionMeta}
             fieldContent={
               <>

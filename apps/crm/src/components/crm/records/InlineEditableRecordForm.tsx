@@ -30,11 +30,24 @@ export function InlineEditableRecordForm({
   const [formValues, setFormValues] = useState(defaultValues);
   const appliedSaveAtRef = useRef<Record<string, number>>({});
 
-  // Full server refresh (navigation, debounced router.refresh after save).
+  // Full server refresh — merge without clobbering fields the rep is still editing.
   useEffect(() => {
-    setFormValues(defaultValues);
-    appliedSaveAtRef.current = {};
-  }, [record.updated_at, defaultValues]);
+    setFormValues((prev) => {
+      const merged = { ...defaultValues };
+      for (const [key, state] of Object.entries(saveFields)) {
+        if (state.status === 'pending' || state.status === 'saving') {
+          merged[key] = prev[key];
+        } else if (
+          state.status === 'saved' &&
+          state.savedAt &&
+          state.lastValue !== undefined
+        ) {
+          merged[key] = state.lastValue;
+        }
+      }
+      return merged;
+    });
+  }, [record.updated_at, defaultValues, saveFields]);
 
   // Optimistic overlay per successful inline save (before RSC re-fetch completes).
   useEffect(() => {
