@@ -1,24 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { getAuthProfile } from '@/lib/supabase-server';
+import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import { syncContactIndexedColumnsFromCoverage } from '@/lib/crm/lead-conversion-sync';
+import { tryCreateLeadConversionAdminClient } from '@/lib/crm/lead-conversion-admin-client';
 import {
   normalizeLeadConversionRpcResult,
   type LeadConversionApiResult,
 } from '@/lib/crm/lead-conversion-result';
-
-function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-  if (!supabaseServiceKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for lead conversion');
-  }
-
-  return createSupabaseClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,9 +33,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adminClient = createAdminClient();
+    const supabase = await createClient();
 
-    const { data, error } = await adminClient.rpc('convert_lead_to_contact', {
+    // Staff session — authenticated role has EXECUTE on convert_lead_to_contact (phase5 keep-list).
+    // Avoids "permission denied" when Vercel service_role key is missing or misconfigured.
+    const { data, error } = await supabase.rpc('convert_lead_to_contact', {
       p_lead_record_id: recordId,
       p_user_id: profile.id,
       p_merge_into_contact_id: mergeIntoContactId || null,
@@ -64,9 +53,12 @@ export async function POST(request: NextRequest) {
 
     const result: LeadConversionApiResult = normalizeLeadConversionRpcResult(data);
 
+    const adminClient = tryCreateLeadConversionAdminClient();
+
     // Belt-and-suspenders: copy any insurance / health-sharing keys the RPC may have missed.
     if (result.success && result.contact_id && !result.already_converted) {
-      const { data: repairData, error: repairError } = await adminClient.rpc(
+      const repairClient = adminClient ?? supabase;
+      const { data: repairData, error: repairError } = await repairClient.rpc(
         'repair_converted_contact_insurance_data',
         { p_contact_id: result.contact_id },
       );
@@ -83,7 +75,7 @@ export async function POST(request: NextRequest) {
       }
 
       const indexedSync = await syncContactIndexedColumnsFromCoverage(
-        adminClient,
+        adminClient ?? supabase,
         result.contact_id,
         'contacts',
       );
