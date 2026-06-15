@@ -1,5 +1,10 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import {
+  applyActiveCrmLeadsFilters,
+  crmRecordToLeadListItem,
+  resolveLeadsModuleId,
+} from '@crm-eco/lib';
+import {
     Users,
     DollarSign,
     TrendingUp,
@@ -12,13 +17,23 @@ export const dynamic = 'force-dynamic';
 
 async function getDashboardStats(organizationId: string, advisorId: string) {
     const supabase = await createServerSupabaseClient();
+    const leadsModuleId = await resolveLeadsModuleId(supabase, organizationId);
 
-    // Get contact counts. leads.advisor_id (not owner_advisor_id).
-    const leadsResult = await supabase
-        .from('leads')
-        .select('id', { count: 'exact', head: true })
-        .eq('organization_id', organizationId)
-        .eq('advisor_id', advisorId);
+    let leadsCount = 0;
+    if (leadsModuleId) {
+        const leadsResult = await (applyActiveCrmLeadsFilters(
+            (supabase as any)
+                .from('crm_records')
+                .select('id', { count: 'exact', head: true })
+                .eq('org_id', organizationId)
+                .eq('module_id', leadsModuleId)
+                .eq('advisor_id', advisorId),
+            organizationId,
+            leadsModuleId,
+        ) as Promise<{ count: number | null }>);
+        leadsCount = leadsResult.count || 0;
+    }
+
     const membersResult = await supabase
         .from('members')
         .select('id', { count: 'exact', head: true })
@@ -31,7 +46,7 @@ async function getDashboardStats(organizationId: string, advisorId: string) {
         .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
 
     return {
-        leads: leadsResult.count || 0,
+        leads: leadsCount,
         members: membersResult.count || 0,
         recentEvents: eventsResult.count || 0,
     };

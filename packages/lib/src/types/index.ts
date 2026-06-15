@@ -31,7 +31,11 @@ export type Organization = TableRow<'organizations'>;
 export type Profile = TableRow<'profiles'>;
 export type Advisor = TableRow<'advisors'>;
 export type Member = TableRow<'members'>;
-export type Lead = TableRow<'leads'>;
+/** Flattened lead list shape from `crm_records` (module key `leads`). See docs/crm/LEADS.md */
+export type { CrmLeadListItem } from '../crm/crm-leads';
+import type { CrmLeadListItem } from '../crm/crm-leads';
+/** @deprecated Legacy `public.leads` removed — use `CrmLeadListItem` or `TableRow<'crm_records'>`. */
+export type Lead = CrmLeadListItem;
 export type Activity = TableRow<'activities'>;
 export type Ticket = TableRow<'tickets'>;
 export type TicketComment = TableRow<'ticket_comments'>;

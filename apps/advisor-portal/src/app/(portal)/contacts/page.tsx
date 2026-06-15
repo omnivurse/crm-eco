@@ -1,4 +1,9 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import {
+  applyActiveCrmLeadsFilters,
+  crmRecordToLeadListItem,
+  resolveLeadsModuleId,
+} from '@crm-eco/lib';
 import Link from 'next/link';
 import { Users, Phone, Mail, ChevronRight, Search } from 'lucide-react';
 
@@ -16,19 +21,47 @@ interface ContactRecord {
 
 async function getContacts(organizationId: string, advisorId: string) {
     const supabase = await createServerSupabaseClient();
+    const leadsModuleId = await resolveLeadsModuleId(supabase, organizationId);
 
-    // Fetch leads assigned to this advisor
-    // Use `as any` on client to avoid TS2589 deep type instantiation from Supabase generics
-    // leads table uses `advisor_id` (not `owner_advisor_id`).
-    const { data: leads } = await (supabase as any)
-        .from('leads')
-        .select('id, first_name, last_name, email, phone, status, created_at')
-        .eq('organization_id', organizationId)
-        .eq('advisor_id', advisorId)
-        .order('created_at', { ascending: false })
-        .limit(50) as { data: ContactRecord[] | null };
+    let leads: ContactRecord[] = [];
+    if (leadsModuleId) {
+        const { data: leadRows } = await (applyActiveCrmLeadsFilters(
+            (supabase as any)
+                .from('crm_records')
+                .select('id, email, phone, status, created_at, data')
+                .eq('org_id', organizationId)
+                .eq('module_id', leadsModuleId)
+                .eq('advisor_id', advisorId),
+            organizationId,
+            leadsModuleId,
+        )
+            .order('created_at', { ascending: false })
+            .limit(50) as Promise<{ data: Array<{
+                id: string;
+                email: string | null;
+                phone: string | null;
+                status: string | null;
+                created_at: string | null;
+                data: unknown;
+            }> | null }>);
 
-    // Fetch members assigned to this advisor
+        leads = (leadRows ?? []).map((row) => {
+            const item = crmRecordToLeadListItem({
+                ...row,
+                data: row.data as import('@crm-eco/lib/types').Json | null,
+            });
+            return {
+                id: item.id,
+                first_name: item.first_name,
+                last_name: item.last_name,
+                email: item.email,
+                phone: item.phone,
+                status: item.status,
+                created_at: item.created_at ?? new Date(0).toISOString(),
+            };
+        });
+    }
+
     const { data: members } = await (supabase as any)
         .from('members')
         .select('id, first_name, last_name, email, phone, status, created_at')
@@ -38,7 +71,7 @@ async function getContacts(organizationId: string, advisorId: string) {
         .limit(50) as { data: ContactRecord[] | null };
 
     return {
-        leads: leads || [],
+        leads,
         members: members || [],
     };
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { pickActiveMemberByName } from '@crm-eco/lib';
+import { pickActiveMemberByName, insertCrmLead } from '@crm-eco/lib';
 import {
   sendEnrollmentConfirmationEmail,
   sendAdvisorNotificationEmail,
@@ -148,26 +148,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create the lead record for tracking
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .insert({
-        organization_id: landingPage.organization_id,
-        first_name: data.firstName,
-        last_name: data.lastName,
-        email: data.email.toLowerCase(),
-        phone: data.phone,
-        state: data.state,
-        status: 'new',
-        source: 'landing_page',
-        source_details: landingPage.utm_campaign || landingPage.utm_source || 'website',
-        advisor_id: landingPage.default_advisor_id,
-      })
-      .select('id')
-      .single();
+    // Create the lead record for tracking (crm_records / leads module)
+    const leadResult = await insertCrmLead(supabase, {
+      orgId: landingPage.organization_id,
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+      phone: data.phone,
+      state: data.state,
+      status: 'new',
+      source: 'landing_page',
+      source_details: landingPage.utm_campaign || landingPage.utm_source || 'website',
+      advisor_id: landingPage.default_advisor_id,
+    });
 
-    if (leadError) {
-      // Don't fail the request, member was created
+    const lead = 'id' in leadResult ? leadResult : null;
+    if ('error' in leadResult) {
+      console.warn('Failed to create CRM lead for landing page enrollment:', leadResult.error);
     }
 
     // Create the enrollment via the atomic, idempotent RPC so a retry / double-submit of

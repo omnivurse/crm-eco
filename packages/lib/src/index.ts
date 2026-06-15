@@ -5,6 +5,7 @@ export * from './imports';
 export * from './enrollment';
 export * from './ai';
 export * from './members';
+export * from './crm';
 export * from './needs';
 export * from './views';
 export * from './billing';

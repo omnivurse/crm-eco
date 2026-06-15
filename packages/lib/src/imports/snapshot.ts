@@ -198,11 +198,11 @@ async function rollbackSnapshot(
 /**
  * Get the table name for an entity type
  */
-function getTableName(entityType: EntityType): 'members' | 'advisors' | 'leads' | 'plans' | 'memberships' {
+function getTableName(entityType: EntityType): 'members' | 'advisors' | 'crm_records' | 'plans' | 'memberships' {
   switch (entityType) {
     case 'member': return 'members';
     case 'advisor': return 'advisors';
-    case 'lead': return 'leads';
+    case 'lead': return 'crm_records';
     case 'plan': return 'plans';
     case 'membership': return 'memberships';
   }

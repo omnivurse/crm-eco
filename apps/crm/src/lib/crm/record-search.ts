@@ -9,67 +9,14 @@
  * (chained `.or()` groups are AND'd).
  */
 
+export {
+  applyHideConvertedLeadsFilter,
+  isConvertedLeadRow,
+  type ConvertedLeadCheck,
+} from '@crm-eco/lib';
+
 export function escapeIlikePattern(value: string): string {
   return value.replace(/[%_\\]/g, '\\$&');
-}
-
-/** Minimal row shape needed to detect an already-converted lead. */
-export interface ConvertedLeadCheck {
-  module_key?: string | null;
-  status?: string | null;
-  data?: Record<string, unknown> | null;
-}
-
-/**
- * True when a search row is a Lead that has already been converted into a
- * Contact.
- *
- * Lead→contact conversion (the `convert_lead_to_contact` RPC) intentionally
- * KEEPS the original lead as an audit trail: it sets `status='Converted'`,
- * `data.is_converted=true`, `data.converted_contact_id`, `data.lead_status`,
- * and writes a `lead_to_contact` row into `crm_record_links`. The live record
- * a rep should act on after conversion is the new Contact, not the stale lead.
- *
- * Because both records share the same name/email/phone, surfacing the
- * converted lead alongside its contact makes a single person look like a
- * duplicate (the reported PIFH complaint — e.g. "Lindsay Taggart" appearing
- * twice). Hiding converted leads from search mirrors Zoho's default behavior;
- * the lead stays reachable from the contact's "converted from" link.
- *
- * Robust against partial markers: any one converted signal is enough, since
- * historical conversions don't all populate every field.
- */
-type OrFilterQuery = { or: (filters: string) => OrFilterQuery };
-
-/**
- * Exclude converted leads at the database layer (module list, export, workqueue).
- * Complements {@link isConvertedLeadRow} for rows that still slip through legacy imports.
- */
-export function applyHideConvertedLeadsFilter<
-  Q extends OrFilterQuery & { neq: (column: string, value: string) => Q },
->(query: Q): Q {
-  const filtered = query
-    .neq('status', 'Converted')
-    .or('data->>is_converted.is.null,data->>is_converted.neq.true')
-    .or('data->>lead_status.is.null,data->>lead_status.neq.Converted')
-    .or('data->>converted_contact_id.is.null,data->>converted_contact_id.eq.');
-  return filtered as Q;
-}
-
-export function isConvertedLeadRow(row: ConvertedLeadCheck): boolean {
-  if ((row.module_key ?? '') !== 'leads') return false;
-  if ((row.status ?? '') === 'Converted') return true;
-
-  const data = row.data ?? {};
-  const isConverted = data['is_converted'];
-  if (isConverted === true || isConverted === 'true') return true;
-
-  const convertedContactId = data['converted_contact_id'];
-  if (typeof convertedContactId === 'string' && convertedContactId.trim().length > 0) {
-    return true;
-  }
-
-  return data['lead_status'] === 'Converted';
 }
 
 /** Safe `data->>` path segment for PostgREST filter strings */

@@ -7,6 +7,11 @@ import {
   type EnrollmentWizardResumeData,
 } from '@/components/enrollment/EnrollmentWizardShell';
 import type { WizardStep, StepStatus } from '@/components/enrollment/wizard';
+import {
+  applyActiveCrmLeadsFilters,
+  crmRecordToLeadListItem,
+  resolveLeadsModuleId,
+} from '@crm-eco/lib';
 
 interface ProfileContext {
   id: string;
@@ -21,6 +26,21 @@ export async function loadEnrollmentWizardBootstrap(
   const supabase = await createServerSupabaseClient();
   const orgId = profile.organization_id;
   const crmRole = profile.crm_role || 'advisor';
+  const leadsModuleId = await resolveLeadsModuleId(supabase, orgId);
+
+  const leadsQuery = leadsModuleId
+    ? applyActiveCrmLeadsFilters(
+        supabase
+          .from('crm_records')
+          .select('id, email, phone, status, created_at, data')
+          .eq('org_id', orgId)
+          .eq('module_id', leadsModuleId),
+        orgId,
+        leadsModuleId,
+      )
+        .order('created_at', { ascending: false })
+        .limit(100)
+    : Promise.resolve({ data: [] as never[], error: null });
 
   const [membersResult, leadsResult, advisorsResult, plansResult] = await Promise.all([
     supabase
@@ -29,13 +49,7 @@ export async function loadEnrollmentWizardBootstrap(
       .eq('organization_id', orgId)
       .order('last_name')
       .limit(200),
-    supabase
-      .from('leads')
-      .select('id, first_name, last_name, email')
-      .eq('organization_id', orgId)
-      .not('status', 'in', '(converted,lost,inactive)')
-      .order('created_at', { ascending: false })
-      .limit(100),
+    leadsQuery,
     supabase
       .from('advisors')
       .select('id, first_name, last_name')
@@ -50,9 +64,26 @@ export async function loadEnrollmentWizardBootstrap(
       .order('name'),
   ]);
 
+  const leads = (leadsResult.data ?? []).map((row: {
+    id: string;
+    email: string | null;
+    phone: string | null;
+    status: string | null;
+    created_at: string | null;
+    data: import('@crm-eco/lib/types').Json | null;
+  }) => {
+    const item = crmRecordToLeadListItem(row);
+    return {
+      id: item.id,
+      first_name: item.first_name ?? '',
+      last_name: item.last_name ?? '',
+      email: item.email,
+    };
+  });
+
   return {
     members: membersResult.data ?? [],
-    leads: leadsResult.data ?? [],
+    leads,
     advisors: advisorsResult.data ?? [],
     plans: plansResult.data ?? [],
     isAdvisorRole: crmRole === 'advisor',

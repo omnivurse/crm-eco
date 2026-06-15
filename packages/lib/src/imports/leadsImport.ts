@@ -1,16 +1,30 @@
 import type { ImportContext, ImportResult, ImportRowData } from './types';
 import { LEAD_COLUMN_MAP, VALID_LEAD_STATUSES } from './types';
 import { normalizeRowHeaders, mapToColumns, parseNumber } from './normalize';
-import type { Database } from '../types';
-
-type LeadInsert = Database['public']['Tables']['leads']['Insert'];
+import {
+  buildCrmLeadRecordPayload,
+  normalizeLeadStatus,
+  resolveLeadsModuleId,
+} from '../crm/crm-leads';
+import type { Json } from '../types';
 
 export async function importLeadsFromRows(
   context: ImportContext,
   rows: ImportRowData[]
 ): Promise<ImportResult> {
   const { supabase, organizationId, jobId } = context;
-  
+
+  const leadsModuleId = await resolveLeadsModuleId(supabase, organizationId);
+  if (!leadsModuleId) {
+    return {
+      total: rows.length,
+      inserted: 0,
+      updated: 0,
+      skipped: rows.length,
+      errors: [{ rowIndex: 0, message: 'Leads module is not configured for this organization' }],
+    };
+  }
+
   const result: ImportResult = {
     total: rows.length,
     inserted: 0,
@@ -21,11 +35,9 @@ export async function importLeadsFromRows(
 
   for (const row of rows) {
     try {
-      // Normalize headers and map to columns
       const normalizedRow = normalizeRowHeaders(row.data);
       const mappedData = mapToColumns(normalizedRow, LEAD_COLUMN_MAP);
 
-      // Validate required fields
       if (!mappedData.first_name || !mappedData.last_name) {
         await recordRowResult(supabase, jobId, row.index, row.data, mappedData, 'error', 'Missing required field: first_name or last_name');
         result.errors.push({ rowIndex: row.index, message: 'Missing required field: first_name or last_name' });
@@ -38,57 +50,64 @@ export async function importLeadsFromRows(
         continue;
       }
 
-      // Validate status if provided
       if (mappedData.status && !VALID_LEAD_STATUSES.includes(mappedData.status)) {
-        mappedData.status = 'new'; // Default to new if invalid
+        mappedData.status = 'new';
       }
 
-      // Check for existing lead (dedup logic)
-      let existingLead = null;
-      
-      // Try (email, phone) if both available
+      const emailLc = mappedData.email.toLowerCase();
+      let existingLead: { id: string; data: Json | null } | null = null;
+
       if (mappedData.email && mappedData.phone) {
         const { data: byBoth } = await supabase
-          .from('leads')
-          .select('id')
-          .eq('organization_id', organizationId)
-          .eq('email', mappedData.email.toLowerCase())
+          .from('crm_records')
+          .select('id, data')
+          .eq('org_id', organizationId)
+          .eq('module_id', leadsModuleId)
+          .eq('email', emailLc)
           .eq('phone', mappedData.phone)
-          .single();
+          .maybeSingle();
         existingLead = byBoth;
       }
-      
-      // If not found, try email only
+
       if (!existingLead && mappedData.email) {
         const { data: byEmail } = await supabase
-          .from('leads')
-          .select('id')
-          .eq('organization_id', organizationId)
-          .eq('email', mappedData.email.toLowerCase())
-          .single();
+          .from('crm_records')
+          .select('id, data')
+          .eq('org_id', organizationId)
+          .eq('module_id', leadsModuleId)
+          .eq('email', emailLc)
+          .maybeSingle();
         existingLead = byEmail;
       }
 
-      // Prepare insert/update data
-      const leadData: Partial<LeadInsert> = {
-        organization_id: organizationId,
+      const payload = buildCrmLeadRecordPayload({
         first_name: mappedData.first_name,
         last_name: mappedData.last_name,
-        email: mappedData.email.toLowerCase(),
+        email: mappedData.email,
         phone: mappedData.phone || null,
         state: mappedData.state || null,
         source: mappedData.source || null,
         campaign: mappedData.campaign || null,
-        status: (mappedData.status as LeadInsert['status']) || 'new',
+        status: normalizeLeadStatus(mappedData.status || 'new'),
         household_size: parseNumber(mappedData.household_size),
         notes: mappedData.notes || null,
-      };
+      });
 
       if (existingLead) {
-        // Update existing lead
+        const priorData =
+          existingLead.data && typeof existingLead.data === 'object' && !Array.isArray(existingLead.data)
+            ? (existingLead.data as Record<string, unknown>)
+            : {};
+
         const { error } = await supabase
-          .from('leads')
-          .update(leadData)
+          .from('crm_records')
+          .update({
+            title: payload.title,
+            status: payload.status,
+            email: payload.email,
+            phone: payload.phone,
+            data: { ...priorData, ...payload.data } as Json,
+          })
           .eq('id', existingLead.id);
 
         if (error) {
@@ -99,10 +118,17 @@ export async function importLeadsFromRows(
           result.updated++;
         }
       } else {
-        // Insert new lead
         const { data: newLead, error } = await supabase
-          .from('leads')
-          .insert(leadData as LeadInsert)
+          .from('crm_records')
+          .insert({
+            org_id: organizationId,
+            module_id: leadsModuleId,
+            title: payload.title,
+            status: payload.status,
+            email: payload.email,
+            phone: payload.phone,
+            data: payload.data as Json,
+          })
           .select('id')
           .single();
 
@@ -145,4 +171,3 @@ async function recordRowResult(
     processed_at: new Date().toISOString(),
   });
 }
-

@@ -59,7 +59,6 @@ export interface ValidationContext {
 // ============================================================================
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^[\d\s\-\+\(\)\.]{7,20}$/;
 
 /**
  * Validate a single field value based on its type
@@ -95,7 +94,7 @@ export function validateField(
       }
       break;
       
-    case 'phone':
+    case 'phone': {
       // More lenient phone validation - just check it has enough digits
       const digits = trimmedValue.replace(/\D/g, '');
       if (digits.length < 7 || digits.length > 15) {
@@ -107,8 +106,9 @@ export function validateField(
         };
       }
       break;
+    }
       
-    case 'date':
+    case 'date': {
       const parsedDate = parseDate(trimmedValue);
       if (!parsedDate) {
         return {
@@ -119,8 +119,9 @@ export function validateField(
         };
       }
       break;
+    }
       
-    case 'number':
+    case 'number': {
       const parsedNumber = parseNumber(trimmedValue);
       if (parsedNumber === null) {
         return {
@@ -131,8 +132,9 @@ export function validateField(
         };
       }
       break;
+    }
       
-    case 'boolean':
+    case 'boolean': {
       const boolValues = ['true', 'false', 'yes', 'no', '1', '0', 'y', 'n'];
       if (!boolValues.includes(trimmedValue.toLowerCase())) {
         return {
@@ -143,6 +145,7 @@ export function validateField(
         };
       }
       break;
+    }
   }
   
   return null;
@@ -294,21 +297,36 @@ async function findExistingLeads(
   emails: string[]
 ): Promise<Map<string, ExistingEntity>> {
   const result = new Map<string, ExistingEntity>();
-  
-  if (emails.length > 0) {
-    const { data } = await supabase
-      .from('leads')
-      .select('id, email')
-      .eq('organization_id', organizationId)
-      .in('email', emails.map(e => e.toLowerCase()));
-    
-    if (data) {
-      for (const row of data) {
-        result.set(`email:${row.email?.toLowerCase()}`, row as ExistingEntity);
-      }
+
+  if (emails.length === 0) {
+    return result;
+  }
+
+  const { data: leadsModule } = await supabase
+    .from('crm_modules')
+    .select('id')
+    .eq('org_id', organizationId)
+    .eq('key', 'leads')
+    .eq('is_enabled', true)
+    .maybeSingle();
+
+  if (!leadsModule?.id) {
+    return result;
+  }
+
+  const { data } = await supabase
+    .from('crm_records')
+    .select('id, email')
+    .eq('org_id', organizationId)
+    .eq('module_id', leadsModule.id)
+    .in('email', emails.map((e) => e.toLowerCase()));
+
+  if (data) {
+    for (const row of data) {
+      result.set(`email:${row.email?.toLowerCase()}`, row as ExistingEntity);
     }
   }
-  
+
   return result;
 }
 
@@ -517,7 +535,7 @@ export async function validateBatch(
   }
   
   // Validate each row
-  let summary = {
+  const summary = {
     missingRequired: 0,
     invalidFormat: 0,
     duplicates: 0,
@@ -694,7 +712,7 @@ export function quickValidate(
   entityType: EntityType
 ): BatchValidationResult {
   const results: RowValidationResult[] = [];
-  let summary = {
+  const summary = {
     missingRequired: 0,
     invalidFormat: 0,
     duplicates: 0,
