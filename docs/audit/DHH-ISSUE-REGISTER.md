@@ -45,7 +45,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 2. Portal `/billing` loads family coverage section
 3. Hawkeye crossref — BLOCKER cleared
 
-**Status:** Open
+**Status:** **Done (Wave 1, 2026-06-15)** — table confirmed on live prod; Hawkeye BLOCKER cleared
 
 ---
 
@@ -71,7 +71,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 **Recommended Fix:** Confirm live prod function catalog; create idempotent migration if missing, or remove dead RPC call if RPC was renamed.
 
 **Migration Needed:** TBD after live DB check  
-**Status:** Open
+**Status:** **Done (Wave 1, 2026-06-15)** — RPC confirmed on live prod
 
 ---
 
@@ -94,7 +94,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 **Recommended Fix:** Follow `docs/MIGRATION_CONSOLIDATION_RUNBOOK.md` — refresh schema, apply pending migrations in rehearsed order, reconcile ledger.
 
 **Migration Needed:** Yes (batch apply with approval)  
-**Status:** Open
+**Status:** **Done (Wave 1, 2026-06-15)** — ledger 23/23 in sync via `supabase db push --include-all`
 
 ---
 
@@ -113,7 +113,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Recommended Fix:** Renumber one file to unused timestamp; verify prod ledger.
 
-**Status:** **In progress (Wave 1)** — repo renumber done 2026-06-15; prod push pending
+**Status:** **Done (Wave 1, 2026-06-15)** — renumbered + applied on prod
 
 ---
 
@@ -134,7 +134,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Recommended Fix:** Rotate keys, remove from git history, add to `.gitignore`, use Vercel env only.
 
-**Status:** Open — **verify whether still tracked** (not re-verified this pass)
+**Status:** **Done (Wave 1, 2026-06-15)** — untracked in git; keys rotated in Supabase + Vercel. Optional follow-up: purge old keys from git history (BFG/filter-repo).
 
 ---
 

@@ -20,7 +20,7 @@ DECLARE
   covered_cmds text[];
   remaining_cmds text[];
   all_cmds text[] := ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'];
-  cmd text;
+  v_cmd text;
   role_list text;
   create_sql text;
   check_expr text;
@@ -64,9 +64,9 @@ BEGIN
       covered_cmds := array_append(covered_cmds, other.cmd);
     END LOOP;
 
-    SELECT array_agg(DISTINCT c)
+    SELECT array_agg(DISTINCT uc)
       INTO covered_cmds
-      FROM unnest(covered_cmds) AS c;
+      FROM unnest(covered_cmds) AS uc;
 
     SELECT array_agg(c ORDER BY c)
       INTO remaining_cmds
@@ -99,27 +99,27 @@ BEGIN
 
     check_expr := COALESCE(pol.with_check, pol.qual);
 
-    FOREACH cmd IN ARRAY remaining_cmds LOOP
+    FOREACH v_cmd IN ARRAY remaining_cmds LOOP
       create_sql := format(
         'CREATE POLICY %I ON %I.%I',
-        pol.policyname || '__' || lower(cmd),
+        pol.policyname || '__' || lower(v_cmd),
         pol.schemaname,
         pol.tablename
       );
 
-      create_sql := create_sql || format(' FOR %s', cmd);
+      create_sql := create_sql || format(' FOR %s', v_cmd);
 
       IF role_list IS NOT NULL THEN
         create_sql := create_sql || format(' TO %s', role_list);
       END IF;
 
-      IF cmd IN ('SELECT', 'UPDATE', 'DELETE') AND pol.qual IS NOT NULL THEN
+      IF v_cmd IN ('SELECT', 'UPDATE', 'DELETE') AND pol.qual IS NOT NULL THEN
         create_sql := create_sql || format(' USING (%s)', pol.qual);
       END IF;
 
-      IF cmd = 'INSERT' AND check_expr IS NOT NULL THEN
+      IF v_cmd = 'INSERT' AND check_expr IS NOT NULL THEN
         create_sql := create_sql || format(' WITH CHECK (%s)', check_expr);
-      ELSIF cmd = 'UPDATE' AND check_expr IS NOT NULL THEN
+      ELSIF v_cmd = 'UPDATE' AND check_expr IS NOT NULL THEN
         create_sql := create_sql || format(' WITH CHECK (%s)', check_expr);
       END IF;
 
