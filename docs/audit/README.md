@@ -165,3 +165,16 @@ NEW HIGH+ findings. Override with `git push --no-verify` if you must.
 See `docs/audit/REMEDIATION_PLAN.md` for the running ledger of fixes,
 migrations, and accepted-risk decisions that brought the audit from 141
 BLOCKERs (May 22, 2026 baseline) down to 0.
+
+## DHH logic audit (2026-06-15)
+
+Scoped read-only audit for CRM ECO / DoubleHelixHub (project key **DHH**).
+Olyron Core is out of scope.
+
+| Document | Contents |
+| --- | --- |
+| [DHH-LOGIC-AUDIT-2026-06-15.md](./DHH-LOGIC-AUDIT-2026-06-15.md) | Phase 1 inventory, Phase 2 summary, Phase 5 workflow matrix |
+| [DHH-PHASE2-TENANT-MATRIX-FULL.md](./DHH-PHASE2-TENANT-MATRIX-FULL.md) | Full tenant/org isolation matrix (58 tables) |
+| [DHH-ISSUE-REGISTER.md](./DHH-ISSUE-REGISTER.md) | Phase 7 issue register (16 items, P0–P3) |
+| [DHH-REPAIR-WAVE1-PRODUCTION-SAFETY.md](./DHH-REPAIR-WAVE1-PRODUCTION-SAFETY.md) | **Wave 1 playbook** — secrets, migrations, Hawkeye (in progress) |
+| [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-06-01.md) | Prior product-wide audit (carry-forward items) |
