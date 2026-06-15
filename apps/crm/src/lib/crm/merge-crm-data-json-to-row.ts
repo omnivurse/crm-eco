@@ -4,6 +4,11 @@ import {
   leadHasHealthSharingData,
   sharingEntityAsCarrierId,
 } from '@/lib/crm/lead-contact-sharing-fields';
+import {
+  HEALTH_INSURANCE_CARRIER_KEYS,
+  healthInsuranceCarrierAsCarrierId,
+  leadHasHealthInsuranceData,
+} from '@/lib/crm/health-insurance-fields';
 
 export interface MergeCrmDataJsonContext {
   /** For PATCH: previous row title when first/last clear. */
@@ -333,6 +338,50 @@ export function mergeCrmDataJsonIntoRowColumns(
     }
     if (d.sharing_effective_date !== undefined && updates.original_start_date === undefined) {
       const mirrored = normalizeDateColumnValue(d.sharing_effective_date);
+      if (mirrored) {
+        updates.original_start_date = mirrored;
+        if (updates.current_year_start_date === undefined) {
+          updates.current_year_start_date = mirrored;
+        }
+      }
+    }
+  }
+
+  const insuranceCarrierTouched = HEALTH_INSURANCE_CARRIER_KEYS.some(
+    (key) => d[key] !== undefined,
+  );
+  const insuranceTouched =
+    insuranceCarrierTouched ||
+    [
+      'health_insurance_plan_name',
+      'health_insurance_premium',
+      'health_insurance_start_date',
+      'health_insurance_end_date',
+      'health_insurance_status',
+      'health_insurance_deductible',
+      'health_insurance_max_out_of_pocket',
+    ].some((key) => d[key] !== undefined);
+
+  if (insuranceTouched && leadHasHealthInsuranceData(d)) {
+    let carrierFromInsurance: string | null = null;
+    for (const key of HEALTH_INSURANCE_CARRIER_KEYS) {
+      carrierFromInsurance = healthInsuranceCarrierAsCarrierId(d[key]);
+      if (carrierFromInsurance) break;
+    }
+    if (
+      carrierFromInsurance &&
+      (updates.carrier_id === undefined || updates.carrier_id === null)
+    ) {
+      updates.carrier_id = carrierFromInsurance;
+    }
+    if (updates.market_type === undefined || updates.market_type === null) {
+      updates.market_type = 'health_insurance';
+    }
+    if (
+      d.health_insurance_start_date !== undefined &&
+      updates.original_start_date === undefined
+    ) {
+      const mirrored = normalizeDateColumnValue(d.health_insurance_start_date);
       if (mirrored) {
         updates.original_start_date = mirrored;
         if (updates.current_year_start_date === undefined) {

@@ -16,6 +16,10 @@ import {
 import { UserCheck, Loader2, CheckCircle, AlertCircle, ArrowRight, GitMerge } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { resolveEffectiveStartDate } from '@/lib/crm/resolve-effective-start-date';
+import {
+  getConvertedContactId,
+  isLeadRecordConverted,
+} from '@/lib/crm/lead-conversion-result';
 
 interface ConvertToContactDialogProps {
   open: boolean;
@@ -40,9 +44,13 @@ export function ConvertToContactDialog({
     contactId?: string;
     contactTitle?: string;
     existingContactId?: string;
+    alreadyConverted?: boolean;
     insuranceRepairWarning?: string;
   } | null>(null);
   const router = useRouter();
+
+  const linkedContactId = getConvertedContactId(recordData);
+  const leadAlreadyConverted = isLeadRecordConverted({ data: recordData });
 
   const handleConvert = async (mergeIntoContactId?: string) => {
     if (mergeIntoContactId) {
@@ -62,6 +70,8 @@ export function ConvertToContactDialog({
       const data = await response.json();
 
       if (!response.ok) {
+        const contactHint =
+          data?.existing_contact_id ?? data?.converted_contact_id ?? data?.contact_id;
         setResult({
           success: false,
           message:
@@ -70,7 +80,7 @@ export function ConvertToContactDialog({
               : response.status === 403
                 ? 'You do not have permission to convert leads. Ask a manager or admin if this is unexpected.'
                 : 'Failed to convert lead to contact',
-          existingContactId: data?.existing_contact_id,
+          existingContactId: contactHint,
         });
         return;
       }
@@ -82,17 +92,24 @@ export function ConvertToContactDialog({
             : undefined;
         setResult({
           success: true,
-          message: data.message || 'Lead converted to contact successfully!',
+          message:
+            data.message ||
+            (data.already_converted
+              ? 'This lead is already linked to a contact.'
+              : 'Lead converted to contact successfully!'),
           contactId: data.contact_id,
           contactTitle: data.contact_title,
+          alreadyConverted: data.already_converted === true,
           insuranceRepairWarning: repairWarning,
         });
         router.refresh();
       } else {
+        const contactHint =
+          data.existing_contact_id ?? data.converted_contact_id ?? data.contact_id;
         setResult({
           success: false,
           message: data.error || 'Failed to convert lead to contact',
-          existingContactId: data.existing_contact_id,
+          existingContactId: contactHint,
         });
       }
     } catch {
@@ -132,10 +149,20 @@ export function ConvertToContactDialog({
           <>
             <AlertDialogHeader>
               <AlertDialogTitle className="text-slate-900 dark:text-white">
-                Convert Lead to Contact?
+                {leadAlreadyConverted ? 'Lead Already Converted' : 'Convert Lead to Contact?'}
               </AlertDialogTitle>
               <AlertDialogDescription asChild>
                 <div className="text-slate-500 space-y-3">
+                  {leadAlreadyConverted && linkedContactId ? (
+                    <>
+                      <p>
+                        <strong className="text-slate-700 dark:text-slate-300">{recordTitle}</strong>{' '}
+                        is already linked to a contact. Open the contact record to continue working the
+                        account — you do not need to convert again.
+                      </p>
+                    </>
+                  ) : (
+                  <>
                   <p>
                     This will create a new <strong className="text-slate-700 dark:text-slate-300">Contact</strong> record
                     from <strong className="text-slate-700 dark:text-slate-300">{recordTitle}</strong> and
@@ -194,10 +221,29 @@ export function ConvertToContactDialog({
                     the green <strong>Convert to Member</strong> button, which enrolls someone in the member system.
                     Use this when they should appear in your Contacts list.
                   </p>
+                  </>
+                  )}
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
+              {leadAlreadyConverted && linkedContactId ? (
+                <>
+                  <Button asChild className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white">
+                    <Link href={`/crm/r/${linkedContactId}`}>
+                      View Contact
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                  <AlertDialogCancel
+                    onClick={handleClose}
+                    className="border-slate-200 dark:border-white/10"
+                  >
+                    Close
+                  </AlertDialogCancel>
+                </>
+              ) : (
+              <>
               <AlertDialogCancel
                 disabled={isConverting}
                 className="border-slate-200 dark:border-white/10"
@@ -226,6 +272,8 @@ export function ConvertToContactDialog({
                   </>
                 )}
               </AlertDialogAction>
+              </>
+              )}
             </AlertDialogFooter>
           </>
         ) : (
@@ -255,7 +303,11 @@ export function ConvertToContactDialog({
                       <AlertCircle className="w-8 h-8 text-amber-500" />
                     </div>
                     <AlertDialogTitle className="text-slate-900 dark:text-white">
-                      {result.existingContactId ? 'Existing Contact Found' : 'Conversion Failed'}
+                      {result.existingContactId
+                        ? 'Existing Contact Found'
+                        : result.alreadyConverted
+                          ? 'Already Linked to Contact'
+                          : 'Conversion Failed'}
                     </AlertDialogTitle>
                     <AlertDialogDescription asChild>
                       <div className="text-slate-500 mt-2 space-y-2">
@@ -275,7 +327,7 @@ export function ConvertToContactDialog({
               {result.success && result.contactId && (
                 <Button asChild className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white">
                   <Link href={`/crm/r/${result.contactId}`}>
-                    View Contact
+                    {result.alreadyConverted ? 'Open Contact' : 'View Contact'}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Link>
                 </Button>

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { getAuthProfile } from '@/lib/supabase-server';
+import { syncContactIndexedColumnsFromCoverage } from '@/lib/crm/lead-conversion-sync';
+import {
+  normalizeLeadConversionRpcResult,
+  type LeadConversionApiResult,
+} from '@/lib/crm/lead-conversion-result';
 
 function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -57,17 +62,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = data as {
-      success?: boolean;
-      contact_id?: string;
-      error?: string;
-      insurance_repair?: Record<string, unknown>;
-      insurance_repair_failed?: boolean;
-      insurance_repair_error?: string;
-    };
+    const result: LeadConversionApiResult = normalizeLeadConversionRpcResult(data);
 
     // Belt-and-suspenders: copy any insurance / health-sharing keys the RPC may have missed.
-    if (result?.success && result.contact_id) {
+    if (result.success && result.contact_id && !result.already_converted) {
       const { data: repairData, error: repairError } = await adminClient.rpc(
         'repair_converted_contact_insurance_data',
         { p_contact_id: result.contact_id },
@@ -82,6 +80,21 @@ export async function POST(request: NextRequest) {
         result.insurance_repair_error = repairError.message;
       } else if (repairData && typeof repairData === 'object') {
         result.insurance_repair = repairData as Record<string, unknown>;
+      }
+
+      const indexedSync = await syncContactIndexedColumnsFromCoverage(
+        adminClient,
+        result.contact_id,
+        'contacts',
+      );
+      if (!indexedSync.ok) {
+        console.warn(
+          'Lead conversion succeeded but indexed coverage sync failed:',
+          indexedSync.error,
+        );
+        result.insurance_repair_failed = true;
+        result.insurance_repair_error =
+          result.insurance_repair_error ?? indexedSync.error;
       }
     }
 

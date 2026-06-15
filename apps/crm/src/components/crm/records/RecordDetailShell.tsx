@@ -63,6 +63,7 @@ import { formatDistanceToNow } from 'date-fns';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
 import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisplay, getOwnerLabel } from '@/components/shared/crm-lane-badges';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
+import { isLeadRecordConverted, getConvertedContactId } from '@/lib/crm/lead-conversion-result';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
@@ -238,7 +239,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
 
   // Lead-to-Contact conversion flags
   const isLeads = module.key === 'leads';
-  const isAlreadyConverted = record.status === 'Converted' || (record.data as Record<string, unknown>)?.is_converted === true;
+  const isAlreadyConverted = isLeadRecordConverted(record);
   const canConvertToContact = isLeads && !isAlreadyConverted;
 
   // Check if we should show ComposerBar on timeline tab
@@ -532,9 +533,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                       }
                       return capacities.length > 0 ? <CapacityBadges capacities={capacities} size="sm" /> : null;
                     })()}
-                    {isLeads && isAlreadyConverted && !!(record.data as Record<string, unknown>)?.converted_contact_id && (
+                    {isLeads && isAlreadyConverted && getConvertedContactId(record.data as Record<string, unknown>) && (
                       <Link
-                        href={`/crm/r/${String((record.data as Record<string, unknown>).converted_contact_id)}`}
+                        href={`/crm/r/${String(getConvertedContactId(record.data as Record<string, unknown>))}`}
                         className="flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />

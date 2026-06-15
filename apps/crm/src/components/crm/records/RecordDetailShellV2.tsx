@@ -121,6 +121,7 @@ import { InlineFieldEditor } from './v2/InlineFieldEditor';
 import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
 import { MembershipChangeHistory } from './v2/MembershipChangeHistory';
 import { DependentCoverageHistory } from './v2/DependentCoverageHistory';
+import { RecordTasksPanel } from './v2/RecordTasksPanel';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
@@ -137,6 +138,7 @@ import { useRecordPresence } from '@/hooks/useRecordPresence';
 import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
 import { useLiveRecord, type LiveRecordEvent } from '@/hooks/useLiveRecord';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { isLeadRecordConverted, getConvertedContactId } from '@/lib/crm/lead-conversion-result';
 
 export interface RecordDetailShellV2Props {
   record: CrmRecord;
@@ -501,8 +503,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const isLeads = module.key === 'leads';
   const isContacts = module.key === 'contacts';
   const isDeals = module.key === 'deals';
-  const isAlreadyConverted =
-    record.status === 'Converted' || (record.data as Record<string, unknown>)?.is_converted === true;
+  const isAlreadyConverted = isLeadRecordConverted(record);
   const canConvertToContact = isLeads && !isAlreadyConverted;
   // "Convert to Member" is available from both Leads and Contacts
   const canConvertToMember = (isLeads || isContacts) && !isAlreadyConverted;
@@ -845,17 +846,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         id: 'activities',
         label: 'Open Activities',
         count: counts?.open_activities ?? null,
-        available: (counts?.open_activities ?? 0) > 0,
-        comingSoonHint:
-          (counts?.open_activities ?? 0) === 0 ? 'No open activities yet' : undefined,
+        available: true,
       },
       {
         id: 'closed_activities',
         label: 'Closed Activities',
         count: counts?.closed_activities ?? null,
-        available: (counts?.closed_activities ?? 0) > 0,
-        comingSoonHint:
-          (counts?.closed_activities ?? 0) === 0 ? 'No completed activities yet' : undefined,
+        available: true,
       },
       {
         id: 'attachments',
@@ -869,14 +866,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         count: counts?.related ?? null,
         available: !!children.related,
       },
-      { id: 'cadences', label: 'Cadences', count: null, available: false, comingSoonHint: 'Cadences panel ships in PR 5' },
-      { id: 'products', label: 'Products', count: null, available: false, comingSoonHint: 'Products panel ships in PR 5' },
-      { id: 'campaigns', label: 'Campaigns', count: null, available: false, comingSoonHint: 'Campaigns panel ships in PR 5' },
-      { id: 'visits', label: 'Visits', count: null, available: false, comingSoonHint: 'SalesIQ integration ships in PR 5' },
-      { id: 'social', label: 'Social', count: null, available: false, comingSoonHint: 'Social integration ships in PR 5' },
-      { id: 'surveys', label: 'Surveys', count: null, available: false, comingSoonHint: 'Surveys integration ships in PR 5' },
-      { id: 'desk', label: 'Zoho Desk', count: null, available: false, comingSoonHint: 'Desk integration ships in PR 5' },
-      { id: 'meetings', label: 'Invited Meetings', count: null, available: false, comingSoonHint: 'Meetings integration ships in PR 5' },
     ];
   }, [children, noteCount, notesProp.length, insights]);
 
@@ -1005,6 +994,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         );
       case 'emails':
         return children.communications ?? <ComingSoon label="Emails" hint="Email history is not enabled for this record." />;
+      case 'activities':
+        return <RecordTasksPanel recordId={record.id} mode="open" />;
+      case 'closed_activities':
+        return <RecordTasksPanel recordId={record.id} mode="closed" />;
       case 'attachments':
         return children.attachments ?? <ComingSoon label="Attachments" hint="No attachments panel is wired for this module." />;
       case 'related':
@@ -1219,9 +1212,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       else if (Array.isArray(data?.capacities)) capacities.push(...(data.capacities as string[]));
                       return capacities.length > 0 ? <CapacityBadges capacities={capacities} size="sm" /> : null;
                     })()}
-                    {isLeads && isAlreadyConverted && !!(record.data as Record<string, unknown>)?.converted_contact_id && (
+                    {isLeads && isAlreadyConverted && getConvertedContactId(record.data as Record<string, unknown>) && (
                       <Link
-                        href={`/crm/r/${String((record.data as Record<string, unknown>).converted_contact_id)}`}
+                        href={`/crm/r/${String(getConvertedContactId(record.data as Record<string, unknown>))}`}
                         className="flex items-center gap-1 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
