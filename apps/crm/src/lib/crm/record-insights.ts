@@ -22,6 +22,14 @@
 
 import { createCrmClient, resolveNoteSourceRecordIds } from './queries';
 import { moduleKeyFromJoinedRelation } from './note-aggregate';
+import {
+  countRecordCampaigns,
+  countRecordCadences,
+  countRecordMeetings,
+  countRecordVisits,
+  countRecordSocial,
+  countRecordProducts,
+} from './record-related-lists';
 import type { ActivityType, CrmRecord } from './types';
 
 export interface InsightBestTime {
@@ -42,6 +50,12 @@ export interface RecordInsightCounts {
   closed_activities: number;
   attachments: number;
   related: number;
+  campaigns: number;
+  cadences: number;
+  meetings: number;
+  visits: number;
+  social: number;
+  products: number;
 }
 
 export interface RecordInsights {
@@ -63,6 +77,12 @@ export function emptyRecordInsights(): RecordInsights {
       closed_activities: 0,
       attachments: 0,
       related: 0,
+      campaigns: 0,
+      cadences: 0,
+      meetings: 0,
+      visits: 0,
+      social: 0,
+      products: 0,
     },
     bestTime: [
       { channel: 'call', value: null, samples: 0 },
@@ -82,13 +102,15 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
     const supabase = await createCrmClient();
 
     let noteSourceIds: string[] = [recordId];
+    let recordEmail: string | null = null;
     try {
       const { data: row } = await supabase
         .from('crm_records')
-        .select('id, data, module:crm_modules!crm_records_module_id_fkey(key)')
+        .select('id, data, email, module:crm_modules!crm_records_module_id_fkey(key)')
         .eq('id', recordId)
         .maybeSingle();
       if (row?.id) {
+        recordEmail = (row.email as string | null) ?? null;
         const moduleKey = moduleKeyFromJoinedRelation(row.module);
         const record = { id: row.id, data: row.data } as CrmRecord;
         noteSourceIds = await resolveNoteSourceRecordIds(record, moduleKey);
@@ -105,18 +127,30 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
       attachmentsCount,
       linksOutCount,
       linksInCount,
+      campaignsCount,
+      cadencesCount,
+      meetingsCount,
+      visitsCount,
+      socialCount,
+      productsCount,
       callSignal,
       emailSignal,
       recentInteractions,
     ] = await Promise.allSettled([
       headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds),
-      headCount(supabase, 'crm_tasks', { record_id: recordId, activity_type: 'email' }),
+      headCount(supabase, 'crm_messages', { record_id: recordId }),
       // Anything not completed / cancelled counts as "open"
       headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['open', 'in_progress']),
       headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['completed']),
       headCount(supabase, 'crm_attachments', { record_id: recordId }),
       headCount(supabase, 'crm_record_links', { source_record_id: recordId }),
       headCount(supabase, 'crm_record_links', { target_record_id: recordId }),
+      countRecordCampaigns(supabase, recordId),
+      countRecordCadences(supabase, recordId),
+      countRecordMeetings(supabase, recordId, recordEmail),
+      countRecordVisits(supabase, recordId),
+      countRecordSocial(supabase, recordId),
+      countRecordProducts(supabase, recordId),
       bestTimeForChannel(supabase, recordId, 'call'),
       bestTimeForChannel(supabase, recordId, 'email'),
       lastInteractionFor(supabase, recordId, noteSourceIds),
@@ -128,6 +162,12 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
     const closedActivities = settleOrZero(closedActivitiesCount);
     const attachments = settleOrZero(attachmentsCount);
     const related = settleOrZero(linksOutCount) + settleOrZero(linksInCount);
+    const campaigns = settleOrZero(campaignsCount);
+    const cadences = settleOrZero(cadencesCount);
+    const meetings = settleOrZero(meetingsCount);
+    const visits = settleOrZero(visitsCount);
+    const social = settleOrZero(socialCount);
+    const products = settleOrZero(productsCount);
 
     const bestCall: InsightBestTime =
       callSignal.status === 'fulfilled' && callSignal.value
@@ -149,6 +189,12 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
         closed_activities: closedActivities,
         attachments,
         related,
+        campaigns,
+        cadences,
+        meetings,
+        visits,
+        social,
+        products,
       },
       bestTime: [bestCall, bestEmail],
       lastInteractionAt,

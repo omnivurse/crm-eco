@@ -122,6 +122,15 @@ import { UnsavedChangesPill } from './v2/UnsavedChangesPill';
 import { MembershipChangeHistory } from './v2/MembershipChangeHistory';
 import { DependentCoverageHistory } from './v2/DependentCoverageHistory';
 import { RecordTasksPanel } from './v2/RecordTasksPanel';
+import {
+  RecordCampaignsPanel,
+  RecordCadencesPanel,
+  RecordMeetingsPanel,
+  RecordVisitsPanel,
+  RecordSocialPanel,
+  RecordProductsPanel,
+} from './v2/RecordRelatedListPanels';
+import { RecordLinksEditorDialog } from './v2/RecordLinksEditorDialog';
 import { FollowUpReminderDialog } from './FollowUpReminderDialog';
 import { FollowUpBanner } from './FollowUpBanner';
 import { useSyncBroadcast } from '@/hooks/useSyncBroadcast';
@@ -312,6 +321,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [showNotesDrawer, setShowNotesDrawer] = useState(false);
   const [showSendEmailDialog, setShowSendEmailDialog] = useState(false);
+  const [showLinksEditor, setShowLinksEditor] = useState(false);
+  const [localLinksOverride, setLocalLinksOverride] = useState<RecordRelatedListLink[] | null>(
+    null,
+  );
   const [aiEmailDraft, setAiEmailDraft] = useState<AiFollowUpEmailDraft | null>(
     null,
   );
@@ -866,6 +879,42 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         count: counts?.related ?? null,
         available: !!children.related,
       },
+      {
+        id: 'campaigns',
+        label: 'Campaigns',
+        count: counts?.campaigns ?? null,
+        available: true,
+      },
+      {
+        id: 'cadences',
+        label: 'Cadences',
+        count: counts?.cadences ?? null,
+        available: true,
+      },
+      {
+        id: 'products',
+        label: 'Products',
+        count: counts?.products ?? null,
+        available: true,
+      },
+      {
+        id: 'visits',
+        label: 'Visits',
+        count: counts?.visits ?? null,
+        available: true,
+      },
+      {
+        id: 'social',
+        label: 'Social',
+        count: counts?.social ?? null,
+        available: true,
+      },
+      {
+        id: 'meetings',
+        label: 'Invited Meetings',
+        count: counts?.meetings ?? null,
+        available: true,
+      },
     ];
   }, [children, noteCount, notesProp.length, insights]);
 
@@ -932,6 +981,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // External links (from record.data.links) — editable via future dialog.
   // -------------------------------------------------------------------------
   const links: RecordRelatedListLink[] = useMemo(() => {
+    if (localLinksOverride) return localLinksOverride;
     const raw = (record.data as Record<string, unknown> | undefined)?.links;
     if (!Array.isArray(raw)) return [];
     return raw
@@ -949,7 +999,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         return null;
       })
       .filter((x): x is RecordRelatedListLink => !!x);
-  }, [record.data]);
+  }, [record.data, localLinksOverride]);
 
   // -------------------------------------------------------------------------
   // Render helpers
@@ -1002,6 +1052,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         return children.attachments ?? <ComingSoon label="Attachments" hint="No attachments panel is wired for this module." />;
       case 'related':
         return children.related ?? <ComingSoon label="Connected Records" hint="Relationship browser is empty." />;
+      case 'campaigns':
+        return <RecordCampaignsPanel recordId={record.id} />;
+      case 'cadences':
+        return <RecordCadencesPanel recordId={record.id} />;
+      case 'products':
+        return <RecordProductsPanel recordId={record.id} />;
+      case 'visits':
+        return <RecordVisitsPanel recordId={record.id} />;
+      case 'social':
+        return <RecordSocialPanel recordId={record.id} />;
+      case 'meetings':
+        return <RecordMeetingsPanel recordId={record.id} recordEmail={record.email} />;
       default:
         return <ComingSoon label={labelFromPane(overviewPane)} hint="This related list ships in a later PR." />;
     }
@@ -1593,9 +1655,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 activeId={overviewPane}
                 onSelect={(id) => setOverviewPane(id as OverviewPane)}
                 onAddRelatedList={() => setShowCustomizeDialog(true)}
-                onAddLink={() =>
-                  toast.info('Record links editor ships in PR 5', { duration: 4000 })
-                }
+                onAddLink={() => setShowLinksEditor(true)}
                 className="sticky top-[220px] self-start hidden lg:flex"
               />
 
@@ -2048,6 +2108,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         moduleKey={module.key}
         catalog={customizeCatalog}
         lockedIds={['details']}
+      />
+
+      <RecordLinksEditorDialog
+        open={showLinksEditor}
+        onOpenChange={setShowLinksEditor}
+        recordId={record.id}
+        links={links}
+        updatedAt={record.updated_at ?? null}
+        onSaved={(saved) => {
+          setLocalLinksOverride(saved);
+          scheduleRecordRefresh();
+        }}
       />
 
       <KeyboardShortcutsDialog
