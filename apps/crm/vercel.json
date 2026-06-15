@@ -42,6 +42,10 @@
     {
       "path": "/api/cron/cancel-active-members",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/automation/cron",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

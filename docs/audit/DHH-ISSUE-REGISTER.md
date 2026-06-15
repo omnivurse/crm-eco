@@ -174,7 +174,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Problem:** UI shows enrolled cadences; records never advance.
 
-**Status:** Open — NEEDS MANUAL REVIEW of current `vercel.json`
+**Status:** **Done (Wave 5, 2026-06-13)** — `/api/automation/cron` in `apps/crm/vercel.json` (every 5m); GET delegates to POST; fail-closed `CRON_SECRET`
 
 ---
 
@@ -193,7 +193,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Problem:** Authenticated users cannot UPDATE commission/payout rows through PostgREST.
 
-**Status:** Open
+**Status:** **Done (Wave 5, 2026-06-13)** — migration `202606190001_commission_payout_write_rls.sql` (apply on prod with approval)
 
 ---
 
@@ -251,7 +251,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Recommended Fix:** Regenerate types; remove `as any` casts.
 
-**Status:** Open
+**Status:** **Done (Wave 3, 2026-06-13)** — billing page uses `/api/member/*` routes; no `as any` casts
 
 ---
 

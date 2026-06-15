@@ -7,6 +7,24 @@ import {
   processScheduledWorkflows,
 } from '@/lib/automation';
 
+function verifyCronSecret(request: NextRequest): NextResponse | null {
+  const authHeader = request.headers.get('authorization') || '';
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (!cronSecret) {
+    console.error('[automation/cron] CRON_SECRET env var is not configured — rejecting request');
+    return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 });
+  }
+
+  const expected = Buffer.from(`Bearer ${cronSecret}`);
+  const actual = Buffer.from(authHeader);
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  return null;
+}
+
 /**
  * Creates a service role client for cron operations
  */
@@ -35,18 +53,8 @@ function createServiceClient() {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Verify cron secret (timing-safe)
-    const authHeader = request.headers.get('authorization') || '';
-    const cronSecret = process.env.CRON_SECRET;
-
-    if (cronSecret) {
-      const expected = `Bearer ${cronSecret}`;
-      const a = Buffer.from(authHeader);
-      const b = Buffer.from(expected);
-      if (a.length !== b.length || !timingSafeEqual(a, b)) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-    }
+    const authFailure = verifyCronSecret(request);
+    if (authFailure) return authFailure;
 
     const results: Record<string, unknown> = {};
 
@@ -131,12 +139,8 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/automation/cron
- * Health check for cron endpoint
+ * Vercel crons invoke GET — delegate to POST so cadences and scheduler jobs run.
  */
-export async function GET() {
-  return NextResponse.json({
-    status: 'ok',
-    endpoint: '/api/automation/cron',
-    description: 'Scheduled automation processing endpoint',
-  });
+export async function GET(request: NextRequest) {
+  return POST(request);
 }

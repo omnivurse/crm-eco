@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { createClient } from '@crm-eco/lib/supabase/client';
 import { 
   CreditCard, 
   DollarSign,
@@ -28,12 +27,10 @@ import {
 } from '@crm-eco/ui/components/tabs';
 import { toast } from 'sonner';
 import {
-  countCurrentlyCoveredDependents,
-  summarizeRecentCoverageChanges,
   formatCoverageDateRange,
   formatCoverageReason,
 } from '@crm-eco/lib';
-import type { DependentCoveragePeriod, DependentWithCoverage, CoverageChangeSummary } from '@crm-eco/lib';
+import type { CoverageChangeSummary } from '@crm-eco/lib';
 
 interface BillingRecord {
   id: string;
@@ -46,12 +43,17 @@ interface BillingRecord {
   created_at: string;
 }
 
-/**
- * Live row shape from `billing_transactions`. We project it to the
- * display-friendly `BillingRecord` shape so the rest of the page never
- * needs to know about the underlying column names.
- */
-interface BillingTransactionRow {
+interface PaymentProfile {
+  id: string;
+  card_last4: string | null;
+  last_four?: string | null;
+  card_type: string | null;
+  expiration_date: string | null;
+  is_default: boolean | null;
+  status: string | null;
+}
+
+interface MemberTransactionRow {
   id: string;
   description: string | null;
   amount: number;
@@ -62,14 +64,17 @@ interface BillingTransactionRow {
   created_at: string;
 }
 
-interface PaymentProfile {
-  id: string;
-  card_last4: string | null;
-  last_four?: string | null;
-  card_type: string | null;
-  expiration_date: string | null;
-  is_default: boolean;
-  status: string;
+function mapTransactionRow(row: MemberTransactionRow): BillingRecord {
+  return {
+    id: row.id,
+    description: row.description,
+    amount: row.amount,
+    status: row.status,
+    due_date: row.billing_period_end,
+    paid_at: row.settled_at,
+    billing_type: row.transaction_type,
+    created_at: row.created_at,
+  };
 }
 
 export default function BillingPage() {
@@ -80,105 +85,71 @@ export default function BillingPage() {
   const [nextPayment, setNextPayment] = useState<{ amount: number; date: string } | null>(null);
   const [familyCoveredCount, setFamilyCoveredCount] = useState(0);
   const [familyRecentChanges, setFamilyRecentChanges] = useState<CoverageChangeSummary[]>([]);
-  
-  const supabase = createClient();
 
   const fetchBillingData = useCallback(async () => {
     setLoading(true);
-    
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
-    // Get profile to find member
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('member_id')
-      .eq('user_id', user.id)
-      .single() as { data: { member_id: string } | null };
+    try {
+      const [profileRes, txRes, profilesRes, scheduleRes, familyRes] = await Promise.all([
+        fetch('/api/member/profile'),
+        fetch('/api/member/transactions?limit=50'),
+        fetch('/api/member/payment-profiles'),
+        fetch('/api/member/billing-schedule'),
+        fetch('/api/member/dependents'),
+      ]);
 
-    if (!profile?.member_id) {
+      if (profileRes.status === 401) return;
+      if (!profileRes.ok) {
+        console.error('[billing] profile fetch failed', profileRes.status);
+        return;
+      }
+
+      const profilePayload = (await profileRes.json()) as {
+        member?: { id: string };
+      };
+      if (!profilePayload.member?.id) return;
+
+      setMemberId(profilePayload.member.id);
+
+      if (txRes.ok) {
+        const txPayload = (await txRes.json()) as { transactions?: MemberTransactionRow[] };
+        setBillingHistory((txPayload.transactions ?? []).map(mapTransactionRow));
+      }
+
+      if (profilesRes.ok) {
+        const profilesPayload = (await profilesRes.json()) as { profiles?: PaymentProfile[] };
+        setPaymentProfiles(profilesPayload.profiles ?? []);
+      }
+
+      if (scheduleRes.ok) {
+        const schedulePayload = (await scheduleRes.json()) as {
+          schedule?: { amount: number; next_billing_date: string } | null;
+        };
+        if (schedulePayload.schedule) {
+          setNextPayment({
+            amount: schedulePayload.schedule.amount,
+            date: schedulePayload.schedule.next_billing_date,
+          });
+        } else {
+          setNextPayment(null);
+        }
+      }
+
+      if (familyRes.ok) {
+        const familyPayload = (await familyRes.json()) as {
+          covered_count?: number;
+          recent_changes?: CoverageChangeSummary[];
+        };
+        setFamilyCoveredCount(familyPayload.covered_count ?? 0);
+        setFamilyRecentChanges(familyPayload.recent_changes ?? []);
+      }
+    } catch (error) {
+      console.error('[billing] fetch failed', error);
+      toast.error('Unable to load billing data. Please refresh.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setMemberId(profile.member_id);
-
-    const { data: billing } = await supabase
-      .from('billing_transactions')
-      .select(
-        'id, description, amount, status, billing_period_end, settled_at, transaction_type, created_at'
-      )
-      .eq('member_id', profile.member_id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-      .returns<BillingTransactionRow[]>();
-
-    if (billing) {
-      setBillingHistory(
-        billing.map((row) => ({
-          id: row.id,
-          description: row.description,
-          amount: row.amount,
-          status: row.status,
-          due_date: row.billing_period_end,
-          paid_at: row.settled_at,
-          billing_type: row.transaction_type,
-          created_at: row.created_at,
-        }))
-      );
-    }
-
-    // Fetch payment profiles
-    const { data: profiles } = await (supabase as any)
-      .from('payment_profiles')
-      .select('*')
-      .eq('member_id', profile.member_id)
-      .eq('is_active', true)
-      .order('is_default', { ascending: false });
-
-    if (profiles) {
-      setPaymentProfiles(profiles);
-    }
-
-    // Fetch next scheduled payment from billing_schedules
-    const { data: schedule } = await (supabase as any)
-      .from('billing_schedules')
-      .select('amount, next_billing_date')
-      .eq('member_id', profile.member_id)
-      .eq('status', 'active')
-      .single();
-
-    if (schedule) {
-      setNextPayment({
-        amount: schedule.amount,
-        date: schedule.next_billing_date,
-      });
-    }
-
-    const [{ data: deps }, { data: periods }] = await Promise.all([
-      supabase
-        .from('dependents')
-        .select('id, first_name, last_name, included_in_enrollment')
-        .eq('member_id', profile.member_id),
-      supabase
-        .from('dependent_coverage_periods')
-        .select('*')
-        .eq('member_id', profile.member_id)
-        .order('created_at', { ascending: false }),
-    ]);
-
-    const dependentList = (deps ?? []) as Pick<
-      DependentWithCoverage,
-      'id' | 'first_name' | 'last_name' | 'included_in_enrollment'
-    >[];
-    const periodList = (periods ?? []) as DependentCoveragePeriod[];
-    setFamilyCoveredCount(countCurrentlyCoveredDependents(dependentList, periodList));
-    setFamilyRecentChanges(
-      summarizeRecentCoverageChanges(dependentList, periodList, 3),
-    );
-
-    setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     queueMicrotask(() => fetchBillingData());

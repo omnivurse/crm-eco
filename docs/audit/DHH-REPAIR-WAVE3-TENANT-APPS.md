@@ -26,7 +26,7 @@ Search fix is live on DB + deployed app.
 | Gate | Target | Status |
 |---|---|---|
 | Admin API tenant guards | Service-role routes require tenant + auth | **In progress** — invoice PDF IDOR fixed |
-| Portal member resolve | No wrong-member link on shared email | **Fixed** — name disambiguation in `getMemberForUser` |
+| Portal billing | No wrong-member link on shared email | **Fixed** — billing page uses member APIs + `getMemberForUser` |
 | CRM API org scoping | Explicit `org_id` / profile org on writes | Review (282 routes — RLS backstop) |
 | Static API audit | Automated route classifier | ✅ `scripts/wave3-tenant-apps.mjs` |
 | Admin `tenantSupabase` parity | Document CRM explicit-filter pattern | Documented (T-04) |
@@ -74,14 +74,27 @@ node scripts/wave3-tenant-apps.mjs --json
 curl -s "https://crm.doublehelixhub.com/api/crm/search?q=Jacob"
 ```
 
+### W3-03 — Portal billing via member APIs (P2)
+
+**File:** `apps/portal/src/app/billing/page.tsx`
+
+**Before:** Client-side Supabase queries with `(supabase as any)` for `payment_profiles` / `billing_schedules`; member resolved via `profiles.member_id` only (shared-email gap).
+
+**After:** Loads billing data through `/api/member/*` routes backed by `requireActiveMembership()` + `getMemberForUser()`.
+
+### W3-04 — Wave 3 audit script accuracy
+
+**File:** `scripts/wave3-tenant-apps.mjs`
+
+Detects `@/lib/data` delegation, `getActiveTenant`, `getAdminProfile`, and `getMemberForUser` so false-positive “review” counts drop.
+
 ---
 
 ## Remaining Wave 3 work
 
-1. Triage `review` routes from `wave3-tenant-apps.mjs` — CRM routes that rely on RLS-only
-2. Portal billing — remove `(supabase as any)` casts (`DHH-AUDIT-011`)
-3. Commission write RLS (`DHH-AUDIT-008`) — admin app writes
-4. Optional: shared CRM org guard helper (mirror admin `fromTenant` for `org_id` tables)
+1. Triage remaining `review` CRM routes — explicit `org_id` on writes where RLS-only is insufficient
+2. Commission write RLS (`DHH-AUDIT-008`) — admin payout approval paths (RPC-backed; verify UI)
+3. Optional: shared CRM org guard helper (mirror admin `fromTenant` for `org_id` tables)
 
 ---
 

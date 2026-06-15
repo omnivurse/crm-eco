@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase-server';
+import {
+  assertCommissionBatchOrgAccess,
+  requireCrmOrgContext,
+} from '@/lib/crm/require-crm-org';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,11 +31,12 @@ export async function POST(
   { params }: { params: Promise<{ batchId: string }> }
 ) {
   try {
-    const profile = await getAuthProfile();
-    if (!profile) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const orgCtx = await requireCrmOrgContext();
+    if (!orgCtx.ok) {
+      return NextResponse.json({ error: orgCtx.error }, { status: orgCtx.status });
     }
 
+    const profile = orgCtx.profile;
     if (!['owner', 'super_admin', 'admin'].includes(profile.role || '')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -39,6 +44,11 @@ export async function POST(
     const { batchId } = await params;
     const body = await request.json().catch(() => ({}));
     const supabase = await createClient();
+
+    const batchAccess = await assertCommissionBatchOrgAccess(supabase, batchId, orgCtx.orgId);
+    if (!batchAccess.ok) {
+      return NextResponse.json({ error: batchAccess.error }, { status: batchAccess.status });
+    }
 
     // Run anomaly detection before approval
     const { data: anomalies, error: anomalyError } = await supabase.rpc(

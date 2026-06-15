@@ -30,18 +30,31 @@ function classifyRoute(filePath, src) {
   const rel = path.relative(ROOT, filePath);
   const app = rel.split(path.sep)[1] ?? 'unknown';
   const flags = {
-    auth: /getAuthProfile|getAuthUser|requireAuth|requireAdminRole|requireActiveTenant|requireActiveMembership/.test(src),
-    org: /organization_id|org_id|getActiveTenant|tenantSupabase|fromTenant|profile\.organization_id/.test(src),
-    service: /createServiceRoleClient|getServiceRole/.test(src),
+    auth: /getAuthProfile|getAuthUser|requireAuth|requireAdminRole|requireActiveTenant|requireActiveMembership|getAdminProfile|getMemberForUser|getActiveTenant|supabase\.auth\.getUser/.test(
+      src,
+    ),
+    org: /organization_id|org_id|getActiveTenant|tenantSupabase|fromTenant|profile\.organization_id|requireActiveMembership|getMemberForUser/.test(
+      src,
+    ),
+    delegated: /from ['"]@\/lib\/data\//.test(src),
+    service: /createServiceRoleClient|getServiceRole|SUPABASE_SERVICE_ROLE_KEY/.test(src),
     cron: /CRON_SECRET|verifyCron|authorization.*Bearer/i.test(src),
     webhook: /webhook|stripe-signature|authorize\.net/i.test(src),
-    public: /\/api\/health|\/api\/public|enroll\/draft|enroll\/submit/i.test(rel),
+    public: /\/api\/health|\/api\/public|enroll\/draft|enroll\/submit|enroll\/public|scheduling\/public|scheduling\/book|tracking\/|webforms\/|team\/invite\/signup|oauth\/callback/i.test(
+      rel,
+    ),
   };
 
   let risk = 'ok';
   let note = '';
 
-  if (flags.service && !flags.auth && !flags.cron && !flags.webhook) {
+  if (flags.delegated) {
+    risk = 'ok';
+    note = 'Tenant guard via @/lib/data (requireActiveMembership)';
+  } else if (flags.public) {
+    risk = 'review';
+    note = 'Intentional public or token/slug-gated route — verify org stamp';
+  } else if (flags.service && !flags.auth && !flags.cron && !flags.webhook) {
     if (flags.public && /enroll\/draft/.test(rel)) {
       risk = 'review';
       note = 'Public enroll draft — service role validates landing slug only';
