@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import { requireActiveTenant } from '@/lib/tenant';
+import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,15 +18,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireActiveTenant();
     const { id: invoiceId } = await params;
 
     if (!invoiceId) {
       return NextResponse.json({ error: 'Invoice ID required' }, { status: 400 });
     }
 
-    const supabase = createServiceRoleClient();
+    const supabase = await createServerSupabaseClient();
 
-    // Fetch invoice with related data
+    // Tenant-scoped read — never fetch by id alone with service role.
     const { data: invoice, error } = await (supabase as any)
       .from('invoices')
       .select(`
@@ -38,6 +41,7 @@ export async function GET(
         )
       `)
       .eq('id', invoiceId)
+      .eq('organization_id', tenant.organizationId)
       .single();
 
     if (error || !invoice) {
@@ -53,8 +57,9 @@ export async function GET(
       });
     }
 
-    // Generate PDF via Edge Function
-    const { data: result, error: fnError } = await supabase.functions.invoke(
+    // Edge function needs service role; invoice ownership already verified above.
+    const serviceClient = createServiceRoleClient();
+    const { data: result, error: fnError } = await serviceClient.functions.invoke(
       'generate-invoice-pdf',
       {
         body: { invoice_id: invoiceId },

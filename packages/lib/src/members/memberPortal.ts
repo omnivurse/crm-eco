@@ -63,15 +63,41 @@ export async function getMemberForUser(
   }
 
   // Fallback: match members.email within the same organization.
-  const { data: member, error: memberError } = await supabase
+  // After B1 (shared household email), multiple active members may share one
+  // address — disambiguate by profile full_name when possible; never guess.
+  const { data: emailMatches, error: memberError } = await supabase
     .from('members')
     .select('*')
     .eq('organization_id', profile.organization_id)
     .eq('email', profile.email)
-    .maybeSingle();
+    .limit(5);
 
-  if (memberError || !member) {
+  if (memberError || !emailMatches?.length) {
     return null;
+  }
+
+  let member: MemberRow | undefined;
+  if (emailMatches.length === 1) {
+    member = emailMatches[0] as MemberRow;
+  } else {
+    const normalizedProfileName = normalizePersonName(profile.full_name);
+    const nameMatches = emailMatches.filter((row: MemberRow) => {
+      return (
+        normalizePersonName(`${row.first_name ?? ''} ${row.last_name ?? ''}`) ===
+        normalizedProfileName
+      );
+    });
+    if (nameMatches.length === 1) {
+      member = nameMatches[0] as MemberRow;
+    } else {
+      // Ambiguous shared-email household — do not link the wrong person.
+      console.warn(
+        'getMemberForUser: ambiguous email match in org',
+        profile.organization_id,
+        profile.email,
+      );
+      return null;
+    }
   }
 
   // Self-heal: write the linkage back so the next call hits the fast path.
@@ -83,6 +109,10 @@ export async function getMemberForUser(
   }
 
   return { profile, member };
+}
+
+function normalizePersonName(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 /**
