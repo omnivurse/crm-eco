@@ -76,10 +76,10 @@ export async function GET(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Get the need record
+    // Load need from crm_records (needs detail module) — member state from JSONB, not embed
     const { data: need, error } = await supabase
       .from('crm_records')
-      .select('*, members(state)')
+      .select('*')
       .eq('id', needId)
       .eq('org_id', profile.organization_id)
       .single();
@@ -88,17 +88,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Need not found' }, { status: 404 });
     }
 
+    const needData =
+      need.data && typeof need.data === 'object'
+        ? (need.data as Record<string, unknown>)
+        : {};
+
     // Build pricing input from need data
     const input: PricingInput = {
-      needType: need.data?.need_type || need.data?.type || 'medical',
-      description: need.data?.description || need.title || '',
-      procedureCodes: need.data?.procedure_codes || [],
-      facilityType: need.data?.facility_type,
-      facilityName: need.data?.facility_name,
-      inNetwork: need.data?.in_network,
-      memberState: need.members?.state || need.data?.member_state,
-      billedAmount: parseFloat(need.data?.billed_amount) || undefined,
-      incidentDate: need.data?.incident_date,
+      needType: (needData.need_type as string) || (needData.type as string) || 'medical',
+      description: (needData.description as string) || need.title || '',
+      procedureCodes: (needData.procedure_codes as string[]) || [],
+      facilityType: needData.facility_type as PricingInput['facilityType'],
+      facilityName: needData.facility_name as string | undefined,
+      inNetwork: needData.in_network as boolean | undefined,
+      memberState: (needData.member_state as string) || undefined,
+      billedAmount: parseFloat(String(needData.billed_amount ?? '')) || undefined,
+      incidentDate: needData.incident_date as string | undefined,
     };
 
     // Suggest codes if none provided

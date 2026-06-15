@@ -1,38 +1,8 @@
 {
   "schema_version": 1,
-  "frozen_at": "2026-05-22T19:18:26.038Z",
+  "frozen_at": "2026-06-15T19:52:42.881Z",
   "fail_threshold": "HIGH",
   "findings": [
-    {
-      "key": "MEDIUM|Unverified joins|Embed `members` from `crm_records` has no direct foreign key",
-      "severity": "MEDIUM",
-      "category": "Unverified joins",
-      "title": "Embed `members` from `crm_records` has no direct foreign key"
-    },
-    {
-      "key": "MEDIUM|Unverified joins|Embed `crm_records` from `enrollments` has no direct foreign key",
-      "severity": "MEDIUM",
-      "category": "Unverified joins",
-      "title": "Embed `crm_records` from `enrollments` has no direct foreign key"
-    },
-    {
-      "key": "MEDIUM|Unverified joins|Embed `crm_records` from `needs` has no direct foreign key",
-      "severity": "MEDIUM",
-      "category": "Unverified joins",
-      "title": "Embed `crm_records` from `needs` has no direct foreign key"
-    },
-    {
-      "key": "MEDIUM|Unverified joins|Embed `profiles` from `auth_events` has no direct foreign key",
-      "severity": "MEDIUM",
-      "category": "Unverified joins",
-      "title": "Embed `profiles` from `auth_events` has no direct foreign key"
-    },
-    {
-      "key": "MEDIUM|RLS misconfig|8 table(s) have RLS enabled but no policies",
-      "severity": "MEDIUM",
-      "category": "RLS misconfig",
-      "title": "8 table(s) have RLS enabled but no policies"
-    },
     {
       "key": "HIGH|RLS too permissive|9 policy(ies) use `USING (true)` for anon/authenticated",
       "severity": "HIGH",
@@ -46,40 +16,46 @@
       "title": "183 `.from(...)` calls use a variable, not a string literal"
     },
     {
-      "key": "LOW|Dynamic chain calls|107 dynamic update expressions in code",
+      "key": "LOW|Dynamic chain calls|106 dynamic update expressions in code",
       "severity": "LOW",
       "category": "Dynamic chain calls",
-      "title": "107 dynamic update expressions in code"
+      "title": "106 dynamic update expressions in code"
     },
     {
-      "key": "LOW|Dynamic chain calls|68 dynamic insert expressions in code",
+      "key": "LOW|Dynamic chain calls|71 dynamic insert expressions in code",
       "severity": "LOW",
       "category": "Dynamic chain calls",
-      "title": "68 dynamic insert expressions in code"
+      "title": "71 dynamic insert expressions in code"
     },
     {
-      "key": "LOW|Dynamic chain calls|191 dynamic select expressions in code",
+      "key": "LOW|Dynamic chain calls|194 dynamic select expressions in code",
       "severity": "LOW",
       "category": "Dynamic chain calls",
-      "title": "191 dynamic select expressions in code"
+      "title": "194 dynamic select expressions in code"
     },
     {
-      "key": "LOW|Possibly unused tables|212 public table(s) are never referenced in the frontend code",
+      "key": "LOW|Dynamic chain calls|5 dynamic upsert expressions in code",
+      "severity": "LOW",
+      "category": "Dynamic chain calls",
+      "title": "5 dynamic upsert expressions in code"
+    },
+    {
+      "key": "LOW|Possibly unused tables|210 public table(s) are never referenced in the frontend code",
       "severity": "LOW",
       "category": "Possibly unused tables",
-      "title": "212 public table(s) are never referenced in the frontend code"
+      "title": "210 public table(s) are never referenced in the frontend code"
     },
     {
-      "key": "INFO|Unused RPCs|417 public function(s) are not called via .rpc() in the frontend",
+      "key": "INFO|Unused RPCs|302 public function(s) are not called via .rpc() in the frontend",
       "severity": "INFO",
       "category": "Unused RPCs",
-      "title": "417 public function(s) are not called via .rpc() in the frontend"
+      "title": "302 public function(s) are not called via .rpc() in the frontend"
     },
     {
-      "key": "MEDIUM|Risky cascades|297 FK(s) cascade-delete from `organizations`",
+      "key": "MEDIUM|Risky cascades|417 FK(s) cascade-delete from `organizations`",
       "severity": "MEDIUM",
       "category": "Risky cascades",
-      "title": "297 FK(s) cascade-delete from `organizations`"
+      "title": "417 FK(s) cascade-delete from `organizations`"
     },
     {
       "key": "MEDIUM|Missing indexes|1 hot filter column(s) have no index",

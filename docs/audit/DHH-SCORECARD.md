@@ -15,7 +15,7 @@ Six repair waves map to the six audit dimensions. **100** means every gate below
 | Production safety | 55 | **~95** | 1 | 0 BLOCKERs, ledger synced, secrets rotated, Hawkeye ≤7d |
 | Tenant isolation (DB) | 74 | **~92** | 2 | B1=0, RLS gaps=0, cross-tenant probes pass |
 | Tenant isolation (apps) | 68 | **~78** | 3 | 0 high-risk API routes, money/PHI writes org-scoped |
-| Frontend/backend sync | 58 | **~65** | 4 | 0 Hawkeye BLOCKERs, types match prod, no `as any` on money paths |
+| Frontend/backend sync | 58 | **~72** | 4 | 0 BLOCKERs; fragile embeds fixed; types regen pending |
 | Critical workflows | 64 | **~72** | 5 | Cron + automation live, commissions writable, lead convert idempotent |
 | Architecture | 62 | **62** | 6 | Duplicate systems documented or retired (long horizon) |
 

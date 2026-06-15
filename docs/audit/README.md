@@ -179,5 +179,6 @@ Olyron Core is out of scope.
 | [DHH-REPAIR-WAVE1-PRODUCTION-SAFETY.md](./DHH-REPAIR-WAVE1-PRODUCTION-SAFETY.md) | **Wave 1 playbook** — secrets, migrations, Hawkeye (**complete**) |
 | [DHH-REPAIR-WAVE2-TENANT-DB.md](./DHH-REPAIR-WAVE2-TENANT-DB.md) | **Wave 2 playbook** — RLS probes, B1/B2 shared-email fix (**complete**) |
 | [DHH-SCORECARD.md](./DHH-SCORECARD.md) | **Master scorecard** — path to 100 on all six dimensions |
+| [DHH-REPAIR-WAVE4-FRONTEND-SYNC.md](./DHH-REPAIR-WAVE4-FRONTEND-SYNC.md) | **Wave 4 playbook** — Hawkeye refresh, embed fixes (**in progress**) |
 | [DHH-REPAIR-WAVE3-TENANT-APPS.md](./DHH-REPAIR-WAVE3-TENANT-APPS.md) | **Wave 3 playbook** — API route audit, admin/portal tenant guards (**in progress**) |
 | [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-06-01.md) | Prior product-wide audit (carry-forward items) |

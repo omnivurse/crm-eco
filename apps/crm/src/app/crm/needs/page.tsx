@@ -147,8 +147,8 @@ async function NeedsContent() {
 
   const supabase = await createServerSupabaseClient();
 
-  // Fetch needs with related data
-  const { data: needs, error } = await supabase
+  // Fetch needs (flat — no fragile PostgREST embeds; members/profiles loaded below)
+  const { data: needsRows, error } = await supabase
     .from('needs')
     .select(`
       id,
@@ -159,8 +159,8 @@ async function NeedsContent() {
       urgency_light,
       sla_target_date,
       created_at,
-      member:crm_records!needs_member_id_fkey(id, title, data),
-      assigned_to_user:profiles!needs_assigned_to_fkey(id, full_name)
+      member_id,
+      assigned_to_profile_id
     `)
     .eq('organization_id', profile.organization_id)
     .order('created_at', { ascending: false })
@@ -170,7 +170,63 @@ async function NeedsContent() {
     console.error('Error fetching needs:', error);
   }
 
-  const needsList = (needs || []) as unknown as Need[];
+  const rawNeeds = needsRows ?? [];
+  const memberIds = [...new Set(rawNeeds.map((n) => n.member_id).filter(Boolean))] as string[];
+  const assigneeIds = [
+    ...new Set(rawNeeds.map((n) => n.assigned_to_profile_id).filter(Boolean)),
+  ] as string[];
+
+  const membersById: Record<
+    string,
+    { id: string; first_name: string | null; last_name: string | null; member_number: string | null }
+  > = {};
+  if (memberIds.length > 0) {
+    const { data: membersData } = await supabase
+      .from('members')
+      .select('id, first_name, last_name, member_number')
+      .in('id', memberIds);
+    for (const m of membersData ?? []) {
+      membersById[m.id] = m;
+    }
+  }
+
+  const assigneesById: Record<string, { id: string; full_name: string | null }> = {};
+  if (assigneeIds.length > 0) {
+    const { data: profilesData } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', assigneeIds);
+    for (const p of profilesData ?? []) {
+      assigneesById[p.id] = p;
+    }
+  }
+
+  const needsList: Need[] = rawNeeds.map((need) => {
+    const memberRow = need.member_id ? membersById[need.member_id] : undefined;
+    const memberName = memberRow
+      ? [memberRow.first_name, memberRow.last_name].filter(Boolean).join(' ') || 'Unknown Member'
+      : undefined;
+    return {
+      id: need.id,
+      need_type: need.need_type,
+      description: need.description,
+      total_amount: need.total_amount,
+      status: need.status,
+      urgency_light: need.urgency_light,
+      sla_target_date: need.sla_target_date,
+      created_at: need.created_at,
+      member: memberRow
+        ? {
+            id: memberRow.id,
+            title: memberName ?? 'Unknown Member',
+            data: { membership_number: memberRow.member_number ?? undefined },
+          }
+        : null,
+      assigned_to_user: need.assigned_to_profile_id
+        ? assigneesById[need.assigned_to_profile_id] ?? null
+        : null,
+    };
+  });
   // eslint-disable-next-line react-hooks/purity -- Server Component: Date.now() per-request is correct
   const now = Date.now();
 

@@ -310,7 +310,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Problem:** No direct FK — embed may fail at runtime.
 
-**Status:** Open
+**Status:** **Done (Wave 4, 2026-06-13)** — batch-fetch members/profiles on needs list; pricing + audit embeds removed
 
 ---
 

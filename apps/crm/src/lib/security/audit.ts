@@ -255,13 +255,7 @@ export async function getRecentAuthEvents(
 
     let query = supabase
         .from('auth_events')
-        .select(`
-      *,
-      profiles!auth_events_user_id_fkey (
-        full_name,
-        organization_id
-      )
-    `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -269,13 +263,49 @@ export async function getRecentAuthEvents(
         query = query.in('event_type', eventTypes);
     }
 
-    const { data, error } = await query;
+    const { data: events, error } = await query;
 
     if (error) throw error;
 
-    // Filter by organization (users belonging to the org)
-    return (data || []).filter(
-        (event: any) =>
-            event.profiles?.organization_id === organizationId
-    );
+    const userIds = [
+        ...new Set(
+            (events ?? [])
+                .map((event) => event.user_id as string | null | undefined)
+                .filter((id): id is string => Boolean(id)),
+        ),
+    ];
+
+    const profilesByUserId = new Map<
+        string,
+        { full_name: string | null; organization_id: string | null }
+    >();
+
+    if (userIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, organization_id')
+            .in('user_id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        for (const profile of profiles ?? []) {
+            if (profile.user_id) {
+                profilesByUserId.set(profile.user_id, {
+                    full_name: profile.full_name,
+                    organization_id: profile.organization_id,
+                });
+            }
+        }
+    }
+
+    return (events ?? [])
+        .map((event) => {
+            const profile = event.user_id ? profilesByUserId.get(event.user_id) : undefined;
+            return profile ? { ...event, profiles: profile } : event;
+        })
+        .filter(
+            (event) =>
+                (event as { profiles?: { organization_id?: string | null } }).profiles
+                    ?.organization_id === organizationId,
+        );
 }
