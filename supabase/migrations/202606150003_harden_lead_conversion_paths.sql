@@ -1,18 +1,11 @@
--- Fix: Lead → Contact conversion was dropping insurance / health sharing fields.
--- ADDITIVE / CREATE OR REPLACE only. Includes one-time backfill for already-converted contacts.
+-- Harden lead conversion paths: stage sync, member conversion guards, legacy row normalization.
+-- ADDITIVE / CREATE OR REPLACE only. Does NOT re-run insurance backfill (see 202606130002).
 
-CREATE OR REPLACE FUNCTION public._crm_jsonb_value_is_blank(v jsonb)
-RETURNS boolean
-LANGUAGE sql
-IMMUTABLE
-SET search_path = public, pg_catalog
-AS $$
-  SELECT v IS NULL
-    OR v = 'null'::jsonb
-    OR v = '""'::jsonb
-    OR (jsonb_typeof(v) = 'string' AND btrim(v #>> '{}') = '');
-$$;
+SET lock_timeout = '5s';
 
+-- ---------------------------------------------------------------------------
+-- 1. convert_lead_to_contact — set stage on conversion (matches workqueue filters)
+-- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.convert_lead_to_contact(
   p_lead_record_id uuid,
   p_user_id uuid,
@@ -172,7 +165,6 @@ BEGIN
     'converted_from_lead_id', p_lead_record_id::text
   );
 
-  -- Catch any additional insurance keys on the lead that were not explicitly listed above.
   v_contact_data := v_contact_data || COALESCE((
     SELECT jsonb_object_agg(k, v)
     FROM jsonb_each(v_lead_data) e(k, v)
@@ -372,226 +364,138 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION public.convert_lead_to_contact(uuid, uuid, uuid) TO authenticated;
 
--- Repair a single converted contact by copying missing fields from its linked lead.
-CREATE OR REPLACE FUNCTION public.repair_converted_contact_insurance_data(p_contact_id uuid)
+-- ---------------------------------------------------------------------------
+-- 2. convert_lead_to_member — module guard, duplicate guard, stage sync, actor FK
+-- ---------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.convert_lead_to_member(p_lead_record_id uuid, p_user_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public'
-AS $$
+AS $function$
 DECLARE
-  v_contact     crm_records%ROWTYPE;
-  v_lead        crm_records%ROWTYPE;
-  v_lead_id     uuid;
-  v_lead_data   jsonb;
-  v_contact_data jsonb;
-  v_patch       jsonb;
-  v_full_patch  jsonb;
-  v_insurance_keys text[] := ARRAY[
-    'carrier', 'sharing_entity', 'group_name', 'tobacco_user',
-    'iua_amount', 'monthly_contribution', 'member_tier',
-    'sharing_status', 'sharing_member_id', 'previous_membership',
-    'previous_product', 'add_on_product', 'vision', 'dental',
-    'health_insurance_carrier', 'insurance_carrier', 'carrier_name',
-    'health_insurance_start_date', 'health_insurance_end_date',
-    'health_insurance_plan_name', 'health_insurance_premium',
-    'health_insurance_status', 'health_insurance_deductible',
-    'sharing_effective_date', 'insurance_effective_date'
-  ];
-  v_lead_only_keys text[] := ARRAY[
-    'is_converted', 'converted_date', 'converted_contact_id', 'lead_status'
-  ];
-  v_sharing_carrier_id uuid;
+  v_lead_record     crm_records%ROWTYPE;
+  v_org_id          uuid;
+  v_leads_module_id uuid;
+  v_lead_data       jsonb;
+  v_new_member_id   uuid;
 BEGIN
-  SELECT * INTO v_contact FROM crm_records WHERE id = p_contact_id;
+  SELECT * INTO v_lead_record FROM crm_records WHERE id = p_lead_record_id;
   IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Contact not found');
+    RETURN jsonb_build_object('success', false, 'error', 'Lead record not found');
   END IF;
 
-  v_contact_data := COALESCE(v_contact.data, '{}'::jsonb);
-  v_lead_id := NULLIF(v_contact_data->>'converted_from_lead_id', '')::uuid;
+  v_org_id := v_lead_record.organization_id;
+  v_lead_data := COALESCE(v_lead_record.data, '{}'::jsonb);
 
-  IF v_lead_id IS NULL THEN
-    SELECT rl.source_record_id INTO v_lead_id
-    FROM crm_record_links rl
-    WHERE rl.link_type = 'lead_to_contact'
-      AND rl.target_record_id = p_contact_id
-    ORDER BY rl.created_at DESC
-    LIMIT 1;
+  SELECT m.id INTO v_leads_module_id
+  FROM crm_modules m
+  WHERE m.id = v_lead_record.module_id AND m.key = 'leads';
+
+  IF v_leads_module_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Record does not belong to a Leads module');
   END IF;
 
-  IF v_lead_id IS NULL THEN
-    RETURN jsonb_build_object('success', true, 'contact_id', p_contact_id, 'message', 'No linked lead found');
-  END IF;
-
-  SELECT * INTO v_lead FROM crm_records WHERE id = v_lead_id;
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Linked lead not found');
-  END IF;
-
-  v_lead_data := COALESCE(v_lead.data, '{}'::jsonb);
-
-  -- Insurance / health-sharing keys first (explicit list for indexed-column side effects below).
-  SELECT COALESCE(jsonb_object_agg(k, v), '{}'::jsonb) INTO v_patch
-  FROM jsonb_each(v_lead_data) e(k, v)
-  WHERE k = ANY(v_insurance_keys)
-    AND NOT public._crm_jsonb_value_is_blank(v)
-    AND public._crm_jsonb_value_is_blank(v_contact_data -> k);
-
-  -- Also backfill any other lead keys the old conversion whitelist dropped (address, family, etc.).
-  SELECT COALESCE(jsonb_object_agg(k, v), '{}'::jsonb) INTO v_full_patch
-  FROM jsonb_each(v_lead_data) e(k, v)
-  WHERE NOT (k = ANY(v_lead_only_keys))
-    AND NOT public._crm_jsonb_value_is_blank(v)
-    AND public._crm_jsonb_value_is_blank(v_contact_data -> k);
-
-  -- Normalize lead address keys to contact mailing_* when contact side is blank.
-  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_street')
-     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'street') THEN
-    v_full_patch := v_full_patch || jsonb_build_object('mailing_street', v_lead_data -> 'street');
-  END IF;
-  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_city')
-     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'city') THEN
-    v_full_patch := v_full_patch || jsonb_build_object('mailing_city', v_lead_data -> 'city');
-  END IF;
-  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_state')
-     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'state') THEN
-    v_full_patch := v_full_patch || jsonb_build_object('mailing_state', v_lead_data -> 'state');
-  END IF;
-  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'mailing_zip')
-     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'zip_code') THEN
-    v_full_patch := v_full_patch || jsonb_build_object('mailing_zip', v_lead_data -> 'zip_code');
-  END IF;
-  IF public._crm_jsonb_value_is_blank(v_contact_data -> 'product')
-     AND NOT public._crm_jsonb_value_is_blank(v_lead_data -> 'product_type') THEN
-    v_full_patch := v_full_patch || jsonb_build_object('product', v_lead_data -> 'product_type');
-  END IF;
-
-  v_full_patch := v_full_patch || v_patch;
-
-  IF (v_patch->>'sharing_entity') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
-    v_sharing_carrier_id := (v_patch->>'sharing_entity')::uuid;
-  ELSIF (v_contact_data->>'sharing_entity') ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN
-    v_sharing_carrier_id := (v_contact_data->>'sharing_entity')::uuid;
-  END IF;
-
-  IF v_full_patch = '{}'::jsonb
-     AND v_contact.carrier_id IS NOT NULL
-     AND v_contact.market_type IS NOT NULL
-     AND v_contact.group_name IS NOT NULL THEN
+  IF v_lead_record.status = 'Converted'
+     OR v_lead_data->>'is_converted' = 'true'
+     OR NULLIF(btrim(v_lead_data->>'converted_member_id'), '') IS NOT NULL
+     OR NULLIF(btrim(v_lead_data->>'converted_contact_id'), '') IS NOT NULL THEN
     RETURN jsonb_build_object(
-      'success', true,
-      'contact_id', p_contact_id,
-      'lead_id', v_lead_id,
-      'added_keys', v_full_patch,
-      'message', 'Nothing to repair'
+      'success', false,
+      'error', 'This lead has already been converted',
+      'converted_member_id', v_lead_data->>'converted_member_id',
+      'converted_contact_id', v_lead_data->>'converted_contact_id'
     );
   END IF;
 
-  UPDATE crm_records c
-  SET data = c.data || v_full_patch,
-      market_type = COALESCE(
-        c.market_type,
-        v_lead.market_type,
-        CASE
-          WHEN NOT public._crm_jsonb_value_is_blank(COALESCE(v_patch -> 'sharing_entity', v_contact_data -> 'sharing_entity'))
-            OR NOT public._crm_jsonb_value_is_blank(COALESCE(v_patch -> 'carrier', v_contact_data -> 'carrier'))
-          THEN 'healthshare'
-          ELSE NULL
-        END
-      ),
-      carrier_id = COALESCE(c.carrier_id, v_lead.carrier_id, v_sharing_carrier_id),
-      tobacco_user = COALESCE(
-        c.tobacco_user,
-        CASE
-          WHEN lower(btrim(v_lead_data->>'tobacco_user')) IN ('true', 't', 'yes', '1') THEN true
-          WHEN lower(btrim(v_lead_data->>'tobacco_user')) IN ('false', 'f', 'no', '0') THEN false
-          ELSE NULL
-        END
-      ),
-      group_name = COALESCE(c.group_name, v_lead_data->>'group_name'),
-      original_start_date = COALESCE(
-        c.original_start_date,
-        public._parse_import_date(COALESCE(v_patch->>'sharing_effective_date', v_lead_data->>'sharing_effective_date'))
-      ),
-      current_year_start_date = COALESCE(
-        c.current_year_start_date,
-        public._parse_import_date(COALESCE(v_patch->>'sharing_effective_date', v_lead_data->>'sharing_effective_date'))
+  IF v_lead_record.email IS NOT NULL AND v_lead_record.email != '' THEN
+    SELECT id INTO v_new_member_id
+    FROM members
+    WHERE email = v_lead_record.email
+      AND organization_id = v_org_id
+    LIMIT 1;
+  END IF;
+
+  IF v_new_member_id IS NULL THEN
+    INSERT INTO members (
+      organization_id, first_name, last_name, email, phone,
+      status, created_at, updated_at
+    ) VALUES (
+      v_org_id,
+      v_lead_data->>'first_name',
+      v_lead_data->>'last_name',
+      v_lead_record.email,
+      v_lead_record.phone,
+      'Active', now(), now()
+    )
+    RETURNING id INTO v_new_member_id;
+  END IF;
+
+  UPDATE crm_records
+  SET status = 'Converted',
+      stage = 'Converted',
+      data = jsonb_set(
+        jsonb_set(
+          jsonb_set(
+            COALESCE(data, '{}'::jsonb),
+            '{is_converted}', 'true'::jsonb
+          ),
+          '{lead_status}', '"Converted"'::jsonb
+        ),
+        '{converted_member_id}', to_jsonb(v_new_member_id::text)
       ),
       updated_at = now()
-  WHERE c.id = p_contact_id;
+  WHERE id = p_lead_record_id;
+
+  INSERT INTO crm_audit_log (organization_id, actor_id, entity, entity_id, action, diff)
+  VALUES (
+    v_org_id,
+    p_user_id,
+    'lead',
+    p_lead_record_id,
+    'update',
+    jsonb_build_object(
+      'converted_to_member_id', v_new_member_id,
+      'converted_at', now()
+    )
+  );
 
   RETURN jsonb_build_object(
     'success', true,
-    'contact_id', p_contact_id,
-    'lead_id', v_lead_id,
-    'added_keys', v_full_patch
+    'member_id', v_new_member_id,
+    'lead_id', p_lead_record_id,
+    'message', 'Lead converted to member successfully'
   );
+EXCEPTION WHEN OTHERS THEN
+  RETURN jsonb_build_object('success', false, 'error', SQLERRM);
 END;
-$$;
+$function$;
 
-GRANT EXECUTE ON FUNCTION public.repair_converted_contact_insurance_data(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.convert_lead_to_member(uuid, uuid) TO authenticated;
 
--- Batch repair for all previously converted contacts (safe to re-run; only fills blanks).
-CREATE OR REPLACE FUNCTION public.backfill_all_converted_contact_insurance_data(p_limit integer DEFAULT NULL)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  v_contact_id uuid;
-  v_repaired     integer := 0;
-  v_skipped      integer := 0;
-  v_errors       jsonb := '[]'::jsonb;
-  v_result       jsonb;
-BEGIN
-  FOR v_contact_id IN
-    SELECT c.id
-    FROM crm_records c
-    INNER JOIN crm_modules mc ON mc.id = c.module_id AND mc.key = 'contacts'
-    WHERE c.data->>'converted_from_lead_id' IS NOT NULL
-       OR EXISTS (
-         SELECT 1
-         FROM crm_record_links rl
-         WHERE rl.link_type = 'lead_to_contact'
-           AND rl.target_record_id = c.id
-       )
-    GROUP BY c.id
-    ORDER BY MAX(c.updated_at) DESC NULLS LAST
-    LIMIT p_limit
-  LOOP
-    BEGIN
-      v_result := public.repair_converted_contact_insurance_data(v_contact_id);
-      IF COALESCE(v_result->>'success', 'false') = 'true'
-         AND COALESCE(v_result->'added_keys', '{}'::jsonb) <> '{}'::jsonb THEN
-        v_repaired := v_repaired + 1;
-      ELSE
-        v_skipped := v_skipped + 1;
-      END IF;
-    EXCEPTION WHEN OTHERS THEN
-      v_errors := v_errors || jsonb_build_array(
-        jsonb_build_object('contact_id', v_contact_id, 'error', SQLERRM)
-      );
-    END;
-  END LOOP;
+-- ---------------------------------------------------------------------------
+-- 3. Normalize legacy converted leads (status/stage only — no data deletion)
+-- ---------------------------------------------------------------------------
+UPDATE public.crm_records cr
+   SET status = 'Converted',
+       stage = 'Converted',
+       updated_at = now()
+  FROM public.crm_modules m
+ WHERE m.id = cr.module_id
+   AND m.key = 'leads'
+   AND cr.status IS DISTINCT FROM 'Converted'
+   AND (
+     COALESCE(cr.data->>'is_converted', '') IN ('true', 't', '1')
+     OR cr.data->>'lead_status' = 'Converted'
+     OR NULLIF(btrim(cr.data->>'converted_contact_id'), '') IS NOT NULL
+     OR NULLIF(btrim(cr.data->>'converted_member_id'), '') IS NOT NULL
+   );
 
-  RETURN jsonb_build_object(
-    'success', true,
-    'repaired', v_repaired,
-    'skipped', v_skipped,
-    'errors', v_errors
-  );
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.backfill_all_converted_contact_insurance_data(integer) TO authenticated;
-
--- One-time backfill at deploy time (non-destructive; only fills blank contact fields).
--- Uses the batched repair function above instead of a single monolithic UPDATE, which
--- can exceed statement_timeout on large lead→contact conversion sets.
-DO $$
-BEGIN
-  PERFORM set_config('statement_timeout', '0', true);
-  PERFORM public.backfill_all_converted_contact_insurance_data(NULL);
-END $$;
+UPDATE public.crm_records cr
+   SET stage = 'Converted',
+       updated_at = now()
+  FROM public.crm_modules m
+ WHERE m.id = cr.module_id
+   AND m.key = 'leads'
+   AND cr.status = 'Converted'
+   AND (cr.stage IS NULL OR cr.stage IS DISTINCT FROM 'Converted');

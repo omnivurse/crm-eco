@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { applyHideConvertedLeadsFilter, isConvertedLeadRow } from '@/lib/crm/record-search';
 import { getAuthProfile } from '@/lib/supabase-server';
 import { createCrmClient } from '@/lib/crm/queries';
 import type {
@@ -332,19 +333,25 @@ export async function GET(request: NextRequest) {
     if (tab === 'all' || tab === 'leads') {
       const leadsModule = leadsModuleResult.status === 'fulfilled' ? leadsModuleResult.value.data : null;
       if (leadsModule?.id) {
-        const { data, error: leadsError } = await supabase
+        let leadsQuery = supabase
           .from('crm_records')
           .select('id, title, status, stage, data, owner_id, created_at, updated_at')
           .eq('org_id', profile.organization_id)
           .eq('module_id', leadsModule.id)
           .or(`owner_id.eq.${profile.id},owner_id.is.null`)
-          .or(LEAD_WORKQUEUE_OR_FILTER)
+          .or(LEAD_WORKQUEUE_OR_FILTER);
+
+        leadsQuery = applyHideConvertedLeadsFilter(leadsQuery);
+
+        const { data, error: leadsError } = await leadsQuery
           .order('created_at', { ascending: false })
           .limit(20);
         if (leadsError) {
           console.error('[Workqueue] Leads query error:', leadsError.message);
         }
-        newLeads = data || [];
+        newLeads = (data || []).filter(
+          (row) => !isConvertedLeadRow({ module_key: 'leads', status: row.status, data: row.data }),
+        );
       } else {
         console.warn('[Workqueue] No leads module found for org:', profile.organization_id);
       }
@@ -467,16 +474,17 @@ export async function GET(request: NextRequest) {
           .in('status', ['open', 'pending']),
       ),
       leadsModuleForCount?.id
-        ? fetchExactCount(
-            'new-leads',
-            supabase
+        ? (async () => {
+            let q = supabase
               .from('crm_records')
               .select('id', { count: 'exact', head: true })
               .eq('org_id', profile.organization_id)
               .eq('module_id', leadsModuleForCount.id)
               .or(`owner_id.eq.${profile.id},owner_id.is.null`)
-              .or(LEAD_WORKQUEUE_OR_FILTER),
-          )
+              .or(LEAD_WORKQUEUE_OR_FILTER);
+            q = applyHideConvertedLeadsFilter(q);
+            return fetchExactCount('new-leads', q);
+          })()
         : Promise.resolve(0),
     ]);
 

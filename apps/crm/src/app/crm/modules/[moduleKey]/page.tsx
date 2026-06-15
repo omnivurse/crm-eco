@@ -210,6 +210,7 @@ async function ModulePageContent({ params, searchParams }: PageProps) {
     const result = await getRecords({
       moduleId: crmModule.id,
       orgId: crmModule.org_id,
+      moduleKey,
       page,
       pageSize,
       search,

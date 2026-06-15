@@ -39,6 +39,23 @@ export interface ConvertedLeadCheck {
  * Robust against partial markers: any one converted signal is enough, since
  * historical conversions don't all populate every field.
  */
+type OrFilterQuery = { or: (filters: string) => OrFilterQuery };
+
+/**
+ * Exclude converted leads at the database layer (module list, export, workqueue).
+ * Complements {@link isConvertedLeadRow} for rows that still slip through legacy imports.
+ */
+export function applyHideConvertedLeadsFilter<
+  Q extends OrFilterQuery & { neq: (column: string, value: string) => Q },
+>(query: Q): Q {
+  const filtered = query
+    .neq('status', 'Converted')
+    .or('data->>is_converted.is.null,data->>is_converted.neq.true')
+    .or('data->>lead_status.is.null,data->>lead_status.neq.Converted')
+    .or('data->>converted_contact_id.is.null,data->>converted_contact_id.eq.');
+  return filtered as Q;
+}
+
 export function isConvertedLeadRow(row: ConvertedLeadCheck): boolean {
   if ((row.module_key ?? '') !== 'leads') return false;
   if ((row.status ?? '') === 'Converted') return true;

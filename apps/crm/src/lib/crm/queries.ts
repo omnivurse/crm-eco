@@ -35,7 +35,7 @@ import type {
   CrmTerritory,
 } from './types';
 import { moduleKeyFromJoinedRelation, resolveNoteSourceRecordIdsWithClient } from './note-aggregate';
-import { applyCrmRecordTextSearch } from './record-search';
+import { applyCrmRecordTextSearch, applyHideConvertedLeadsFilter, isConvertedLeadRow } from './record-search';
 import { alignMisalignedRecordModule } from './align-record-module';
 import { resolveCrmRecordFilterField } from './report-field-path';
 
@@ -488,6 +488,10 @@ export interface RecordQueryOptions {
    * Returned `total` will be 0.
    */
   includeCount?: boolean;
+  /** When `'leads'`, hide converted leads from list counts (Zoho-style). */
+  moduleKey?: string;
+  /** Override hide-converted behavior (default: true when moduleKey is leads). */
+  hideConvertedLeads?: boolean;
 }
 
 export interface RecordQueryResult {
@@ -512,7 +516,12 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     scope = 'all',
     territoryId,
     includeCount = true,
+    moduleKey,
+    hideConvertedLeads,
   } = options;
+
+  const shouldHideConvertedLeads =
+    hideConvertedLeads ?? moduleKey === 'leads';
 
   let query = includeCount
     ? supabase
@@ -523,6 +532,10 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
   if (orgId) {
     query = query.eq('org_id', orgId);
+  }
+
+  if (shouldHideConvertedLeads) {
+    query = applyHideConvertedLeadsFilter(query);
   }
 
   // Apply territory filter
@@ -838,6 +851,9 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
   const records = rows.filter((r) => {
     if (seenIds.has(r.id)) return false;
     seenIds.add(r.id);
+    if (shouldHideConvertedLeads && isConvertedLeadRow({ module_key: moduleKey ?? 'leads', status: r.status, data: r.data as Record<string, unknown> | null })) {
+      return false;
+    }
     return true;
   });
 

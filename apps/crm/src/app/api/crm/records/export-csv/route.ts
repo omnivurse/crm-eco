@@ -170,6 +170,7 @@ export async function GET(request: NextRequest) {
           const { records } = await getRecords({
             moduleId: crmModule.id,
             orgId: crmModule.org_id,
+            moduleKey: crmModule.key,
             page,
             pageSize: EXPORT_PAGE_SIZE,
             filters,

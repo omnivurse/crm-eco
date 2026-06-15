@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
     // Call the conversion function
     const { data, error } = await adminClient.rpc('convert_lead_to_member', {
       p_lead_record_id: recordId,
-      p_user_id: profile.user_id,
+      // crm_audit_log.actor_id FK → profiles.id (not auth.users.id)
+      p_user_id: profile.id,
     });
 
     if (error) {
