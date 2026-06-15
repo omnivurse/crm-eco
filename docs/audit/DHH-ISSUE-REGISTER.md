@@ -155,7 +155,7 @@ Prior audit: [CRM-ECO-Product-Audit-2026-06-01.md](./CRM-ECO-Product-Audit-2026-
 
 **Recommended Fix:** Apply dedup/partial unique index migration after rehearsal.
 
-**Status:** Open — NEEDS MANUAL REVIEW on live prod row counts
+**Status:** **Done (Wave 2, 2026-06-15)** — `202606170001` applied on prod; 988 invisible members backfilled to 0; B2 name-filter stops contact ping-pong. Contacts module still email-deduped (2nd family Contact optional follow-up).
 
 ---
 
