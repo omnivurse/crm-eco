@@ -81,10 +81,15 @@ interface SubmitBody {
 
 /**
  * POST /api/enroll/submit
- * Final submission for the public enrollment wizard.
+ * Final submission for the public WEBSITE enrollment wizard (anonymous prospect —
+ * NO login, NO pre-existing member required).
+ *
+ * Identity/ownership = the signed draft cookie (NOT auth). All writes use the
+ * service-role client. reCAPTCHA v3 is verified on submit.
  *
  * Validates: signed draft cookie, reCAPTCHA v3 token, required fields.
- * Creates: member, enrollment (status='submitted'), enrollment_dependents.
+ * Creates: member (find-or-create by org+email+name), enrollment
+ *   (status='submitted', enrollment_source='website'), enrollment_dependents.
  * Returns: enrollment id + redirect path.
  */
 export async function POST(request: NextRequest) {
@@ -110,6 +115,24 @@ export async function POST(request: NextRequest) {
 
   const supabase = createServiceRoleClient();
   const orgId = draft.organizationId;
+
+  // Website-specific attribution, read from the SIGNED draft (server-trusted —
+  // stamped by api/enroll/draft from the published landing_pages row, never the
+  // client's body). enrollments has no landing_page_id COLUMN, so the landing page
+  // id rides in custom_fields (matching api/enroll/public). advisor_id IS a real
+  // column on both members and enrollments. enrollment_source defaults to
+  // 'website' for this software.
+  const draftData = draft.data ?? {};
+  const advisorId =
+    typeof draftData.advisor_id === 'string' && draftData.advisor_id ? draftData.advisor_id : null;
+  const landingPageId =
+    typeof draftData.landing_page_id === 'string' && draftData.landing_page_id
+      ? draftData.landing_page_id
+      : null;
+  const enrollmentSource =
+    typeof draftData.enrollment_source === 'string' && draftData.enrollment_source
+      ? draftData.enrollment_source
+      : 'website';
 
   // 1. Find-or-create member (C2: dedup by org + email + NAME so a double-submit / retry
   //    reuses the existing member. NOTE: email alone is NOT unique for members — in
@@ -152,7 +175,9 @@ export async function POST(request: NextRequest) {
         state: member.state ?? null,
         postal_code: member.zip_code ?? null,
         status: 'pending',
-        source: 'public_wizard',
+        source: 'website',
+        // Attribute the brand-new prospect to the landing page's advisor (if any).
+        advisor_id: advisorId,
       })
       .select('id')
       .single();
@@ -303,18 +328,26 @@ export async function POST(request: NextRequest) {
     p_org_id: orgId,
     p_payload: {
       primary_member_id: memberId,
+      // Website-specific: attribute the enrollment to the landing page's advisor
+      // (read from the signed draft, not the client body).
+      advisor_id: advisorId,
       selected_plan_id: selected_plan_id ?? null,
       effective_date: effective_date ?? defaultEffective,
       household_size: 1 + (household?.length ?? 0),
       base_monthly_cost: basePrice,
       permanent_bill_day: 20,
-      enrollment_source: 'public_wizard',
+      // Defaults to 'website' for the public website enrollment software (the
+      // signed draft stamps it; falls back here defensively).
+      enrollment_source: enrollmentSource,
       channel: 'web',
       // C1: stable per-submit key so a retry/double-click of this wizard draft
       // returns the same enrollment instead of creating a duplicate.
       idempotency_key: `enroll_${draft.draftId}`,
       custom_fields: {
         landing_slug: draft.slug,
+        // enrollments has no landing_page_id column — carry it in custom_fields
+        // (matching api/enroll/public) so the admin can trace the source page.
+        landing_page_id: landingPageId,
         draft_id: draft.draftId,
         recaptcha_score: captcha.score,
         acknowledgments: acknowledgments ?? {},
@@ -372,10 +405,13 @@ export async function POST(request: NextRequest) {
     organization_id: orgId,
     enrollment_id: enrollmentId,
     event_type: 'submitted',
-    message: `Public enrollment wizard submission (slug=${draft.slug}, recaptcha=${captcha.score})`,
+    message: `Public website enrollment submission (slug=${draft.slug}, recaptcha=${captcha.score})`,
     data_after: {
       slug: draft.slug,
       draft_id: draft.draftId,
+      landing_page_id: landingPageId,
+      advisor_id: advisorId,
+      enrollment_source: enrollmentSource,
       recaptcha_score: captcha.score,
     },
   });
@@ -464,7 +500,6 @@ export async function POST(request: NextRequest) {
           // is non-fatal and never breaks the public submit; the audit log above
           // already recorded the routing.
           try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- draft-only table
             await (supabase as any).from('enrollment_approvals').insert({
               org_id: orgId,
               enrollment_id: enrollmentId,

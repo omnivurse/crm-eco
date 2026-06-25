@@ -28,7 +28,16 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/enroll/draft
- * Creates or updates a draft. Body: { slug, data: {...} }
+ * Creates or updates a draft for the public WEBSITE enrollment software.
+ * Body: { slug, data?: {...} }
+ *
+ * The signed draft cookie is the anon prospect's identity/ownership token for the
+ * whole public enrollment flow — there is NO login. We never trust the client for
+ * the tenant or advisor: organization_id, the landing-page id, and the landing
+ * page's default advisor are all resolved HERE from the published landing_pages
+ * row and baked into the signed cookie, so submit/* can rely on them without
+ * re-resolving (and without a malicious client being able to spoof a different
+ * org/advisor).
  */
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
@@ -41,7 +50,7 @@ export async function POST(request: NextRequest) {
   const supabase = createServiceRoleClient();
   const { data: landing, error: landingErr } = await supabase
     .from('landing_pages')
-    .select('id, organization_id')
+    .select('id, organization_id, default_advisor_id')
     .eq('slug', slug)
     .eq('is_published', true)
     .single();
@@ -51,12 +60,27 @@ export async function POST(request: NextRequest) {
   }
 
   const existing = readDraftFromRequest(request);
+  const sameSlug = existing?.slug === slug;
+
+  // Website-specific identity baked into the SIGNED draft (server-trusted, never
+  // client-supplied): which published landing page this enrollment came through
+  // and the advisor it should be attributed to. Mirrors the advisor flow in
+  // api/enroll/public (landing_pages.default_advisor_id). The submit route reads
+  // these from draft.data so the prospect's browser can never spoof them.
   const draft: EnrollmentDraft = {
-    draftId: existing?.slug === slug ? existing.draftId : randomUUID(),
+    draftId: sameSlug ? existing!.draftId : randomUUID(),
     organizationId: landing.organization_id,
     slug,
-    createdAt: existing?.slug === slug ? existing.createdAt : Date.now(),
-    data: { ...(existing?.slug === slug ? existing.data : {}), ...(data ?? {}) },
+    createdAt: sameSlug ? existing!.createdAt : Date.now(),
+    data: {
+      ...(sameSlug ? existing!.data : {}),
+      ...(data ?? {}),
+      // Re-stamped on every write from the trusted landing_pages row so a client
+      // can't override them via the merged client `data` above.
+      landing_page_id: landing.id,
+      advisor_id: landing.default_advisor_id ?? null,
+      enrollment_source: 'website',
+    },
   };
 
   const response = NextResponse.json({ draft });

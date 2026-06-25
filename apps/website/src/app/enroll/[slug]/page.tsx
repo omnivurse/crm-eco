@@ -261,6 +261,8 @@ export default async function AdvisorLandingPage({ params, searchParams }: PageP
             isAuthenticated={!!user}
             advisorId={landingPage.default_advisor_id || undefined}
             landingPageId={landingPage.id}
+            slug={landingPage.slug}
+            organizationId={landingPage.organization_id}
           />
         </div>
       </div>
