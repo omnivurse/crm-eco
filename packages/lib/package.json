@@ -14,6 +14,7 @@
     "./billing/authorize-net": "./src/billing/authorize-net.ts",
     "./commissions": "./src/commissions/index.ts",
     "./rules": "./src/rules/index.ts",
+    "./enroll": "./src/enroll/index.ts",
     "./email": "./src/email/index.ts",
     "./realtime": "./src/realtime/index.ts",
     "./audit": "./src/audit/index.ts",
