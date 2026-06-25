@@ -2,7 +2,6 @@
   "permissions": {
     "allow": [
       "Bash(npx next build:*)",
-      "Bash(SUPABASE_DB_PASSWORD='Wq8rh3wJjTywGmXo' npx supabase db push)",
       "Bash(npx eslint packages/lib/src/email/email-service.ts)",
       "Bash(npx turbo build --filter=@crm-eco/crm)",
       "Read(//c/Users/User/Documents/GitHub/crm-eco/**)",
