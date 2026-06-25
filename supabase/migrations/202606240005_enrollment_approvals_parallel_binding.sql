@@ -1,6 +1,6 @@
 -- Phase 0 / Enrollment Review: PARALLEL-BINDING approval + review tables (ADDITIVE, idempotent). [D-decision]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 --
 -- DECISION (CTO-approved): PARALLEL BINDING. These two NEW tables REUSE the existing approval
 --   definitions (crm_approval_rules / crm_approval_processes, already widened to allow

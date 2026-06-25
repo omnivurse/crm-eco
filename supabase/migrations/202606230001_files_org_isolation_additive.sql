@@ -1,6 +1,6 @@
 -- Phase 0 / Tenancy: org isolation for public.files (ADDITIVE, idempotent). [A1 of 3]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 -- Risk: MEDIUM — adds nullable columns + indexes + sync trigger; backfill (A2) is guarded/resumable.
 --        The ONLY non-additive step (replacing the leaky "Users can read org files"
 --        SELECT policy) lives in A2 5.2 and is policy-only + reversible — held behind

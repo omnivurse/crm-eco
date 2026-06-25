@@ -1,6 +1,6 @@
 -- Phase 0 / Questionnaire engine: normalized, org-scoped questionnaire schema. [B1]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 -- Risk: LOW — purely ADDITIVE: 5 new tables + 1 nullable FK column on plans + indexes,
 --        RLS, helper fns, triggers. No existing object is altered or dropped. Idempotent
 --        (IF NOT EXISTS / DROP-then-CREATE for policies, triggers, functions).

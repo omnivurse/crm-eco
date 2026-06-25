@@ -1,6 +1,6 @@
 -- Phase 0 / Enrollment Review: add 'pending_review' + 'more_info' review states (ADDITIVE, idempotent). [A3]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 -- Risk: TIER-1 — step (1) replaces the enrollments_status_check CHECK constraint (DROP IF EXISTS +
 --        ADD). It is a *text* CHECK array (NOT a Postgres enum), so this is a metadata-only
 --        constraint swap: NO type rewrite, NO data migration, and the new array is a strict

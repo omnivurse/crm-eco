@@ -484,7 +484,13 @@ export async function getSelfServeQuote(
           total_monthly_cost: quoteResult.totalMonthly,
           snapshot,
         })
-        .eq('id', enrollmentId);
+        .eq('id', enrollmentId)
+        // Money-safety (defense-in-depth): only ever stamp the quote onto a
+        // pre-active draft so the base_monthly_cost AFTER-UPDATE billing trigger
+        // (trg_enrollment_sync_billing_cost) can NEVER fire on an active enrollment.
+        // The trigger is also a no-op off-'active', but this makes the invariant
+        // explicit rather than relying on the caller only quoting drafts.
+        .in('status', ['draft', 'in_progress']);
 
       if (updateError) {
         return { success: false, error: 'Failed to save quote' };

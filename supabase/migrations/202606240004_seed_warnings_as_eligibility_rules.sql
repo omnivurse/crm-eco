@@ -1,6 +1,6 @@
 -- Phase 0 / Eligibility: fold the 2 hardcoded warnings.ts checks into ADVISORY product_eligibility_rules (data seed, idempotent). [C3]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 -- Risk: TIER-1 — INSERTs data rows only (no DDL, no constraint/type change). Idempotent via a
 --        NOT EXISTS guard keyed on (plan_id, rule_type, rule_name), so re-running is a no-op.
 -- WHY: packages/lib/src/enrollment/warnings.ts hardcodes two ADVISORY enrollment checks that are

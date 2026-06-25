@@ -1,6 +1,6 @@
 -- Phase 0 / Enrollment Review: allow 'enrollment_submit' approval-rule trigger (ADDITIVE, idempotent). [A4]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 -- Risk: TIER-1 — step (1) replaces the crm_approval_rules_trigger_type_check CHECK constraint
 --        (DROP IF EXISTS + ADD). It is a *text* CHECK array (NOT a Postgres enum), so this is a
 --        metadata-only constraint swap: NO type rewrite, NO data migration, and the new array is a

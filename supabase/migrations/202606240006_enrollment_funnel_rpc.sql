@@ -1,6 +1,6 @@
 -- Phase 0 / Enrollment Ops (SLICE E3): enrollment FUNNEL analytics RPC (ADDITIVE, read-only). [E3]
 -- Project: sffisarikcreyyjzdjvb (PIF-ECO-V2 production)
--- Status: DRAFT — not applied. Lives in supabase/drafts/ so it does NOT auto-run.
+-- Status: PROMOTED to supabase/migrations/ — applied in version order by `supabase db push` (additive + idempotent).
 --
 -- PURPOSE: one own-org, admin-gated funnel RPC for apps/admin/(dashboard)/analytics/funnel.
 --   Reports, for the cohort of enrollments CREATED in the last p_months:
