@@ -1,7 +1,9 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser } from '@crm-eco/lib';
+import type { QuestionnaireTemplate } from '@crm-eco/enrollment';
 import { redirect } from 'next/navigation';
 import { SelfServeEnrollmentWizard } from '@/components/SelfServeEnrollmentWizard';
+import { getDefaultQuestionnaireTemplate } from '@/lib/enroll/questionnaire';
 
 interface PageProps {
   searchParams: Promise<{ resume?: string }>;
@@ -46,6 +48,16 @@ export default async function EnrollPage({ searchParams }: PageProps) {
       .limit(10);
 
     plans = plansData || [];
+  }
+
+  // Load the org's DEFAULT, PUBLISHED questionnaire template (if any). The
+  // questionnaire step runs before plan selection, so it loads the org default
+  // (not a plan-keyed template). When none exists this is undefined and the
+  // wizard leaves the step inert/skipped — unchanged behavior. Requires an org
+  // context; RLS on the questionnaire tables scopes the read to the caller's org.
+  let questionnaireTemplate: QuestionnaireTemplate | undefined;
+  if (organizationId) {
+    questionnaireTemplate = await getDefaultQuestionnaireTemplate(organizationId);
   }
 
   // If resuming an enrollment, get the data
@@ -95,6 +107,11 @@ export default async function EnrollPage({ searchParams }: PageProps) {
     date_of_birth: context.member.date_of_birth || '',
   } : undefined;
 
+  // Resolve the eligibility-enforcement flag server-side so the env var never
+  // ships to the client bundle. Default OFF -> eligibility findings are advisory
+  // only; flipping to 'true' makes blocking findings hard-gate plan selection.
+  const eligibilityEnforce = process.env.ELIGIBILITY_ENFORCE === 'true';
+
   return (
     <div className="max-w-4xl mx-auto">
       <SelfServeEnrollmentWizard
@@ -106,6 +123,8 @@ export default async function EnrollPage({ searchParams }: PageProps) {
         plans={plans}
         prefillData={prefillData}
         isAuthenticated={!!user}
+        eligibilityEnforce={eligibilityEnforce}
+        questionnaireTemplate={questionnaireTemplate}
       />
     </div>
   );

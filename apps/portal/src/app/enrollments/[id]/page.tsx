@@ -15,7 +15,9 @@ import {
   EnrollmentStepsTimeline,
   EnrollmentDetailsCard,
   EnrollmentActivityCard,
+  MoreInfoPanel,
 } from '@/components/enrollments';
+import { getApplicantReviews } from '@/lib/data/moreInfo';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -76,8 +78,12 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
     );
   }
 
-  // Fetch related data in parallel
-  const [steps, auditLog, membership] = await Promise.all([
+  // Fetch related data in parallel. getApplicantReviews re-verifies ownership and
+  // reads only applicant-visible review rows via service-role; it degrades to an
+  // empty payload (the enrollment_reviews draft table may be absent on prod), so
+  // allSettled keeps the page resilient if that read rejects.
+  const needsMoreInfoPanel = enrollment.status === 'more_info';
+  const [steps, auditLog, membership, applicantReviewsResult] = await Promise.all([
     getEnrollmentSteps(supabase, enrollment.id),
     getEnrollmentAuditLog(supabase, enrollment.id, 20),
     getMembershipForEnrollment(
@@ -86,7 +92,16 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
       enrollment.selected_plan_id,
       member.organization_id
     ),
+    needsMoreInfoPanel
+      ? Promise.allSettled([getApplicantReviews(enrollment.id)])
+      : Promise.resolve(null),
   ]);
+
+  const applicantReviews =
+    applicantReviewsResult &&
+    applicantReviewsResult[0]?.status === 'fulfilled'
+      ? applicantReviewsResult[0].value.reviews
+      : [];
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -116,6 +131,11 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
         }}
         membership={membership}
       />
+
+      {/* More-info responder — only when our team has asked for more information */}
+      {needsMoreInfoPanel && (
+        <MoreInfoPanel enrollmentId={enrollment.id} reviews={applicantReviews} />
+      )}
 
       {/* Two Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

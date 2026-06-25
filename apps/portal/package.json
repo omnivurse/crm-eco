@@ -12,6 +12,7 @@
   "dependencies": {
     "@crm-eco/enrollment": "*",
     "@crm-eco/lib": "*",
+    "@crm-eco/rates": "*",
     "@crm-eco/ui": "*",
     "@radix-ui/react-avatar": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",

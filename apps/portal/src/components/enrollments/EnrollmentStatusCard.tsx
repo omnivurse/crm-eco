@@ -27,6 +27,18 @@ const statusConfig: Record<string, {
     icon: <Clock className="w-3 h-3" />,
     message: 'Your enrollment has been submitted and is under review by our team. We will contact you if we need any additional information.',
   },
+  pending_review: {
+    label: 'Under Review',
+    className: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    icon: <Clock className="w-3 h-3" />,
+    message: 'Your enrollment is being reviewed by our team. We will reach out if we need anything further.',
+  },
+  more_info: {
+    label: 'Action Needed',
+    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    icon: <AlertTriangle className="w-3 h-3" />,
+    message: 'Our team needs more information to continue reviewing your enrollment. Please review the request below and respond.',
+  },
   approved: {
     label: 'Approved',
     className: 'bg-green-100 text-green-800 border-green-200',
