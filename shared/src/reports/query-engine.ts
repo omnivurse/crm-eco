@@ -7,7 +7,7 @@ import type {
   Sorting,
   ReportDefinition,
   ColumnType,
-} from './types.js';
+} from './types';
 
 // ============================================================================
 // DATA SOURCE DEFINITIONS
@@ -520,5 +520,5 @@ function mapOperatorToSupabase(operator: string): string {
 // EXPORT FOR USE
 // ============================================================================
 
-export { DATA_SOURCES } from './types.js';
-export type { DataSource, ColumnDefinition, Filter } from './types.js';
+export { DATA_SOURCES } from './types';
+export type { DataSource, ColumnDefinition, Filter } from './types';

@@ -1,4 +1,4 @@
-import type { SavedReport, DataSource } from './types.js';
+import type { SavedReport, DataSource } from './types';
 
 // ============================================================================
 // REPORT TEMPLATE INTERFACE
