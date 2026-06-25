@@ -67,18 +67,42 @@ interface PaymentData {
 // ============================================================================
 
 async function getOrCreateEnrollment(enrollmentId?: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Authenticate via the SSR/cookie client (RLS-bound) — reads only the caller's
+  // own auth + profile, so RLS is the right gate here.
+  const ssr = await createServerSupabaseClient();
+  const { data: { user } } = await ssr.auth.getUser();
 
   if (!user) {
     return { error: 'Not authenticated' };
   }
 
-  const context = await getMemberForUser(supabase, user.id);
+  // Resolve the caller's profile. Every authenticated user has exactly one
+  // (handle_new_user). profile.id is the OWNERSHIP ANCHOR — enrollments.created_by
+  // FKs to profiles.id — and profile.organization_id scopes the draft to the org.
+  const { data: profile } = await ssr
+    .from('profiles')
+    .select('id, organization_id, member_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!profile) {
+    return { error: 'Not authenticated' };
+  }
+
+  // Member context (may be null for a logged-in non-member) — used for prefill.
+  const context = await getMemberForUser(ssr, user.id);
+
+  // WRITES use the service-role client. enrollments / enrollment_steps have NO
+  // member-level INSERT/UPDATE RLS policy, so the cookie/RLS client is denied for
+  // a member. This mirrors the established pattern (completeSelfServeQuestionnaireStep,
+  // respondMoreInfo, the submit route): service-role for the write, ownership
+  // verified IN CODE. Because service-role bypasses RLS, the checks below ARE the
+  // access boundary — they must be fail-closed.
+  const service = createServiceRoleClient();
 
   // If resuming an existing enrollment
   if (enrollmentId) {
-    const { data: enrollment, error } = await (supabase as any)
+    const { data: enrollment, error } = await (service as any)
       .from('enrollments')
       .select('*, primary_member:primary_member_id(*)')
       .eq('id', enrollmentId)
@@ -88,15 +112,24 @@ async function getOrCreateEnrollment(enrollmentId?: string) {
       return { error: 'Enrollment not found' };
     }
 
-    // Verify ownership
-    if (context?.member && enrollment.primary_member_id !== context.member.id) {
+    // FAIL-CLOSED ownership: the caller must own this enrollment — either they
+    // created it (created_by is server-set to their profile id) or they are its
+    // primary member. Both are airtight, non-spoofable proofs, so the org is NOT
+    // re-checked here: a created_by/member match already implies rightful access,
+    // and re-checking org would falsely lock out a legitimate creator whose profile
+    // org is null or has since changed. A logged-in user must never reach another
+    // user's enrollment through the service-role client — this is that boundary.
+    const ownsAsCreator = enrollment.created_by === profile.id;
+    const ownsAsMember =
+      !!context?.member && enrollment.primary_member_id === context.member.id;
+    if (!ownsAsCreator && !ownsAsMember) {
       return { error: 'Access denied' };
     }
 
-    return { supabase, user, context, enrollment };
+    return { supabase: service, user, profile, context, enrollment };
   }
 
-  return { supabase, user, context, enrollment: null };
+  return { supabase: service, user, profile, context, enrollment: null };
 }
 
 // ============================================================================
@@ -113,7 +146,18 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
       return { success: false, error: result.error };
     }
 
-    const { supabase, user, context } = result;
+    const { supabase, profile, context } = result;
+
+    // Self-serve enrollment is member-only: enrollments.primary_member_id is NOT
+    // NULL, so only an existing member can be the primary applicant on this
+    // logged-in path. Fail with a clear message instead of a raw DB NOT-NULL error.
+    // (Brand-new prospects enroll via the public/anon route, not these actions.)
+    if (!context?.member) {
+      return {
+        success: false,
+        error: 'An active membership is required to start an enrollment.',
+      };
+    }
 
     // Generate enrollment number
     const enrollmentNumber = `WS-SS-${Date.now().toString(36).toUpperCase()}`;
@@ -143,18 +187,21 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
       rx_pricing_result: {},
     };
 
-    // Set member/org if we have context
+    // Owner + org. created_by (-> profiles.id) is the ownership anchor verified on
+    // every resume/step/submit. Org comes from the caller's profile, then their
+    // member, then the first available org as a last resort.
+    enrollmentData.created_by = profile.id;
     if (context?.member) {
       enrollmentData.primary_member_id = context.member.id;
-      enrollmentData.organization_id = context.member.organization_id;
-    } else {
-      // For new members, we need an org - use default or first available
+    }
+    enrollmentData.organization_id =
+      profile.organization_id ?? context?.member?.organization_id ?? null;
+    if (!enrollmentData.organization_id) {
       const { data: org } = await (supabase as any)
         .from('organizations')
         .select('id')
         .limit(1)
         .single();
-
       if (org) {
         enrollmentData.organization_id = org.id;
       }
@@ -177,7 +224,7 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
       .insert({
         enrollment_id: enrollment.id,
         event_type: 'status_change',
-        actor_profile_id: user.id,
+        actor_profile_id: profile.id,
         message: 'Self-serve enrollment started',
         data_after: { status: 'draft', mode: 'member_self_serve' },
       });
@@ -230,6 +277,7 @@ export async function completeSelfServeIntakeStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'intake',
         is_completed: true,
@@ -291,6 +339,7 @@ export async function completeSelfServeHouseholdStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'household',
         is_completed: true,
@@ -367,6 +416,7 @@ export async function completeSelfServePlanSelectionStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'plan_selection',
         is_completed: true,
@@ -744,6 +794,7 @@ export async function completeSelfServeComplianceStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'compliance',
         is_completed: true,
@@ -912,6 +963,7 @@ export async function completeSelfServeQuestionnaireStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'questionnaire',
         is_completed: true,
@@ -977,6 +1029,7 @@ export async function completeSelfServePaymentStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'payment',
         is_completed: true,
@@ -1081,6 +1134,7 @@ export async function submitSelfServeEnrollment(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'confirmation',
         is_completed: true,
