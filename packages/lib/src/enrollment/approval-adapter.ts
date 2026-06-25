@@ -6,8 +6,8 @@
  * (apps/crm/src/lib/approvals/rules.ts) is cookie/anon-key scoped and keyed on
  * a CRM `module_id` — neither of which exists in this service-role, module-less
  * public path. So we reuse the part that IS shareable: the single operator
- * vocabulary + pure condition evaluator from `@crm-eco/lib/rules`, and read the
- * rule rows ourselves.
+ * vocabulary + pure condition evaluator from the shared rules module, and read
+ * the rule rows ourselves.
  *
  * Rules live in `crm_approval_rules` with `trigger_type = 'enrollment_submit'`,
  * scoped by `org_id`. Each rule's `conditions` is the same
@@ -18,13 +18,18 @@
  * SAFETY: this module only READS. It never mutates enrollment state. The submit
  * route decides what to do with a match, and only when ENROLLMENT_APPROVAL_ENABLED
  * is on.
+ *
+ * SHARED: lives in `@crm-eco/lib` so the member portal submit route and the
+ * public enrollment software (apps/website) use ONE implementation. Consume via
+ * the package's main entry, e.g.:
+ *   import { checkEnrollmentApprovalRequired } from '@crm-eco/lib';
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   evaluateRuleConditionGroup,
   type RuleConditionGroup,
-} from '@crm-eco/lib/rules';
+} from '../rules';
 
 /** Trigger key for enrollment-submit approval rules in crm_approval_rules. */
 export const ENROLLMENT_SUBMIT_TRIGGER = 'enrollment_submit' as const;

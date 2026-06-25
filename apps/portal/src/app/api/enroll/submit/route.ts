@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pickActiveMemberByName, checkEligibility } from '@crm-eco/lib';
+import {
+  pickActiveMemberByName,
+  checkEligibility,
+  buildEnrollmentApprovalRecord,
+  checkEnrollmentApprovalRequired,
+} from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
 import type { CoverageTier, QuoteInput } from '@crm-eco/rates/types';
 import { readDraftFromRequest, clearDraftCookie } from '@/lib/enroll/draft-cookie';
 import { verifyRecaptchaToken } from '@/lib/enroll/recaptcha';
-import {
-  buildEnrollmentApprovalRecord,
-  checkEnrollmentApprovalRequired,
-} from '@/lib/enroll/approval-adapter';
 
 // MONEY-TOUCHING: persisting the engine-computed base_monthly_cost is only done
 // when this flag is explicitly enabled. Defaults OFF — when off, this path keeps

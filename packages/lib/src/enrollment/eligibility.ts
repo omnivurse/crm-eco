@@ -4,7 +4,7 @@
  * Activates the previously-INERT `product_eligibility_rules` table (the admin
  * `ProductEligibilityModal` is its only writer; nothing read it at enroll time).
  * This module mirrors the approval-adapter pattern
- * (`apps/portal/src/lib/enroll/approval-adapter.ts`): a thin reader + a pure
+ * (`packages/lib/src/enrollment/approval-adapter.ts`): a thin reader + a pure
  * evaluator that reuses the shared operator vocabulary from `@crm-eco/lib/rules`
  * for operator-based rules (`custom`), and dedicated handlers for the fixed
  * discrete configs (`age`, `state`, `household`, `waiting_period`, `pre_existing`).

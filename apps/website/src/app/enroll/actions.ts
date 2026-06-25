@@ -1,27 +1,66 @@
 'use server';
 
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { getMemberForUser, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
+import { createServerSupabaseClient, createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import {
+  getMemberForUser,
+  getRxPricingEstimate,
+  validateMedications,
+  buildEnrollmentApprovalRecord,
+  checkEnrollmentApprovalRequired,
+} from '@crm-eco/lib';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 import type { ActionResult, IntakeData, HouseholdMember, PlanSelectionData, ComplianceData, PaymentData } from '@crm-eco/enrollment';
 import { revalidatePath } from 'next/cache';
+
+// STATE-TOUCHING: auto-routing a freshly submitted enrollment into a review hold
+// is only done when this flag is explicitly enabled. Defaults OFF — when off, the
+// enrollment stays 'submitted' and admins triage it manually (the safe, unchanged
+// default). When ON, enrollment-submit approval rules are evaluated and a match
+// parks the enrollment in 'pending_review' for review. Mirrors the member portal's
+// submit route (apps/portal/src/app/api/enroll/submit/route.ts).
+const ENROLLMENT_APPROVAL_ENABLED = process.env.ENROLLMENT_APPROVAL_ENABLED === 'true';
 
 // ============================================================================
 // Helper Functions
 // ============================================================================
 
 async function getOrCreateEnrollment(enrollmentId?: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  // Authenticate via the SSR/cookie client (RLS-bound) — reads only the caller's
+  // own auth + profile, so RLS is the right gate here.
+  const ssr = await createServerSupabaseClient();
+  const { data: { user } } = await ssr.auth.getUser();
 
   if (!user) {
     return { error: 'Not authenticated' };
   }
 
-  const context = await getMemberForUser(supabase, user.id);
+  // Resolve the caller's profile. Every authenticated user has exactly one
+  // (handle_new_user). profile.id is the OWNERSHIP ANCHOR — enrollments.created_by
+  // FKs to profiles.id — and profile.organization_id scopes the draft to the org.
+  const { data: profile } = await ssr
+    .from('profiles')
+    .select('id, organization_id, member_id')
+    .eq('user_id', user.id)
+    .single();
 
+  if (!profile) {
+    return { error: 'Not authenticated' };
+  }
+
+  // Member context (may be null for a logged-in non-member) — used for prefill.
+  const context = await getMemberForUser(ssr, user.id);
+
+  // WRITES use the service-role client. enrollments / enrollment_steps have NO
+  // member-level INSERT/UPDATE RLS policy, so the cookie/RLS client is denied for
+  // a member. This mirrors the established pattern (apps/portal/src/app/enroll/
+  // actions.ts, the submit route): service-role for the write, ownership verified
+  // IN CODE. Because service-role bypasses RLS, the checks below ARE the access
+  // boundary — they must be fail-closed.
+  const service = createServiceRoleClient();
+
+  // If resuming an existing enrollment
   if (enrollmentId) {
-    const { data: enrollment, error } = await (supabase as any)
+    const { data: enrollment, error } = await (service as any)
       .from('enrollments')
       .select('*, primary_member:primary_member_id(*)')
       .eq('id', enrollmentId)
@@ -31,14 +70,35 @@ async function getOrCreateEnrollment(enrollmentId?: string) {
       return { error: 'Enrollment not found' };
     }
 
-    if (context?.member && enrollment.primary_member_id !== context.member.id) {
+    // FAIL-CLOSED ownership: the caller must own this enrollment — either they
+    // created it (created_by is server-set to their profile id) or they are its
+    // primary member. Both are airtight, non-spoofable proofs, so the org is NOT
+    // re-checked here: a created_by/member match already implies rightful access,
+    // and re-checking org would falsely lock out a legitimate creator whose profile
+    // org is null or has since changed. A logged-in user must never reach another
+    // user's enrollment through the service-role client — this is that boundary.
+    const ownsAsCreator = enrollment.created_by === profile.id;
+    const ownsAsMember =
+      !!context?.member && enrollment.primary_member_id === context.member.id;
+    if (!ownsAsCreator && !ownsAsMember) {
       return { error: 'Access denied' };
     }
 
-    return { supabase, user, context, enrollment };
+    return { supabase: service, user, profile, context, enrollment };
   }
 
-  return { supabase, user, context, enrollment: null };
+  return { supabase: service, user, profile, context, enrollment: null };
+}
+
+/** Whole-year age as of a reference date, from a YYYY-MM-DD (or ISO) DOB string. */
+function ageOnDate(dob: string | null | undefined, asOf: Date): number | null {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime()) || Number.isNaN(asOf.getTime())) return null;
+  let age = asOf.getFullYear() - d.getFullYear();
+  const m = asOf.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && asOf.getDate() < d.getDate())) age--;
+  return age >= 0 && age < 120 ? age : null;
 }
 
 // ============================================================================
@@ -54,7 +114,19 @@ export async function createSelfServeEnrollment(
       return { success: false, error: result.error };
     }
 
-    const { supabase, user, context } = result;
+    const { supabase, profile, context } = result;
+
+    // Self-serve enrollment is member-only: enrollments.primary_member_id is NOT
+    // NULL, so only an existing member can be the primary applicant on this
+    // logged-in path. Fail with a clear message instead of a raw DB NOT-NULL error.
+    // (Brand-new prospects enroll via the public/anon route — the landing-page
+    // wizard's POST /api/enroll/submit — not these logged-in actions.)
+    if (!context?.member) {
+      return {
+        success: false,
+        error: 'An active membership is required to start an enrollment.',
+      };
+    }
 
     const enrollmentNumber = `WS-SS-${Date.now().toString(36).toUpperCase()}`;
     const source = options?.enrollmentSource || 'website';
@@ -84,32 +156,36 @@ export async function createSelfServeEnrollment(
       rx_pricing_result: {},
     };
 
-    // Set advisor_id if provided (e.g., from a landing page)
+    // Set advisor_id if provided (e.g., from a landing page) — website-specific.
     if (options?.advisorId) {
       enrollmentData.advisor_id = options.advisorId;
     }
 
-    if (context?.member) {
-      enrollmentData.primary_member_id = context.member.id;
-      enrollmentData.organization_id = context.member.organization_id;
-
-      // Also set the advisor on the member record if not already set
-      if (options?.advisorId && !context.member.advisor_id) {
-        await (supabase as any)
-          .from('members')
-          .update({ advisor_id: options.advisorId })
-          .eq('id', context.member.id);
-      }
-    } else {
+    // Owner + member + org. created_by (-> profiles.id) is the ownership anchor
+    // verified on every resume/step/submit. primary_member_id is required (checked
+    // above). Org comes from the caller's profile, then their member, then the
+    // first available org as a last resort.
+    enrollmentData.created_by = profile.id;
+    enrollmentData.primary_member_id = context.member.id;
+    enrollmentData.organization_id =
+      profile.organization_id ?? context.member.organization_id ?? null;
+    if (!enrollmentData.organization_id) {
       const { data: org } = await (supabase as any)
         .from('organizations')
         .select('id')
         .limit(1)
         .single();
-
       if (org) {
         enrollmentData.organization_id = org.id;
       }
+    }
+
+    // Also set the advisor on the member record if not already set (website-specific).
+    if (options?.advisorId && !context.member.advisor_id) {
+      await (supabase as any)
+        .from('members')
+        .update({ advisor_id: options.advisorId })
+        .eq('id', context.member.id);
     }
 
     const { data: enrollment, error } = await (supabase as any)
@@ -128,7 +204,7 @@ export async function createSelfServeEnrollment(
       .insert({
         enrollment_id: enrollment.id,
         event_type: 'status_change',
-        actor_profile_id: user.id,
+        actor_profile_id: profile.id,
         message: `Self-serve enrollment started from ${source}`,
         data_after: {
           status: 'draft',
@@ -178,6 +254,7 @@ export async function completeSelfServeIntakeStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'intake',
         is_completed: true,
@@ -230,6 +307,7 @@ export async function completeSelfServeHouseholdStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'household',
         is_completed: true,
@@ -295,6 +373,7 @@ export async function completeSelfServePlanSelectionStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'plan_selection',
         is_completed: true,
@@ -413,6 +492,7 @@ export async function completeSelfServeComplianceStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'compliance',
         is_completed: true,
@@ -468,6 +548,7 @@ export async function completeSelfServePaymentStep(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'payment',
         is_completed: true,
@@ -561,6 +642,7 @@ export async function submitSelfServeEnrollment(
     await (supabase as any)
       .from('enrollment_steps')
       .upsert({
+        organization_id: enrollment.organization_id,
         enrollment_id: enrollmentId,
         step_key: 'confirmation',
         is_completed: true,
@@ -578,6 +660,127 @@ export async function submitSelfServeEnrollment(
         data_before: { status: enrollment.status },
         data_after: { status: 'submitted', membership_id: membershipId },
       });
+
+    // OPTIONAL approval routing (flag-gated; default OFF). Mirrors the public
+    // submit route (apps/portal/src/app/api/enroll/submit/route.ts): when
+    // ENROLLMENT_APPROVAL_ENABLED is on, evaluate the EXISTING approval rules
+    // engine (trigger_type='enrollment_submit') via the shared @crm-eco/lib
+    // adapter against the just-submitted enrollment. A matching rule parks it in
+    // 'pending_review' instead of leaving it 'submitted'.
+    //
+    // Entirely non-fatal: any error here (incl. a missing enrollment_approvals
+    // draft table) leaves the enrollment 'submitted' (the safe default) and never
+    // fails the submit. base_monthly_cost is NEVER written by this block.
+    if (ENROLLMENT_APPROVAL_ENABLED) {
+      try {
+        const orgId = enrollment.organization_id;
+        const snapshot = enrollment.snapshot || {};
+        const intake = snapshot.intake || {};
+        const householdMembers: Array<{ relationship?: string; date_of_birth?: string }> =
+          snapshot.household?.members ?? [];
+        const coverageStart =
+          enrollment.requested_effective_date ?? intake.requested_effective_date ?? null;
+
+        // Derive ages / coverage tier from the persisted snapshot (the same source
+        // of truth the wizard wrote). Ages are computed as of the coverage start.
+        const asOf = coverageStart ? new Date(coverageStart) : new Date();
+        const memberAge = ageOnDate(
+          intake.date_of_birth ?? enrollment.primary_member?.date_of_birth ?? null,
+          asOf,
+        );
+        const spouseRels = new Set(['spouse', 'partner', 'husband', 'wife']);
+        let hasSpouse = false;
+        let hasDependents = false;
+        for (const h of householdMembers) {
+          const rel = (h.relationship || '').toLowerCase();
+          if (spouseRels.has(rel)) hasSpouse = true;
+          else hasDependents = true;
+        }
+        const coverageTier =
+          hasSpouse && hasDependents
+            ? 'family'
+            : hasSpouse
+              ? 'member_spouse'
+              : hasDependents
+                ? 'member_children'
+                : 'member';
+
+        const approvalRecord = buildEnrollmentApprovalRecord({
+          selectedPlanId: enrollment.selected_plan_id ?? null,
+          effectiveDate: coverageStart,
+          state: intake.state ?? enrollment.primary_member?.state ?? null,
+          householdSize:
+            enrollment.household_size ?? 1 + householdMembers.length,
+          memberAge,
+          hasSpouse,
+          hasDependents,
+          coverageTier,
+          // READ-ONLY use of the already-persisted cost — never written here.
+          baseMonthlyCost: Number(enrollment.base_monthly_cost ?? 0),
+          totalMonthlyCost:
+            enrollment.total_monthly_cost != null
+              ? Number(enrollment.total_monthly_cost)
+              : null,
+          acknowledgments: snapshot.compliance ?? undefined,
+        });
+
+        const match = await checkEnrollmentApprovalRequired(supabase, orgId, approvalRecord);
+
+        if (match) {
+          const reviewReason = `Auto-routed for review by approval rule "${match.ruleName}"`;
+          const { error: reviewErr } = await (supabase as any)
+            .from('enrollments')
+            .update({
+              status: 'pending_review',
+              status_reason: reviewReason,
+            })
+            .eq('id', enrollmentId)
+            .eq('status', 'submitted'); // don't clobber a state an admin already changed
+
+          if (!reviewErr) {
+            await (supabase as any).from('enrollment_audit_log').insert({
+              organization_id: orgId,
+              enrollment_id: enrollmentId,
+              event_type: 'status_change',
+              old_status: 'submitted',
+              new_status: 'pending_review',
+              message: reviewReason,
+              data_after: {
+                approval_rule_id: match.ruleId,
+                approval_rule_name: match.ruleName,
+                approval_process_id: match.processId,
+              },
+            });
+
+            // PARALLEL-BINDING approval row bound to enrollments(id). Idempotent
+            // via the partial UNIQUE indexes (enrollment_id) WHERE status='pending'
+            // and (idempotency_key) WHERE NOT NULL — a unique violation here is the
+            // expected no-op on a retried submit and is swallowed below.
+            try {
+              await (supabase as any).from('enrollment_approvals').insert({
+                org_id: orgId,
+                enrollment_id: enrollmentId,
+                rule_id: match.ruleId,
+                process_id: match.processId,
+                status: 'pending',
+                requested_by: null,
+                idempotency_key: `enroll_approval_${enrollmentId}`,
+                context: {
+                  rule_name: match.ruleName,
+                  source: enrollment.enrollment_source ?? 'website',
+                },
+              });
+            } catch {
+              // A parallel-binding approval-row failure (incl. the expected unique
+              // violation, or a missing draft table) must never break the submit.
+              // The enrollment is already parked in 'pending_review' and audit-logged.
+            }
+          }
+        }
+      } catch {
+        // Gating must never break a submit — leave the enrollment 'submitted'.
+      }
+    }
 
     revalidatePath('/enroll');
 
