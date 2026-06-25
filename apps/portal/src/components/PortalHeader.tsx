@@ -16,6 +16,12 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 
+// MANAGE-ONLY PORTAL: enrollment is NOT self-serve here — prospects enroll via the
+// public enrollment software on the website. "Enroll Now" points off-site to that
+// URL (env-configurable, external absolute), so it uses a plain <a> not next/link.
+const ENROLLMENT_URL =
+  process.env.NEXT_PUBLIC_ENROLLMENT_URL || 'https://www.doublehelixhub.com/enroll';
+
 const navItems = [
   { label: 'Dashboard', href: '/' },
   { label: 'Coverage', href: '/coverage' },
@@ -189,9 +195,9 @@ export function PortalHeader() {
                 <Link href="/signin">
                   <Button variant="ghost" size="sm" className="text-dhh-ink hover:bg-slate-100">Sign In</Button>
                 </Link>
-                <Link href="/enroll">
+                <a href={ENROLLMENT_URL}>
                   <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-lg shadow-md">Enroll Now</Button>
-                </Link>
+                </a>
               </div>
             )}
           </div>
@@ -286,13 +292,13 @@ export function PortalHeader() {
                   >
                     Sign In
                   </Link>
-                  <Link 
-                    href="/enroll" 
+                  <a
+                    href={ENROLLMENT_URL}
                     className="px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 rounded-lg text-center"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Enroll Now
-                  </Link>
+                  </a>
                 </>
               )}
             </nav>

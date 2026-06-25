@@ -19,6 +19,16 @@ export default async function EnrollPage({ searchParams }: PageProps) {
   // Resolve member context (may be null for new users)
   const context = user ? await getMemberForUser(supabase, user.id) : null;
 
+  // MANAGE-ONLY PORTAL: members do NOT self-enroll here. A logged-in user who is
+  // already a member is sent to their dashboard — the public ENROLLMENT software
+  // lives on the website (NEXT_PUBLIC_ENROLLMENT_URL). New prospects enroll there,
+  // not in the member-management portal. (Resume-via-?resume for an existing draft
+  // is preserved by gating on the absence of a resume token, so a member finishing
+  // an in-progress draft started elsewhere is not bounced.)
+  if (user && context?.member && !resolvedSearchParams.resume) {
+    redirect('/');
+  }
+
   // Get available plans
   const organizationId = context?.member?.organization_id;
   let plans: Array<{
