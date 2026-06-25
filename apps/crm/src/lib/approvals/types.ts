@@ -4,6 +4,11 @@
  */
 
 import type { ConditionGroup, Condition } from '../automation/types';
+import type {
+  RuleConditionOperator,
+  RuleCondition,
+  RuleConditionGroup,
+} from '@crm-eco/lib/rules';
 
 // ============================================================================
 // Approval Process Definition
@@ -185,29 +190,15 @@ export type ApprovalRuleTriggerType =
   | 'record_create'
   | 'field_threshold';
 
-export type ApprovalConditionOperator = 
-  | 'eq' 
-  | 'neq' 
-  | 'gt' 
-  | 'lt' 
-  | 'gte' 
-  | 'lte' 
-  | 'contains' 
-  | 'in'
-  | 'not_in'
-  | 'is_empty'
-  | 'is_not_empty';
+// Operator vocabulary + condition shapes are now defined ONCE in the shared
+// @crm-eco/lib/rules module so approval rules and questionnaire/eligibility
+// logic stay in sync. Re-exported here under their original names for
+// back-compat with existing crm_records callers.
+export type ApprovalConditionOperator = RuleConditionOperator;
 
-export interface ApprovalCondition {
-  field: string;
-  operator: ApprovalConditionOperator;
-  value: string | number | boolean | string[] | null;
-}
+export type ApprovalCondition = RuleCondition;
 
-export interface ApprovalRuleConditions {
-  logic: 'AND' | 'OR';
-  conditions: ApprovalCondition[];
-}
+export type ApprovalRuleConditions = RuleConditionGroup;
 
 export interface ApprovalRuleTriggerConfig {
   field?: string;

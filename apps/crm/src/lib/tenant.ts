@@ -34,6 +34,9 @@ export interface ResolvedTenant {
   organizationSlug: string;
   organizationName: string;
   subdomain: string | null;
+  /** Vanity domain (organizations.domain); needed for read-back in the
+   *  provisioning UI that writes it. Null when no custom domain is set. */
+  domain: string | null;
   role: TenantRole;
   isDefault: boolean;
   branding: Record<string, unknown>;
@@ -45,6 +48,8 @@ export interface TenantMembership {
   organizationName: string;
   organizationSlug: string;
   subdomain: string | null;
+  /** Vanity domain (organizations.domain). Null when no custom domain is set. */
+  domain: string | null;
   role: TenantRole;
   isDefault: boolean;
   plan: string;
@@ -78,6 +83,7 @@ interface MembershipRow {
   name: string;
   slug: string;
   subdomain: string | null;
+  domain: string | null;
   plan: string;
   branding: Record<string, unknown> | null;
   role: string;
@@ -104,7 +110,7 @@ export const getActiveTenant = cache(async (): Promise<ResolvedTenant | null> =>
 
   const { data: memberships, error } = (await (supabase as any)
     .from('my_organizations')
-    .select('id, name, slug, subdomain, plan, branding, role, is_default')) as {
+    .select('id, name, slug, subdomain, domain, plan, branding, role, is_default')) as {
     data: MembershipRow[] | null;
     error: unknown;
   };
@@ -136,6 +142,7 @@ export const getActiveTenant = cache(async (): Promise<ResolvedTenant | null> =>
     organizationSlug: chosen.slug,
     organizationName: chosen.name,
     subdomain: chosen.subdomain,
+    domain: chosen.domain,
     role: chosen.role as TenantRole,
     isDefault: chosen.is_default,
     branding: (chosen.branding ?? {}) as Record<string, unknown>,
@@ -150,7 +157,7 @@ export async function listMyTenants(): Promise<TenantMembership[]> {
   const supabase = await createClient();
   const { data, error } = (await (supabase as any)
     .from('my_organizations')
-    .select('id, name, slug, subdomain, plan, branding, role, is_default')
+    .select('id, name, slug, subdomain, domain, plan, branding, role, is_default')
     .order('is_default', { ascending: false })
     .order('name', { ascending: true })) as {
     data: MembershipRow[] | null;
@@ -164,6 +171,7 @@ export async function listMyTenants(): Promise<TenantMembership[]> {
     organizationName: row.name,
     organizationSlug: row.slug,
     subdomain: row.subdomain,
+    domain: row.domain,
     role: row.role as TenantRole,
     isDefault: row.is_default,
     plan: row.plan,
