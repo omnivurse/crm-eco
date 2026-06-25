@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
+import { enrollPublicUrl } from '@/lib/enroll-url';
 
 interface LandingPage {
   id: string;
@@ -70,8 +71,7 @@ export default function QRCodePage() {
 
   function getEnrollmentUrl() {
     if (!landingPage) return '';
-    const baseUrl = process.env.NEXT_PUBLIC_PORTAL_URL || window.location.origin.replace('admin.', '');
-    return `${baseUrl}/enroll/${landingPage.slug}`;
+    return enrollPublicUrl(landingPage.slug);
   }
 
   async function copyLink() {

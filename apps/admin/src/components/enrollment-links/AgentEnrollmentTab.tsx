@@ -19,6 +19,7 @@ import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { toast } from 'sonner';
+import { enrollPublicBaseUrl } from '@/lib/enroll-url';
 
 interface AgentEnrollmentTabProps {
   agent: {
@@ -45,7 +46,7 @@ export function AgentEnrollmentTab({ agent, stats, onUpdate }: AgentEnrollmentTa
 
   function getEnrollmentUrl() {
     if (!agent.enrollment_code) return '';
-    const baseUrl = process.env.NEXT_PUBLIC_PORTAL_URL || window.location.origin.replace('admin.', '');
+    const baseUrl = enrollPublicBaseUrl();
     return `${baseUrl}/enroll?agent=${agent.enrollment_code}`;
   }
 

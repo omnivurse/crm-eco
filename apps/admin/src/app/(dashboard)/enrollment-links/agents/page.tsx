@@ -26,6 +26,7 @@ import {
   TableRow,
 } from '@crm-eco/ui/components/table';
 import { toast } from 'sonner';
+import { enrollPublicBaseUrl } from '@/lib/enroll-url';
 
 interface Agent {
   id: string;
@@ -143,7 +144,7 @@ export default function AgentLinksPage() {
   }, [searchQuery, agents]);
 
   function getAgentEnrollmentUrl(enrollmentCode: string) {
-    const baseUrl = process.env.NEXT_PUBLIC_PORTAL_URL || window.location.origin.replace('admin.', '');
+    const baseUrl = enrollPublicBaseUrl();
     return `${baseUrl}/enroll?agent=${enrollmentCode}`;
   }
 

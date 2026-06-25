@@ -15,128 +15,41 @@ import type {
 } from '@crm-eco/enrollment';
 import { Button, Input, Label, Card, CardContent } from '@crm-eco/ui';
 import { Loader2, ArrowRight } from 'lucide-react';
-import {
-  createSelfServeEnrollment,
-  completeSelfServeIntakeStep,
-  completeSelfServeHouseholdStep,
-  completeSelfServePlanSelectionStep,
-  completeSelfServeComplianceStep,
-  completeSelfServePaymentStep,
-  submitSelfServeEnrollment,
-  runSelfServeRxPricing,
-} from '@/app/enroll/actions';
 import { getRecaptchaToken } from '@/lib/recaptcha-client';
 
 const PORTAL_URL = process.env.NEXT_PUBLIC_PORTAL_URL || 'https://members.doublehelixhub.com';
 
-interface LandingPageEnrollmentWizardProps {
-  existingEnrollmentId?: string;
+interface PublicEnrollmentWizardProps {
+  plans: WizardPlan[];
+  /**
+   * Landing-page slug. Present for the agent landing-page form (`/enroll/[slug]`),
+   * omitted for the generic form (`/enroll`) where the draft route resolves the
+   * tenant from the request host. The signed cookie carries the resolved org either
+   * way — this client never sends an org.
+   */
+  slug?: string;
+  prefillData?: PrefillData;
   existingSnapshot?: WizardSnapshot;
   completedSteps?: string[];
-  plans: WizardPlan[];
-  prefillData?: PrefillData;
-  isAuthenticated: boolean;
-  advisorId?: string;
-  landingPageId: string;
-  /** Landing page slug — the anon API resolves org + draft from this. */
-  slug: string;
-  /** Organization that owns this landing page (display/context only). */
-  organizationId: string;
 }
 
 /**
- * Landing page wrapper for the public enrollment wizard.
+ * PUBLIC (anonymous prospect — NO login) enrollment wizard for the admin
+ * enrollment software, served on tenant-facing domains. The signed draft cookie
+ * (set by /api/enroll/draft, verified server-side) is the prospect's identity /
+ * ownership token. The final submit attaches a reCAPTCHA v3 token.
  *
- * Two paths share the SAME wizard UI (@crm-eco/enrollment) via the
- * EnrollmentActions adapter:
- *
- *  - LOGGED-IN MEMBER (isAuthenticated): unchanged — drives the auth-gated
- *    server actions (createSelfServeEnrollment / submitSelfServeEnrollment …),
- *    binding advisorId + landingPageId through a closure.
- *
- *  - ANON PROSPECT (default for the public landing page, no login): drives the
- *    website's /api/enroll/* routes. The signed draft cookie (set by
- *    /api/enroll/draft and verified server-side) is the prospect's identity /
- *    ownership token — NOT auth. The final submit attaches a reCAPTCHA v3 token.
- *
- * The shared wizard's intake step collects email/phone/address but NOT the
- * primary member's name or DOB, so the anon path gates the wizard behind a small
- * lead-capture form ("Tell us about yourself") that starts the draft and supplies
- * name/email/phone as prefill — mirroring the portal's anon `start` step.
+ * The shared wizard's intake step collects email/phone/address but NOT the primary
+ * member's name or DOB, so this gates the wizard behind a small lead-capture form
+ * that starts the draft and supplies name/email/phone as prefill.
  */
-export function LandingPageEnrollmentWizard({
-  advisorId,
-  landingPageId,
-  slug,
-  organizationId: _organizationId,
-  ...props
-}: LandingPageEnrollmentWizardProps) {
-  // Logged-in member path: keep the existing server-action adapter intact.
-  if (props.isAuthenticated) {
-    const actions: EnrollmentActions = {
-      createEnrollment: () =>
-        createSelfServeEnrollment({
-          advisorId,
-          landingPageId,
-          enrollmentSource: 'landing_page',
-        }),
-      completeIntakeStep: completeSelfServeIntakeStep,
-      completeHouseholdStep: completeSelfServeHouseholdStep,
-      completePlanSelectionStep: completeSelfServePlanSelectionStep,
-      completeComplianceStep: completeSelfServeComplianceStep,
-      completePaymentStep: completeSelfServePaymentStep,
-      submitEnrollment: submitSelfServeEnrollment,
-      runRxPricing: runSelfServeRxPricing,
-    };
-
-    return (
-      <SelfServeEnrollmentWizard
-        {...props}
-        actions={actions}
-        afterSubmitUrl={`${PORTAL_URL}/signin`}
-        afterSubmitLabel="Sign In to Member Portal"
-      />
-    );
-  }
-
-  // Anon prospect path: lead-capture gate → shared wizard driven by /api/enroll/*.
-  return (
-    <AnonLandingEnrollment
-      {...props}
-      slug={slug}
-    />
-  );
-}
-
-// ============================================================================
-// Anon prospect flow
-// ============================================================================
-
-interface PrimaryMember {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  date_of_birth: string;
-}
-
-interface AnonLandingEnrollmentProps {
-  existingEnrollmentId?: string;
-  existingSnapshot?: WizardSnapshot;
-  completedSteps?: string[];
-  plans: WizardPlan[];
-  prefillData?: PrefillData;
-  isAuthenticated: boolean;
-  slug: string;
-}
-
-function AnonLandingEnrollment({
+export function PublicEnrollmentWizard({
   plans,
   slug,
   prefillData,
   existingSnapshot,
   completedSteps,
-}: AnonLandingEnrollmentProps) {
+}: PublicEnrollmentWizardProps) {
   const [started, setStarted] = useState(false);
   const [member, setMember] = useState<PrimaryMember>({
     first_name: '',
@@ -154,9 +67,8 @@ function AnonLandingEnrollment({
     memberRef.current = member;
   }, [member]);
 
-  // The wizard accumulates step data in its own internal snapshot but only hands
-  // submitEnrollment() the enrollmentId. We mirror each step's data here so the
-  // final /api/enroll/submit can assemble the full member payload.
+  // Mirror each step's data so the final /api/enroll/submit can assemble the full
+  // member payload (the wizard only hands submitEnrollment() the enrollmentId).
   const draftRef = useRef<{
     intake?: IntakeData;
     household?: HouseholdMember[];
@@ -170,22 +82,19 @@ function AnonLandingEnrollment({
       const res = await fetch('/api/enroll/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // `slug` is omitted for the generic form; the route resolves org by host.
         body: JSON.stringify({ slug, data }),
       });
       return res.ok;
     }
 
     return {
-      // createEnrollment is invoked by the wizard the first time the prospect
-      // completes intake. The draft cookie was already created at the gate; here
-      // we just hand back a stable client-side id (the wizard only uses it to key
-      // subsequent step calls — for the anon path the cookie is the real handle).
       createEnrollment: async () => {
         const ok = await patchDraft({ member: memberRef.current });
         if (!ok) {
           return { success: false, error: 'Failed to start enrollment' };
         }
-        return { success: true, data: { enrollmentId: `anon-${slug}` } };
+        return { success: true, data: { enrollmentId: `anon-${slug ?? 'generic'}` } };
       },
 
       completeIntakeStep: async (_enrollmentId: string, data: IntakeData) => {
@@ -264,8 +173,8 @@ function AnonLandingEnrollment({
         return { success: true, data: {} };
       },
 
-      // Rx pricing is an authenticated-only feature (the action requires a member
-      // session); the anon path renders the plan step without it.
+      // Rx pricing is an authenticated-only feature; the anon path renders the plan
+      // step without it.
       runRxPricing: async () => ({
         success: false,
         error: 'Rx pricing is available after you create an account.',
@@ -273,8 +182,7 @@ function AnonLandingEnrollment({
     };
   }, [slug]);
 
-  // The captured name/email/phone seed the shared intake step's prefill so the
-  // prospect doesn't re-type what they entered at the gate.
+  // The captured name/email/phone seed the shared intake step's prefill.
   const anonPrefill: PrefillData = {
     first_name: member.first_name,
     last_name: member.last_name,
@@ -314,11 +222,19 @@ function AnonLandingEnrollment({
 }
 
 // ============================================================================
-// Lead-capture gate (anon)
+// Types + lead-capture gate
 // ============================================================================
 
+interface PrimaryMember {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  date_of_birth: string;
+}
+
 interface LeadCaptureGateProps {
-  slug: string;
+  slug?: string;
   member: PrimaryMember;
   onChange: (m: PrimaryMember) => void;
   onStarted: () => void;
@@ -335,8 +251,8 @@ function LeadCaptureGate({ slug, member, onChange, onStarted }: LeadCaptureGateP
 
     try {
       // Start the signed draft cookie. The cookie carries the org (resolved
-      // server-side from the slug) and becomes this prospect's ownership token
-      // for the rest of the flow.
+      // server-side from the slug or host) and becomes this prospect's ownership
+      // token for the rest of the flow.
       const res = await fetch('/api/enroll/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

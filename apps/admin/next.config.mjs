@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared'],
+  transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/shared', '@crm-eco/enrollment'],
 
   experimental: {
     optimizePackageImports: ['recharts', 'framer-motion', 'lucide-react', 'date-fns'],

@@ -28,7 +28,9 @@ const enrollmentSchema = z.object({
 
 /**
  * POST /api/enroll/public
- * Handle public enrollment form submissions
+ * Simple single-step public enrollment form submission (org resolved from the
+ * landing page in the body). The multi-step wizard uses /draft + /submit instead;
+ * this is kept for parity with any simple inline landing-page form.
  */
 export async function POST(request: NextRequest) {
   const forwarded = request.headers.get('x-forwarded-for');
@@ -79,9 +81,7 @@ export async function POST(request: NextRequest) {
       // RPC might not exist, ignore error
     }
 
-    // Check if member already exists. Match on email + NAME, not email alone: family
-    // members legitimately share one email in health-benefits, so an email-only match
-    // (esp. with .single(), which throws on >1) would mis-attach or error.
+    // Check if member already exists. Match on email + NAME, not email alone.
     const emailLc = data.email.toLowerCase().trim();
     const { data: emailMatches } = await supabase
       .from('members')
@@ -119,9 +119,6 @@ export async function POST(request: NextRequest) {
         .single();
 
       if (memberError || !newMember) {
-        // A concurrent submit, or a returning member outside the lookup window above,
-        // can collide with members_org_email_name_active_uniq. Recover by reusing the
-        // existing active member instead of failing the enrollment.
         if (memberError?.code === '23505') {
           const { data: retryMatches } = await supabase
             .from('members')
@@ -167,10 +164,7 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to create CRM lead for landing page enrollment:', leadResult.error);
     }
 
-    // Create the enrollment via the atomic, idempotent RPC so a retry / double-submit of
-    // the same landing-page form (same member + plan) reuses the existing enrollment
-    // instead of creating a duplicate — a duplicate would later double-bill / double-pay
-    // commission once both are approved.
+    // Create the enrollment via the atomic, idempotent RPC.
     const idempotencyKey = `landing_${landingPage.id}_${memberId}_${data.planId ?? 'none'}`;
     const { data: enrollResult, error: enrollmentError } = await supabase.rpc('create_enrollment_tx', {
       p_org_id: landingPage.organization_id,
@@ -194,14 +188,10 @@ export async function POST(request: NextRequest) {
     const idempotentReplay =
       (enrollResult as { idempotent_replay?: boolean }).idempotent_replay === true;
 
-    // Retry / double-submit: the enrollment already exists. Don't duplicate it, re-fire the
-    // confirmation/advisor emails, or re-log the enrollment_created event.
     if (idempotentReplay) {
       return NextResponse.json({ success: true, enrollmentId });
     }
 
-    // create_enrollment_tx doesn't set the wizard snapshot, but the rest of the portal
-    // reads enrollment.snapshot.intake — preserve it on first creation.
     await supabase
       .from('enrollments')
       .update({

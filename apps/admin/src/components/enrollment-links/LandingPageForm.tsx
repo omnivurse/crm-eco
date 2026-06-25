@@ -44,6 +44,7 @@ import {
   AlertDialogTrigger,
 } from '@crm-eco/ui/components/alert-dialog';
 import { toast } from 'sonner';
+import { enrollPublicUrl } from '@/lib/enroll-url';
 
 const landingPageSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -313,8 +314,8 @@ export function LandingPageForm({ landingPage }: LandingPageFormProps) {
                 variant="outline"
                 asChild
               >
-                <a 
-                  href={`${process.env.NEXT_PUBLIC_PORTAL_URL || ''}/enroll/${landingPage.slug}`}
+                <a
+                  href={enrollPublicUrl(landingPage.slug)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="gap-2"
