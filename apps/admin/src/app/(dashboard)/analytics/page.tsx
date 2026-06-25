@@ -47,10 +47,15 @@ async function getEnrollmentStats(): Promise<EnrollmentStats | null> {
   if (!tenant) return null;
   const orgId = tenant.organizationId;
 
-  // Get enrollment counts by status
+  // Get enrollment counts by status.
+  // "Pending" here means awaiting admin review. The enrollments.status check
+  // constraint has no 'pending' value — submissions land as 'submitted'
+  // (see get_dashboard_hero_stats, which counts pending review as 'submitted').
+  // Include the forthcoming review statuses so this stays correct once they exist.
+  const PENDING_REVIEW_STATUSES = ['submitted', 'pending_review', 'more_info'];
   const [totalSettled, pendingSettled, approvedSettled, rejectedSettled, cancelledSettled] = await Promise.allSettled([
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId),
-    supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'pending'),
+    supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).in('status', PENDING_REVIEW_STATUSES),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'approved'),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'rejected'),
     supabase.from('enrollments').select('id', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'cancelled'),

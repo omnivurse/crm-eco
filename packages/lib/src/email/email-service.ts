@@ -67,6 +67,14 @@ export class EmailService {
     let text = input.text;
     let templateId: string | null = null;
 
+    // Merge the sending org's brand variables UNDER any caller-supplied
+    // variables so BOTH the template path and the direct-HTML path below can
+    // reference {{brand_logo_url}} / {{brand_company_name}} / {{brand_primary_color}}.
+    // Caller-supplied keys always win (spread after). No-op when branding is empty.
+    const brandVars = await this.getBrandVars();
+    const variables: Record<string, string> = { ...brandVars, ...(input.variables || {}) };
+    input = { ...input, variables };
+
     // If using a template, fetch and process it
     if (input.templateSlug || input.templateId) {
       const template = await this.getTemplate(input.templateSlug, input.templateId);
@@ -432,6 +440,77 @@ export class EmailService {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
+  }
+
+  /**
+   * Resolve brand variables for the sending org from the single canonical
+   * brand store, `organizations.branding` (jsonb). Read once via the same
+   * client the service already uses (admin/SSR per the construction site).
+   *
+   * Mirrors the tolerant key resolution used by @crm-eco/ui's branding.ts
+   * (nested `branding.colors.primary`, flat `branding.primary_color`, or
+   * `branding.primary`) without importing the React UI package into @crm-eco/lib.
+   *
+   * Returns brand_* vars only when present, so an empty branding ('{}') yields
+   * {} and email rendering is unchanged (PIFH stays default).
+   */
+  private async getBrandVars(): Promise<Record<string, string>> {
+    try {
+      const { data, error } = await this.db
+        .from('organizations')
+        .select('branding')
+        .eq('id', this.organizationId)
+        .single();
+
+      if (error || !data) {
+        return {};
+      }
+
+      const branding =
+        data.branding !== null &&
+        typeof data.branding === 'object' &&
+        !Array.isArray(data.branding)
+          ? (data.branding as Record<string, unknown>)
+          : null;
+      if (!branding) {
+        return {};
+      }
+
+      const colors =
+        branding.colors !== null &&
+        typeof branding.colors === 'object' &&
+        !Array.isArray(branding.colors)
+          ? (branding.colors as Record<string, unknown>)
+          : null;
+
+      // Resolve a string value tolerant of nested / flat shapes.
+      const pick = (...candidates: unknown[]): string | null => {
+        for (const candidate of candidates) {
+          if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+        }
+        return null;
+      };
+
+      const vars: Record<string, string> = {};
+
+      const logoUrl = pick(branding.logo_url, branding.logoUrl, branding.logo);
+      if (logoUrl) vars.brand_logo_url = logoUrl;
+
+      const companyName = pick(
+        branding.company_name,
+        branding.companyName,
+        branding.name
+      );
+      if (companyName) vars.brand_company_name = companyName;
+
+      const primaryColor = pick(colors?.primary, branding.primary_color, branding.primary);
+      if (primaryColor) vars.brand_primary_color = primaryColor;
+
+      return vars;
+    } catch (err) {
+      console.error('Error resolving brand variables:', err);
+      return {};
+    }
   }
 
   /**

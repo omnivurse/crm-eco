@@ -74,3 +74,6 @@ pnpm-lock.yaml
 .claude/qa/reports/
 .claude/qa/manifest.json
 .claude/qa/PAUSE
+
+# Local Claude Code overrides (keep secrets/DB passwords out of the tracked settings)
+.claude/settings.local.json

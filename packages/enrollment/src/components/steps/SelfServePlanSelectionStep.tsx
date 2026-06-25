@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input, Label, Button, Card, CardContent, Badge } from '@crm-eco/ui';
-import { Loader2, ArrowRight, Plus, Trash2, Pill, Sparkles, Check } from 'lucide-react';
+import { Loader2, ArrowRight, Plus, Trash2, Pill, Sparkles, Check, AlertTriangle, ShieldAlert } from 'lucide-react';
 import type { WizardPlan } from '../../types';
-import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
+import type { MedicationInput, RxPricingResult, EligibilityResult } from '@crm-eco/lib';
+import type { QuoteResult } from '@crm-eco/rates/types';
+import { PricingQuote } from '../PricingQuote';
 
 interface SelfServePlanSelectionStepProps {
   plans: WizardPlan[];
@@ -19,6 +21,35 @@ interface SelfServePlanSelectionStepProps {
     rx_medications?: MedicationInput[];
   }) => void;
   onRxPricing: (medications: MedicationInput[]) => Promise<RxPricingResult | null>;
+  /**
+   * Server-authority quote. Returns the server-computed QuoteResult for the
+   * given plan + effective date. The server owns pricing; this step only
+   * displays what it returns. When omitted, or on error / NO_RATE_SET, the
+   * step falls back to the flat plan monthly_share.
+   */
+  onQuote?: (input: {
+    selected_plan_id: string;
+    requested_effective_date: string;
+  }) => Promise<{ success: boolean; result?: QuoteResult; error?: string }>;
+  /**
+   * DB-driven eligibility check. Returns the server-evaluated EligibilityResult
+   * for the selected plan + effective date (rules read from
+   * product_eligibility_rules, keyed on selected_plan_id -> plans). When omitted
+   * (or on error), no eligibility panel is shown and the step behaves exactly as
+   * before — so this is non-breaking for hosts that have not wired it.
+   */
+  onEligibility?: (input: {
+    selected_plan_id: string;
+    requested_effective_date: string;
+  }) => Promise<{ success: boolean; result?: EligibilityResult; error?: string }>;
+  /**
+   * Enforcement flag. When true, BLOCKING eligibility findings hard-gate this
+   * step: Continue is disabled while a blocking finding stands for the selected
+   * plan. When false (the default), ALL findings are advisory — they render as
+   * notices but never prevent advancing. Mirrors ELIGIBILITY_ENFORCE (default
+   * OFF); the host passes the resolved boolean so the env flag stays server-side.
+   */
+  eligibilityEnforce?: boolean;
   loading: boolean;
 }
 
@@ -38,10 +69,16 @@ export function SelfServePlanSelectionStep({
   rxPricingResult: initialRxPricing,
   onComplete,
   onRxPricing,
+  onQuote,
+  onEligibility,
+  eligibilityEnforce = false,
   loading,
 }: SelfServePlanSelectionStepProps) {
   const [selectedPlan, setSelectedPlan] = useState(selectedPlanId || '');
   const [effectiveDate, setEffectiveDate] = useState(requestedEffectiveDate || '');
+  const [quoteResult, setQuoteResult] = useState<QuoteResult | null>(null);
+  const [eligibility, setEligibility] = useState<EligibilityResult | null>(null);
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [medications, setMedications] = useState<MedicationInput[]>(
     initialMedications || []
   );
@@ -53,6 +90,76 @@ export function SelfServePlanSelectionStep({
     (initialMedications?.length || 0) > 0
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Server-authority quote: on debounced plan / effective-date change, ask the
+  // server for the authoritative QuoteResult. On error / NO_RATE_SET (or when
+  // no action is wired) we clear it and fall back to the flat monthly_share.
+  const quoteRequestRef = useRef(0);
+  useEffect(() => {
+    if (!onQuote || !selectedPlan || !effectiveDate) {
+      setQuoteResult(null);
+      return;
+    }
+
+    const requestId = ++quoteRequestRef.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await onQuote({
+          selected_plan_id: selectedPlan,
+          requested_effective_date: effectiveDate,
+        });
+        // Ignore stale responses from superseded requests.
+        if (requestId !== quoteRequestRef.current) return;
+        setQuoteResult(res.success && res.result ? res.result : null);
+      } catch {
+        if (requestId !== quoteRequestRef.current) return;
+        setQuoteResult(null);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [onQuote, selectedPlan, effectiveDate]);
+
+  // DB-driven eligibility: on the SAME debounced (plan, effective-date) change,
+  // ask the server for the structured EligibilityResult. Mirrors the quote seam.
+  // On error / when no action is wired we clear it (no panel, no gate).
+  const eligibilityRequestRef = useRef(0);
+  useEffect(() => {
+    if (!onEligibility || !selectedPlan || !effectiveDate) {
+      setEligibility(null);
+      setEligibilityLoading(false);
+      return;
+    }
+
+    const requestId = ++eligibilityRequestRef.current;
+    setEligibilityLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await onEligibility({
+          selected_plan_id: selectedPlan,
+          requested_effective_date: effectiveDate,
+        });
+        if (requestId !== eligibilityRequestRef.current) return;
+        setEligibility(res.success && res.result ? res.result : null);
+        // Clear any stale hard-block error once a fresh result arrives; the
+        // disabled-Continue gate is recomputed from isEligibilityBlocked.
+        setErrors((prev) => (prev.eligibility ? { ...prev, eligibility: '' } : prev));
+      } catch {
+        if (requestId !== eligibilityRequestRef.current) return;
+        setEligibility(null);
+      } finally {
+        if (requestId === eligibilityRequestRef.current) setEligibilityLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [onEligibility, selectedPlan, effectiveDate]);
+
+  // Block-vs-warn decision lives HERE: only when the host turned enforcement on
+  // (ELIGIBILITY_ENFORCE) AND there is at least one blocking finding for the
+  // selected plan do we hard-gate the step. Otherwise findings are advisory.
+  const hasBlockingFindings = (eligibility?.blocking.length ?? 0) > 0;
+  const isEligibilityBlocked = eligibilityEnforce && hasBlockingFindings;
 
   const getMinDate = () => {
     const today = new Date();
@@ -120,6 +227,16 @@ export function SelfServePlanSelectionStep({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Hard-gate: when enforcement is on and the selected plan has a blocking
+    // eligibility finding, do not advance. (When enforcement is off this is
+    // always false, so behaviour is unchanged.)
+    if (isEligibilityBlocked) {
+      setErrors((prev) => ({
+        ...prev,
+        eligibility: 'This plan is not available based on the eligibility requirements below.',
+      }));
+      return;
+    }
     if (validate()) {
       onComplete({
         selected_plan_id: selectedPlan,
@@ -390,7 +507,10 @@ export function SelfServePlanSelectionStep({
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-blue-900">
-                  ${selectedPlanData.monthly_share}/mo
+                  ${quoteResult && (!quoteResult.errors || quoteResult.errors.length === 0)
+                    ? quoteResult.totalMonthly
+                    : selectedPlanData.monthly_share}
+                  /mo
                 </p>
               </div>
             </div>
@@ -398,13 +518,99 @@ export function SelfServePlanSelectionStep({
         </Card>
       )}
 
+      {/* Authoritative pricing breakdown (server-computed; flat fallback) */}
+      {selectedPlanData && (
+        <PricingQuote
+          result={quoteResult}
+          fallbackMonthlyShare={selectedPlanData.monthly_share}
+        />
+      )}
+
+      {/* Eligibility findings (DB-driven). Advisory by default; when the host
+          enforces, blocking findings additionally hard-gate Continue. */}
+      {selectedPlanData && eligibility && eligibility.findings.length > 0 && (
+        <Card
+          className={
+            isEligibilityBlocked
+              ? 'bg-red-50 border-red-200'
+              : 'bg-amber-50 border-amber-200'
+          }
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-3">
+              {isEligibilityBlocked ? (
+                <ShieldAlert className="w-5 h-5 text-red-600" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              )}
+              <h4
+                className={`font-medium ${
+                  isEligibilityBlocked ? 'text-red-900' : 'text-amber-900'
+                }`}
+              >
+                {isEligibilityBlocked
+                  ? 'This plan is not available'
+                  : 'Eligibility notices'}
+              </h4>
+            </div>
+            <ul className="space-y-2">
+              {eligibility.findings.map((f) => {
+                // A finding only reads as a hard block when enforcement is on.
+                const isBlock = eligibilityEnforce && f.severity === 'block';
+                return (
+                  <li key={f.rule_id} className="flex items-start gap-2">
+                    <Badge
+                      className={
+                        isBlock
+                          ? 'bg-red-100 text-red-800 border border-red-200 shrink-0'
+                          : 'bg-amber-100 text-amber-800 border border-amber-200 shrink-0'
+                      }
+                    >
+                      {isBlock ? 'Not eligible' : 'Notice'}
+                    </Badge>
+                    <span
+                      className={`text-sm ${
+                        isBlock ? 'text-red-800' : 'text-amber-800'
+                      }`}
+                    >
+                      {f.message}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            {isEligibilityBlocked && (
+              <p className="text-xs text-red-700 mt-3">
+                Please choose a different plan or contact support to continue.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {errors.eligibility && (
+        <p className="text-sm text-red-600">{errors.eligibility}</p>
+      )}
+
       {/* Submit */}
       <div className="flex justify-end pt-4">
-        <Button type="submit" disabled={loading} className="gap-2">
+        <Button
+          type="submit"
+          // Only the loading state of an ENFORCING check holds Continue — when
+          // enforcement is off (or no action is wired) advancing is never
+          // delayed, so behaviour is unchanged. A standing block always holds.
+          disabled={loading || isEligibilityBlocked || (eligibilityEnforce && eligibilityLoading)}
+          className="gap-2"
+        >
           {loading ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />
               Saving...
+            </>
+          ) : eligibilityEnforce && eligibilityLoading ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Checking eligibility...
             </>
           ) : (
             <>

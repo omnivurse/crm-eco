@@ -1,4 +1,4 @@
-import type { ExportOptions, ExportResult, ExportFormat, ColumnType } from './types.js';
+import type { ExportOptions, ExportResult, ExportFormat, ColumnType } from './types';
 
 // ============================================================================
 // EXPORT UTILITIES

@@ -5,10 +5,10 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { evaluateRuleConditionGroup } from '@crm-eco/lib/rules';
 import type {
   CrmApprovalRule,
   ApprovalRuleTriggerType,
-  ApprovalCondition,
   ApprovalRuleConditions,
   RuleMatchResult,
 } from './types';
@@ -90,94 +90,16 @@ export async function getApprovalRule(ruleId: string): Promise<CrmApprovalRule |
 // ============================================================================
 
 /**
- * Evaluate a single condition against record data
- */
-function evaluateCondition(
-  condition: ApprovalCondition,
-  recordData: Record<string, unknown>
-): boolean {
-  const fieldValue = recordData[condition.field];
-  const compareValue = condition.value;
-  
-  switch (condition.operator) {
-    case 'eq':
-      return fieldValue === compareValue;
-    
-    case 'neq':
-      return fieldValue !== compareValue;
-    
-    case 'gt':
-      if (typeof fieldValue === 'number' && typeof compareValue === 'number') {
-        return fieldValue > compareValue;
-      }
-      return Number(fieldValue) > Number(compareValue);
-    
-    case 'gte':
-      if (typeof fieldValue === 'number' && typeof compareValue === 'number') {
-        return fieldValue >= compareValue;
-      }
-      return Number(fieldValue) >= Number(compareValue);
-    
-    case 'lt':
-      if (typeof fieldValue === 'number' && typeof compareValue === 'number') {
-        return fieldValue < compareValue;
-      }
-      return Number(fieldValue) < Number(compareValue);
-    
-    case 'lte':
-      if (typeof fieldValue === 'number' && typeof compareValue === 'number') {
-        return fieldValue <= compareValue;
-      }
-      return Number(fieldValue) <= Number(compareValue);
-    
-    case 'contains':
-      if (typeof fieldValue === 'string' && typeof compareValue === 'string') {
-        return fieldValue.toLowerCase().includes(compareValue.toLowerCase());
-      }
-      return false;
-    
-    case 'in':
-      if (Array.isArray(compareValue)) {
-        return compareValue.includes(fieldValue as string);
-      }
-      return false;
-    
-    case 'not_in':
-      if (Array.isArray(compareValue)) {
-        return !compareValue.includes(fieldValue as string);
-      }
-      return true;
-    
-    case 'is_empty':
-      return fieldValue === null || fieldValue === undefined || fieldValue === '';
-    
-    case 'is_not_empty':
-      return fieldValue !== null && fieldValue !== undefined && fieldValue !== '';
-    
-    default:
-      return false;
-  }
-}
-
-/**
- * Evaluate all conditions with AND/OR logic
+ * Evaluate all conditions with AND/OR logic.
+ *
+ * Delegates to the shared group evaluator in @crm-eco/lib/rules so there is a
+ * single condition-evaluation implementation across approvals + questionnaire.
  */
 function evaluateConditions(
   conditions: ApprovalRuleConditions,
   recordData: Record<string, unknown>
 ): boolean {
-  // If no conditions, rule always matches
-  if (!conditions.conditions || conditions.conditions.length === 0) {
-    return true;
-  }
-  
-  const logic = conditions.logic || 'AND';
-  
-  if (logic === 'AND') {
-    return conditions.conditions.every(c => evaluateCondition(c, recordData));
-  } else {
-    return conditions.conditions.some(c => evaluateCondition(c, recordData));
-  }
+  return evaluateRuleConditionGroup(conditions, recordData);
 }
 
 /**

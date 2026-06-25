@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { RootProviders } from '@/components/providers/RootProviders';
+import { getActiveTenant } from '@/lib/tenant';
 import './globals.css';
 
 const inter = Inter({
@@ -82,17 +84,32 @@ const themeScript = `
 })();
 `;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Resolve the active tenant's branding server-side and inject it as a
+  // static <style> so the first paint already reflects the tenant palette.
+  // Mutating CSS custom properties on the client would cause the documented
+  // React #418/#423 hydration mismatch. getActiveTenant() is request-cached
+  // (React cache) and returns null for unauthenticated requests, in which
+  // case brandingToCssText('') falls through to the theme.css defaults.
+  const tenant = await getActiveTenant();
+  const tenantThemeCss = brandingToCssText(tenant?.branding);
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Theme script MUST be first to prevent any flash */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        
+
+        {/* Tenant branding tokens — server-rendered, overrides theme.css for
+            the active org. Empty string when no custom branding (PIFH). */}
+        {tenantThemeCss ? (
+          <style id="tenant-theme" dangerouslySetInnerHTML={{ __html: tenantThemeCss }} />
+        ) : null}
+
         {/* DNS prefetch for Supabase */}
         <link rel="dns-prefetch" href="https://sffisarikcreyyjzdjvb.supabase.co" />
       </head>

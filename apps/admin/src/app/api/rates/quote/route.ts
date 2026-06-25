@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireAdminRole } from '@/lib/auth';
-import { quote } from '@crm-eco/rates';
-import type { RateConfig, QuoteInput, QuoteOptions } from '@crm-eco/rates/types';
-import seedConfig from '@crm-eco/rates/config';
+import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
+import type { QuoteInput, QuoteOptions } from '@crm-eco/rates/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +50,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const config = seedConfig as unknown as RateConfig;
+    // Build the authoritative RateConfig from the live DB rate tables
+    // (plan_rate_sets + joined plan_rate_entries / plan_fees), scoped to org.
+    // Same query shape as GET /api/rates/config so both routes share one builder.
+    const { data: rateSets, error: configError } = await (supabase as any)
+      .from('plan_rate_sets')
+      .select(`
+        *,
+        plan:plans!inner(id, name, code, organization_id),
+        entries:plan_rate_entries(*),
+        fees:plan_fees(*)
+      `)
+      .eq('plan.organization_id', profile.organization_id);
+
+    if (configError) {
+      console.error('Error fetching rate config for quote:', configError);
+      return NextResponse.json(
+        { error: 'Failed to load rate configuration' },
+        { status: 500 }
+      );
+    }
+
+    const config = buildRateConfigFromDb(rateSets ?? []);
     const result = quote(config, input, effectiveOptions);
 
     return NextResponse.json(result);

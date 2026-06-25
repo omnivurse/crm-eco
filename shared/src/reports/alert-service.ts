@@ -2,7 +2,7 @@ import type {
   ReportAlert,
   AlertConditionType,
   AlertConditionConfig,
-} from './types.js';
+} from './types';
 
 // ============================================================================
 // ALERT EVALUATION TYPES

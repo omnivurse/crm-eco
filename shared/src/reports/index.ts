@@ -1,5 +1,5 @@
 // Types and schemas
-export * from './types.js';
+export * from './types';
 
 // Query engine
 export {
@@ -10,7 +10,7 @@ export {
   buildSupabaseQuery,
   type QueryBuilderResult,
   type SupabaseQueryParams,
-} from './query-engine.js';
+} from './query-engine';
 
 // Templates
 export {
@@ -22,7 +22,7 @@ export {
   convertTemplateToReport,
   type ReportTemplate,
   type TemplateCategory,
-} from './templates.js';
+} from './templates';
 
 // Milestone service
 export {
@@ -34,7 +34,7 @@ export {
   type AdvisorMetrics,
   type MilestoneCalculationResult,
   type MilestoneNotification,
-} from './milestone-service.js';
+} from './milestone-service';
 
 // Alert service
 export {
@@ -46,7 +46,7 @@ export {
   createAlertNotification,
   type AlertEvaluationResult,
   type AlertNotification,
-} from './alert-service.js';
+} from './alert-service';
 
 // Export service
 export {
@@ -58,4 +58,4 @@ export {
   exportToJSON,
   exportData,
   downloadExport,
-} from './export-service.js';
+} from './export-service';

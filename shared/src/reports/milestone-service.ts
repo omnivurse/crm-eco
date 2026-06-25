@@ -1,4 +1,4 @@
-import type { AgentLevel, AdvisorMilestoneProgress } from './types.js';
+import type { AgentLevel, AdvisorMilestoneProgress } from './types';
 
 // ============================================================================
 // MILESTONE CALCULATION TYPES

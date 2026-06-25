@@ -13,8 +13,9 @@ import {
   Label,
   Switch,
 } from '@crm-eco/ui';
-import { Save, Palette, Bell, Shield, Zap, Loader2 } from 'lucide-react';
+import { Save, Palette, Bell, Shield, Zap, Loader2, Globe } from 'lucide-react';
 import { toast } from 'sonner';
+import { saveOrgBranding, getOrgBranding } from './actions';
 
 interface AdminSettings {
   id?: string;
@@ -61,6 +62,11 @@ const defaultSettings: AdminSettings = {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<AdminSettings>(defaultSettings);
+  // Tenant provisioning fields — these live on `organizations`, NOT on
+  // `admin_settings`. They're persisted via the saveOrgBranding server
+  // action so RLS organizations_update_owner_admin applies.
+  const [subdomain, setSubdomain] = useState('');
+  const [domain, setDomain] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const supabase = createClient();
@@ -83,6 +89,13 @@ export default function SettingsPage() {
         // maybeSingle() returns null for 0 rows instead of throwing a 406
         // (PGRST116) — a fresh org has no admin_settings row yet, which is
         // expected, so fall through to defaults rather than logging an error.
+        //
+        // DEPRECATION SHIM: `admin_settings` branding columns
+        // (default_primary_color, default_secondary_color,
+        // default_logo_url, company_name) are no longer canonical —
+        // `organizations.branding` is. We still read them here so legacy
+        // orgs that never re-saved branding keep showing their old values,
+        // but the canonical read below wins when present.
         const { data: existingSettings } = await supabase
           .from('admin_settings')
           .select('*')
@@ -95,6 +108,22 @@ export default function SettingsPage() {
             ...existingSettings,
             rate_effective_date: existingSettings.rate_effective_date || '',
           });
+        }
+
+        // Canonical branding (organizations.branding) + provisioning
+        // fields (subdomain/domain). When present these override the
+        // deprecated admin_settings branding columns above.
+        const org = await getOrgBranding();
+        if (org.ok) {
+          setSubdomain(org.subdomain || '');
+          setDomain(org.domain || '');
+          setSettings((prev) => ({
+            ...prev,
+            company_name: org.branding.company_name ?? prev.company_name,
+            default_logo_url: org.branding.logo_url ?? prev.default_logo_url,
+            default_primary_color: org.branding.primary_color ?? prev.default_primary_color,
+            default_secondary_color: org.branding.secondary_color ?? prev.default_secondary_color,
+          }));
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -145,6 +174,38 @@ export default function SettingsPage() {
         enable_dependent_management: settings.enable_dependent_management,
       };
 
+      // CANONICAL branding write → organizations.branding (jsonb), plus
+      // optional tenant provisioning fields (subdomain/domain). This goes
+      // through the saveOrgBranding server action which uses the cookie/SSR
+      // client so RLS organizations_update_owner_admin is enforced. Empty
+      // fields are dropped server-side so an org with no customizations
+      // stores branding='{}' and renders the theme.css defaults.
+      const brandingResult = await saveOrgBranding({
+        branding: {
+          primary_color: settings.default_primary_color || undefined,
+          secondary_color: settings.default_secondary_color || undefined,
+          logo_url: settings.default_logo_url || undefined,
+          company_name: settings.company_name || undefined,
+        },
+        subdomain: subdomain.trim() || null,
+        domain: domain.trim() || null,
+      });
+
+      if (!brandingResult.ok) {
+        if (brandingResult.error === 'subdomain_or_domain_taken') {
+          toast.error('That subdomain or domain is already in use by another organization.');
+        } else if (brandingResult.error === 'forbidden') {
+          toast.error('You do not have permission to change branding for this organization.');
+        } else {
+          toast.error('Failed to save branding settings.');
+        }
+        return;
+      }
+
+      // DEPRECATION SHIM: keep mirroring the non-canonical branding columns
+      // into admin_settings so any code path still reading the old columns
+      // stays consistent during the migration. organizations.branding above
+      // is the source of truth; do NOT drop these columns.
       // Type assertion needed because admin_settings is a new table not yet in generated types
       const { error } = await (supabase.from('admin_settings') as any)
         .upsert(settingsToSave, { onConflict: 'organization_id' });
@@ -256,6 +317,50 @@ export default function SettingsPage() {
                   placeholder="#3b82f6"
                 />
               </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tenant Domains (provisioning) — writes to organizations.{subdomain,domain} */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Tenant Domains
+          </CardTitle>
+          <CardDescription>
+            The subdomain and vanity domain your members and admins use to
+            reach this organization. Branding above and these domains are
+            saved to your organization record when you click Save.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="org_subdomain">Subdomain</Label>
+              <Input
+                id="org_subdomain"
+                value={subdomain}
+                onChange={(e) => setSubdomain(e.target.value)}
+                placeholder="acme"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Used as <span className="font-mono">acme.admin.doublehelix.com</span>.
+                Lowercase letters, numbers, and hyphens only.
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="org_domain">Custom Domain</Label>
+              <Input
+                id="org_domain"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                placeholder="portal.acme.com"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Optional vanity domain. Must be unique across all organizations.
+              </p>
             </div>
           </div>
         </CardContent>

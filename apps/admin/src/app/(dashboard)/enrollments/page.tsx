@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
-import { FileText, Eye } from 'lucide-react';
+import { FileText, Eye, Inbox } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
@@ -77,6 +77,14 @@ export default async function EnrollmentsPage() {
         description="Manage enrollment applications"
         icon={<FileText className="w-6 h-6" />}
         gradient="from-purple-600 to-purple-400"
+        actions={
+          <Link href="/enrollments/queue" prefetch={false}>
+            <Button variant="outline" size="sm">
+              <Inbox className="h-4 w-4 mr-2" />
+              Review Queue
+            </Button>
+          </Link>
+        }
       />
 
       {/* Enrollments Table */}

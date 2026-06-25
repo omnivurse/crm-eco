@@ -135,6 +135,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               Pricing Matrix
             </Button>
           </Link>
+          <Link href={`/products/${product.id}/questionnaire`}>
+            <Button variant="outline">
+              <List className="h-4 w-4 mr-2" />
+              Questionnaire
+            </Button>
+          </Link>
           <Link href={`/products/${product.id}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
