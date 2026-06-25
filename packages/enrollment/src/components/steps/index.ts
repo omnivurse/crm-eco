@@ -1,5 +1,6 @@
 export { SelfServeIntakeStep } from './SelfServeIntakeStep';
 export { SelfServeHouseholdStep } from './SelfServeHouseholdStep';
+export { SelfServeQuestionnaireStep } from './SelfServeQuestionnaireStep';
 export { SelfServePlanSelectionStep } from './SelfServePlanSelectionStep';
 export { SelfServeComplianceStep } from './SelfServeComplianceStep';
 export { SelfServePaymentStep } from './SelfServePaymentStep';

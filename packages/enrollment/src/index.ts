@@ -3,6 +3,7 @@ export { SelfServeEnrollmentWizard } from './components/SelfServeEnrollmentWizar
 export {
   SelfServeIntakeStep,
   SelfServeHouseholdStep,
+  SelfServeQuestionnaireStep,
   SelfServePlanSelectionStep,
   SelfServeComplianceStep,
   SelfServePaymentStep,
@@ -23,6 +24,10 @@ export type {
   ComplianceData,
   PaymentData,
   EnrollmentActions,
+  QuestionnaireQuestion,
+  QuestionnaireQuestionType,
+  QuestionnaireTemplate,
+  QuestionnaireAnswers,
 } from './types';
 
 export { ENROLLMENT_STEPS } from './types';

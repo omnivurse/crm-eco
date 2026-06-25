@@ -1,59 +1,50 @@
 'use client';
 
-import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Badge } from '@crm-eco/ui';
-import { DollarSign, AlertTriangle, ChevronDown } from 'lucide-react';
-import { quote } from '@crm-eco/rates';
-import type { RateConfig, QuoteInput, QuoteResult, QuoteOptions, CoverageTier, RateSetKey } from '@crm-eco/rates/types';
-import seedConfig from '@crm-eco/rates/config';
-
-const config = seedConfig as unknown as RateConfig;
+import { DollarSign, AlertTriangle } from 'lucide-react';
+import type { QuoteResult } from '@crm-eco/rates/types';
 
 interface PricingQuoteProps {
-  planId: string;
-  coverageTier: CoverageTier;
-  memberAge: number;
-  spouseAge?: number;
-  dependentAges?: number[];
-  coverageStart: string;
-  rateSetOverride?: RateSetKey | null;
+  /**
+   * Server-computed quote. The server is the pricing authority — this component
+   * never computes a price client-side; it only renders the result it is given.
+   */
+  result: QuoteResult | null;
+  /**
+   * Flat plan monthly share to show when no server quote is available
+   * (e.g. no rate set configured / quote error). When omitted and `result`
+   * is null, nothing renders.
+   */
+  fallbackMonthlyShare?: number;
 }
 
-export function PricingQuote({
-  planId,
-  coverageTier,
-  memberAge,
-  spouseAge,
-  dependentAges,
-  coverageStart,
-  rateSetOverride,
-}: PricingQuoteProps) {
-  const result = useMemo<QuoteResult | null>(() => {
-    if (!planId || !memberAge || !coverageStart) return null;
-
-    const input: QuoteInput = {
-      planId,
-      coverageTier,
-      household: {
-        memberAge,
-        ...(spouseAge !== undefined ? { spouseAge } : {}),
-        ...(dependentAges?.length ? { dependentAges } : {}),
-      },
-      coverageStart,
-    };
-
-    const opts: QuoteOptions = {};
-    if (rateSetOverride) {
-      opts.rateSetOverride = rateSetOverride;
-    }
-
-    return quote(config, input, Object.keys(opts).length > 0 ? opts : undefined);
-  }, [planId, coverageTier, memberAge, spouseAge, dependentAges, coverageStart, rateSetOverride]);
-
+export function PricingQuote({ result, fallbackMonthlyShare }: PricingQuoteProps) {
   const formatCurrency = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
-  if (!result) return null;
+  // Fallback: no server-computed quote, but we have a flat plan price to show.
+  if (!result) {
+    if (fallbackMonthlyShare === undefined) return null;
+
+    return (
+      <Card className="border-teal-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <DollarSign className="h-4 w-4" />
+            Your Estimated Monthly Cost
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-2">
+            <p className="text-3xl font-bold text-teal-700">
+              {formatCurrency(fallbackMonthlyShare)}
+            </p>
+            <p className="text-xs text-slate-500 mt-1">per month</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const hasErrors = result.errors && result.errors.length > 0;
 

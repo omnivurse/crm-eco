@@ -1,6 +1,7 @@
 // @crm-eco/rates — E123 Rate Engine
 export { quote, getPlanOptions, buildMatrixPreview, resolveRateSetKey, findAgeBand } from './rateEngine';
 export { validateRateConfig } from './validate';
+export { buildRateConfigFromDb } from './dbConfig';
 export type {
   RateConfig,
   RateConfigMeta,

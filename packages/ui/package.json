@@ -10,6 +10,7 @@
     "./components/*": "./src/components/*.tsx",
     "./components/sonner": "./src/components/sonner.tsx",
     "./lib/utils": "./src/lib/utils.ts",
+    "./lib/branding": "./src/lib/branding.ts",
     "./styles/theme.css": "./src/styles/theme.css",
     "./styles/auth.css": "./src/styles/auth.css",
     "./styles/landing.css": "./src/styles/landing.css",
