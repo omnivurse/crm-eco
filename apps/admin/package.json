@@ -9,6 +9,7 @@
     "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
+    "@crm-eco/enrollment": "*",
     "@crm-eco/lib": "*",
     "@crm-eco/rates": "*",
     "@crm-eco/shared": "*",

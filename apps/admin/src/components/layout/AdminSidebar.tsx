@@ -28,6 +28,7 @@ import {
   ChevronLeft,
   PieChart,
   Activity,
+  Filter,
   LogOut,
 } from 'lucide-react';
 import { useTerminal } from '@/components/terminal';
@@ -130,6 +131,7 @@ const navSections: NavSection[] = [
     collapsible: true,
     items: [
       { label: 'Reports', href: '/reports', icon: <BarChart3 className="h-5 w-5" /> },
+      { label: 'Enrollment Funnel', href: '/analytics/funnel', icon: <Filter className="h-5 w-5" /> },
       { label: 'Demographics', href: '/analytics/demographics', icon: <PieChart className="h-5 w-5" /> },
       { label: 'Actuarial Data', href: '/analytics/actuarial', icon: <Activity className="h-5 w-5" /> },
     ],

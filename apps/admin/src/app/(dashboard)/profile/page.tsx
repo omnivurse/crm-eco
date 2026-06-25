@@ -75,9 +75,17 @@ interface OrganizationData {
   name: string;
   slug: string;
   settings: Record<string, unknown> | null;
+  // Canonical brand store (jsonb). Source of truth for company_name /
+  // logo / colors — see organizations.branding.
+  branding: Record<string, unknown> | null;
   created_at: string | null;
 }
 
+// DEPRECATION SHIM: `company_name` / `default_logo_url` are no longer
+// canonical — `organizations.branding` (company_name / logo_url) is. The
+// notification-email columns are still admin_settings-only. This read is
+// kept for backwards-compat and to surface notification emails; branding
+// fields are overlaid from organizations.branding below when present.
 interface AdminSettingsData {
   company_name: string | null;
   default_logo_url: string | null;
@@ -209,14 +217,33 @@ export default function ProfilePage() {
         setOrganization(orgData as unknown as OrganizationData);
       }
 
-      // Fetch admin settings for company info
+      // Fetch admin settings for company info (DEPRECATION SHIM — see
+      // AdminSettingsData). Notification emails are admin_settings-only;
+      // company_name / logo are overlaid from organizations.branding
+      // (canonical) below when present.
       const { data: settingsData } = await (supabase.from('admin_settings') as any)
         .select('company_name, default_logo_url, admin_notification_email, billing_notification_email')
         .eq('organization_id', p.organization_id)
         .maybeSingle();
 
-      if (settingsData) {
-        setAdminSettings(settingsData as unknown as AdminSettingsData);
+      // Canonical branding overlay: organizations.branding wins over the
+      // deprecated admin_settings.company_name / default_logo_url columns.
+      const orgBranding = (orgData as unknown as OrganizationData | null)?.branding as
+        | { company_name?: string; logo_url?: string }
+        | null
+        | undefined;
+
+      const merged: AdminSettingsData = {
+        company_name:
+          orgBranding?.company_name ?? (settingsData?.company_name ?? null),
+        default_logo_url:
+          orgBranding?.logo_url ?? (settingsData?.default_logo_url ?? null),
+        admin_notification_email: settingsData?.admin_notification_email ?? null,
+        billing_notification_email: settingsData?.billing_notification_email ?? null,
+      };
+
+      if (settingsData || orgBranding) {
+        setAdminSettings(merged);
       }
     } catch (error) {
       console.error('Error loading profile:', error);
