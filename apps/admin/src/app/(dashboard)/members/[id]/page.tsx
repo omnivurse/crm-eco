@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { format } from 'date-fns';
 import { getActiveTenant } from '@/lib/tenant';
+import { getMemberPortalStatus } from '../actions';
+import { MemberPortalAccess } from './MemberPortalAccess';
 
 async function getMember(id: string) {
   const supabase = await createServerSupabaseClient();
@@ -81,12 +83,17 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
     notFound();
   }
 
-  const [dependentsResult, enrollmentsResult] = await Promise.allSettled([
+  const [dependentsResult, enrollmentsResult, portalResult] = await Promise.allSettled([
     getDependents(id),
     getEnrollments(id),
+    getMemberPortalStatus(id),
   ]);
   const dependents = dependentsResult.status === 'fulfilled' ? dependentsResult.value : [];
   const enrollments = enrollmentsResult.status === 'fulfilled' ? enrollmentsResult.value : [];
+  const portal =
+    portalResult.status === 'fulfilled'
+      ? portalResult.value
+      : { hasLogin: false, email: (member.email as string) ?? null };
 
   return (
     <div className="space-y-6">
@@ -225,6 +232,9 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
 
         {/* Sidebar */}
         <div className="space-y-6">
+          {/* Portal access (invite to self-service portal) */}
+          <MemberPortalAccess memberId={member.id} hasLogin={portal.hasLogin} email={portal.email} />
+
           {/* Advisor */}
           <Card>
             <CardHeader>
