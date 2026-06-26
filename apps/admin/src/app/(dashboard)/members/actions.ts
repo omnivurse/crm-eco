@@ -76,7 +76,12 @@ export async function inviteMemberToPortal(memberId: string): Promise<InviteResu
       organizationId: tenant.organizationId,
       email: member.email as string,
       mode: 'invite',
-      ...(portalUrl ? { redirectTo: `${portalUrl}/signin` } : {}),
+      // Invited members have no password yet — land them on the portal's
+      // set-password page (NOT /signin, which is a password-login form). The
+      // portal's /update-password consumes the invite session from the URL and
+      // lets them choose a password. This URL must be in the Supabase Auth
+      // "Redirect URLs" allowlist or Supabase silently falls back to site_url.
+      ...(portalUrl ? { redirectTo: `${portalUrl}/update-password` } : {}),
     });
 
     if (!result.ok) {
