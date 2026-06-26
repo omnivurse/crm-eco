@@ -182,7 +182,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
                     <p>{member.address_line1}</p>
                     {member.address_line2 && <p>{member.address_line2}</p>}
                     <p>
-                      {member.city}, {member.state} {member.zip_code}
+                      {member.city}, {member.state} {member.postal_code}
                     </p>
                   </div>
                 </div>
