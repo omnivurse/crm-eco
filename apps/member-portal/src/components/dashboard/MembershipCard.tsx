@@ -112,7 +112,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
 
         {/* View Details Link */}
         <div className="pt-2 border-t">
-          <Link href={`/membership/${membership.id}`} className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+          <Link href="/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
             View details
             <ArrowRight className="w-3 h-3" />
           </Link>
