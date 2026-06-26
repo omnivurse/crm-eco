@@ -38,7 +38,18 @@ export interface PortalTenant {
  * Cached per request via React's `cache()`.
  */
 export const getPortalTenant = cache(async (): Promise<PortalTenant | null> => {
-  const service = createServiceRoleClient();
+  // Branding resolution must NEVER crash a render. If the service-role client
+  // can't be constructed — e.g. SUPABASE_SERVICE_ROLE_KEY is absent in a
+  // preview/build environment where it (correctly) isn't scoped — degrade to
+  // default theming instead of throwing. The root layout treats null as
+  // "fall through to theme.css defaults". When the key IS present (production)
+  // behaviour is unchanged.
+  let service: ReturnType<typeof createServiceRoleClient>;
+  try {
+    service = createServiceRoleClient();
+  } catch {
+    return null;
+  }
 
   // (1) Authenticated member → their org.
   const supabase = await createServerSupabaseClient();
