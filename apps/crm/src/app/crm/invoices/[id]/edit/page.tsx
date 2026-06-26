@@ -490,7 +490,8 @@ export default function EditInvoicePage() {
         contact_id: client?.id ?? null,
         status: nextStatus,
         subtotal: calculations.subtotal,
-        discount_type: discountType,
+        // DB CHECK allows only 'fixed' | 'percentage' (never 'percent').
+        discount_type: discountType === 'fixed' ? 'fixed' : 'percentage',
         discount_value: discountValue,
         tax_rate: Math.round(calculations.effectiveTaxRate * 100) / 100,
         tax_amount: calculations.taxTotal,

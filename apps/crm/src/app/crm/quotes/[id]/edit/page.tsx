@@ -583,13 +583,19 @@ export default function EditQuotePage() {
 
       if (quoteError) throw quoteError;
 
-      // Replace line items: delete existing, then re-insert the current set.
-      const { error: deleteError } = await supabase
+      // Replace line items SAFELY. The Supabase JS client cannot run a
+      // multi-statement transaction, so we capture the existing rows, INSERT
+      // the new set FIRST, and only delete the previously-stored rows once the
+      // insert succeeds. A failed insert (e.g. a constraint violation) can
+      // therefore never leave the quote with its line items wiped. There is no
+      // unique constraint on quote_line_items, so the old and new rows can
+      // briefly coexist without collision.
+      const { data: existingLineItems, error: existingError } = await supabase
         .from('quote_line_items')
-        .delete()
+        .select('id')
         .eq('quote_id', quoteId);
 
-      if (deleteError) throw deleteError;
+      if (existingError) throw existingError;
 
       if (persistedItems.length > 0) {
         const { error: insertError } = await supabase.from('quote_line_items').insert(
@@ -599,7 +605,8 @@ export default function EditQuotePage() {
             description: item.description || null,
             quantity: item.quantity,
             unit_price: item.unitPrice,
-            discount_type: item.discountType === 'fixed' ? 'fixed' : 'percent',
+            // DB CHECK allows only 'fixed' | 'percentage' (never 'percent').
+            discount_type: item.discountType === 'fixed' ? 'fixed' : 'percentage',
             discount_value: item.discount,
             total: calcItemAmount(item),
             sort_order: index,
@@ -607,6 +614,18 @@ export default function EditQuotePage() {
         );
 
         if (insertError) throw insertError;
+      }
+
+      const previousLineItemIds = ((existingLineItems ?? []) as { id: string }[]).map(
+        (r) => r.id,
+      );
+      if (previousLineItemIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('quote_line_items')
+          .delete()
+          .in('id', previousLineItemIds);
+
+        if (deleteError) throw deleteError;
       }
 
       toast.success(sendAfterSave ? 'Quote sent successfully' : 'Quote updated');

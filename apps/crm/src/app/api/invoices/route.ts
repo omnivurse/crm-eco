@@ -82,7 +82,14 @@ export async function POST(request: NextRequest) {
         subtotal: data.subtotal,
         tax_rate: effectiveTaxRate,
         tax_amount: data.tax_total,
-        discount_type: data.discount_type || null,
+        // Map the builder's UI token onto the DB CHECK domain
+        // (discount_type allows only 'fixed' | 'percentage', never 'percent').
+        discount_type:
+          data.discount_type === 'percent'
+            ? 'percentage'
+            : data.discount_type === 'fixed'
+              ? 'fixed'
+              : null,
         discount_value: data.discount_value,
         total: data.total,
         amount_paid: 0,
