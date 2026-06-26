@@ -87,13 +87,30 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // PUBLIC enrollment surface (anon prospects — NO login). Matched EXACTLY so it
+  // never opens up the auth-gated dashboard pages `/enrollments` or
+  // `/enrollment-links` (a `startsWith('/enroll')` would). API routes (`/api/enroll/*`)
+  // are already excluded from this middleware by the matcher below.
+  const isEnrollRoute = pathname === '/enroll' || pathname.startsWith('/enroll/');
+
+  // HOST HARDENING: a tenant enrollment host (`enroll.<tenant>`) must ONLY ever
+  // serve the public enroll surface — never the admin dashboard, login, or
+  // marketing landing. Anything else on such a host is redirected to /enroll, so
+  // the dashboard is reachable only on the admin host(s).
+  const reqHost = (request.headers.get('host') || '').toLowerCase().split(':')[0];
+  const isEnrollHost = reqHost.startsWith('enroll.');
+  if (isEnrollHost && !isEnrollRoute) {
+    return NextResponse.redirect(new URL('/enroll', request.url));
+  }
+
   const isLandingPage = pathname === '/';
   const isPublicRoute =
     isLandingPage ||
+    isEnrollRoute ||
     PUBLIC_ROUTES.some((route) => pathname.startsWith(route));
 
   // ──────────────────────────────────────────────────────────────────
-  //  Public routes (landing + auth)
+  //  Public routes (landing + auth + enroll)
   // ──────────────────────────────────────────────────────────────────
   if (isPublicRoute) {
     const { data: { user } } = await supabase.auth.getUser();

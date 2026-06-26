@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
 import { toast } from 'sonner';
+import { enrollPublicUrl } from '@/lib/enroll-url';
 
 interface LandingPage {
   id: string;
@@ -99,8 +100,7 @@ export default function EnrollmentLinksPage() {
   }, []);
 
   function getPublicUrl(slug: string) {
-    const baseUrl = process.env.NEXT_PUBLIC_PORTAL_URL || window.location.origin.replace('admin.', '');
-    return `${baseUrl}/enroll/${slug}`;
+    return enrollPublicUrl(slug);
   }
 
   async function copyLink(slug: string) {
