@@ -30,6 +30,13 @@ additional_redirect_urls = [
   "https://members.doublehelixhub.com/**",
   "https://advisors.doublehelixhub.com/**",
   "https://doublehelixhub.com/**",
+  # Tenant (PIFH) white-label domains — member portal invites redirect here
+  # (NEXT_PUBLIC_PORTAL_URL = https://members.payitforwardhealth.com)
+  "https://crm.payitforwardhealth.com/**",
+  "https://admin.payitforwardhealth.com/**",
+  "https://members.payitforwardhealth.com/**",
+  "https://advisors.payitforwardhealth.com/**",
+  "https://payitforwardhealth.com/**",
   # Local development
   "http://localhost:3000/**",
   "http://localhost:3001/**",
