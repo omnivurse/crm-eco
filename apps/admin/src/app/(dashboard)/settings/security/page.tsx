@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { inviteStaffUser } from './actions';
 
 interface User {
   id: string;
@@ -206,9 +207,12 @@ export default function SecuritySettingsPage() {
     setIsSaving(true);
 
     try {
-      // In a real implementation, this would send an invite email
-      // For now, we'll show a placeholder message
-      toast.success(`Invitation would be sent to ${inviteEmail}`);
+      const result = await inviteStaffUser(inviteEmail, inviteRole);
+      if (!result.ok) {
+        toast.error(result.error ?? 'Failed to send invitation');
+        return;
+      }
+      toast.success(`Invitation sent to ${inviteEmail}`);
       setIsInviteModalOpen(false);
       setInviteEmail('');
       setInviteRole('staff');

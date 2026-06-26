@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { createAuthorizeNetService } from '@crm-eco/lib/billing/authorize-net';
+import { createResendService } from '@crm-eco/lib/email';
 import { getActiveTenant } from '@/lib/tenant';
 import { getAdminProfile } from '@/lib/profile';
 
@@ -236,7 +237,28 @@ export async function sendFailureNotification(failureId: string): Promise<{ succ
       return { success: false, error: 'Failure not found' };
     }
 
-    // Update notification status
+    if (!failure.member?.email) {
+      return { success: false, error: 'Member has no email address on file' };
+    }
+
+    // Actually send the notification email (previously this only flipped flags
+    // and showed a false success — no message was ever delivered).
+    const resend = createResendService();
+    const firstName = failure.member.first_name || 'there';
+    const sendResult = await resend.send({
+      to: failure.member.email,
+      subject: 'Action needed: there was an issue with your membership payment',
+      html: `<p>Hi ${firstName},</p>
+<p>We were unable to process your most recent membership payment. To keep your membership active, please review and update your payment method.</p>
+<p>If you have already resolved this, thank you — no further action is needed.</p>
+<p>If you have questions, just reply to this email and our team will help.</p>`,
+    });
+
+    if (!sendResult.success) {
+      return { success: false, error: sendResult.error || 'Failed to send the notification email' };
+    }
+
+    // Only record the notification once the email actually went out.
     await (supabase
       .from('billing_failures') as any)
       .update({
