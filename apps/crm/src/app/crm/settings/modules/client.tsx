@@ -204,7 +204,7 @@ export function ModulesSettingsClient({ modules: initialModules, profile }: Modu
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => router.push(`/settings/fields?module=${module.id}`)}
+                      onClick={() => router.push(`/crm/settings/fields?module=${module.id}`)}
                     >
                       <Settings className="w-4 h-4" />
                     </Button>

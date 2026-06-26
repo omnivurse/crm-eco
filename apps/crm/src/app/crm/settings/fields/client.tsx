@@ -106,7 +106,7 @@ export function FieldsSettingsClient({
   const router = useRouter();
 
   const handleModuleChange = (moduleId: string) => {
-    router.push(`/settings/fields?module=${moduleId}`);
+    router.push(`/crm/settings/fields?module=${moduleId}`);
   };
 
   const handleCreateField = async () => {
