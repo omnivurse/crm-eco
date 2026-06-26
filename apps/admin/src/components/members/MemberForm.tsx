@@ -40,7 +40,7 @@ interface MemberFormProps {
     address_line2: string | null;
     city: string | null;
     state: string | null;
-    zip_code: string | null;
+    postal_code: string | null;
     advisor_id: string | null;
     market_type: string | null;
     status: string;
@@ -77,7 +77,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
     address_line2: initialData?.address_line2 ?? '',
     city: initialData?.city ?? '',
     state: initialData?.state ?? '',
-    zip_code: initialData?.zip_code ?? '',
+    zip_code: initialData?.postal_code ?? '',
     advisor_id: initialData?.advisor_id ?? '',
     market_type: initialData?.market_type ?? '',
     status: initialData?.status ?? 'pending',
@@ -100,8 +100,11 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       );
+      // The UI field is `zip_code` but the DB column is `postal_code` — map it and
+      // drop zip_code from the payload so it isn't sent to a non-existent column.
+      const { zip_code, ...nextRest } = next;
       const memberData = {
-        ...next,
+        ...nextRest,
         advisor_id: next.advisor_id || null,
         market_type: next.market_type || null,
         date_of_birth: next.date_of_birth || null,
@@ -111,7 +114,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
         address_line2: next.address_line2 || null,
         city: next.city || null,
         state: next.state || null,
-        zip_code: next.zip_code || null,
+        postal_code: zip_code || null,
         existing_condition_description: next.existing_condition
           ? next.existing_condition_description || null
           : null,
@@ -167,8 +170,10 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       return;
     }
 
+    // UI field `zip_code` → DB column `postal_code`; drop zip_code from the payload.
+    const { zip_code, ...formRest } = formData;
     const memberData = {
-      ...formData,
+      ...formRest,
       organization_id: profile.organization_id,
       advisor_id: formData.advisor_id || null,
       market_type: formData.market_type || null,
@@ -179,7 +184,7 @@ export function MemberForm({ agents, initialData }: MemberFormProps) {
       address_line2: formData.address_line2 || null,
       city: formData.city || null,
       state: formData.state || null,
-      zip_code: formData.zip_code || null,
+      postal_code: zip_code || null,
       existing_condition_description: formData.existing_condition
         ? formData.existing_condition_description || null
         : null,
