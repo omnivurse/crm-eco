@@ -102,12 +102,12 @@ export function DashboardClient({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push('/import')}>
+          <Button variant="outline" onClick={() => router.push('/crm/import')}>
             <Upload className="w-4 h-4 mr-2" />
             Import
           </Button>
           <Button
-            onClick={() => router.push('/modules/contacts?new=true')}
+            onClick={() => router.push('/crm/modules/contacts?new=true')}
             className="bg-brand-teal-600 hover:bg-brand-teal-700"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -121,7 +121,7 @@ export function DashboardClient({
         {moduleStats.map((stat) => {
           const Icon = moduleIcons[stat.moduleKey] || FileText;
           return (
-            <Link key={stat.moduleKey} href={`/modules/${stat.moduleKey}`}>
+            <Link key={stat.moduleKey} href={`/crm/modules/${stat.moduleKey}`}>
               <Card className="hover:shadow-md transition-shadow hover:border-brand-teal-500">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -250,7 +250,7 @@ export function DashboardClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-base font-semibold">Recent Imports</CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => router.push('/import')}>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/crm/import')}>
               <Plus className="w-4 h-4 mr-1" />
               New Import
             </Button>

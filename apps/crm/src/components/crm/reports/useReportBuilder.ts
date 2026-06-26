@@ -231,7 +231,6 @@ export function useReportBuilder() {
     if (reportId) {
       loadReport(reportId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportId]);
 
   async function loadReport(id: string) {
@@ -448,7 +447,7 @@ export function useReportBuilder() {
       if (!res.ok) throw new Error('Failed to save');
       const data = await res.json();
       toast.success('Report saved');
-      router.push(`/crm/reports/${data.id || reportId}`);
+      router.push(`/crm/reports/saved/${data.id || reportId}`);
     } catch {
       toast.error('Failed to save report');
     } finally {
