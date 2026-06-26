@@ -103,6 +103,17 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // CSV import state
+  const [importRows, setImportRows] = useState<Array<{
+    state_code: string;
+    license_number: string;
+    license_type: string;
+    issue_date: string | null;
+    expiration_date: string | null;
+  }>>([]);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importFileName, setImportFileName] = useState<string | null>(null);
+
   // License form state
   const [licenseForm, setLicenseForm] = useState({
     state_code: '',
@@ -184,6 +195,87 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
       notes: '',
     });
     setIsLicenseModalOpen(true);
+  };
+
+  const handleImportFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setImportError(null);
+    setImportRows([]);
+    setImportFileName(file.name);
+    try {
+      const text = await file.text();
+      const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        setImportError('CSV must have a header row and at least one data row.');
+        return;
+      }
+      const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+      const col = (name: string) => header.indexOf(name);
+      const iState = col('state_code');
+      const iNum = col('license_number');
+      if (iState === -1 || iNum === -1) {
+        setImportError('CSV header must include at least: state_code, license_number');
+        return;
+      }
+      const iType = col('license_type');
+      const iIssue = col('issue_date');
+      const iExp = col('expiration_date');
+      const rows = [];
+      for (const line of lines.slice(1)) {
+        const cells = line.split(',').map((c) => c.trim());
+        const state_code = cells[iState];
+        const license_number = cells[iNum];
+        if (!state_code || !license_number) continue; // skip incomplete rows
+        rows.push({
+          state_code: state_code.toUpperCase(),
+          license_number,
+          license_type: (iType !== -1 && cells[iType]) || 'life_health',
+          issue_date: (iIssue !== -1 && cells[iIssue]) || null,
+          expiration_date: (iExp !== -1 && cells[iExp]) || null,
+        });
+      }
+      if (rows.length === 0) {
+        setImportError('No valid rows found (each row needs state_code and license_number).');
+        return;
+      }
+      setImportRows(rows);
+    } catch {
+      setImportError('Could not read the file. Please upload a valid CSV.');
+    }
+  };
+
+  const handleImportLicenses = async () => {
+    if (importRows.length === 0) return;
+    setIsSaving(true);
+    try {
+      const payload = importRows.map((r) => ({
+        organization_id: organizationId,
+        advisor_id: agentId,
+        state_code: r.state_code,
+        license_number: r.license_number,
+        license_type: r.license_type,
+        issue_date: r.issue_date,
+        expiration_date: r.expiration_date,
+        status: 'active',
+      }));
+      const { error } = await (supabase.from('agent_licenses') as any).insert(payload);
+      if (error) {
+        toast.error(`Import failed: ${error.message}`);
+        return;
+      }
+      toast.success(`Imported ${payload.length} license(s)`);
+      setIsImportModalOpen(false);
+      setImportRows([]);
+      setImportFileName(null);
+      setImportError(null);
+      await loadData();
+    } catch {
+      toast.error('Import failed');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleEditLicense = (license: License) => {
@@ -834,20 +926,33 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
           <div className="space-y-4 py-4">
             <div className="border-2 border-dashed rounded-lg p-8 text-center">
               <Upload className="h-10 w-10 mx-auto text-slate-400 mb-4" />
-              <p className="text-sm text-slate-600 mb-2">
-                Drag and drop a CSV file here, or click to browse
+              <p className="text-sm text-slate-600 mb-3">
+                Choose a CSV file of licenses to import
               </p>
-              <Button variant="outline">Select File</Button>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleImportFileSelected}
+                className="block mx-auto text-sm text-slate-600 file:mr-3 file:rounded-md file:border file:border-slate-300 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-slate-50"
+              />
+              {importFileName && !importError && (
+                <p className="text-sm text-emerald-600 mt-3">
+                  {importFileName}: {importRows.length} license(s) ready to import
+                </p>
+              )}
+              {importError && <p className="text-sm text-red-600 mt-3">{importError}</p>}
             </div>
             <div className="text-sm text-slate-500">
-              <p className="font-medium mb-2">CSV Format:</p>
-              <p>For Licenses: state_code, license_number, license_type, issue_date, expiration_date</p>
-              <p>For Appointments: carrier_name, carrier_code, states (comma-separated), effective_date</p>
+              <p className="font-medium mb-2">CSV columns (header row required):</p>
+              <p>state_code, license_number, license_type, issue_date, expiration_date</p>
+              <p className="text-xs mt-1">Only state_code and license_number are required per row.</p>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsImportModalOpen(false)}>Cancel</Button>
-            <Button disabled>Import</Button>
+            <Button onClick={handleImportLicenses} disabled={isSaving || importRows.length === 0}>
+              {isSaving ? 'Importing…' : `Import ${importRows.length || ''}`.trim()}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
