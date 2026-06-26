@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
+import { headers } from 'next/headers';
 import {
   createServerSupabaseClient,
   createServiceRoleClient,
@@ -10,61 +11,120 @@ import { getMemberForUser } from '@crm-eco/lib';
 export interface PortalTenant {
   organizationId: string;
   branding: Record<string, unknown>;
+  /** Org display name — useful for the pre-login sign-in screen on a tenant domain. */
+  orgName: string | null;
 }
 
 /**
- * Resolves the active member's organization and its canonical branding
- * (organizations.branding jsonb) for server-side theming of the portal.
+ * Resolves the portal's tenant (organization) + its canonical branding
+ * (organizations.branding jsonb) for server-side theming.
  *
- * WHY THIS IS A *SOFT* RESOLVER (no redirect):
- * This runs in the root layout, which wraps EVERY route — including the
- * unauthenticated/public ones ((auth) login, /access-denied, public enroll &
- * pricing pages). The redirecting gate `requireActiveMembership()` belongs to
- * the (member) route group layout, NOT here: calling it in the root layout
- * would bounce unauthenticated visitors off /login (redirect loop) and off the
- * public marketing pages. So we resolve the member context the same way
- * `requireActiveMembership` does internally — `getMemberForUser()` against the
- * cookie/SSR client — but return `null` instead of redirecting when there is no
- * member. Branding then simply falls through to the theme.css defaults on
- * public pages.
+ * WHITE-LABEL RESOLUTION ORDER:
+ *  1. AUTHENTICATED member → their own organization (post-login is always the
+ *     member's org, never the domain's).
+ *  2. PRE-LOGIN / public → the organization that owns the REQUEST HOSTNAME, so a
+ *     tenant domain (e.g. members.payitforwardhealth.com) themes its own sign-in
+ *     and public pages. Matched by exact organizations.domain/subdomain first,
+ *     then by registrable base domain (members.X / enroll.X → the org owning X).
  *
- * WHY A SERVICE-ROLE CLIENT FOR THE BRANDING READ:
- * Portal members live in `members`/`memberships`, NOT `organization_members`,
- * so the `my_organizations` view is empty for them and they have no RLS SELECT
- * grant on `organizations` — a cookie/SSR client would read 0 rows for the
- * branding column. We therefore resolve the org id from the authenticated
- * member context first, then read the SINGLE `branding` column with a
- * service-role client scoped to that one own-org id (`.eq('id', orgId)`). This
- * mirrors the elevated own-org posture already used by the enroll flow
- * (apps/portal/src/app/enroll/[slug]/page.tsx → createServiceRoleClient()).
+ * Branding reads use a service-role client scoped to a single org id (portal
+ * members have no RLS grant on organizations). Returns null only when neither a
+ * member nor a host-matched org can be resolved (→ theme.css defaults).
+ *
+ * NOTE: visible white-label requires the org to actually have branding populated
+ * (organizations.branding: logo/colors/company_name). With empty branding the
+ * resolver still returns the org (orgName usable) but CSS falls through to defaults.
  *
  * Cached per request via React's `cache()`.
- *
- * @returns the org id + branding (empty `{}` on a branding miss so callers fall
- *          through to the theme.css defaults), or `null` when there is no
- *          authenticated member org (public/unauthenticated pages).
  */
 export const getPortalTenant = cache(async (): Promise<PortalTenant | null> => {
+  const service = createServiceRoleClient();
+
+  // (1) Authenticated member → their org.
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (user) {
+    const ctx = await getMemberForUser(supabase, user.id);
+    const organizationId = ctx?.member.organization_id;
+    if (organizationId) {
+      const { data } = await service
+        .from('organizations')
+        .select('branding, name')
+        .eq('id', organizationId)
+        .maybeSingle();
+      return {
+        organizationId,
+        branding: (data?.branding ?? {}) as Record<string, unknown>,
+        orgName: (data?.name as string) ?? null,
+      };
+    }
+  }
 
-  if (!user) return null;
+  // (2) Pre-login / public → resolve the org from the request hostname.
+  const host = await resolveRequestHost();
+  if (host) {
+    const org = await resolveOrgByHost(service, host);
+    if (org) {
+      return {
+        organizationId: org.id,
+        branding: (org.branding ?? {}) as Record<string, unknown>,
+        orgName: (org.name as string) ?? null,
+      };
+    }
+  }
 
-  const ctx = await getMemberForUser(supabase, user.id);
-  const organizationId = ctx?.member.organization_id;
-
-  if (!organizationId) return null;
-
-  const serviceClient = createServiceRoleClient();
-  const { data } = await serviceClient
-    .from('organizations')
-    .select('branding')
-    .eq('id', organizationId)
-    .maybeSingle();
-
-  const branding = (data?.branding ?? {}) as Record<string, unknown>;
-
-  return { organizationId, branding };
+  return null;
 });
+
+/** The incoming request host (proxy-aware), lowercased and without port. */
+async function resolveRequestHost(): Promise<string | null> {
+  try {
+    const h = await headers();
+    const raw = h.get('x-forwarded-host') ?? h.get('host');
+    if (!raw) return null;
+    return raw.split(',')[0].trim().toLowerCase().split(':')[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Registrable base domain: last two labels (members.payitforwardhealth.com → payitforwardhealth.com). */
+function baseDomain(host: string): string {
+  const parts = host.split('.');
+  return parts.length <= 2 ? host : parts.slice(-2).join('.');
+}
+
+/**
+ * Find the organization that owns a hostname. Exact domain/subdomain match first;
+ * then any org whose domain shares the request's registrable base domain (so
+ * members.X and enroll.X both resolve to the org that owns X). Never throws.
+ */
+async function resolveOrgByHost(
+  service: any,
+  host: string,
+): Promise<{ id: string; branding: unknown; name: string | null } | null> {
+  try {
+    const { data: exact } = await service
+      .from('organizations')
+      .select('id, branding, name')
+      .or(`domain.eq.${host},subdomain.eq.${host}`)
+      .limit(1)
+      .maybeSingle();
+    if (exact) return exact;
+
+    const base = baseDomain(host);
+    const { data: byBase } = await service
+      .from('organizations')
+      .select('id, branding, name')
+      .ilike('domain', `%${base}`)
+      .limit(1)
+      .maybeSingle();
+    if (byBase) return byBase;
+
+    return null;
+  } catch {
+    return null;
+  }
+}
