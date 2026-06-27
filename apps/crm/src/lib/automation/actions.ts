@@ -667,27 +667,35 @@ async function executeCreateEnrollmentDraft(
     ...config.additionalData,
   };
 
-  // Create enrollment draft (this is a simplified version - real implementation would use enrollment API)
-  const { data: enrollment, error } = await supabase
-    .from('enrollments')
-    .insert({
-      organization_id: context.orgId,
-      status: 'draft',
+  // Create the enrollment draft through the canonical, idempotent
+  // create_enrollment_tx RPC — the same primitive the wizard / portal self-serve
+  // / submit / public / admin-manual / durable-workflow paths use — instead of a
+  // bespoke direct insert. createServiceClient() is the service-role client and
+  // the RPC is service-role-only.
+  // NOTE (pre-existing, unchanged): this action does not yet resolve/create the
+  // primary member from the CRM record, so the RPC (like the old insert) fails
+  // the enrollments.primary_member_id NOT NULL constraint until that is wired —
+  // the "real implementation" the original comment referred to.
+  const { data: created, error } = await supabase.rpc('create_enrollment_tx', {
+    p_org_id: context.orgId,
+    p_payload: {
       selected_plan_id: config.planId,
       effective_date: config.effectiveDate,
       created_by: context.profileId,
-    })
-    .select()
-    .single();
+      enrollment_source: 'automation',
+    },
+  });
 
-  if (error) {
+  if (error || !created?.enrollment_id) {
     return {
       actionId: 'create_enrollment_draft',
       type: 'create_enrollment_draft',
       status: 'failed',
-      error: error.message,
+      error: error?.message ?? 'Failed to create enrollment draft',
     };
   }
+
+  const enrollmentId = created.enrollment_id as string;
 
   // Link record to enrollment
   await supabase
@@ -695,7 +703,7 @@ async function executeCreateEnrollmentDraft(
     .update({
       data: {
         ...record.data,
-        enrollment_id: enrollment.id,
+        enrollment_id: enrollmentId,
         enrollment_status: 'draft',
       },
     })
@@ -705,7 +713,7 @@ async function executeCreateEnrollmentDraft(
     actionId: 'create_enrollment_draft',
     type: 'create_enrollment_draft',
     status: 'success',
-    output: { enrollmentId: enrollment.id },
+    output: { enrollmentId },
   };
 }
 
