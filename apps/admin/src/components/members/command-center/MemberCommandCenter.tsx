@@ -563,7 +563,7 @@ export function MemberCommandCenter({
                 <KeyRound className="h-5 w-5" />
                 Merge members
               </CardTitle>
-              <CardDescription>Reuses existing MergeMembersModal + soft-merge on members</CardDescription>
+              <CardDescription>Merge a duplicate member into this one — atomic + recalc-correct</CardDescription>
             </CardHeader>
             <CardContent>
               <MergeMembersSection
@@ -574,11 +574,6 @@ export function MemberCommandCenter({
                   first_name: member.first_name,
                   last_name: member.last_name,
                   email: member.email,
-                  phone: (member.phone as string | null) ?? null,
-                  status: member.status,
-                  created_at: (member.created_at as string) ?? new Date().toISOString(),
-                  effective_date: (member.effective_date as string | null) ?? null,
-                  plan_name: (member.plan_name as string | null) ?? null,
                   member_number: (member.member_number as string | null) ?? null,
                 }}
               />

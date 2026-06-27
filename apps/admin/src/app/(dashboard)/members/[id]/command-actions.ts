@@ -13,6 +13,7 @@ import {
   staffChangePlan,
   staffEndPlan,
   staffCreateEnrollment,
+  staffMergeMembers,
   type StaffCoverageContext,
 } from '@crm-eco/lib';
 import { getActiveTenant, type TenantRole } from '@/lib/tenant';
@@ -160,5 +161,56 @@ export async function adminCreateEnrollment(input: Parameters<typeof staffCreate
   if (!staff.ok) return { success: false, error: staff.error };
   const result = await staffCreateEnrollment(staff.ctx, input);
   if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+// ── Member merge ────────────────────────────────────────────────────────────
+
+export interface MergeCandidate {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  member_number: string | null;
+  status: string | null;
+}
+
+/** Search org members to pick a duplicate to merge into the keeper. */
+export async function searchMembersForMerge(
+  query: string,
+  keeperId: string,
+): Promise<{ success: boolean; error?: string; results: MergeCandidate[] }> {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error, results: [] };
+
+  // Strip PostgREST filter-breaking characters before interpolating into .or().
+  const q = query.replace(/[(),%*]/g, ' ').trim();
+  if (q.length < 2) return { success: true, results: [] };
+
+  const { data, error } = await staff.ctx.supabase
+    .from('members')
+    .select('id, first_name, last_name, email, member_number, status')
+    .eq('organization_id', staff.ctx.organizationId)
+    .is('merged_into_id', null)
+    .neq('id', keeperId)
+    .or(
+      `first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,member_number.ilike.%${q}%`,
+    )
+    .order('last_name', { ascending: true })
+    .limit(10);
+
+  if (error) return { success: false, error: error.message, results: [] };
+  return { success: true, results: (data ?? []) as MergeCandidate[] };
+}
+
+/** Merge a duplicate (secondary) into the keeper via the atomic RPC + recalc. */
+export async function adminMergeMembers(input: { keeper_id: string; secondary_id: string }) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffMergeMembers(staff.ctx, input);
+  if (result.success) {
+    revalidateMember(input.keeper_id);
+    revalidateMember(input.secondary_id);
+  }
   return result;
 }

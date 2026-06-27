@@ -6,4 +6,5 @@ export * from './memberOnboarding';
 export * from './staffDependentCoverage';
 export * from './memberPlan';
 export * from './staffEnrollment';
+export * from './mergeMembers';
 
