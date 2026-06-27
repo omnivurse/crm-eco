@@ -101,6 +101,8 @@ export default function AgentAssignmentPage() {
   const [previewRule, setPreviewRule] = useState<AssignmentRule | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRemoveAgentModalOpen, setIsRemoveAgentModalOpen] = useState(false);
+  const [agentToRemove, setAgentToRemove] = useState<Agent | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
@@ -295,6 +297,70 @@ export default function AgentAssignmentPage() {
     } catch (error) {
       console.error('Error deleting rule:', error);
       toast.error('Failed to delete rule');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /** Deactivate agent and remove from all assignment rules (soft remove — keeps history). */
+  const handleRemoveAgent = async () => {
+    if (!agentToRemove || !organizationId) return;
+    setIsSaving(true);
+
+    try {
+      const { error: deactivateError } = await supabase
+        .from('advisors')
+        .update({ status: 'inactive', is_active: false })
+        .eq('id', agentToRemove.id)
+        .eq('organization_id', organizationId);
+
+      if (deactivateError) throw deactivateError;
+
+      const rulesToUpdate = rules.filter((rule) => {
+        const users = rule.config.users ?? [];
+        const inUsers = users.includes(agentToRemove.id);
+        const isFixedOwner = rule.config.fixed_owner === agentToRemove.id;
+        const inTerritories = Object.values(rule.config.territories ?? {}).some((ids) =>
+          ids.includes(agentToRemove.id),
+        );
+        return inUsers || isFixedOwner || inTerritories;
+      });
+
+      for (const rule of rulesToUpdate) {
+        const nextConfig = { ...rule.config };
+        if (nextConfig.users) {
+          nextConfig.users = nextConfig.users.filter((id) => id !== agentToRemove.id);
+        }
+        if (nextConfig.fixed_owner === agentToRemove.id) {
+          nextConfig.fixed_owner = undefined;
+        }
+        if (nextConfig.territories) {
+          nextConfig.territories = Object.fromEntries(
+            Object.entries(nextConfig.territories).map(([key, ids]) => [
+              key,
+              ids.filter((id) => id !== agentToRemove.id),
+            ]),
+          );
+        }
+
+        const { error: ruleError } = await (supabase as any)
+          .from('crm_assignment_rules')
+          .update({ config: nextConfig })
+          .eq('id', rule.id);
+
+        if (ruleError) throw ruleError;
+      }
+
+      toast.success(
+        `${agentToRemove.first_name} ${agentToRemove.last_name} removed from assignment pool`,
+      );
+      setIsRemoveAgentModalOpen(false);
+      setAgentToRemove(null);
+      loadData();
+    } catch (error) {
+      console.error('Error removing agent:', error);
+      const message = error instanceof Error ? error.message : 'Failed to remove agent';
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
@@ -557,29 +623,52 @@ export default function AgentAssignmentPage() {
       <Card>
         <CardHeader>
           <CardTitle>Available Agents</CardTitle>
-          <CardDescription>Active agents that can be assigned to rules</CardDescription>
+          <CardDescription>
+            Active agents that can be assigned to rules. Remove an agent to take them out of this pool
+            (sets status to inactive and removes them from existing rules).
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {agents.map((agent) => (
-              <div key={agent.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-teal-700">
-                    {agent.first_name?.[0]}{agent.last_name?.[0]}
-                  </span>
+          {agents.length === 0 ? (
+            <p className="text-sm text-slate-500 py-4 text-center">No active agents available</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {agents.map((agent) => (
+                <div key={agent.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
+                    <span className="text-sm font-medium text-teal-700">
+                      {agent.first_name?.[0]}
+                      {agent.last_name?.[0]}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      href={`/agents/${agent.id}`}
+                      className="font-medium text-slate-900 truncate block hover:text-teal-700 hover:underline"
+                    >
+                      {agent.first_name} {agent.last_name}
+                    </Link>
+                    <p className="text-xs text-slate-500 truncate">{agent.email}</p>
+                  </div>
+                  <Badge variant="default" className="bg-green-100 text-green-700 shrink-0">
+                    Active
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0"
+                    title="Remove from assignment pool"
+                    onClick={() => {
+                      setAgentToRemove(agent);
+                      setIsRemoveAgentModalOpen(true);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 truncate">
-                    {agent.first_name} {agent.last_name}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">{agent.email}</p>
-                </div>
-                <Badge variant="default" className="bg-green-100 text-green-700">
-                  Active
-                </Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -827,6 +916,33 @@ export default function AgentAssignmentPage() {
             <Button variant="destructive" onClick={handleDeleteRule} disabled={isSaving}>
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Agent Confirmation Modal */}
+      <Dialog open={isRemoveAgentModalOpen} onOpenChange={setIsRemoveAgentModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Agent from Assignment Pool</DialogTitle>
+            <DialogDescription>
+              Remove{' '}
+              <strong>
+                {agentToRemove?.first_name} {agentToRemove?.last_name}
+              </strong>{' '}
+              from available agents? They will be set to <strong>inactive</strong>, removed from all
+              assignment rules, and will no longer receive new auto-assignments. Existing members and
+              commission history are kept.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRemoveAgentModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleRemoveAgent} disabled={isSaving}>
+              {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Remove Agent
             </Button>
           </DialogFooter>
         </DialogContent>
