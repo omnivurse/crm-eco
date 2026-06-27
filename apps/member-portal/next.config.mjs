@@ -1,3 +1,5 @@
+import { withWorkflow } from 'workflow/next';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@crm-eco/ui', '@crm-eco/lib', '@crm-eco/enrollment'],
@@ -23,4 +25,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withWorkflow(nextConfig);
