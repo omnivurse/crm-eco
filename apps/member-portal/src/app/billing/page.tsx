@@ -446,20 +446,34 @@ export default function BillingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-900">Auto-Pay is Enabled</p>
-                    <p className="text-sm text-green-700">
-                      Your monthly share will be automatically charged on the due date
-                    </p>
+              {paymentProfiles.some((p) => p.is_default) ? (
+                <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-900">Auto-Pay is Enabled</p>
+                      <p className="text-sm text-green-700">
+                        Your monthly share is automatically charged to your default payment method on the due date
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    Manage
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                    <div>
+                      <p className="font-medium text-amber-900">Auto-Pay is not set up</p>
+                      <p className="text-sm text-amber-700">
+                        Add a default payment method to charge your monthly share automatically.
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm">
-                  Manage
-                </Button>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

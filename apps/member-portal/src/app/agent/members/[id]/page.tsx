@@ -184,12 +184,12 @@ export default async function AgentMemberDetailPage({ params }: PageProps) {
               <div>
                 <label className="text-sm font-medium text-slate-500">Address</label>
                 <p className="text-slate-900">
-                  {member.street_address ? (
+                  {member.address_line1 ? (
                     <>
-                      {member.street_address}
-                      {member.apartment && `, ${member.apartment}`}
+                      {member.address_line1}
+                      {member.address_line2 && `, ${member.address_line2}`}
                       <br />
-                      {member.city}, {member.state} {member.zip_code}
+                      {member.city}, {member.state} {member.postal_code}
                     </>
                   ) : (
                     '-'

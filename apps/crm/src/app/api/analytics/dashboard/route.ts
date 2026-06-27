@@ -95,8 +95,10 @@ export async function GET(request: NextRequest) {
       totalAdvisorsCount,
       recentMembersCount,
       previousPeriodMembersCount,
-      activeMembersForMRR,
+      activeSchedulesForMRR,
       needsForBreakdown,
+      recentMembersForChart,
+      recentEnrollmentsForChart,
     ] = await Promise.all([
       supabase.from('members').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('members').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
@@ -109,8 +111,10 @@ export async function GET(request: NextRequest) {
       supabase.from('advisors').select('*', { count: 'exact', head: true }).eq('organization_id', orgId),
       supabase.from('members').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', thirtyDaysAgo),
       supabase.from('members').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('created_at', sixtyDaysAgo).lt('created_at', thirtyDaysAgo),
-      supabase.from('members').select('monthly_share').eq('organization_id', orgId).eq('status', 'active').limit(MAX_ANALYTICS_RECORDS),
+      supabase.from('billing_schedules').select('amount').eq('organization_id', orgId).eq('status', 'active').limit(MAX_ANALYTICS_RECORDS),
       supabase.from('needs').select('urgency_light, total_amount, reimbursed_amount').eq('organization_id', orgId).not('status', 'in', '(paid,closed)').limit(MAX_ANALYTICS_RECORDS),
+      supabase.from('members').select('created_at').eq('organization_id', orgId).gte('created_at', thirtyDaysAgo).limit(MAX_ANALYTICS_RECORDS),
+      supabase.from('enrollments').select('created_at').eq('organization_id', orgId).gte('created_at', thirtyDaysAgo).limit(MAX_ANALYTICS_RECORDS),
     ]);
 
     const {
@@ -129,8 +133,10 @@ export async function GET(request: NextRequest) {
     const recentMembersNum = recentMembersCount.count || 0;
     const previousPeriodMembersNum = previousPeriodMembersCount.count || 0;
 
-    const mrrData = activeMembersForMRR.data || [];
-    const mrr = mrrData.reduce((sum: number, m: { monthly_share: number | null }) => sum + (Number(m.monthly_share) || 0), 0);
+    // MRR from active billing schedules (authoritative), not the denormalized
+    // members.monthly_share cache column.
+    const mrrData = activeSchedulesForMRR.data || [];
+    const mrr = mrrData.reduce((sum: number, s: { amount: number | null }) => sum + (Number(s.amount) || 0), 0);
 
     const conversionRate = totalLeads > 0 ? (convertedLeadsNum / totalLeads * 100) : 0;
 
@@ -153,6 +159,8 @@ export async function GET(request: NextRequest) {
     const totalReimbursed = needsData.reduce((sum: number, n: { reimbursed_amount: number | null }) => sum + (Number(n.reimbursed_amount) || 0), 0);
 
     const recentLeads = (recentLeadsResult.data ?? []) as Array<{ created_at: string | null }>;
+    const recentMemberDays = (recentMembersForChart.data ?? []) as Array<{ created_at: string | null }>;
+    const recentEnrollmentDays = (recentEnrollmentsForChart.data ?? []) as Array<{ created_at: string | null }>;
     const dailyActivity: { date: string; members: number; leads: number; enrollments: number }[] = [];
     for (let i = 29; i >= 0; i--) {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
@@ -160,9 +168,9 @@ export async function GET(request: NextRequest) {
 
       dailyActivity.push({
         date: dateStr,
-        members: 0,
+        members: recentMemberDays.filter((m) => m.created_at?.startsWith(dateStr)).length,
         leads: recentLeads.filter((l) => l.created_at?.startsWith(dateStr)).length,
-        enrollments: 0,
+        enrollments: recentEnrollmentDays.filter((e) => e.created_at?.startsWith(dateStr)).length,
       });
     }
 
