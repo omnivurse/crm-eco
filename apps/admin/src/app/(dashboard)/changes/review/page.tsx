@@ -6,8 +6,10 @@ import { PageHeader } from '@/components/ui/PageHeader';
 
 const PAGE_SIZE = 50;
 
-// Statuses that still need an admin decision.
-const PENDING_STATUSES = ['pending', 'needs_review'];
+// Statuses that still need an admin decision. The DB CHECK on
+// member_change_requests.status uses 'pending_review' (not 'pending'/'needs_review');
+// the prior values matched nothing, so the queue was always empty.
+const PENDING_STATUSES = ['pending_review'];
 
 interface ChangeRequestRow {
   id: string;
@@ -64,10 +66,14 @@ function formatLabel(value: string): string {
 
 function statusVariant(status: string): 'default' | 'secondary' | 'outline' | 'destructive' {
   switch (status) {
-    case 'needs_review':
-      return 'destructive';
-    case 'pending':
+    case 'pending_review':
       return 'secondary';
+    case 'rejected':
+    case 'withdrawn':
+      return 'destructive';
+    case 'approved':
+    case 'completed':
+      return 'default';
     default:
       return 'outline';
   }
