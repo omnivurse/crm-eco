@@ -89,7 +89,11 @@ const PIFH_OWNER_IDS = [
  */
 const FLOORS = {
   members: 1062,
-  advisors: 692,
+  // Recalibrated 2026-06-27: the 692 baseline was captured too high. Live prod
+  // holds 672 advisors, ALL status='active', unchanged since the 2026-05-04 seed
+  // (verified: no ongoing loss). Floor set to 640 to keep catching catastrophic
+  // loss while allowing normal churn.
+  advisors: 640,
   enrollments: 1098,
 };
 
