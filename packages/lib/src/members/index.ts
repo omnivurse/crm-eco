@@ -5,4 +5,5 @@ export * from './membershipBillingRecalc';
 export * from './memberOnboarding';
 export * from './staffDependentCoverage';
 export * from './memberPlan';
+export * from './staffEnrollment';
 

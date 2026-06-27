@@ -12,6 +12,7 @@ import {
   staffAssignPlan,
   staffChangePlan,
   staffEndPlan,
+  staffCreateEnrollment,
   type StaffCoverageContext,
 } from '@crm-eco/lib';
 import { getActiveTenant, type TenantRole } from '@/lib/tenant';
@@ -148,6 +149,16 @@ export async function adminEndPlan(input: Parameters<typeof staffEndPlan>[1]) {
   const staff = await resolveStaffContext();
   if (!staff.ok) return { success: false, error: staff.error };
   const result = await staffEndPlan(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+// ── Manual enrollment creation (admins, full control) ───────────────────────
+
+export async function adminCreateEnrollment(input: Parameters<typeof staffCreateEnrollment>[1]) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffCreateEnrollment(staff.ctx, input);
   if (result.success) revalidateMember(input.member_id);
   return result;
 }
