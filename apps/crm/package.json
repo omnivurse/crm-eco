@@ -15,6 +15,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@crm-eco/enrollment": "*",
     "@crm-eco/lib": "*",
     "@crm-eco/shared": "*",
     "@crm-eco/ui": "*",
