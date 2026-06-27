@@ -37,7 +37,7 @@ import {
   MEMBER_COMMAND_TABS,
   type MemberCommandCenterData,
   type MemberCommandTab,
-} from '@/lib/member-command/queries';
+} from '@/lib/member-command/types';
 import type { PortalAccessStatus } from '@/app/(dashboard)/members/actions';
 
 function formatCurrency(value: number | null | undefined) {
