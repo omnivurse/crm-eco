@@ -34,6 +34,7 @@ import { MergeMembersSection } from '@/components/members/command-center/MergeMe
 import { MemberPortalAccess } from '@/app/(dashboard)/members/[id]/MemberPortalAccess';
 import { AdminDependentCoveragePanel } from '@/components/members/command-center/AdminDependentCoveragePanel';
 import { MemberProductsPanel } from '@/components/members/command-center/MemberProductsPanel';
+import { MemberEnrollmentCreate } from '@/components/members/command-center/MemberEnrollmentCreate';
 import {
   MEMBER_COMMAND_TABS,
   type MemberCommandCenterData,
@@ -306,10 +307,11 @@ export function MemberCommandCenter({
         </TabsContent>
 
         <TabsContent value="enrollments" className="mt-6 space-y-4">
+          <MemberEnrollmentCreate memberId={member.id} availablePlans={data.availablePlans} />
           {data.enrollments.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-slate-500">
-                No enrollments. Create via public enroll or CRM wizard; approve in Enrollments queue.
+                No enrollments yet. Use “Create enrollment” above, then approve it from the enrollment detail.
               </CardContent>
             </Card>
           ) : (
