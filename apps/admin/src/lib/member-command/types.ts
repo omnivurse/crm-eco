@@ -168,4 +168,11 @@ export interface MemberCommandCenterData {
   adminActivity: Record<string, unknown>[];
   enrollmentAudit: Record<string, unknown>[];
   agents: { id: string; first_name: string; last_name: string; email: string }[];
+  availablePlans: {
+    id: string;
+    name: string;
+    code: string | null;
+    plan_type: string | null;
+    monthly_share: number | null;
+  }[];
 }

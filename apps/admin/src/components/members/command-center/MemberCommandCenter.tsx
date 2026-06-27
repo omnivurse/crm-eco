@@ -33,6 +33,7 @@ import { MemberBillingTab } from '@/components/billing/MemberBillingTab';
 import { MergeMembersSection } from '@/components/members/command-center/MergeMembersSection';
 import { MemberPortalAccess } from '@/app/(dashboard)/members/[id]/MemberPortalAccess';
 import { AdminDependentCoveragePanel } from '@/components/members/command-center/AdminDependentCoveragePanel';
+import { MemberProductsPanel } from '@/components/members/command-center/MemberProductsPanel';
 import {
   MEMBER_COMMAND_TABS,
   type MemberCommandCenterData,
@@ -349,43 +350,11 @@ export function MemberCommandCenter({
         </TabsContent>
 
         <TabsContent value="products" className="mt-6 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Memberships &amp; plans
-              </CardTitle>
-              <CardDescription>
-                Authoritative: <code className="text-xs">memberships</code> → <code className="text-xs">plans</code>
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {data.memberships.length === 0 ? (
-                <p className="text-sm text-slate-500">No membership rows</p>
-              ) : (
-                data.memberships.map((m) => {
-                  const p = m.plans as Record<string, unknown> | null;
-                  return (
-                    <div key={m.id as string} className="flex justify-between border rounded-lg p-3">
-                      <div>
-                        <p className="font-medium">{(p?.name as string) ?? 'Plan'}</p>
-                        <p className="text-sm text-slate-500">
-                          {m.effective_date
-                            ? format(new Date(m.effective_date as string), 'MMM d, yyyy')
-                            : '—'}
-                          {m.end_date ? ` → ${format(new Date(m.end_date as string), 'MMM d, yyyy')}` : ''}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <Badge variant={statusBadgeVariant(m.status as string)}>{m.status as string}</Badge>
-                        <p className="text-sm mt-1">{formatCurrency(m.billing_amount as number)}/mo</p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </CardContent>
-          </Card>
+          <MemberProductsPanel
+            memberId={member.id}
+            memberships={data.memberships as (Record<string, unknown> & { id: string; status: string })[]}
+            availablePlans={data.availablePlans}
+          />
         </TabsContent>
 
         <TabsContent value="billing" className="mt-6">
