@@ -9,6 +9,9 @@ import {
   staffEndDependentCoverage,
   staffLogHistoricalCoveragePeriod,
   staffPurgeDependentRecord,
+  staffAssignPlan,
+  staffChangePlan,
+  staffEndPlan,
   type StaffCoverageContext,
 } from '@crm-eco/lib';
 import { getActiveTenant, type TenantRole } from '@/lib/tenant';
@@ -119,6 +122,32 @@ export async function adminPurgeDependentRecord(input: {
   const staff = await resolveStaffContext();
   if (!staff.ok) return { success: false, error: staff.error };
   const result = await staffPurgeDependentRecord(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+// ── Plan / product management (memberships) ─────────────────────────────────
+
+export async function adminAssignPlan(input: Parameters<typeof staffAssignPlan>[1]) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffAssignPlan(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+export async function adminChangePlan(input: Parameters<typeof staffChangePlan>[1]) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffChangePlan(staff.ctx, input);
+  if (result.success) revalidateMember(input.member_id);
+  return result;
+}
+
+export async function adminEndPlan(input: Parameters<typeof staffEndPlan>[1]) {
+  const staff = await resolveStaffContext();
+  if (!staff.ok) return { success: false, error: staff.error };
+  const result = await staffEndPlan(staff.ctx, input);
   if (result.success) revalidateMember(input.member_id);
   return result;
 }
