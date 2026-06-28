@@ -6,6 +6,11 @@ import {
   checkEnrollmentApprovalRequired,
 } from '@crm-eco/lib';
 import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
+import {
+  finalizeEnrollment,
+  type PaymentMethodInput,
+  type PaymentBillingAddress,
+} from '@crm-eco/lib';
 import { quote, buildRateConfigFromDb } from '@crm-eco/rates';
 import type { CoverageTier, QuoteInput } from '@crm-eco/rates/types';
 import {
@@ -73,6 +78,14 @@ interface SubmitBody {
     relationship: string;
   }>;
   acknowledgments?: Record<string, boolean>;
+  /**
+   * Payment method collected at the wizard's payment step. When present AND
+   * ENROLLMENT_COMPLETION_ENABLED is on, the enrollment is completed immediately
+   * (vault + first-month charge + provision). Until the new bank adapter +
+   * tokenized payment step ship, this is absent and the flow is unchanged.
+   */
+  paymentMethod?: PaymentMethodInput;
+  billingAddress?: PaymentBillingAddress;
 }
 
 /**
@@ -473,9 +486,58 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // 6. GATED completion (the gold-standard flow). When a payment method was
+  // collected and ENROLLMENT_COMPLETION_ENABLED is on, finalize now: vault +
+  // charge month 1 -> membership (effective the 1st) + billing schedule ->
+  // portal invite -> member + agent emails. Off by default, so until the new
+  // bank adapter + tokenized payment step ship, live behavior is unchanged.
+  // Non-fatal: a failure still returns the submitted enrollment for manual
+  // finalization in the admin Command Center.
+  let completion:
+    | { success: boolean; error?: string; placeholderPayment?: boolean }
+    | undefined;
+  if (
+    process.env.ENROLLMENT_COMPLETION_ENABLED === 'true' &&
+    body.paymentMethod &&
+    selected_plan_id &&
+    basePrice > 0
+  ) {
+    try {
+      const [{ data: orgRow }, { data: planRow }] = await Promise.all([
+        supabase.from('organizations').select('name').eq('id', orgId).maybeSingle(),
+        supabase.from('plans').select('name').eq('id', selected_plan_id).maybeSingle(),
+      ]);
+      const result = await finalizeEnrollment(supabase, {
+        organizationId: orgId,
+        enrollmentId,
+        memberId,
+        email: normalizedEmail,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        phone: member.phone ?? '',
+        amountCents: Math.round(basePrice * 100),
+        paymentMethod: body.paymentMethod,
+        billingAddress: body.billingAddress,
+        planName: planRow?.name ?? undefined,
+        organizationName: orgRow?.name ?? 'Pay It Forward Health',
+        // Coverage starts on the 1st — let the RPC default to the 1st of next month.
+        effectiveDate: null,
+        portalRedirectTo: `${process.env.NEXT_PUBLIC_PORTAL_URL ?? 'https://members.payitforwardhealth.com'}/update-password`,
+      });
+      completion = {
+        success: result.success,
+        error: result.error,
+        placeholderPayment: result.placeholderPayment,
+      };
+    } catch (e) {
+      completion = { success: false, error: e instanceof Error ? e.message : 'completion_failed' };
+    }
+  }
+
   const response = NextResponse.json({
     enrollment_id: enrollmentId,
     redirect: donePath(draft.slug, enrollmentId),
+    ...(completion ? { completion } : {}),
   });
   clearDraftCookie(response);
   return response;
