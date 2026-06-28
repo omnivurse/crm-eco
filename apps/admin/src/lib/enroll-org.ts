@@ -15,8 +15,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * baked into the signed draft cookie.
  */
 
+import { PIFH_ORG_AGENT_ID, PIFH_ORG_ID } from '@crm-eco/lib';
+
 /** PIFH — the default tenant for a generic enroll with no host/landing match. */
-export const PIFH_DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
+export const PIFH_DEFAULT_ORG_ID = PIFH_ORG_ID;
+
+/** Canonical top-level in-house agent; all other PIFH advisors sit underneath. */
+export { PIFH_ORG_AGENT_ID };
 
 export function getDefaultEnrollOrgId(): string {
   return process.env.ENROLLMENT_DEFAULT_ORG_ID || PIFH_DEFAULT_ORG_ID;
