@@ -32,7 +32,7 @@ import {
   CheckList,
 } from '@/components/sections/blocks';
 import { IMAGES } from '@/lib/site-images';
-import { STATS } from '@/lib/site';
+import { STATS, PIFH_ORG_ID } from '@/lib/site';
 
 const rateConfig = seedConfig as unknown as RateConfig;
 
@@ -76,6 +76,7 @@ async function getPlansWithBenefits() {
   const { data: plans } = await supabase
     .from('plans')
     .select('id, name, code, monthly_share, iua_amount, description, tier')
+    .eq('organization_id', PIFH_ORG_ID)
     .eq('is_active', true)
     .or('hide_from_public.is.null,hide_from_public.eq.false')
     .order('monthly_share');

@@ -15,6 +15,15 @@ export const BRAND = {
   platform: 'DoubleHelixHub',
 } as const;
 
+/**
+ * The PIFH tenant's organization id. ALL public data reads on this single-tenant
+ * marketing site MUST be scoped to it — the `plans`/`product_benefits` tables are
+ * shared across every DoubleHelixHub tenant, so an unscoped query would surface
+ * other tenants' products. Confirmed in prod as 0000…0001; overridable via env.
+ */
+export const PIFH_ORG_ID =
+  process.env.NEXT_PUBLIC_PIFH_ORG_ID || '00000000-0000-0000-0000-000000000001';
+
 export const PHONE = {
   display: '(800) 555-0100', // PLACEHOLDER — replace with real member line
   tel: '18005550100',

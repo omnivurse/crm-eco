@@ -6,6 +6,7 @@ import { buildMatrixPreview } from '@crm-eco/rates';
 import type { RateConfig } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
 import { Container, SectionHeading } from '@/components/sections/blocks';
+import { PIFH_ORG_ID } from '@/lib/site';
 
 const rateConfig = seedConfig as unknown as RateConfig;
 
@@ -38,6 +39,7 @@ export async function HomePlanCards() {
   const { data: plans } = await supabase
     .from('plans')
     .select('id, name, code, monthly_share, description')
+    .eq('organization_id', PIFH_ORG_ID)
     .eq('is_active', true)
     .or('hide_from_public.is.null,hide_from_public.eq.false')
     .order('monthly_share')
