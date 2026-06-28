@@ -16,6 +16,7 @@ export * from './email';
 export * from './tracking';
 export * from './realtime';
 export * from './mutations';
+export * from './organizations/pifh';
 // activity-log is server-only (uses next/headers via supabase/server)
 // Import directly: import { logActivity } from '@crm-eco/lib/activity-log';
 export { ActivityActions } from './activity-log/types';
