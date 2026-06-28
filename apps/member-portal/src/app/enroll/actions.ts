@@ -162,67 +162,69 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
     // Generate enrollment number
     const enrollmentNumber = `WS-SS-${Date.now().toString(36).toUpperCase()}`;
 
-    // Prepare enrollment data
-    const enrollmentData: Record<string, unknown> = {
-      enrollment_number: enrollmentNumber,
-      enrollment_mode: 'member_self_serve',
-      enrollment_source: 'portal',
-      status: 'draft',
-      snapshot: {
-        intake: context?.member ? {
-          email: context.member.email,
-          phone: context.member.phone,
-          address_line1: context.member.address_line1,
-          address_line2: context.member.address_line2,
-          city: context.member.city,
-          state: context.member.state,
-          zip_code: context.member.postal_code,
-        } : {},
-        household: { members: [] },
-        plan_selection: {},
-        compliance: {},
-        payment: {},
+    // Prefill the intake snapshot from the caller's member record (guaranteed
+    // present by the guard above).
+    const snapshot = {
+      intake: {
+        email: context.member.email,
+        phone: context.member.phone,
+        address_line1: context.member.address_line1,
+        address_line2: context.member.address_line2,
+        city: context.member.city,
+        state: context.member.state,
+        zip_code: context.member.postal_code,
       },
-      rx_medications: [],
-      rx_pricing_result: {},
+      household: { members: [] },
+      plan_selection: {},
+      compliance: {},
+      payment: {},
     };
 
-    // Owner + org. created_by (-> profiles.id) is the ownership anchor verified on
-    // every resume/step/submit. Org comes from the caller's profile, then their
-    // member, then the first available org as a last resort.
-    enrollmentData.created_by = profile.id;
-    if (context?.member) {
-      enrollmentData.primary_member_id = context.member.id;
-    }
-    enrollmentData.organization_id =
-      profile.organization_id ?? context?.member?.organization_id ?? null;
-    if (!enrollmentData.organization_id) {
+    // Org: caller's profile, then their member, then the first org as a last resort.
+    let organizationId =
+      profile.organization_id ?? context.member.organization_id ?? null;
+    if (!organizationId) {
       const { data: org } = await (supabase as any)
         .from('organizations')
         .select('id')
         .limit(1)
         .single();
-      if (org) {
-        enrollmentData.organization_id = org.id;
-      }
+      organizationId = org?.id ?? null;
+    }
+    if (!organizationId) {
+      return { success: false, error: 'No organization context for enrollment.' };
     }
 
-    // Create enrollment
-    const { data: enrollment, error } = await (supabase as any)
-      .from('enrollments')
-      .insert(enrollmentData)
-      .select()
-      .single();
+    // Create the draft through the canonical, idempotent create_enrollment_tx RPC
+    // — the same primitive the submit / public / admin-manual / durable-workflow
+    // paths use — instead of a bespoke direct insert. created_by (-> profiles.id)
+    // is the ownership anchor verified on every resume/step/submit. `supabase`
+    // here is the service-role client; the RPC is service-role-only.
+    const { data: created, error } = await (supabase as any).rpc('create_enrollment_tx', {
+      p_org_id: organizationId,
+      p_payload: {
+        primary_member_id: context.member.id,
+        created_by: profile.id,
+        enrollment_mode: 'member_self_serve',
+        enrollment_source: 'portal',
+        enrollment_number: enrollmentNumber,
+        snapshot,
+      },
+    });
 
-    if (error) {
+    if (error || !created?.enrollment_id) {
+      console.error('createSelfServeEnrollment RPC error:', error);
       return { success: false, error: 'Failed to create enrollment' };
     }
+
+    const enrollmentId = created.enrollment_id as string;
 
     // Log audit event
     await (supabase as any)
       .from('enrollment_audit_log')
       .insert({
-        enrollment_id: enrollment.id,
+        organization_id: organizationId,
+        enrollment_id: enrollmentId,
         event_type: 'status_change',
         actor_profile_id: profile.id,
         message: 'Self-serve enrollment started',
@@ -231,7 +233,7 @@ export async function createSelfServeEnrollment(): Promise<ActionResult<{ enroll
 
     revalidatePath('/enroll');
 
-    return { success: true, data: { enrollmentId: enrollment.id } };
+    return { success: true, data: { enrollmentId } };
   } catch (error) {
     console.error('createSelfServeEnrollment error:', error);
     return { success: false, error: 'An unexpected error occurred' };

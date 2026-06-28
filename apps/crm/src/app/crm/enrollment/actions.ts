@@ -1,6 +1,6 @@
 'use server';
 
-import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import { createServiceRoleClient } from '@crm-eco/lib/supabase/server';
 import { computeEnrollmentWarnings, getRxPricingEstimate, validateMedications } from '@crm-eco/lib';
 import type { MedicationInput, RxPricingResult } from '@crm-eco/lib';
 import type { WizardSnapshot, HouseholdMember, EnrollmentMode } from '@/components/enrollment/wizard';
@@ -248,27 +248,32 @@ export async function completeIntakeStep(data: IntakeStepData): Promise<ActionRe
 
     // If enrollmentId is 'pending', we need to create the enrollment now
     if (enrollmentId === 'pending') {
-      const { data: enrollment, error: enrollmentError } = await supabase
-        .from('enrollments')
-        .insert({
-          organization_id: profile.organization_id,
+      // Create the draft through the canonical, idempotent create_enrollment_tx
+      // RPC (shared with the submit / public / portal self-serve / admin-manual /
+      // durable-workflow paths) rather than a bespoke direct insert. The RPC is
+      // SECURITY DEFINER and service-role-only, so call it with the service-role
+      // client AFTER verifyCrmAccess has authorized the caller; p_org_id is the
+      // caller's own authorized org (server-derived, never client-supplied).
+      const service = createServiceRoleClient();
+      const { data: created, error: enrollmentError } = await (service as any).rpc('create_enrollment_tx', {
+        p_org_id: profile.organization_id,
+        p_payload: {
           primary_member_id: memberId,
           lead_id: data.leadId || null,
           advisor_id: data.advisorId || null,
           enrollment_source: data.enrollmentSource || null,
           channel: data.channel || null,
           enrollment_mode: enrollmentMode,
-          status: 'draft',
+          created_by: profile.id,
           snapshot: { enrollmentMode, intake: snapshotIntake },
-        })
-        .select('id')
-        .single();
+        },
+      });
 
-      if (enrollmentError || !enrollment) {
-        return { success: false, error: `Failed to create enrollment: ${enrollmentError?.message}` };
+      if (enrollmentError || !created?.enrollment_id) {
+        return { success: false, error: `Failed to create enrollment: ${enrollmentError?.message ?? 'unknown error'}` };
       }
 
-      enrollmentId = enrollment.id;
+      enrollmentId = created.enrollment_id as string;
 
       // Create enrollment steps
       const steps = ['intake', 'household', 'plan_selection', 'compliance', 'payment', 'confirmation'];
