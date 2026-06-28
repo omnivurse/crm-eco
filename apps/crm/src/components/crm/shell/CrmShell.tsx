@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { CrmTopBar } from './CrmTopBar';
+import { CrmModuleTabBar } from './CrmModuleTabBar';
 import { ZohoContextualSidebar } from './ZohoContextualSidebar';
 import { BottomBar } from './bottom-bar';
 import { CommandPalette } from './CommandPalette';
 import { OfflineBanner } from '@/components/crm/offline/OfflineBanner';
 import { SyncToastNotifier } from '@/components/crm/offline/SyncToastNotifier';
 import { OfflineAnalyticsBoot } from '@/components/crm/offline/OfflineAnalyticsBoot';
-import { ModuleProvider } from '@/contexts/ModuleContext';
+import { ModuleProvider, ModulePathSync } from '@/contexts/ModuleContext';
 import { GizmoProvider } from '@/components/crm/gizmo';
 import dynamic from 'next/dynamic';
 
@@ -75,6 +76,7 @@ export function CrmShell({
 
   return (
     <ModuleProvider>
+      <ModulePathSync />
       <GizmoProvider profileId={profile.id}>
         <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
           {/* Content Container */}
@@ -99,6 +101,8 @@ export function CrmShell({
               mobileMenuOpen={mobileMenuOpen}
               onMobileMenuToggle={handleMobileMenuToggle}
             />
+
+            <CrmModuleTabBar />
 
             {/* Mobile Menu Overlay */}
             {mobileMenuOpen && (

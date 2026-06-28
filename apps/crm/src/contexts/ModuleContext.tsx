@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 
 // Top-level modules in the Zoho-style navigation
 export type TopModule =
@@ -60,6 +61,66 @@ export function useModule() {
 
 function isValidModule(value: string): value is TopModule {
     return ['crm', 'communications', 'revenue', 'operations', 'analytics', 'integrations', 'settings'].includes(value);
+}
+
+/** Resolve the active top-level module from the current pathname (single source of truth). */
+export function resolveTopModuleFromPathname(pathname: string): TopModule {
+    if (pathname.startsWith('/crm/settings')) return 'settings';
+    if (pathname.startsWith('/crm/integrations')) return 'integrations';
+    if (pathname.startsWith('/crm/analytics') || pathname.startsWith('/crm/executive')) return 'analytics';
+    if (
+        pathname.startsWith('/crm/operations') ||
+        pathname.startsWith('/crm/scheduling') ||
+        pathname.startsWith('/crm/playbooks') ||
+        pathname.startsWith('/crm/enrollment') ||
+        pathname.startsWith('/crm/needs') ||
+        pathname.startsWith('/crm/approvals') ||
+        pathname.startsWith('/crm/vendors')
+    ) {
+        return 'operations';
+    }
+    if (
+        pathname.startsWith('/crm/revenue') ||
+        pathname.startsWith('/crm/products') ||
+        pathname.startsWith('/crm/quotes') ||
+        pathname.startsWith('/crm/invoices') ||
+        pathname.startsWith('/crm/forecasting') ||
+        pathname.startsWith('/crm/commissions')
+    ) {
+        return 'revenue';
+    }
+    if (
+        pathname.startsWith('/crm/communications') ||
+        pathname.startsWith('/crm/campaigns') ||
+        pathname.startsWith('/crm/sequences') ||
+        pathname.startsWith('/crm/email') ||
+        pathname.startsWith('/crm/inbox')
+    ) {
+        return 'communications';
+    }
+    return 'crm';
+}
+
+export const TOP_MODULE_TITLES: Record<TopModule, string> = {
+    crm: 'CRM',
+    communications: 'Communications',
+    revenue: 'Revenue',
+    operations: 'Operations',
+    analytics: 'Analytics',
+    integrations: 'Integrations',
+    settings: 'Settings',
+};
+
+/** Keeps ModuleContext in sync with the URL (Zoho-style module persistence). */
+export function ModulePathSync() {
+    const pathname = usePathname();
+    const { setActiveModule } = useModule();
+
+    useEffect(() => {
+        setActiveModule(resolveTopModuleFromPathname(pathname));
+    }, [pathname, setActiveModule]);
+
+    return null;
 }
 
 /** Navigation item: link, section header, or separator */

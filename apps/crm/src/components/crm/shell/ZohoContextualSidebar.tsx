@@ -87,14 +87,21 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { Lightbulb, Search, LogOut } from 'lucide-react';
-import { useModule, getNavItemsForModule, TopModule, type NavItem } from '@/contexts/ModuleContext';
+import {
+  useModule,
+  getNavItemsForModule,
+  resolveTopModuleFromPathname,
+  TOP_MODULE_TITLES,
+  type NavItem,
+} from '@/contexts/ModuleContext';
+import { ModuleSwitcherRail } from './ModuleSwitcherRail';
+import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
 import { useGizmoSafe } from '@/components/crm/gizmo';
 
 /** Compact search box that opens the global search overlay via Cmd+K event */
 function SidebarSearchTrigger({ collapsed }: { collapsed?: boolean }) {
     const handleClick = () => {
-        // Dispatch Cmd+K to open the global search overlay
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }));
+        openCrmCommandPalette();
     };
 
     if (collapsed) {
@@ -115,7 +122,7 @@ function SidebarSearchTrigger({ collapsed }: { collapsed?: boolean }) {
             className="flex items-center gap-1.5 w-full h-7 px-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[12px]"
         >
             <Search className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="flex-1 text-left truncate">Search contacts...</span>
+            <span className="flex-1 text-left truncate">Search or workflow…</span>
             <kbd className="hidden sm:inline-flex text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1 py-0.5">
                 ⌘K
             </kbd>
@@ -245,50 +252,7 @@ export function ZohoContextualSidebar({
         router.refresh();
     };
 
-    // Determine active module from pathname - order matters (more specific first)
-    const getActiveFromPath = (): TopModule => {
-        // Settings routes (most specific)
-        if (pathname.startsWith('/crm/settings')) return 'settings';
-
-        // Integrations
-        if (pathname.startsWith('/crm/integrations')) return 'integrations';
-
-        // Analytics & Reports & Executive
-        if (pathname.startsWith('/crm/analytics') ||
-            pathname.startsWith('/crm/executive')) return 'analytics';
-
-        // Operations: scheduling, playbooks, enrollment, needs, approvals, vendors, import
-        if (pathname.startsWith('/crm/operations') ||
-            pathname.startsWith('/crm/scheduling') ||
-            pathname.startsWith('/crm/playbooks') ||
-            pathname.startsWith('/crm/enrollment') ||
-            pathname.startsWith('/crm/needs') ||
-            pathname.startsWith('/crm/approvals') ||
-            pathname.startsWith('/crm/vendors')) return 'operations';
-
-        // Documents — part of main CRM nav
-        if (pathname.startsWith('/crm/documents')) return 'crm';
-
-        // Revenue: products, quotes, invoices, forecasting, commissions, revenue overview
-        if (pathname.startsWith('/crm/revenue') ||
-            pathname.startsWith('/crm/products') ||
-            pathname.startsWith('/crm/quotes') ||
-            pathname.startsWith('/crm/invoices') ||
-            pathname.startsWith('/crm/forecasting') ||
-            pathname.startsWith('/crm/commissions')) return 'revenue';
-
-        // Communications: inbox, communications, campaigns, email, sequences
-        if (pathname.startsWith('/crm/communications') ||
-            pathname.startsWith('/crm/campaigns') ||
-            pathname.startsWith('/crm/sequences') ||
-            pathname.startsWith('/crm/email') ||
-            pathname.startsWith('/crm/inbox')) return 'communications';
-
-        // CRM routes: dashboard, calendar, modules, accounts, pipeline, activities, tasks, reports, members, import
-        return 'crm';
-    };
-
-    const activeTopModule = getActiveFromPath();
+    const activeTopModule = resolveTopModuleFromPathname(pathname);
     const navItems = getNavItemsForModule(activeTopModule);
 
     const isActive = (href: string) => {
@@ -298,16 +262,7 @@ export function ZohoContextualSidebar({
         return pathname.startsWith(href);
     };
 
-    // Module titles
-    const moduleTitle: Record<TopModule, string> = {
-        crm: 'CRM',
-        communications: 'Communications',
-        revenue: 'Revenue',
-        operations: 'Operations',
-        analytics: 'Analytics',
-        integrations: 'Integrations',
-        settings: 'Settings',
-    };
+    const moduleTitle = TOP_MODULE_TITLES;
 
     // Handle link click on mobile
     const handleLinkClick = () => {
@@ -325,11 +280,13 @@ export function ZohoContextualSidebar({
                     isOpen ? 'w-52' : 'w-14'
                 )}
             >
-                {/* Module Title */}
+                {/* Module switcher + title */}
+                <ModuleSwitcherRail expanded={isOpen} />
+
                 {isOpen && (
-                    <div className="px-3 py-2 border-b border-slate-200/80 dark:border-white/5">
-                        <h2 className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                            {moduleTitle[activeTopModule]}
+                    <div className="px-3 py-1.5 border-b border-slate-200/80 dark:border-white/5">
+                        <h2 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
+                            {moduleTitle[activeTopModule]} menu
                         </h2>
                     </div>
                 )}
@@ -434,16 +391,18 @@ export function ZohoContextualSidebar({
             {/* Mobile Sidebar - Slide-in Drawer */}
             <aside
                 className={cn(
-                    'fixed top-12 left-0 bottom-0 w-72 z-40 lg:hidden',
+                    'fixed top-[5.5rem] left-0 bottom-0 w-72 z-40 lg:hidden',
                     'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
                     'transform transition-transform duration-300 ease-in-out',
                     mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
                 )}
             >
-                {/* Mobile Module Title */}
-                <div className="px-4 py-3 border-b border-slate-200 dark:border-white/5">
-                    <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                        {moduleTitle[activeTopModule]}
+                {/* Mobile Module switcher */}
+                <ModuleSwitcherRail expanded />
+
+                <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5">
+                    <h2 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
+                        {moduleTitle[activeTopModule]} menu
                     </h2>
                 </div>
 

@@ -31,7 +31,6 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { ThemeToggle } from './ThemeToggle';
-import { ZohoModuleBar } from './ZohoModuleBar';
 import { SplitCreateButton } from './SplitCreateButton';
 import { ConnectivityModeToggle } from '@/components/crm/offline/ConnectivityModeToggle';
 import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill';
@@ -154,13 +153,8 @@ export const CrmTopBar = memo(function CrmTopBar({
         <BrandLogo variant="full" size="sm" priority />
       </Link>
 
-      {/* Center Section: Module Tabs - hidden on mobile */}
-      <div className="hidden lg:flex flex-1 justify-center px-4">
-        <ZohoModuleBar />
-      </div>
-
-      {/* Spacer for mobile to push actions to right */}
-      <div className="flex-1 lg:hidden" />
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Right Section: Search + Actions */}
       <div className="flex items-center gap-1 lg:gap-2">

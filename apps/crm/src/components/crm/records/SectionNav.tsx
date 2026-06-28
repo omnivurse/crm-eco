@@ -45,7 +45,7 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
   let lastGroup = sections[0]?.navGroup;
 
   return (
-    <div className="sticky top-[140px] z-[5] -mx-1 border-b border-slate-200 bg-white/95 px-1 shadow-sm backdrop-blur-lg dark:border-white/5 dark:bg-slate-950/95">
+    <div className="sticky top-[180px] z-[5] -mx-1 border-b border-slate-200 bg-white/95 px-1 shadow-sm backdrop-blur-lg dark:border-white/5 dark:bg-slate-950/95">
       <div
         className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-thin"
         role="tablist"
