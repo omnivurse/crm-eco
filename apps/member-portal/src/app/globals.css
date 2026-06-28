@@ -80,3 +80,10 @@
     transition: none !important;
   }
 }
+
+/* Outline buttons on dark / gradient hero surfaces (avoid white-on-white) */
+@layer components {
+  .btn-hero-outline {
+    @apply border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white;
+  }
+}

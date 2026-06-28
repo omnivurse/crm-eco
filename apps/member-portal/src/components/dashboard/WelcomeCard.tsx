@@ -61,10 +61,10 @@ export function WelcomeCard({
             ) : null}
 
             <Link href="/support">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
-                className="border-white/30 text-white hover:bg-white/10 gap-2"
+                className="btn-hero-outline gap-2"
               >
                 <HelpCircle className="w-4 h-4" />
                 Contact Support

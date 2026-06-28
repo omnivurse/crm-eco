@@ -71,9 +71,9 @@ export function IdCardDownloadButton({ idCard }: { idCard: IdCardData }) {
 
   return (
     <Button
-      variant="secondary"
+      variant="outline"
       size="sm"
-      className="bg-white/20 hover:bg-white/30 text-white border-0"
+      className="btn-hero-outline gap-2"
       onClick={handleDownload}
     >
       <Download className="h-4 w-4 mr-2" />

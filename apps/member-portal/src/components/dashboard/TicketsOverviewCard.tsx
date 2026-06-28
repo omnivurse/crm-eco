@@ -20,7 +20,7 @@ interface TicketsOverviewCardProps {
 export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
   if (!tickets || tickets.length === 0) {
     return (
-      <Card className="h-full">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <MessageSquare className="w-5 h-5 text-slate-400" />
@@ -49,7 +49,7 @@ export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
   }
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <MessageSquare className="w-5 h-5 text-blue-600" />

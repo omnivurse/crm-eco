@@ -24,7 +24,7 @@ interface MembershipCardProps {
 export function MembershipCard({ membership }: MembershipCardProps) {
   if (!membership) {
     return (
-      <Card className="h-full">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Heart className="w-5 h-5 text-slate-400" />
@@ -55,7 +55,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
   const monthlyAmount = membership.billing_amount || membership.plans?.monthly_share;
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">

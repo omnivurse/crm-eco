@@ -22,7 +22,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
   // No enrollment - show start new enrollment
   if (!enrollment) {
     return (
-      <Card className="h-full">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <FileText className="w-5 h-5 text-slate-400" />
@@ -53,7 +53,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
   // Submitted enrollment - waiting for review
   if (enrollment.status === 'submitted') {
     return (
-      <Card className="h-full border-blue-200">
+      <Card className="border-blue-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -112,7 +112,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
 
   // Draft or in_progress - show resume option
   return (
-    <Card className="h-full border-amber-200">
+    <Card className="border-amber-200">
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">

@@ -111,7 +111,7 @@ export function MemberDashboardShell({
       <FailureBanner count={openFailureCount} />
 
       {/* Main Grid - 2 columns on desktop */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column */}
         <div className="space-y-6">
           <MembershipCard membership={membership} />

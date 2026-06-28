@@ -138,7 +138,7 @@ export default async function EnrollmentDetailPage({ params }: PageProps) {
       )}
 
       {/* Two Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         {/* Left Column - Steps Timeline */}
         <EnrollmentStepsTimeline steps={steps} />
 

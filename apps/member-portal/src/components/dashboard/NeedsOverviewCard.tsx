@@ -33,7 +33,7 @@ const formatAmount = (amount: number | null | undefined) => {
 export function NeedsOverviewCard({ needs }: NeedsOverviewCardProps) {
   if (!needs || needs.length === 0) {
     return (
-      <Card className="h-full">
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <HeartPulse className="w-5 h-5 text-slate-400" />
@@ -56,7 +56,7 @@ export function NeedsOverviewCard({ needs }: NeedsOverviewCardProps) {
   }
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <HeartPulse className="w-5 h-5 text-blue-600" />
