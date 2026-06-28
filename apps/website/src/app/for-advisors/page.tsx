@@ -1,374 +1,385 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Button } from '@crm-eco/ui';
 import {
-  Button,
-  Card,
-  CardContent,
-  Badge,
-} from '@crm-eco/ui';
-import {
-  DollarSign,
-  Users,
-  Award,
   ArrowRight,
-  Star,
-  Briefcase,
-  FileCheck,
+  CircleDollarSign,
+  CalendarClock,
+  Headphones,
+  ClipboardCheck,
   GraduationCap,
-  Wallet,
-  Sparkles,
+  Rocket,
+  Megaphone,
+  LayoutDashboard,
+  BadgePercent,
+  HeartHandshake,
+  Quote,
+  Star,
 } from 'lucide-react';
+import { Reveal } from '@/components/sections/Reveal';
+import {
+  Container,
+  Eyebrow,
+  SectionHeading,
+  FeatureCard,
+  IconChip,
+  StatStrip,
+  BrandImage,
+  CTABand,
+  CheckList,
+} from '@/components/sections/blocks';
+import { IMAGES } from '@/lib/site-images';
+import { BRAND, STATS } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'For Advisors',
   description:
-    'Partner with Double Helix Hub. Earn competitive commissions while helping families find affordable health sharing. Join our growing network of advisors.',
+    'Offer your clients an affordable, year-round alternative to insurance. Partner with Pay It Forward Health for competitive compensation, real marketing support, and a back office that has your back.',
 };
 
-const benefits = [
+const WHY_PARTNER = [
   {
-    title: 'Competitive Commissions',
-    description:
-      'Earn generous commissions on every membership you help bring to our community. Our tiered structure rewards top performers.',
-    icon: DollarSign,
+    icon: HeartHandshake,
+    title: 'A product clients actually love',
+    body: 'Health care sharing is affordable, transparent, and welcoming to everyone — no networks, no health questionnaire to get a quote. It is an easy story to tell and a relationship that keeps families coming back.',
   },
   {
-    title: 'Growing Network',
-    description:
-      'Join a community of advisors serving families across the country. Our member base continues to expand, creating more opportunities.',
-    icon: Users,
+    icon: CalendarClock,
+    title: 'Sell all year long',
+    body: 'There is no open-enrollment window. Households can join whenever life changes, so you are never waiting on a calendar to grow your book or help someone who needs coverage today.',
   },
   {
-    title: 'Marketing Support',
-    description:
-      'Access co-branded materials, social media assets, and training resources to help you succeed and grow your practice.',
-    icon: Award,
-  },
-  {
-    title: 'Dedicated Portal',
-    description:
-      'Manage your clients, track commissions, and access resources through our advisor-only portal designed for your workflow.',
-    icon: Briefcase,
+    icon: Headphones,
+    title: 'Real people behind you',
+    body: 'A dedicated partner team answers your questions, helps with enrollment, and supports your members after the sale — so you can focus on relationships, not paperwork.',
   },
 ];
 
-const commissionTiers = [
-  { level: 'Bronze', percent: '8%', minMembers: '1–24', color: 'amber' },
-  { level: 'Silver', percent: '10%', minMembers: '25–49', color: 'slate' },
-  { level: 'Gold', percent: '12%', minMembers: '50+', color: 'teal' },
-];
-
-const steps = [
+const STEPS = [
   {
-    step: 1,
-    title: 'Apply',
-    description:
-      'Submit your application through our advisor portal. We review applications within 2–3 business days.',
-    icon: FileCheck,
+    icon: ClipboardCheck,
+    step: '01',
+    title: 'Apply to partner',
+    body: 'Tell us about your practice and the families you serve. We review applications quickly and reach out within a couple of business days.',
   },
   {
-    step: 2,
-    title: 'Get Trained',
-    description:
-      'Complete our onboarding and compliance training. Learn our plans, sharing guidelines, and best practices.',
     icon: GraduationCap,
+    step: '02',
+    title: 'Get up to speed',
+    body: 'Complete a short onboarding on how sharing works, who it is right for, and how to enroll a member. You will be confident and compliant before your first conversation.',
   },
   {
-    step: 3,
-    title: 'Start Earning',
-    description:
-      'Begin enrolling families and earning commissions. Our team supports you every step of the way.',
-    icon: Wallet,
+    icon: Rocket,
+    step: '03',
+    title: 'Start helping families',
+    body: 'Enroll households year-round through your advisor tools, track your members and earnings in one place, and lean on our team whenever you need a hand.',
   },
 ];
 
-const testimonials = [
+const WHAT_YOU_GET = [
+  {
+    icon: BadgePercent,
+    title: 'Competitive compensation',
+    body: 'Earn fair, transparent commissions on every household you enroll, with a structure that rewards consistency and growth. You always know what you have earned.',
+  },
+  {
+    icon: Megaphone,
+    title: 'Marketing that helps you sell',
+    body: 'Co-branded materials, plain-language explainers, social assets, and talking points — everything you need to introduce sharing clearly and confidently.',
+  },
+  {
+    icon: LayoutDashboard,
+    title: 'A real back office',
+    body: 'A dedicated advisor portal to enroll members, manage your book, and see your commissions — backed by a support team that handles the heavy lifting.',
+  },
+];
+
+const REASSURANCE = [
+  'A genuinely affordable option families can say yes to',
+  'No provider networks and no referrals — members keep their own doctors',
+  'Year-round enrollment, so you are never blocked by a calendar',
+  'Welcoming to people of every background and belief',
+  'A partner team that supports your members long after the sale',
+];
+
+const TESTIMONIALS = [
   {
     quote:
-      'Partnering with Double Helix Hub has been a game-changer for my practice. The commissions are fair, the support is excellent, and I feel good helping families find affordable healthcare.',
+      'Adding sharing to what I offer changed my practice. Families finally have an affordable option, and the partner team makes enrollment painless.',
     name: 'Jennifer R.',
-    role: 'Independent Advisor, Texas',
-    rating: 5,
+    role: 'Independent advisor, Texas',
   },
   {
     quote:
-      'The training and marketing materials they provide are top-notch. I was up and running within a week, and my clients love the transparency of health sharing.',
+      'The marketing materials are clear and honest, so my clients understand exactly what they are joining. I was helping families within my first week.',
     name: 'Marcus T.',
-    role: 'Health Benefits Consultant, Florida',
-    rating: 5,
+    role: 'Health benefits consultant, Florida',
   },
   {
     quote:
-      "I've been an advisor for two years now. The dedicated portal makes it easy to manage everything, and the commission structure really rewards consistency.",
+      'Year-round enrollment means I am never waiting on a season to grow. The advisor portal keeps my book and my commissions in one easy place.',
     name: 'Sarah L.',
-    role: 'Family Benefits Specialist, Ohio',
-    rating: 5,
+    role: 'Family benefits specialist, Ohio',
   },
 ];
 
 export default function ForAdvisorsPage() {
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden hub-inner-page-hero">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 hub-icon-chip border rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-cyan-700">
-                Advisor Partnership Program
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-              Partner with{' '}
-              <span className="gradient-text">
-                Double Helix Hub
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed mb-8">
-              Earn while helping families find affordable health sharing. Join our
-              network of advisors who are making a difference in their communities.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="/contact">
-                <Button
-                  size="lg"
-                  className="hub-btn-gradient text-white shadow-lg shadow-cyan-500/20 gap-2 w-full sm:w-auto"
-                >
-                  Apply Now
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </a>
-              <Link href="/contact">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="gap-2 w-full sm:w-auto"
-                >
-                  Learn More
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Value Proposition - Benefit Cards */}
-      <section className="section-padding bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Why advisors choose us
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Everything you need to grow your practice and serve families well.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {benefits.map((benefit) => (
-              <Card
-                key={benefit.title}
-                className="border shadow-sm hover:shadow-md transition-shadow h-full"
-              >
-                <CardContent className="pt-6">
-                  <div className="w-12 h-12 rounded-xl hub-gradient-icon flex items-center justify-center mb-4">
-                    <benefit.icon className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                    {benefit.title}
-                  </h3>
-                  <p className="text-slate-600 leading-relaxed">
-                    {benefit.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Commission Structure */}
-      <section className="section-padding bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Commission structure
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Simple, transparent tiers that reward your growth.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            {commissionTiers.map((tier) => (
-              <Card
-                key={tier.level}
-                className={`border shadow-sm overflow-hidden ${
-                  tier.color === 'teal' ? 'ring-2 ring-primary' : ''
-                }`}
-              >
-                <div
-                  className={`h-1.5 ${
-                    tier.color === 'teal'
-                      ? 'hub-gradient-icon'
-                      : tier.color === 'slate'
-                        ? 'bg-slate-400'
-                        : 'bg-amber-400'
-                  }`}
-                />
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-bold text-slate-900">
-                      {tier.level}
-                    </h3>
-                    {tier.color === 'teal' && (
-                      <Badge className="hub-icon-chip text-cyan-700 hover:bg-cyan-50">
-                        Best Value
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-3xl font-bold text-primary mb-1">
-                    {tier.percent}
-                  </p>
-                  <p className="text-sm text-slate-500 mb-4">
-                    commission per membership
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    <span className="font-medium">Active members:</span>{' '}
-                    {tier.minMembers}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How to Become an Advisor */}
-      <section className="section-padding bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              How to become an advisor
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Three simple steps to start earning with Double Helix Hub.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {steps.map((item) => (
-              <div key={item.step} className="relative text-center">
-                <div className="w-16 h-16 rounded-2xl hub-gradient-icon flex items-center justify-center mx-auto mb-5 shadow-lg shadow-cyan-500/20">
-                  <item.icon className="w-7 h-7 text-white" />
-                </div>
-                <div className="absolute -top-1 -right-2 md:right-auto md:left-1/2 md:ml-6 w-8 h-8 rounded-full bg-slate-900 text-white text-sm font-bold flex items-center justify-center">
-                  {item.step}
-                </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                  {item.title}
-                </h3>
-                <p className="text-slate-600 leading-relaxed">
-                  {item.description}
-                </p>
+      {/* Hero */}
+      <section className="hub-inner-page-hero">
+        <Container className="py-20 md:py-28">
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
+            <Reveal>
+              <Eyebrow className="mb-4">Advisor Partnership Program</Eyebrow>
+              <h1 className="font-heading text-[clamp(2.25rem,5vw,3.75rem)] font-semibold leading-[1.08] text-pif-navy-800 text-balance">
+                Offer families a healthier{' '}
+                <span className="gradient-text">alternative</span> to insurance
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-relaxed text-slate-600">
+                Partner with {BRAND.name} to give your clients an affordable,
+                transparent way to handle medical costs — and grow a practice
+                built on trust. It is health care sharing, not insurance, and
+                it is a relationship families keep.
+              </p>
+              <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+                <Link href="/enroll">
+                  <Button
+                    size="lg"
+                    className="w-full gap-2 pif-grad-care font-semibold text-white shadow-lg shadow-pif-teal/25 hover:opacity-95 sm:w-auto"
+                  >
+                    Become an Advisor
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full gap-2 border-pif-navy-200 font-semibold text-pif-navy-800 hover:bg-pif-mist sm:w-auto"
+                  >
+                    Talk to our team
+                  </Button>
+                </Link>
               </div>
-            ))}
+              <p className="mt-6 text-sm text-slate-500">
+                Year-round enrollment. No networks. Welcoming to everyone.
+              </p>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <BrandImage image={IMAGES.teamMeeting} aspect="aspect-[4/3]" priority />
+            </Reveal>
           </div>
-
-          <div className="text-center mt-12">
-            <a href="/contact">
-              <Button
-                size="lg"
-                className="hub-btn-gradient text-white gap-2"
-              >
-                Start Your Application
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </a>
-          </div>
-        </div>
+        </Container>
       </section>
 
-      {/* Advisor Testimonials */}
-      <section className="section-padding bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              What advisors are saying
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Hear from advisors who have partnered with Double Helix Hub.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((testimonial) => (
-              <Card
-                key={testimonial.name}
-                className="border shadow-sm h-full"
-              >
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className="w-4 h-4 fill-amber-400 text-amber-400"
-                      />
-                    ))}
-                  </div>
-                  <p className="text-slate-700 leading-relaxed mb-6">
-                    &ldquo;{testimonial.quote}&rdquo;
-                  </p>
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {testimonial.name}
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      {testimonial.role}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+      {/* Why partner with PIFH */}
+      <section className="bg-white py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="Why partner with us"
+              title="An easy yes for your clients — and your business"
+              subtitle="Sharing gives families real savings and gives you a product you can stand behind, all year round."
+            />
+          </Reveal>
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {WHY_PARTNER.map((item, i) => (
+              <Reveal key={item.title} delay={i * 0.08}>
+                <div className="h-full rounded-2xl border border-pif-navy-100 bg-white p-8 shadow-sm ring-1 ring-pif-navy/5">
+                  <IconChip icon={item.icon} variant="brand" className="mb-5" />
+                  <h3 className="font-heading text-xl font-semibold text-pif-navy-800">
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 leading-relaxed text-slate-600">{item.body}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative overflow-hidden hub-cta-band py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_70%)]" />
-        <div className="container mx-auto px-4 relative text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to partner with us?
-          </h2>
-          <p className="text-lg text-cyan-100 mb-8 max-w-2xl mx-auto">
-            Join our network of advisors and start earning while helping families
-            find affordable health sharing.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/contact">
-              <Button
-                size="lg"
-                className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-lg gap-2 w-full sm:w-auto"
-              >
-                Apply Now
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </a>
-            <Link href="/contact">
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-white/30 text-white hover:bg-white/10 gap-2 w-full sm:w-auto"
-              >
-                Learn More
-              </Button>
+      {/* How it works for advisors */}
+      <section className="hub-section-muted py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="How it works"
+              title="From application to your first enrollment in three steps"
+              subtitle="We keep onboarding simple so you can start helping families quickly and with confidence."
+            />
+          </Reveal>
+          <div className="mx-auto mt-14 grid max-w-5xl gap-8 md:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <Reveal key={s.step} delay={i * 0.08}>
+                <div className="relative h-full rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5">
+                  <span className="absolute right-6 top-5 font-heading text-5xl font-bold text-pif-navy-50">
+                    {s.step}
+                  </span>
+                  <IconChip icon={s.icon} variant="soft" className="mb-5" />
+                  <h3 className="font-heading text-xl font-semibold text-pif-navy-800">
+                    {s.title}
+                  </h3>
+                  <p className="mt-3 leading-relaxed text-slate-600">{s.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+          <div className="mt-12 text-center">
+            <Link
+              href="/enroll"
+              className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
+            >
+              Start your advisor application
+              <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-        </div>
+        </Container>
       </section>
+
+      {/* What you get */}
+      <section className="bg-white py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="What you get"
+              title="Everything you need to grow a thriving practice"
+              subtitle="Fair compensation, marketing that does the explaining for you, and a back office that handles the rest."
+            />
+          </Reveal>
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {WHAT_YOU_GET.map((item, i) => (
+              <Reveal key={item.title} delay={i * 0.08}>
+                <FeatureCard
+                  icon={item.icon}
+                  title={item.title}
+                  iconVariant={i === 0 ? 'gold' : 'soft'}
+                >
+                  {item.body}
+                </FeatureCard>
+              </Reveal>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* Reassurance — dark split with image */}
+      <section className="hub-section-dark relative overflow-hidden py-20 md:py-28">
+        <Container>
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+            <div>
+              <SectionHeading
+                align="left"
+                tone="light"
+                eyebrowTone="light"
+                eyebrow="What you can promise"
+                title="A simple, honest offer families can trust"
+              />
+              <p className="mt-5 text-lg leading-relaxed text-white/80">
+                {BRAND.name} is a health care sharing community — not insurance.
+                Members voluntarily share one another&apos;s eligible medical
+                costs, which keeps it affordable and human. That is a story your
+                clients will thank you for telling.
+              </p>
+              <CheckList tone="light" className="mt-8" items={REASSURANCE} />
+            </div>
+            <Reveal delay={0.1}>
+              <BrandImage
+                image={IMAGES.consultation}
+                aspect="aspect-[4/3]"
+                scrim={false}
+                className="ring-white/10"
+              />
+            </Reveal>
+          </div>
+        </Container>
+      </section>
+
+      {/* Credibility / stats strip */}
+      <section className="bg-white py-16 md:py-24">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="A community worth representing"
+              title="Numbers your clients can stand behind"
+              subtitle="When you introduce families to sharing, you are introducing them to a community that consistently shows up."
+            />
+          </Reveal>
+          <Reveal delay={0.1} className="mt-12">
+            <StatStrip
+              tone="light"
+              stats={[
+                { value: STATS.members, label: 'Members & growing' },
+                { value: STATS.shared, label: 'Shared by the community' },
+                { value: STATS.satisfaction, label: 'Average member rating' },
+                { value: STATS.savings, label: 'Typical savings vs. insurance' },
+              ]}
+            />
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* Advisor testimonials */}
+      <section className="hub-section-muted py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="From our advisors"
+              title="Trusted by the people who recommend us"
+              subtitle="Hear from advisors who have built lasting client relationships with sharing."
+            />
+          </Reveal>
+          <div className="mx-auto mt-14 grid max-w-6xl gap-6 md:grid-cols-3">
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.name} delay={i * 0.08}>
+                <figure className="flex h-full flex-col rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5">
+                  <div className="mb-4 flex items-center gap-1 text-pif-gold-400">
+                    {Array.from({ length: 5 }).map((_, n) => (
+                      <Star key={n} className="h-4 w-4 fill-current" />
+                    ))}
+                  </div>
+                  <Quote className="mb-3 h-7 w-7 text-pif-teal-200" />
+                  <blockquote className="flex-1 leading-relaxed text-slate-700">
+                    {t.quote}
+                  </blockquote>
+                  <figcaption className="mt-6 border-t border-pif-navy-100 pt-5">
+                    <p className="font-semibold text-pif-navy-800">{t.name}</p>
+                    <p className="text-sm text-slate-500">{t.role}</p>
+                  </figcaption>
+                </figure>
+              </Reveal>
+            ))}
+          </div>
+        </Container>
+      </section>
+
+      {/* Earnings reassurance band */}
+      <section className="bg-white py-16 md:py-24">
+        <Container>
+          <Reveal>
+            <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 rounded-3xl border border-pif-gold-100 bg-pif-gold-50/60 p-10 text-center ring-1 ring-pif-gold-100">
+              <IconChip icon={CircleDollarSign} variant="gold" />
+              <h3 className="font-heading text-2xl font-semibold text-pif-navy-800">
+                Earn while you help families pay it forward
+              </h3>
+              <p className="max-w-2xl leading-relaxed text-slate-600">
+                Transparent commissions, no enrollment season to wait on, and a
+                team that supports you and your members every step of the way.
+                Doing right by your clients and building your business are the
+                same thing here.
+              </p>
+            </div>
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* Final CTA */}
+      <CTABand
+        title="Ready to offer your clients something better?"
+        subtitle="Join our network of advisors and help families find affordable, transparent health care sharing — all year round."
+        primary={{ label: 'Become an Advisor', href: '/enroll' }}
+        secondary={{ label: 'Talk to our team', href: '/contact' }}
+      />
     </>
   );
 }

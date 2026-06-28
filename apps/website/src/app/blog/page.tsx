@@ -1,17 +1,21 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Button, Card, CardContent, Badge } from '@crm-eco/ui';
+import Image from 'next/image';
+import { ArrowRight, Calendar, Clock } from 'lucide-react';
+import { Reveal } from '@/components/sections/Reveal';
 import {
-  Calendar,
-  Clock,
-  ArrowRight,
-  BookOpen,
-} from 'lucide-react';
+  Container,
+  Eyebrow,
+  SectionHeading,
+  CTABand,
+} from '@/components/sections/blocks';
+import { IMAGES, imageUrl, type SiteImage } from '@/lib/site-images';
+import { BRAND } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Blog & Resources',
+  title: 'Blog & Member Stories',
   description:
-    'Health and wellness resources, community stories, and plan updates from Double Helix Hub.',
+    'Health and wellness guidance, plain-spoken explainers, and real community stories from the Pay It Forward Health family. Learn how health care sharing works.',
 };
 
 const CATEGORIES = [
@@ -25,9 +29,9 @@ const CATEGORIES = [
 const PLACEHOLDER_POSTS = [
   {
     slug: 'understanding-health-sharing',
-    title: 'Understanding Health Sharing: A Beginner\'s Guide',
+    title: "Understanding Health Sharing: A Beginner's Guide",
     excerpt:
-      'Health sharing ministries offer an alternative to traditional insurance. Learn how members voluntarily share medical expenses and support each other through community.',
+      'Health care sharing is a community alternative to insurance — not insurance itself. Learn how members voluntarily share one another’s eligible medical costs.',
     category: 'Health Tips',
     date: '2025-02-10',
     readTime: '5 min read',
@@ -36,16 +40,16 @@ const PLACEHOLDER_POSTS = [
     slug: 'family-surgery-story',
     title: 'How Our Community Supported Our Family Through Surgery',
     excerpt:
-      'When our son needed emergency surgery, the Double Helix Hub community came through. Here\'s our story of gratitude and the power of shared support.',
+      'When our son needed emergency surgery, the Pay It Forward Health community came through. Here is our story of gratitude and the power of shared support.',
     category: 'Community Stories',
     date: '2025-02-08',
     readTime: '4 min read',
   },
   {
     slug: '2025-plan-enhancements',
-    title: '2025 Plan Enhancements: What\'s New for Members',
+    title: "2025 Membership Enhancements: What's New for Members",
     excerpt:
-      'We\'re excited to announce several improvements to our sharing plans, including expanded preventive care benefits and streamlined need submission.',
+      'We are excited to share several improvements to our programs, including expanded preventive care and a simpler way to submit a sharing request.',
     category: 'Plan Updates',
     date: '2025-02-05',
     readTime: '6 min read',
@@ -54,7 +58,7 @@ const PLACEHOLDER_POSTS = [
     slug: 'wellness-habits-that-stick',
     title: '5 Wellness Habits That Actually Stick',
     excerpt:
-      'Building sustainable health habits doesn\'t require drastic changes. Discover simple, evidence-based practices that support long-term wellness.',
+      'Building lasting health habits does not require drastic changes. Discover simple, evidence-based practices that support your wellbeing for the long haul.',
     category: 'Wellness',
     date: '2025-02-01',
     readTime: '7 min read',
@@ -63,121 +67,203 @@ const PLACEHOLDER_POSTS = [
     slug: 'preventive-care-matters',
     title: 'Why Preventive Care Matters for Your Family',
     excerpt:
-      'Regular check-ups and screenings can catch health issues early. Learn how preventive care fits into health sharing and why it\'s worth the investment.',
+      'Regular check-ups and screenings can catch issues early. Learn how preventive care fits into your membership and why it is worth making time for.',
     category: 'Health Tips',
     date: '2025-01-28',
     readTime: '5 min read',
   },
   {
     slug: 'member-spotlight-john',
-    title: 'Member Spotlight: John\'s Journey to Better Health',
+    title: "Member Spotlight: John's Journey to Better Health",
     excerpt:
-      'After switching to health sharing, John discovered a community that cared. Read how he reduced his healthcare costs while improving his overall wellness.',
+      'After joining a sharing community, John found people who genuinely cared. Read how he lowered his health care costs while improving his overall wellness.',
     category: 'Community Stories',
     date: '2025-01-25',
     readTime: '4 min read',
   },
 ];
 
+/** Map each editorial category to a reviewed brand image for thumbnails. */
+const CATEGORY_IMAGE: Record<string, SiteImage> = {
+  'Health Tips': IMAGES.consultation,
+  'Community Stories': IMAGES.familyTogether,
+  'Plan Updates': IMAGES.teamMeeting,
+  Wellness: IMAGES.wellness,
+};
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
 export default function BlogPage() {
+  const [featured, ...rest] = PLACEHOLDER_POSTS;
+  const featuredImage = CATEGORY_IMAGE[featured.category] ?? IMAGES.community;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
+    <>
       {/* Hero */}
-      <section className="relative overflow-hidden hub-inner-page-hero">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.15),transparent)]" />
-        <div className="container mx-auto px-4 py-16 md:py-24 relative">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 hub-icon-chip border rounded-full px-4 py-1.5 mb-6">
-              <BookOpen className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-cyan-700">
-                Blog & Resources
-              </span>
+      <section className="hub-inner-page-hero py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <div className="mx-auto max-w-3xl text-center">
+              <Eyebrow className="mb-4">Resources &amp; Stories</Eyebrow>
+              <h1 className="font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-semibold leading-[1.08] text-pif-navy-800 text-balance">
+                Learn, explore, and read{' '}
+                <span className="gradient-text">real member stories</span>
+              </h1>
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+                Plain-spoken guidance on health care sharing, practical wellness
+                tips, and honest stories from the {BRAND.name} community —
+                because the best way to understand sharing is to hear from the
+                people who live it.
+              </p>
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
-              Health & Wellness{' '}
-              <span className="gradient-text">
-                Resources
-              </span>
-            </h1>
-            <p className="text-lg text-slate-600 leading-relaxed">
-              Tips, community stories, plan updates, and wellness guidance to
-              support your health journey.
-            </p>
-          </div>
-        </div>
-      </section>
+          </Reveal>
 
-      {/* Categories Filter */}
-      <section className="border-b bg-white sticky top-16 z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <Button
-                key={cat}
-                variant={cat === 'All' ? 'default' : 'outline'}
-                size="sm"
-                className={
-                  cat === 'All'
-                    ? 'hub-btn-gradient text-white'
-                    : ''
-                }
-              >
-                {cat}
-              </Button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Blog Grid */}
-      <section className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
-          {PLACEHOLDER_POSTS.map((post) => (
-            <Card
-              key={post.slug}
-              className="group overflow-hidden border-slate-200 hover:border-cyan-200 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <Badge
-                    variant="secondary"
-                    className="hub-icon-chip text-cyan-700 border-cyan-200"
-                  >
-                    {post.category}
-                  </Badge>
-                </div>
-                <h2 className="text-xl font-semibold text-slate-900 mb-2 group-hover:text-cyan-700 transition-colors line-clamp-2">
-                  {post.title}
-                </h2>
-                <p className="text-slate-600 text-sm leading-relaxed line-clamp-2 mb-4">
-                  {post.excerpt}
-                </p>
-                <div className="flex items-center gap-4 text-xs text-slate-500 mb-4">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {new Date(post.date).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {post.readTime}
-                  </span>
-                </div>
-                <Link
-                  href={`/blog/${post.slug}`}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-cyan-700 group/link"
+          {/* Category chips (presentational) */}
+          <Reveal delay={0.1}>
+            <div className="mt-10 flex flex-wrap justify-center gap-2.5">
+              {CATEGORIES.map((cat) => (
+                <span
+                  key={cat}
+                  className={
+                    cat === 'All'
+                      ? 'pif-grad-care rounded-full px-4 py-1.5 text-sm font-semibold text-white shadow-sm shadow-pif-teal/25'
+                      : 'rounded-full border border-pif-navy-100 bg-white px-4 py-1.5 text-sm font-medium text-slate-600'
+                  }
                 >
-                  Read More
-                  <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  {cat}
+                </span>
+              ))}
+            </div>
+          </Reveal>
+        </Container>
       </section>
-    </div>
+
+      {/* Featured post */}
+      <section className="bg-white pb-4 pt-4 md:pt-8">
+        <Container>
+          <Reveal>
+            <Link
+              href={`/blog/${featured.slug}`}
+              className="group grid overflow-hidden rounded-3xl border border-pif-navy-100 bg-white shadow-sm ring-1 ring-pif-navy/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-pif-navy/10 md:grid-cols-2"
+            >
+              <div className="relative aspect-[16/10] overflow-hidden md:aspect-auto">
+                <Image
+                  src={imageUrl(featuredImage, 1100)}
+                  alt={featuredImage.alt}
+                  fill
+                  priority
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-pif-navy-900/25 via-transparent to-transparent" />
+              </div>
+              <div className="flex flex-col justify-center p-8 md:p-10">
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-pif-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-pif-teal-700 ring-1 ring-pif-teal-100">
+                    {featured.category}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-pif-gold-600">
+                    Featured
+                  </span>
+                </div>
+                <h2 className="mt-5 font-heading text-2xl font-semibold leading-snug text-pif-navy-800 transition-colors group-hover:text-pif-teal-700 md:text-3xl">
+                  {featured.title}
+                </h2>
+                <p className="mt-4 leading-relaxed text-slate-600">
+                  {featured.excerpt}
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-5 text-sm text-slate-500">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar className="h-4 w-4" aria-hidden="true" />
+                    {formatDate(featured.date)}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="h-4 w-4" aria-hidden="true" />
+                    {featured.readTime}
+                  </span>
+                </div>
+                <span className="mt-7 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-teal-700">
+                  Read the story
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </Link>
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* Article grid */}
+      <section className="bg-white py-16 md:py-20">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              align="left"
+              eyebrow="Latest articles"
+              title="More from the community"
+              subtitle="Browse our most recent guides, updates, and member stories."
+            />
+          </Reveal>
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+            {rest.map((post, i) => {
+              const image = CATEGORY_IMAGE[post.category] ?? IMAGES.community;
+              return (
+                <Reveal key={post.slug} delay={(i % 3) * 0.07}>
+                  <Link
+                    href={`/blog/${post.slug}`}
+                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-pif-navy-100 bg-white shadow-sm ring-1 ring-pif-navy/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-pif-navy/10"
+                  >
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <Image
+                        src={imageUrl(image, 800)}
+                        alt={image.alt}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-pif-navy-900/25 via-transparent to-transparent" />
+                      <span className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-pif-teal-700 shadow-sm">
+                        {post.category}
+                      </span>
+                    </div>
+                    <div className="flex flex-1 flex-col p-6">
+                      <h3 className="font-heading text-lg font-semibold leading-snug text-pif-navy-800 transition-colors group-hover:text-pif-teal-700">
+                        {post.title}
+                      </h3>
+                      <p className="mt-3 flex-1 text-sm leading-relaxed text-slate-600">
+                        {post.excerpt}
+                      </p>
+                      <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-pif-navy-100 pt-4 text-xs text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                          {formatDate(post.date)}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                          {post.readTime}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                </Reveal>
+              );
+            })}
+          </div>
+        </Container>
+      </section>
+
+      {/* Final CTA */}
+      <CTABand
+        title="Have questions about how sharing works?"
+        subtitle="Our team is happy to walk you through it — no pressure, no sales pitch. Join any time; there is no enrollment window to wait for."
+        primary={{ label: 'Become a Member', href: '/enroll' }}
+        secondary={{ label: 'See How It Works', href: '/how-it-works' }}
+      />
+    </>
   );
 }
