@@ -57,126 +57,20 @@ import {
 } from '@/lib/crm/currency-input';
 import { AdvisorCarrierField } from './AdvisorCarrierField';
 import {
-  fallbackSectionHeadingFromFieldSection,
-  normalizeLegacySectionHeading,
   CRM_SECTION_NAV_EVENT,
+  buildEffectiveSections,
   shouldAlwaysShowEmptySection,
 } from './section-utils';
+import { getSectionCardAccent } from './section-accent-tokens';
 import {
   getPersistedExpandedSections,
   persistSectionExpanded,
 } from '@/lib/crm/record-section-persistence';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
-// ---------------------------------------------------------------------------
-// Section accent palette
-// ---------------------------------------------------------------------------
-// Each entry maps a `LayoutSectionAccent` key to Tailwind classes for the card
-// border, the header background, and the title text. We deliberately use full
-// class strings (no template interpolation) so Tailwind's JIT picks them up.
+// Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
-interface AccentClassSet {
-  border: string;
-  header: string;
-  title: string;
-  ring: string;
-}
-
-const ACCENT_CLASSES: Record<LayoutSectionAccent, AccentClassSet> = {
-  slate: {
-    border: 'border-slate-200 dark:border-slate-700',
-    header: 'bg-slate-50/70 dark:bg-slate-800/40',
-    title: 'text-slate-700 dark:text-slate-200',
-    ring: 'ring-slate-200/60 dark:ring-slate-700/60',
-  },
-  emerald: {
-    border: 'border-emerald-200 dark:border-emerald-700/40',
-    header: 'bg-emerald-50/70 dark:bg-emerald-500/10',
-    title: 'text-emerald-700 dark:text-emerald-300',
-    ring: 'ring-emerald-200/60 dark:ring-emerald-700/40',
-  },
-  blue: {
-    border: 'border-blue-200 dark:border-blue-700/40',
-    header: 'bg-blue-50/70 dark:bg-blue-500/10',
-    title: 'text-blue-700 dark:text-blue-300',
-    ring: 'ring-blue-200/60 dark:ring-blue-700/40',
-  },
-  cyan: {
-    border: 'border-cyan-200 dark:border-cyan-700/40',
-    header: 'bg-cyan-50/70 dark:bg-cyan-500/10',
-    title: 'text-cyan-700 dark:text-cyan-300',
-    ring: 'ring-cyan-200/60 dark:ring-cyan-700/40',
-  },
-  purple: {
-    border: 'border-purple-200 dark:border-purple-700/40',
-    header: 'bg-purple-50/70 dark:bg-purple-500/10',
-    title: 'text-purple-700 dark:text-purple-300',
-    ring: 'ring-purple-200/60 dark:ring-purple-700/40',
-  },
-  amber: {
-    border: 'border-amber-200 dark:border-amber-700/40',
-    header: 'bg-amber-50/70 dark:bg-amber-500/10',
-    title: 'text-amber-700 dark:text-amber-300',
-    ring: 'ring-amber-200/60 dark:ring-amber-700/40',
-  },
-  rose: {
-    border: 'border-rose-200 dark:border-rose-700/40',
-    header: 'bg-rose-50/70 dark:bg-rose-500/10',
-    title: 'text-rose-700 dark:text-rose-300',
-    ring: 'ring-rose-200/60 dark:ring-rose-700/40',
-  },
-  pink: {
-    border: 'border-pink-200 dark:border-pink-700/40',
-    header: 'bg-pink-50/70 dark:bg-pink-500/10',
-    title: 'text-pink-700 dark:text-pink-300',
-    ring: 'ring-pink-200/60 dark:ring-pink-700/40',
-  },
-  indigo: {
-    border: 'border-indigo-200 dark:border-indigo-700/40',
-    header: 'bg-indigo-50/70 dark:bg-indigo-500/10',
-    title: 'text-indigo-700 dark:text-indigo-300',
-    ring: 'ring-indigo-200/60 dark:ring-indigo-700/40',
-  },
-  teal: {
-    border: 'border-teal-200 dark:border-teal-700/40',
-    header: 'bg-teal-50/70 dark:bg-teal-500/10',
-    title: 'text-teal-700 dark:text-teal-300',
-    ring: 'ring-teal-200/60 dark:ring-teal-700/40',
-  },
-  sky: {
-    border: 'border-sky-200 dark:border-sky-700/40',
-    header: 'bg-sky-50/70 dark:bg-sky-500/10',
-    title: 'text-sky-700 dark:text-sky-300',
-    ring: 'ring-sky-200/60 dark:ring-sky-700/40',
-  },
-  violet: {
-    border: 'border-violet-200 dark:border-violet-700/40',
-    header: 'bg-violet-50/70 dark:bg-violet-500/10',
-    title: 'text-violet-700 dark:text-violet-300',
-    ring: 'ring-violet-200/60 dark:ring-violet-700/40',
-  },
-  orange: {
-    border: 'border-orange-200 dark:border-orange-700/40',
-    header: 'bg-orange-50/70 dark:bg-orange-500/10',
-    title: 'text-orange-700 dark:text-orange-300',
-    ring: 'ring-orange-200/60 dark:ring-orange-700/40',
-  },
-  fuchsia: {
-    border: 'border-fuchsia-200 dark:border-fuchsia-700/40',
-    header: 'bg-fuchsia-50/70 dark:bg-fuchsia-500/10',
-    title: 'text-fuchsia-700 dark:text-fuchsia-300',
-    ring: 'ring-fuchsia-200/60 dark:ring-fuchsia-700/40',
-  },
-  lime: {
-    border: 'border-lime-200 dark:border-lime-700/40',
-    header: 'bg-lime-50/70 dark:bg-lime-500/10',
-    title: 'text-lime-700 dark:text-lime-300',
-    ring: 'ring-lime-200/60 dark:ring-lime-700/40',
-  },
-};
-
-const getAccent = (accent?: LayoutSectionAccent): AccentClassSet =>
-  ACCENT_CLASSES[accent ?? 'slate'];
+const getAccent = (accent?: LayoutSectionAccent) => getSectionCardAccent(accent);
 
 // Search dropdown for lookup/user fields
 function LookupSearchField({
@@ -827,29 +721,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return () => window.removeEventListener(CRM_SECTION_NAV_EVENT, onNav as EventListener);
   }, [record?.id]);
 
-  // Build the effective section list: start with layout sections, then append any
-  // field-section keys that aren't covered (handles seed/migration section mismatch)
-  const sections = useMemo(() => {
-    const layoutSections = layoutConfig.sections || [{ key: 'main', label: 'General', columns: 2 }];
-    const coveredKeys = new Set(layoutSections.map((s: LayoutSection) => s.key));
-
-    // Find sections present in field data but not in the layout
-    const extraSections: LayoutSection[] = [];
-    for (const sectionKey of Object.keys(fieldsBySection)) {
-      if (!coveredKeys.has(sectionKey)) {
-        extraSections.push({
-          key: sectionKey,
-          label: fallbackSectionHeadingFromFieldSection(sectionKey),
-          columns: 2,
-        });
-      }
-    }
-
-    return [...layoutSections, ...extraSections].map((s) => ({
-      ...s,
-      label: normalizeLegacySectionHeading(s.key, s.label),
-    }));
-  }, [layoutConfig.sections, fieldsBySection]);
+  const sections = useMemo(
+    () => buildEffectiveSections(layoutConfig, Object.keys(fieldsBySection), moduleKey),
+    [layoutConfig, fieldsBySection, moduleKey],
+  );
 
   const handleFormSubmit = onSubmit ? handleSubmit(onSubmit) : undefined;
 
@@ -1250,14 +1125,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     );
   };
 
-  // Read-only mode: render as plain div without form or actions
-  // Use CSS columns (not grid) so collapsed cards truly shrink and siblings flow up
+  // Read-only overview: single column so section order matches the nav pills
+  // (multi-column masonry fills top-to-bottom per column and scrambles order).
   if (readOnly) {
-    return (
-      <div className="columns-1 lg:columns-2 xl:columns-2 gap-3 space-y-3">
-        {renderSections()}
-      </div>
-    );
+    return <div className="space-y-3">{renderSections()}</div>;
   }
 
   // When embedded in a server action form, just render the fields without form wrapper

@@ -18,6 +18,7 @@ const GizmoWidget = dynamic(
   { ssr: false }
 );
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+import { CRM_OPEN_COMMAND_PALETTE_EVENT } from '@/lib/crm/command-palette-bus';
 
 interface CrmShellProps {
   children: React.ReactNode;
@@ -39,6 +40,13 @@ export function CrmShell({
   useEffect(() => {
     queueMicrotask(() => setMobileMenuOpen(false));
   }, [pathname]);
+
+  // Dashboard hero / top bar can open the command palette via event bus.
+  useEffect(() => {
+    const openPalette = () => setCommandPaletteOpen(true);
+    window.addEventListener(CRM_OPEN_COMMAND_PALETTE_EVENT, openPalette);
+    return () => window.removeEventListener(CRM_OPEN_COMMAND_PALETTE_EVENT, openPalette);
+  }, []);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {

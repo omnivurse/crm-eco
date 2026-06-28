@@ -21,6 +21,7 @@ import {
 
 import type { CrmProfile } from '@/lib/crm/types';
 import type { CalendarEvent } from '@/lib/crm/queries';
+import { CrmCommandBar } from '@/components/crm/shell/CrmCommandBar';
 
 /** Calendar event for display in hero section */
 export interface HeroCalendarEvent {
@@ -345,6 +346,14 @@ export function DashboardHero({
     <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-white/10 p-4 md:p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
 
       <div className="relative z-10">
+        {/* Command bar — Zoho-style entry point for search + workflows */}
+        <div
+          className="mb-4 animate-fadeSlideUp opacity-0"
+          style={{ animationDelay: '25ms' }}
+        >
+          <CrmCommandBar size="hero" />
+        </div>
+
         {/* ── Zone A: Header ── */}
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
           <div className="animate-fadeSlideUp">

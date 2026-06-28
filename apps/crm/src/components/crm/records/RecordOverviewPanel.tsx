@@ -57,9 +57,14 @@ function LiveSectionOverview({
     });
   }, [saveCtx?.fields]);
 
+  const inlineEditable = layoutV2Shell || isPersonModuleKey(moduleKey);
+
   const sections = useMemo(
-    () => getSectionMeta(fields, layout, liveValues, moduleKey),
-    [fields, layout, liveValues, moduleKey],
+    () =>
+      getSectionMeta(fields, layout, liveValues, moduleKey, {
+        inlineEditable,
+      }),
+    [fields, layout, liveValues, moduleKey, inlineEditable],
   );
 
   return (

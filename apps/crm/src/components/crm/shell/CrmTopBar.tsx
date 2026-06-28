@@ -36,15 +36,17 @@ import { SplitCreateButton } from './SplitCreateButton';
 import { ConnectivityModeToggle } from '@/components/crm/offline/ConnectivityModeToggle';
 import { PendingChangesPill } from '@/components/crm/offline/PendingChangesPill';
 import { clearOfflineState } from '@/lib/offline/reset';
+import { openCrmCommandPalette } from '@/lib/crm/command-palette-bus';
 import type { CrmModule, CrmProfile } from '@/lib/crm/types';
+
+function openCommandPalette(onOpenCommandPalette?: () => void) {
+  if (onOpenCommandPalette) onOpenCommandPalette();
+  else openCrmCommandPalette();
+}
 
 // Lazy load heavy components - only loaded when user interacts
 const NotificationsPanel = dynamic(
   () => import('../NotificationsPanel').then((mod) => mod.NotificationsPanel),
-  { ssr: false }
-);
-const GlobalSearchOverlay = dynamic(
-  () => import('@/components/zoho/GlobalSearchOverlay').then((mod) => mod.GlobalSearchOverlay),
   { ssr: false }
 );
 const QuickCreateDrawer = dynamic(
@@ -67,21 +69,20 @@ export const CrmTopBar = memo(function CrmTopBar({
   mobileMenuOpen,
   onMobileMenuToggle,
 }: CrmTopBarProps) {
-  const [searchOpen, setSearchOpen] = useState(false);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const router = useRouter();
 
-  // ⌘K / Ctrl+K keyboard shortcut to open search from anywhere
+  // ⌘K / Ctrl+K — global command palette (search, navigate, workflows)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        setSearchOpen(true);
+        openCommandPalette(onOpenCommandPalette);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [onOpenCommandPalette]);
 
   const handleSignOut = async () => {
     try {
@@ -93,8 +94,6 @@ export const CrmTopBar = memo(function CrmTopBar({
     } catch (err) {
       console.error('Failed to log logout:', err);
     }
-    // Wipe the offline cache/queue BEFORE sign-out so no user-scoped
-    // PII is left behind on the device for the next sign-in.
     try {
       await clearOfflineState();
     } catch (err) {
@@ -167,11 +166,11 @@ export const CrmTopBar = memo(function CrmTopBar({
       <div className="flex items-center gap-1 lg:gap-2">
         {/* Search Button — opens global search overlay */}
         <button
-          onClick={() => setSearchOpen(true)}
+          onClick={() => openCommandPalette(onOpenCommandPalette)}
           className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
-          <span className="truncate">Search all records...</span>
+          <span className="truncate">Search or start a workflow…</span>
           <kbd className="ml-auto hidden lg:inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1.5 py-0.5">
             ⌘K
           </kbd>
@@ -180,7 +179,7 @@ export const CrmTopBar = memo(function CrmTopBar({
           variant="ghost"
           size="icon"
           className="sm:hidden h-8 w-8 rounded-md text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10"
-          onClick={() => setSearchOpen(true)}
+          onClick={() => openCommandPalette(onOpenCommandPalette)}
           title="Search (⌘K)"
         >
           <Search className="w-4 h-4" />
@@ -313,9 +312,6 @@ export const CrmTopBar = memo(function CrmTopBar({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      {/* Global Search Overlay */}
-      <GlobalSearchOverlay open={searchOpen} onOpenChange={setSearchOpen} />
 
       {/* Quick Create Drawer */}
       <QuickCreateDrawer open={quickCreateOpen} onOpenChange={setQuickCreateOpen} />
