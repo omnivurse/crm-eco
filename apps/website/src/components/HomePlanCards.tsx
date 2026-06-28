@@ -5,6 +5,7 @@ import { CheckCircle2, Star, ArrowRight } from 'lucide-react';
 import { buildMatrixPreview } from '@crm-eco/rates';
 import type { RateConfig } from '@crm-eco/rates/types';
 import seedConfig from '@crm-eco/rates/config';
+import { Container, SectionHeading } from '@/components/sections/blocks';
 
 const rateConfig = seedConfig as unknown as RateConfig;
 
@@ -15,7 +16,6 @@ interface DbPlan {
   monthly_share: number | null;
   description: string | null;
 }
-
 interface DbBenefit {
   id: string;
   plan_id: string;
@@ -45,8 +45,7 @@ export async function HomePlanCards() {
 
   const dbPlans = (plans || []) as DbPlan[];
 
-  // Fetch benefits for found plans
-  let benefitsByPlan = new Map<string, DbBenefit[]>();
+  const benefitsByPlan = new Map<string, DbBenefit[]>();
   if (dbPlans.length > 0) {
     const planIds = dbPlans.map((p) => p.id);
     const { data: benefits } = await supabase
@@ -54,153 +53,104 @@ export async function HomePlanCards() {
       .select('id, plan_id, benefit_name')
       .in('plan_id', planIds)
       .order('sort_order');
-
     for (const b of (benefits || []) as DbBenefit[]) {
       if (!benefitsByPlan.has(b.plan_id)) benefitsByPlan.set(b.plan_id, []);
       benefitsByPlan.get(b.plan_id)!.push(b);
     }
   }
 
-  // If no plans in DB, show nothing (avoid empty state on homepage)
   if (dbPlans.length === 0) return null;
 
   const popularIndex = dbPlans.length >= 3 ? 1 : -1;
 
   return (
-    <section className="section-padding bg-slate-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Plans for every family
-          </h2>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-            Affordable monthly contributions that fit your budget. Choose the plan
-            that works best for your household.
-          </p>
-        </div>
+    <section className="relative bg-pif-mist py-20 md:py-28">
+      <Container>
+        <SectionHeading
+          eyebrow="Membership Programs"
+          title="A program for every household and budget"
+          subtitle="Affordable monthly shares with no annual deductible to satisfy. Choose the level of support that fits your family — change or cancel any time."
+        />
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="mx-auto mt-14 grid max-w-5xl gap-6 md:grid-cols-3">
           {dbPlans.map((plan, index) => {
             const isPopular = index === popularIndex;
             const planBenefits = benefitsByPlan.get(plan.id) || [];
+            const preview = buildMatrixPreview(rateConfig, plan.code, 'current');
+            const startingAt = preview
+              ? Math.min(...Object.values(preview.matrix.member || {}).filter(Boolean))
+              : null;
+            const price = startingAt ?? plan.monthly_share;
 
             return (
               <div
                 key={plan.id}
-                className={`rounded-2xl p-6 md:p-8 ${
+                className={`relative flex flex-col rounded-2xl p-7 md:p-8 ${
                   isPopular
-                    ? 'bg-gradient-to-b from-dhh-ink to-dhh-panel text-white shadow-xl shadow-cyan-500/20 ring-4 ring-primary/20 scale-[1.02]'
-                    : 'bg-white border shadow-sm'
+                    ? 'hub-card-popular text-white md:-mt-3 md:mb-3'
+                    : 'border border-pif-navy-100 bg-white shadow-sm ring-1 ring-pif-navy/5'
                 }`}
               >
                 {isPopular && (
-                  <div className="inline-flex items-center gap-1 bg-white/20 text-white text-xs font-semibold px-2.5 py-1 rounded-full mb-4">
-                    <Star className="w-3 h-3" />
+                  <span className="pif-grad-gold absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full px-3.5 py-1 text-xs font-bold text-pif-navy-900 shadow-md">
+                    <Star className="h-3 w-3 fill-current" />
                     Most Popular
-                  </div>
+                  </span>
                 )}
-                <h3
-                  className={`text-xl font-bold ${
-                    isPopular ? 'text-white' : 'text-slate-900'
-                  }`}
-                >
+                <h3 className={`font-heading text-xl font-semibold ${isPopular ? 'text-white' : 'text-pif-navy-800'}`}>
                   {plan.name}
                 </h3>
-                <p
-                  className={`text-sm mt-1 ${
-                    isPopular ? 'text-cyan-100' : 'text-slate-500'
-                  }`}
-                >
-                  {plan.description || 'Health sharing plan'}
+                <p className={`mt-1 text-sm ${isPopular ? 'text-pif-teal-100' : 'text-slate-500'}`}>
+                  {plan.description || 'Community health sharing program'}
                 </p>
-                <div className="mt-4 mb-6">
-                  {(() => {
-                    const preview = buildMatrixPreview(rateConfig, plan.code, 'current');
-                    const startingAt = preview
-                      ? Math.min(...Object.values(preview.matrix.member || {}).filter(Boolean))
-                      : null;
-                    return startingAt ? (
-                      <>
-                        <span
-                          className={`text-4xl font-bold ${
-                            isPopular ? 'text-white' : 'text-slate-900'
-                          }`}
-                        >
-                          {formatCurrency(startingAt)}
-                        </span>
-                        <span
-                          className={`text-sm ${
-                            isPopular ? 'text-cyan-100' : 'text-slate-500'
-                          }`}
-                        >
-                          /mo starting
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span
-                          className={`text-4xl font-bold ${
-                            isPopular ? 'text-white' : 'text-slate-900'
-                          }`}
-                        >
-                          {formatCurrency(plan.monthly_share)}
-                        </span>
-                        <span
-                          className={`text-sm ${
-                            isPopular ? 'text-cyan-100' : 'text-slate-500'
-                          }`}
-                        >
-                          /month
-                        </span>
-                      </>
-                    );
-                  })()}
+
+                <div className="mb-6 mt-5">
+                  <span className={`font-heading text-4xl font-bold ${isPopular ? 'text-white' : 'text-pif-navy-800'}`}>
+                    {formatCurrency(price)}
+                  </span>
+                  <span className={`text-sm ${isPopular ? 'text-pif-teal-100' : 'text-slate-500'}`}>
+                    {startingAt ? '/mo starting' : '/month'}
+                  </span>
                 </div>
+
                 {planBenefits.length > 0 && (
-                  <ul className="space-y-2.5 mb-8">
+                  <ul className="mb-8 space-y-2.5">
                     {planBenefits.map((benefit) => (
                       <li key={benefit.id} className="flex items-start gap-2">
                         <CheckCircle2
-                          className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                            isPopular ? 'text-cyan-200' : 'text-primary'
-                          }`}
+                          className={`mt-0.5 h-4 w-4 flex-shrink-0 ${isPopular ? 'text-pif-gold-300' : 'text-pif-green-600'}`}
                         />
-                        <span
-                          className={`text-sm ${
-                            isPopular ? 'text-cyan-50' : 'text-slate-600'
-                          }`}
-                        >
+                        <span className={`text-sm ${isPopular ? 'text-white/85' : 'text-slate-600'}`}>
                           {benefit.benefit_name}
                         </span>
                       </li>
                     ))}
                   </ul>
                 )}
-                <Link href={`/enroll?plan=${plan.id}`}>
-                  <Button
-                    className={`w-full ${
-                      isPopular
-                        ? 'bg-white text-cyan-700 hover:bg-cyan-50'
-                        : 'hub-btn-gradient text-white'
-                    }`}
-                  >
-                    Get Started
-                  </Button>
-                </Link>
+
+                <div className="mt-auto">
+                  <Link href={`/enroll?plan=${plan.id}`}>
+                    <Button
+                      className={`w-full font-semibold ${
+                        isPopular ? 'bg-white text-pif-navy-800 hover:bg-pif-mist' : 'hub-btn-gradient text-white'
+                      }`}
+                    >
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
               </div>
             );
           })}
         </div>
 
-        <div className="text-center mt-10">
-          <Link href="/plans">
-            <Button variant="link" className="text-primary gap-2">
-              View all plans and compare features
-              <ArrowRight className="w-4 h-4" />
-            </Button>
+        <div className="mt-10 text-center">
+          <Link href="/plans" className="inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600">
+            Compare all programs and pricing
+            <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-      </div>
+      </Container>
     </section>
   );
 }

@@ -1,372 +1,427 @@
-'use client';
-
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Button, Card, CardContent } from '@crm-eco/ui';
+import { Button } from '@crm-eco/ui';
 import {
-  CheckCircle2,
-  XCircle,
   ArrowRight,
-  Shield,
-  Heart,
-  Users,
-  FileCheck,
-  CreditCard,
+  FileText,
+  BookOpen,
+  Wallet,
+  UserPlus,
+  Compass,
+  PiggyBank,
   Send,
-  HeartHandshake,
-  Sparkles,
+  HeartPulse,
+  Check,
+  X,
+  HelpCircle,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Reveal } from '@/components/sections/Reveal';
+import {
+  Container,
+  SectionHeading,
+  IconChip,
+  StatStrip,
+  BrandImage,
+  CTABand,
+  CheckList,
+} from '@/components/sections/blocks';
+import { IMAGES } from '@/lib/site-images';
+import { BRAND, STATS } from '@/lib/site';
 
-const steps = [
+export const metadata: Metadata = {
+  title: 'How Health Care Sharing Works | Pay It Forward Health',
+  description:
+    'A plain-language guide to community health care sharing — what a sharing request is, what the Member Guidelines cover, how the Initial Unshareable Amount (IUA) works, and the simple monthly rhythm of members caring for members. Not insurance.',
+};
+
+const TERMS = [
   {
-    number: 1,
-    title: 'Choose Your Plan',
-    description:
-      'Select from Essential, Premium, or Complete plans based on your family size and coverage needs. Compare features and find the right fit.',
-    icon: Shield,
+    icon: FileText,
+    term: 'Sharing Request',
+    body: 'When you have an eligible medical need, you submit a sharing request through your member portal. Our team reviews it against the guidelines, and the community shares the eligible amount with you — no claim forms or denial letters.',
   },
   {
-    number: 2,
-    title: 'Complete Enrollment',
-    description:
-      'Fill out our simple enrollment form with your household information. Most families complete enrollment in under 15 minutes.',
-    icon: FileCheck,
+    icon: BookOpen,
+    term: 'Member Guidelines',
+    body: 'A clear, published document that spells out exactly what is eligible for sharing and what is not. Because everyone agrees to the same guidelines, sharing stays fair, transparent, and predictable for the whole community.',
   },
   {
-    number: 3,
-    title: 'Monthly Contributions',
-    description:
-      'Your monthly contribution goes into the sharing pool. This is how members support each other when medical needs arise.',
-    icon: CreditCard,
+    icon: Wallet,
+    term: 'Initial Unshareable Amount (IUA)',
+    body: 'A set amount you pay toward each separate medical need before the community shares the rest. Unlike an insurance deductible, the IUA applies per need and does not reset every January — so a healthy year is never wasted.',
+  },
+];
+
+const STEPS = [
+  {
+    icon: UserPlus,
+    step: '01',
+    title: 'Join the community',
+    body: 'Choose the program that fits your household and enroll online in minutes. There is no open-enrollment window and no health questionnaire to get a quote — you can join any time of year.',
   },
   {
-    number: 4,
-    title: 'Submit Medical Needs',
-    description:
-      'When you have an eligible medical expense, submit your need through our portal. We guide you through the process step by step.',
+    icon: Compass,
+    step: '02',
+    title: 'Learn the guidelines',
+    body: 'Get to know the Member Guidelines so you know what is eligible, how the IUA works, and what to expect. Everything is published in plain language, with our team a phone call away.',
+  },
+  {
+    icon: PiggyBank,
+    step: '03',
+    title: 'Share each month',
+    body: 'Your affordable monthly share goes to support fellow members with eligible needs — a fraction of a typical insurance premium, and a direct act of community care.',
+  },
+  {
     icon: Send,
+    step: '04',
+    title: 'Submit a sharing request',
+    body: 'When a medical need arises, pay your IUA, see the doctor you choose, and submit a sharing request. The community shares the eligible balance, often within days.',
   },
   {
-    number: 5,
-    title: 'Community Shares',
-    description:
-      'Eligible needs are shared among members. You receive support from the community, and you support others with your contributions.',
-    icon: HeartHandshake,
+    icon: HeartPulse,
+    step: '05',
+    title: 'Live well',
+    body: 'With preventive care, telehealth, prescription savings and advocacy included, you stay ahead of problems — and the cycle of paying it forward continues for the next member who needs it.',
   },
 ];
 
-const comparisonData = [
+const COMPARISON = [
   {
-    category: 'Monthly Cost',
-    sharing: 'Typically 40-60% lower',
-    insurance: 'Higher premiums, deductibles',
-    sharingGood: true,
+    category: 'Monthly cost',
+    sharing: 'A low, predictable monthly share',
+    insurance: 'Premiums that climb most years',
   },
   {
-    category: 'Coverage Model',
-    sharing: 'Members share eligible needs',
-    insurance: 'Insurance company pays claims',
-    sharingGood: true,
+    category: 'How costs are paid',
+    sharing: 'Members share one another’s eligible needs directly',
+    insurance: 'A company pays claims it approves',
   },
   {
-    category: 'Transparency',
-    sharing: 'Full visibility into sharing',
-    insurance: 'Complex policies, hidden terms',
-    sharingGood: true,
+    category: 'Up-front amount',
+    sharing: 'One IUA per need — it does not reset yearly',
+    insurance: 'A deductible that resets every January',
   },
   {
-    category: 'Community',
-    sharing: 'Direct member-to-member support',
-    insurance: 'Transactional relationship',
-    sharingGood: true,
+    category: 'Choosing your doctor',
+    sharing: 'No networks — keep the doctors you trust',
+    insurance: 'In-network restrictions often apply',
   },
   {
-    category: 'Flexibility',
-    sharing: 'Choose your providers',
-    insurance: 'Network restrictions often apply',
-    sharingGood: true,
+    category: 'When you can join',
+    sharing: 'Join any time of year',
+    insurance: 'Limited open-enrollment windows',
   },
   {
-    category: 'Claims Process',
-    sharing: 'Simple submission, direct sharing',
-    insurance: 'Complex claims, denials common',
-    sharingGood: true,
+    category: 'How it feels',
+    sharing: 'Neighbors helping neighbors, transparently',
+    insurance: 'A transactional, often opaque, process',
   },
 ];
 
-const eligibilityItems = [
-  'Individuals and families of all sizes',
-  'U.S. residents (varies by state)',
-  'Those seeking affordable healthcare alternatives',
-  'People who value community and transparency',
-  'Self-employed and small business owners',
-  'Families with healthy lifestyles',
+const WELCOME = [
+  'Individuals and families of every size and stage of life',
+  'People of all backgrounds and beliefs — no faith requirement',
+  'Self-employed workers, freelancers, and small-business owners',
+  'Anyone seeking an honest, affordable alternative to insurance',
 ];
 
 export default function HowItWorksPage() {
   return (
     <>
-      {/* Hero Section */}
-      <section className="relative overflow-hidden hub-inner-page-hero">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
-        <div className="container mx-auto px-4 py-20 md:py-32 relative">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 hub-icon-chip border rounded-full px-4 py-1.5 mb-6">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium text-cyan-700">
-                Simple & Transparent
-              </span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6">
-              Understanding{' '}
-              <span className="gradient-text">
-                Health Sharing
-              </span>
-            </h1>
-            <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-              Learn how Double Helix Hub works — from choosing a plan to
-              submitting needs and receiving support from our community.
+      {/* Hero */}
+      <section className="relative overflow-hidden pif-grad-brand">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-10%,rgba(255,255,255,0.16),transparent)]" />
+        <Container className="relative py-20 md:py-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-[0.8125rem] font-bold uppercase tracking-[0.2em] text-pif-teal-200">
+              How Sharing Works
             </p>
+            <h1 className="mt-5 font-heading text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[1.08] text-white text-balance">
+              Community health care, made simple
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/85">
+              {BRAND.name} is a health care sharing community — not insurance. Members
+              voluntarily share one another&apos;s eligible medical costs. Here is exactly how it
+              works, in plain language.
+            </p>
+            <div className="mt-9 flex flex-col justify-center gap-4 sm:flex-row">
+              <Link href="/enroll">
+                <Button
+                  size="lg"
+                  className="w-full gap-2 bg-white font-semibold text-pif-navy-800 shadow-lg hover:bg-pif-mist sm:w-auto"
+                >
+                  Become a Member
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/plans">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full border-white/50 bg-transparent font-semibold text-white hover:bg-white/10 sm:w-auto"
+                >
+                  Compare Plans
+                </Button>
+              </Link>
+            </div>
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* Step-by-Step Walkthrough */}
-      <section className="section-padding bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              How It Works in 5 Steps
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              A straightforward process from enrollment to community support.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto space-y-6">
-            {steps.map((step, index) => (
-              <motion.div
-                key={step.number}
-                initial="initial"
-                whileInView="animate"
-                viewport={{ once: true, margin: '-50px' }}
-                variants={{
-                  initial: { opacity: 0, y: 20 },
-                  animate: { opacity: 1, y: 0 },
-                }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-              >
-                <Card className="border shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col md:flex-row gap-6">
-                      <div className="flex-shrink-0 flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-2xl hub-gradient-icon flex items-center justify-center text-white text-xl font-bold">
-                          {step.number}
-                        </div>
-                        <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center md:hidden">
-                          <step.icon className="w-6 h-6 text-primary" />
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="hidden md:flex w-12 h-12 rounded-xl hub-icon-chip items-center justify-center mb-3">
-                          <step.icon className="w-6 h-6 text-primary" />
-                        </div>
-                        <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                          {step.title}
-                        </h3>
-                        <p className="text-slate-600 leading-relaxed">
-                          {step.description}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
+      {/* Key terms */}
+      <section className="bg-white py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="Start with the basics"
+              title="Three terms worth knowing"
+              subtitle="Sharing uses a few simple ideas instead of insurance jargon. Once these click, the rest is easy."
+            />
+          </Reveal>
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {TERMS.map((t, i) => (
+              <Reveal key={t.term} delay={i * 0.08}>
+                <div className="h-full rounded-2xl border border-pif-navy-100 bg-white p-8 shadow-sm ring-1 ring-pif-navy/5">
+                  <IconChip icon={t.icon} variant="brand" className="mb-5" />
+                  <h3 className="font-heading text-xl font-semibold text-pif-navy-800">{t.term}</h3>
+                  <p className="mt-3 leading-relaxed text-slate-600">{t.body}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* What is Health Sharing Explainer */}
-      <section className="section-padding bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl hub-gradient-icon flex items-center justify-center">
-                <Heart className="w-6 h-6 text-white" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-                What is Health Sharing?
-              </h2>
-            </div>
-            <div className="space-y-4 text-slate-600 leading-relaxed">
-              <p>
-                Health sharing is a community-based approach to managing healthcare
-                costs. Instead of paying premiums to an insurance company, members
-                contribute a monthly amount that goes into a sharing pool. When
-                members have eligible medical needs, the community shares those
-                costs directly.
-              </p>
-              <p>
-                Double Helix Hub is a health cost sharing ministry — not
-                insurance. We facilitate voluntary sharing among members who agree
-                to our guidelines. This model often results in significantly lower
-                monthly costs while maintaining transparency and a sense of
-                community that traditional insurance cannot provide.
-              </p>
-              <p>
-                Members choose their own healthcare providers, submit needs through
-                our simple portal, and receive support from fellow members. It&apos;s
-                healthcare the way it was meant to be: neighbor helping neighbor.
-              </p>
-            </div>
+      {/* The cyclical journey — numbered steps */}
+      <section className="hub-section-muted py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="The member journey"
+              title="A simple rhythm that comes back around"
+              subtitle="Sharing is a cycle, not a contract. Each member is cared for, and in turn helps care for the next — paying it forward."
+            />
+          </Reveal>
+          <div className="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <Reveal key={s.step} delay={(i % 3) * 0.08}>
+                <div className="relative h-full rounded-2xl border border-pif-navy-100 bg-white p-7 shadow-sm ring-1 ring-pif-navy/5">
+                  <span className="absolute right-6 top-5 font-heading text-5xl font-bold text-pif-navy-50">
+                    {s.step}
+                  </span>
+                  <IconChip icon={s.icon} variant="soft" className="mb-5" />
+                  <h3 className="font-heading text-xl font-semibold text-pif-navy-800">{s.title}</h3>
+                  <p className="mt-3 leading-relaxed text-slate-600">{s.body}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* Comparison Grid */}
-      <section className="section-padding bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              Health Sharing vs Traditional Insurance
-            </h2>
-            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              See how community health sharing compares to conventional insurance.
-            </p>
+      {/* Image + IUA emphasis */}
+      <section className="bg-white py-20 md:py-28">
+        <Container>
+          <div className="grid items-center gap-12 md:grid-cols-2 lg:gap-20">
+            <Reveal className="order-2 md:order-1">
+              <BrandImage image={IMAGES.consultation} aspect="aspect-[4/3]" priority />
+            </Reveal>
+            <Reveal className="order-1 md:order-2" delay={0.1}>
+              <SectionHeading
+                align="left"
+                eyebrow="Pay it forward"
+                title="You are never facing a medical need alone"
+                subtitle="When something happens, you see the provider you choose, pay your IUA, and the community shares the rest. No networks to navigate, no surprise denials."
+              />
+              <CheckList
+                className="mt-8"
+                items={[
+                  'Submit a sharing request right from your member portal',
+                  'Eligible needs are reviewed against the published guidelines',
+                  'The community shares the eligible balance, often within days',
+                  'Our advocates step in to review and negotiate large bills',
+                ]}
+              />
+            </Reveal>
           </div>
+        </Container>
+      </section>
 
-          <div className="max-w-5xl mx-auto">
-            {/* Desktop: 3-column grid */}
-            <div className="hidden md:block border rounded-2xl overflow-hidden shadow-sm">
-              <div className="grid grid-cols-3 bg-slate-50 border-b">
-                <div className="p-4 font-semibold text-slate-900">Category</div>
-                <div className="p-4 font-semibold text-cyan-700 text-center">
-                  Health Sharing
+      {/* Comparison: sharing vs. traditional insurance */}
+      <section className="hub-section-muted py-20 md:py-28">
+        <Container>
+          <Reveal>
+            <SectionHeading
+              eyebrow="A different model"
+              title="Sharing vs. traditional insurance"
+              subtitle="Both help with medical costs — but sharing is built around people, transparency, and care rather than policies and fine print."
+            />
+          </Reveal>
+
+          <Reveal delay={0.1} className="mx-auto mt-14 max-w-5xl">
+            {/* Desktop / tablet: 3-column grid */}
+            <div className="hidden overflow-hidden rounded-3xl border border-pif-navy-100 bg-white shadow-sm ring-1 ring-pif-navy/5 md:block">
+              <div className="grid grid-cols-3 border-b border-pif-navy-100 bg-pif-mist">
+                <div className="p-5 font-heading font-semibold text-pif-navy-800">What to compare</div>
+                <div className="p-5 text-center font-heading font-semibold text-pif-teal-700">
+                  {BRAND.shortName} sharing
                 </div>
-                <div className="p-4 font-semibold text-slate-600 text-center">
-                  Traditional Insurance
+                <div className="p-5 text-center font-heading font-semibold text-slate-500">
+                  Traditional insurance
                 </div>
               </div>
-              {comparisonData.map((row) => (
+              {COMPARISON.map((row) => (
                 <div
                   key={row.category}
-                  className="grid grid-cols-3 border-b last:border-b-0 hover:bg-slate-50/50 transition-colors"
+                  className="grid grid-cols-3 border-b border-pif-navy-100 transition-colors last:border-b-0 hover:bg-pif-mist/60"
                 >
-                  <div className="p-4 font-medium text-slate-900">
-                    {row.category}
-                  </div>
-                  <div className="p-4 flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0" />
-                    <span className="text-slate-700 text-sm">
-                      {row.sharing}
+                  <div className="p-5 font-medium text-pif-navy-800">{row.category}</div>
+                  <div className="flex items-start justify-center gap-2 p-5">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-pif-green-50 text-pif-green-600">
+                      <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                     </span>
+                    <span className="text-sm text-slate-700">{row.sharing}</span>
                   </div>
-                  <div className="p-4 flex items-center justify-center gap-2">
-                    <XCircle className="w-5 h-5 text-slate-400 flex-shrink-0" />
-                    <span className="text-slate-500 text-sm">
-                      {row.insurance}
+                  <div className="flex items-start justify-center gap-2 p-5">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                      <X className="h-3.5 w-3.5" strokeWidth={2.5} />
                     </span>
+                    <span className="text-sm text-slate-500">{row.insurance}</span>
                   </div>
                 </div>
               ))}
             </div>
 
             {/* Mobile: stacked cards */}
-            <div className="md:hidden space-y-3">
-              {comparisonData.map((row) => (
+            <div className="space-y-4 md:hidden">
+              {COMPARISON.map((row) => (
                 <div
                   key={row.category}
-                  className="border rounded-xl p-4 shadow-sm bg-white"
+                  className="rounded-2xl border border-pif-navy-100 bg-white p-5 shadow-sm ring-1 ring-pif-navy/5"
                 >
-                  <div className="font-semibold text-slate-900 mb-3">
-                    {row.category}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <p className="mb-4 font-heading font-semibold text-pif-navy-800">{row.category}</p>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-pif-green-50 text-pif-green-600">
+                        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      </span>
                       <div>
-                        <span className="text-xs font-medium text-cyan-700 block">
-                          Health Sharing
+                        <span className="block text-xs font-semibold uppercase tracking-wide text-pif-teal-700">
+                          {BRAND.shortName} sharing
                         </span>
-                        <span className="text-sm text-slate-700">
-                          {row.sharing}
-                        </span>
+                        <span className="text-sm text-slate-700">{row.sharing}</span>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <XCircle className="w-4 h-4 text-slate-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex items-start gap-2.5">
+                      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                        <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+                      </span>
                       <div>
-                        <span className="text-xs font-medium text-slate-500 block">
-                          Traditional Insurance
+                        <span className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Traditional insurance
                         </span>
-                        <span className="text-sm text-slate-500">
-                          {row.insurance}
-                        </span>
+                        <span className="text-sm text-slate-500">{row.insurance}</span>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </Reveal>
+
+          <Reveal delay={0.15}>
+            <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-slate-500">
+              {BRAND.name} is not an insurance company and the program is not insurance. It is a
+              voluntary community of members sharing one another&apos;s eligible medical costs.
+            </p>
+          </Reveal>
+        </Container>
       </section>
 
-      {/* Eligibility Section */}
-      <section className="section-padding bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-xl hub-gradient-icon flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
-                Who Can Join?
-              </h2>
+      {/* Welcoming / eligibility — dark */}
+      <section className="hub-section-dark relative overflow-hidden py-20 md:py-28">
+        <Container>
+          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
+            <div>
+              <SectionHeading
+                align="left"
+                tone="light"
+                eyebrowTone="light"
+                eyebrow="Everyone is welcome"
+                title="Open to people of every background"
+              />
+              <p className="mt-5 text-lg leading-relaxed text-white/80">
+                There is no faith requirement, no health questionnaire to get a quote, and no
+                open-enrollment window to wait for. If you believe in caring for your neighbor, you
+                already belong here.
+              </p>
+              <CheckList tone="light" className="mt-8" items={WELCOME} />
+              <p className="mt-7 text-sm text-white/60">
+                Eligibility can vary by state. Reach out or start enrollment and we&apos;ll help you
+                confirm your options.
+              </p>
             </div>
-            <p className="text-slate-600 mb-6 leading-relaxed">
-              Double Helix Hub welcomes a wide range of members. Here&apos;s who
-              typically joins our community:
-            </p>
-            <ul className="space-y-3">
-              {eligibilityItems.map((item, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-slate-700">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-slate-600 mt-6 text-sm">
-              Eligibility may vary by state. Contact us or complete enrollment to
-              confirm your eligibility.
-            </p>
+            <Reveal delay={0.1}>
+              <BrandImage
+                image={IMAGES.familyOutdoor}
+                aspect="aspect-[4/3]"
+                scrim={false}
+                className="ring-white/10"
+              />
+            </Reveal>
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative overflow-hidden hub-cta-band py-20">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.1),transparent_70%)]" />
-        <div className="container mx-auto px-4 relative text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-            Ready to Join?
-          </h2>
-          <p className="text-lg text-cyan-100 mb-8 max-w-2xl mx-auto">
-            Start your enrollment today and become part of a community that shares
-            healthcare costs — and cares for each other.
-          </p>
-          <Link href="/enroll">
-            <Button
-              size="lg"
-              className="bg-white text-cyan-700 hover:bg-cyan-50 shadow-lg gap-2"
-            >
-              Enroll Now
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
-        </div>
+      {/* Stats strip */}
+      <section className="bg-white py-16 md:py-20">
+        <Container>
+          <Reveal>
+            <StatStrip
+              tone="light"
+              stats={[
+                { value: STATS.members, label: 'Members & growing' },
+                { value: STATS.shared, label: 'Shared by the community' },
+                { value: STATS.satisfaction, label: 'Average member rating' },
+                { value: STATS.savings, label: 'Typical savings' },
+              ]}
+            />
+          </Reveal>
+        </Container>
       </section>
+
+      {/* FAQ teaser */}
+      <section className="hub-section-muted py-20 md:py-24">
+        <Container>
+          <Reveal>
+            <div className="mx-auto flex max-w-3xl flex-col items-center rounded-3xl border border-pif-navy-100 bg-white p-10 text-center shadow-sm ring-1 ring-pif-navy/5 md:p-14">
+              <IconChip icon={HelpCircle} variant="gold" className="mb-6" />
+              <h2 className="font-heading text-[clamp(1.5rem,3vw,2.25rem)] font-semibold leading-tight text-pif-navy-800 text-balance">
+                Still have questions?
+              </h2>
+              <p className="mt-4 max-w-xl text-lg leading-relaxed text-slate-600">
+                We&apos;ve answered the things members ask most — about the IUA, eligible needs,
+                pre-existing conditions, joining mid-year, and more.
+              </p>
+              <Link
+                href="/faq"
+                className="mt-7 inline-flex items-center gap-2 font-semibold text-pif-teal-700 transition-colors hover:text-pif-green-600"
+              >
+                Read frequently asked questions
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Reveal>
+        </Container>
+      </section>
+
+      {/* Final CTA */}
+      <CTABand
+        title="Ready to join a community that pays it forward?"
+        subtitle="Enroll any time of year and start sharing the first of next month. No networks, no surprises — just neighbors caring for neighbors."
+        primary={{ label: 'Become a Member', href: '/enroll' }}
+        secondary={{ label: 'Compare Plans', href: '/plans' }}
+      />
     </>
   );
 }

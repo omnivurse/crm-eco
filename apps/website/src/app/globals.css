@@ -1,4 +1,6 @@
-/* Double Helix Hub - Company Website Styles */
+/* Pay It Forward Health — marketing site styles (a DoubleHelixHub tenant brand).
+   Brand palette is applied LOCALLY here + in tailwind.config.ts so it never
+   leaks into the shared @crm-eco/ui tokens used by CRM/admin/portal. */
 @import '@crm-eco/ui/styles/theme.css';
 
 @tailwind base;
@@ -14,120 +16,156 @@
     @apply border-border;
   }
   :root {
-    /* Website: crisp white canvas, CRM/admin accent palette */
     --background: 0 0% 100%;
-    --hub-ink: #030712;
-    --hub-panel: #0a1628;
-    --hub-accent: #06b6d4;
-    --hub-highlight: #3dd6ff;
-    --hub-muted: #f8fafc;
+
+    /* Override shared interactive token -> PIFH deep teal (AA on white) */
+    --primary: 186 81% 22%;          /* #0B5D66 */
+    --primary-foreground: 0 0% 100%;
+    --ring: 186 81% 30%;
+
+    /* PIFH brand hexes (from the logo) */
+    --pif-navy: #003a5c;
+    --pif-navy-deep: #06283d;
+    --pif-teal: #0e8c9a;
+    --pif-teal-deep: #0b5d66;
+    --pif-green: #12a065;
+    --pif-gold: #f4b400;
+    --pif-ink: #0a2233;
+    --pif-mist: #f2f8f9;
+
+    /* Brand gradients — echo the logo's teal->green spiral */
+    --pif-grad-brand: linear-gradient(135deg, #003a5c 0%, #0e8c9a 52%, #12a065 100%);
+    --pif-grad-care: linear-gradient(135deg, #0e8c9a 0%, #12a065 100%);
+    --pif-grad-deep: linear-gradient(160deg, #04202f 0%, #003a5c 55%, #0b5d66 100%);
+    --pif-grad-gold: linear-gradient(135deg, #f4b400 0%, #f59e0b 100%);
+
+    /* Legacy hub-* tokens repointed to PIFH so existing markup re-skins */
+    --hub-ink: #06283d;
+    --hub-panel: #003a5c;
+    --hub-accent: #0e8c9a;
+    --hub-highlight: #1fa4ae;
+    --hub-muted: #f2f8f9;
   }
   body {
-    @apply bg-white text-foreground;
+    @apply bg-white;
+    color: var(--pif-ink);
     font-family: var(--font-body), 'Inter', system-ui, sans-serif;
     overflow-x: hidden;
     overscroll-behavior-x: none;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading), 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: var(--font-heading), 'Fraunces', Georgia, 'Times New Roman', serif;
+    letter-spacing: -0.01em;
   }
 }
 
 /* ============================================================
-   HUB MARKETING SITE — Enterprise light theme (CRM/admin palette)
+   PIFH brand gradient helpers
    ============================================================ */
+.pif-grad-brand { background: var(--pif-grad-brand); }
+.pif-grad-care  { background: var(--pif-grad-care); }
+.pif-grad-deep  { background: var(--pif-grad-deep); }
+.pif-grad-gold  { background: var(--pif-grad-gold); }
 
+/* Brand gradient clipped onto text — use sparingly, one phrase at a time */
+.gradient-text {
+  background: var(--pif-grad-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Gold underline accent for a single emphasized word */
+.pif-underline {
+  background-image: var(--pif-grad-gold);
+  background-repeat: no-repeat;
+  background-position: 0 88%;
+  background-size: 100% 0.32em;
+  padding: 0 0.04em;
+}
+
+/* ============================================================
+   Marketing sections (class names retained; recolored to PIFH)
+   ============================================================ */
 .hub-page-hero {
   position: relative;
   overflow: hidden;
   background: #ffffff;
 }
-
 .hub-page-hero::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 70% 55% at 85% 15%, rgba(6, 182, 212, 0.08), transparent 60%),
-    radial-gradient(ellipse 55% 45% at 10% 85%, rgba(59, 130, 246, 0.06), transparent 55%),
-    radial-gradient(ellipse 45% 40% at 55% 50%, rgba(139, 92, 246, 0.04), transparent 50%);
+    radial-gradient(ellipse 70% 55% at 85% 12%, rgba(14, 140, 154, 0.10), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 8% 88%, rgba(18, 160, 101, 0.09), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 55% 50%, rgba(244, 180, 0, 0.06), transparent 50%);
 }
-
 .hub-page-hero::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+    linear-gradient(rgba(0, 58, 92, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 58, 92, 0.05) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black, transparent);
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black, transparent);
 }
 
 .hub-eyebrow {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.8125rem;
+  font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--hub-accent);
+  color: var(--pif-teal-deep);
 }
 
 .hub-section-dark {
-  background: var(--hub-ink);
-  background-image: radial-gradient(ellipse 60% 50% at 30% 50%, rgba(6, 182, 212, 0.06), transparent 60%);
+  background: var(--pif-grad-deep);
 }
-
 .hub-section-muted {
-  background: linear-gradient(180deg, #ffffff 0%, var(--hub-muted) 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--pif-mist) 100%);
 }
-
 .hub-cta-band {
-  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 52%, #8b5cf6 100%);
+  background: var(--pif-grad-brand);
 }
-
 .hub-card-popular {
-  background: linear-gradient(160deg, #030712 0%, #0a1628 55%, #0f2744 100%);
+  background: var(--pif-grad-deep);
   box-shadow:
-    0 20px 40px rgba(3, 7, 18, 0.18),
-    0 0 0 1px rgba(6, 182, 212, 0.15);
+    0 24px 48px rgba(4, 32, 47, 0.28),
+    0 0 0 1px rgba(14, 140, 154, 0.25);
 }
-
 .hub-icon-chip {
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.15);
-  color: var(--hub-accent);
+  background: rgba(14, 140, 154, 0.10);
+  border: 1px solid rgba(14, 140, 154, 0.18);
+  color: var(--pif-teal-deep);
 }
-
 .hub-step-ring {
-  background: rgba(6, 182, 212, 0.1);
-  border: 1px solid rgba(6, 182, 212, 0.2);
-  color: var(--hub-accent);
+  background: rgba(18, 160, 101, 0.10);
+  border: 1px solid rgba(18, 160, 101, 0.22);
+  color: var(--pif-green);
 }
-
 .hub-link {
-  color: var(--hub-accent);
+  color: var(--pif-teal-deep);
   font-weight: 600;
   transition: color 0.2s ease;
 }
-
-.hub-link:hover {
-  color: #0891b2;
-}
+.hub-link:hover { color: var(--pif-green); }
 
 .hub-btn-gradient {
-  background: linear-gradient(135deg, #06b6d4, #3b82f6) !important;
+  background: var(--pif-grad-care) !important;
   color: #fff !important;
   border: none;
-  box-shadow: 0 4px 20px rgba(6, 182, 212, 0.25);
+  box-shadow: 0 6px 22px rgba(14, 140, 154, 0.28);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
 .hub-btn-gradient:hover {
   transform: translateY(-1px);
-  box-shadow: 0 8px 28px rgba(6, 182, 212, 0.35);
+  box-shadow: 0 10px 30px rgba(18, 160, 101, 0.34);
 }
 
 .hub-inner-page-hero {
@@ -135,33 +173,24 @@
   overflow: hidden;
   background: #ffffff;
   background-image:
-    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(6, 182, 212, 0.07), transparent),
-    radial-gradient(ellipse 50% 40% at 100% 50%, rgba(139, 92, 246, 0.05), transparent);
+    radial-gradient(ellipse 80% 60% at 50% -10%, rgba(14, 140, 154, 0.09), transparent),
+    radial-gradient(ellipse 50% 40% at 100% 50%, rgba(18, 160, 101, 0.07), transparent),
+    radial-gradient(ellipse 40% 35% at 0% 30%, rgba(244, 180, 0, 0.05), transparent);
 }
-
 .hub-gradient-icon {
-  background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 55%, #8b5cf6 100%);
+  background: var(--pif-grad-brand);
   color: #fff;
 }
 
-
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-  .section-padding {
-    @apply py-16 md:py-24;
-  }
-  .section-padding-sm {
-    @apply py-12 md:py-16;
-  }
+  .text-balance { text-wrap: balance; }
+  .section-padding { @apply py-16 md:py-24; }
+  .section-padding-sm { @apply py-12 md:py-16; }
 }
 
 /* ============================================================
-   HERO SECTION - Animated Mesh & Effects
+   HERO — animated mesh & effects (recolored via component usage)
    ============================================================ */
-
-/* Blob base: large soft-edged gradient circle with blur */
 .hero-blob {
   position: absolute;
   border-radius: 50%;
@@ -171,27 +200,23 @@
   will-change: transform;
 }
 
-/* Blob path keyframes - each blob drifts on a unique organic path */
 @keyframes blob-drift-1 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   25%      { transform: translate(60px, -40px) scale(1.08); }
   50%      { transform: translate(-30px, 50px) scale(0.95); }
   75%      { transform: translate(40px, 20px) scale(1.04); }
 }
-
 @keyframes blob-drift-2 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   25%      { transform: translate(-50px, 30px) scale(1.05); }
   50%      { transform: translate(40px, -60px) scale(0.97); }
   75%      { transform: translate(-20px, -30px) scale(1.02); }
 }
-
 @keyframes blob-drift-3 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   33%      { transform: translate(70px, 40px) scale(1.06); }
   66%      { transform: translate(-60px, -20px) scale(0.94); }
 }
-
 @keyframes blob-drift-4 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   20%      { transform: translate(-40px, -50px) scale(1.03); }
@@ -199,76 +224,42 @@
   60%      { transform: translate(50px, -30px) scale(1.07); }
   80%      { transform: translate(-60px, 20px) scale(0.98); }
 }
-
 @keyframes blob-drift-5 {
   0%, 100% { transform: translate(0, 0) scale(1); }
   30%      { transform: translate(45px, 35px) scale(1.04); }
   60%      { transform: translate(-35px, -45px) scale(0.96); }
 }
 
-/* Network line flowing dash animation */
 @keyframes dash-flow {
   0%   { stroke-dashoffset: 0; }
   100% { stroke-dashoffset: -20; }
 }
-
 .hero-network-line {
   stroke-dasharray: 6 8;
   animation: dash-flow 2s linear infinite;
 }
 
-/* Shimmer effect for CTA */
 @keyframes cta-shimmer {
   0%   { background-position: -200% center; }
   100% { background-position: 200% center; }
 }
-
-.hero-cta-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
+.hero-cta-shimmer { position: relative; overflow: hidden; }
 .hero-cta-shimmer::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.15) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: cta-shimmer 3s ease-in-out infinite;
   pointer-events: none;
   border-radius: inherit;
 }
 
-/* Pulse ring behind primary CTA */
-@keyframes cta-pulse-ring {
-  0%   { transform: scale(1); opacity: 0.4; }
-  70%  { transform: scale(1.35); opacity: 0; }
-  100% { transform: scale(1.35); opacity: 0; }
-}
-
-/* Reduced motion: disable all hero animations */
 @media (prefers-reduced-motion: reduce) {
-  .hero-blob {
-    animation: none !important;
-    filter: blur(80px);
-  }
-  .hero-network-line {
-    animation: none !important;
-  }
-  .hero-cta-shimmer::after {
-    animation: none !important;
-  }
+  .hero-blob { animation: none !important; filter: blur(80px); }
+  .hero-network-line { animation: none !important; }
+  .hero-cta-shimmer::after { animation: none !important; }
 }
-
-/* Mobile: reduce blur for perf */
 @media (max-width: 768px) {
-  .hero-blob {
-    filter: blur(60px);
-    opacity: 0.35;
-  }
+  .hero-blob { filter: blur(60px); opacity: 0.35; }
 }

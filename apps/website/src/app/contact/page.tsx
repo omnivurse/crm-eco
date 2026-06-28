@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Input,
   Label,
   Textarea,
   Button,
-  Card,
-  CardContent,
 } from '@crm-eco/ui';
 import {
   Select,
@@ -19,11 +18,23 @@ import {
 import {
   Mail,
   Phone,
-  MapPin,
   Clock,
-  MessageCircle,
+  LifeBuoy,
   Send,
+  CheckCircle2,
+  Users,
+  ArrowRight,
+  MessageCircle,
 } from 'lucide-react';
+import { Reveal } from '@/components/sections/Reveal';
+import {
+  Container,
+  Eyebrow,
+  SectionHeading,
+  IconChip,
+  CTABand,
+} from '@/components/sections/blocks';
+import { PHONE, EMAIL, PORTAL_URL } from '@/lib/site';
 
 const SUBJECT_OPTIONS = [
   'General Inquiry',
@@ -104,52 +115,93 @@ export default function ContactPage() {
     setErrors({});
   };
 
+  const CONTACT_DETAILS = [
+    {
+      icon: Phone,
+      label: 'Call our member care team',
+      value: PHONE.display,
+      href: `tel:${PHONE.tel}`,
+      note: 'Real people, ready to help with enrollment and sharing questions.',
+    },
+    {
+      icon: Mail,
+      label: 'General questions',
+      value: EMAIL.general,
+      href: `mailto:${EMAIL.general}`,
+      note: 'New to sharing? Start here and we will point you the right way.',
+    },
+    {
+      icon: LifeBuoy,
+      label: 'Member support',
+      value: EMAIL.support,
+      href: `mailto:${EMAIL.support}`,
+      note: 'Already a member? Reach our support team for help with your account.',
+    },
+  ];
+
   return (
     <>
-      {/* Hero Section */}
+      {/* ---------------------------------------------------------------- Hero */}
       <section className="relative overflow-hidden hub-inner-page-hero">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(20,184,166,0.12),transparent)]" />
-        <div className="container mx-auto px-4 py-16 md:py-24 relative">
-          <div className="max-w-2xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
-              Get in touch
+        <Container className="py-20 md:py-28">
+          <div className="mx-auto max-w-3xl text-center">
+            <Eyebrow className="mb-4">We&apos;re here for you</Eyebrow>
+            <h1 className="font-heading text-[clamp(2.25rem,5vw,3.5rem)] font-semibold leading-[1.1] text-pif-navy-800 text-balance">
+              Let&apos;s talk about{' '}
+              <span className="gradient-text">caring for your health</span>
             </h1>
-            <p className="text-lg md:text-xl text-slate-600">
-              We&apos;d love to hear from you
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-slate-600">
+              Whether you&apos;re exploring health-care sharing for the first time
+              or you&apos;re already part of the community, our team is glad to
+              help. Send us a note or reach out directly — every question is
+              welcome.
             </p>
+            <div className="mt-8 inline-flex items-center gap-2 rounded-full bg-pif-green-50 px-4 py-2 text-sm font-semibold text-pif-green-700 ring-1 ring-pif-green-100">
+              <Users className="h-4 w-4" />
+              Welcoming to all — no requirements, no judgment
+            </div>
           </div>
-        </div>
+        </Container>
       </section>
 
-      {/* Two Column Layout */}
-      <section className="section-padding bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 max-w-6xl mx-auto items-start">
+      {/* ---------------------------------------------- Form + contact details */}
+      <section className="bg-white py-20 md:py-28">
+        <Container>
+          <div className="grid items-start gap-12 lg:grid-cols-2 lg:gap-16">
             {/* Left: Contact Form */}
-            <div>
-              <Card className="border shadow-sm">
-                <CardContent className="pt-6">
-                  {submitted ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 rounded-full hub-icon-chip flex items-center justify-center mx-auto mb-4">
-                        <Mail className="w-8 h-8 text-primary" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-900 mb-2">
-                        Thank you for reaching out!
-                      </h3>
-                      <p className="text-slate-600 mb-6">
-                        We&apos;ve received your message and will get back to you
-                        within 1–2 business days.
-                      </p>
-                      <Button
-                        variant="outline"
-                        onClick={() => setSubmitted(false)}
-                      >
-                        Send another message
-                      </Button>
-                    </div>
-                  ) : (
-                    <form onSubmit={handleSubmit} className="space-y-5">
+            <Reveal>
+              <div className="rounded-3xl border border-pif-navy-100 bg-white p-8 shadow-xl shadow-pif-navy/10 ring-1 ring-pif-navy/5 sm:p-10">
+                {submitted ? (
+                  <div className="py-12 text-center">
+                    <span className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full pif-grad-care text-white shadow-md shadow-pif-teal/25">
+                      <CheckCircle2 className="h-8 w-8" />
+                    </span>
+                    <h2 className="font-heading text-2xl font-semibold text-pif-navy-800">
+                      Thank you for reaching out!
+                    </h2>
+                    <p className="mx-auto mt-3 max-w-sm leading-relaxed text-slate-600">
+                      We&apos;ve received your message and a real member of our
+                      team will get back to you within 1&ndash;2 business days.
+                    </p>
+                    <Button
+                      variant="outline"
+                      className="mt-7 border-pif-navy/15 font-semibold text-pif-navy-800 hover:bg-pif-mist"
+                      onClick={() => setSubmitted(false)}
+                    >
+                      Send another message
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Eyebrow className="mb-3">Send a message</Eyebrow>
+                    <h2 className="font-heading text-2xl font-semibold text-pif-navy-800">
+                      Tell us how we can help
+                    </h2>
+                    <p className="mt-3 leading-relaxed text-slate-600">
+                      Fill out the form below and we&apos;ll be in touch soon.
+                      There&apos;s no pressure and no sales script — just answers.
+                    </p>
+                    <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                       <div className="space-y-2">
                         <Label htmlFor="name">Name</Label>
                         <Input
@@ -231,133 +283,107 @@ export default function ContactPage() {
                       </div>
                       <Button
                         type="submit"
-                        className="w-full hub-btn-gradient text-white gap-2"
+                        className="w-full gap-2 hub-btn-gradient text-white"
                       >
                         Send Message
-                        <Send className="w-4 h-4" />
+                        <Send className="h-4 w-4" />
                       </Button>
+                      <p className="text-center text-sm text-slate-500">
+                        We typically reply within 1&ndash;2 business days.
+                      </p>
                     </form>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                  </>
+                )}
+              </div>
+            </Reveal>
 
-            {/* Right: Contact Info */}
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-6">
-                  Contact Information
-                </h2>
-                <div className="space-y-5">
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
-                      <Phone className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">Phone</p>
-                      <p className="text-slate-600">(555) 123-4567</p>
-                    </div>
+            {/* Right: Contact details */}
+            <Reveal delay={0.1}>
+              <div className="lg:pl-4">
+                <SectionHeading
+                  align="left"
+                  eyebrow="Reach us directly"
+                  title="Other ways to connect"
+                  subtitle="Prefer a phone call or email? Use whichever way feels easiest — we'll meet you there."
+                />
+
+                <div className="mt-9 space-y-6">
+                  {CONTACT_DETAILS.map((d) => (
+                    <a
+                      key={d.label}
+                      href={d.href}
+                      className="group flex gap-4 rounded-2xl border border-pif-navy-100 bg-white p-5 shadow-sm ring-1 ring-pif-navy/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-pif-navy/10"
+                    >
+                      <IconChip icon={d.icon} variant="soft" className="flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-slate-500">
+                          {d.label}
+                        </p>
+                        <p className="mt-0.5 font-heading text-lg font-semibold text-pif-navy-800 transition-colors group-hover:text-pif-teal-700">
+                          {d.value}
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                          {d.note}
+                        </p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+
+                {/* Office hours */}
+                <div className="mt-6 flex items-start gap-4 rounded-2xl bg-pif-mist p-5 ring-1 ring-pif-navy/5">
+                  <IconChip icon={Clock} variant="soft" className="flex-shrink-0" />
+                  <div>
+                    <p className="font-heading text-lg font-semibold text-pif-navy-800">
+                      When we&apos;re available
+                    </p>
+                    <p className="mt-0.5 text-slate-600">
+                      Monday&ndash;Friday, 8am&ndash;6pm CT
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-slate-600">
+                      Outside these hours? Leave a message and we&apos;ll follow
+                      up the next business day.
+                    </p>
                   </div>
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
-                      <Mail className="w-6 h-6 text-primary" />
-                    </div>
+                </div>
+
+                {/* Member portal callout */}
+                <div className="mt-6 overflow-hidden rounded-2xl hub-section-dark p-7 shadow-lg shadow-pif-navy/20">
+                  <div className="flex items-start gap-4">
+                    <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/10 text-pif-gold-300 ring-1 ring-white/15">
+                      <MessageCircle className="h-6 w-6" />
+                    </span>
                     <div>
-                      <p className="font-medium text-slate-900">Email</p>
-                      <a
-                        href="mailto:support@doublehelixhub.com"
-                        className="text-primary hover:text-cyan-700 hover:underline"
+                      <p className="font-heading text-lg font-semibold text-white">
+                        Already a member?
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-white/80">
+                        Manage your membership, view sharing requests, and update
+                        your household anytime in the member portal.
+                      </p>
+                      <Link
+                        href={PORTAL_URL}
+                        className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-pif-gold-300 transition-colors hover:text-pif-gold-200"
                       >
-                        support@doublehelixhub.com
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">
-                        Office Hours
-                      </p>
-                      <p className="text-slate-600">
-                        Mon–Fri 8am–6pm CST
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-xl hub-icon-chip flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900">Address</p>
-                      <p className="text-slate-600">
-                        123 Health Share Way
-                        <br />
-                        Dallas, TX 75001
-                      </p>
+                        Go to the member portal
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {/* Support Type Cards */}
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4">
-                  How we can help
-                </h3>
-                <div className="grid gap-4">
-                  <Card className="border shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4 pb-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg hub-icon-chip flex items-center justify-center flex-shrink-0">
-                        <Phone className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          Phone Support
-                        </p>
-                        <p className="text-sm text-slate-600">
-                          Call us during office hours for immediate assistance
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4 pb-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg hub-icon-chip flex items-center justify-center flex-shrink-0">
-                        <Mail className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          Email Support
-                        </p>
-                        <p className="text-sm text-slate-600">
-                          We typically respond within 1–2 business days
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card className="border shadow-sm opacity-75">
-                    <CardContent className="pt-4 pb-4 flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
-                        <MessageCircle className="w-5 h-5 text-slate-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900">
-                          Live Chat
-                        </p>
-                        <p className="text-sm text-slate-500">
-                          Coming soon
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </div>
+            </Reveal>
           </div>
-        </div>
+        </Container>
       </section>
+
+      {/* ---------------------------------------------------------------- CTA */}
+      <CTABand
+        title="Have a question we didn't cover?"
+        subtitle="Explore how community health-care sharing works, or take the first step and join thousands of families who've chosen a more caring way."
+        primary={{ label: 'Become a Member', href: '/enroll' }}
+        secondary={{ label: 'How It Works', href: '/how-it-works' }}
+      />
     </>
   );
 }
