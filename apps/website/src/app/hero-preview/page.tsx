@@ -1,8 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { imageUrl, type SiteImage } from '@/lib/site-images';
+import { imageUrl, type UnsplashImage } from '@/lib/site-images';
 
-const CANDIDATES: Array<SiteImage & { label: string; vibe: string }> = [
+const CANDIDATES: Array<UnsplashImage & { label: string; vibe: string }> = [
   {
     id: 'photo-1511895426328-dc8714191300',
     alt: 'A multi-generational family holding hands on the beach at sunset',
@@ -35,7 +35,7 @@ const CANDIDATES: Array<SiteImage & { label: string; vibe: string }> = [
   },
 ];
 
-function HeroMock({ image, label, vibe }: (typeof CANDIDATES)[number]) {
+function HeroMock({ label, vibe, ...image }: (typeof CANDIDATES)[number]) {
   return (
     <article className="overflow-hidden rounded-2xl border border-pif-navy-100 bg-white shadow-sm">
       <div className="relative aspect-[16/9] overflow-hidden border-b border-pif-navy-100">
@@ -92,7 +92,7 @@ export default function HeroPreviewPage() {
 
       <div className="grid gap-8">
         {CANDIDATES.map((candidate) => (
-          <HeroMock key={candidate.id} {...candidate} image={candidate} />
+          <HeroMock key={candidate.id} {...candidate} />
         ))}
       </div>
     </main>
