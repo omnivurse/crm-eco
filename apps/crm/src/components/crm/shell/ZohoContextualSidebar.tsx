@@ -280,8 +280,8 @@ export function ZohoContextualSidebar({
                     isOpen ? 'w-52' : 'w-14'
                 )}
             >
-                {/* Module switcher + title */}
-                <ModuleSwitcherRail expanded={isOpen} />
+                {/* Module switcher — icon rail when collapsed; top tab bar handles expanded desktop */}
+                {!isOpen && <ModuleSwitcherRail expanded={false} />}
 
                 {isOpen && (
                     <div className="px-3 py-1.5 border-b border-slate-200/80 dark:border-white/5">
