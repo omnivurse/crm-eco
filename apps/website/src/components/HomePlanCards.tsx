@@ -34,6 +34,10 @@ function formatCurrency(amount: number | null): string {
 }
 
 export async function HomePlanCards() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    return null;
+  }
+
   const supabase = await createServerSupabaseClient();
 
   const { data: plans } = await supabase

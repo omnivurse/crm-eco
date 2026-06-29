@@ -3,17 +3,24 @@
  * Every ID below was verified to resolve (HTTP 200) from images.unsplash.com,
  * which is already whitelisted in next.config. Alt text is intentionally general
  * so it stays accurate. Use `imageUrl()` to request a sized, auto-formatted URL.
+ * Local assets live under `public/` and use the `local` field instead of `id`.
  */
 
-export type SiteImage = { id: string; alt: string };
+export type UnsplashImage = { id: string; alt: string };
+export type LocalImage = { local: string; alt: string };
+export type SiteImage = UnsplashImage | LocalImage;
 
 const BASE = 'https://images.unsplash.com/';
 
 export function imageUrl(img: SiteImage, width = 1200, quality = 80): string {
+  if ('local' in img) return img.local;
   return `${BASE}${img.id}?auto=format&fit=crop&w=${width}&q=${quality}`;
 }
 
 export const IMAGES = {
+  /** Original AI-generated artwork — safe for PIFH marketing use (not third-party stock). */
+  heroBackground:    { local: '/images/hero-community-hands.jpg', alt: 'Diverse hands and medical gloves forming a heart shape together' },
+  logoMark:          { local: '/logo-mark.png', alt: 'Pay It Forward Health emblem' },
   heroDoctorPatient: { id: 'photo-1576091160550-2173dba999ef', alt: 'A clinician listening closely to a patient in a warm consultation room' },
   familyTogether:    { id: 'photo-1511895426328-dc8714191300', alt: 'A happy family smiling together at home' },
   consultation:      { id: 'photo-1631217868264-e5b90bb7e133', alt: 'A doctor reviewing a care plan with a patient' },
@@ -31,7 +38,7 @@ export const IMAGES = {
   pharmacy:          { id: 'photo-1532938911079-1b06ac7ceec7', alt: 'A pharmacist preparing a prescription' },
   seniorCare:        { id: 'photo-1577880216142-8549e9488dad', alt: 'An older adult on a video health visit' },
   portraitWoman:     { id: 'photo-1573497019940-1c28c88b4f3e', alt: 'Portrait of a smiling member' },
-  happyPeople:       { id: 'photo-1469571486292-0ba58a3f068b', alt: 'People laughing together outdoors' },
+  happyPeople:       { id: 'photo-1469571486292-0ba58a3f068b', alt: 'Painted hands forming a heart shape together' },
 } as const;
 
 export type ImageKey = keyof typeof IMAGES;
