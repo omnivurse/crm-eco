@@ -87,15 +87,18 @@ export const RecordRelatedListNav = memo(function RecordRelatedListNav({
     <nav
       aria-label="Related list navigation"
       className={cn(
-        'w-56 shrink-0 flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-300',
+        'w-52 xl:w-56 shrink-0 flex flex-col gap-1 text-sm text-slate-600 dark:text-slate-300',
+        'rounded-lg border border-slate-200/80 dark:border-white/10 bg-slate-50/80 dark:bg-slate-900/40',
+        'max-h-[calc(100vh-12rem)] overflow-y-auto scrollbar-thin py-2 pr-1',
         className,
       )}
+      style={{ top: 'var(--record-sticky-offset, 11rem)' }}
     >
-      <header className="px-2 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+      <header className="px-2.5 pt-0.5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
         Related List
       </header>
 
-      <ul className="space-y-0.5">
+      <ul className="space-y-0.5 px-0.5">
         {items.map((item) => {
           const Icon = ICONS[item.id] || Link2;
           const isActive = activeId === item.id;

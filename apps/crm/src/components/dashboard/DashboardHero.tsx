@@ -9,19 +9,17 @@ import {
   Flame,
   Activity,
   Sparkles,
-  UserPlus,
-  DollarSign,
-  Phone,
-  Mail,
   Calendar,
   Video,
   ChevronRight,
   Trophy,
+  Phone,
 } from 'lucide-react';
 
 import type { CrmProfile } from '@/lib/crm/types';
-import type { CalendarEvent } from '@/lib/crm/queries';
 import { CrmCommandBar } from '@/components/crm/shell/CrmCommandBar';
+import { DashboardWorkflowChips } from '@/components/dashboard/DashboardWorkflowChips';
+import { DashboardPickUpSection } from '@/components/dashboard/DashboardPickUpSection';
 
 /** Calendar event for display in hero section */
 export interface HeroCalendarEvent {
@@ -96,29 +94,6 @@ function HeroCard({
     >
       <div className="relative z-10 h-full">{children}</div>
     </div>
-  );
-}
-
-/**
- * QuickActionButton - Horizontal pill-style action button
- */
-function QuickActionButton({
-  href,
-  icon: Icon,
-  label,
-}: {
-  href: string;
-  icon: typeof UserPlus;
-  label: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-400 transition-colors text-[11px] font-medium whitespace-nowrap"
-    >
-      <Icon className="w-3.5 h-3.5" />
-      <span>{label}</span>
-    </Link>
   );
 }
 
@@ -346,12 +321,19 @@ export function DashboardHero({
     <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-white/10 p-4 md:p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
 
       <div className="relative z-10">
-        {/* Command bar — Zoho-style entry point for search + workflows */}
+        {/* Command center — search, workflows, pick up where you left off */}
         <div
-          className="mb-4 animate-fadeSlideUp opacity-0"
+          className="mb-4 space-y-3 animate-fadeSlideUp opacity-0"
           style={{ animationDelay: '25ms' }}
         >
           <CrmCommandBar size="hero" />
+          <DashboardWorkflowChips
+            crmRole={profile.crm_role}
+            todaysTaskCount={todaysTaskCount}
+            overdueCount={overdueCount}
+            atRiskCount={atRiskCount}
+          />
+          <DashboardPickUpSection />
         </div>
 
         {/* ── Zone A: Header ── */}
@@ -363,17 +345,6 @@ export function DashboardHero({
             <p className="text-xs text-slate-400 dark:text-white/40 mt-1">
               {mounted ? dateInfo.formattedDate : ''}
             </p>
-          </div>
-
-          {/* Quick Actions - 2x2 pill grid */}
-          <div
-            className="grid grid-cols-2 gap-2 animate-fadeSlideUp opacity-0"
-            style={{ animationDelay: '50ms' }}
-          >
-            <QuickActionButton href="/crm/modules/contacts/new" icon={UserPlus} label="Contact" />
-            <QuickActionButton href="/crm/modules/deals/new" icon={DollarSign} label="Deal" />
-            <QuickActionButton href="/crm/activities?type=call" icon={Phone} label="Log Call" />
-            <QuickActionButton href="/crm/communications/new" icon={Mail} label="Email" />
           </div>
         </div>
 

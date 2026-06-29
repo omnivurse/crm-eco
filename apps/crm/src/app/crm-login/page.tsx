@@ -1,255 +1,59 @@
-'use client';
+import { Suspense } from 'react';
+import { brandingToCssVariables } from '@crm-eco/ui/lib/branding';
+import { getLoginBrandingContext } from '@/lib/login-tenant';
+import { safeCrmRedirect } from '@/lib/login-branding-types';
+import { CrmLoginClient } from './CrmLoginClient';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { supabase } from '@/lib/supabase-client';
-import { AuthSplitLayout, AuthHeroPanel, BrandLogo, authForm } from '@crm-eco/ui';
-import {
-  Shield,
-  Activity,
-  Stethoscope,
-  Loader2,
-  Lock,
-  Eye,
-  EyeOff,
-  Mail,
-  Square,
-} from 'lucide-react';
 export const dynamic = 'force-dynamic';
 
-export default function CrmLoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  // Log authentication events
-  const logAuthEvent = async (action: string, details?: Record<string, unknown>) => {
-    try {
-      await fetch('/api/auth/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, email, details }),
-      });
-    } catch (err) {
-      console.error('Failed to log auth event:', err);
-    }
-  };
+const ERROR_MESSAGES: Record<string, string> = {
+  profile_fetch_failed: 'Your session could not be verified. Please sign in again.',
+  no_crm_access: 'You do not have access to the CRM. Please contact your administrator.',
+  no_organization: 'Your account is not linked to an organization.',
+  session_expired: 'Your session expired. Please sign in again.',
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
+interface CrmLoginPageProps {
+  searchParams: Promise<{
+    org?: string;
+    redirect?: string;
+    error?: string;
+  }>;
+}
 
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (authError) {
-        // Log failed login attempt
-        await logAuthEvent('login_failed', { reason: authError.message });
-        setError(authError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!authData.user) {
-        await logAuthEvent('login_failed', { reason: 'No user returned' });
-        setError('Authentication failed');
-        setLoading(false);
-        return;
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, crm_role, organization_id')
-        .eq('user_id', authData.user.id)
-        .not('crm_role', 'is', null)
-        .single();
-
-      if (profileError || !profile) {
-        await logAuthEvent('login_failed', { reason: 'No CRM access', profileError: profileError?.message });
-        await supabase.auth.signOut();
-        setError('You do not have access to the CRM. Please contact your administrator.');
-        setLoading(false);
-        return;
-      }
-
-      // Log successful login
-      await logAuthEvent('login_success', { role: profile.crm_role });
-
-      // Full page navigation (not client-side router.push) so the browser
-      // sends the fresh auth cookies with the request and the middleware
-      // can verify the session. router.push would trigger a fetch via the
-      // service worker before cookies have fully propagated, causing a 503.
-      window.location.href = '/crm';
-    } catch (err) {
-      await logAuthEvent('login_failed', { reason: 'Unexpected error' });
-      setError('An unexpected error occurred');
-      setLoading(false);
-    }
-  };
+async function CrmLoginContent({ searchParams }: CrmLoginPageProps) {
+  const params = await searchParams;
+  const brandingContext = await getLoginBrandingContext(params.org);
+  const redirectTo = safeCrmRedirect(params.redirect);
+  const initialError = params.error ? ERROR_MESSAGES[params.error] ?? null : null;
+  const cssVars = brandingToCssVariables(brandingContext?.branding);
 
   return (
-    <AuthSplitLayout
-      hero={
-        <AuthHeroPanel
-          headline={
-            <>
-              <span className="block">Empowering</span>
-              <span className="block bg-gradient-to-r from-[#67e8f9] to-[#a5f3fc] bg-clip-text text-transparent">
-                Healthier Lives
-              </span>
-            </>
-          }
-          subtitle="Building stronger communities through shared health and compassionate care."
-          badge="CRM"
-        />
-      }
+    <div
+      className="min-h-screen"
+      style={Object.keys(cssVars).length > 0 ? (cssVars as React.CSSProperties) : undefined}
     >
-      <div className="space-y-8">
-        <div className="text-center lg:text-left">
-          <Link href="/" className="inline-flex items-center mb-6">
-            <BrandLogo variant="full" size="lg" tone="white" priority />
-          </Link>
-          <h2 className={authForm.title}>Welcome back</h2>
-          <p className={authForm.subtitle}>Sign in to access your CRM dashboard</p>
-        </div>
+      <CrmLoginClient
+        brandingContext={brandingContext}
+        redirectTo={redirectTo}
+        initialError={initialError}
+      />
+    </div>
+  );
+}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && <div className={authForm.error}>{error}</div>}
+function CrmLoginFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-400 text-sm">
+      Loading sign-in…
+    </div>
+  );
+}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className={authForm.label}>Email Address</label>
-              <div className="relative group">
-                <div className={authForm.inputGlow} />
-                <Mail className={authForm.inputIcon} />
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  className={authForm.input}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className={authForm.label}>Password</label>
-                <Link href="/reset-password" className={authForm.link}>Forgot password?</Link>
-              </div>
-              <div className="relative group">
-                <div className={authForm.inputGlow} />
-                <Lock className={authForm.inputIcon} />
-                <input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  className={`${authForm.input} pr-12`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 z-10"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <button
-              type="button"
-              onClick={() => setRememberMe(!rememberMe)}
-              className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                rememberMe ? authForm.checkboxOn : authForm.checkboxOff
-              }`}
-            >
-              {rememberMe && <Square className="w-2.5 h-2.5 text-white fill-current" />}
-            </button>
-            <label onClick={() => setRememberMe(!rememberMe)} className={authForm.checkboxLabel}>
-              Remember me for 30 days
-            </label>
-          </div>
-
-          <button type="submit" className={authForm.submitBtn} disabled={loading}>
-            <div className={authForm.submitShimmer} />
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Signing in...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center">
-                Sign in
-                <span className="ml-2 group-hover:translate-x-1 transition-transform">&rarr;</span>
-              </span>
-            )}
-          </button>
-
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className={authForm.dividerLine} />
-            </div>
-            <div className="relative flex justify-center">
-              <span className={authForm.dividerText}>Need CRM Access?</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            className="w-full h-14 border border-slate-600 bg-slate-800/30 text-slate-200 hover:bg-slate-800/50 hover:border-slate-500 rounded-xl transition-all"
-            onClick={() => { window.location.href = 'mailto:support@doublehelixhub.com'; }}
-          >
-            Contact Administrator
-          </button>
-        </form>
-
-        <div className="mt-8 space-y-4">
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-              <Shield className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-semibold text-emerald-300">HIPAA Compliant</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
-              <Lock className="w-4 h-4 text-cyan-400" />
-              <span className="text-xs font-semibold text-cyan-300">256-bit Encryption</span>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center gap-3 text-xs text-slate-500 flex-wrap">
-            <span className="flex items-center gap-1">
-              <Activity className="w-3.5 h-3.5 text-cyan-400" />
-              MFA Protected
-            </span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
-            <span className="flex items-center gap-1">
-              <Stethoscope className="w-3.5 h-3.5 text-cyan-400" />
-              PHI Secure
-            </span>
-            <span className="w-1 h-1 rounded-full bg-slate-600" />
-            <span className="flex items-center gap-1">
-              <Shield className="w-3.5 h-3.5 text-cyan-400" />
-              Audit Logging
-            </span>
-          </div>
-
-          <p className={authForm.footer}>© 2026 Double Helix Hub. All rights reserved.</p>
-        </div>
-      </div>
-    </AuthSplitLayout>
+export default function CrmLoginPage(props: CrmLoginPageProps) {
+  return (
+    <Suspense fallback={<CrmLoginFallback />}>
+      <CrmLoginContent {...props} />
+    </Suspense>
   );
 }

@@ -17,17 +17,20 @@ import {
 import { Search, X, ArrowRight, StickyNote, LayoutList } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CrmRecord, CrmField } from '@/lib/crm/types';
+import {
+  buildRecordFieldSearchHits,
+  buildRecordSearchableRows,
+  type RecordFieldNavigateTarget,
+} from '@/lib/crm/record-field-search';
 
-export type NavigateToMatchArgs =
-  | { type: 'field'; fieldKey: string }
-  | { type: 'notes' };
+export type NavigateToMatchArgs = RecordFieldNavigateTarget;
 
-export interface InlineRecordSearchHit {
+export type InlineRecordSearchHit = {
   id: string;
   navigate: NavigateToMatchArgs;
   label: string;
   snippet: string;
-}
+};
 
 interface InlineRecordSearchProps {
   record: CrmRecord;
@@ -36,87 +39,6 @@ interface InlineRecordSearchProps {
   noteBodies?: string[];
   /** Switch tabs/panes and scroll targets — implemented by RecordDetailShellV2 */
   onNavigateToMatch: (args: NavigateToMatchArgs) => void;
-}
-
-function stringifyValue(val: unknown): string {
-  if (val === null || val === undefined) return '';
-  if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return String(val);
-  if (Array.isArray(val)) return val.map(stringifyValue).filter(Boolean).join(', ');
-  if (typeof val === 'object') {
-    try {
-      return JSON.stringify(val);
-    } catch {
-      return '';
-    }
-  }
-  return String(val);
-}
-
-/** Core columns mirrored on CrmRecord; custom fields usually live under `data` only */
-function valueFor(record: CrmRecord, key: string): unknown {
-  switch (key) {
-    case 'title':
-      return record.title;
-    case 'email':
-      return record.email;
-    case 'phone':
-      return record.phone;
-    case 'status':
-      return record.status;
-    case 'stage':
-      return record.stage;
-    default:
-      return record.data?.[key];
-  }
-}
-
-function snippetAround(text: string, queryLower: string, maxLen = 96): string {
-  const raw = text.trim().replace(/\s+/g, ' ');
-  if (!raw) return '';
-  const lower = raw.toLowerCase();
-  let i = lower.indexOf(queryLower);
-  if (i === -1) i = 0;
-  const half = Math.floor((maxLen - queryLower.length) / 2);
-  const start = Math.max(0, i - Math.max(half, 0));
-  const slice = raw.slice(start, start + maxLen);
-  const prefix = start > 0 ? '…' : '';
-  const suffix = start + maxLen < raw.length ? '…' : '';
-  return `${prefix}${slice}${suffix}`;
-}
-
-function buildHits(
-  rows: Array<{ fieldKey: string; label: string; text: string }>,
-  noteText: string,
-  rawQuery: string,
-): InlineRecordSearchHit[] {
-  const queryLower = rawQuery.trim().toLowerCase();
-  if (!queryLower) return [];
-
-  const hits: InlineRecordSearchHit[] = [];
-  let id = 0;
-
-  for (const row of rows) {
-    const hay = `${row.label} ${row.text}`.toLowerCase();
-    if (!hay.includes(queryLower)) continue;
-    hits.push({
-      id: `f-${row.fieldKey}-${id++}`,
-      navigate: { type: 'field', fieldKey: row.fieldKey },
-      label: row.label,
-      snippet: snippetAround(row.text, queryLower),
-    });
-  }
-
-  const nt = noteText.trim();
-  if (nt && nt.toLowerCase().includes(queryLower)) {
-    hits.push({
-      id: `notes-${id++}`,
-      navigate: { type: 'notes' },
-      label: 'Notes',
-      snippet: snippetAround(nt, queryLower),
-    });
-  }
-
-  return hits.slice(0, 30);
 }
 
 export function InlineRecordSearch({
@@ -131,50 +53,18 @@ export function InlineRecordSearch({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const sortedFields = useMemo(
-    () => [...fields].sort((a, b) => a.display_order - b.display_order),
-    [fields],
-  );
-
   const noteText = useMemo(
     () => noteBodies.map((b) => (typeof b === 'string' ? b : '')).join('\n'),
     [noteBodies],
   );
 
-  const searchableRows = useMemo(() => {
-    const rows: Array<{ fieldKey: string; label: string; text: string }> = [];
-    const seen = new Set<string>();
-
-    for (const f of sortedFields) {
-      if (seen.has(f.key)) continue;
-      seen.add(f.key);
-      const text = stringifyValue(valueFor(record, f.key));
-      if (text.trim()) {
-        rows.push({ fieldKey: f.key, label: f.label, text });
-      }
-    }
-
-    const standard: Array<{ key: string; label: string }> = [
-      { key: 'title', label: 'Title' },
-      { key: 'email', label: 'Email' },
-      { key: 'phone', label: 'Phone' },
-      { key: 'status', label: 'Status' },
-      { key: 'stage', label: 'Stage' },
-    ];
-    for (const s of standard) {
-      if (seen.has(s.key)) continue;
-      const text = stringifyValue(valueFor(record, s.key));
-      if (text.trim()) {
-        seen.add(s.key);
-        rows.push({ fieldKey: s.key, label: s.label, text });
-      }
-    }
-
-    return rows;
-  }, [record, sortedFields]);
+  const searchableRows = useMemo(
+    () => buildRecordSearchableRows(record, fields),
+    [record, fields],
+  );
 
   const results = useMemo(
-    () => buildHits(searchableRows, noteText, query),
+    () => buildRecordFieldSearchHits(searchableRows, noteText, query),
     [searchableRows, noteText, query],
   );
 

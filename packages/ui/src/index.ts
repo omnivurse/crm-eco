@@ -5,6 +5,7 @@ export * from './components/avatar';
 export * from './components/badge';
 export * from './components/auth';
 export * from './components/brand-logo';
+export * from './components/tenant-brand-logo';
 export * from './components/button';
 export * from './components/card';
 export * from './components/checkbox';

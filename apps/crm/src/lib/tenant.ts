@@ -14,8 +14,9 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase-server';
+import { ACTIVE_ORG_COOKIE } from '@/lib/login-branding-types';
 
-export const ACTIVE_ORG_COOKIE = 'dh_active_org';
+export { ACTIVE_ORG_COOKIE };
 export const ACTIVE_ORG_HEADER = 'x-active-org';
 
 const ROOT_DOMAINS = [

@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -46,7 +46,12 @@ import {
   Sparkles,
   Clock,
   Loader2,
+  Crosshair,
 } from 'lucide-react';
+import {
+  getRecordCommandContext,
+  subscribeRecordCommandContext,
+} from '@/lib/crm/record-command-context';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -179,8 +184,20 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   const [searchResults, setSearchResults] = useState<RecordSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [recents, setRecents] = useState<RecordSearchResult[]>([]);
+  const [recordContextVersion, setRecordContextVersion] = useState(0);
   const searchAbortRef = useRef<AbortController | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => subscribeRecordCommandContext(() => setRecordContextVersion((v) => v + 1)), []);
+
+  const recordCommandContext = useMemo(
+    () => getRecordCommandContext(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- version bump re-reads store
+    [recordContextVersion],
+  );
+
+  const onRecordPage = pathname?.startsWith('/crm/r/') ?? false;
 
   const navigate = useCallback(
     (path: string) => {
@@ -308,6 +325,27 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
     }));
   }, [recents, query, navigate]);
 
+  const fieldJumpCommands: CommandItem[] = useMemo(() => {
+    const trimmed = query.trim();
+    if (!onRecordPage || !recordCommandContext || trimmed.length < 1) return [];
+
+    return recordCommandContext.searchFields(trimmed).map((hit) => ({
+      id: `field-jump-${hit.id}`,
+      label: hit.label,
+      description: hit.snippet
+        ? `${recordCommandContext.recordTitle} · ${hit.snippet}`
+        : recordCommandContext.recordTitle,
+      icon: <Crosshair className="w-4 h-4" />,
+      action: () => {
+        recordCommandContext.jumpTo(hit.navigate);
+        onOpenChange(false);
+        setQuery('');
+      },
+      category: 'Jump to field',
+      keywords: [hit.label.toLowerCase(), hit.snippet.toLowerCase()],
+    }));
+  }, [onRecordPage, recordCommandContext, query, onOpenChange]);
+
   const baseCommands: CommandItem[] = useMemo(() => {
     const commands: CommandItem[] = [
       {
@@ -419,6 +457,9 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
   // the user has typed, recents when idle.
   const orderedCategories = useMemo(() => {
     const buckets: Array<{ category: string; items: CommandItem[] }> = [];
+    if (fieldJumpCommands.length > 0) {
+      buckets.push({ category: 'Jump to field', items: fieldJumpCommands });
+    }
     if (recordCommands.length > 0) {
       buckets.push({ category: 'Records', items: recordCommands });
     }
@@ -436,7 +477,7 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
       if (items && items.length > 0) buckets.push({ category: cat, items });
     }
     return buckets;
-  }, [recordCommands, recentCommands, filteredBase]);
+  }, [fieldJumpCommands, recordCommands, recentCommands, filteredBase]);
 
   const flatCommands = useMemo(
     () => orderedCategories.flatMap((b) => b.items),
@@ -504,7 +545,11 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
         <div className="flex items-center border-b px-3">
           <Search className="w-4 h-4 text-muted-foreground mr-2" />
           <Input
-            placeholder="Search records, run commands…"
+            placeholder={
+              onRecordPage && recordCommandContext
+                ? 'Jump to field, search records, run commands…'
+                : 'Search records, run commands…'
+            }
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="flex-1 border-0 focus-visible:ring-0 h-12 placeholder:text-muted-foreground"

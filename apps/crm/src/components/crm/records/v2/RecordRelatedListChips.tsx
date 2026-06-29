@@ -49,6 +49,7 @@ export interface RecordRelatedListChipsProps {
   onSelect: (id: string) => void;
   onMore?: () => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export const RecordRelatedListChips = memo(function RecordRelatedListChips({
@@ -57,6 +58,7 @@ export const RecordRelatedListChips = memo(function RecordRelatedListChips({
   onSelect,
   onMore,
   className,
+  style,
 }: RecordRelatedListChipsProps) {
   const activeChipRef = useRef<HTMLButtonElement>(null);
 
@@ -77,6 +79,7 @@ export const RecordRelatedListChips = memo(function RecordRelatedListChips({
     <div
       role="tablist"
       aria-label="Record sections"
+      style={style}
       className={cn(
         'relative flex items-center gap-1.5 overflow-x-auto scrollbar-thin px-4 py-2 border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 backdrop-blur',
         className,

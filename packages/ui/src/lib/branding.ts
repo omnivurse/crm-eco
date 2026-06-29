@@ -124,6 +124,54 @@ function brandingToDeclarations(branding?: Record<string, unknown> | null): stri
   return decls.join('');
 }
 
+export interface ResolvedBrandDisplay {
+  companyName: string | null;
+  logoUrl: string | null;
+}
+
+/** Read company name + logo URL from organizations.branding jsonb. */
+export function resolveBrandDisplay(
+  branding?: Record<string, unknown> | null,
+  orgName?: string | null,
+): ResolvedBrandDisplay {
+  const record = asRecord(branding);
+  const pickString = (...candidates: unknown[]): string | null => {
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+    }
+    return null;
+  };
+
+  const logoUrl = record
+    ? pickString(record.logo_url, record.logoUrl, record.logo)
+    : null;
+  const companyName =
+    pickString(record?.company_name, record?.companyName, record?.name) ??
+    (orgName?.trim() || null);
+
+  return { companyName, logoUrl };
+}
+
+/** CSS custom properties for inline `style` (avoids dangerouslySetInnerHTML). */
+export function brandingToCssVariables(
+  branding?: Record<string, unknown> | null,
+): Record<string, string> {
+  const decls = brandingToDeclarations(branding);
+  if (!decls) return {};
+
+  const vars: Record<string, string> = {};
+  for (const chunk of decls.split(';')) {
+    const trimmed = chunk.trim();
+    if (!trimmed.startsWith('--')) continue;
+    const colon = trimmed.indexOf(':');
+    if (colon === -1) continue;
+    const key = trimmed.slice(0, colon).trim();
+    const value = trimmed.slice(colon + 1).trim();
+    if (key && value) vars[key] = value;
+  }
+  return vars;
+}
+
 /**
  * Translate a tenant's `organizations.branding` object into a CSS string that
  * overrides the brand tokens in BOTH the light (`:root`) and dark (`.dark`)

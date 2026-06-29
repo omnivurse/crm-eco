@@ -227,7 +227,7 @@ async function RecordDetailContent({ params }: PageProps) {
       notes={notes}
       orgId={profile.organization_id}
       insights={insightsWithLegacy}
-      className="h-[calc(100vh-64px)]"
+      className="h-[calc(100dvh-7.25rem)]"
     >
       {{
         overview: (
@@ -314,7 +314,7 @@ export default function RecordDetailPage(props: PageProps) {
 
 function RecordDetailSkeleton() {
   return (
-    <div className="flex h-[calc(100vh-64px)]">
+    <div className="flex h-[calc(100dvh-7.25rem)]">
       <div className="flex-1 overflow-hidden">
         {/* Header skeleton */}
         <div className="bg-white dark:bg-slate-950/80 border-b border-slate-200 dark:border-white/5 p-6">

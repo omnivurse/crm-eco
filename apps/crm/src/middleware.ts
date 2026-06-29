@@ -194,7 +194,14 @@ export async function middleware(request: NextRequest) {
         profile.is_active &&
         profile.crm_role
       ) {
-        return redirectWithCookies(new URL('/crm', request.url), supabaseResponse);
+        const redirectParam = request.nextUrl.searchParams.get('redirect');
+        const destination =
+          redirectParam &&
+          redirectParam.startsWith('/crm') &&
+          !redirectParam.startsWith('//')
+            ? redirectParam
+            : '/crm';
+        return redirectWithCookies(new URL(destination, request.url), supabaseResponse);
       }
 
       // Session exists but no usable CRM profile (or DB unreachable) —

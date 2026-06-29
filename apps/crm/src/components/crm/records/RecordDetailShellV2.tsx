@@ -148,6 +148,11 @@ import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
 import { useLiveRecord, type LiveRecordEvent } from '@/hooks/useLiveRecord';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import { isLeadRecordConverted, getConvertedContactId } from '@/lib/crm/lead-conversion-result';
+import {
+  buildRecordFieldSearchHits,
+  buildRecordSearchableRows,
+} from '@/lib/crm/record-field-search';
+import { setRecordCommandContext } from '@/lib/crm/record-command-context';
 
 export interface RecordDetailShellV2Props {
   record: CrmRecord;
@@ -333,6 +338,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const aiEmailAutoTriggeredRef = useRef(false);
   /** Scroll container for scrolling `[data-field]` / notes pane into view after find */
   const recordMainScrollRef = useRef<HTMLElement | null>(null);
+  const recordStickyHeaderRef = useRef<HTMLDivElement | null>(null);
+  const [headerCompact, setHeaderCompact] = useState(false);
 
   // When the Command Palette lands here with `?ai=email`, request a fresh AI
   // follow-up draft and open SendEmailDialog pre-filled, then scrub the query
@@ -548,6 +555,68 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 150);
   }, []);
+
+  const noteBodiesForSearch = useMemo(
+    () => notesProp.map((n) => n.body),
+    [notesProp],
+  );
+
+  const searchableRows = useMemo(
+    () => buildRecordSearchableRows(record, _fields),
+    [record, _fields],
+  );
+
+  // Expose "jump to field" targets to the global CommandPalette (⌘K).
+  useEffect(() => {
+    setRecordCommandContext({
+      recordId: record.id,
+      recordTitle: getRecordDisplayName(record),
+      searchFields: (q) =>
+        buildRecordFieldSearchHits(searchableRows, noteBodiesForSearch.join('\n'), q, 12),
+      jumpTo: handleNavigateToMatch,
+    });
+    return () => setRecordCommandContext(null);
+  }, [
+    record,
+    searchableRows,
+    noteBodiesForSearch,
+    handleNavigateToMatch,
+  ]);
+
+  // Collapse the hero header once the user scrolls — keeps title + key fields pinned.
+  useEffect(() => {
+    const root = recordMainScrollRef.current;
+    if (!root) return;
+
+    const onScroll = () => {
+      const y = root.scrollTop;
+      setHeaderCompact((prev) => {
+        if (!prev && y > 64) return true;
+        if (prev && y <= 8) return false;
+        return prev;
+      });
+    };
+
+    root.addEventListener('scroll', onScroll, { passive: true });
+    return () => root.removeEventListener('scroll', onScroll);
+  }, [record.id]);
+
+  // Sync sticky offset for the related-list rail with measured header height.
+  useEffect(() => {
+    const root = recordMainScrollRef.current;
+    const header = recordStickyHeaderRef.current;
+    if (!root || !header) return;
+
+    const syncOffset = () => {
+      const h = header.getBoundingClientRect().height;
+      root.style.setProperty('--record-sticky-offset', `${Math.ceil(h + 12)}px`);
+    };
+
+    syncOffset();
+    const ro = new ResizeObserver(syncOffset);
+    ro.observe(header);
+    return () => ro.disconnect();
+  }, [record.id, headerCompact, topTab]);
 
   // -------------------------------------------------------------------------
   // Action handlers (preserve V1 behaviour)
@@ -1096,10 +1165,17 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
     <RecordAiContextProvider recordId={record.id} enabled>
     <div className={cn('flex h-full', className)}>
       <main ref={recordMainScrollRef} className="flex-1 overflow-y-auto" data-record-find-root>
-        {/* Sticky header ---------------------------------------------------- */}
-        <div className="sticky top-0 z-10 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200 dark:border-white/5">
-          <div className="w-full px-4 xl:px-6 py-3">
+        {/* Sticky header — compacts on scroll so title + key fields stay visible */}
+        <div
+          ref={recordStickyHeaderRef}
+          className={cn(
+            'sticky top-0 z-10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-b border-slate-200 dark:border-white/5 transition-[padding,box-shadow] duration-200',
+            headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
+          )}
+        >
+          <div className={cn('w-full px-4 xl:px-6', headerCompact ? 'py-2' : 'py-3')}>
             {/* Breadcrumb + search */}
+            {!headerCompact && (
             <div className="flex items-center justify-between gap-4 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 <Link
@@ -1124,13 +1200,23 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 />
               </div>
             </div>
+            )}
 
             {/* Title row */}
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-start gap-4 min-w-0">
-                <RecordAvatarTile name={getRecordDisplayName(record)} moduleKey={module.key} size="lg" />
+            <div className={cn('flex items-start justify-between gap-4', headerCompact && 'items-center')}>
+              <div className={cn('flex items-start gap-4 min-w-0', headerCompact && 'items-center gap-2.5')}>
+                <RecordAvatarTile
+                  name={getRecordDisplayName(record)}
+                  moduleKey={module.key}
+                  size={headerCompact ? 'sm' : 'lg'}
+                />
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white truncate flex items-center gap-2">
+                  <h1
+                    className={cn(
+                      'font-bold text-slate-900 dark:text-white truncate flex items-center gap-2',
+                      headerCompact ? 'text-base' : 'text-2xl',
+                    )}
+                  >
                     <InlineFieldEditor
                       field="title"
                       value={record.title || ''}
@@ -1141,21 +1227,25 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       validate={(v) =>
                         v.trim().length === 0 ? 'Title cannot be empty' : null
                       }
-                      inputClassName="text-2xl font-bold"
+                      inputClassName={headerCompact ? 'text-base font-bold' : 'text-2xl font-bold'}
                     />
+                    {!headerCompact && (
                     <UnsavedChangesPill
                       className="font-normal text-[11px]"
                       recordId={record.id}
                     />
+                    )}
                   </h1>
+                  {!headerCompact && (
                   <RecordTagsRow
                     recordId={record.id}
                     recordData={record.data as Record<string, unknown> | undefined}
                     readOnly={isAlreadyConverted && isLeads}
                     className="mt-1.5"
                   />
-                  {/* Meta row: email, phone, status, badges */}
-                  <div className="flex items-center gap-3 mt-2 flex-wrap">
+                  )}
+                  {/* Meta row: email, phone, status, badges — always visible when sticky */}
+                  <div className={cn('flex items-center gap-3 flex-wrap', headerCompact ? 'mt-0.5' : 'mt-2')}>
                     <span className="group flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400">
                       <Mail className="w-3.5 h-3.5" />
                       <InlineFieldEditor
@@ -1265,9 +1355,9 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
-                    {!isLeads && <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />}
-                    {!isLeads && <NormalizationBadge status={(record as any).normalization_status} size="sm" />}
-                    {(() => {
+                    {!isLeads && !headerCompact && <MarketTypeBadge marketType={(record as any).market_type} showIcon size="sm" />}
+                    {!isLeads && !headerCompact && <NormalizationBadge status={(record as any).normalization_status} size="sm" />}
+                    {!headerCompact && (() => {
                       const data = record.data as Record<string, unknown> | undefined;
                       const capacities: string[] = [];
                       if (data?.product_type && typeof data.product_type === 'string') capacities.push(data.product_type);
@@ -1287,14 +1377,16 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 </div>
               </div>
 
-              {/* Header Actions: Convert (leads only) | Send Email | Edit | Note Template ⌄ | ⋯ */}
-              <div className="flex flex-wrap items-center gap-2 justify-end shrink-0 min-w-0">
+              {/* Header Actions — compact mode keeps only high-frequency actions */}
+              <div className={cn('flex flex-wrap items-center gap-2 justify-end shrink-0 min-w-0', headerCompact && 'gap-1')}>
+                {!headerCompact && (
                 <PresenceStack
                   participants={presenceParticipants}
                   moduleKey={module.key}
                   className="mr-1"
                 />
-                {canConvertToContact && (
+                )}
+                {!headerCompact && canConvertToContact && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -1307,7 +1399,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <span className="text-xs sm:text-sm">Convert to Contact</span>
                   </Button>
                 )}
-                {canConvertToMember && (
+                {!headerCompact && canConvertToMember && (
                   <ConvertLeadButton
                     recordId={record.id}
                     recordTitle={getRecordDisplayName(record)}
@@ -1331,6 +1423,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   </span>
                 </Button>
 
+                {!headerCompact && (
                 <Button
                   type="button"
                   size="sm"
@@ -1345,6 +1438,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     <span className="hidden sm:inline">Set Reminder</span>
                   </span>
                 </Button>
+                )}
 
                 <Button
                   variant="outline"
@@ -1357,7 +1451,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   <span className="hidden min-[380px]:inline">Edit</span>
                 </Button>
 
-                {/* Note templates — visible on narrow viewports; overflow row wraps via flex-wrap above. */}
+                {!headerCompact && (
                 <div className="flex items-stretch shrink-0">
                   <Button
                     variant="outline"
@@ -1462,6 +1556,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -1564,6 +1659,48 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               </div>
             </div>
 
+            {/* Top tabs: Overview / Timeline / Data Privacy */}
+            <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-5')}>
+              <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
+                <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
+                  <TabsTrigger
+                    value="overview"
+                    onClick={() => setOverviewPane('details')}
+                    className={cn(
+                      'px-4 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors',
+                      headerCompact ? 'py-2' : 'py-3',
+                    )}
+                  >
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="timeline"
+                    className={cn(
+                      'px-4 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors',
+                      headerCompact ? 'py-2' : 'py-3',
+                    )}
+                  >
+                    <ClockIcon className="w-4 h-4 mr-1.5" />
+                    Timeline
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="privacy"
+                    className={cn(
+                      'px-4 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors',
+                      headerCompact ? 'py-2' : 'py-3',
+                    )}
+                  >
+                    <Shield className="w-4 h-4 mr-1.5" />
+                    Data Privacy
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+        </div>
+
+        {/* Context banners scroll away so the compact header stays lean */}
+        <div className="px-4 xl:px-6">
             {/* Deal stage progress */}
             {isDeals && stages.length > 0 && (
               <div className="mt-4">
@@ -1595,36 +1732,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               refreshKey={followUpRefreshKey}
               className="mt-4"
             />
-
-            {/* Top tabs: Overview / Timeline / Data Privacy */}
-            <div className="mt-5 -mb-px">
-              <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
-                <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
-                  <TabsTrigger
-                    value="overview"
-                    onClick={() => setOverviewPane('details')}
-                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
-                  >
-                    Overview
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="timeline"
-                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
-                  >
-                    <ClockIcon className="w-4 h-4 mr-1.5" />
-                    Timeline
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="privacy"
-                    className="px-4 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:border-b-2 data-[state=active]:border-teal-500 rounded-none bg-transparent data-[state=active]:bg-transparent hover:text-slate-900 dark:hover:text-white transition-colors"
-                  >
-                    <Shield className="w-4 h-4 mr-1.5" />
-                    Data Privacy
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
         </div>
 
         {/* Mobile-only horizontal related-list chip rail. Sits directly
@@ -1642,13 +1749,14 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             setOverviewPane(id as OverviewPane);
           }}
           onMore={() => setShowCustomizeDialog(true)}
-          className="lg:hidden sticky top-[64px] z-[5]"
+          className="lg:hidden sticky z-[5]"
+          style={{ top: 'var(--record-sticky-offset, 11rem)' }}
         />
 
         {/* Body -------------------------------------------------------------- */}
         <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
           <TabsContent value="overview" className="mt-0">
-            <div className="flex gap-4 xl:gap-6 px-4 xl:px-6 py-4 pb-24 lg:pb-4">
+            <div className="flex gap-3 xl:gap-5 px-4 xl:px-6 py-4 pb-24 lg:pb-4">
               <RecordRelatedListNav
                 items={navItems}
                 links={links}
@@ -1656,7 +1764,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 onSelect={(id) => setOverviewPane(id as OverviewPane)}
                 onAddRelatedList={() => setShowCustomizeDialog(true)}
                 onAddLink={() => setShowLinksEditor(true)}
-                className="sticky top-[220px] self-start hidden lg:flex"
+                className="sticky self-start hidden lg:flex"
               />
 
               <div className="flex-1 min-w-0">{renderOverviewPane()}</div>
@@ -1668,7 +1776,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 <button
                   type="button"
                   onClick={() => setInsightsCollapsed(false)}
-                  className="hidden xl:flex sticky top-[220px] self-start items-center gap-1 px-1 py-3 rounded-l-lg border border-r-0 border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-500 hover:text-teal-600 transition-colors"
+                  className="hidden xl:flex sticky self-start items-center gap-1 px-1 py-3 rounded-l-lg border border-r-0 border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-500 hover:text-teal-600 transition-colors"
+                  style={{ top: 'var(--record-sticky-offset, 11rem)' }}
                   aria-label="Expand insights panel"
                   title="Show insights"
                 >
@@ -1678,8 +1787,12 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   </span>
                 </button>
               ) : (
+              <div
+                className="hidden xl:block sticky self-start"
+                style={{ top: 'var(--record-sticky-offset, 11rem)' }}
+              >
               <RecordInsightsPanel
-                className="hidden xl:flex sticky top-[220px] self-start"
+                className="flex"
                 lastUpdatedAt={insights?.lastInteractionAt ?? record.updated_at}
                 bestTime={bestTimeSlots}
                 quickActions={
@@ -1795,6 +1908,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   </>
                 }
               />
+              </div>
               )}
             </div>
           </TabsContent>

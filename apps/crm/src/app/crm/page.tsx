@@ -14,7 +14,8 @@ import {
   getAdvisorContactSummary,
 } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
-import { DEFAULT_LAYOUT, WIDGET_REGISTRY } from '@/lib/dashboard';
+import { WIDGET_REGISTRY } from '@/lib/dashboard';
+import { resolveDefaultDashboardLayout } from '@/lib/dashboard/role-default-layout';
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
 import type { HeroCalendarEvent } from '@/components/dashboard/DashboardHero';
@@ -123,13 +124,13 @@ async function DashboardContent() {
     );
   }
 
-  // Load user's saved layout or use default
-  let layout = DEFAULT_LAYOUT;
+  // Load user's saved layout, or role-aware defaults for first-time visitors.
+  let layout = resolveDefaultDashboardLayout(profile.crm_role);
   try {
     const savedLayout = await loadDashboardLayout();
     if (savedLayout) layout = savedLayout;
   } catch (err) {
-    console.error('[Dashboard] Failed to load layout, using default:', err);
+    console.error('[Dashboard] Failed to load layout, using role default:', err);
   }
 
   const widgetTypes = layout.widgets.map((w) => w.type);

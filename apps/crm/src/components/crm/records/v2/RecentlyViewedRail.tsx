@@ -35,6 +35,8 @@ export interface RecentlyViewedRailProps {
   /** Cap visible chips. Defaults to 8. */
   limit?: number;
   className?: string;
+  /** `inline` — compact strip for dashboard hero (no outer card chrome). */
+  variant?: 'card' | 'inline';
 }
 
 function getInitials(title: string | null | undefined): string {
@@ -67,6 +69,7 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
   moduleKey,
   limit = 8,
   className,
+  variant = 'card',
 }: RecentlyViewedRailProps) {
   const [items, setItems] = useState<RecentlyViewedItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,15 +102,24 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
 
   if (!loading && visible.length === 0) return null;
 
+  const isInline = variant === 'inline';
+
   return (
     <section
       aria-label="Recently viewed"
       className={cn(
-        'rounded-2xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm',
+        isInline
+          ? 'rounded-lg border border-slate-200/70 dark:border-white/10 bg-slate-50/50 dark:bg-slate-900/30'
+          : 'rounded-2xl border border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm',
         className,
       )}
     >
-      <div className="px-4 py-2 flex items-center gap-2 border-b border-slate-100 dark:border-white/5">
+      <div
+        className={cn(
+          'px-3 flex items-center gap-2 border-b border-slate-100 dark:border-white/5',
+          isInline ? 'py-1.5' : 'py-2 px-4',
+        )}
+      >
         <Clock className="w-3.5 h-3.5 text-slate-400" />
         <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
           Recently viewed
@@ -118,12 +130,15 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
           </span>
         )}
       </div>
-      <div className="flex gap-2 px-3 py-3 overflow-x-auto [scrollbar-width:thin]">
+      <div className={cn('flex gap-2 overflow-x-auto [scrollbar-width:thin]', isInline ? 'px-2 py-2' : 'px-3 py-3')}>
         {loading
-          ? Array.from({ length: 5 }).map((_, i) => (
+          ? Array.from({ length: isInline ? 4 : 5 }).map((_, i) => (
               <div
                 key={i}
-                className="min-w-[180px] h-[60px] rounded-xl bg-slate-100 dark:bg-slate-800/50 animate-pulse"
+                className={cn(
+                  'rounded-xl bg-slate-100 dark:bg-slate-800/50 animate-pulse',
+                  isInline ? 'min-w-[160px] h-[52px]' : 'min-w-[180px] h-[60px]',
+                )}
               />
             ))
           : visible.map((item) => (
@@ -132,9 +147,10 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
                 href={`/crm/r/${item.recordId}`}
                 prefetch={false}
                 className={cn(
-                  'group shrink-0 min-w-[180px] max-w-[240px] rounded-xl border border-slate-200 dark:border-white/10',
+                  'group shrink-0 rounded-xl border border-slate-200 dark:border-white/10',
                   'bg-white dark:bg-slate-900/60 hover:border-teal-400 dark:hover:border-teal-500/60 hover:shadow-sm',
-                  'px-3 py-2 flex items-center gap-2 transition-colors',
+                  'flex items-center gap-2 transition-colors',
+                  isInline ? 'min-w-[160px] max-w-[220px] px-2.5 py-1.5' : 'min-w-[180px] max-w-[240px] px-3 py-2',
                 )}
               >
                 <div

@@ -1,6 +1,8 @@
 export { DashboardGrid } from './DashboardGrid';
 export { DashboardToolbar } from './DashboardToolbar';
 export { DashboardHero } from './DashboardHero';
+export { DashboardWorkflowChips } from './DashboardWorkflowChips';
+export { DashboardPickUpSection } from './DashboardPickUpSection';
 export { DashboardStats } from './DashboardStats';
 export { DashboardSkeleton } from './DashboardSkeleton';
 export { WidgetCard } from './WidgetCard';
