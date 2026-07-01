@@ -10,6 +10,7 @@ export const HEALTH_SHARING_DATA_KEYS = [
   'monthly_contribution',
   'iua_amount',
   'sharing_effective_date',
+  'sharing_end_date',
   'sharing_status',
   'sharing_member_id',
   'previous_membership',

@@ -413,13 +413,8 @@ export function mergeCrmDataJsonIntoRowColumns(
     const mirrored = normalizeDateColumnValue(d.sharing_end_date);
     if (mirrored) updates.cancellation_date = mirrored;
   }
-  if (
-    d.health_insurance_end_date !== undefined &&
-    updates.cancellation_date === undefined
-  ) {
-    const mirrored = normalizeDateColumnValue(d.health_insurance_end_date);
-    if (mirrored) updates.cancellation_date = mirrored;
-  }
+  // health_insurance_end_date stays in JSONB only — it is the canonical major-medical
+  // end date and must not overwrite the indexed membership cancellation_date.
 
   return updates;
 }

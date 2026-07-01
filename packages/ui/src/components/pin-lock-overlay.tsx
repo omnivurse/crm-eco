@@ -9,25 +9,53 @@ const SESSION_HOURS = 12;
 interface PinLockOverlayProps {
   pin: string;
   appName?: string;
+  /** When true, show the gate regardless of env (used by PIFH website only). */
+  alwaysOn?: boolean;
 }
 
+/** Default preview PIN when env is unset (client-side gate only). */
+export const DEFAULT_SITE_PIN = '012049';
+
 /**
- * Site-wide PIN gate is opt-in only. Disabled by default so testers and
- * staging can reach login flows without a shared PIN.
- *
- * Re-enable before a restricted preview: set `NEXT_PUBLIC_ENABLE_PIN_LOCK=true`
- * in the deployment environment and rebuild.
+ * Opt-in PIN gate for apps that set `NEXT_PUBLIC_ENABLE_PIN_LOCK=true`.
+ * The PIFH marketing site uses `alwaysOn` on `SitePinLockGate` instead.
  */
 export function isPinLockEnabled(): boolean {
-  return process.env.NEXT_PUBLIC_ENABLE_PIN_LOCK === 'true';
+  return (
+    process.env.NEXT_PUBLIC_ENABLE_PIN_LOCK === 'true' ||
+    process.env.VITE_ENABLE_PIN_LOCK === 'true'
+  );
+}
+
+/** PIN from env (`NEXT_PUBLIC_SITE_PIN` / `VITE_SITE_PIN`) or default preview PIN. */
+export function getSitePin(): string {
+  const fromEnv =
+    process.env.NEXT_PUBLIC_SITE_PIN?.trim() ||
+    process.env.VITE_SITE_PIN?.trim();
+  return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_SITE_PIN;
+}
+
+/** Drop-in gate for app root layouts. */
+export function SitePinLockGate({
+  appName = 'Application',
+  alwaysOn = false,
+}: {
+  appName?: string;
+  alwaysOn?: boolean;
+}) {
+  return <PinLockOverlay pin={getSitePin()} appName={appName} alwaysOn={alwaysOn} />;
 }
 
 /**
  * Full-screen PIN gate that blocks access until the correct PIN is entered.
  * Persists unlock state in sessionStorage for SESSION_HOURS hours.
  */
-export function PinLockOverlay({ pin, appName = 'Application' }: PinLockOverlayProps) {
-  const pinLockEnabled = isPinLockEnabled();
+export function PinLockOverlay({
+  pin,
+  appName = 'Application',
+  alwaysOn = false,
+}: PinLockOverlayProps) {
+  const pinLockEnabled = alwaysOn || isPinLockEnabled();
   const [locked, setLocked] = React.useState(true);
   const [entered, setEntered] = React.useState('');
   const [error, setError] = React.useState(false);

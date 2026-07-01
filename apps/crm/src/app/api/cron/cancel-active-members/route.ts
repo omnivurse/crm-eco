@@ -22,7 +22,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import {
-  ACTIVE_CONTACT_STATUSES,
+  TERMINAL_CONTACT_STATUSES,
+  isEligibleForScheduledCancellation,
   isScheduledCancellationDue,
 } from '@/lib/crm/resolve-effective-end-date';
 import {
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
       .from('crm_records')
       .select(SELECT_COLS)
       .in('module_id', moduleIds)
-      .in('status', [...ACTIVE_CONTACT_STATUSES])
+      .not('status', 'in', `(${[...TERMINAL_CONTACT_STATUSES].map((s) => `"${s}"`).join(',')})`)
       .order('id', { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
@@ -111,6 +112,7 @@ export async function GET(request: NextRequest) {
     scanned += page.length;
 
     for (const raw of page as RecordForScheduledCancel[]) {
+      if (!isEligibleForScheduledCancellation(raw.status)) continue;
       const check = isScheduledCancellationDue(raw, today);
       if (!check.due || !check.effectiveDate || !check.endDate) continue;
 

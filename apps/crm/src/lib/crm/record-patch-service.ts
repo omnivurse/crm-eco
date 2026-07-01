@@ -12,6 +12,7 @@ import {
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
+import { buildScheduledCancellationUpdates } from '@/lib/crm/scheduled-end-date-cancel';
 
 /** Matches `getAuthProfile()` shape used by CRM API routes */
 /** Profile fields required by CRM record create/patch (matches `getAuthProfile()`). */
@@ -258,6 +259,21 @@ export async function executeCrmRecordPatch(params: {
     };
   }
 
+  const today = new Date().toISOString().slice(0, 10);
+  const mergedForCancelCheck = {
+    status: (updates.status ?? previousRecord.status) as string | null,
+    cancellation_date: (updates.cancellation_date ??
+      previousRecord.cancellation_date) as string | null,
+    data: (updates.data ?? previousRecord.data) as Record<string, unknown> | null,
+    id: previousRecord.id,
+    org_id: previousRecord.org_id,
+    title: previousRecord.title,
+  };
+  const autoCancelUpdates = buildScheduledCancellationUpdates(mergedForCancelCheck, today);
+  if (autoCancelUpdates) {
+    Object.assign(updates, autoCancelUpdates);
+  }
+
   const { data: record, error } = await supabase
     .from('crm_records')
     .update(updates)
@@ -283,6 +299,19 @@ export async function executeCrmRecordPatch(params: {
 
   if (!record) {
     return { ok: false, status: 500, body: { error: 'Update returned no data', code: 'NO_DATA' } };
+  }
+
+  if (autoCancelUpdates) {
+    const { error: histError } = await supabase.from('crm_stage_history').insert({
+      record_id: id,
+      org_id: previousRecord.org_id,
+      from_stage: previousRecord.status,
+      to_stage: 'Cancelled',
+      reason: 'Auto-cancelled on save: scheduled end date reached',
+    });
+    if (histError) {
+      console.error('[Records] auto-cancel stage_history error:', histError.message);
+    }
   }
 
   const typedRecord = record as CrmRecord;

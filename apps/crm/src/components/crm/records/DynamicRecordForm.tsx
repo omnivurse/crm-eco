@@ -66,6 +66,9 @@ import {
   getPersistedExpandedSections,
   persistSectionExpanded,
 } from '@/lib/crm/record-section-persistence';
+import {
+  shouldShowEndDateFieldInSection,
+} from '@/lib/crm/coverage-end-date-fields';
 import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
@@ -644,6 +647,9 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
   const fieldsBySection = useMemo(() => {
     const grouped: Record<string, CrmField[]> = {};
     for (const field of visibleFields) {
+      if (!shouldShowEndDateFieldInSection(field.key, field.section || 'main')) {
+        continue;
+      }
       const section = field.section || 'main';
       if (!grouped[section]) grouped[section] = [];
       grouped[section].push(field);
@@ -862,35 +868,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
-  /** End / cancellation date for the emerald snapshot (below start date). */
-  const heroEndDateField = useMemo(() => {
-    const isDateType = (f: CrmField) => f.type === 'date' || f.type === 'datetime';
-    const candidates = [
-      findFieldByKey('cancellation_date'),
-      findFieldByKey('end_date'),
-      findFieldByKey('termination_date'),
-      findFieldByKey('coverage_end_date'),
-      findFieldByKey('insurance_end_date'),
-      findFieldByKey('sharing_end_date'),
-      // Generic key-pattern fallback
-      matchByKeyPattern(
-        [/cancel.*date|end.*date|termination.*date/i],
-        isDateType,
-      ),
-    ].filter((f): f is CrmField => Boolean(f));
-
-    // Only show if distinct from the start date field
-    const startKey = heroStartDateField?.key;
-    const valid = startKey ? candidates.filter((f) => f.key !== startKey) : candidates;
-    return valid.find((f) => hasValue(f.key)) ?? valid[0];
-  }, [findFieldByKey, matchByKeyPattern, hasValue, heroStartDateField]);
-
   /** Product / plan / tier lines for the emerald snapshot (never duplicates carrier/date rows). */
   const heroProductPlanFields = useMemo(() => {
     const skipKeys = new Set<string>();
     if (heroSharingField) skipKeys.add(heroSharingField.key);
     if (heroStartDateField) skipKeys.add(heroStartDateField.key);
-    if (heroEndDateField) skipKeys.add(heroEndDateField.key);
 
     const preferredKeys = [
       'product',
@@ -948,7 +930,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     }
 
     return out;
-  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField, heroEndDateField]);
+  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField]);
 
   /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
   const heroProductPlanSnapshotFields = useMemo(() => {
@@ -1093,7 +1075,6 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                             No effective date field configured
                           </p>
                         )}
-                        {heroEndDateField && hasValue(heroEndDateField.key) && renderFieldCell(heroEndDateField)}
                       </div>
                     </div>
                   </div>

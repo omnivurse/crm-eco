@@ -26,43 +26,56 @@ export interface ScheduledCancelResult {
   error?: string;
 }
 
-export async function applyScheduledEndDateCancelForRecord(
-  supabase: SupabaseClient,
+/** Build row updates when a past end date should flip status to Cancelled. */
+export function buildScheduledCancellationUpdates(
   record: RecordForScheduledCancel,
   today: string,
-): Promise<ScheduledCancelResult> {
+): Record<string, unknown> | null {
   const check = isScheduledCancellationDue(record, today);
-  if (!check.due || !check.effectiveDate) {
-    return { cancelled: false };
-  }
+  if (!check.due || !check.effectiveDate) return null;
 
   const existingData =
     record.data && typeof record.data === 'object' && !Array.isArray(record.data)
       ? record.data
       : {};
 
+  return {
+    status: 'Cancelled',
+    cancellation_date: check.effectiveDate,
+    data: {
+      ...existingData,
+      contact_status: 'Cancelled',
+      cancellation_date: check.effectiveDate,
+      cancellation_reason:
+        (existingData.cancellation_reason as string | undefined) ||
+        'Scheduled end date reached',
+      scheduled_cancel_end_date: check.endDate,
+      auto_cancelled_at: new Date().toISOString(),
+    },
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export async function applyScheduledEndDateCancelForRecord(
+  supabase: SupabaseClient,
+  record: RecordForScheduledCancel,
+  today: string,
+): Promise<ScheduledCancelResult> {
+  const cancelUpdates = buildScheduledCancellationUpdates(record, today);
+  if (!cancelUpdates) {
+    return { cancelled: false };
+  }
+
   const { error: updateError } = await supabase
     .from('crm_records')
-    .update({
-      status: 'Cancelled',
-      cancellation_date: check.effectiveDate,
-      data: {
-        ...existingData,
-        contact_status: 'Cancelled',
-        cancellation_date: check.effectiveDate,
-        cancellation_reason:
-          (existingData.cancellation_reason as string | undefined) ||
-          'Scheduled end date reached',
-        scheduled_cancel_end_date: check.endDate,
-        auto_cancelled_at: new Date().toISOString(),
-      },
-      updated_at: new Date().toISOString(),
-    })
+    .update(cancelUpdates)
     .eq('id', record.id);
 
   if (updateError) {
     return { cancelled: false, record_id: record.id, error: updateError.message };
   }
+
+  const check = isScheduledCancellationDue(record, today);
 
   const { error: histError } = await supabase.from('crm_stage_history').insert({
     record_id: record.id,

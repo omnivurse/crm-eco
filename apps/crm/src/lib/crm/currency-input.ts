@@ -21,16 +21,23 @@ export function fieldUsesDecimalMoney(field: {
 
 const CURRENCY_TYPING_RE = /^\d*(\.\d{0,2})?$/;
 
+/** Strip currency formatting so pasted values like "$1,234.56" can be parsed. */
+export function sanitizeCurrencyInput(raw: string): string {
+  return raw.trim().replace(/[$,\s]/g, '');
+}
+
 /** True while the user is typing a partial currency value (e.g. "12." or "12.3"). */
 export function isValidCurrencyTyping(raw: string): boolean {
-  return CURRENCY_TYPING_RE.test(raw);
+  const sanitized = sanitizeCurrencyInput(raw);
+  if (sanitized === '') return true;
+  return CURRENCY_TYPING_RE.test(sanitized);
 }
 
 /** Parse and round to cents; returns null for blank/invalid input. */
 export function parseCurrencyInput(raw: string): number | null {
-  const trimmed = raw.trim();
-  if (trimmed === '') return null;
-  const n = Number(trimmed);
+  const sanitized = sanitizeCurrencyInput(raw);
+  if (sanitized === '') return null;
+  const n = Number(sanitized);
   if (!Number.isFinite(n)) return null;
   return Math.round(n * 100) / 100;
 }

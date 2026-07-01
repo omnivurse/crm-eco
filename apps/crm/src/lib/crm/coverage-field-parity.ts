@@ -51,6 +51,7 @@ export const REQUIRED_PERSON_COVERAGE_FIELD_KEYS = [
   'monthly_contribution',
   'iua_amount',
   'sharing_effective_date',
+  'sharing_end_date',
   'sharing_status',
   'sharing_member_id',
   'previous_membership',
