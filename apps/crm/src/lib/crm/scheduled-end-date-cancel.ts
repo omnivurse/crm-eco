@@ -61,6 +61,11 @@ export async function applyScheduledEndDateCancelForRecord(
   record: RecordForScheduledCancel,
   today: string,
 ): Promise<ScheduledCancelResult> {
+  const check = isScheduledCancellationDue(record, today);
+  if (!check.due || !check.effectiveDate) {
+    return { cancelled: false };
+  }
+
   const cancelUpdates = buildScheduledCancellationUpdates(record, today);
   if (!cancelUpdates) {
     return { cancelled: false };
@@ -74,8 +79,6 @@ export async function applyScheduledEndDateCancelForRecord(
   if (updateError) {
     return { cancelled: false, record_id: record.id, error: updateError.message };
   }
-
-  const check = isScheduledCancellationDue(record, today);
 
   const { error: histError } = await supabase.from('crm_stage_history').insert({
     record_id: record.id,
