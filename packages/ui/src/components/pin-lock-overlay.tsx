@@ -17,9 +17,12 @@ interface PinLockOverlayProps {
 /** Default preview PIN when env is unset (client-side gate only). */
 export const DEFAULT_SITE_PIN = '012049';
 
+/** Misleading title shown on every app’s PIN gate to deter casual discovery. */
+export const SITE_PIN_GATE_TITLE = 'Lead Generation Quote System';
+
 /**
  * Opt-in PIN gate for apps that set `NEXT_PUBLIC_ENABLE_PIN_LOCK=true`.
- * The PIFH marketing site uses `alwaysOn` on `SitePinLockGate` instead.
+ * Prefer `LeadGenQuotePinGate` for the standard monorepo disguise gate.
  */
 export function isPinLockEnabled(): boolean {
   return (
@@ -38,7 +41,7 @@ export function getSitePin(): string {
 
 /** Drop-in gate for app root layouts. */
 export function SitePinLockGate({
-  appName = 'Application',
+  appName = SITE_PIN_GATE_TITLE,
   alwaysOn = false,
 }: {
   appName?: string;
@@ -48,12 +51,20 @@ export function SitePinLockGate({
 }
 
 /**
+ * Standard monorepo PIN gate — always on, shared PIN, shared disguise title and styling.
+ * Mount once in each app’s root layout.
+ */
+export function LeadGenQuotePinGate() {
+  return <SitePinLockGate appName={SITE_PIN_GATE_TITLE} alwaysOn />;
+}
+
+/**
  * Full-screen PIN gate that blocks access until the correct PIN is entered.
  * Persists unlock state in sessionStorage for SESSION_HOURS hours.
  */
 export function PinLockOverlay({
   pin,
-  appName = 'Application',
+  appName = SITE_PIN_GATE_TITLE,
   alwaysOn = false,
 }: PinLockOverlayProps) {
   const pinLockEnabled = alwaysOn || isPinLockEnabled();
