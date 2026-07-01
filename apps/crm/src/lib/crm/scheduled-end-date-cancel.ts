@@ -98,7 +98,7 @@ export async function applyScheduledEndDateCancelForRecord(
   return {
     cancelled: true,
     record_id: record.id,
-    effective_date: check.effectiveDate,
+    effective_date: check.effectiveDate ?? undefined,
     end_date: check.endDate ?? undefined,
   };
 }
