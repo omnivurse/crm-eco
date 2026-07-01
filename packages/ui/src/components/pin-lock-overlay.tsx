@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { cn } from '../lib/utils';
 
 const PIN_STORAGE_KEY = 'app-pin-unlocked';
 const PIN_EXPIRY_KEY = 'app-pin-expiry';
@@ -105,7 +106,7 @@ export function PinLockOverlay({
         }
       }
     },
-    [entered, pin, handleUnlock]
+    [entered, pin, handleUnlock],
   );
 
   const handleKeyDown = React.useCallback(
@@ -120,7 +121,7 @@ export function PinLockOverlay({
         }
       }
     },
-    [entered]
+    [entered],
   );
 
   const handlePaste = React.useCallback(
@@ -141,95 +142,86 @@ export function PinLockOverlay({
         inputRefs.current[Math.min(pasted.length, pin.length - 1)]?.focus();
       }
     },
-    [pin, handleUnlock]
+    [pin, handleUnlock],
   );
 
   if (!pinLockEnabled || !mounted || !locked) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[99999] flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 font-sans"
-    >
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-[#f4f5f7] px-4 font-sans">
       <div
-        className="flex flex-col items-center gap-8 py-12 px-10 rounded-3xl bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl max-w-[400px] w-[90vw]"
+        className="w-full max-w-md border border-[#d8dce3] bg-white px-8 py-10 shadow-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pin-lock-title"
       >
-        {/* Lock icon */}
-        <div
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-        >
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-          </svg>
-        </div>
-
-        <div className="text-center">
-          <h1 className="text-slate-50 text-2xl font-bold mb-2 tracking-tight">
+        <div className="mb-8 border-b border-[#e8eaed] pb-6">
+          <h1
+            id="pin-lock-title"
+            className="text-[15px] font-semibold tracking-wide text-[#1a1f26] uppercase"
+          >
             {appName}
           </h1>
-          <p className="text-slate-400 text-sm">
-            Enter PIN to continue
+          <p className="mt-2 text-sm text-[#5f6773]">
+            Enter your access PIN to continue.
           </p>
         </div>
 
-        {/* PIN input boxes */}
-        <div className="flex gap-3">
-          {Array.from({ length: pin.length }).map((_, i) => (
-            <input
-              key={i}
-              ref={(el) => { inputRefs.current[i] = el; }}
-              type="password"
-              inputMode="numeric"
-              maxLength={1}
-              value={entered[i] || ''}
-              autoFocus={i === 0}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, '');
-                if (val) handleDigit(val[val.length - 1], i);
-              }}
-              onKeyDown={(e) => handleKeyDown(e, i)}
-              onPaste={i === 0 ? handlePaste : undefined}
-              className="w-12 h-14 text-center text-2xl font-bold rounded-xl bg-white/[0.08] text-slate-50 outline-none transition-all caret-blue-500"
-              style={{
-                border: error
-                  ? '2px solid #ef4444'
-                  : entered[i]
-                    ? '2px solid #3b82f6'
-                    : '2px solid rgba(255, 255, 255, 0.15)',
-                animation: error ? 'pin-shake 0.4s ease' : undefined,
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = '#3b82f6';
-                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.2)';
-              }}
-              onBlur={(e) => {
-                if (!entered[i]) {
-                  e.target.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                }
-                e.target.style.boxShadow = 'none';
-              }}
-            />
-          ))}
+        <div className="mb-2">
+          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[#8b939e]">
+            Access PIN
+          </p>
+          <div className="flex justify-center gap-2">
+            {Array.from({ length: pin.length }).map((_, i) => (
+              <input
+                key={i}
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
+                type="password"
+                inputMode="numeric"
+                maxLength={1}
+                value={entered[i] || ''}
+                autoFocus={i === 0}
+                aria-label={`PIN digit ${i + 1} of ${pin.length}`}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, '');
+                  if (val) handleDigit(val[val.length - 1], i);
+                }}
+                onKeyDown={(e) => handleKeyDown(e, i)}
+                onPaste={i === 0 ? handlePaste : undefined}
+                className={cn(
+                  'h-11 w-10 border bg-white text-center text-lg font-medium text-[#1a1f26] outline-none transition-colors',
+                  'focus:border-[#1a1f26] focus:ring-1 focus:ring-[#1a1f26]',
+                  error
+                    ? 'border-red-600 animate-[pin-shake_0.4s_ease]'
+                    : entered[i]
+                      ? 'border-[#1a1f26]'
+                      : 'border-[#c5cad3]',
+                )}
+              />
+            ))}
+          </div>
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm -mt-2 font-medium">
-            Incorrect PIN
+          <p className="mt-3 text-center text-sm text-red-700" role="alert">
+            Incorrect PIN. Please try again.
           </p>
         )}
 
-        <p className="text-slate-600 text-xs text-center">
-          Authorized Access Only
+        <p className="mt-8 text-center text-xs text-[#8b939e]">
+          Authorized personnel only.
         </p>
       </div>
 
       <style>{`
         @keyframes pin-shake {
           0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-8px); }
-          40% { transform: translateX(8px); }
-          60% { transform: translateX(-6px); }
-          80% { transform: translateX(6px); }
+          20% { transform: translateX(-4px); }
+          40% { transform: translateX(4px); }
+          60% { transform: translateX(-3px); }
+          80% { transform: translateX(3px); }
         }
       `}</style>
     </div>

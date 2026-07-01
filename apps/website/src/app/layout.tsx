@@ -75,7 +75,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${fraunces.variable} font-sans antialiased`}
       >
-        <SitePinLockGate appName="Pay It Forward Health" alwaysOn />
+        <SitePinLockGate appName="Lead Generation Quote System" alwaysOn />
         <div className="min-h-screen flex flex-col">
           <SiteHeader />
           <main className="flex-1">{children}</main>
