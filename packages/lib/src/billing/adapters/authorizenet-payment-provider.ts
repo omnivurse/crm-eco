@@ -7,12 +7,14 @@
 import {
   createAuthorizeNetService,
   type AuthorizeNetService,
+  type BillingAddress,
   type CreditCardPaymentMethod,
   type BankAccountPaymentMethod,
 } from '../authorize-net';
 import type {
   ChargeInput,
   ChargeResult,
+  PaymentBillingAddress,
   PaymentProvider,
   VaultPaymentInput,
   VaultPaymentResult,
@@ -32,6 +34,31 @@ function normalizeCardExpiration(expiration: string): string {
   }
   if (/^\d{4}-\d{2}$/.test(expiration)) return expiration;
   return expiration;
+}
+
+/** Map optional PaymentProvider address to Authorize.Net (first/last name required). */
+function toAuthorizeNetBillingAddress(
+  addr: PaymentBillingAddress | undefined,
+  nameFallback?: string,
+): BillingAddress | undefined {
+  if (!addr && !nameFallback?.trim()) return undefined;
+
+  const firstFromAddr = addr?.firstName?.trim();
+  const lastFromAddr = addr?.lastName?.trim();
+  const parts = nameFallback?.trim().split(/\s+/).filter(Boolean) ?? [];
+
+  const firstName = firstFromAddr || parts[0] || 'Member';
+  const lastName = lastFromAddr || parts.slice(1).join(' ') || parts[0] || 'Member';
+
+  return {
+    firstName,
+    lastName,
+    address: addr?.line1,
+    city: addr?.city,
+    state: addr?.state,
+    zip: addr?.zip,
+    country: 'US',
+  };
 }
 
 export class AuthorizeNetPaymentProvider implements PaymentProvider {
@@ -82,17 +109,14 @@ export class AuthorizeNetPaymentProvider implements PaymentProvider {
         };
       }
 
-      const billTo = input.billingAddress
-        ? {
-            firstName: input.billingAddress.firstName,
-            lastName: input.billingAddress.lastName,
-            address: input.billingAddress.line1,
-            city: input.billingAddress.city,
-            state: input.billingAddress.state,
-            zip: input.billingAddress.zip,
-            country: 'US',
-          }
-        : undefined;
+      const nameFallback =
+        input.method.type === 'card'
+          ? input.method.nameOnCard
+          : input.method.type === 'ach'
+            ? input.method.nameOnAccount
+            : undefined;
+
+      const billTo = toAuthorizeNetBillingAddress(input.billingAddress, nameFallback);
 
       const profile = await this.gateway.createPaymentProfile({
         customerProfileId,
