@@ -14,10 +14,14 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { cache } from 'react';
 import { createClient } from '@/lib/supabase-server';
-import { ACTIVE_ORG_COOKIE } from '@/lib/login-branding-types';
+import {
+  ACTIVE_ORG_COOKIE,
+  ACTIVE_ORG_HEADER,
+  type TenantRole,
+} from '@crm-eco/lib/tenant';
 
-export { ACTIVE_ORG_COOKIE };
-export const ACTIVE_ORG_HEADER = 'x-active-org';
+export { ACTIVE_ORG_COOKIE, ACTIVE_ORG_HEADER };
+export type { TenantRole };
 
 const ROOT_DOMAINS = [
   'doublehelix.com',
@@ -27,8 +31,6 @@ const ROOT_DOMAINS = [
   'localhost',
   'localhost:3000',
 ];
-
-export type TenantRole = 'owner' | 'super_admin' | 'admin' | 'staff' | 'read_only';
 
 export interface ResolvedTenant {
   organizationId: string;

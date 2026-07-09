@@ -30,6 +30,7 @@ import {
 } from 'react';
 import { mutationQueue } from '@/lib/offline/mutation-queue';
 import { makeIdempotencyKey } from '@/lib/offline/queued-send';
+import { resolveFieldSaveTarget } from '@/lib/crm/record-field-registry';
 
 export type FieldSaveStatus = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
 
@@ -84,37 +85,6 @@ export interface RecordFieldSaveContextValue {
    */
   flush: () => Promise<void>;
 }
-
-/**
- * Fields recognized as top-level columns by `executeCrmRecordPatch`. Any
- * key NOT in this list is automatically routed through JSONB `data`.
- * Keep this in sync with CANONICAL_TOP_LEVEL_KEYS in record-patch-service.
- */
-const KNOWN_ROW_COLUMNS = new Set<string>([
-  'title',
-  'status',
-  'stage',
-  'owner_id',
-  'market_type',
-  'carrier_id',
-  'normalization_status',
-  'normalization_notes',
-  'canonical_advisor_id',
-  'normalized_advisor_name',
-  'normalized_agent_name',
-  'tobacco_user',
-  'record_type',
-  'import_source',
-  'advisor_id',
-  'contact_type',
-  'territory_id',
-  'source_record_id',
-  'import_batch_id',
-  'original_start_date',
-  'current_year_start_date',
-  'cancellation_date',
-  'group_name',
-]);
 
 const RecordFieldSaveContext =
   createContext<RecordFieldSaveContextValue | null>(null);
@@ -395,7 +365,7 @@ export function RecordFieldSaveProvider({
   const save = useCallback<RecordFieldSaveContextValue['save']>(
     (field, value, options) => {
       const target: FieldSaveTarget =
-        options?.target ?? (KNOWN_ROW_COLUMNS.has(field) ? 'row' : 'data');
+        options?.target ?? resolveFieldSaveTarget(field);
       // Mark pending immediately so the pill lights up while typing.
       updateField(field, { status: 'pending', error: undefined });
 

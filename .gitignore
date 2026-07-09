@@ -77,3 +77,6 @@ pnpm-lock.yaml
 
 # Local Claude Code overrides (keep secrets/DB passwords out of the tracked settings)
 .claude/settings.local.json
+
+# skills.sh bulk installer cache/logs
+scripts/.cache/

@@ -22,9 +22,14 @@ import 'server-only';
 import { cookies, headers } from 'next/headers';
 import { cache } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
+import {
+  ACTIVE_ORG_COOKIE,
+  ACTIVE_ORG_HEADER,
+  type TenantRole,
+} from '@crm-eco/lib/tenant';
 
-export const ACTIVE_ORG_COOKIE = 'dh_active_org';
-export const ACTIVE_ORG_HEADER = 'x-active-org';
+export { ACTIVE_ORG_COOKIE, ACTIVE_ORG_HEADER };
+export type { TenantRole };
 
 // Root domains the resolver recognises as "no tenant slug" hosts.
 // `doublehelixhub.com` is kept for back-compat with the PIFH production
@@ -40,8 +45,6 @@ const ROOT_DOMAINS = [
   'localhost',
   'localhost:3002',
 ];
-
-export type TenantRole = 'owner' | 'super_admin' | 'admin' | 'staff' | 'read_only';
 
 export interface ResolvedTenant {
   organizationId: string;

@@ -1,5 +1,9 @@
 import { CRM_DATA_JSONB_KEYS_SYNCED_TO_ROW_ON_PATCH } from '@/lib/crm/record-form-defaults';
 import {
+  CRM_RECORD_DATE_COLUMN_KEYS,
+  CRM_RECORD_UUID_COLUMN_KEYS,
+} from '@/lib/crm/record-field-registry';
+import {
   HEALTH_SHARING_DATA_KEYS,
   leadHasHealthSharingData,
   sharingEntityAsCarrierId,
@@ -50,24 +54,13 @@ export function normalizeRowColumnValue(value: unknown): unknown {
  * as June 1, year 26 AD — the historic 2-digit-year bug we healed in migration
  * 202605060006.
  */
-const DATE_COLUMN_KEYS = new Set([
-  'original_start_date',
-  'current_year_start_date',
-  'cancellation_date',
-]);
+const DATE_COLUMN_KEYS = CRM_RECORD_DATE_COLUMN_KEYS;
 
 /**
  * Row columns typed as UUID in Postgres. Non-UUID free-text values must
  * NOT be synced here or Postgres returns `invalid input syntax for type uuid`.
  */
-const UUID_COLUMN_KEYS = new Set([
-  'carrier_id',
-  'canonical_advisor_id',
-  'advisor_id',
-  'territory_id',
-  'source_record_id',
-  'import_batch_id',
-]);
+const UUID_COLUMN_KEYS = CRM_RECORD_UUID_COLUMN_KEYS;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

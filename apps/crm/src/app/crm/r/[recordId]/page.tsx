@@ -12,8 +12,7 @@ import {
   getCachedCurrentProfile,
 } from '@/lib/crm/queries';
 import { resolveRecordOrMergeDestination } from '@/lib/crm/resolve-record';
-import { applyAge65AutoCancelForRecord } from '@/lib/crm/age-65-auto-cancel';
-import { applyScheduledEndDateCancelForRecordView } from '@/lib/crm/scheduled-end-date-cancel-live';
+import { applyAge65AutoCancelForRecord, applyScheduledEndDateCancelForRecordView } from '@/lib/crm/membership-lifecycle';
 import { RecordDetailShell } from '@/components/crm/records/RecordDetailShell';
 import { RecordDetailShellV2 } from '@/components/crm/records/RecordDetailShellV2';
 import { isLayoutV2Enabled } from '@/lib/crm/feature-flags';

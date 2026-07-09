@@ -36,7 +36,7 @@ import {
   PENDING_CONTACT_STATUSES,
   resolveActiveStatusForMarket,
   resolveEffectiveStartDate,
-} from '@/lib/crm/resolve-effective-start-date';
+} from '@/lib/crm/membership-lifecycle';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;

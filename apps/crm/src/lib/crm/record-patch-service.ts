@@ -12,7 +12,12 @@ import {
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 import { alignMisalignedRecordModule } from '@/lib/crm/align-record-module';
-import { buildScheduledCancellationUpdates } from '@/lib/crm/scheduled-end-date-cancel';
+import { buildScheduledCancellationUpdates } from '@/lib/crm/membership-lifecycle';
+import {
+  CRM_RECORD_PATCH_CANONICAL_KEYS,
+  CRM_RECORD_DATE_COLUMN_KEYS,
+  CRM_RECORD_UUID_COLUMN_KEYS,
+} from '@/lib/crm/record-field-registry';
 
 /** Matches `getAuthProfile()` shape used by CRM API routes */
 /** Profile fields required by CRM record create/patch (matches `getAuthProfile()`). */
@@ -27,45 +32,6 @@ export interface CrmPatchAuthProfile {
 export type CrmRecordPatchResult =
   | { ok: true; record: CrmRecord; previousRecord: CrmRecord }
   | { ok: false; status: number; body: Record<string, unknown> };
-
-const CANONICAL_TOP_LEVEL_KEYS = [
-  'market_type',
-  'carrier_id',
-  'normalization_status',
-  'normalization_notes',
-  'canonical_advisor_id',
-  'normalized_advisor_name',
-  'normalized_agent_name',
-  'tobacco_user',
-  'record_type',
-  'import_source',
-  'advisor_id',
-  'contact_type',
-  'territory_id',
-  'source_record_id',
-  'import_batch_id',
-  'original_start_date',
-  'current_year_start_date',
-  'cancellation_date',
-  'group_name',
-] as const;
-
-/** Subset of CANONICAL_TOP_LEVEL_KEYS that map to DATE columns (not text/uuid). */
-const CANONICAL_DATE_KEYS = new Set<string>([
-  'original_start_date',
-  'current_year_start_date',
-  'cancellation_date',
-]);
-
-/** Subset of CANONICAL_TOP_LEVEL_KEYS that map to UUID columns. */
-const CANONICAL_UUID_KEYS = new Set<string>([
-  'carrier_id',
-  'canonical_advisor_id',
-  'advisor_id',
-  'territory_id',
-  'source_record_id',
-  'import_batch_id',
-]);
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -195,11 +161,11 @@ export async function executeCrmRecordPatch(params: {
     updates.stage = body.stage;
   }
 
-  for (const key of CANONICAL_TOP_LEVEL_KEYS) {
+  for (const key of CRM_RECORD_PATCH_CANONICAL_KEYS) {
     if (body[key] !== undefined) {
-      if (CANONICAL_DATE_KEYS.has(key)) {
+      if (CRM_RECORD_DATE_COLUMN_KEYS.has(key)) {
         (updates as Record<string, unknown>)[key] = normalizeDateColumnValue(body[key]);
-      } else if (CANONICAL_UUID_KEYS.has(key)) {
+      } else if (CRM_RECORD_UUID_COLUMN_KEYS.has(key)) {
         // UUID columns reject non-UUID text. Free-text carrier/advisor
         // values must stay in JSONB only.
         const v = normalizeRowColumnValue(body[key]);

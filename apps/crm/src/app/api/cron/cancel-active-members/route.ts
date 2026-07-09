@@ -25,11 +25,9 @@ import {
   TERMINAL_CONTACT_STATUSES,
   isEligibleForScheduledCancellation,
   isScheduledCancellationDue,
-} from '@/lib/crm/resolve-effective-end-date';
-import {
   applyScheduledEndDateCancelForRecord,
   type RecordForScheduledCancel,
-} from '@/lib/crm/scheduled-end-date-cancel';
+} from '@/lib/crm/membership-lifecycle';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;

@@ -319,6 +319,8 @@ function httpConfigFromEnv(): HttpProviderConfig {
   };
 }
 
+import { createAuthorizeNetPaymentProvider } from './adapters/authorizenet-payment-provider';
+
 /* ------------------------------- Registry -------------------------------- */
 
 type PaymentProviderFactory = () => PaymentProvider;
@@ -326,6 +328,7 @@ type PaymentProviderFactory = () => PaymentProvider;
 const REGISTRY = new Map<string, PaymentProviderFactory>([
   ['placeholder', () => new PlaceholderPaymentProvider()],
   ['http', () => new GenericHttpPaymentProvider(httpConfigFromEnv())],
+  ['authorizenet', () => createAuthorizeNetPaymentProvider()],
 ]);
 
 /**
