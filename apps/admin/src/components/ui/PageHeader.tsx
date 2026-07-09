@@ -21,7 +21,7 @@ export function PageHeader({
   title,
   description,
   icon,
-  gradient = 'from-[#0891b2] to-[#06b6d4]',
+  gradient = 'from-primary to-primary/80',
   actions,
   backHref,
   backLabel = 'Back',
@@ -144,7 +144,7 @@ export function CardHeaderTitle({
   title,
   description,
   icon,
-  iconBg = 'bg-gradient-to-br from-[#0891b2] to-[#06b6d4]',
+  iconBg = 'bg-gradient-to-br from-primary to-primary/80',
   actions,
   className,
 }: CardHeaderTitleProps) {

@@ -164,7 +164,7 @@ export const CrmTopBar = memo(function CrmTopBar({
           className="hidden sm:flex items-center gap-2 h-8 px-2.5 rounded-md border border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5 text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:text-slate-600 dark:hover:text-slate-300 transition-colors text-[13px] min-w-[160px] lg:min-w-[220px]"
         >
           <Search className="w-4 h-4 flex-shrink-0" />
-          <span className="truncate">Search or start a workflow…</span>
+          <span className="truncate">Search people, deals, or start a workflow…</span>
           <kbd className="ml-auto hidden lg:inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded px-1.5 py-0.5">
             ⌘K
           </kbd>

@@ -17,9 +17,18 @@ import {
 } from 'lucide-react';
 
 import type { CrmProfile } from '@/lib/crm/types';
+import type { ModuleStats } from '@/lib/crm/types';
 import { CrmCommandBar } from '@/components/crm/shell/CrmCommandBar';
 import { DashboardWorkflowChips } from '@/components/dashboard/DashboardWorkflowChips';
 import { DashboardPickUpSection } from '@/components/dashboard/DashboardPickUpSection';
+import {
+  SalesJourneyStrip,
+  type JourneyStageCounts,
+} from '@/components/dashboard/SalesJourneyStrip';
+import {
+  TodayQueuePreview,
+  type TodayQueueItem,
+} from '@/components/dashboard/TodayQueuePreview';
 
 /** Calendar event for display in hero section */
 export interface HeroCalendarEvent {
@@ -58,6 +67,12 @@ interface DashboardHeroProps {
   weeklyGoal?: WeeklyGoalProgress;
   /** AI-generated insight summary */
   aiInsight?: string;
+  /** Module stats for journey strip */
+  moduleStats?: ModuleStats[];
+  /** Active/open enrollment count for journey strip */
+  enrollmentCount?: number;
+  /** Compact today-queue preview items */
+  todayQueueItems?: TodayQueueItem[];
 }
 
 // ============================================================================
@@ -229,6 +244,22 @@ function StatItem({
   );
 }
 
+function buildJourneyCounts(
+  moduleStats: ModuleStats[] | undefined,
+  enrollmentCount: number,
+  atRiskCount: number,
+): JourneyStageCounts {
+  const byKey = (key: string) =>
+    moduleStats?.find((s) => s.moduleKey === key)?.totalRecords ?? 0;
+  return {
+    leads: byKey('leads'),
+    contacts: byKey('contacts'),
+    deals: byKey('deals'),
+    enrollments: enrollmentCount,
+    atRiskDeals: atRiskCount,
+  };
+}
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -243,6 +274,9 @@ export function DashboardHero({
   pipelineHealth,
   weeklyGoal,
   aiInsight,
+  moduleStats,
+  enrollmentCount = 0,
+  todayQueueItems = [],
 }: DashboardHeroProps) {
   const [mounted, setMounted] = useState(false);
   const [dateInfo, setDateInfo] = useState({ greeting: 'Hello', formattedDate: '' });
@@ -268,6 +302,11 @@ export function DashboardHero({
 
   const firstName = profile.full_name?.split(' ')[0] || 'there';
 
+  const journeyCounts = useMemo(
+    () => buildJourneyCounts(moduleStats, enrollmentCount, atRiskCount),
+    [moduleStats, enrollmentCount, atRiskCount],
+  );
+
   const { displayInsight, insightHref } = useMemo(() => {
     if (aiInsight) return { displayInsight: aiInsight, insightHref: null };
 
@@ -280,11 +319,11 @@ export function DashboardHero({
     }
     if (overdueCount > 0) {
       insights.push(`${overdueCount} overdue task${overdueCount > 1 ? 's' : ''}`);
-      if (!href) href = '/crm/activities?filter=overdue';
+      if (!href) href = '/crm/workqueue';
     }
     if (todaysTaskCount > 0) {
       insights.push(`${todaysTaskCount} task${todaysTaskCount > 1 ? 's' : ''} due today`);
-      if (!href) href = '/crm/activities';
+      if (!href) href = '/crm/workqueue';
     }
     if (newThisWeek > 0) {
       insights.push(`${newThisWeek} new record${newThisWeek > 1 ? 's' : ''} this week`);
@@ -319,53 +358,60 @@ export function DashboardHero({
 
   return (
     <div className="relative overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-white/10 p-4 md:p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-
-      <div className="relative z-10">
-        {/* Command center — search, workflows, pick up where you left off */}
-        <div
-          className="mb-4 space-y-3 animate-fadeSlideUp opacity-0"
-          style={{ animationDelay: '25ms' }}
-        >
-          <CrmCommandBar size="hero" />
-          <DashboardWorkflowChips
-            crmRole={profile.crm_role}
-            todaysTaskCount={todaysTaskCount}
-            overdueCount={overdueCount}
-            atRiskCount={atRiskCount}
-          />
-          <DashboardPickUpSection />
-        </div>
-
-        {/* ── Zone A: Header ── */}
-        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
-          <div className="animate-fadeSlideUp">
+      <div className="relative z-10 space-y-4">
+        {/* Zone A: Greeting + search-first command bar */}
+        <div className="flex flex-col gap-3">
+          <div>
             <h1 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white tracking-tight">
               {dateInfo.greeting}, {firstName}!
             </h1>
             <p className="text-xs text-slate-400 dark:text-white/40 mt-1">
               {mounted ? dateInfo.formattedDate : ''}
+              <span className="hidden sm:inline">
+                {mounted ? ' · ' : ''}What do you want to work on?
+              </span>
             </p>
           </div>
+          <CrmCommandBar
+            size="hero"
+            placeholder="Search people, deals, or start a workflow…"
+            className="crm-motion-safe"
+          />
         </div>
 
-        {/* ── AI Insight Banner ── */}
+        {/* Zone B: Lead → Enroll journey */}
+        <SalesJourneyStrip counts={journeyCounts} />
+
+        {/* Zone C: Workflow chips + today queue + pick up */}
+        <DashboardWorkflowChips
+          crmRole={profile.crm_role}
+          todaysTaskCount={todaysTaskCount}
+          overdueCount={overdueCount}
+          atRiskCount={atRiskCount}
+        />
+
+        <TodayQueuePreview
+          items={todayQueueItems}
+          overdueCount={overdueCount}
+          todaysTaskCount={todaysTaskCount}
+        />
+
+        <DashboardPickUpSection />
+
+        {/* Insight banner */}
         {insightHref ? (
           <Link
             href={insightHref}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/[0.10] mb-3 hover:border-teal-300 dark:hover:border-white/[0.18] transition-colors cursor-pointer group animate-fadeSlideUp opacity-0"
-            style={{ animationDelay: '100ms' }}
+            className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/[0.10] hover:border-teal-300 dark:hover:border-white/[0.18] transition-colors cursor-pointer group"
           >
             <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-blue-500/10 group-hover:bg-teal-100 dark:group-hover:bg-blue-500/15 transition-colors">
-              <Sparkles className="w-4 h-4 text-teal-500 dark:text-blue-400 group-hover:animate-pulse" />
+              <Sparkles className="w-4 h-4 text-teal-500 dark:text-blue-400" />
             </div>
             <p className="text-xs text-slate-600 dark:text-white/80 flex-1">{displayInsight}</p>
             <ChevronRight className="w-4 h-4 text-slate-400 dark:text-white/40 group-hover:text-teal-500 dark:group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
           </Link>
         ) : (
-          <div
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/[0.10] mb-3 animate-fadeSlideUp opacity-0"
-            style={{ animationDelay: '100ms' }}
-          >
+          <div className="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-slate-50 dark:bg-white/[0.07] border border-slate-200/80 dark:border-white/[0.10]">
             <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-blue-500/10">
               <Sparkles className="w-4 h-4 text-teal-500 dark:text-blue-400" />
             </div>
@@ -373,8 +419,8 @@ export function DashboardHero({
           </div>
         )}
 
-        {/* ── Zone B: Metrics Strip ── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
+        {/* Zone D: Metrics + context (secondary, below primary workflow) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           <HeroCard delay={150}>
             <StatItem icon={Sun} value={todaysTaskCount} label="Tasks Today" color="amber" />
           </HeroCard>
@@ -389,20 +435,19 @@ export function DashboardHero({
           </HeroCard>
         </div>
 
-        {/* ── Zone C: Context Row ── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          {/* Left: Pipeline Health + Weekly Goal */}
           <HeroCard className="p-3.5" delay={350}>
             <PipelineBar health={displayPipelineHealth} />
             <div className="border-t border-slate-100 dark:border-white/[0.10] my-3" />
             <GoalProgressBar goal={displayWeeklyGoal} />
           </HeroCard>
 
-          {/* Right: Today's Schedule */}
           <HeroCard className="p-3.5" delay={400}>
             <div className="flex items-center gap-1.5 mb-3">
               <Calendar className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
-              <span className="text-xs font-medium text-slate-500 dark:text-white/60 uppercase tracking-wide">Today&apos;s Schedule</span>
+              <span className="text-xs font-medium text-slate-500 dark:text-white/60 uppercase tracking-wide">
+                Today&apos;s Schedule
+              </span>
             </div>
             {todaysMeetings.length > 0 ? (
               <div className="space-y-0.5">

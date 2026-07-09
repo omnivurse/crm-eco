@@ -161,8 +161,8 @@ export const CRM_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-people', separator: true, sectionTitle: 'People Management' },
     { key: 'advisors', label: 'Advisors & Agents', icon: 'user-cog', href: '/crm/members' },
-    { key: 'contact-groups', label: 'Contact Groups', icon: 'folder-users', href: '/crm/modules/contacts?tab=groups', badge: 'new' },
-    { key: 'segmentation', label: 'Segmentation', icon: 'target', href: '/crm/modules/contacts?tab=segments', badge: 'new' },
+    { key: 'contact-groups', label: 'Contact Groups', icon: 'folder-users', href: '/crm/modules/contacts?tab=groups' },
+    { key: 'segmentation', label: 'Segmentation', icon: 'target', href: '/crm/modules/contacts?tab=segments' },
 
     { key: 'sec-engage', separator: true, sectionTitle: 'Engagement' },
     { key: 'inbox', label: 'Inbox', icon: 'inbox', href: '/crm/inbox' },
@@ -171,10 +171,10 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'calendar', label: 'Calendar', icon: 'calendar', href: '/crm/calendar' },
 
     { key: 'sec-health', separator: true, sectionTitle: 'Health Intelligence' },
-    { key: 'lifecycle', label: 'Lifecycle Events', icon: 'heart-pulse', href: '/crm/modules/contacts?tab=lifecycle', badge: 'new' },
-    { key: 'medicaid', label: 'Medicaid Tracker', icon: 'shield-plus', href: '/crm/modules/contacts?tab=medicaid', badge: 'new' },
-    { key: 'carriers', label: 'Carriers & Plans', icon: 'building-2', href: '/crm/modules/contacts?tab=carriers', badge: 'new' },
-    { key: 'premium-compare', label: 'Premium Compare', icon: 'calculator', href: '/crm/modules/contacts?tab=premiums', badge: 'new' },
+    { key: 'lifecycle', label: 'Lifecycle Events', icon: 'heart-pulse', href: '/crm/modules/contacts?tab=lifecycle' },
+    { key: 'medicaid', label: 'Medicaid Tracker', icon: 'shield-plus', href: '/crm/modules/contacts?tab=medicaid' },
+    { key: 'carriers', label: 'Carriers & Plans', icon: 'building-2', href: '/crm/modules/contacts?tab=carriers' },
+    { key: 'premium-compare', label: 'Premium Compare', icon: 'calculator', href: '/crm/modules/contacts?tab=premiums' },
 
     { key: 'sec-insights', separator: true, sectionTitle: 'Insights' },
     { key: 'reports', label: 'Reports', icon: 'pie-chart', href: '/crm/reports' },
@@ -194,13 +194,13 @@ export const COMMUNICATIONS_NAV_ITEMS: NavItem[] = [
     { key: 'overview', label: 'Overview', icon: 'home', href: '/crm/communications' },
 
     { key: 'sec-campaigns', separator: true, sectionTitle: 'Campaigns' },
-    { key: 'email-campaigns', label: 'Email Campaigns', icon: 'megaphone', href: '/crm/campaigns', badge: 'new' },
+    { key: 'email-campaigns', label: 'Email Campaigns', icon: 'megaphone', href: '/crm/campaigns' },
     { key: 'sequences', label: 'Sequences', icon: 'repeat', href: '/crm/sequences' },
     { key: 'sms-campaigns', label: 'SMS Campaigns', icon: 'message-square', href: '/crm/communications?tab=sms', badge: 'beta' },
 
     { key: 'sec-tools', separator: true, sectionTitle: 'Tools' },
     { key: 'templates', label: 'Templates', icon: 'layout', href: '/crm/settings/templates' },
-    { key: 'assets', label: 'Asset Library', icon: 'folder', href: '/crm/email/assets', badge: 'new' },
+    { key: 'assets', label: 'Asset Library', icon: 'folder', href: '/crm/email/assets' },
     { key: 'signatures', label: 'Signatures', icon: 'file-signature', href: '/crm/settings/signatures' },
     { key: 'domains', label: 'Email Domains', icon: 'globe', href: '/crm/settings/email-domains' },
 
@@ -222,8 +222,8 @@ export const REVENUE_NAV_ITEMS: NavItem[] = [
     { key: 'documents', label: 'Documents', icon: 'file-text', href: '/crm/documents' },
 
     { key: 'sec-insurance', separator: true, sectionTitle: 'Insurance' },
-    { key: 'carriers', label: 'Carriers & Plans', icon: 'building-2', href: '/crm/modules/contacts?tab=carriers', badge: 'new' },
-    { key: 'premium-compare', label: 'Premium Compare', icon: 'calculator', href: '/crm/modules/contacts?tab=premiums', badge: 'new' },
+    { key: 'carriers', label: 'Carriers & Plans', icon: 'building-2', href: '/crm/modules/contacts?tab=carriers' },
+    { key: 'premium-compare', label: 'Premium Compare', icon: 'calculator', href: '/crm/modules/contacts?tab=premiums' },
 
     { key: 'sec-financial', separator: true, sectionTitle: 'Financial' },
     { key: 'forecasting', label: 'Forecasting', icon: 'chart-line', href: '/crm/forecasting' },
@@ -239,13 +239,13 @@ export const OPERATIONS_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-process', separator: true, sectionTitle: 'Process' },
     { key: 'scheduling', label: 'Scheduling', icon: 'calendar', href: '/crm/scheduling' },
-    { key: 'playbooks', label: 'Playbooks', icon: 'book-open', href: '/crm/playbooks', badge: 'new' },
+    { key: 'playbooks', label: 'Playbooks', icon: 'book-open', href: '/crm/playbooks' },
     { key: 'enrollment', label: 'Enrollment', icon: 'clipboard-check', href: '/crm/enrollment' },
     { key: 'needs', label: 'Needs', icon: 'heart', href: '/crm/needs' },
     { key: 'approvals', label: 'Approvals', icon: 'check-circle', href: '/crm/approvals' },
 
     { key: 'sec-vendors', separator: true, sectionTitle: 'Vendors' },
-    { key: 'vendors', label: 'Vendor Hub', icon: 'building-2', href: '/crm/vendors', badge: 'new' },
+    { key: 'vendors', label: 'Vendor Hub', icon: 'building-2', href: '/crm/vendors' },
     { key: 'vendor-upload', label: 'Upload Files', icon: 'file-up', href: '/crm/vendors/upload' },
     { key: 'vendor-changes', label: 'Review Changes', icon: 'git-branch', href: '/crm/vendors/changes' },
     { key: 'vendor-connectors', label: 'Connectors', icon: 'link-2', href: '/crm/vendors/connectors' },
@@ -253,7 +253,7 @@ export const OPERATIONS_NAV_ITEMS: NavItem[] = [
 
     { key: 'sec-data', separator: true, sectionTitle: 'Data Management' },
     { key: 'import', label: 'Import / Export', icon: 'upload', href: '/crm/import' },
-    { key: 'data-jobs', label: 'Data Jobs', icon: 'database', href: '/crm/settings/system-health?tab=jobs', badge: 'new' },
+    { key: 'data-jobs', label: 'Data Jobs', icon: 'database', href: '/crm/settings/system-health?tab=jobs' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -273,10 +273,10 @@ export const ANALYTICS_NAV_ITEMS: NavItem[] = [
     { key: 'forecast-analytics', label: 'Forecast', icon: 'chart-line', href: '/crm/forecasting' },
 
     { key: 'sec-health-metrics', separator: true, sectionTitle: 'Health Metrics' },
-    { key: 'lifecycle-stats', label: 'Lifecycle Stats', icon: 'heart-pulse', href: '/crm/analytics?tab=lifecycle', badge: 'new' },
-    { key: 'medicaid-stats', label: 'Medicaid Stats', icon: 'shield-plus', href: '/crm/analytics?tab=medicaid', badge: 'new' },
-    { key: 'advisor-analytics', label: 'Advisor Analytics', icon: 'user-cog', href: '/crm/analytics?tab=advisors', badge: 'new' },
-    { key: 'churn-analysis', label: 'Churn Analysis', icon: 'trending-down', href: '/crm/analytics?tab=churn', badge: 'new' },
+    { key: 'lifecycle-stats', label: 'Lifecycle Stats', icon: 'heart-pulse', href: '/crm/analytics?tab=lifecycle' },
+    { key: 'medicaid-stats', label: 'Medicaid Stats', icon: 'shield-plus', href: '/crm/analytics?tab=medicaid' },
+    { key: 'advisor-analytics', label: 'Advisor Analytics', icon: 'user-cog', href: '/crm/analytics?tab=advisors' },
+    { key: 'churn-analysis', label: 'Churn Analysis', icon: 'trending-down', href: '/crm/analytics?tab=churn' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -298,7 +298,7 @@ export const INTEGRATIONS_NAV_ITEMS: NavItem[] = [
     { key: 'logs', label: 'Logs', icon: 'scroll-text', href: '/crm/integrations/logs' },
 
     { key: 'sec-marketplace', separator: true, sectionTitle: 'Marketplace' },
-    { key: 'extensions', label: 'Extensions', icon: 'puzzle', href: '/crm/integrations?tab=extensions', badge: 'new' },
+    { key: 'extensions', label: 'Extensions', icon: 'puzzle', href: '/crm/integrations?tab=extensions' },
     { key: 'installed', label: 'Installed', icon: 'check-circle', href: '/crm/integrations?tab=installed' },
 ];
 
@@ -342,7 +342,7 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
     { key: 'audit-logs', label: 'Audit Logs', icon: 'scroll-text', href: '/crm/settings/system-health?tab=audit' },
 
     { key: 'sec-advanced', separator: true, sectionTitle: 'Advanced' },
-    { key: 'configuration', label: 'Configuration', icon: 'sliders', href: '/crm/settings/configuration', badge: 'new' },
+    { key: 'configuration', label: 'Configuration', icon: 'sliders', href: '/crm/settings/configuration' },
     { key: 'landing-pages', label: 'Landing Pages', icon: 'globe', href: '/crm/settings/landing-pages', badge: 'beta' },
     { key: 'developer', label: 'Developer Hub', icon: 'code', href: '/crm/integrations?tab=api-keys' },
 ];

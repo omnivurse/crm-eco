@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * @deprecated Prefer CommandPalette (⌘K) — this overlay is not mounted in CrmShell.
+ * Kept for reference / potential ModuleShell parity; do not re-introduce dual search UX.
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {

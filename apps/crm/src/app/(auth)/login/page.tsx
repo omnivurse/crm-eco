@@ -57,7 +57,8 @@ export default function LoginPage() {
           return;
         }
 
-        router.push('/dashboard');
+        // Canonical post-login destination matches middleware + /crm-login
+        router.push('/crm');
         router.refresh();
       }
     } catch (err) {
@@ -198,18 +199,20 @@ export default function LoginPage() {
           </div>
           <div className="relative flex justify-center">
             <span className="bg-[#0a1628] px-4 text-slate-500 text-xs uppercase tracking-widest">
-              New Member?
+              Need CRM Access?
             </span>
           </div>
         </div>
 
-        {/* Enrollment CTA */}
+        {/* Admin contact — enrollment is a protected CRM route, not a public signup */}
         <button
           type="button"
           className="w-full h-14 border border-slate-700 bg-slate-800/30 text-slate-300 hover:bg-slate-800/50 hover:text-white hover:border-slate-600 rounded-xl transition-all cursor-pointer font-semibold"
-          onClick={() => router.push('/crm/enrollment')}
+          onClick={() => {
+            window.location.href = 'mailto:support@doublehelixhub.com';
+          }}
         >
-          Start your enrollment
+          Contact Administrator
         </button>
       </form>
 

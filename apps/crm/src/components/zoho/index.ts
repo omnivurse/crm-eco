@@ -33,7 +33,7 @@ export { RelatedListTable } from './RelatedListTable';
 export { ComposerBar } from './ComposerBar';
 
 // Global Actions
-export { GlobalSearchOverlay } from './GlobalSearchOverlay';
+export { GlobalSearchOverlay } from './GlobalSearchOverlay'; // @deprecated — unused; CommandPalette is the canonical global search. Do not mount.
 export { QuickCreateDrawer } from './QuickCreateDrawer';
 
 // Hooks & Context

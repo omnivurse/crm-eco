@@ -592,11 +592,33 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
             </div>
           )}
 
-          {flatCommands.length === 0 && !terminalMatch ? (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              {query.trim().length >= 2
-                ? 'No matches. Try a different query or a terminal command like "leads view All"'
-                : 'Start typing to search records or run a command…'}
+          {searchLoading && query.trim().length >= 2 && flatCommands.length === 0 && !terminalMatch ? (
+            <div className="py-8 flex flex-col items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span>Searching records…</span>
+            </div>
+          ) : flatCommands.length === 0 && !terminalMatch ? (
+            <div className="py-6 px-4 text-center space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {query.trim().length >= 2
+                  ? 'No matches in this palette. Try a different query or open the full search page.'
+                  : 'Start typing to search records or run a command…'}
+              </p>
+              {query.trim().length >= 2 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const q = query.trim();
+                    onOpenChange(false);
+                    setQuery('');
+                    router.push(`/crm/search?q=${encodeURIComponent(q)}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  View all results for &ldquo;{query.trim()}&rdquo;
+                </button>
+              ) : null}
             </div>
           ) : (
             orderedCategories.map(({ category, items }) => (
@@ -658,8 +680,8 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
           )}
         </div>
 
-        <div className="border-t px-3 py-2 flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-3">
+        <div className="border-t px-3 py-2 flex items-center justify-between text-xs text-muted-foreground gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <span className="flex items-center gap-1">
               <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono">↑↓</kbd>
               navigate
@@ -673,10 +695,26 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
               toggle
             </span>
           </div>
-          <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono">esc</kbd>
-            close
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            {query.trim().length >= 2 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const q = query.trim();
+                  onOpenChange(false);
+                  setQuery('');
+                  router.push(`/crm/search?q=${encodeURIComponent(q)}`);
+                }}
+                className="text-primary hover:underline font-medium truncate max-w-[10rem] sm:max-w-none"
+              >
+                View all results
+              </button>
+            ) : null}
+            <span className="flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted font-mono">esc</kbd>
+              close
+            </span>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

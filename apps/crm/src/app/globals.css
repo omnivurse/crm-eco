@@ -47,6 +47,13 @@
   animation-iteration-count: infinite !important;
 }
 
+/* Narrow motion allowlist for home journey / search focus polish */
+.crm-motion-safe,
+.crm-motion-safe::before,
+.crm-motion-safe::after {
+  transition-duration: 150ms !important;
+}
+
 /* ============================================================
    MOBILE PERFORMANCE OPTIMIZATIONS
    Disable heavy backdrop-filter effects on mobile for better performance

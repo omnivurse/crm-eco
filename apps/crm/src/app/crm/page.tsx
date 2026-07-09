@@ -5,13 +5,13 @@ import {
   getCachedAtRiskDeals,
   getCachedModuleStats,
   getReportSummary,
-  getMyTasks,
   getUpcomingTasks,
   getRecentActivity,
   getTodaysTasks,
   getCalendarEvents,
-  getOrganization,
   getAdvisorContactSummary,
+  createCrmClient,
+  getMyTasks,
 } from '@/lib/crm/queries';
 import { loadDashboardLayout } from './dashboard-actions';
 import { WIDGET_REGISTRY } from '@/lib/dashboard';
@@ -19,6 +19,7 @@ import { resolveDefaultDashboardLayout } from '@/lib/dashboard/role-default-layo
 import { DashboardLayoutProvider } from '@/contexts/DashboardLayoutContext';
 import { DashboardHero } from '@/components/dashboard/DashboardHero';
 import type { HeroCalendarEvent } from '@/components/dashboard/DashboardHero';
+import type { TodayQueueItem } from '@/components/dashboard/TodayQueuePreview';
 import {
   CrmAlerts,
   DashboardToolbar,
@@ -26,6 +27,80 @@ import {
 } from '@/components/dashboard';
 import { preRenderWidgets } from '@/components/dashboard/ServerWidgetRenderer';
 import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
+
+/** Active enrollment count for the journey strip (draft + in_progress + submitted). */
+async function getOpenEnrollmentCount(orgId: string): Promise<number> {
+  try {
+    const supabase = await createCrmClient();
+    const { count, error } = await supabase
+      .from('enrollments')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', orgId)
+      .in('status', ['draft', 'in_progress', 'submitted']);
+    if (error) {
+      console.error('[Dashboard] enrollment count failed:', error);
+      return 0;
+    }
+    return count ?? 0;
+  } catch (err) {
+    console.error('[Dashboard] enrollment count error:', err);
+    return 0;
+  }
+}
+
+/** Build a compact today-queue preview from tasks + at-risk deals. */
+async function buildTodayQueueItems(
+  profileId: string,
+  orgId: string,
+): Promise<TodayQueueItem[]> {
+  const items: TodayQueueItem[] = [];
+  try {
+    const [todaysTasks, myTasks, atRisk] = await Promise.all([
+      getTodaysTasks(profileId, 5),
+      getMyTasks(profileId, false, 20),
+      getCachedAtRiskDeals(orgId, 3),
+    ]);
+
+    const now = new Date();
+    const overdue = myTasks.filter(
+      (t) => t.due_at && new Date(t.due_at) < now && t.status !== 'completed',
+    );
+
+    for (const t of overdue.slice(0, 2)) {
+      items.push({
+        id: `overdue-${t.id}`,
+        title: t.title || 'Untitled task',
+        subtitle: t.due_at ? `Due ${new Date(t.due_at).toLocaleDateString()}` : null,
+        href: '/crm/workqueue',
+        kind: 'overdue',
+      });
+    }
+
+    for (const t of todaysTasks.slice(0, 3)) {
+      if (items.some((i) => i.id === `overdue-${t.id}`)) continue;
+      items.push({
+        id: `task-${t.id}`,
+        title: t.title || 'Untitled task',
+        subtitle: 'Due today',
+        href: '/crm/workqueue',
+        kind: 'task',
+      });
+    }
+
+    for (const d of atRisk.slice(0, 2)) {
+      items.push({
+        id: `risk-${d.id}`,
+        title: d.name || 'At-risk deal',
+        subtitle: `${d.daysInStage}d in stage · ${d.stage}`,
+        href: `/crm/r/${d.id}`,
+        kind: 'at_risk',
+      });
+    }
+  } catch (err) {
+    console.error('[Dashboard] today queue build failed:', err);
+  }
+  return items.slice(0, 5);
+}
 
 // Server-side data fetching based on widget types
 async function fetchWidgetData(
@@ -133,16 +208,29 @@ async function DashboardContent() {
     console.error('[Dashboard] Failed to load layout, using role default:', err);
   }
 
-  const widgetTypes = layout.widgets.map((w) => w.type);
+  // Strip comingSoon widgets from the rendered layout (catalog already hides them)
+  const activeWidgets = layout.widgets.filter(
+    (w) => !WIDGET_REGISTRY[w.type]?.comingSoon,
+  );
+  const layoutForRender = { ...layout, widgets: activeWidgets };
+  const widgetTypes = activeWidgets.map((w) => w.type);
 
   // Fetch hero/shared data in parallel first
-  const [heroStatsResult, moduleStatsResult, reportSummaryResult, calendarEventsResult] =
-    await Promise.allSettled([
-      getCachedDashboardHeroStats(profile.organization_id, profile.id),
-      getCachedModuleStats(profile.organization_id),
-      getReportSummary(profile.organization_id),
-      getCalendarEvents(profile.organization_id),
-    ]);
+  const [
+    heroStatsResult,
+    moduleStatsResult,
+    reportSummaryResult,
+    calendarEventsResult,
+    enrollmentCountResult,
+    todayQueueResult,
+  ] = await Promise.allSettled([
+    getCachedDashboardHeroStats(profile.organization_id, profile.id),
+    getCachedModuleStats(profile.organization_id),
+    getReportSummary(profile.organization_id),
+    getCalendarEvents(profile.organization_id),
+    getOpenEnrollmentCount(profile.organization_id),
+    buildTodayQueueItems(profile.id, profile.organization_id),
+  ]);
 
   const heroStats = heroStatsResult.status === 'fulfilled'
     ? heroStatsResult.value
@@ -159,6 +247,12 @@ async function DashboardContent() {
   const calendarEvents = calendarEventsResult.status === 'fulfilled'
     ? calendarEventsResult.value || []
     : [];
+
+  const enrollmentCount =
+    enrollmentCountResult.status === 'fulfilled' ? enrollmentCountResult.value : 0;
+
+  const todayQueueItems =
+    todayQueueResult.status === 'fulfilled' ? todayQueueResult.value : [];
 
   // Map calendar events to hero format
   const upcomingMeetings: HeroCalendarEvent[] = calendarEvents.slice(0, 3).map((event: { id: string; title: string; start_time: string; type?: string }) => ({
@@ -181,9 +275,9 @@ async function DashboardContent() {
   }
 
   return (
-    <DashboardLayoutProvider initialLayout={layout}>
-      <div className="space-y-3 pb-6">
-        {/* Enterprise Hero — always visible, personalized greeting + quick actions + key stats */}
+    <DashboardLayoutProvider initialLayout={layoutForRender}>
+      <div className="space-y-4 pb-6">
+        {/* Day-in-the-life home: search → journey → queue → pick-up → metrics */}
         <DashboardHero
           profile={profile}
           todaysTaskCount={heroStats.todaysTaskCount}
@@ -191,16 +285,24 @@ async function DashboardContent() {
           newThisWeek={heroStats.newThisWeek}
           atRiskCount={heroStats.atRiskCount}
           upcomingMeetings={upcomingMeetings}
+          moduleStats={moduleStats}
+          enrollmentCount={enrollmentCount}
+          todayQueueItems={todayQueueItems}
         />
 
         {/* CRM Alerts — only renders when there are actionable items */}
         <CrmAlerts heroStats={heroStats} />
 
-        {/* Dashboard Toolbar — customize / edit mode controls */}
-        <DashboardToolbar />
-
-        {/* Customizable Widget Grid — all content is drag-and-drop widgets */}
-        <DashboardGrid renderedWidgets={preRenderWidgets(layout.widgets, widgetData)} />
+        {/* Below-fold customizable widgets */}
+        <section aria-label="Dashboard widgets" className="space-y-3 pt-1">
+          <div className="flex items-center justify-between gap-2 px-0.5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Your dashboard
+            </h2>
+          </div>
+          <DashboardToolbar />
+          <DashboardGrid renderedWidgets={preRenderWidgets(activeWidgets, widgetData)} />
+        </section>
       </div>
     </DashboardLayoutProvider>
   );
