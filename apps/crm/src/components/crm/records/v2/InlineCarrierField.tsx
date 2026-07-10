@@ -21,6 +21,9 @@ import {
   ChevronDown,
   ExternalLink,
   Loader2,
+  Plus,
+  Search,
+  Type,
   X,
 } from 'lucide-react';
 import type { FieldCarrierType } from '@/lib/crm/types';
@@ -41,6 +44,11 @@ interface AdvisorCarrier {
 }
 
 interface CarrierListEntry {
+  id: string;
+  name: string;
+}
+
+interface DirectoryEntry {
   id: string;
   name: string;
 }
@@ -109,6 +117,43 @@ function loadCarriers(carrierType: string): Promise<CarrierListEntry[]> {
   return p;
 }
 
+/** Drop the cached personal list so a freshly-added carrier shows up. */
+function bustListCache(carrierType: string): void {
+  listCache.delete(carrierType);
+  inFlight.delete(carrierType);
+}
+
+/** Search the org-wide carrier directory (carriers not yet in the personal list). */
+async function searchOrgDirectory(
+  carrierType: string,
+  query: string,
+  signal: AbortSignal,
+): Promise<DirectoryEntry[]> {
+  const url = `/api/crm/carriers?carrier_type=${encodeURIComponent(
+    carrierType,
+  )}&search=${encodeURIComponent(query)}&limit=10`;
+  const res = await fetch(url, { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const json = (await res.json()) as {
+    data?: { id: string; carrier_name: string }[];
+  };
+  return (json.data || []).map((c) => ({ id: c.id, name: c.carrier_name }));
+}
+
+/** Add an org-directory carrier to the current advisor's personal list. */
+async function addCarrierToMyList(carrierId: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/crm/advisor-carriers', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ carrier_id: carrierId }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export interface InlineCarrierFieldProps {
   field: string;
   value: string | null | undefined;
@@ -148,7 +193,12 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   );
   const [loaded, setLoaded] = useState<boolean>(listCache.has(carrierType));
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [directory, setDirectory] = useState<DirectoryEntry[]>([]);
+  const [directoryLoading, setDirectoryLoading] = useState(false);
+  const [adding, setAdding] = useState<string | null>(null);
   const containerRef = useRef<HTMLSpanElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (loaded) return;
@@ -163,18 +213,49 @@ export const InlineCarrierField = memo(function InlineCarrierField({
     };
   }, [carrierType, loaded]);
 
+  const closePicker = useCallback(() => {
+    setOpen(false);
+    setQuery('');
+    setDirectory([]);
+    onEditEnd?.();
+    void releaseFieldLock(field);
+  }, [onEditEnd, releaseFieldLock, field]);
+
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        onEditEnd?.();
-        void releaseFieldLock(field);
+        closePicker();
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open, onEditEnd, releaseFieldLock, field]);
+  }, [open, closePicker]);
+
+  // Debounced org-directory search whenever the query changes (2+ chars).
+  useEffect(() => {
+    if (!open) return;
+    const trimmed = query.trim();
+    if (trimmed.length < 2) {
+      setDirectory([]);
+      setDirectoryLoading(false);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      setDirectoryLoading(true);
+      searchOrgDirectory(carrierType, trimmed, ctrl.signal)
+        .then((rows) => setDirectory(rows))
+        .catch((err) => {
+          if ((err as Error)?.name !== 'AbortError') setDirectory([]);
+        })
+        .finally(() => setDirectoryLoading(false));
+    }, 250);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [carrierType, open, query]);
 
   const currentLabel =
     value && carriers.find((c) => c.id === value)?.name
@@ -186,19 +267,56 @@ export const InlineCarrierField = memo(function InlineCarrierField({
   const openPicker = () => {
     if (readOnly || lockOwner) return;
     setOpen(true);
+    // Prefill the search with any free-text value so the rep can refine it.
+    setQuery(value && !UUID_RE.test(value) ? String(value) : '');
     onEditStart?.();
     void acquireFieldLock(field);
+    queueMicrotask(() => inputRef.current?.focus());
   };
 
   const pick = useCallback(
     async (id: string | null) => {
-      setOpen(false);
-      onEditEnd?.();
-      void releaseFieldLock(field);
+      closePicker();
       await save(field, id, target ? { target } : undefined);
     },
-    [save, field, target, onEditEnd, releaseFieldLock],
+    [save, field, target, closePicker],
   );
+
+  const handleAddToMyList = useCallback(
+    async (carrier: DirectoryEntry) => {
+      setAdding(carrier.id);
+      const ok = await addCarrierToMyList(carrier.id);
+      setAdding(null);
+      if (!ok) {
+        // Still let the rep proceed by storing the name as text.
+        void pick(carrier.name);
+        return;
+      }
+      bustListCache(carrierType);
+      const list = await loadCarriers(carrierType);
+      setCarriers(list);
+      setLoaded(true);
+      void pick(carrier.id);
+    },
+    [carrierType, pick],
+  );
+
+  const trimmedQuery = query.trim();
+  const personalMatches = trimmedQuery
+    ? carriers.filter((c) =>
+        c.name.toLowerCase().includes(trimmedQuery.toLowerCase()),
+      )
+    : carriers;
+  const personalIds = new Set(carriers.map((c) => c.id));
+  const personalNames = new Set(carriers.map((c) => c.name.trim().toLowerCase()));
+  const directorySuggestions = directory.filter(
+    (d) =>
+      !personalIds.has(d.id) && !personalNames.has(d.name.trim().toLowerCase()),
+  );
+  const showFreeTextFallback =
+    trimmedQuery.length > 0 &&
+    !personalMatches.some((c) => c.name.toLowerCase() === trimmedQuery.toLowerCase()) &&
+    !directorySuggestions.some((c) => c.name.toLowerCase() === trimmedQuery.toLowerCase());
 
   if (readOnly || lockOwner) {
     return (
@@ -276,47 +394,147 @@ export const InlineCarrierField = memo(function InlineCarrierField({
       ) : null}
 
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[16rem] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-1 max-h-72 overflow-y-auto">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[18rem] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-1 max-h-80 overflow-y-auto">
+          {/* Search / type a new carrier */}
+          <div className="sticky top-0 z-10 mb-1 flex items-center gap-2 rounded-md bg-slate-50 px-2 py-1.5 dark:bg-slate-800/60">
+            <Search className="h-3.5 w-3.5 text-slate-400" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  closePicker();
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const lower = trimmedQuery.toLowerCase();
+                  const exactPersonal = personalMatches.find(
+                    (c) => c.name.toLowerCase() === lower,
+                  );
+                  if (exactPersonal) return void pick(exactPersonal.id);
+                  const exactDir = directorySuggestions.find(
+                    (c) => c.name.toLowerCase() === lower,
+                  );
+                  if (exactDir) return void handleAddToMyList(exactDir);
+                  if (trimmedQuery) void pick(trimmedQuery);
+                }
+              }}
+              placeholder={`Search or add ${terms.singularLower}…`}
+              className="flex-1 bg-transparent text-sm placeholder:text-slate-400 focus:outline-none"
+            />
+            {(directoryLoading || !loaded) && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+            )}
+          </div>
+
+          {/* Personal / directory list */}
           {!loaded ? (
             <div className="p-3 text-xs text-slate-500 text-center inline-flex items-center gap-1.5 justify-center w-full">
               <Loader2 className="w-3 h-3 animate-spin" /> Loading {terms.pluralLower}…
             </div>
-          ) : carriers.length === 0 ? (
-            <div className="p-3 text-xs text-slate-500 text-center">
-              <div>No {terms.pluralLower} in your list yet.</div>
-              <Link
-                href="/crm/settings/my-carriers"
-                className="mt-1 inline-flex items-center gap-1 text-teal-600 hover:underline"
-              >
-                Set up my {terms.pluralLower} <ExternalLink className="w-3 h-3" />
-              </Link>
-            </div>
-          ) : (
-            carriers.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => void pick(c.id)}
-                className={cn(
-                  'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left',
-                  'hover:bg-slate-100 dark:hover:bg-slate-800',
-                  value === c.id && 'text-teal-700 dark:text-teal-300',
-                )}
-              >
-                <span
+          ) : personalMatches.length > 0 ? (
+            <div>
+              <div className="px-2 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                My {terms.pluralLower}
+              </div>
+              {personalMatches.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => void pick(c.id)}
                   className={cn(
-                    'inline-flex h-4 w-4 items-center justify-center rounded-full border',
-                    value === c.id
-                      ? 'bg-teal-500 border-teal-500 text-white'
-                      : 'border-slate-300 dark:border-slate-600',
+                    'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left',
+                    'hover:bg-slate-100 dark:hover:bg-slate-800',
+                    value === c.id && 'text-teal-700 dark:text-teal-300',
                   )}
                 >
-                  {value === c.id ? <Check className="h-3 w-3" /> : null}
-                </span>
-                <span className="truncate">{c.name}</span>
-              </button>
-            ))
+                  <span
+                    className={cn(
+                      'inline-flex h-4 w-4 items-center justify-center rounded-full border',
+                      value === c.id
+                        ? 'bg-teal-500 border-teal-500 text-white'
+                        : 'border-slate-300 dark:border-slate-600',
+                    )}
+                  >
+                    {value === c.id ? <Check className="h-3 w-3" /> : null}
+                  </span>
+                  <span className="truncate">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          ) : carriers.length === 0 && !trimmedQuery ? (
+            <div className="px-2 pb-1 pt-0.5 text-[11px] text-slate-500">
+              No {terms.pluralLower} in your list yet — type a name below to add one.
+            </div>
+          ) : (
+            <div className="px-2 pb-1 pt-0.5 text-[11px] text-slate-500">
+              No {terms.pluralLower} in your list match &quot;{trimmedQuery}&quot;.
+            </div>
           )}
+
+          {/* Org directory results — carriers not yet in the personal list */}
+          {trimmedQuery.length >= 2 && (
+            <div className="mt-1 border-t border-slate-100 pt-1 dark:border-slate-800">
+              <div className="px-2 pb-1 pt-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                From organization directory
+              </div>
+              {directoryLoading && directorySuggestions.length === 0 ? (
+                <div className="px-2 py-1 text-xs text-slate-500">Searching…</div>
+              ) : directorySuggestions.length === 0 ? (
+                <div className="px-2 py-1 text-xs text-slate-500">No directory matches.</div>
+              ) : (
+                directorySuggestions.map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+                  >
+                    <span className="truncate">{c.name}</span>
+                    <button
+                      type="button"
+                      disabled={adding === c.id}
+                      onClick={() => void handleAddToMyList(c)}
+                      className="inline-flex items-center gap-1 rounded-md border border-teal-200 bg-teal-50 px-2 py-0.5 text-[11px] font-medium text-teal-700 hover:bg-teal-100 disabled:opacity-60 dark:border-teal-700/40 dark:bg-teal-500/10 dark:text-teal-300"
+                    >
+                      {adding === c.id ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Plus className="h-3 w-3" />
+                      )}
+                      Add &amp; select
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Free-text fallback — enter a brand-new carrier like "Elevate" */}
+          {showFreeTextFallback && (
+            <div className="mt-1 border-t border-slate-100 pt-1 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => void pick(trimmedQuery)}
+                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                <Type className="h-3.5 w-3.5 text-slate-400" />
+                <span>
+                  Use &quot;<span className="font-medium">{trimmedQuery}</span>&quot; as text
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Footer — manage list link */}
+          <div className="mt-1 border-t border-slate-100 px-2 py-1.5 dark:border-slate-800">
+            <Link
+              href="/crm/settings/my-carriers"
+              className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:underline dark:text-teal-400"
+              onClick={closePicker}
+            >
+              Manage my {terms.pluralLower} <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
         </div>
       ) : null}
     </span>

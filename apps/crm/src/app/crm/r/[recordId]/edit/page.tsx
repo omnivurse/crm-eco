@@ -5,6 +5,15 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2, X } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from '@crm-eco/ui/components/alert-dialog';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useEditRecordData } from '@/hooks/useEditRecordData';
@@ -344,6 +353,10 @@ export default function EditRecordPage() {
 
   const [saving, setSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  // Pending internal navigation the user attempted with unsaved changes. When
+  // set, the leave-confirmation modal is shown instead of a native confirm().
+  const [leaveGuardHref, setLeaveGuardHref] = useState<string | null>(null);
+  const [leaving, setLeaving] = useState<false | 'save' | 'discard'>(false);
 
   const formRef = useRef<DynamicRecordFormHandle>(null);
   const latestValuesRef = useRef<Record<string, unknown>>({});
@@ -453,21 +466,24 @@ export default function EditRecordPage() {
     return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty]);
 
-  // In-app navigation guard: intercept clicks on internal links when dirty
+  // In-app navigation guard: intercept clicks on internal links when dirty and
+  // open a clear confirmation modal (native confirm() only offers OK/Cancel,
+  // where "OK" silently discards — reps mistook it for "Save"). We always block
+  // the click here; the modal then decides to save, discard, or stay.
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: MouseEvent) => {
       const anchor = (e.target as HTMLElement).closest('a');
       if (!anchor) return;
+      // Ignore clicks originating inside the leave-confirmation modal itself.
+      if ((e.target as HTMLElement).closest('[data-leave-guard-modal]')) return;
       const href = anchor.getAttribute('href');
       if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')) {
         return;
       }
-      const confirmed = window.confirm('You have unsaved changes. Leave without saving?');
-      if (!confirmed) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      setLeaveGuardHref(href);
     };
     document.addEventListener('click', handler, true);
     return () => document.removeEventListener('click', handler, true);
@@ -562,6 +578,44 @@ export default function EditRecordPage() {
     await queryClient.invalidateQueries({ queryKey: queryKeys.records.drawer(recordId) });
     await queryClient.invalidateQueries({ queryKey: queryKeys.records.lists() });
   }, [queryClient, recordId]);
+
+  // Leave-guard actions: navigate to the pending href, optionally saving first.
+  const proceedToPendingHref = useCallback(() => {
+    const href = leaveGuardHref;
+    if (!href) return;
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+    isDirtyRef.current = false;
+    setIsDirty(false);
+    setLeaveGuardHref(null);
+    router.push(href);
+  }, [leaveGuardHref, router]);
+
+  const handleLeaveSave = useCallback(async () => {
+    if (!leaveGuardHref) return;
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+    setLeaving('save');
+    try {
+      const values = formRef.current?.getValues() ?? latestValuesRef.current;
+      await persist(values);
+      await invalidateCaches();
+      toast.success('Changes saved');
+      proceedToPendingHref();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save record');
+    } finally {
+      setLeaving(false);
+    }
+  }, [leaveGuardHref, persist, invalidateCaches, proceedToPendingHref]);
+
+  const handleLeaveDiscard = useCallback(() => {
+    proceedToPendingHref();
+  }, [proceedToPendingHref]);
 
   const handleSave = useCallback(async () => {
     if (!record) return;
@@ -763,6 +817,58 @@ export default function EditRecordPage() {
           )}
         </Button>
       </div>
+
+      {/* Unsaved-changes leave guard — replaces the ambiguous native confirm().
+          Safe action ("Keep editing") is the default; leaving without saving
+          takes a deliberate click. */}
+      <AlertDialog
+        open={leaveGuardHref !== null}
+        onOpenChange={(open) => {
+          if (!open && !leaving) setLeaveGuardHref(null);
+        }}
+      >
+        <AlertDialogContent data-leave-guard-modal>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save your changes before leaving?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes on this record. If you leave now without
+              saving, your latest edits will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-between gap-2">
+            <Button
+              variant="ghost"
+              onClick={handleLeaveDiscard}
+              disabled={leaving !== false}
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
+            >
+              Leave without saving
+            </Button>
+            <div className="flex gap-2">
+              <AlertDialogCancel disabled={leaving !== false} className="mt-0">
+                Keep editing
+              </AlertDialogCancel>
+              <Button
+                onClick={handleLeaveSave}
+                disabled={leaving !== false}
+                className="bg-teal-500 hover:bg-teal-600 text-white"
+              >
+                {leaving === 'save' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save &amp; leave
+                  </>
+                )}
+              </Button>
+            </div>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
