@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   Select,
@@ -95,7 +96,7 @@ export function ModuleListClient({
   };
 
   const handleBulkDelete = async (ids: string[]) => {
-    if (!confirm(`Are you sure you want to delete ${ids.length} record(s)?`)) {
+    if (!(await confirmDialog({ title: `Delete ${ids.length} record(s)?`, confirmLabel: 'Delete', destructive: true }))) {
       return;
     }
 

@@ -43,6 +43,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -389,9 +390,13 @@ export function QuestionnaireBuilder({ organizationId, planId, planName }: Quest
 
   const deleteTemplate = async (template: QuestionnaireTemplateRow) => {
     if (
-      !confirm(
-        `Delete template "${template.name}"? This removes its questions and logic. Recorded answers (questionnaire_answers) are protected and will block deletion if any exist.`
-      )
+      !(await confirmDialog({
+        title: `Delete template "${template.name}"?`,
+        description:
+          'This removes its questions and logic. Recorded answers (questionnaire_answers) are protected and will block deletion if any exist.',
+        confirmLabel: 'Delete',
+        destructive: true,
+      }))
     ) {
       return;
     }
@@ -877,7 +882,7 @@ function TemplateEditor({
   };
 
   const deleteQuestion = async (q: QuestionnaireQuestionRow) => {
-    if (!confirm(`Delete question "${q.label}"?`)) return;
+    if (!(await confirmDialog({ title: `Delete question "${q.label}"?`, confirmLabel: 'Delete', destructive: true }))) return;
     setSaving(true);
     try {
       const result = await deleteQuestionAction(q.id);
@@ -971,7 +976,7 @@ function TemplateEditor({
   };
 
   const deleteLogic = async (rule: QuestionnaireLogicRow) => {
-    if (!confirm('Delete this logic rule?')) return;
+    if (!(await confirmDialog({ title: 'Delete this logic rule?', confirmLabel: 'Delete', destructive: true }))) return;
     setSaving(true);
     try {
       const result = await deleteLogicRuleAction(rule.id);

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Button,
   Badge,
@@ -210,7 +211,7 @@ export function CustomFieldsManager({ definitions, organizationId }: CustomField
   };
 
   const handleDelete = async (field: CustomFieldDefinition) => {
-    if (!confirm(`Are you sure you want to delete the "${field.field_label}" field? This action cannot be undone.`)) {
+    if (!(await confirmDialog({ title: `Delete the "${field.field_label}" field?`, description: 'This action cannot be undone.', confirmLabel: 'Delete', destructive: true }))) {
       return;
     }
 

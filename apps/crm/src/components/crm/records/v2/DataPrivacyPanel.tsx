@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Textarea } from '@crm-eco/ui/components/textarea';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
@@ -202,9 +203,12 @@ export function DataPrivacyPanel({
       toast.info('Erasure already requested for this record');
       return;
     }
-    const confirmed = window.confirm(
-      'Request erasure for this record? An administrator will review and delete the record per your retention policy.',
-    );
+    const confirmed = await confirmDialog({
+      title: 'Request erasure for this record?',
+      description: 'An administrator will review and delete the record per your retention policy.',
+      confirmLabel: 'Request erasure',
+      destructive: true,
+    });
     if (!confirmed) return;
 
     setErasureLoading(true);

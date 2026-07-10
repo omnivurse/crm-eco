@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -260,7 +261,7 @@ export default function ValidationRulesSettingsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this validation rule?')) return;
+    if (!(await confirmDialog({ title: 'Delete this validation rule?', confirmLabel: 'Delete', destructive: true }))) return;
     await supabase.from('crm_validation_rules').delete().eq('id', id);
     setRules(rules.filter(r => r.id !== id));
   };

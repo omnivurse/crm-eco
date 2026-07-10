@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 
 interface SchedulingLink {
@@ -149,7 +150,7 @@ export default function EditSchedulingLinkPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this scheduling link?')) return;
+    if (!(await confirmDialog({ title: 'Delete this scheduling link?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const res = await fetch(`/api/scheduling/${id}`, { method: 'DELETE' });

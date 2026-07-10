@@ -25,6 +25,7 @@ import {
     ListTodo,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 import {
     Dialog,
@@ -842,7 +843,7 @@ export default function CalendarPage() {
                                         <button
                                             className="text-slate-400 hover:text-red-500"
                                             onClick={async () => {
-                                                if (!confirm(`Disconnect ${cal.name}?`)) return;
+                                                if (!(await confirmDialog({ title: `Disconnect ${cal.name}?`, confirmLabel: 'Disconnect', destructive: true }))) return;
                                                 try {
                                                     const response = await fetch(`/api/calendar/disconnect/${cal.id}`, {
                                                         method: 'DELETE',

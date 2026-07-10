@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Textarea } from '@crm-eco/ui/components/textarea';
@@ -118,7 +119,7 @@ export function RecordDetailClient({
   };
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+    if (!(await confirmDialog({ title: 'Delete this record?', description: 'This action cannot be undone.', confirmLabel: 'Delete', destructive: true }))) {
       return;
     }
 

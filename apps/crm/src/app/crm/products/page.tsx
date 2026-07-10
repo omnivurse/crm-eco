@@ -18,6 +18,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   DropdownMenu,
@@ -534,7 +535,7 @@ export default function ProductsPage() {
   }
 
   async function handleDeleteProduct(product: Product) {
-    if (!confirm(`Are you sure you want to delete "${product.name}"?`)) return;
+    if (!(await confirmDialog({ title: `Delete "${product.name}"?`, confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase

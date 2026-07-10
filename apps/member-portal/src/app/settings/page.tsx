@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@crm-eco/ui/components/select';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 import {
   getMemberSettings,
@@ -109,7 +110,15 @@ export default function SettingsPage() {
       kind === 'deletion'
         ? 'Request permanent deletion of your account and data? Our team will contact you to confirm before anything is removed.'
         : 'Request a copy of all your personal data? Our team will prepare it and follow up by email.';
-    if (!confirm(confirmText)) return;
+    if (
+      !(await confirmDialog({
+        title: 'Confirm your request',
+        description: confirmText,
+        confirmLabel: 'Submit request',
+        destructive: true,
+      }))
+    )
+      return;
 
     setPrivacyPending(kind);
     const result = await requestPrivacyAction(kind);

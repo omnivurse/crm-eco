@@ -14,6 +14,7 @@ import {
 import { Search, Filter, X, DollarSign, Eye, Edit, Copy, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 
@@ -104,7 +105,7 @@ export function ProductsClient({ products, organizationId, categories }: Product
   };
 
   const handleDelete = async (productId: string, productName: string) => {
-    if (!confirm(`Delete "${productName}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ title: `Delete "${productName}"?`, description: 'This cannot be undone.', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase.from('plans').delete().eq('id', productId);

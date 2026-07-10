@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -277,7 +278,7 @@ export default function InvoiceGroupsPage() {
   };
 
   const handleDelete = async (group: InvoiceGroup) => {
-    if (!confirm(`Delete "${group.name}"? This will remove all member assignments.`)) return;
+    if (!(await confirmDialog({ title: `Delete "${group.name}"?`, description: 'This will remove all member assignments.', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase.from('invoice_groups').delete().eq('id', group.id);

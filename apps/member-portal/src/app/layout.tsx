@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import './globals.css';
 import { PortalAppShell } from '@/components/PortalAppShell';
 import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
@@ -78,6 +79,7 @@ export default async function RootLayout({
         <PortalAppShell>{children}</PortalAppShell>
         <InstallPrompt />
         <UpdateToast />
+        <ConfirmDialogHost />
       </body>
     </html>
   );

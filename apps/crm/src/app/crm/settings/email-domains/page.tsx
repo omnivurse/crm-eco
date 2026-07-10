@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -527,7 +528,7 @@ export default function EmailDomainsPage() {
   }
 
   async function handleDeleteDomain(id: string) {
-    if (!confirm('Are you sure you want to delete this domain?')) return;
+    if (!(await confirmDialog({ title: 'Delete this domain?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const response = await fetch(`/api/settings/email-domains/${id}`, { method: 'DELETE' });

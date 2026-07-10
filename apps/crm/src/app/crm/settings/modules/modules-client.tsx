@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { CrmModule } from '@/lib/crm/types';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 
 interface ModulesClientProps {
     initialModules: CrmModule[];
@@ -192,7 +193,7 @@ export default function ModulesClient({ initialModules, orgId }: ModulesClientPr
             return;
         }
 
-        if (!confirm(`Are you sure you want to delete "${module.name}"? This cannot be undone.`)) {
+        if (!(await confirmDialog({ title: `Delete "${module.name}"?`, description: 'This cannot be undone.', confirmLabel: 'Delete', destructive: true }))) {
             return;
         }
 

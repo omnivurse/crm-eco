@@ -30,6 +30,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
@@ -294,7 +295,7 @@ export default function ScheduledReportsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this schedule?')) return;
+    if (!(await confirmDialog({ title: 'Delete this schedule?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await scheduledReports()

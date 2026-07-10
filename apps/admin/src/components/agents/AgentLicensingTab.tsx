@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -339,7 +340,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
   };
 
   const handleDeleteLicense = async (license: License) => {
-    if (!confirm('Are you sure you want to delete this license?')) return;
+    if (!(await confirmDialog({ title: 'Delete this license?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase
@@ -435,7 +436,7 @@ export function AgentLicensingTab({ agentId, organizationId }: AgentLicensingTab
   };
 
   const handleDeleteAppointment = async (appointment: Appointment) => {
-    if (!confirm('Are you sure you want to delete this appointment?')) return;
+    if (!(await confirmDialog({ title: 'Delete this appointment?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -127,7 +128,7 @@ export function PipelineSettingsClient({ initialPipelines, canDelete }: Props) {
   };
 
   const handleDeletePipeline = async (id: string) => {
-    if (!confirm('Delete this pipeline? Stages will be removed.')) return;
+    if (!(await confirmDialog({ title: 'Delete this pipeline?', description: 'Stages will be removed.', confirmLabel: 'Delete', destructive: true }))) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/crm/pipelines?id=${id}`, { method: 'DELETE' });
@@ -212,7 +213,7 @@ export function PipelineSettingsClient({ initialPipelines, canDelete }: Props) {
   };
 
   const handleDeleteStage = async (stageId: string) => {
-    if (!confirm('Remove this stage? It will be deactivated, not hard-deleted.')) return;
+    if (!(await confirmDialog({ title: 'Remove this stage?', description: 'It will be deactivated, not hard-deleted.', confirmLabel: 'Remove', destructive: true }))) return;
     setBusy(true);
     try {
       const res = await fetch(`/api/crm/pipelines/stages?id=${stageId}`, { method: 'DELETE' });

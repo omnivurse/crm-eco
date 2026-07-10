@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   ChevronLeft,
   Plus,
@@ -477,7 +478,7 @@ function IntegrationCategoryPageContent({
   };
 
   const handleDisconnect = async (id: string) => {
-    if (!confirm('Are you sure you want to disconnect this integration?')) return;
+    if (!(await confirmDialog({ title: 'Disconnect this integration?', confirmLabel: 'Disconnect', destructive: true }))) return;
 
     try {
       await fetch(`/api/integrations/${id}`, {
@@ -512,7 +513,7 @@ function IntegrationCategoryPageContent({
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this integration? This cannot be undone.')) return;
+    if (!(await confirmDialog({ title: 'Remove this integration?', description: 'This cannot be undone.', confirmLabel: 'Remove', destructive: true }))) return;
 
     try {
       await fetch(`/api/integrations/${id}`, {

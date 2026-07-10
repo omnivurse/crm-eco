@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
 import {
@@ -279,7 +280,7 @@ export default function DeveloperHubPage() {
   /* ---------- revoke API key ---------- */
 
   async function revokeKey(key: ApiKey) {
-    if (!confirm(`Revoke API key "${key.name}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ title: `Revoke API key "${key.name}"?`, description: 'This cannot be undone.', confirmLabel: 'Revoke', destructive: true }))) return;
     try {
       setRevokingId(key.id);
       const res = await fetch(`/api/crm/developer/api-keys?id=${key.id}`, { method: 'DELETE' });
@@ -332,7 +333,7 @@ export default function DeveloperHubPage() {
   /* ---------- delete webhook ---------- */
 
   async function deleteWebhook(wh: WebhookEntry) {
-    if (!confirm(`Delete webhook "${wh.name}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ title: `Delete webhook "${wh.name}"?`, description: 'This cannot be undone.', confirmLabel: 'Delete', destructive: true }))) return;
     try {
       setDeletingWebhookId(wh.id);
       const res = await fetch(`/api/crm/developer/webhooks?id=${wh.id}`, { method: 'DELETE' });

@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -225,7 +226,7 @@ export default function MarketplacePage() {
   /* ---------- uninstall ---------- */
 
   async function uninstallExtension(install: ExtensionInstall) {
-    if (!confirm(`Uninstall ${install.extension.name}? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ title: `Uninstall ${install.extension.name}?`, description: 'This cannot be undone.', confirmLabel: 'Uninstall', destructive: true }))) return;
     try {
       setUninstallingId(install.id);
       const res = await fetch(`/api/crm/extensions/installs?extension_id=${install.extension_id}`, {

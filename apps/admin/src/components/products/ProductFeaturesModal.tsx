@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Dialog,
   DialogContent,
@@ -198,7 +199,7 @@ export function ProductFeaturesModal({
   };
 
   const handleDeleteFeature = async (featureId: string) => {
-    if (!confirm('Delete this feature? It will be removed from all products.')) return;
+    if (!(await confirmDialog({ title: 'Delete this feature?', description: 'It will be removed from all products.', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase

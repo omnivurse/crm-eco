@@ -15,6 +15,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 
 // ============================================================================
 // Types
@@ -65,7 +66,7 @@ export default function PlaybooksPage() {
   }, [fetchPlaybooks]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this playbook?')) return;
+    if (!(await confirmDialog({ title: 'Delete this playbook?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const res = await fetch(`/api/playbooks/${id}`, { method: 'DELETE' });

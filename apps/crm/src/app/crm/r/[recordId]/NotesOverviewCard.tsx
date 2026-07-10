@@ -16,6 +16,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { sanitizeNoteHtml, getNoteAuthorDisplay, getNoteAuthorName, stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
@@ -55,7 +56,7 @@ function NotePreviewItem({
   const isTruncated = plainPreview.length > TRUNCATE_LENGTH;
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!(await confirmDialog({ title: 'Delete this note?', confirmLabel: 'Delete', destructive: true }))) return;
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/crm/notes/${note.id}`, { method: 'DELETE' });

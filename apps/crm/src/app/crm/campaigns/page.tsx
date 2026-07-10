@@ -29,6 +29,7 @@ import {
 import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -358,7 +359,7 @@ export default function CampaignsPage() {
           break;
         }
         case 'delete': {
-          if (!confirm('Are you sure you want to delete this campaign?')) {
+          if (!(await confirmDialog({ title: 'Delete campaign?', confirmLabel: 'Delete', destructive: true }))) {
             setActionLoading(null);
             return;
           }

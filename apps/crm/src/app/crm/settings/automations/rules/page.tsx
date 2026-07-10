@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Zap,
   Plus,
@@ -125,7 +126,7 @@ export default function AutomationRulesPage() {
   };
 
   const handleDelete = async (ruleId: string) => {
-    if (!confirm('Are you sure you want to delete this rule?')) return;
+    if (!(await confirmDialog({ title: 'Delete this rule?', confirmLabel: 'Delete', destructive: true }))) return;
     
     try {
       await fetch(`/api/automation/rules/${ruleId}`, {

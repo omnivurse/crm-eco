@@ -26,6 +26,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   DropdownMenu,
@@ -259,7 +260,7 @@ export default function QuotesPage() {
   }
 
   async function handleDeleteQuote(quote: Quote) {
-    if (!confirm(`Are you sure you want to delete quote ${quote.quote_number}?`)) return;
+    if (!(await confirmDialog({ title: `Delete quote ${quote.quote_number}?`, confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase

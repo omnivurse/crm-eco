@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Dialog,
   DialogContent,
@@ -266,7 +267,7 @@ export function ProductEligibilityModal({
   };
 
   const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm('Delete this eligibility rule?')) return;
+    if (!(await confirmDialog({ title: 'Delete this eligibility rule?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase

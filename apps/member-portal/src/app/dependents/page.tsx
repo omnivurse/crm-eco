@@ -54,6 +54,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@crm-eco/ui/components/dropdown-menu';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 
 export default function DependentsPage() {
@@ -309,10 +310,14 @@ export default function DependentsPage() {
 
   const handlePurgeDependent = async (dependent: DependentWithCoverage) => {
     if (
-      !confirm(
-        `Permanently delete the record for ${dependent.first_name} ${dependent.last_name}? ` +
+      !(await confirmDialog({
+        title: 'Purge dependent record',
+        description:
+          `Permanently delete the record for ${dependent.first_name} ${dependent.last_name}? ` +
           `This removes the person and ALL their coverage history. Prefer "End coverage" for normal use.`,
-      )
+        confirmLabel: 'Purge record',
+        destructive: true,
+      }))
     ) {
       return;
     }

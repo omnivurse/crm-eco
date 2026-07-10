@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import {
@@ -181,7 +182,7 @@ export default function BillingSchedulesPage() {
   }
 
   async function cancelSchedule(schedule: BillingSchedule) {
-    if (!confirm('Are you sure you want to cancel this billing schedule?')) return;
+    if (!(await confirmDialog({ title: 'Cancel this billing schedule?', confirmLabel: 'Cancel schedule', destructive: true }))) return;
     
     setProcessingId(schedule.id);
     try {

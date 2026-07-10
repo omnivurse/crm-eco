@@ -5,6 +5,7 @@ import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
 import {
@@ -296,7 +297,7 @@ export default function SequencesPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this sequence?')) return;
+    if (!(await confirmDialog({ title: 'Delete this sequence?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const response = await fetch(`/api/sequences/${id}`, {

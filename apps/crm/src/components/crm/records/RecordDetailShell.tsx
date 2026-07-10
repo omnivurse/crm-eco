@@ -29,6 +29,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@crm-eco/ui/components/tabs';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -638,7 +639,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     <DropdownMenuItem
                       className="text-red-600 dark:text-red-400 focus:text-red-700 dark:focus:text-red-300 focus:bg-red-50 dark:focus:bg-red-500/10"
                       onClick={async () => {
-                        if (!confirm(`Are you sure you want to delete this ${module.name.toLowerCase()}? This action cannot be undone.`)) return;
+                        if (!(await confirmDialog({ title: `Delete this ${module.name.toLowerCase()}?`, description: 'This action cannot be undone.', confirmLabel: 'Delete', destructive: true }))) return;
                         try {
                           const res = await fetch(`/api/crm/records/${record.id}`, {
                             method: 'DELETE',

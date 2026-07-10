@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { Badge } from '@crm-eco/ui/components/badge';
 import {
@@ -144,7 +145,7 @@ export default function ApiKeysManager() {
   }
 
   async function handleRevoke(id: string, name: string) {
-    if (!confirm(`Revoke API key "${name}"? This cannot be undone.`)) return;
+    if (!(await confirmDialog({ title: `Revoke API key "${name}"?`, description: 'This cannot be undone.', confirmLabel: 'Revoke', destructive: true }))) return;
     try {
       const res = await fetch(`/api/crm/developer/api-keys?id=${id}`, { method: 'DELETE' });
       if (res.ok) {

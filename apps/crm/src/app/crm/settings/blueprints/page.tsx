@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -148,7 +149,7 @@ export default function BlueprintsSettingsPage() {
   };
 
   const handleDeleteBlueprint = async (id: string) => {
-    if (!confirm('Delete this blueprint?')) return;
+    if (!(await confirmDialog({ title: 'Delete this blueprint?', confirmLabel: 'Delete', destructive: true }))) return;
     await supabase.from('crm_blueprints').delete().eq('id', id);
     setBlueprints(blueprints.filter(b => b.id !== id));
   };

@@ -31,6 +31,7 @@ import { Button } from '@crm-eco/ui/components/button';
 import { Input } from '@crm-eco/ui/components/input';
 import { Label } from '@crm-eco/ui/components/label';
 import { Switch } from '@crm-eco/ui/components/switch';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 
 export default function AgentSettingsPage() {
@@ -145,7 +146,15 @@ export default function AgentSettingsPage() {
   };
 
   const handleDisableMfa = async () => {
-    if (!confirm('Are you sure you want to disable two-factor authentication? This will make your account less secure.')) {
+    if (
+      !(await confirmDialog({
+        title: 'Disable two-factor authentication',
+        description:
+          'Are you sure you want to disable two-factor authentication? This will make your account less secure.',
+        confirmLabel: 'Disable 2FA',
+        destructive: true,
+      }))
+    ) {
       return;
     }
 

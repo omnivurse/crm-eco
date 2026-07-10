@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   Dialog,
@@ -128,7 +129,7 @@ export function AssetLibrary({
   }, [open, fetchAssets]);
 
   const handleDelete = async (assetId: string) => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
+    if (!(await confirmDialog({ title: 'Delete this asset?', confirmLabel: 'Delete', destructive: true }))) return;
 
     setDeleting(assetId);
     try {

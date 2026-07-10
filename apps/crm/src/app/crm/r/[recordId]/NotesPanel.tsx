@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { StickyNote, Plus, Pin, Pencil, Trash2, Loader2, User } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
@@ -29,7 +30,7 @@ function NoteCard({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
+    if (!(await confirmDialog({ title: 'Delete this note?', confirmLabel: 'Delete', destructive: true }))) return;
 
     setIsDeleting(true);
     try {

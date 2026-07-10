@@ -14,6 +14,7 @@ import {
   Textarea,
   Separator,
 } from '@crm-eco/ui';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   ArrowLeft,
   Check,
@@ -108,7 +109,7 @@ export default function ApprovalDetailPage() {
   async function handleCancel() {
     if (!approval) return;
     
-    if (!confirm('Are you sure you want to cancel this approval request?')) return;
+    if (!(await confirmDialog({ title: 'Cancel this approval request?', confirmLabel: 'Cancel request', destructive: true }))) return;
     
     setProcessing(true);
     

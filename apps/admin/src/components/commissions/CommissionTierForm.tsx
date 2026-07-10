@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -153,7 +154,14 @@ export function CommissionTierForm({ tier, organizationId }: CommissionTierFormP
 
   async function handleDelete() {
     if (!tier) return;
-    if (!confirm('Are you sure you want to delete this commission tier? This cannot be undone.')) {
+    if (
+      !(await confirmDialog({
+        title: 'Delete this commission tier?',
+        description: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+      }))
+    ) {
       return;
     }
 

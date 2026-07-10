@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   Card,
@@ -127,7 +128,7 @@ export default function AssetLibraryPage() {
   }, [fetchAssets]);
 
   const handleDelete = async (assetId: string) => {
-    if (!confirm('Are you sure you want to delete this asset?')) return;
+    if (!(await confirmDialog({ title: 'Delete this asset?', confirmLabel: 'Delete', destructive: true }))) return;
 
     setDeleting(assetId);
     try {
@@ -157,7 +158,7 @@ export default function AssetLibraryPage() {
 
   const handleBulkDelete = async () => {
     if (selectedAssets.size === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedAssets.size} assets?`)) return;
+    if (!(await confirmDialog({ title: `Delete ${selectedAssets.size} assets?`, confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const response = await fetch('/api/email/assets', {

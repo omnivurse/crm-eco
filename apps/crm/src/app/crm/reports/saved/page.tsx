@@ -18,6 +18,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   DropdownMenu,
@@ -89,7 +90,7 @@ export default function SavedReportsPage() {
   };
 
   const handleDeleteReport = async (reportId: string) => {
-    if (!confirm('Are you sure you want to delete this report?')) return;
+    if (!(await confirmDialog({ title: 'Delete this report?', confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });

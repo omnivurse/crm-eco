@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -172,7 +173,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
   };
 
   const deleteIuaLevel = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this IUA level?')) return;
+    if (!(await confirmDialog({ title: 'Delete this IUA level?', confirmLabel: 'Delete', destructive: true }))) return;
     setSaving(true);
     try {
       await supabase.from('product_iua').delete().eq('id', id);
@@ -208,7 +209,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
   };
 
   const deleteAgeBracket = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this age bracket?')) return;
+    if (!(await confirmDialog({ title: 'Delete this age bracket?', confirmLabel: 'Delete', destructive: true }))) return;
     setSaving(true);
     try {
       await supabase.from('product_age_brackets').delete().eq('id', id);
@@ -244,7 +245,7 @@ export function PricingMatrixEditor({ productId, organizationId }: PricingMatrix
   };
 
   const deleteBenefitType = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this benefit type?')) return;
+    if (!(await confirmDialog({ title: 'Delete this benefit type?', confirmLabel: 'Delete', destructive: true }))) return;
     setSaving(true);
     try {
       await supabase.from('product_benefit_types').delete().eq('id', id);

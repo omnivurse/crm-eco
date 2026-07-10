@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -122,7 +123,7 @@ export default function CommsSettingsPage() {
   };
 
   const handleDeleteProvider = async (id: string) => {
-    if (!confirm('Delete this provider?')) return;
+    if (!(await confirmDialog({ title: 'Delete this provider?', confirmLabel: 'Delete', destructive: true }))) return;
     await supabase.from('crm_message_providers').delete().eq('id', id);
     setProviders(providers.filter(p => p.id !== id));
   };
@@ -168,7 +169,7 @@ export default function CommsSettingsPage() {
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    if (!confirm('Delete this template?')) return;
+    if (!(await confirmDialog({ title: 'Delete this template?', confirmLabel: 'Delete', destructive: true }))) return;
     await supabase.from('crm_message_templates').delete().eq('id', id);
     setTemplates(templates.filter(t => t.id !== id));
   };

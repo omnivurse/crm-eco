@@ -17,6 +17,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { toast } from 'sonner';
 
@@ -99,8 +100,8 @@ export default function WebhooksPage() {
     toast.success('Webhook created');
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this webhook?')) return;
+  const handleDelete = async (id: string) => {
+    if (!(await confirmDialog({ title: 'Delete this webhook?', confirmLabel: 'Delete', destructive: true }))) return;
     saveWebhooks(webhooks.filter(w => w.id !== id));
     toast.success('Webhook deleted');
   };

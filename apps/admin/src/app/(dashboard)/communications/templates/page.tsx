@@ -14,6 +14,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
@@ -163,7 +164,14 @@ export default function EmailTemplatesPage() {
       return;
     }
 
-    if (!confirm(`Delete template "${template.name}"? This cannot be undone.`)) {
+    if (
+      !(await confirmDialog({
+        title: `Delete template "${template.name}"?`,
+        description: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+      }))
+    ) {
       return;
     }
 

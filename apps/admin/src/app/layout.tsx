@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
+import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
 import { getActiveTenant } from '@/lib/tenant';
 import './globals.css';
 
@@ -55,6 +56,7 @@ export default async function RootLayout({
       <body className={`${inter.variable} ${jakarta.variable} font-sans antialiased`}>
         <LeadGenQuotePinGate />
         {children}
+        <ConfirmDialogHost />
       </body>
     </html>
   );

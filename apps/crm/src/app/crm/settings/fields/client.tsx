@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Card, CardContent } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Input } from '@crm-eco/ui/components/input';
@@ -155,7 +156,7 @@ export function FieldsSettingsClient({
   };
 
   const handleDeleteField = async (fieldId: string) => {
-    if (!confirm('Are you sure you want to delete this field? This cannot be undone.')) {
+    if (!(await confirmDialog({ title: 'Delete this field?', description: 'This cannot be undone.', confirmLabel: 'Delete', destructive: true }))) {
       return;
     }
 

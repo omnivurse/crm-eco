@@ -40,6 +40,7 @@ import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { useMutationQueue } from '@/hooks/useMutationQueue';
 import { cacheKeys, cacheGet } from '@/lib/offline/response-cache';
 import {
@@ -281,9 +282,13 @@ export default function OfflineDebugClient({
 
   const handleWipe = async () => {
     if (
-      !window.confirm(
-        'Wipe ALL offline state?\n\nThis removes queued edits, cached reads, and the recent-records index on this device. Use only for support triage.',
-      )
+      !(await confirmDialog({
+        title: 'Wipe ALL offline state?',
+        description:
+          'This removes queued edits, cached reads, and the recent-records index on this device. Use only for support triage.',
+        confirmLabel: 'Wipe',
+        destructive: true,
+      }))
     ) {
       return;
     }

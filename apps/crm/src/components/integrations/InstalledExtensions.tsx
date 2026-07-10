@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { toast } from 'sonner';
 
@@ -102,7 +103,7 @@ export default function InstalledExtensions() {
   }
 
   async function handleUninstall(install: InstalledExtension) {
-    if (!confirm(`Uninstall "${install.extension.name}"? This will remove all configuration.`)) return;
+    if (!(await confirmDialog({ title: `Uninstall "${install.extension.name}"?`, description: 'This will remove all configuration.', confirmLabel: 'Uninstall', destructive: true }))) return;
     setUninstalling(install.id);
     try {
       const res = await fetch(`/api/crm/extensions/installs?extension_id=${install.extension_id}`, {

@@ -18,6 +18,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 
 interface AutoResponse {
@@ -115,8 +116,8 @@ export default function AutoResponsesPage() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (!confirm('Delete this auto-response?')) return;
+  const handleDelete = async (id: string) => {
+    if (!(await confirmDialog({ title: 'Delete this auto-response?', confirmLabel: 'Delete', destructive: true }))) return;
     saveResponses(responses.filter(r => r.id !== id));
   };
 

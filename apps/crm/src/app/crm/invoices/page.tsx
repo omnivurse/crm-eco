@@ -27,6 +27,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Input } from '@crm-eco/ui/components/input';
 import {
   DropdownMenu,
@@ -284,7 +285,7 @@ export default function InvoicesPage() {
   }
 
   async function handleDeleteInvoice(invoice: Invoice) {
-    if (!confirm(`Are you sure you want to delete invoice ${invoice.invoice_number}?`)) return;
+    if (!(await confirmDialog({ title: `Delete invoice ${invoice.invoice_number}?`, confirmLabel: 'Delete', destructive: true }))) return;
 
     try {
       const { error } = await supabase

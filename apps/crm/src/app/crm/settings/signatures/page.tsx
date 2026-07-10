@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import {
   Card,
   CardContent,
@@ -107,7 +108,7 @@ export default function SignaturesSettingsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this signature?')) return;
+    if (!(await confirmDialog({ title: 'Delete this signature?', confirmLabel: 'Delete', destructive: true }))) return;
 
     setDeletingId(id);
     try {

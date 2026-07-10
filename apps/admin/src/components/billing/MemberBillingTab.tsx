@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
 import { createClient } from '@crm-eco/lib/supabase/client';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   CreditCard,
@@ -169,7 +170,7 @@ export function MemberBillingTab({ memberId }: MemberBillingTabProps) {
   }
 
   async function handleDeleteProfile(profileId: string) {
-    if (!confirm('Are you sure you want to delete this payment method?')) {
+    if (!(await confirmDialog({ title: 'Delete this payment method?', confirmLabel: 'Delete', destructive: true }))) {
       return;
     }
 
