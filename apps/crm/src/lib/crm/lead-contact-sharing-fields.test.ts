@@ -37,10 +37,34 @@ describe('mergeHealthSharingIntoContactData', () => {
 });
 
 describe('bridgeLegacyCarrierToSharingEntity', () => {
-  it('maps legacy carrier to sharing_entity on contacts', () => {
+  it('maps legacy ministry carrier to sharing_entity on contacts', () => {
     const base = { carrier: 'Zion Health' };
     bridgeLegacyCarrierToSharingEntity(base, 'contacts');
     expect(base.sharing_entity).toBe('Zion Health');
+  });
+
+  it('routes a known insurance carrier to health_insurance_carrier, not sharing_entity', () => {
+    const base: Record<string, unknown> = { carrier: 'Cigna' };
+    bridgeLegacyCarrierToSharingEntity(base, 'contacts');
+    expect(base.health_insurance_carrier).toBe('Cigna');
+    expect(base.sharing_entity).toBeUndefined();
+  });
+
+  it('routes an insurance carrier to insurance even when sharing_entity is already set', () => {
+    const base: Record<string, unknown> = { carrier: 'Aetna', sharing_entity: 'Sedera' };
+    bridgeLegacyCarrierToSharingEntity(base, 'contacts');
+    expect(base.health_insurance_carrier).toBe('Aetna');
+    expect(base.sharing_entity).toBe('Sedera');
+  });
+
+  it('does not overwrite an existing health_insurance_carrier', () => {
+    const base: Record<string, unknown> = {
+      carrier: 'Cigna',
+      health_insurance_carrier: 'Aetna',
+    };
+    bridgeLegacyCarrierToSharingEntity(base, 'contacts');
+    expect(base.health_insurance_carrier).toBe('Aetna');
+    expect(base.sharing_entity).toBeUndefined();
   });
 });
 

@@ -20,7 +20,11 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CrmLinkedRecord } from '@/lib/crm/types';
-import { RelatedRecordsPanel, type LinkCandidate } from './RelatedRecordsPanel';
+import {
+  RelatedRecordsPanel,
+  type LinkCandidate,
+  type LinkManyResult,
+} from './RelatedRecordsPanel';
 
 interface Props {
   recordId: string;
@@ -63,6 +67,43 @@ export function RelatedRecordsPanelClient({ recordId, initialLinkedRecords, clas
       router.refresh();
     },
     [recordId, refresh, router]
+  );
+
+  const handleLinkMany = useCallback(
+    async (targetRecordIds: string[], linkType: string): Promise<LinkManyResult> => {
+      let linked = 0;
+      let duplicates = 0;
+      let failed = 0;
+
+      await Promise.all(
+        targetRecordIds.map(async (targetRecordId) => {
+          try {
+            const res = await fetch('/api/crm/record-links', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                source_record_id: recordId,
+                target_record_id: targetRecordId,
+                link_type: linkType,
+                is_primary: false,
+              }),
+            });
+            if (res.ok) linked += 1;
+            else if (res.status === 409) duplicates += 1;
+            else failed += 1;
+          } catch {
+            failed += 1;
+          }
+        }),
+      );
+
+      if (linked > 0) {
+        await refresh();
+        router.refresh();
+      }
+      return { linked, duplicates, failed };
+    },
+    [recordId, refresh, router],
   );
 
   const handleUnlink = useCallback(
@@ -129,6 +170,7 @@ export function RelatedRecordsPanelClient({ recordId, initialLinkedRecords, clas
       recordId={recordId}
       linkedRecords={linkedRecords}
       onLinkRecord={handleLinkRecord}
+      onLinkMany={handleLinkMany}
       onUnlink={handleUnlink}
       onSetPrimary={handleSetPrimary}
       onSearchRecords={handleSearchRecords}

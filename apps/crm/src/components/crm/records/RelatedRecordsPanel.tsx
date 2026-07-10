@@ -36,6 +36,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { cn } from '@crm-eco/ui/lib/utils';
+import { toast } from 'sonner';
 import type { CrmLinkedRecord } from '@/lib/crm/types';
 
 /** Minimal row used in “link record” search (also returned by global CRM search API). */
@@ -46,11 +47,20 @@ export interface LinkCandidate {
   module_key: string;
 }
 
+/** Outcome of a batch link so the dialog can report skips vs failures. */
+export interface LinkManyResult {
+  linked: number;
+  duplicates: number;
+  failed: number;
+}
+
 interface RelatedRecordsPanelProps {
   recordId: string;
   linkedRecords: CrmLinkedRecord[];
   isLoading?: boolean;
   onLinkRecord?: (targetRecordId: string, linkType: string, isPrimary?: boolean) => Promise<void>;
+  /** Link several records at once with one shared relationship (additive). */
+  onLinkMany?: (targetRecordIds: string[], linkType: string) => Promise<LinkManyResult>;
   onUnlink?: (linkId: string) => Promise<void>;
   onSetPrimary?: (linkId: string, isPrimary: boolean) => Promise<void>;
   availableRecords?: LinkCandidate[];
@@ -247,22 +257,40 @@ function LinkedRecordCard({
 
 function LinkRecordDialog({
   onLink,
+  onLinkMany,
   availableRecords,
   onSearch,
 }: {
   onLink: (recordId: string, linkType: string, isPrimary?: boolean) => Promise<void>;
+  onLinkMany?: (targetRecordIds: string[], linkType: string) => Promise<LinkManyResult>;
   availableRecords?: LinkCandidate[];
   onSearch?: (query: string) => Promise<LinkCandidate[]>;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRecord, setSelectedRecord] = useState<LinkCandidate | null>(null);
+  const [selectedRecords, setSelectedRecords] = useState<LinkCandidate[]>([]);
   const [linkType, setLinkType] = useState('family_household');
   const [isPrimary, setIsPrimary] = useState(false);
   const [isLinking, setIsLinking] = useState(false);
   const [searchResults, setSearchResults] = useState<LinkCandidate[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const toggleRecord = (record: LinkCandidate) => {
+    setSelectedRecords((prev) =>
+      prev.some((r) => r.id === record.id)
+        ? prev.filter((r) => r.id !== record.id)
+        : [...prev, record],
+    );
+  };
+
+  const resetForm = () => {
+    setIsOpen(false);
+    setSelectedRecords([]);
+    setSearchQuery('');
+    setLinkType('family_household');
+    setIsPrimary(false);
+  };
 
   // Debounced auto-search as user types
   const runSearch = useCallback(
@@ -295,16 +323,44 @@ function LinkRecordDialog({
   }, [searchQuery, runSearch]);
 
   const handleLink = async () => {
-    if (!selectedRecord) return;
+    if (selectedRecords.length === 0) return;
 
     setIsLinking(true);
     try {
-      await onLink(selectedRecord.id, linkType, isPrimary);
-      setIsOpen(false);
-      setSelectedRecord(null);
-      setSearchQuery('');
-      setLinkType('family_household');
-      setIsPrimary(false);
+      if (onLinkMany) {
+        const { linked, duplicates, failed } = await onLinkMany(
+          selectedRecords.map((r) => r.id),
+          linkType,
+        );
+        if (linked > 0) {
+          const extras = [
+            duplicates > 0 ? `${duplicates} already linked` : null,
+            failed > 0 ? `${failed} failed` : null,
+          ].filter(Boolean);
+          toast.success(
+            `Linked ${linked} record${linked === 1 ? '' : 's'}` +
+              (extras.length ? ` · ${extras.join(' · ')}` : ''),
+          );
+          resetForm();
+        } else if (duplicates > 0 && failed === 0) {
+          toast.info('Those records are already linked');
+          resetForm();
+        } else {
+          toast.error('Could not link the selected records');
+        }
+      } else {
+        // Fallback: single-relationship batch via the one-at-a-time handler.
+        // Only the first selection can be primary (primary is per-source).
+        for (let i = 0; i < selectedRecords.length; i += 1) {
+          await onLink(selectedRecords[i].id, linkType, isPrimary && i === 0);
+        }
+        toast.success(
+          `Linked ${selectedRecords.length} record${selectedRecords.length === 1 ? '' : 's'}`,
+        );
+        resetForm();
+      }
+    } catch {
+      toast.error('Could not link the selected records');
     } finally {
       setIsLinking(false);
     }
@@ -313,7 +369,7 @@ function LinkRecordDialog({
   const recordsToShow = searchQuery ? searchResults : availableRecords || [];
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => (open ? setIsOpen(true) : resetForm())}>
       <DialogTrigger asChild>
         <Button
           variant="outline"
@@ -325,7 +381,11 @@ function LinkRecordDialog({
       </DialogTrigger>
       <DialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-slate-900 dark:text-white">Link a Record</DialogTitle>
+          <DialogTitle className="text-slate-900 dark:text-white">Link Records</DialogTitle>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Select one or more records, choose how they relate, and link them all at
+            once. Existing links are kept.
+          </p>
         </DialogHeader>
 
         <div className="space-y-4 mt-4">
@@ -352,12 +412,12 @@ function LinkRecordDialog({
               recordsToShow.map((record) => {
                 const icon = MODULE_ICONS[record.module_key] || <Link2 className="w-4 h-4" />;
                 const colors = MODULE_COLORS[record.module_key] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
-                const isSelected = selectedRecord?.id === record.id;
+                const isSelected = selectedRecords.some((r) => r.id === record.id);
 
                 return (
                   <button
                     key={record.id}
-                    onClick={() => setSelectedRecord(record)}
+                    onClick={() => toggleRecord(record)}
                     className={cn(
                       'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
                       isSelected
@@ -396,11 +456,14 @@ function LinkRecordDialog({
             )}
           </div>
 
-          {selectedRecord && (
+          {selectedRecords.length > 0 && (
             <>
               {/* Link Type */}
               <div>
-                <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">Link Type</label>
+                <label className="text-sm text-slate-600 dark:text-slate-400 mb-1 block">
+                  Relationship for {selectedRecords.length} selected record
+                  {selectedRecords.length === 1 ? '' : 's'}
+                </label>
                 <Select value={linkType} onValueChange={setLinkType}>
                   <SelectTrigger className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
                     <SelectValue />
@@ -427,16 +490,19 @@ function LinkRecordDialog({
                 </Select>
               </div>
 
-              {/* Primary Toggle */}
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isPrimary}
-                  onChange={(e) => setIsPrimary(e.target.checked)}
-                  className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800/50 text-teal-500 focus:ring-teal-500/50"
-                />
-                <span className="text-sm text-slate-600 dark:text-slate-300">Mark as primary relationship</span>
-              </label>
+              {/* Primary is a single-record concept (one primary per source), so
+                  only offer it when exactly one record is selected. */}
+              {selectedRecords.length === 1 && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isPrimary}
+                    onChange={(e) => setIsPrimary(e.target.checked)}
+                    className="rounded border-slate-300 dark:border-white/20 bg-white dark:bg-slate-800/50 text-teal-500 focus:ring-teal-500/50"
+                  />
+                  <span className="text-sm text-slate-600 dark:text-slate-300">Mark as primary relationship</span>
+                </label>
+              )}
             </>
           )}
 
@@ -444,14 +510,14 @@ function LinkRecordDialog({
           <div className="flex justify-end gap-2 pt-2">
             <Button
               variant="ghost"
-              onClick={() => setIsOpen(false)}
+              onClick={resetForm}
               className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             >
               Cancel
             </Button>
             <Button
               onClick={handleLink}
-              disabled={!selectedRecord || isLinking}
+              disabled={selectedRecords.length === 0 || isLinking}
               className="bg-teal-500 hover:bg-teal-400 text-white"
             >
               {isLinking ? (
@@ -462,7 +528,9 @@ function LinkRecordDialog({
               ) : (
                 <>
                   <Link2 className="w-4 h-4 mr-2" />
-                  Link Record
+                  {selectedRecords.length > 1
+                    ? `Link ${selectedRecords.length} Records`
+                    : 'Link Record'}
                 </>
               )}
             </Button>
@@ -478,6 +546,7 @@ export function RelatedRecordsPanel({
   linkedRecords,
   isLoading,
   onLinkRecord,
+  onLinkMany,
   onUnlink,
   onSetPrimary,
   availableRecords,
@@ -511,6 +580,7 @@ export function RelatedRecordsPanel({
       {onLinkRecord && (
         <LinkRecordDialog
           onLink={onLinkRecord}
+          onLinkMany={onLinkMany}
           availableRecords={availableRecords}
           onSearch={onSearchRecords}
         />

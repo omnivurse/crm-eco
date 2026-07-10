@@ -4,6 +4,8 @@
  * `carrier` (insurance section) from Zoho imports.
  */
 
+import { isKnownInsuranceCarrier } from './coverage-carriers';
+
 export const HEALTH_SHARING_DATA_KEYS = [
   'sharing_entity',
   'member_tier',
@@ -60,13 +62,28 @@ export function mergeHealthSharingIntoContactData(
 /**
  * Contacts imported from Zoho often have `carrier` (text) while the CRM UI
  * edits `sharing_entity`. Bridge reads so the Health Sharing section shows data.
+ *
+ * A legacy `carrier` that is actually a major-medical insurer (e.g. "Cigna")
+ * must NOT surface as a health-share "Sharing Entity" — that mixes insurance
+ * and health sharing. Route recognized insurers to `health_insurance_carrier`
+ * instead; only genuine ministries / unknown carriers fall through to
+ * `sharing_entity`.
  */
 export function bridgeLegacyCarrierToSharingEntity(
   base: Record<string, unknown>,
   moduleKey?: string | null,
 ): void {
   if (moduleKey !== 'contacts' && moduleKey !== 'members') return;
-  if (!isBlankJsonValue(base.sharing_entity) || isBlankJsonValue(base.carrier)) return;
+  if (isBlankJsonValue(base.carrier)) return;
+
+  if (isKnownInsuranceCarrier(base.carrier)) {
+    if (isBlankJsonValue(base.health_insurance_carrier)) {
+      base.health_insurance_carrier = base.carrier;
+    }
+    return;
+  }
+
+  if (!isBlankJsonValue(base.sharing_entity)) return;
   base.sharing_entity = base.carrier;
 }
 

@@ -70,6 +70,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(link, { status: 201 });
   } catch (error) {
+    // Unique violation = this exact (source, target, link_type) link already
+    // exists. That's not a server error — surface it as a 409 so batch linking
+    // can treat "already linked" as a skip rather than a hard failure.
+    if ((error as { code?: string })?.code === '23505') {
+      return NextResponse.json(
+        { error: 'This record is already linked with that relationship' },
+        { status: 409 }
+      );
+    }
     console.error('Error creating record link:', error);
     return NextResponse.json(
       { error: 'Failed to create record link' },

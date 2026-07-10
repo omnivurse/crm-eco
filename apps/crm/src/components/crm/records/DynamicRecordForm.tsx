@@ -43,6 +43,7 @@ import type {
 import { getFieldOptions } from '@/lib/crm/utils';
 import { toDatetimeLocalValue } from '@/lib/crm/datetime-local';
 import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
+import { classifyCarrierValue } from '@/lib/crm/coverage-carriers';
 import {
   isoDateToMaskedDisplay,
   maskDateTyping,
@@ -74,6 +75,22 @@ import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
 const getAccent = (accent?: LayoutSectionAccent) => getSectionCardAccent(accent);
+
+/**
+ * Label for the Membership Snapshot's carrier/entity row. The snapshot resolves
+ * one field to represent coverage, but that field may be the health-share
+ * `sharing_entity`, the `health_insurance_carrier`, or a generic `carrier`. Show
+ * a label that matches the actual coverage type so an insurer (e.g. "Cigna")
+ * never reads as a "Sharing Entity". The stored value wins over the field's
+ * static metadata so a mis-filed value is still labeled correctly.
+ */
+function coverageCarrierLabel(field: CrmField, value: unknown): string {
+  const byValue = classifyCarrierValue(value);
+  const byMeta = field.metadata?.carrier_type;
+  if (byValue === 'insurance' || byMeta === 'insurance') return 'Insurance Carrier';
+  if (byValue === 'healthshare' || byMeta === 'healthshare') return 'Sharing Entity';
+  return field.label;
+}
 
 // Search dropdown for lookup/user fields
 function LookupSearchField({
@@ -843,6 +860,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
+  // Relabel the resolved carrier row so insurance vs health sharing read as
+  // distinct (same field key, so inline edit still saves to the right field).
+  const heroSharingFieldForDisplay = useMemo(() => {
+    if (!heroSharingField) return undefined;
+    const label = coverageCarrierLabel(heroSharingField, defaultValues[heroSharingField.key]);
+    return label === heroSharingField.label ? heroSharingField : { ...heroSharingField, label };
+  }, [heroSharingField, defaultValues]);
+
   const heroStartDateField = useMemo(() => {
     const isDateType = (f: CrmField) => f.type === 'date';
     const candidates = [
@@ -1060,8 +1085,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
                           Membership Snapshot
                         </p>
-                        {heroSharingField ? (
-                          renderFieldCell(heroSharingField)
+                        {heroSharingFieldForDisplay ? (
+                          renderFieldCell(heroSharingFieldForDisplay)
                         ) : (
                           <p className="text-xs text-muted-foreground">
                             No carrier or sharing entity field configured
