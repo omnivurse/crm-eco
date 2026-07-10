@@ -8,11 +8,13 @@ import { ImportWizard } from './import-wizard';
 interface PageProps {
   searchParams: Promise<{
     module?: string;
+    smart?: string;
   }>;
 }
 
 async function ImportPageContent({ searchParams }: PageProps) {
-  const { module: preselectedModule } = await searchParams;
+  const { module: preselectedModule, smart } = await searchParams;
+  const smartMode = smart === '1' || smart === 'true';
   
   const profile = await getCurrentProfile();
   if (!profile) {
@@ -88,7 +90,14 @@ async function ImportPageContent({ searchParams }: PageProps) {
           </p>
         </Link>
 
-        <div className="glass-card rounded-xl p-5 border border-slate-200 dark:border-white/10 hover:border-amber-500/30 transition-all group cursor-pointer">
+        <Link
+          href="/crm/import?smart=1"
+          className={`glass-card rounded-xl p-5 border transition-all group cursor-pointer ${
+            smartMode
+              ? 'border-amber-500/60 ring-1 ring-amber-500/30'
+              : 'border-slate-200 dark:border-white/10 hover:border-amber-500/30'
+          }`}
+        >
           <div className="flex items-center gap-3 mb-3">
             <div className="p-2.5 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
               <Sparkles className="w-5 h-5 text-amber-600 dark:text-amber-400" />
@@ -101,7 +110,7 @@ async function ImportPageContent({ searchParams }: PageProps) {
           <p className="text-slate-500 dark:text-slate-400 text-sm">
             Auto-detect module and map fields intelligently.
           </p>
-        </div>
+        </Link>
       </div>
 
       {/* Import Wizard */}
@@ -109,6 +118,7 @@ async function ImportPageContent({ searchParams }: PageProps) {
         modules={modules}
         organizationId={profile.organization_id}
         preselectedModule={preselectedModule}
+        smartMode={smartMode}
       />
     </div>
   );

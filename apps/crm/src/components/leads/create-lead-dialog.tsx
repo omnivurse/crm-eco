@@ -171,16 +171,35 @@ export function CreateLeadDialog() {
       const leadStatus = mapLegacyStatus(formData.status);
 
       if (!forceCreate && formData.email?.trim()) {
+        // Only warn on a TRUE duplicate — same email AND same name. Family members
+        // (e.g. a child dependent) may legitimately share a parent's email, so a
+        // same-email/different-name match is allowed through without a warning.
         const { data: existing } = await supabase
           .from('crm_records')
-          .select('id, title, email')
+          .select('id, title, email, data')
           .eq('org_id', authProfile.organization_id)
           .eq('module_id', leadsModuleId)
           .ilike('email', formData.email.trim())
-          .limit(1);
+          .limit(5);
 
-        if (existing && existing.length > 0) {
-          setDuplicateWarning(existing[0] as { id: string; title: string | null; email: string | null });
+        const newName = `${formData.firstName} ${formData.lastName}`
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .trim();
+        const sameNameMatch = (existing ?? []).find((r) => {
+          const d = (r.data ?? {}) as Record<string, unknown>;
+          const existingName = (
+            `${(d.first_name as string) ?? ''} ${(d.last_name as string) ?? ''}`.trim() ||
+            (r.title ?? '')
+          )
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+          return existingName === newName;
+        });
+
+        if (sameNameMatch) {
+          setDuplicateWarning(sameNameMatch as { id: string; title: string | null; email: string | null });
           setLoading(false);
           return;
         }

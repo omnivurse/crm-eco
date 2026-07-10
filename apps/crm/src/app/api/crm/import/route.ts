@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import {
+  mergeCrmDataJsonIntoRowColumns,
+  sanitizeCrmDataJsonPatch,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 
 
 interface ColumnMapping {
@@ -109,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     const { data: moduleRow, error: moduleLookupError } = await supabase
       .from('crm_modules')
-      .select('id')
+      .select('id, key')
       .eq('id', moduleId)
       .eq('org_id', profile.organization_id)
       .maybeSingle();
@@ -120,6 +124,50 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+    const moduleKey = (moduleRow as { key: string | null }).key ?? null;
+
+    /**
+     * Build a `crm_records` insert row from a transformed CSV row using the
+     * SAME normalization the create/PATCH path uses: date strings coerced to
+     * ISO, canonical values mirrored onto indexed columns (carrier_id, start /
+     * cancellation dates, group_name, …), and the title derived from
+     * name/preferred fields. Without this, imported records saved values into
+     * JSONB only and did not display or filter consistently with records added
+     * through the form.
+     */
+    const buildInsertRecord = (row: TransformedRow): Record<string, unknown> => {
+      const cleanData = sanitizeCrmDataJsonPatch(row.recordData);
+      const columnUpdates = mergeCrmDataJsonIntoRowColumns(cleanData, {
+        moduleKey,
+        previousTitle: row.title,
+      });
+      const mType =
+        (typeof columnUpdates.market_type === 'string' && columnUpdates.market_type
+          ? (columnUpdates.market_type as string)
+          : classifyMarketType(cleanData)) as
+          | 'healthshare'
+          | 'traditional_insurance'
+          | 'unknown';
+      const { advisorName, agentName } = extractCanonicalNames(cleanData, mType);
+      return {
+        org_id: organizationId,
+        module_id: moduleId,
+        owner_id: profile.id,
+        created_by: profile.id,
+        // Indexed columns derived from JSONB (title/email/phone/status/dates/…).
+        ...columnUpdates,
+        data: cleanData,
+        email: (columnUpdates.email as string | null | undefined) ?? row.email,
+        phone: (columnUpdates.phone as string | null | undefined) ?? row.phone,
+        title: (columnUpdates.title as string | null | undefined) ?? row.title,
+        status: (columnUpdates.status as string | null | undefined) ?? row.status,
+        import_source: 'csv_import',
+        market_type: mType,
+        normalized_advisor_name: advisorName,
+        normalized_agent_name: agentName,
+        normalization_status: mType !== 'unknown' ? 'normalized' : 'needs_review',
+      };
+    };
 
     // Create import job
     const { data: importJob, error: jobError } = await supabase
@@ -311,27 +359,7 @@ export async function POST(request: NextRequest) {
     for (let batchStart = 0; batchStart < validRows.length; batchStart += BATCH_SIZE) {
       const batch = validRows.slice(batchStart, batchStart + BATCH_SIZE);
 
-      const recordsToInsert = batch.map(row => {
-        const mType = classifyMarketType(row.recordData);
-        const { advisorName, agentName } = extractCanonicalNames(row.recordData, mType);
-        return {
-          org_id: organizationId,
-          module_id: moduleId,
-          owner_id: profile.id,
-          title: row.title,
-          status: row.status,
-          data: row.recordData,
-          email: row.email,
-          phone: row.phone,
-          created_by: profile.id,
-          // Canonical fields (Phase 2)
-          import_source: 'csv_import',
-          market_type: mType,
-          normalized_advisor_name: advisorName,
-          normalized_agent_name: agentName,
-          normalization_status: mType !== 'unknown' ? 'normalized' : 'needs_review' as const,
-        };
-      });
+      const recordsToInsert = batch.map(buildInsertRecord);
 
       const { data: insertedBatch, error: batchError } = await supabase
         .from('crm_records')
@@ -342,26 +370,9 @@ export async function POST(request: NextRequest) {
         // If batch fails due to unique constraint, fall back to row-by-row insert
         if ((batchError as any).code === '23505') {
           for (const row of batch) {
-            const singleMType = classifyMarketType(row.recordData);
-            const singleCanon = extractCanonicalNames(row.recordData, singleMType);
             const { data: singleRecord, error: singleError } = await supabase
               .from('crm_records')
-              .insert({
-                org_id: organizationId,
-                module_id: moduleId,
-                owner_id: profile.id,
-                title: row.title,
-                status: row.status,
-                data: row.recordData,
-                email: row.email,
-                phone: row.phone,
-                created_by: profile.id,
-                import_source: 'csv_import',
-                market_type: singleMType,
-                normalized_advisor_name: singleCanon.advisorName,
-                normalized_agent_name: singleCanon.agentName,
-                normalization_status: singleMType !== 'unknown' ? 'normalized' : 'needs_review',
-              })
+              .insert(buildInsertRecord(row))
               .select('id');
 
             if (singleError) {

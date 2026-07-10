@@ -22,6 +22,36 @@ export type CrmRecordCreateResult =
   | { ok: true; record: CrmRecord }
   | { ok: false; status: number; body: Record<string, unknown> };
 
+/** Candidate row shape returned by the `check_crm_duplicate` RPC. */
+interface DuplicateCandidate {
+  id: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  status: string | null;
+  created_at: string | null;
+}
+
+/** Normalize a name for comparison: lowercase, collapse whitespace, trim. */
+function normalizeName(name: string | null | undefined): string {
+  return (name ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Comparable display name for a record's `data` — first + last, falling back to
+ * an explicit title/name. Used to distinguish a true duplicate (same email AND
+ * name) from a family member who legitimately shares a parent's email.
+ */
+function recordDisplayName(data: Record<string, unknown>): string {
+  const first = typeof data.first_name === 'string' ? data.first_name : '';
+  const last = typeof data.last_name === 'string' ? data.last_name : '';
+  const combined = `${first} ${last}`.trim();
+  const fallback =
+    (typeof data.title === 'string' ? data.title : '') ||
+    (typeof data.name === 'string' ? data.name : '');
+  return normalizeName(combined || fallback);
+}
+
 /**
  * Single implementation of CRM record create (duplicate check, indexed columns from JSONB, workflows, scoring).
  * Used by `POST /api/crm/records` and server-side `createRecord()`.
@@ -59,14 +89,24 @@ export async function executeCrmRecordCreate(params: {
       p_phone: phoneToCheck,
     });
 
-    if (duplicates && duplicates.length > 0) {
+    // Family members legitimately share one email/phone — e.g. a child dependent
+    // with their own record who is reachable at a parent's address. Treat a
+    // candidate as a blocking duplicate only when the NAME also matches; the same
+    // email with a DIFFERENT name is allowed, consistent with the (email + name)
+    // idx_crm_records_unique_email index and the members table's shared-email rule.
+    const newName = recordDisplayName(input.data);
+    const realDuplicates = ((duplicates as DuplicateCandidate[] | null) ?? []).filter(
+      (d) => !newName || normalizeName(d.title) === newName,
+    );
+
+    if (realDuplicates.length > 0) {
       return {
         ok: false,
         status: 409,
         body: {
-          error: 'A record with this email already exists',
+          error: 'A record with this name and email already exists',
           code: 'DUPLICATE_RECORD',
-          duplicates,
+          duplicates: realDuplicates,
         },
       };
     }

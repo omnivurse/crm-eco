@@ -27,6 +27,16 @@ interface ImportWizardProps {
   modules: CrmModule[];
   organizationId: string;
   preselectedModule?: string;
+  /** Smart Import: skip manual module pick and auto-detect + auto-map on upload. */
+  smartMode?: boolean;
+}
+
+interface SmartInfo {
+  moduleName: string;
+  confidence: number;
+  autoMapped: number;
+  unmapped: number;
+  aiUsed: boolean;
 }
 
 type WizardStep = 'module' | 'upload' | 'mapping' | 'preview' | 'importing' | 'complete';
@@ -64,11 +74,13 @@ const STEP_LABELS: Record<WizardStep, string> = {
   complete: 'Complete',
 };
 
-export function ImportWizard({ modules, organizationId, preselectedModule }: ImportWizardProps) {
-  const [step, setStep] = useState<WizardStep>(preselectedModule ? 'upload' : 'module');
+export function ImportWizard({ modules, organizationId, preselectedModule, smartMode = false }: ImportWizardProps) {
+  const [step, setStep] = useState<WizardStep>(preselectedModule || smartMode ? 'upload' : 'module');
   const [selectedModule, setSelectedModule] = useState<CrmModule | null>(
     modules.find(m => m.key === preselectedModule) || null
   );
+  const [smartLoading, setSmartLoading] = useState(false);
+  const [smartInfo, setSmartInfo] = useState<SmartInfo | null>(null);
   const [fields, setFields] = useState<CrmField[]>([]);
   const [csvData, setCsvData] = useState<ParsedRow[]>([]);
   const [headers, setHeaders] = useState<string[]>([]);
@@ -204,6 +216,94 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     return undefined;
   }, []);
 
+  /**
+   * Smart Import: send the headers to the AI-assisted mapper, which detects the
+   * target module, loads its fields, and returns column → field mappings
+   * (Zoho-aware). Drops the user straight onto the review step.
+   */
+  const runSmartDetection = useCallback(
+    async (csvHeaders: string[]) => {
+      setSmartLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/crm/import/smart-map', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ headers: csvHeaders }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Smart detection failed');
+
+        const detected =
+          modules.find((m) => m.id === data.module.id) || (data.module as CrmModule);
+        setSelectedModule(detected);
+        setFields(data.fields || []);
+        setMappings(
+          (data.mappings || []).map((m: { sourceColumn: string; targetField: string | null; autoMapped: boolean }) => ({
+            sourceColumn: m.sourceColumn,
+            targetField: m.targetField,
+            autoMapped: m.autoMapped,
+          })),
+        );
+        setSmartInfo({
+          moduleName: data.module.name,
+          confidence: data.moduleConfidence ?? 0,
+          autoMapped: data.stats?.autoMapped ?? 0,
+          unmapped: data.stats?.unmapped ?? 0,
+          aiUsed: data.stats?.aiUsed ?? false,
+        });
+        setStep('mapping');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Smart detection failed');
+        setStep('upload');
+      } finally {
+        setSmartLoading(false);
+      }
+    },
+    [modules],
+  );
+
+  /** Re-run smart mapping against a user-chosen module (from the review banner). */
+  const reRunSmartMap = useCallback(
+    async (moduleId: string) => {
+      if (headers.length === 0) return;
+      setSmartLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/crm/import/smart-map', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ headers, moduleId }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Smart mapping failed');
+        const detected =
+          modules.find((m) => m.id === data.module.id) || (data.module as CrmModule);
+        setSelectedModule(detected);
+        setFields(data.fields || []);
+        setMappings(
+          (data.mappings || []).map((m: { sourceColumn: string; targetField: string | null; autoMapped: boolean }) => ({
+            sourceColumn: m.sourceColumn,
+            targetField: m.targetField,
+            autoMapped: m.autoMapped,
+          })),
+        );
+        setSmartInfo({
+          moduleName: data.module.name,
+          confidence: 1,
+          autoMapped: data.stats?.autoMapped ?? 0,
+          unmapped: data.stats?.unmapped ?? 0,
+          aiUsed: data.stats?.aiUsed ?? false,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Smart mapping failed');
+      } finally {
+        setSmartLoading(false);
+      }
+    },
+    [headers, modules],
+  );
+
   // Parse CSV file
   const processFile = useCallback((file: File) => {
     setFileName(file.name);
@@ -237,7 +337,14 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
         }
         setCsvData(rows);
 
-        // Smart auto-map columns
+        // Smart mode (no module chosen yet): let the AI mapper detect the module
+        // and map columns. Otherwise use the local heuristic against the already
+        // selected module's fields.
+        if (smartMode && !selectedModule) {
+          void runSmartDetection(csvHeaders);
+          return;
+        }
+
         const autoMappings = csvHeaders.map(header => {
           const matchedField = findBestFieldMatch(header, fields);
           return {
@@ -253,7 +360,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
       }
     };
     reader.readAsText(file);
-  }, [fields, findBestFieldMatch]);
+  }, [fields, findBestFieldMatch, smartMode, selectedModule, runSmartDetection]);
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -372,7 +479,7 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
 
   // Reset wizard
   const handleReset = useCallback(() => {
-    setStep('module');
+    setStep(smartMode ? 'upload' : 'module');
     setSelectedModule(null);
     setFields([]);
     setCsvData([]);
@@ -384,7 +491,9 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
     setError(null);
     setSaveMapping(false);
     setMappingName('');
-  }, []);
+    setSmartInfo(null);
+    setSmartLoading(false);
+  }, [smartMode]);
 
   const mappedFieldsCount = mappings.filter(m => m.targetField).length;
   const autoMappedCount = mappings.filter(m => m.autoMapped).length;
@@ -482,25 +591,41 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1">
-                  Upload CSV for {selectedModule?.name_plural}
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                  {smartMode && !selectedModule && <Sparkles className="w-4 h-4 text-amber-500" />}
+                  {smartMode && !selectedModule
+                    ? 'Smart Import — Upload CSV'
+                    : `Upload CSV for ${selectedModule?.name_plural ?? 'records'}`}
                 </h3>
                 <p className="text-slate-600 dark:text-slate-400 text-sm">
-                  Upload a CSV file with your data. The first row should contain column headers.
+                  {smartMode && !selectedModule
+                    ? 'Drop your Zoho (or any) CSV export. We’ll auto-detect the module and map the columns for you.'
+                    : 'Upload a CSV file with your data. The first row should contain column headers.'}
                 </p>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSelectedModule(null);
-                  setStep('module');
-                }}
-                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              >
-                Change Module
-              </Button>
+              {!smartMode && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedModule(null);
+                    setStep('module');
+                  }}
+                  className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                >
+                  Change Module
+                </Button>
+              )}
             </div>
+
+            {smartLoading && (
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <Loader2 className="w-5 h-5 text-amber-500 animate-spin flex-shrink-0" />
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  Detecting module and mapping fields…
+                </p>
+              </div>
+            )}
 
             <label
               className={`
@@ -556,6 +681,43 @@ export function ImportWizard({ modules, organizationId, preselectedModule }: Imp
                 </span>
               </div>
             </div>
+
+            {/* Smart Import detection banner — lets the user confirm or override
+                the auto-detected module and re-map against a different one. */}
+            {smartInfo && (
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-amber-500/10 to-teal-500/10 border border-amber-500/20">
+                <div className="flex items-center gap-2 flex-1">
+                  <Sparkles className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                  <p className="text-sm text-slate-700 dark:text-slate-200">
+                    Detected <strong>{smartInfo.moduleName}</strong>
+                    {smartInfo.confidence > 0 && (
+                      <span className="text-slate-500">
+                        {' '}({Math.round(smartInfo.confidence * 100)}% confidence)
+                      </span>
+                    )}{' '}
+                    · {smartInfo.autoMapped} columns mapped
+                    {smartInfo.unmapped > 0 && `, ${smartInfo.unmapped} need review`}
+                    {smartInfo.aiUsed && ' · AI-assisted'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-slate-500 dark:text-slate-400">Wrong module?</label>
+                  <select
+                    value={selectedModule?.id ?? ''}
+                    disabled={smartLoading}
+                    onChange={(e) => reRunSmartMap(e.target.value)}
+                    className="bg-white dark:bg-slate-900/50 border border-slate-300 dark:border-white/10 rounded-lg px-2 py-1.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/50"
+                  >
+                    {modules.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                  {smartLoading && <Loader2 className="w-4 h-4 text-amber-500 animate-spin" />}
+                </div>
+              </div>
+            )}
 
             <div className="glass rounded-xl border border-slate-200 dark:border-white/5 overflow-hidden">
               <div className="grid grid-cols-2 gap-4 p-3 bg-slate-100 dark:bg-slate-900/50 border-b border-slate-200 dark:border-white/5 text-xs font-semibold uppercase tracking-wider text-slate-500">

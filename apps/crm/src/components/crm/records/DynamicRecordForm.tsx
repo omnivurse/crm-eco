@@ -893,6 +893,30 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
+  // Referral context (source + referring member). Reps need this at a glance
+  // when talking with a member, so we surface it in the snapshot instead of
+  // leaving it buried in the Financial / Conversion section below.
+  const heroReferralSourceField = useMemo(() => {
+    const isTextish = (f: CrmField) =>
+      f.type === 'text' || f.type === 'select' || f.type === 'picklist';
+    const candidates = [
+      findFieldByKey('referral_source'),
+      findFieldByKey('referral'),
+      matchByKeyPattern([/referral.?source/i, /^referral$/i], isTextish),
+    ].filter((f): f is CrmField => Boolean(f));
+    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
+  }, [findFieldByKey, matchByKeyPattern, hasValue]);
+
+  const heroReferringMemberField = useMemo(() => {
+    const isTextish = (f: CrmField) =>
+      f.type === 'text' || f.type === 'select' || f.type === 'picklist';
+    const candidates = [
+      findFieldByKey('referring_member'),
+      matchByKeyPattern([/referring.?member/i, /referred.?by/i, /referrer/i], isTextish),
+    ].filter((f): f is CrmField => Boolean(f));
+    return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
+  }, [findFieldByKey, matchByKeyPattern, hasValue]);
+
   /** Product / plan / tier lines for the emerald snapshot (never duplicates carrier/date rows). */
   const heroProductPlanFields = useMemo(() => {
     const skipKeys = new Set<string>();
@@ -964,6 +988,22 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     }
     return heroProductPlanFields;
   }, [heroProductPlanFields, hasValue, inlineEditable, readOnly]);
+
+  /** Referral rows for the snapshot; empty rows dropped in static read-only view. */
+  const heroReferralSnapshotFields = useMemo(() => {
+    const seen = new Set<string>();
+    const fields = [heroReferralSourceField, heroReferringMemberField].filter(
+      (f): f is CrmField => {
+        if (!f || seen.has(f.key)) return false;
+        seen.add(f.key);
+        return true;
+      },
+    );
+    if (readOnly && !inlineEditable) {
+      return fields.filter((f) => hasValue(f.key));
+    }
+    return fields;
+  }, [heroReferralSourceField, heroReferringMemberField, hasValue, inlineEditable, readOnly]);
 
   const renderSections = () => {
     /** Clears sticky overview pills + approximate shell header when scrolling from section nav. */
@@ -1099,6 +1139,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                           <p className="text-xs text-muted-foreground">
                             No effective date field configured
                           </p>
+                        )}
+                        {heroReferralSnapshotFields.length > 0 && (
+                          <div className="pt-2 mt-1 border-t border-emerald-600/20 dark:border-emerald-400/20 space-y-3">
+                            {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
+                          </div>
                         )}
                       </div>
                     </div>
