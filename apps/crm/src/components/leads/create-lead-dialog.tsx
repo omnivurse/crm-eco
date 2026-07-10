@@ -24,7 +24,7 @@ import {
   Separator,
   Textarea,
 } from '@crm-eco/ui';
-import { Plus, User, MapPin, Target, FileText, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Plus, User, MapPin, Target, FileText, AlertTriangle, ExternalLink, Building2 } from 'lucide-react';
 import { logActivityForLead, ActivityTypes } from '@crm-eco/lib';
 import type { Advisor as CanonicalAdvisor } from '@crm-eco/lib/types';
 
@@ -66,6 +66,19 @@ const LEAD_STATUS_OPTIONS = [
   { value: 'Unqualified', label: 'Unqualified' },
 ];
 
+// Roles for the point-of-contact on a small-group lead (often not the
+// decision-maker — e.g. the person who takes your call is the Office Manager).
+const CONTACT_ROLE_OPTIONS = [
+  'Owner',
+  'Decision Maker',
+  'Office Manager',
+  'HR Manager',
+  'Office Admin',
+  'Benefits Coordinator',
+  'Accountant / Bookkeeper',
+  'Other',
+];
+
 function mapLegacyStatus(status: string): string {
   const legacy: Record<string, string> = {
     new: 'New',
@@ -99,6 +112,11 @@ export function CreateLeadDialog() {
     lastName: '',
     email: '',
     phone: '',
+    groupName: '',
+    contactRole: '',
+    isDecisionMaker: '',
+    contactPhone: '',
+    contactEmail: '',
     state: '',
     source: '',
     campaign: '',
@@ -173,6 +191,11 @@ export function CreateLeadDialog() {
         last_name: formData.lastName,
         email: formData.email || null,
         phone: formData.phone || null,
+        group_name: formData.groupName.trim() || null,
+        contact_role: formData.contactRole || null,
+        is_decision_maker: formData.isDecisionMaker || null,
+        contact_phone: formData.contactPhone.trim() || null,
+        contact_email: formData.contactEmail.trim() || null,
         state: formData.state || null,
         lead_source: formData.source || null,
         campaign: formData.campaign || null,
@@ -211,6 +234,11 @@ export function CreateLeadDialog() {
         lastName: '',
         email: '',
         phone: '',
+        groupName: '',
+        contactRole: '',
+        isDecisionMaker: '',
+        contactPhone: '',
+        contactEmail: '',
         state: '',
         source: '',
         campaign: '',
@@ -329,6 +357,85 @@ export function CreateLeadDialog() {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Building2 className="h-4 w-4" />
+              Company &amp; Contact
+            </div>
+            <p className="-mt-2 text-xs text-muted-foreground">
+              For small groups — record the company and who you&apos;re actually speaking with
+              (e.g. the Office Manager), and whether they&apos;re the decision-maker.
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="groupName">Company / Group</Label>
+              <Input
+                id="groupName"
+                placeholder="e.g. Anchor Construction"
+                value={formData.groupName}
+                onChange={(e) => setFormData({ ...formData, groupName: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactRole">Contact Role</Label>
+                <Select
+                  value={formData.contactRole}
+                  onValueChange={(value) => setFormData({ ...formData, contactRole: value })}
+                >
+                  <SelectTrigger id="contactRole">
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CONTACT_ROLE_OPTIONS.map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {role}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="isDecisionMaker">Primary Decision-Maker?</Label>
+                <Select
+                  value={formData.isDecisionMaker}
+                  onValueChange={(value) => setFormData({ ...formData, isDecisionMaker: value })}
+                >
+                  <SelectTrigger id="isDecisionMaker">
+                    <SelectValue placeholder="Unknown" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactPhone">Direct Phone</Label>
+                <Input
+                  id="contactPhone"
+                  placeholder="Contact's direct line"
+                  value={formData.contactPhone}
+                  onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="contactEmail">Direct Email</Label>
+                <Input
+                  id="contactEmail"
+                  type="email"
+                  placeholder="Contact's direct email"
+                  value={formData.contactEmail}
+                  onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
                 />
               </div>
             </div>

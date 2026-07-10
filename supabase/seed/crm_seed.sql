@@ -135,6 +135,17 @@ BEGIN
     (v_org_id, v_contacts_module_id, 'affiliate', 'Affiliate', 'text', false, false, 23, 'main', '[]'::jsonb)
   ON CONFLICT (module_id, key) DO NOTHING;
 
+  -- Company & Contact (carried over from small-group leads on conversion)
+  INSERT INTO crm_fields (org_id, module_id, key, label, type, required, is_system, display_order, section, options)
+  VALUES
+    (v_org_id, v_contacts_module_id, 'group_name', 'Company / Group', 'text', false, false, 24, 'main', '[]'::jsonb),
+    (v_org_id, v_contacts_module_id, 'contact_role', 'Contact Role', 'select', false, false, 25, 'main',
+     '["Owner", "Decision Maker", "Office Manager", "HR Manager", "Office Admin", "Benefits Coordinator", "Accountant / Bookkeeper", "Other"]'::jsonb),
+    (v_org_id, v_contacts_module_id, 'is_decision_maker', 'Primary Decision-Maker?', 'select', false, false, 26, 'main', '["Yes", "No"]'::jsonb),
+    (v_org_id, v_contacts_module_id, 'contact_phone', 'Direct Phone', 'phone', false, false, 27, 'main', '[]'::jsonb),
+    (v_org_id, v_contacts_module_id, 'contact_email', 'Direct Email', 'email', false, false, 28, 'main', '[]'::jsonb)
+  ON CONFLICT (module_id, key) DO NOTHING;
+
   -- Address Fields
   INSERT INTO crm_fields (org_id, module_id, key, label, type, required, is_system, display_order, section)
   VALUES
@@ -231,6 +242,17 @@ BEGIN
      '["Member Referral", "Non-Member Referral", "Liberty Healthshare", "Sedera Generated Lead", "Website", "Social Media", "Email Campaign", "Outside Advisor", "Event", "Other"]'::jsonb),
     (v_org_id, v_leads_module_id, 'owner_id', 'Lead Owner', 'user', false, true, 12, 'main', '[]'::jsonb),
     (v_org_id, v_leads_module_id, 'producer_id', 'Producer', 'user', false, false, 13, 'main', '[]'::jsonb)
+  ON CONFLICT (module_id, key) DO NOTHING;
+
+  -- Company & Contact (small-group leads: point-of-contact company + role)
+  INSERT INTO crm_fields (org_id, module_id, key, label, type, required, is_system, display_order, section, options)
+  VALUES
+    (v_org_id, v_leads_module_id, 'group_name', 'Company / Group', 'text', false, false, 19, 'main', '[]'::jsonb),
+    (v_org_id, v_leads_module_id, 'contact_role', 'Contact Role', 'select', false, false, 20, 'main',
+     '["Owner", "Decision Maker", "Office Manager", "HR Manager", "Office Admin", "Benefits Coordinator", "Accountant / Bookkeeper", "Other"]'::jsonb),
+    (v_org_id, v_leads_module_id, 'is_decision_maker', 'Primary Decision-Maker?', 'select', false, false, 21, 'main', '["Yes", "No"]'::jsonb),
+    (v_org_id, v_leads_module_id, 'contact_phone', 'Direct Phone', 'phone', false, false, 22, 'main', '[]'::jsonb),
+    (v_org_id, v_leads_module_id, 'contact_email', 'Direct Email', 'email', false, false, 23, 'main', '[]'::jsonb)
   ON CONFLICT (module_id, key) DO NOTHING;
 
   -- Address
