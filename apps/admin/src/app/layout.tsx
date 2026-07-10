@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { brandingToCssText } from '@crm-eco/ui/lib/branding';
 import { LeadGenQuotePinGate } from '@crm-eco/ui/components/pin-lock-overlay';
 import { ConfirmDialogHost } from '@crm-eco/ui/components/confirm-dialog';
+import { PromptDialogHost } from '@crm-eco/ui/components/prompt-dialog';
 import { getActiveTenant } from '@/lib/tenant';
 import './globals.css';
 
@@ -57,6 +58,7 @@ export default async function RootLayout({
         <LeadGenQuotePinGate />
         {children}
         <ConfirmDialogHost />
+        <PromptDialogHost />
       </body>
     </html>
   );

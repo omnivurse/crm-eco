@@ -5,6 +5,7 @@ import { queuedSend } from '@/lib/offline/queued-send';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Combobox } from '@crm-eco/ui';
 import type { ComboboxOption } from '@crm-eco/ui';
+import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Loader2, Users, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
@@ -873,8 +874,13 @@ export const ModuleShell = memo(function ModuleShell({
     sortDirection,
   ]);
 
-  const handleCreateView = useCallback(() => {
-    const viewName = prompt('Enter a name for the new view:');
+  const handleCreateView = useCallback(async () => {
+    const viewName = await promptDialog({
+      title: 'Create a new view',
+      label: 'View name',
+      placeholder: 'e.g. My open leads',
+      confirmLabel: 'Create view',
+    });
     if (!viewName?.trim()) return;
     // Navigate to create view with the name pre-filled
     const params = new URLSearchParams({ name: viewName.trim() });

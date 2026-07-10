@@ -20,6 +20,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { EmailToolbar } from './EmailToolbar';
 import { MergeFieldExtension } from './extensions/MergeFieldExtension';
 import { Button } from '@crm-eco/ui/components/button';
+import { promptDialog } from '@crm-eco/ui/components/prompt-dialog';
 import { Code, Eye } from 'lucide-react';
 import { replaceMergeFields } from './types';
 
@@ -160,12 +161,18 @@ export function EmailEditor({
     return replaceMergeFields(editor.getHTML(), previewData);
   }, [editor, previewData]);
 
-  const handleImageUploadClick = useCallback(() => {
+  const handleImageUploadClick = useCallback(async () => {
     if (onImageUpload) {
       onImageUpload();
     } else {
       // Default image insertion via URL prompt
-      const url = window.prompt('Enter image URL:');
+      const url = await promptDialog({
+        title: 'Insert image',
+        label: 'Image URL',
+        placeholder: 'https://…',
+        inputType: 'url',
+        confirmLabel: 'Insert',
+      });
       if (url && editor) {
         editor.chain().focus().setImage({ src: url }).run();
       }
