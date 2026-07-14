@@ -86,6 +86,16 @@ function isReachable(route: string): boolean {
   return false;
 }
 
+/** Does a concrete nav path match any route pattern (treating [x] as a single-segment wildcard)? */
+function matchesRoute(navPath: string, routePatterns: string[]): boolean {
+  const nav = navPath.split('/').filter(Boolean);
+  return routePatterns.some((rp) => {
+    const seg = rp.split('/').filter(Boolean);
+    if (seg.length !== nav.length) return false;
+    return seg.every((s, i) => s.startsWith('[') || s === nav[i]);
+  });
+}
+
 describe('CRM navigation reachability', () => {
   it('every /crm page is reachable from the nav (no orphans)', async () => {
     const appDir = path.resolve(process.cwd(), 'src/app');
@@ -97,6 +107,19 @@ describe('CRM navigation reachability', () => {
     expect(
       orphans,
       `\n${orphans.length} unreachable /crm route(s) — add a nav entry in ModuleContext or an ALLOWLIST exception:\n  ${orphans.join('\n  ')}\n`,
+    ).toEqual([]);
+  });
+
+  it('every nav href points to a real route (no dead links)', async () => {
+    const appDir = path.resolve(process.cwd(), 'src/app');
+    const files = await fg('crm/**/page.tsx', { cwd: appDir });
+    const routePatterns = files.map(routeFromFile);
+    const dead = Array.from(navHrefs)
+      .filter((h) => !matchesRoute(h, routePatterns))
+      .sort();
+    expect(
+      dead,
+      `\n${dead.length} nav href(s) point to a non-existent route (fix the href in ModuleContext):\n  ${dead.join('\n  ')}\n`,
     ).toEqual([]);
   });
 });
