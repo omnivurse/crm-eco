@@ -150,13 +150,13 @@ export function PortalHeader() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2.5 hover:bg-slate-50 rounded-xl py-2 px-3">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-cyan-500/20">
-                      {memberName ? getInitials(memberName) : <User className="w-4 h-4" />}
+                      {memberName ? getInitials(memberName) : <User className="w-4 h-4" aria-hidden />}
                     </div>
                     <div className="text-left">
                       <span className="text-sm font-semibold text-dhh-ink block">{memberName || 'Account'}</span>
                       <span className="text-xs text-primary">Member</span>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                    <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg border-slate-200">
@@ -168,24 +168,24 @@ export function PortalHeader() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push('/profile')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <User className="mr-3 h-4 w-4 text-primary" />
+                    <User className="mr-3 h-4 w-4 text-primary" aria-hidden />
                     <span className="font-medium">My Profile</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/dependents')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <Users className="mr-3 h-4 w-4 text-primary" />
+                    <Users className="mr-3 h-4 w-4 text-primary" aria-hidden />
                     <span className="font-medium">Dependents</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/documents')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <FileText className="mr-3 h-4 w-4 text-primary" />
+                    <FileText className="mr-3 h-4 w-4 text-primary" aria-hidden />
                     <span className="font-medium">Documents</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/settings')} className="px-4 py-2.5 cursor-pointer hover:bg-slate-50">
-                    <Settings className="mr-3 h-4 w-4 text-primary" />
+                    <Settings className="mr-3 h-4 w-4 text-primary" aria-hidden />
                     <span className="font-medium">Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="px-4 py-2.5 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
-                    <LogOut className="mr-3 h-4 w-4" />
+                    <LogOut className="mr-3 h-4 w-4" aria-hidden />
                     <span className="font-medium">Sign Out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -247,7 +247,7 @@ export function PortalHeader() {
                 className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <User className="w-4 h-4 text-primary" />
+                <User className="w-4 h-4 text-primary" aria-hidden />
                 My Profile
               </Link>
               <Link 
@@ -255,7 +255,7 @@ export function PortalHeader() {
                 className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Users className="w-4 h-4 text-primary" />
+                <Users className="w-4 h-4 text-primary" aria-hidden />
                 Dependents
               </Link>
               <Link 
@@ -263,7 +263,7 @@ export function PortalHeader() {
                 className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <FileText className="w-4 h-4 text-primary" />
+                <FileText className="w-4 h-4 text-primary" aria-hidden />
                 Documents
               </Link>
               <Link 
@@ -271,7 +271,7 @@ export function PortalHeader() {
                 className="px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg flex items-center gap-3"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                <Settings className="w-4 h-4 text-primary" />
+                <Settings className="w-4 h-4 text-primary" aria-hidden />
                 Settings
               </Link>
               
@@ -282,7 +282,7 @@ export function PortalHeader() {
                   onClick={handleSignOut}
                   className="px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg text-left flex items-center gap-3"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-4 h-4" aria-hidden />
                   Sign Out
                 </button>
               ) : (

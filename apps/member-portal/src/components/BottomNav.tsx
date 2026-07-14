@@ -76,6 +76,7 @@ export function BottomNav() {
                 />
               )}
               <item.icon
+                aria-hidden
                 className={cn(
                   'w-5 h-5',
                   isActive ? 'text-primary' : 'text-slate-500'
