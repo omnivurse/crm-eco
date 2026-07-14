@@ -134,9 +134,9 @@ export default async function CoveragePage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'active': return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'pending': return <Clock className="h-5 w-5 text-amber-500" />;
-      default: return <AlertCircle className="h-5 w-5 text-slate-400" />;
+      case 'active': return <CheckCircle className="h-5 w-5 text-green-500" aria-hidden />;
+      case 'pending': return <Clock className="h-5 w-5 text-amber-500" aria-hidden />;
+      default: return <AlertCircle className="h-5 w-5 text-slate-400" aria-hidden />;
     }
   };
 
@@ -184,7 +184,7 @@ export default async function CoveragePage() {
                     key={index}
                     className="flex items-start gap-3 p-3 rounded-lg bg-slate-50"
                   >
-                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
+                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" aria-hidden />
                     <div>
                       <p className="font-medium text-slate-900">{benefit.name}</p>
                       <p className="text-sm text-slate-500">{benefit.description}</p>
@@ -221,7 +221,7 @@ export default async function CoveragePage() {
       ) : (
         <Card className="text-center py-12">
           <CardContent>
-            <Shield className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+            <Shield className="h-16 w-16 mx-auto mb-4 text-slate-300" aria-hidden />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">No Active Coverage</h2>
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
               You don't have an active health sharing membership. 
@@ -230,7 +230,7 @@ export default async function CoveragePage() {
             <Link href="/enroll">
               <Button className="gap-2">
                 Start Enrollment
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden />
               </Button>
             </Link>
           </CardContent>

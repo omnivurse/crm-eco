@@ -60,12 +60,12 @@ export default function SecurityPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-4 py-8">
       <Link href="/profile" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to Profile
+        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden /> Back to Profile
       </Link>
 
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-          <ShieldCheck className="h-6 w-6 text-emerald-600" />
+          <ShieldCheck className="h-6 w-6 text-emerald-600" aria-hidden />
           Security
         </h1>
         <p className="mt-1 text-sm text-slate-600">Change your password or sign-in email.</p>
@@ -74,7 +74,7 @@ export default function SecurityPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Lock className="h-4 w-4" />
+            <Lock className="h-4 w-4" aria-hidden />
             Change password
           </CardTitle>
         </CardHeader>
@@ -133,7 +133,7 @@ export default function SecurityPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Mail className="h-4 w-4" />
+            <Mail className="h-4 w-4" aria-hidden />
             Change email
           </CardTitle>
         </CardHeader>

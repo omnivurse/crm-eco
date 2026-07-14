@@ -157,10 +157,10 @@ export default function BillingPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Paid': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'Pending': return <Clock className="h-4 w-4 text-amber-500" />;
-      case 'Failed': return <XCircle className="h-4 w-4 text-red-500" />;
-      default: return <AlertCircle className="h-4 w-4 text-slate-400" />;
+      case 'Paid': return <CheckCircle className="h-4 w-4 text-green-500" aria-hidden />;
+      case 'Pending': return <Clock className="h-4 w-4 text-amber-500" aria-hidden />;
+      case 'Failed': return <XCircle className="h-4 w-4 text-red-500" aria-hidden />;
+      default: return <AlertCircle className="h-4 w-4 text-slate-400" aria-hidden />;
     }
   };
 
@@ -175,7 +175,7 @@ export default function BillingPage() {
   };
 
   const getCardIcon = (cardType: string | null) => {
-    return <CreditCard className="h-5 w-5" />;
+    return <CreditCard className="h-5 w-5" aria-hidden />;
   };
 
   const totalPaid = billingHistory
@@ -207,7 +207,7 @@ export default function BillingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-green-600" />
+                <DollarSign className="h-6 w-6 text-green-600" aria-hidden />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Total Paid</p>
@@ -223,7 +223,7 @@ export default function BillingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-amber-600" />
+                <Clock className="h-6 w-6 text-amber-600" aria-hidden />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Pending</p>
@@ -239,7 +239,7 @@ export default function BillingPage() {
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                <Calendar className="h-6 w-6 text-blue-600" />
+                <Calendar className="h-6 w-6 text-blue-600" aria-hidden />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Next Payment</p>
@@ -302,11 +302,11 @@ export default function BillingPage() {
       <Tabs defaultValue="history" className="space-y-6">
         <TabsList>
           <TabsTrigger value="history" className="gap-2">
-            <Receipt className="h-4 w-4" />
+            <Receipt className="h-4 w-4" aria-hidden />
             Payment History
           </TabsTrigger>
           <TabsTrigger value="methods" className="gap-2">
-            <Wallet className="h-4 w-4" />
+            <Wallet className="h-4 w-4" aria-hidden />
             Payment Methods
           </TabsTrigger>
         </TabsList>
@@ -320,7 +320,7 @@ export default function BillingPage() {
             <CardContent>
               {billingHistory.length === 0 ? (
                 <div className="text-center py-8">
-                  <Receipt className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <Receipt className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
                   <p className="text-slate-500">No billing history found</p>
                 </div>
               ) : (
@@ -385,7 +385,7 @@ export default function BillingPage() {
               </div>
               <Button className="gap-2" asChild>
                 <Link href="/billing/methods/new">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-4 w-4" aria-hidden />
                   Add Method
                 </Link>
               </Button>
@@ -393,11 +393,11 @@ export default function BillingPage() {
             <CardContent>
               {paymentProfiles.length === 0 ? (
                 <div className="text-center py-8">
-                  <CreditCard className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+                  <CreditCard className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
                   <p className="text-slate-500 mb-4">No payment methods on file</p>
                   <Button variant="outline" className="gap-2" asChild>
                     <Link href="/billing/methods/new">
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-4 w-4" aria-hidden />
                       Add Payment Method
                     </Link>
                   </Button>
@@ -449,7 +449,7 @@ export default function BillingPage() {
               {paymentProfiles.some((p) => p.is_default) ? (
                 <div className="flex items-center justify-between p-4 bg-green-50 border border-green-100 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <CheckCircle className="h-5 w-5 text-green-600" aria-hidden />
                     <div>
                       <p className="font-medium text-green-900">Auto-Pay is Enabled</p>
                       <p className="text-sm text-green-700">
@@ -464,7 +464,7 @@ export default function BillingPage() {
               ) : (
                 <div className="flex items-center justify-between p-4 bg-amber-50 border border-amber-100 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                    <AlertCircle className="h-5 w-5 text-amber-600" aria-hidden />
                     <div>
                       <p className="font-medium text-amber-900">Auto-Pay is not set up</p>
                       <p className="text-sm text-amber-700">

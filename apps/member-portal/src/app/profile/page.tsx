@@ -162,9 +162,9 @@ export default function ProfilePage() {
         </div>
         <Button onClick={handleSave} disabled={saving} className="gap-2">
           {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
           ) : (
-            <Save className="h-4 w-4" />
+            <Save className="h-4 w-4" aria-hidden />
           )}
           Save Changes
         </Button>
@@ -196,7 +196,7 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
+            <User className="h-5 w-5" aria-hidden />
             Personal Information
           </CardTitle>
         </CardHeader>
@@ -270,7 +270,7 @@ export default function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
+            <MapPin className="h-5 w-5" aria-hidden />
             Address
           </CardTitle>
         </CardHeader>

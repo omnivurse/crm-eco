@@ -53,13 +53,13 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-8">
       <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:underline">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back
+        <ChevronLeft className="mr-1 h-4 w-4" aria-hidden /> Back
       </Link>
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-            <Bell className="h-6 w-6" />
+            <Bell className="h-6 w-6" aria-hidden />
             Notifications
           </h1>
           <p className="mt-1 text-sm text-slate-600">
@@ -72,7 +72,7 @@ export default function NotificationsPage() {
             disabled={marking}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
-            <CheckCheck className="h-4 w-4" />
+            <CheckCheck className="h-4 w-4" aria-hidden />
             Mark all read
           </button>
         )}
@@ -85,7 +85,7 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Bell className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+            <Bell className="mx-auto mb-3 h-12 w-12 text-slate-300" aria-hidden />
             <p className="text-slate-500">You don&apos;t have any notifications yet.</p>
           </CardContent>
         </Card>
