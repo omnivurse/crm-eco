@@ -26,6 +26,10 @@ import {
   type UpdateRow,
 } from '@/lib/imports/csv-update';
 import type { CrmRecord } from '@/lib/crm/types';
+import {
+  buildNormalizedRecordWrite,
+  pickUpdateMirrorColumns,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -407,9 +411,30 @@ export async function POST(req: NextRequest) {
 
   let updated = 0;
   for (const { row, resolution, payload } of writes) {
+    // Mirror canonical values onto indexed columns (carrier/market/dates/
+    // group_name/advisor/normalized_*) and date-sanitize the JSONB — the CSV
+    // update path previously touched only the 5 standard columns, so those
+    // fields lived in JSONB and never displayed/filtered. Purely additive: the
+    // CSV-authoritative title/email/phone/status/stage from `payload.columns`
+    // still win (their "only-changed, non-empty" semantics are preserved).
+    const norm = buildNormalizedRecordWrite(payload.mergedData, {
+      moduleKey: moduleRow.key,
+      previousTitle: resolution.record.title,
+    });
+    // Keep only the extra indexed mirrors. `pickUpdateMirrorColumns` drops the
+    // out-of-band-owned columns (status/stage + advisor/normalization), and we
+    // also drop title/email/phone so `payload.columns` (the CSV diff) stays the
+    // sole owner of those — preserving the CSV-update "only-changed" semantics.
+    const mirroredColumns = pickUpdateMirrorColumns(norm.columns, [
+      'title',
+      'email',
+      'phone',
+    ]);
+
     const updatePatch: Record<string, unknown> = {
+      ...mirroredColumns,
       ...payload.columns,
-      data: payload.mergedData,
+      data: norm.data,
       updated_at: new Date().toISOString(),
     };
 

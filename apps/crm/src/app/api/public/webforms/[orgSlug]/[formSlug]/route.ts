@@ -5,6 +5,10 @@ import { executeMatchingWorkflows } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
 import type { CrmWebform } from '@/lib/automation/types';
 import { rateLimit, getRateLimitHeaders } from '@crm-eco/lib/rate-limit';
+import {
+  buildNormalizedRecordWrite,
+  pickUpdateMirrorColumns,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 
 /**
  * Creates a service role client for public webform submissions
@@ -93,6 +97,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const typedWebform = webform as CrmWebform;
+
+    // Resolve the module key so record writes normalize consistently with the
+    // form-create/edit paths (person-module title + status handling).
+    const { data: moduleRow } = await supabase
+      .from('crm_modules')
+      .select('key')
+      .eq('id', typedWebform.module_id)
+      .maybeSingle();
+    const moduleKey = (moduleRow as { key: string | null } | null)?.key ?? null;
 
     // Parse submission data
     let submissionData: Record<string, unknown>;
@@ -187,14 +200,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
 
       if (strategy === 'update') {
-        // Update existing record
-        const updatedData = { ...existingRecord.data, ...dataFields };
-        
+        // Update existing record — normalize the merged JSONB and mirror
+        // canonical values onto indexed columns so the update displays/filters.
+        const mergedData = { ...existingRecord.data, ...dataFields };
+        const norm = buildNormalizedRecordWrite(mergedData, {
+          moduleKey,
+          previousTitle: existingRecord.title,
+        });
+
         const { data: updated, error: updateError } = await supabase
           .from('crm_records')
           .update({
+            // On update, don't re-mirror out-of-band-owned columns from stale JSONB.
+            ...pickUpdateMirrorColumns(norm.columns),
             ...extractedSystem,
-            data: updatedData,
+            data: norm.data,
           })
           .eq('id', existingRecord.id)
           .select()
@@ -217,14 +237,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     if (!existingRecord) {
-      // Create new record
+      // Create new record — normalize JSONB + mirror indexed columns.
+      const norm = buildNormalizedRecordWrite(dataFields, {
+        moduleKey,
+        previousTitle: (extractedSystem.title as string | null) ?? null,
+      });
       const { data: created, error: createError } = await supabase
         .from('crm_records')
         .insert({
           org_id: org.id,
           module_id: typedWebform.module_id,
+          ...norm.columns,
           ...extractedSystem,
-          data: dataFields,
+          data: norm.data,
           system: {
             source: 'webform',
             webform_id: typedWebform.id,

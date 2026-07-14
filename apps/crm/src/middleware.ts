@@ -21,12 +21,32 @@ interface CachedProfile {
 // HMAC signing helpers (Web Crypto API — Edge Runtime compatible)
 // ---------------------------------------------------------------------------
 
+// The profile-cache cookie is HMAC-signed with the service-role key. If that
+// secret is missing/empty (a misconfigured environment), Web Crypto's
+// importKey throws "Zero-length key is not supported" — and because this runs
+// in middleware, that would take down EVERY matched route. Treat an absent
+// secret as "caching disabled": skip the signed cache and fall back to the DB
+// lookup (warning once) instead of crashing the whole app. When the key IS
+// present (e.g. production), behavior is unchanged.
+const HMAC_SECRET = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+const HMAC_AVAILABLE = HMAC_SECRET.length > 0;
+
+let warnedMissingSecret = false;
+function warnMissingSecretOnce(): void {
+  if (warnedMissingSecret) return;
+  warnedMissingSecret = true;
+  console.warn(
+    '[Middleware] SUPABASE_SERVICE_ROLE_KEY is not set — profile-cache signing ' +
+      'disabled; falling back to a DB profile lookup on every request. Set the ' +
+      'key to re-enable the signed cache.',
+  );
+}
+
 async function getHmacKey(): Promise<CryptoKey> {
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   const encoder = new TextEncoder();
   return crypto.subtle.importKey(
     'raw',
-    encoder.encode(secret),
+    encoder.encode(HMAC_SECRET),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign', 'verify']
@@ -61,6 +81,7 @@ async function verifyPayload(payload: string, signature: string): Promise<boolea
 // ---------------------------------------------------------------------------
 
 async function getCachedProfile(request: NextRequest, userId: string): Promise<CachedProfile | null> {
+  if (!HMAC_AVAILABLE) return null; // no signing secret — force a fresh DB lookup
   try {
     const raw = request.cookies.get(PROFILE_CACHE_COOKIE)?.value;
     if (!raw) return null;
@@ -91,6 +112,10 @@ async function setProfileCacheOnResponse(
   profile: { id: string; crm_role: string | null; is_active: boolean },
   userId: string
 ): Promise<void> {
+  if (!HMAC_AVAILABLE) {
+    warnMissingSecretOnce();
+    return; // no signing secret — skip the signed cache; the DB lookup already ran
+  }
   const cached: CachedProfile = {
     ...profile,
     user_id: userId,

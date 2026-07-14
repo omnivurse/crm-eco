@@ -535,7 +535,7 @@ export default function CrmLandingPage() {
           <p>Join the agencies already running their entire operation on Double Helix CRM.</p>
           <div className="lp-hero-actions">
             <Link href="/crm-login" className="lp-btn-primary">Start Free Trial <ArrowIcon /></Link>
-            <a href="#" className="lp-btn-secondary">Schedule a Demo</a>
+            <a href="#demo" className="lp-btn-secondary">Schedule a Demo</a>
           </div>
         </div>
       </section>

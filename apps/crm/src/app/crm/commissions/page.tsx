@@ -80,9 +80,9 @@ function HierarchyNode({ node, level = 0 }: { node: AdvisorNode; level?: number 
   return (
     <div className="select-none">
       <div
-        className={`flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors cursor-pointer ${
-          level === 0 ? 'bg-slate-100 dark:bg-slate-800/30' : ''
-        }`}
+        className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+          hasChildren ? 'hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer' : ''
+        } ${level === 0 ? 'bg-slate-100 dark:bg-slate-800/30' : ''}`}
         style={{ marginLeft: level * 24 }}
         onClick={() => hasChildren && setExpanded(!expanded)}
       >

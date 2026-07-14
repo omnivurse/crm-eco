@@ -1,10 +1,112 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildNormalizedRecordWrite,
   mergeCrmDataJsonIntoRowColumns,
   normalizeRowColumnValue,
   normalizeDateColumnValue,
+  pickUpdateMirrorColumns,
   sanitizeCrmDataJsonPatch,
 } from './merge-crm-data-json-to-row';
+
+describe('pickUpdateMirrorColumns', () => {
+  it('drops out-of-band-owned columns but keeps JSONB-authoritative ones', () => {
+    const columns = {
+      // out-of-band / endpoint-owned — must be dropped on update
+      status: 'Active',
+      stage: 'Won',
+      normalization_status: 'normalized',
+      canonical_advisor_id: 'adv-1',
+      normalized_advisor_name: 'Alice',
+      normalized_agent_name: 'Alice',
+      advisor_id: 'adv-1',
+      // JSONB-authoritative display columns — must survive
+      title: 'Jane Doe',
+      email: 'jane@x.com',
+      phone: '303',
+      market_type: 'healthshare',
+      carrier_id: 'car-1',
+      original_start_date: '2026-01-01',
+      group_name: 'Acme',
+      tobacco_user: true,
+    };
+    const kept = pickUpdateMirrorColumns(columns);
+
+    for (const dropped of [
+      'status',
+      'stage',
+      'normalization_status',
+      'canonical_advisor_id',
+      'normalized_advisor_name',
+      'normalized_agent_name',
+      'advisor_id',
+    ]) {
+      expect(kept[dropped]).toBeUndefined();
+    }
+    expect(kept.title).toBe('Jane Doe');
+    expect(kept.market_type).toBe('healthshare');
+    expect(kept.carrier_id).toBe('car-1');
+    expect(kept.original_start_date).toBe('2026-01-01');
+    expect(kept.group_name).toBe('Acme');
+    expect(kept.tobacco_user).toBe(true);
+  });
+
+  it('honors extraExclude (e.g. CSV-update owns title/email/phone)', () => {
+    const kept = pickUpdateMirrorColumns(
+      { title: 'x', email: 'e', phone: 'p', market_type: 'healthshare' },
+      ['title', 'email', 'phone'],
+    );
+    expect(kept.title).toBeUndefined();
+    expect(kept.email).toBeUndefined();
+    expect(kept.phone).toBeUndefined();
+    expect(kept.market_type).toBe('healthshare');
+  });
+});
+
+describe('buildNormalizedRecordWrite', () => {
+  it('returns cleaned JSONB and mirrored indexed columns together', () => {
+    const { data, columns } = buildNormalizedRecordWrite(
+      {
+        first_name: 'Elisa',
+        last_name: 'Sargent',
+        email: 'elisa@example.com',
+        phone: '303-555-1212',
+        start_date: '6/1/26', // Zoho 2-digit year
+        date_of_birth: '1/1/68',
+      },
+      { moduleKey: 'contacts', previousTitle: null },
+    );
+
+    // JSONB date-like keys are canonicalized (Y2K pivot), not mangled.
+    expect(data.date_of_birth).toBe('1968-01-01');
+    // Non-date JSONB values pass through untouched.
+    expect(data.first_name).toBe('Elisa');
+
+    // Canonical values are mirrored onto their indexed columns.
+    expect(columns.email).toBe('elisa@example.com');
+    expect(columns.phone).toBe('303-555-1212');
+    expect(columns.title).toBe('Elisa Sargent'); // name-derived for a person module
+    // Legacy `start_date` mirrors to the indexed original_start_date (ISO).
+    expect(columns.original_start_date).toBe('2026-06-01');
+  });
+
+  it('is null / shape safe', () => {
+    expect(buildNormalizedRecordWrite(null)).toEqual({ data: {}, columns: {} });
+    expect(buildNormalizedRecordWrite(undefined)).toEqual({ data: {}, columns: {} });
+    expect(
+      buildNormalizedRecordWrite([] as unknown as Record<string, unknown>),
+    ).toEqual({ data: {}, columns: {} });
+  });
+
+  it('does not invent columns for fields that were not provided', () => {
+    const { columns } = buildNormalizedRecordWrite(
+      { custom_note: 'hello' },
+      { moduleKey: 'contacts' },
+    );
+    expect(columns.email).toBeUndefined();
+    expect(columns.carrier_id).toBeUndefined();
+    expect(columns.original_start_date).toBeUndefined();
+  });
+});
 
 describe('normalizeRowColumnValue', () => {
   it('returns null for empty strings so typed columns accept the write', () => {
