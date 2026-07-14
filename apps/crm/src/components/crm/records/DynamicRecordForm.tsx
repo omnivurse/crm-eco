@@ -868,6 +868,27 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return label === heroSharingField.label ? heroSharingField : { ...heroSharingField, label };
   }, [heroSharingField, defaultValues]);
 
+  // Classify the record's coverage as health-sharing vs insurance so the
+  // snapshot shows ONE coherent set of terms — never an insurance Monthly
+  // Premium next to a health-share Monthly Contribution. Priority: the resolved
+  // carrier field's value / metadata (the same signal that labels the carrier
+  // row), then a field-presence heuristic. Falls back to 'unknown', in which
+  // case nothing is filtered — we never hide real data when coverage type is
+  // genuinely ambiguous.
+  const recordPlanType = useMemo<'healthshare' | 'insurance' | 'unknown'>(() => {
+    if (heroSharingField) {
+      const byValue = classifyCarrierValue(defaultValues[heroSharingField.key]);
+      if (byValue !== 'unknown') return byValue;
+      const byMeta = heroSharingField.metadata?.carrier_type;
+      if (byMeta === 'insurance' || byMeta === 'healthshare') return byMeta;
+    }
+    const hasSharing = ['sharing_entity', 'monthly_contribution', 'monthly_share', 'iua_amount', 'member_tier', 'sharing_status', 'sharing_member_id'].some((k) => hasValue(k));
+    const hasInsurance = ['health_insurance_carrier', 'monthly_premium', 'health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium', 'coverage_option'].some((k) => hasValue(k));
+    if (hasSharing && !hasInsurance) return 'healthshare';
+    if (hasInsurance && !hasSharing) return 'insurance';
+    return 'unknown';
+  }, [heroSharingField, defaultValues, hasValue]);
+
   const heroStartDateField = useMemo(() => {
     const isDateType = (f: CrmField) => f.type === 'date';
     const candidates = [
@@ -922,6 +943,19 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     const skipKeys = new Set<string>();
     if (heroSharingField) skipKeys.add(heroSharingField.key);
     if (heroStartDateField) skipKeys.add(heroStartDateField.key);
+
+    // Plan-type separation: skip the OTHER coverage type's exclusive rows so a
+    // health-share member never shows an insurance Monthly Premium, and an
+    // insurance member never shows a Monthly Contribution / IUA. 'unknown'
+    // skips nothing (both the preferred-key loop and the pattern fallback below
+    // honor skipKeys).
+    if (recordPlanType === 'healthshare') {
+      // Only unambiguous insurance terms. 'coverage_option'/'plan_name' are
+      // left neutral (either type can carry one) so a real value is never hidden.
+      for (const k of ['health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium', 'monthly_premium']) skipKeys.add(k);
+    } else if (recordPlanType === 'insurance') {
+      for (const k of ['monthly_share', 'monthly_contribution', 'iua_amount', 'member_tier', 'sharing_member_id', 'sharing_status']) skipKeys.add(k);
+    }
 
     const preferredKeys = [
       'product',
@@ -979,7 +1013,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     }
 
     return out;
-  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField]);
+  }, [visibleFields, findFieldByKey, heroSharingField, heroStartDateField, recordPlanType]);
 
   /** Omit empty rows in static read-only snapshot; keep placeholders in edit / inline-edit. */
   const heroProductPlanSnapshotFields = useMemo(() => {
@@ -1123,7 +1157,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                             <ShieldCheck className="h-3.5 w-3.5" />
                           </span>
                           <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
-                            Membership Snapshot
+                            {recordPlanType === 'insurance'
+                              ? 'Insurance Snapshot'
+                              : recordPlanType === 'healthshare'
+                                ? 'HealthShare Snapshot'
+                                : 'Coverage Snapshot'}
                           </span>
                         </div>
                         <div className="flex-1 space-y-3 p-4">
