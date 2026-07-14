@@ -25,14 +25,14 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <FileText className="w-5 h-5 text-slate-400" />
+            <FileText className="w-5 h-5 text-slate-400" aria-hidden />
             Enrollment
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
-              <Plus className="w-7 h-7 text-blue-600" />
+              <Plus className="w-7 h-7 text-blue-600" aria-hidden />
             </div>
             <p className="text-slate-900 font-medium mb-2">Ready to get started?</p>
             <p className="text-sm text-slate-500 mb-4">
@@ -41,7 +41,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
             <Link href="/enroll">
               <Button className="gap-2">
                 Start New Enrollment
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4" aria-hidden />
               </Button>
             </Link>
           </div>
@@ -57,7 +57,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="w-5 h-5 text-blue-600" />
+              <FileText className="w-5 h-5 text-blue-600" aria-hidden />
               Enrollment
             </CardTitle>
             <StatusBadge status={enrollment.status} />
@@ -66,7 +66,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
         <CardContent>
           <div className="bg-blue-50 rounded-lg p-4 mb-4">
             <div className="flex items-start gap-3">
-              <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+              <Clock className="w-5 h-5 text-blue-600 mt-0.5" aria-hidden />
               <div>
                 <p className="text-blue-900 font-medium">Under Review</p>
                 <p className="text-sm text-blue-700">
@@ -100,7 +100,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
           <div className="flex gap-2">
             <Link href={`/enrollments/${enrollment.id}`} className="flex-1">
               <Button variant="outline" className="w-full gap-2">
-                <Eye className="w-4 h-4" />
+                <Eye className="w-4 h-4" aria-hidden />
                 View Status
               </Button>
             </Link>
@@ -116,7 +116,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <FileText className="w-5 h-5 text-amber-600" />
+            <FileText className="w-5 h-5 text-amber-600" aria-hidden />
             Enrollment
           </CardTitle>
           <StatusBadge status={enrollment.status} />
@@ -149,7 +149,7 @@ export function EnrollmentPanel({ enrollment }: EnrollmentPanelProps) {
           <Link href={`/enroll?resume=${enrollment.id}`} className="flex-1">
             <Button className="w-full gap-2">
               Resume Enrollment
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4" aria-hidden />
             </Button>
           </Link>
         </div>

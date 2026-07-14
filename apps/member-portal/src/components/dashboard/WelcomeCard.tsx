@@ -43,7 +43,7 @@ export function WelcomeCard({
                   size="lg" 
                   className="bg-white text-blue-700 hover:bg-blue-50 gap-2"
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4" aria-hidden />
                   Resume Enrollment
                 </Button>
               </Link>
@@ -53,9 +53,9 @@ export function WelcomeCard({
                   size="lg" 
                   className="bg-white text-blue-700 hover:bg-blue-50 gap-2"
                 >
-                  <Heart className="w-4 h-4" />
+                  <Heart className="w-4 h-4" aria-hidden />
                   Start Enrollment
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4" aria-hidden />
                 </Button>
               </Link>
             ) : null}
@@ -66,7 +66,7 @@ export function WelcomeCard({
                 size="lg"
                 className="btn-hero-outline gap-2"
               >
-                <HelpCircle className="w-4 h-4" />
+                <HelpCircle className="w-4 h-4" aria-hidden />
                 Contact Support
               </Button>
             </Link>

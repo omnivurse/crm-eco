@@ -27,14 +27,14 @@ export function MembershipCard({ membership }: MembershipCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Heart className="w-5 h-5 text-slate-400" />
+            <Heart className="w-5 h-5 text-slate-400" aria-hidden />
             Your Membership
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <Heart className="w-7 h-7 text-slate-400" />
+              <Heart className="w-7 h-7 text-slate-400" aria-hidden />
             </div>
             <p className="text-slate-600 mb-2">No active membership yet.</p>
             <p className="text-sm text-slate-500 mb-4">
@@ -43,7 +43,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
             <Link href="/enroll">
               <Button className="gap-2">
                 Start Enrollment
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4" aria-hidden />
               </Button>
             </Link>
           </div>
@@ -59,7 +59,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Heart className="w-5 h-5 text-primary" />
+            <Heart className="w-5 h-5 text-primary" aria-hidden />
             Your Membership
           </CardTitle>
           <StatusBadge status={membership.status} className="capitalize" />
@@ -80,7 +80,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
         {/* Details Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="flex items-start gap-2">
-            <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
+            <Hash className="w-4 h-4 text-slate-400 mt-0.5" aria-hidden />
             <div>
               <p className="text-xs text-slate-500">Membership #</p>
               <p className="text-sm font-medium text-slate-900">
@@ -90,7 +90,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
           </div>
 
           <div className="flex items-start gap-2">
-            <Calendar className="w-4 h-4 text-slate-400 mt-0.5" />
+            <Calendar className="w-4 h-4 text-slate-400 mt-0.5" aria-hidden />
             <div>
               <p className="text-xs text-slate-500">Effective Date</p>
               <p className="text-sm font-medium text-slate-900">
@@ -100,7 +100,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
           </div>
 
           <div className="flex items-start gap-2 col-span-2">
-            <DollarSign className="w-4 h-4 text-slate-400 mt-0.5" />
+            <DollarSign className="w-4 h-4 text-slate-400 mt-0.5" aria-hidden />
             <div>
               <p className="text-xs text-slate-500">Monthly Share</p>
               <p className="text-lg font-semibold text-slate-900">
@@ -114,7 +114,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
         <div className="pt-2 border-t">
           <Link href="/plan" className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1">
             View details
-            <ArrowRight className="w-3 h-3" />
+            <ArrowRight className="w-3 h-3" aria-hidden />
           </Link>
         </div>
       </CardContent>

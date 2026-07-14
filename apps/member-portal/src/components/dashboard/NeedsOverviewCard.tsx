@@ -36,14 +36,14 @@ export function NeedsOverviewCard({ needs }: NeedsOverviewCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <HeartPulse className="w-5 h-5 text-slate-400" />
+            <HeartPulse className="w-5 h-5 text-slate-400" aria-hidden />
             Needs & Sharing Activity
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <FileQuestion className="w-7 h-7 text-slate-400" />
+              <FileQuestion className="w-7 h-7 text-slate-400" aria-hidden />
             </div>
             <p className="text-slate-600 mb-2">No Needs on file yet.</p>
             <p className="text-sm text-slate-500">
@@ -59,7 +59,7 @@ export function NeedsOverviewCard({ needs }: NeedsOverviewCardProps) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <HeartPulse className="w-5 h-5 text-blue-600" />
+          <HeartPulse className="w-5 h-5 text-blue-600" aria-hidden />
           Needs & Sharing Activity
         </CardTitle>
       </CardHeader>
@@ -101,7 +101,7 @@ export function NeedsOverviewCard({ needs }: NeedsOverviewCardProps) {
             className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
           >
             View all Needs
-            <ArrowRight className="w-3 h-3" />
+            <ArrowRight className="w-3 h-3" aria-hidden />
           </Link>
         </div>
       </CardContent>

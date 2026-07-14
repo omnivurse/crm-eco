@@ -23,14 +23,14 @@ export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <MessageSquare className="w-5 h-5 text-slate-400" />
+            <MessageSquare className="w-5 h-5 text-slate-400" aria-hidden />
             Support & Messages
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-6">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <HelpCircle className="w-7 h-7 text-slate-400" />
+              <HelpCircle className="w-7 h-7 text-slate-400" aria-hidden />
             </div>
             <p className="text-slate-600 mb-2">No support tickets yet.</p>
             <p className="text-sm text-slate-500 mb-4">
@@ -38,7 +38,7 @@ export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
             </p>
             <Link href="/support/new">
               <Button variant="outline" className="gap-2">
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4" aria-hidden />
                 Contact Support
               </Button>
             </Link>
@@ -52,7 +52,7 @@ export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
     <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <MessageSquare className="w-5 h-5 text-blue-600" />
+          <MessageSquare className="w-5 h-5 text-blue-600" aria-hidden />
           Support & Messages
         </CardTitle>
       </CardHeader>
@@ -85,11 +85,11 @@ export function TicketsOverviewCard({ tickets }: TicketsOverviewCardProps) {
             className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
           >
             View all tickets
-            <ArrowRight className="w-3 h-3" />
+            <ArrowRight className="w-3 h-3" aria-hidden />
           </Link>
           <Link href="/support/new">
             <Button variant="outline" size="sm" className="gap-1">
-              <Plus className="w-3 h-3" />
+              <Plus className="w-3 h-3" aria-hidden />
               New Ticket
             </Button>
           </Link>

@@ -45,7 +45,7 @@ export function AdvisorCard({ advisor }: AdvisorCardProps) {
                 href={`mailto:${advisor.email}`}
                 className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 hover:text-blue-700"
               >
-                <Mail className="h-3 w-3" />
+                <Mail className="h-3 w-3" aria-hidden />
                 {advisor.email}
               </a>
             )}
@@ -54,7 +54,7 @@ export function AdvisorCard({ advisor }: AdvisorCardProps) {
                 href={`tel:${advisor.phone}`}
                 className="mt-0.5 flex items-center gap-1 text-xs text-slate-500 hover:text-blue-700"
               >
-                <Phone className="h-3 w-3" />
+                <Phone className="h-3 w-3" aria-hidden />
                 {advisor.phone}
               </a>
             )}
@@ -63,7 +63,7 @@ export function AdvisorCard({ advisor }: AdvisorCardProps) {
             href="/support?topic=advisor"
             className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-200"
           >
-            <MessageCircle className="h-3.5 w-3.5" />
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden />
             Message
           </Link>
         </div>

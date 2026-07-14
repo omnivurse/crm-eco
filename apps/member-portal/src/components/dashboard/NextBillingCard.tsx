@@ -15,7 +15,7 @@ export function NextBillingCard({ schedule }: NextBillingCardProps) {
     <Card className="border-slate-200">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
-          <Calendar className="h-5 w-5 text-blue-600" />
+          <Calendar className="h-5 w-5 text-blue-600" aria-hidden />
           Next billing
         </CardTitle>
       </CardHeader>
@@ -39,7 +39,7 @@ export function NextBillingCard({ schedule }: NextBillingCardProps) {
               className="inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:text-blue-800"
             >
               Manage
-              <ArrowRight className="h-3.5 w-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
         ) : (
