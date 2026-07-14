@@ -1043,9 +1043,9 @@ export const RecordTable = memo(function RecordTable({
         {/* Desktop Loading Skeleton */}
         <div className="hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-hidden">
           <div className="animate-pulse">
-            <div className="h-12 bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-white/5" />
+            <div className="bg-slate-100 dark:bg-slate-800/50 border-b border-slate-200 dark:border-white/5" style={{ height: ROW_HEIGHT }} />
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-14 border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-4">
+              <div key={i} className="border-b border-slate-200 dark:border-white/5 flex items-center px-4 gap-4" style={{ height: ROW_HEIGHT }}>
                 <div className="w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded" />
                 <div className="flex-1 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
                 <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded" />
@@ -1159,7 +1159,7 @@ export const RecordTable = memo(function RecordTable({
           'sticky top-0 z-10 transition-shadow block',
           isScrolled && 'shadow-md shadow-black/5 dark:shadow-black/20'
         )}>
-          <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth }}>
+          <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth, height: ROW_HEIGHT }}>
             <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm sticky left-0 z-20" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
               <Checkbox
                 checked={allSelected ? true : someSelected ? 'indeterminate' : false}
