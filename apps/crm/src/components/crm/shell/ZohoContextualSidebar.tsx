@@ -275,6 +275,7 @@ export function ZohoContextualSidebar({
         <>
             {/* Desktop Sidebar */}
             <aside
+                data-crm-module={activeTopModule}
                 className={cn(
                     'group/sidebar relative hidden lg:flex flex-col border-r border-slate-200/80 dark:border-white/5 bg-white/90 dark:bg-slate-900/50 backdrop-blur-sm transition-all duration-200',
                     isOpen ? 'w-52' : 'w-14'
@@ -285,7 +286,8 @@ export function ZohoContextualSidebar({
 
                 {isOpen && (
                     <div className="px-3 py-1.5 border-b border-slate-200/80 dark:border-white/5">
-                        <h2 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
+                        <h2 className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
+                            <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--mod-fg)' }} aria-hidden />
                             {moduleTitle[activeTopModule]} menu
                         </h2>
                     </div>
@@ -321,20 +323,21 @@ export function ZohoContextualSidebar({
                                 prefetch={false}
                                 key={item.key}
                                 href={item.href}
+                                style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}
                                 className={cn(
                                     'flex items-center gap-2.5 px-2.5 py-[5px] rounded-md text-[13px] font-medium transition-colors',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
                                     active
-                                        ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-l-[3px] border-teal-500 pl-[7px]'
+                                        ? 'border-l-[3px] pl-[7px]'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
                                     !isOpen && 'justify-center px-1.5'
                                 )}
                                 title={!isOpen ? item.label : undefined}
                             >
-                                <Icon className={cn(
-                                    'w-[15px] h-[15px] flex-shrink-0',
-                                    active && 'text-teal-600 dark:text-teal-400'
-                                )} />
+                                <Icon
+                                    style={active ? { color: 'var(--mod-fg)' } : undefined}
+                                    className="w-[15px] h-[15px] flex-shrink-0"
+                                />
                                 {isOpen && (
                                     <>
                                         <span className="flex-1 truncate">{item.label}</span>
@@ -390,6 +393,7 @@ export function ZohoContextualSidebar({
 
             {/* Mobile Sidebar - Slide-in Drawer */}
             <aside
+                data-crm-module={activeTopModule}
                 className={cn(
                     'fixed top-[5.5rem] left-0 bottom-0 w-72 z-40 lg:hidden',
                     'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
@@ -401,7 +405,8 @@ export function ZohoContextualSidebar({
                 <ModuleSwitcherRail expanded />
 
                 <div className="px-4 py-2 border-b border-slate-200 dark:border-white/5">
-                    <h2 className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
+                    <h2 className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-[0.14em]">
+                        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--mod-fg)' }} aria-hidden />
                         {moduleTitle[activeTopModule]} menu
                     </h2>
                 </div>
@@ -437,19 +442,20 @@ export function ZohoContextualSidebar({
                                 key={item.key}
                                 href={item.href}
                                 onClick={handleLinkClick}
+                                style={active ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)', borderColor: 'var(--mod-border)' } : undefined}
                                 className={cn(
                                     'flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all',
                                     'hover:bg-slate-100 dark:hover:bg-white/5',
                                     'active:scale-[0.98]',
                                     active
-                                        ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-400 border-l-3 border-teal-500'
+                                        ? 'border-l-[3px]'
                                         : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                                 )}
                             >
-                                <Icon className={cn(
-                                    'w-5 h-5 flex-shrink-0',
-                                    active && 'text-teal-600 dark:text-teal-400'
-                                )} />
+                                <Icon
+                                    style={active ? { color: 'var(--mod-fg)' } : undefined}
+                                    className="w-5 h-5 flex-shrink-0"
+                                />
                                 <span className="flex-1">{item.label}</span>
                                 {item.badge === 'new' && (
                                     <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 uppercase">

@@ -59,24 +59,27 @@ export function CrmModuleTabBar() {
               prefetch={false}
               key={module.key}
               href={module.href}
+              data-crm-module={module.key}
               onClick={() => handleClick(module.key)}
+              style={isActive ? { color: 'var(--mod-fg)' } : undefined}
               className={cn(
                 'relative flex shrink-0 snap-start items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors sm:text-[13px]',
                 isActive
-                  ? 'text-teal-700 dark:text-teal-300'
+                  ? ''
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',
               )}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon
-                className={cn(
-                  'h-3.5 w-3.5',
-                  isActive ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400',
-                )}
+                style={isActive ? { color: 'var(--mod-fg)' } : undefined}
+                className={cn('h-3.5 w-3.5', !isActive && 'text-slate-400')}
               />
               <span>{module.label}</span>
               {isActive && (
-                <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-teal-500 dark:bg-teal-400" />
+                <span
+                  className="absolute inset-x-2 bottom-0 h-0.5 rounded-full"
+                  style={{ backgroundColor: 'var(--mod-border)' }}
+                />
               )}
             </Link>
           );
@@ -87,19 +90,27 @@ export function CrmModuleTabBar() {
         <Link
           prefetch={false}
           href="/crm/settings"
+          data-crm-module="settings"
           onClick={() => handleClick('settings')}
+          style={activeModule === 'settings' ? { color: 'var(--mod-fg)' } : undefined}
           className={cn(
             'relative flex shrink-0 snap-start items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors sm:text-[13px]',
             activeModule === 'settings'
-              ? 'text-teal-700 dark:text-teal-300'
+              ? ''
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',
           )}
           aria-current={activeModule === 'settings' ? 'page' : undefined}
         >
-          <Settings className="h-3.5 w-3.5" />
+          <Settings
+            className="h-3.5 w-3.5"
+            style={activeModule === 'settings' ? { color: 'var(--mod-fg)' } : undefined}
+          />
           <span>Settings</span>
           {activeModule === 'settings' && (
-            <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-teal-500 dark:bg-teal-400" />
+            <span
+              className="absolute inset-x-2 bottom-0 h-0.5 rounded-full"
+              style={{ backgroundColor: 'var(--mod-border)' }}
+            />
           )}
         </Link>
       </div>

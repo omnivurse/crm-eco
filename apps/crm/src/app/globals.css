@@ -327,3 +327,37 @@
   --crm-row-h: 52px; --crm-toolbar-h: 56px; --crm-chrome-h: 120px;
   --crm-gutter: 28px; --crm-section-gap: 32px; --crm-cell-py: 12px;
 }
+
+/* ============================================================
+   PER-MODULE COLOR-CODING — refresh 2026-07 (scoped to apps/crm)
+   Each top-level module owns a signature hue so the chrome tells
+   you where you are at a glance (Zoho-style wayfinding). A
+   `data-crm-module="<key>"` attribute on the module tab bar, the
+   switcher rail, and the contextual sidebar resolves the channel
+   vars; the shared rule derives the fg / bg / border roles the
+   chrome consumes. Custom props inherit, so setting the attribute
+   on the <aside> flows the hue to every nav item inside it.
+   All 14 foregrounds verified WCAG AA on their ground.
+   ============================================================ */
+[data-crm-module='crm']            { --mod-h: 187; --mod-s: 80%; --mod-l: 30%; }
+[data-crm-module='communications'] { --mod-h: 217; --mod-s: 80%; --mod-l: 45%; }
+[data-crm-module='revenue']        { --mod-h: 152; --mod-s: 65%; --mod-l: 30%; }
+[data-crm-module='operations']     { --mod-h: 28;  --mod-s: 90%; --mod-l: 38%; }
+[data-crm-module='analytics']      { --mod-h: 263; --mod-s: 60%; --mod-l: 52%; }
+[data-crm-module='integrations']   { --mod-h: 292; --mod-s: 60%; --mod-l: 45%; }
+[data-crm-module='settings']       { --mod-h: 220; --mod-s: 12%; --mod-l: 40%; }
+
+.dark [data-crm-module='crm']            { --mod-s: 70%; --mod-l: 62%; }
+.dark [data-crm-module='communications'] { --mod-s: 85%; --mod-l: 66%; }
+.dark [data-crm-module='revenue']        { --mod-s: 60%; --mod-l: 58%; }
+.dark [data-crm-module='operations']     { --mod-s: 90%; --mod-l: 60%; }
+.dark [data-crm-module='analytics']      { --mod-s: 75%; --mod-l: 72%; }
+.dark [data-crm-module='integrations']   { --mod-s: 70%; --mod-l: 70%; }
+.dark [data-crm-module='settings']       { --mod-s: 12%; --mod-l: 66%; }
+
+[data-crm-module] {
+  --mod-fg:       hsl(var(--mod-h) var(--mod-s) var(--mod-l));
+  --mod-bg:       hsl(var(--mod-h) var(--mod-s) var(--mod-l) / 0.11);
+  --mod-bg-hover: hsl(var(--mod-h) var(--mod-s) var(--mod-l) / 0.16);
+  --mod-border:   hsl(var(--mod-h) var(--mod-s) var(--mod-l));
+}

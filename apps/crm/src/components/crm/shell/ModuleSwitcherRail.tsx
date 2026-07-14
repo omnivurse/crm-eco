@@ -74,13 +74,15 @@ export function ModuleSwitcherRail({ expanded, className }: ModuleSwitcherRailPr
               prefetch={false}
               key={module.key}
               href={module.href}
+              data-crm-module={module.key}
               title={TOP_MODULE_TITLES[module.key as TopModule] ?? module.label}
               onClick={() => setActiveModule(module.key as TopModule)}
+              style={isActive ? { backgroundColor: 'var(--mod-bg)', color: 'var(--mod-fg)' } : undefined}
               className={cn(
                 'flex items-center rounded-md transition-colors',
                 expanded ? 'gap-2 px-2 py-1.5 text-[11px] font-medium' : 'h-8 w-8 justify-center',
                 isActive
-                  ? 'bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300'
+                  ? ''
                   : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-white',
               )}
             >
