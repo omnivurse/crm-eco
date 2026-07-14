@@ -1,5 +1,5 @@
-import { PageLoading } from '@/components/PageLoading';
+import { PageSkeleton } from '@/components/PageSkeleton';
 
 export default function Loading() {
-  return <PageLoading />;
+  return <PageSkeleton />;
 }
