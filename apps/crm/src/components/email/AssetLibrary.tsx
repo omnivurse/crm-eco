@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -149,7 +150,7 @@ export function AssetLibrary({
       }
       setTotal((prev) => prev - 1);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete asset');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete asset');
     } finally {
       setDeleting(null);
     }

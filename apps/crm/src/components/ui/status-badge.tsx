@@ -1,0 +1,146 @@
+import * as React from 'react';
+import { cn } from '@crm-eco/ui';
+
+/**
+ * Semantic status colour system for the CRM.
+ *
+ * One hue = one meaning, everywhere. Colours come from the tone tokens
+ * defined in `apps/crm/src/app/globals.css` (`--tone-*-fg/-bg/-border`,
+ * light + dark). Route every status / stage / priority pill through
+ * <StatusBadge> + statusToTone() so the same state never renders in two
+ * different colours across the app.
+ */
+export type Tone =
+  | 'neutral'
+  | 'info'
+  | 'progress'
+  | 'attention'
+  | 'success'
+  | 'danger'
+  | 'special'
+  | 'brand';
+
+const TONE_CLASS: Record<Tone, string> = {
+  neutral:
+    'text-[var(--tone-neutral-fg)] bg-[var(--tone-neutral-bg)] border-[var(--tone-neutral-border)]',
+  info: 'text-[var(--tone-info-fg)] bg-[var(--tone-info-bg)] border-[var(--tone-info-border)]',
+  progress:
+    'text-[var(--tone-progress-fg)] bg-[var(--tone-progress-bg)] border-[var(--tone-progress-border)]',
+  attention:
+    'text-[var(--tone-attention-fg)] bg-[var(--tone-attention-bg)] border-[var(--tone-attention-border)]',
+  success:
+    'text-[var(--tone-success-fg)] bg-[var(--tone-success-bg)] border-[var(--tone-success-border)]',
+  danger:
+    'text-[var(--tone-danger-fg)] bg-[var(--tone-danger-bg)] border-[var(--tone-danger-border)]',
+  special:
+    'text-[var(--tone-special-fg)] bg-[var(--tone-special-bg)] border-[var(--tone-special-border)]',
+  // Brand is reserved for interactive/brand emphasis only — never a status.
+  brand: 'text-primary bg-primary/10 border-primary/30',
+};
+
+/**
+ * Canonical status → tone map. Keys are normalised (lowercased,
+ * non-alphanumerics stripped). Extend this with the real status values
+ * used across your modules; anything unmapped falls back to `neutral`.
+ */
+const STATUS_TONE: Record<string, Tone> = {
+  // lifecycle / generic
+  new: 'info',
+  open: 'info',
+  active: 'success',
+  inactive: 'neutral',
+  draft: 'neutral',
+  archived: 'neutral',
+  pending: 'attention',
+  inprogress: 'progress',
+  onhold: 'attention',
+  blocked: 'danger',
+  completed: 'success',
+  done: 'success',
+  cancelled: 'neutral',
+  canceled: 'neutral',
+  // leads
+  contacted: 'progress',
+  working: 'progress',
+  nurturing: 'progress',
+  qualified: 'success',
+  unqualified: 'neutral',
+  converted: 'success',
+  // deals / pipeline
+  won: 'success',
+  closedwon: 'success',
+  lost: 'danger',
+  closedlost: 'danger',
+  negotiation: 'attention',
+  proposal: 'progress',
+  // tickets / support
+  resolved: 'success',
+  closed: 'neutral',
+  reopened: 'attention',
+  escalated: 'danger',
+  waiting: 'attention',
+  // priority / urgency
+  low: 'neutral',
+  medium: 'info',
+  normal: 'info',
+  high: 'attention',
+  urgent: 'danger',
+  critical: 'danger',
+  // approvals
+  approved: 'success',
+  rejected: 'danger',
+  submitted: 'info',
+};
+
+const normalize = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+/** Map a raw status/stage/priority string to its canonical tone. */
+export function statusToTone(status?: string | null): Tone {
+  if (!status) return 'neutral';
+  return STATUS_TONE[normalize(status)] ?? 'neutral';
+}
+
+export interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Raw status/stage/priority string; mapped to a tone automatically. */
+  status?: string | null;
+  /** Force a specific tone (overrides the status → tone lookup). */
+  tone?: Tone;
+  /** Show a leading dot. Default true. */
+  dot?: boolean;
+  /** Visible label; defaults to the status string. */
+  label?: React.ReactNode;
+  size?: 'sm' | 'md';
+}
+
+/**
+ * Consistent, theme-aware status pill. Give it a `status` and it colours
+ * itself from the canonical map; or pass an explicit `tone`.
+ *
+ *   <StatusBadge status={lead.status} />
+ *   <StatusBadge tone="success" label="Paid" />
+ */
+export function StatusBadge({
+  status,
+  tone,
+  dot = true,
+  label,
+  size = 'md',
+  className,
+  ...props
+}: StatusBadgeProps): React.JSX.Element {
+  const resolved = tone ?? statusToTone(status);
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border font-medium leading-none whitespace-nowrap',
+        size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs',
+        TONE_CLASS[resolved],
+        className,
+      )}
+      {...props}
+    >
+      {dot && <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />}
+      {label ?? status ?? '—'}
+    </span>
+  );
+}

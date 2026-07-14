@@ -26,17 +26,43 @@
 }
 
 /* ============================================================
-   GLOBAL ANIMATION DISABLE
-   Kill all animations and transitions project-wide for performance.
-   Only essential loading indicators are preserved.
+   MOTION POLICY  (refresh 2026-07 — replaces a blanket kill-switch)
+   Motion is ON by default so component + Radix transitions work.
+   It is disabled ONLY for users who ask via prefers-reduced-motion,
+   and we add one cheap, curated transition for interactive surfaces
+   instead of a blanket `all` on every element.
    ============================================================ */
-*,
-*::before,
-*::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-  scroll-behavior: auto !important;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a,
+  button,
+  [role='button'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'],
+  summary,
+  input,
+  select,
+  textarea,
+  label[for] {
+    transition:
+      color 140ms ease,
+      background-color 140ms ease,
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      opacity 140ms ease,
+      transform 140ms ease;
+  }
 }
 
 /* Preserve loading spinner — essential UX feedback */
@@ -232,4 +258,72 @@
   .dark .sticky-scrollbar {
     scrollbar-color: rgba(148, 163, 184, 0.35) rgba(30, 41, 59, 0.6);
   }
+}
+
+/* ============================================================
+   CRM DESIGN FOUNDATION — refresh 2026-07 (scoped to apps/crm)
+   These :root / .dark overrides load AFTER @crm-eco/ui theme.css,
+   so they win here WITHOUT affecting the other apps. This is the
+   cascading layer: change a token, every /crm page follows.
+   ============================================================ */
+:root {
+  /* Signature accent — Spruce Teal (bolder refresh, evolved from the
+     brand cyan). #0E7C86 ≈ 4.8:1 with white → WCAG AA on every CTA,
+     fixing the old white-on-#06b6d4 2.43:1 failure. Ring follows. */
+  --primary: 187 81% 29%;
+  --ring: 187 81% 29%;
+
+  /* Reclaim shadcn's --accent as a NEUTRAL hover/selected surface
+     (it was purple, which flashed on every menu / select / ghost
+     button). Deliberate purple now lives in --brand-purple. */
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+  --brand-purple: 263 70% 60%;
+
+  /* --- Semantic TONE layer — one hue = one meaning --------------
+     Consumed by <StatusBadge>. -bg = tint, -fg = text/icon. */
+  --tone-neutral-fg:#64748b;   --tone-neutral-bg:#64748b14;   --tone-neutral-border:#64748b40;
+  --tone-info-fg:#2563eb;      --tone-info-bg:#2563eb14;      --tone-info-border:#2563eb40;
+  --tone-progress-fg:#7c3aed;  --tone-progress-bg:#7c3aed14;  --tone-progress-border:#7c3aed40;
+  --tone-attention-fg:#c2740a; --tone-attention-bg:#c2740a16; --tone-attention-border:#c2740a40;
+  --tone-success-fg:#0e9f6e;   --tone-success-bg:#0e9f6e16;   --tone-success-border:#0e9f6e40;
+  --tone-danger-fg:#dc2626;    --tone-danger-bg:#dc262614;    --tone-danger-border:#dc262640;
+  --tone-special-fg:#db2777;   --tone-special-bg:#db277714;   --tone-special-border:#db277740;
+
+  /* --- Density-aware spacing/size scale (comfortable-dense default)
+     Consumed by shell / tables / toolbars in later phases. ------- */
+  --crm-row-h: 40px;
+  --crm-toolbar-h: 48px;
+  --crm-chrome-h: 104px;
+  --crm-gutter: 20px;
+  --crm-section-gap: 24px;
+  --crm-cell-py: 8px;
+}
+
+.dark {
+  /* Brighter spruce teal so the accent pops on dark grounds. */
+  --primary: 187 72% 46%;
+  --ring: 187 72% 46%;
+
+  --accent: 220 40% 14%;
+  --accent-foreground: 210 40% 98%;
+  --brand-purple: 263 70% 72%;
+
+  --tone-neutral-fg:#94a3b8;   --tone-neutral-bg:#94a3b81f;   --tone-neutral-border:#94a3b840;
+  --tone-info-fg:#60a5fa;      --tone-info-bg:#60a5fa1f;      --tone-info-border:#60a5fa40;
+  --tone-progress-fg:#a78bfa;  --tone-progress-bg:#a78bfa1f;  --tone-progress-border:#a78bfa40;
+  --tone-attention-fg:#fbbf24; --tone-attention-bg:#fbbf241f; --tone-attention-border:#fbbf2440;
+  --tone-success-fg:#34d399;   --tone-success-bg:#34d3991f;   --tone-success-border:#34d39940;
+  --tone-danger-fg:#f87171;    --tone-danger-bg:#f871711f;    --tone-danger-border:#f8717140;
+  --tone-special-fg:#f472b6;   --tone-special-bg:#f472b61f;   --tone-special-border:#f472b640;
+}
+
+/* Density modes — set data-density on <html> (persisted via ViewPreferences later) */
+:root[data-density='compact'] {
+  --crm-row-h: 34px; --crm-toolbar-h: 42px; --crm-chrome-h: 92px;
+  --crm-gutter: 14px; --crm-section-gap: 16px; --crm-cell-py: 5px;
+}
+:root[data-density='comfortable'] {
+  --crm-row-h: 52px; --crm-toolbar-h: 56px; --crm-chrome-h: 120px;
+  --crm-gutter: 28px; --crm-section-gap: 32px; --crm-cell-py: 12px;
 }

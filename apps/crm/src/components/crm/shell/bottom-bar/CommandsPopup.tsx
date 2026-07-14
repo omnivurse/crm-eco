@@ -59,14 +59,14 @@ const defaultActions: QuickAction[] = [
     label: 'New Task',
     icon: <ClipboardCheck className="w-4 h-4" />,
     color: 'text-orange-500 bg-orange-50 dark:bg-orange-500/10',
-    href: '/crm/modules/tasks/new',
+    href: '/crm/tasks/new',
   },
   {
     id: 'log-call',
     label: 'Log Call',
     icon: <PhoneCall className="w-4 h-4" />,
     color: 'text-amber-500 bg-amber-50 dark:bg-amber-500/10',
-    href: '/crm/modules/calls/new',
+    href: '/crm/activities?type=call',
   },
   {
     id: 'send-email',
@@ -80,7 +80,7 @@ const defaultActions: QuickAction[] = [
     label: 'Meeting',
     icon: <Calendar className="w-4 h-4" />,
     color: 'text-purple-500 bg-purple-50 dark:bg-purple-500/10',
-    href: '/crm/modules/meetings/new',
+    href: '/crm/activities?type=meeting',
   },
   {
     id: 'import-data',

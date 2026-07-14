@@ -92,6 +92,27 @@ function mapLegacyStatus(status: string): string {
   return legacy[status] ?? status;
 }
 
+const INITIAL_FORM_DATA = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  groupName: '',
+  contactRole: '',
+  isDecisionMaker: '',
+  contactPhone: '',
+  contactEmail: '',
+  state: '',
+  source: '',
+  campaign: '',
+  householdSize: '',
+  desiredStartDate: '',
+  currentCoverage: '',
+  status: 'New',
+  advisorId: '',
+  notes: '',
+};
+
 export function CreateLeadDialog() {
   const router = useRouter();
   const { profile: authProfile } = useClientAuth();
@@ -107,26 +128,7 @@ export function CreateLeadDialog() {
   } | null>(null);
   const [forceCreate, setForceCreate] = useState(false);
 
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    groupName: '',
-    contactRole: '',
-    isDecisionMaker: '',
-    contactPhone: '',
-    contactEmail: '',
-    state: '',
-    source: '',
-    campaign: '',
-    householdSize: '',
-    desiredStartDate: '',
-    currentCoverage: '',
-    status: 'New',
-    advisorId: '',
-    notes: '',
-  });
+  const [formData, setFormData] = useState(INITIAL_FORM_DATA);
 
   useEffect(() => {
     if (open && authProfile?.organization_id) {
@@ -154,6 +156,18 @@ export function CreateLeadDialog() {
       void fetchMeta();
     }
   }, [open, authProfile?.organization_id]);
+
+  // Reset all form + dedup state whenever the dialog closes, so a reopened
+  // dialog never keeps stale banners/errors or silently bypasses dedup via a
+  // lingering forceCreate. Covers the X, ESC, overlay click, Cancel, and success.
+  useEffect(() => {
+    if (!open) {
+      setError(null);
+      setDuplicateWarning(null);
+      setForceCreate(false);
+      setFormData(INITIAL_FORM_DATA);
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -245,29 +259,7 @@ export function CreateLeadDialog() {
           : `Created new lead with email ${formData.email}`,
       });
 
-      setOpen(false);
-      setDuplicateWarning(null);
-      setForceCreate(false);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        groupName: '',
-        contactRole: '',
-        isDecisionMaker: '',
-        contactPhone: '',
-        contactEmail: '',
-        state: '',
-        source: '',
-        campaign: '',
-        householdSize: '',
-        desiredStartDate: '',
-        currentCoverage: '',
-        status: 'New',
-        advisorId: '',
-        notes: '',
-      });
+      setOpen(false); // closing triggers the reset effect above
       router.push(`/crm/r/${insertedLead.id}`);
       router.refresh();
     } catch (err: unknown) {

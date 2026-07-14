@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import DOMPurify from 'dompurify';
 import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
@@ -245,7 +246,7 @@ export function SignatureBuilder({
 
   const handleSave = async () => {
     if (!formData.name.trim() || !formData.content_html.trim()) {
-      alert('Please provide a name and signature content.');
+      toast.error('Please provide a name and signature content.');
       return;
     }
 
@@ -257,7 +258,7 @@ export function SignatureBuilder({
       });
     } catch (error) {
       console.error('Failed to save signature:', error);
-      alert('Failed to save signature. Please try again.');
+      toast.error('Failed to save signature. Please try again.');
     } finally {
       setSaving(false);
     }

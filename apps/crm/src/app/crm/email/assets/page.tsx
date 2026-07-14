@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -150,7 +151,7 @@ export default function AssetLibraryPage() {
       });
       setTotal((prev) => prev - 1);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete asset');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete asset');
     } finally {
       setDeleting(null);
     }
@@ -175,7 +176,7 @@ export default function AssetLibraryPage() {
       setTotal((prev) => prev - selectedAssets.size);
       setSelectedAssets(new Set());
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to delete assets');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete assets');
     }
   };
 

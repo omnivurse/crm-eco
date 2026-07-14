@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -73,7 +74,7 @@ export default function ApprovalDetailPage() {
     if (!approval) return;
     
     if (action !== 'approve' && !comment.trim()) {
-      alert('Please provide a comment');
+      toast.error('Please provide a comment');
       return;
     }
     
@@ -97,10 +98,10 @@ export default function ApprovalDetailPage() {
         await loadApproval();
         setComment('');
       } else {
-        alert(result.error || 'Failed to process approval');
+        toast.error(result.error || 'Failed to process approval');
       }
     } catch (err) {
-      alert('Failed to process approval');
+      toast.error('Failed to process approval');
     } finally {
       setProcessing(false);
     }
@@ -128,10 +129,10 @@ export default function ApprovalDetailPage() {
       if (result.success) {
         router.push('/crm/approvals');
       } else {
-        alert(result.error || 'Failed to cancel approval');
+        toast.error(result.error || 'Failed to cancel approval');
       }
     } catch (err) {
-      alert('Failed to cancel approval');
+      toast.error('Failed to cancel approval');
     } finally {
       setProcessing(false);
     }

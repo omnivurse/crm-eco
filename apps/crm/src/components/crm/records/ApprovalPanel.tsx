@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
@@ -149,10 +150,10 @@ export function ApprovalPanel({ recordId, onApprovalChange }: ApprovalPanelProps
           setHistory(historyData.history || []);
         }
       } else {
-        alert(result.error || 'Failed to process approval');
+        toast.error(result.error || 'Failed to process approval');
       }
     } catch (error) {
-      alert('Failed to process approval');
+      toast.error('Failed to process approval');
     } finally {
       setProcessing(false);
       setActionType(null);

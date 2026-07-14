@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-client';
@@ -193,10 +194,10 @@ export function CommunicationsTab({ recordId, orgId, email, phone }: Communicati
         setTemplateId('');
         setComposeOpen(false);
       } else {
-        alert(result.error || 'Failed to send message');
+        toast.error(result.error || 'Failed to send message');
       }
     } catch {
-      alert('Failed to send message');
+      toast.error('Failed to send message');
     } finally {
       setSending(false);
     }

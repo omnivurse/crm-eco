@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
-import { Dialog, DialogContent } from '@crm-eco/ui/components/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { Button } from '@crm-eco/ui/components/button';
 import { Monitor, Tablet, Smartphone, X } from 'lucide-react';
 import type { LandingPageSection } from '@/lib/landing-pages/types';
@@ -52,10 +52,10 @@ export function PreviewModal({ open, onOpenChange, sections, pageName }: Preview
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 flex flex-col gap-0">
+      <DialogContent hideCloseButton className="max-w-[95vw] w-full h-[90vh] p-0 flex flex-col gap-0">
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-white/10 flex-shrink-0">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">{pageName} — Preview</h3>
+          <DialogTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300">{pageName} — Preview</DialogTitle>
           <div className="flex items-center gap-1">
             <Button
               variant={device === 'desktop' ? 'default' : 'ghost'}

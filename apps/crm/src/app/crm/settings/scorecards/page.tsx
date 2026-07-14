@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase-client';
@@ -153,7 +154,7 @@ export default function ScorecardsPage() {
     try {
       // In production, this would call an API to calculate scorecards
       // For now, we show a message
-      alert('Scorecard generation would be triggered via a server-side job');
+      toast.info('Scorecard generation would be triggered via a server-side job');
     } finally {
       setGenerating(false);
     }
