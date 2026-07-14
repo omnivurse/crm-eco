@@ -34,7 +34,7 @@ export default async function PlanOverviewPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      <Link href="/" className="inline-flex items-center text-sm text-blue-600 hover:underline">
+      <Link href="/" className="inline-flex items-center text-sm text-primary hover:underline">
         <ChevronLeft className="mr-1 h-4 w-4" /> Back
       </Link>
 
@@ -61,7 +61,7 @@ export default async function PlanOverviewPage() {
           href="/dependents"
           className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow"
         >
-          <Users className="mb-3 h-6 w-6 text-blue-600" />
+          <Users className="mb-3 h-6 w-6 text-primary" />
           <p className="font-semibold text-slate-900">Dependents</p>
           <p className="mt-1 text-xs text-slate-500">
             {familyCoverage.coveredCount} of {familyCoverage.totalDependents} currently on plan
@@ -88,7 +88,7 @@ export default async function PlanOverviewPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-4 w-4 text-blue-600" />
+            <Users className="h-4 w-4 text-primary" />
             Family coverage
           </CardTitle>
         </CardHeader>
@@ -113,7 +113,7 @@ export default async function PlanOverviewPage() {
           ) : (
             <p className="text-xs text-slate-500">
               No coverage changes logged yet.{' '}
-              <Link href="/dependents" className="text-blue-600 hover:underline">
+              <Link href="/dependents" className="text-primary hover:underline">
                 Manage dependents
               </Link>
             </p>
@@ -124,7 +124,7 @@ export default async function PlanOverviewPage() {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-4 w-4 text-blue-600" />
+            <FileText className="h-4 w-4 text-primary" />
             Plan documents
           </CardTitle>
         </CardHeader>

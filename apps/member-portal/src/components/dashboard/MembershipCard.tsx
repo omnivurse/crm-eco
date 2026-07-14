@@ -59,7 +59,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-lg">
-            <Heart className="w-5 h-5 text-blue-600" />
+            <Heart className="w-5 h-5 text-primary" />
             Your Membership
           </CardTitle>
           <StatusBadge status={membership.status} className="capitalize" />
@@ -67,13 +67,13 @@ export function MembershipCard({ membership }: MembershipCardProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Plan Name */}
-        <div className="bg-blue-50 rounded-lg p-4">
-          <p className="text-sm text-blue-600 font-medium mb-1">Plan</p>
-          <p className="text-lg font-semibold text-blue-900">
+        <div className="bg-primary/5 ring-1 ring-primary/10 rounded-lg p-4">
+          <p className="text-sm text-primary font-medium mb-1">Plan</p>
+          <p className="text-lg font-semibold text-slate-900">
             {membership.plans?.name || 'N/A'}
           </p>
           {membership.plans?.code && (
-            <p className="text-sm text-blue-600">{membership.plans.code}</p>
+            <p className="text-sm text-primary">{membership.plans.code}</p>
           )}
         </div>
 
@@ -112,7 +112,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
 
         {/* View Details Link */}
         <div className="pt-2 border-t">
-          <Link href="/plan" className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
+          <Link href="/plan" className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1">
             View details
             <ArrowRight className="w-3 h-3" />
           </Link>

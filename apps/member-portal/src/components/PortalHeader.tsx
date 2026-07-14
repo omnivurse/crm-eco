@@ -149,7 +149,7 @@ export function PortalHeader() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2.5 hover:bg-slate-50 rounded-xl py-2 px-3">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-cyan-500/20">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-cyan-500/20">
                       {memberName ? getInitials(memberName) : <User className="w-4 h-4" />}
                     </div>
                     <div className="text-left">
@@ -196,7 +196,7 @@ export function PortalHeader() {
                   <Button variant="ghost" size="sm" className="text-dhh-ink hover:bg-slate-100">Sign In</Button>
                 </Link>
                 <a href={ENROLLMENT_URL}>
-                  <Button size="sm" className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-lg shadow-md">Enroll Now</Button>
+                  <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg shadow-md">Enroll Now</Button>
                 </a>
               </div>
             )}
@@ -294,7 +294,7 @@ export function PortalHeader() {
                   </Link>
                   <a
                     href={ENROLLMENT_URL}
-                    className="px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-400 hover:to-blue-400 rounded-lg text-center"
+                    className="px-4 py-2.5 text-sm font-medium bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 rounded-lg text-center"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Enroll Now
