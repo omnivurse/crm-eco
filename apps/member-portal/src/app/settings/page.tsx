@@ -183,7 +183,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+            <Bell className="h-5 w-5" aria-hidden />
             Notification Preferences
           </CardTitle>
           <CardDescription>
@@ -194,7 +194,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-slate-500" />
+                <Mail className="h-5 w-5 text-slate-500" aria-hidden />
                 <div>
                   <p className="font-medium text-slate-900">Email Notifications</p>
                   <p className="text-sm text-slate-500">Receive updates via email</p>
@@ -208,7 +208,7 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Smartphone className="h-5 w-5 text-slate-500" />
+                <Smartphone className="h-5 w-5 text-slate-500" aria-hidden />
                 <div>
                   <p className="font-medium text-slate-900">SMS Notifications</p>
                   <p className="text-sm text-slate-500">Receive text message alerts</p>
@@ -262,9 +262,9 @@ export default function SettingsPage() {
           <div className="flex justify-end pt-4">
             <Button onClick={handleSaveNotifications} disabled={savingNotifications}>
               {savingNotifications ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 mr-2" aria-hidden />
               )}
               Save Preferences
             </Button>
@@ -276,7 +276,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
+            <Lock className="h-5 w-5" aria-hidden />
             Security
           </CardTitle>
           <CardDescription>
@@ -311,9 +311,9 @@ export default function SettingsPage() {
             <div className="flex justify-end">
               <Button type="submit" disabled={savingPassword || !newPassword}>
                 {savingPassword ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />
                 ) : (
-                  <Shield className="h-4 w-4 mr-2" />
+                  <Shield className="h-4 w-4 mr-2" aria-hidden />
                 )}
                 Update Password
               </Button>
@@ -326,7 +326,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" />
+            <Globe className="h-5 w-5" aria-hidden />
             Language & Region
           </CardTitle>
           <CardDescription>
@@ -368,9 +368,9 @@ export default function SettingsPage() {
           <div className="flex justify-end pt-2">
             <Button onClick={handleSaveLocale} disabled={savingLocale}>
               {savingLocale ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden />
               ) : (
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 mr-2" aria-hidden />
               )}
               Save Language &amp; Region
             </Button>
@@ -382,7 +382,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <Shield className="h-5 w-5" aria-hidden />
             Data & Privacy
           </CardTitle>
           <CardDescription>

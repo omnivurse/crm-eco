@@ -81,7 +81,7 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
     <Card className="print:shadow-none print:border-0" data-invoice-card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ReceiptText className="w-5 h-5 text-blue-600" />
+          <ReceiptText className="w-5 h-5 text-blue-600" aria-hidden />
           Itemized Invoice
         </CardTitle>
         <CardDescription>
@@ -196,7 +196,7 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
 
         {canEdit && (
           <Button type="button" variant="outline" size="sm" onClick={addLine} className="print:hidden">
-            <Plus className="w-4 h-4 mr-1" /> Add line item
+            <Plus className="w-4 h-4 mr-1" aria-hidden /> Add line item
           </Button>
         )}
 
@@ -238,12 +238,12 @@ export function NeedInvoiceCard({ needId, invoice, canEdit = true }: NeedInvoice
         <div className="flex flex-wrap gap-3 pt-1 print:hidden">
           {canEdit && (
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden /> : <Save className="w-4 h-4 mr-2" aria-hidden />}
               Save Invoice
             </Button>
           )}
           <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-2" /> Print / Save PDF
+            <Printer className="w-4 h-4 mr-2" aria-hidden /> Print / Save PDF
           </Button>
         </div>
       </CardContent>

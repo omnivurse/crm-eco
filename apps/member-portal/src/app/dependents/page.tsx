@@ -344,11 +344,11 @@ export default function DependentsPage() {
   const getRelationshipIcon = (relationship: string) => {
     switch (relationship.toLowerCase()) {
       case 'spouse':
-        return <Heart className="h-4 w-4 text-pink-500" />;
+        return <Heart className="h-4 w-4 text-pink-500" aria-hidden />;
       case 'child':
-        return <User className="h-4 w-4 text-blue-500" />;
+        return <User className="h-4 w-4 text-blue-500" aria-hidden />;
       default:
-        return <User className="h-4 w-4 text-slate-500" />;
+        return <User className="h-4 w-4 text-slate-500" aria-hidden />;
     }
   };
 
@@ -368,7 +368,7 @@ export default function DependentsPage() {
           <p className="text-slate-500">Manage family members on your plan</p>
         </div>
         <Button onClick={() => handleOpenDialog()} className="gap-2">
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden />
           Add Dependent
         </Button>
       </div>
@@ -376,14 +376,14 @@ export default function DependentsPage() {
       {dependents.length === 0 ? (
         <Card className="text-center py-12">
           <CardContent>
-            <Users className="h-16 w-16 mx-auto mb-4 text-slate-300" />
+            <Users className="h-16 w-16 mx-auto mb-4 text-slate-300" aria-hidden />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">No Dependents</h2>
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
               You haven&apos;t added any dependents to your membership yet. Add your spouse or
               children to include them in your coverage.
             </p>
             <Button onClick={() => handleOpenDialog()} className="gap-2">
-              <UserPlus className="h-4 w-4" />
+              <UserPlus className="h-4 w-4" aria-hidden />
               Add Your First Dependent
             </Button>
           </CardContent>
@@ -396,7 +396,7 @@ export default function DependentsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                      <User className="h-6 w-6 text-slate-600" />
+                      <User className="h-6 w-6 text-slate-600" aria-hidden />
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900">
@@ -431,24 +431,24 @@ export default function DependentsPage() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => handleOpenDialog(dependent)}>
-                        <Edit className="mr-2 h-4 w-4" />
+                        <Edit className="mr-2 h-4 w-4" aria-hidden />
                         Edit info
                       </DropdownMenuItem>
                       {isCurrentlyCovered(dependent) ? (
                         <DropdownMenuItem onClick={() => openCoverageAction(dependent, 'end')}>
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 h-4 w-4" aria-hidden />
                           End coverage…
                         </DropdownMenuItem>
                       ) : (
                         <DropdownMenuItem onClick={() => openCoverageAction(dependent, 'start')}>
-                          <UserPlus className="mr-2 h-4 w-4" />
+                          <UserPlus className="mr-2 h-4 w-4" aria-hidden />
                           Add to coverage…
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem
                         onClick={() => openCoverageAction(dependent, 'log_historical')}
                       >
-                        <Calendar className="mr-2 h-4 w-4" />
+                        <Calendar className="mr-2 h-4 w-4" aria-hidden />
                         Log historical period…
                       </DropdownMenuItem>
                       <DropdownMenuItem
@@ -757,7 +757,7 @@ export default function DependentsPage() {
               onClick={handleCoverageActionSave}
               disabled={coverageSaving || !coverageForm.date}
             >
-              {coverageSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {coverageSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" aria-hidden /> : null}
               {coverageAction?.mode === 'end' ? 'End coverage' : 'Save period'}
             </Button>
           </div>

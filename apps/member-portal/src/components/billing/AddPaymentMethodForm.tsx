@@ -192,7 +192,7 @@ export function AddPaymentMethodForm({ config }: AddPaymentMethodFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <CreditCard className="h-4 w-4 text-slate-600" />
+            <CreditCard className="h-4 w-4 text-slate-600" aria-hidden />
             Card details
           </CardTitle>
         </CardHeader>
@@ -205,7 +205,7 @@ export function AddPaymentMethodForm({ config }: AddPaymentMethodFormProps) {
             )}
 
             <div className="flex items-start gap-2 rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-900">
-              <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+              <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
               <p>
                 Your card number is tokenized by Authorize.Net Accept.js in your browser.
                 We never receive or store your full card number.
@@ -361,12 +361,12 @@ export function AddPaymentMethodForm({ config }: AddPaymentMethodFormProps) {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   Saving…
                 </>
               ) : !scriptReady ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
                   Loading secure form…
                 </>
               ) : (

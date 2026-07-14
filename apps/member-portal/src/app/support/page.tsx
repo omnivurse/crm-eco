@@ -39,7 +39,7 @@ export default async function SupportPage() {
           href="/" 
           className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4" aria-hidden />
           Back to Dashboard
         </Link>
       </div>

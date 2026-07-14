@@ -91,7 +91,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
-          <DollarSign className="w-6 h-6 text-green-600" />
+          <DollarSign className="w-6 h-6 text-green-600" aria-hidden />
           Amounts & Reimbursement
         </CardTitle>
       </CardHeader>
@@ -100,7 +100,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
           {/* Left: Amounts */}
           <div className="space-y-4">
             <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-              <Banknote className="w-4 h-4" /> Financial Summary
+              <Banknote className="w-4 h-4" aria-hidden /> Financial Summary
             </h3>
             
             <div className="space-y-3">
@@ -148,7 +148,7 @@ export function NeedAmountsCard({ need }: NeedAmountsCardProps) {
             {/* Payment Info */}
             <div className="space-y-4">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> Your Payment to Provider
+                <CreditCard className="w-4 h-4" aria-hidden /> Your Payment to Provider
               </h3>
               
               <div className="space-y-3 bg-slate-50 p-4 rounded-lg">

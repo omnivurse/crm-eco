@@ -52,11 +52,11 @@ export default function DocumentsPage() {
 
   const getDocumentIcon = (type: string) => {
     switch (type) {
-      case 'contract': return <FileCheck className="h-5 w-5 text-blue-600" />;
-      case 'guidelines': return <Shield className="h-5 w-5 text-green-600" />;
-      case 'guide': return <FileText className="h-5 w-5 text-purple-600" />;
-      case 'legal': return <FileText className="h-5 w-5 text-slate-600" />;
-      default: return <FileText className="h-5 w-5 text-slate-600" />;
+      case 'contract': return <FileCheck className="h-5 w-5 text-blue-600" aria-hidden />;
+      case 'guidelines': return <Shield className="h-5 w-5 text-green-600" aria-hidden />;
+      case 'guide': return <FileText className="h-5 w-5 text-purple-600" aria-hidden />;
+      case 'legal': return <FileText className="h-5 w-5 text-slate-600" aria-hidden />;
+      default: return <FileText className="h-5 w-5 text-slate-600" aria-hidden />;
     }
   };
 
@@ -98,7 +98,7 @@ export default function DocumentsPage() {
                 <h2 className="text-xl font-bold">{idCard.orgName}</h2>
               </div>
               <div className="text-right">
-                <Shield className="h-10 w-10 text-blue-300" />
+                <Shield className="h-10 w-10 text-blue-300" aria-hidden />
               </div>
             </div>
 
@@ -144,7 +144,7 @@ export default function DocumentsPage() {
         <CardContent>
           {documents.length === 0 && (
             <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+              <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
               <p className="text-slate-500 mb-2">No documents available yet</p>
               <p className="text-sm text-slate-400">
                 Your contracts, guides, and legal documents will appear here
@@ -173,7 +173,7 @@ export default function DocumentsPage() {
                 <div className="flex items-center gap-3">
                   {doc.status === 'signed' && (
                     <Badge variant="outline" className="text-green-600 border-green-200">
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                      <CheckCircle className="h-3 w-3 mr-1" aria-hidden />
                       Signed
                     </Badge>
                   )}
@@ -182,7 +182,7 @@ export default function DocumentsPage() {
                     size="sm"
                     onClick={() => handleDownload(doc)}
                   >
-                    <Download className="h-4 w-4 mr-2" />
+                    <Download className="h-4 w-4 mr-2" aria-hidden />
                     Download
                   </Button>
                 </div>
@@ -202,7 +202,7 @@ export default function DocumentsPage() {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8">
-            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+            <Calendar className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
             <p className="text-slate-500 mb-2">No tax documents available yet</p>
             <p className="text-sm text-slate-400">
               Annual contribution statements will appear here after year-end

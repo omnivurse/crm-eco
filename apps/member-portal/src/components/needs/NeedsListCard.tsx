@@ -38,14 +38,14 @@ export function NeedsListCard({ needs }: NeedsListCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
-            <HeartPulse className="w-5 h-5 text-slate-400" />
+            <HeartPulse className="w-5 h-5 text-slate-400" aria-hidden />
             Your Needs
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <FileQuestion className="w-8 h-8 text-slate-400" />
+              <FileQuestion className="w-8 h-8 text-slate-400" aria-hidden />
             </div>
             <h3 className="text-lg font-medium text-slate-900 mb-2">
               No Needs on file yet
@@ -63,7 +63,7 @@ export function NeedsListCard({ needs }: NeedsListCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <HeartPulse className="w-5 h-5 text-blue-600" />
+          <HeartPulse className="w-5 h-5 text-blue-600" aria-hidden />
           Your Needs
         </CardTitle>
         <CardDescription>

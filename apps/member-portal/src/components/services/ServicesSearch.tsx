@@ -148,7 +148,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
         <CardContent className="pt-6">
           <div className="flex gap-3">
             <div className="relative flex-1 max-w-xs">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden />
               <Input
                 type="text"
                 placeholder="Enter ZIP code"
@@ -166,9 +166,9 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
               style={{ backgroundColor: 'var(--hub-accent, #06b6d4)' }}
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <Search className="h-4 w-4" />
+                <Search className="h-4 w-4" aria-hidden />
               )}
               Search
             </Button>
@@ -187,7 +187,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
       {!loading && searched && services.length === 0 && (
         <Card className="text-center py-12">
           <CardContent>
-            <Building2 className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+            <Building2 className="h-12 w-12 mx-auto mb-3 text-slate-300" aria-hidden />
             <h3 className="text-lg font-semibold text-slate-900 mb-1">No Services Found</h3>
             <p className="text-slate-500">
               No healthcare services are currently available for ZIP code {zipCode}.
@@ -212,7 +212,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
                     <span className={cn('inline-flex items-center justify-center w-8 h-8 rounded-lg', config.color)}>
-                      <CategoryIcon className="h-4 w-4" />
+                      <CategoryIcon className="h-4 w-4" aria-hidden />
                     </span>
                     {config.label}
                     <Badge variant="secondary" className="ml-auto">{catServices.length}</Badge>
@@ -251,9 +251,9 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                                 {svc.location_count} location{svc.location_count !== 1 ? 's' : ''}
                               </span>
                               {isExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-slate-400" />
+                                <ChevronDown className="h-4 w-4 text-slate-400" aria-hidden />
                               ) : (
-                                <ChevronRight className="h-4 w-4 text-slate-400" />
+                                <ChevronRight className="h-4 w-4 text-slate-400" aria-hidden />
                               )}
                             </div>
                           </div>
@@ -264,7 +264,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                           <div className="mt-2 ml-4 space-y-2">
                             {locationsLoading ? (
                               <div className="flex items-center gap-2 py-4 text-sm text-slate-500">
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                                 Loading locations...
                               </div>
                             ) : locations.length === 0 ? (
@@ -288,7 +288,7 @@ export function ServicesSearch({ memberZip }: ServicesSearchProps) {
                                             className="inline-flex items-center gap-1 text-sm text-cyan-700 hover:underline"
                                             onClick={(e) => e.stopPropagation()}
                                           >
-                                            <Phone className="h-3.5 w-3.5" />
+                                            <Phone className="h-3.5 w-3.5" aria-hidden />
                                             {loc.phone}
                                           </a>
                                         )}

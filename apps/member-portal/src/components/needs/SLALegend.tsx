@@ -15,7 +15,7 @@ export function SLALegend() {
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 bg-slate-50 rounded-lg text-sm">
       <div className="flex items-center gap-2 text-slate-600">
-        <Info className="w-4 h-4" />
+        <Info className="w-4 h-4" aria-hidden />
         <span>Timeline indicators:</span>
       </div>
       {indicators.map(({ urgency, description }) => (

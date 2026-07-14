@@ -86,7 +86,7 @@ export function NeedStatusCard({ need }: NeedStatusCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
-          <FileText className="w-6 h-6 text-blue-600" />
+          <FileText className="w-6 h-6 text-blue-600" aria-hidden />
           Need Status
         </CardTitle>
         <CardDescription>
@@ -109,7 +109,7 @@ export function NeedStatusCard({ need }: NeedStatusCardProps) {
           {!isTerminal && targetDate && (
             <div>
               <p className="text-sm text-slate-500 mb-1 flex items-center gap-1">
-                <Target className="w-3 h-3" /> Target Date
+                <Target className="w-3 h-3" aria-hidden /> Target Date
               </p>
               <p className="text-sm font-medium text-slate-900">
                 {format(new Date(targetDate), 'MMM d, yyyy')}
@@ -147,7 +147,7 @@ export function NeedStatusCard({ need }: NeedStatusCardProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <p className="text-sm text-slate-500 mb-1 flex items-center gap-1">
-              <FileText className="w-4 h-4" /> Need Type
+              <FileText className="w-4 h-4" aria-hidden /> Need Type
             </p>
             <p className="font-medium text-slate-900">{need.need_type}</p>
           </div>
@@ -155,7 +155,7 @@ export function NeedStatusCard({ need }: NeedStatusCardProps) {
           {need.incident_date && (
             <div>
               <p className="text-sm text-slate-500 mb-1 flex items-center gap-1">
-                <Calendar className="w-4 h-4" /> Service Date
+                <Calendar className="w-4 h-4" aria-hidden /> Service Date
               </p>
               <p className="font-medium text-slate-900">
                 {format(new Date(need.incident_date), 'MMM d, yyyy')}
@@ -166,7 +166,7 @@ export function NeedStatusCard({ need }: NeedStatusCardProps) {
           {need.facility_name && (
             <div>
               <p className="text-sm text-slate-500 mb-1 flex items-center gap-1">
-                <Building2 className="w-4 h-4" /> Facility / Provider
+                <Building2 className="w-4 h-4" aria-hidden /> Facility / Provider
               </p>
               <p className="font-medium text-slate-900">{need.facility_name}</p>
             </div>
@@ -198,7 +198,7 @@ export function NeedStatusCard({ need }: NeedStatusCardProps) {
         {/* Warning for attention-needed statuses */}
         {(need.status === 'awaiting_member_docs' || (!isTerminal && need.urgency_light === 'red')) && (
           <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden />
             <div>
               <p className="font-medium text-amber-800">Action may be required</p>
               <p className="text-sm text-amber-700">

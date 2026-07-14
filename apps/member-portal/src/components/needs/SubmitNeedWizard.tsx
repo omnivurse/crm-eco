@@ -183,7 +183,7 @@ function Step1Details({ state, setState, onNext }: StepProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-blue-600" />
+            <FileText className="w-5 h-5 text-blue-600" aria-hidden />
             Sharing Request
           </CardTitle>
           <CardDescription>Complete the form below to submit your request.</CardDescription>
@@ -381,9 +381,9 @@ function Step1Details({ state, setState, onNext }: StepProps) {
         </CardContent>
         <CardFooter className="flex justify-end">
           <Button onClick={onNext} disabled={state.isSubmitting}>
-            {state.isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {state.isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden /> : null}
             Continue
-            <ChevronRight className="w-4 h-4 ml-2" />
+            <ChevronRight className="w-4 h-4 ml-2" aria-hidden />
           </Button>
         </CardFooter>
       </Card>
@@ -400,7 +400,7 @@ function Step2Documents({ state, setState, onNext, onBack }: StepProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileCheck className="w-5 h-5 text-blue-600" />
+          <FileCheck className="w-5 h-5 text-blue-600" aria-hidden />
           Documents
         </CardTitle>
         <CardDescription>
@@ -425,7 +425,7 @@ function Step2Documents({ state, setState, onNext, onBack }: StepProps) {
       </CardContent>
       <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
         <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
-          <ChevronLeft className="w-4 h-4 mr-2" />
+          <ChevronLeft className="w-4 h-4 mr-2" aria-hidden />
           Back
         </Button>
         <Button onClick={onNext} disabled={state.isSubmitting} className="w-full sm:w-auto">
@@ -461,7 +461,7 @@ function Step3Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Send className="w-5 h-5 text-blue-600" />
+          <Send className="w-5 h-5 text-blue-600" aria-hidden />
           Review & Submit
         </CardTitle>
         <CardDescription>Please review your request before submitting.</CardDescription>
@@ -513,7 +513,7 @@ function Step3Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
         )}
 
         <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" aria-hidden />
           <p className="text-sm text-blue-800">
             By submitting, you confirm the information provided is accurate to the best of your
             knowledge. Our team will review your request and reach out if we need anything else.
@@ -522,7 +522,7 @@ function Step3Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
       </CardContent>
       <CardFooter className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
         <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
-          <ChevronLeft className="w-4 h-4 mr-2" />
+          <ChevronLeft className="w-4 h-4 mr-2" aria-hidden />
           Back
         </Button>
         <Button
@@ -533,7 +533,7 @@ function Step3Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
           {state.isSubmitting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           ) : (
-            <Send className="w-4 h-4 mr-2" />
+            <Send className="w-4 h-4 mr-2" aria-hidden />
           )}
           Submit Request
         </Button>
@@ -548,7 +548,7 @@ function SuccessScreen({ needId, attachmentCount }: { needId: string; attachment
     <Card className="text-center">
       <CardContent className="pt-12 pb-8">
         <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle className="w-8 h-8 text-green-600" />
+          <CheckCircle className="w-8 h-8 text-green-600" aria-hidden />
         </div>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Request Submitted!</h2>
         <p className="text-slate-600 mb-8 max-w-md mx-auto">
@@ -678,7 +678,7 @@ export function SubmitNeedWizard({ memberPrefill }: { memberPrefill?: MemberPref
                     : 'bg-slate-200 text-slate-500'
               }`}
             >
-              {state.currentStep > step.num ? <CheckCircle className="w-5 h-5" /> : step.num}
+              {state.currentStep > step.num ? <CheckCircle className="w-5 h-5" aria-hidden /> : step.num}
             </div>
             <span
               className={`ml-2 text-sm hidden sm:inline ${
@@ -700,7 +700,7 @@ export function SubmitNeedWizard({ memberPrefill }: { memberPrefill?: MemberPref
 
       {state.error && (
         <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" aria-hidden />
           <p className="text-sm text-red-800">{state.error}</p>
         </div>
       )}

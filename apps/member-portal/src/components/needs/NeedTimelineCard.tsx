@@ -22,74 +22,74 @@ const getEventConfig = (eventType: string) => {
   const configs: Record<string, { label: string; icon: React.ReactNode; className: string }> = {
     created: {
       label: 'Need Created',
-      icon: <FileText className="w-4 h-4" />,
+      icon: <FileText className="w-4 h-4" aria-hidden />,
       className: 'text-blue-600 bg-blue-100',
     },
     submitted: {
       label: 'Submitted for Review',
-      icon: <Send className="w-4 h-4" />,
+      icon: <Send className="w-4 h-4" aria-hidden />,
       className: 'text-blue-600 bg-blue-100',
     },
     docs_received: {
       label: 'Documents Received',
-      icon: <FileText className="w-4 h-4" />,
+      icon: <FileText className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     docs_requested: {
       label: 'Documents Requested',
-      icon: <AlertTriangle className="w-4 h-4" />,
+      icon: <AlertTriangle className="w-4 h-4" aria-hidden />,
       className: 'text-amber-600 bg-amber-100',
     },
     in_review: {
       label: 'In Review',
-      icon: <Clock className="w-4 h-4" />,
+      icon: <Clock className="w-4 h-4" aria-hidden />,
       className: 'text-blue-600 bg-blue-100',
     },
     approved: {
       label: 'Approved',
-      icon: <CheckCircle className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     paid: {
       label: 'Reimbursement Processed',
-      icon: <CheckCircle className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     denied: {
       label: 'Not Approved',
-      icon: <AlertTriangle className="w-4 h-4" />,
+      icon: <AlertTriangle className="w-4 h-4" aria-hidden />,
       className: 'text-red-600 bg-red-100',
     },
     closed: {
       label: 'Closed',
-      icon: <CheckCircle className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
       className: 'text-slate-600 bg-slate-100',
     },
     note: {
       label: 'Update',
-      icon: <MessageSquare className="w-4 h-4" />,
+      icon: <MessageSquare className="w-4 h-4" aria-hidden />,
       className: 'text-slate-600 bg-slate-100',
     },
     status_change: {
       label: 'Status Changed',
-      icon: <Clock className="w-4 h-4" />,
+      icon: <Clock className="w-4 h-4" aria-hidden />,
       className: 'text-blue-600 bg-blue-100',
     },
     consent_recorded: {
       label: 'Member Consent Recorded',
-      icon: <CheckCircle className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
       className: 'text-green-600 bg-green-100',
     },
     payment_recorded: {
       label: 'Payment Information Added',
-      icon: <CheckCircle className="w-4 h-4" />,
+      icon: <CheckCircle className="w-4 h-4" aria-hidden />,
       className: 'text-blue-600 bg-blue-100',
     },
   };
 
   return configs[eventType] || {
     label: eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-    icon: <History className="w-4 h-4" />,
+    icon: <History className="w-4 h-4" aria-hidden />,
     className: 'text-slate-600 bg-slate-100',
   };
 };
@@ -117,7 +117,7 @@ export function NeedTimelineCard({ events }: NeedTimelineCardProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl">
-            <History className="w-6 h-6 text-slate-600" />
+            <History className="w-6 h-6 text-slate-600" aria-hidden />
             Activity & Updates
           </CardTitle>
         </CardHeader>
@@ -134,7 +134,7 @@ export function NeedTimelineCard({ events }: NeedTimelineCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
-          <History className="w-6 h-6 text-slate-600" />
+          <History className="w-6 h-6 text-slate-600" aria-hidden />
           Activity & Updates
         </CardTitle>
       </CardHeader>
