@@ -71,7 +71,7 @@ export default function DocumentsPage() {
   if (error) {
     return (
       <div className="text-center py-12">
-        <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" />
+        <FileText className="h-12 w-12 mx-auto mb-4 text-slate-300" aria-hidden />
         <p className="text-slate-600 mb-1">We couldn&apos;t load your documents.</p>
         <p className="text-sm text-slate-400 mb-4">Please check your connection and try again.</p>
         <Button variant="outline" onClick={() => window.location.reload()}>Retry</Button>

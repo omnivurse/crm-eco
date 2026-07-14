@@ -430,7 +430,7 @@ function Step2Documents({ state, setState, onNext, onBack }: StepProps) {
         </Button>
         <Button onClick={onNext} disabled={state.isSubmitting} className="w-full sm:w-auto">
           Continue
-          <ChevronRight className="w-4 h-4 ml-2" />
+          <ChevronRight className="w-4 h-4 ml-2" aria-hidden />
         </Button>
       </CardFooter>
     </Card>
@@ -531,7 +531,7 @@ function Step3Review({ state, onNext, onBack }: Omit<StepProps, 'setState'>) {
           className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
         >
           {state.isSubmitting ? (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden />
           ) : (
             <Send className="w-4 h-4 mr-2" aria-hidden />
           )}
