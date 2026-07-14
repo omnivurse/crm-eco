@@ -130,7 +130,7 @@ export function SplitCreateButton({
                 size={size}
                 className={cn(
                     'rounded-r-none bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white font-medium shadow-sm',
-                    size === 'sm' && 'h-9 px-3'
+                    size === 'sm' && 'h-8 px-3'
                 )}
                 asChild
             >
@@ -147,7 +147,7 @@ export function SplitCreateButton({
                         size={size}
                         className={cn(
                             'rounded-l-none border-l border-white/20 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-white shadow-sm px-2',
-                            size === 'sm' && 'h-9'
+                            size === 'sm' && 'h-8'
                         )}
                     >
                         <ChevronDown className={cn('w-4 h-4 transition-transform', isOpen && 'rotate-180')} />

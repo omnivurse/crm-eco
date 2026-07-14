@@ -294,7 +294,14 @@
      Consumed by shell / tables / toolbars in later phases. ------- */
   --crm-row-h: 40px;
   --crm-toolbar-h: 48px;
-  --crm-chrome-h: 104px;
+  /* App-shell top chrome — consumed by CrmTopBar (height), CrmModuleTabBar
+     (link height + sticky offset), and the mobile nav drawer offset.
+     --crm-chrome-h is DERIVED from the two bars so the drawer offset can never
+     drift out of sync with them. The +1px accounts for the module bar's
+     border-b (the top bar's own border sits inside its border-box height). */
+  --crm-topbar-h: 44px;
+  --crm-modulebar-h: 38px;
+  --crm-chrome-h: calc(var(--crm-topbar-h) + var(--crm-modulebar-h) + 1px);
   --crm-gutter: 20px;
   --crm-section-gap: 24px;
   --crm-cell-py: 8px;
@@ -320,11 +327,13 @@
 
 /* Density modes — set data-density on <html> (persisted via ViewPreferences later) */
 :root[data-density='compact'] {
-  --crm-row-h: 34px; --crm-toolbar-h: 42px; --crm-chrome-h: 92px;
+  --crm-row-h: 34px; --crm-toolbar-h: 42px;
+  --crm-topbar-h: 38px; --crm-modulebar-h: 32px;
   --crm-gutter: 14px; --crm-section-gap: 16px; --crm-cell-py: 5px;
 }
 :root[data-density='comfortable'] {
-  --crm-row-h: 52px; --crm-toolbar-h: 56px; --crm-chrome-h: 120px;
+  --crm-row-h: 52px; --crm-toolbar-h: 56px;
+  --crm-topbar-h: 52px; --crm-modulebar-h: 44px;
   --crm-gutter: 28px; --crm-section-gap: 32px; --crm-cell-py: 12px;
 }
 

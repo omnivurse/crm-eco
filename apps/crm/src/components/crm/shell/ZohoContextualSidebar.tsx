@@ -395,7 +395,7 @@ export function ZohoContextualSidebar({
             <aside
                 data-crm-module={activeTopModule}
                 className={cn(
-                    'fixed top-[5.5rem] left-0 bottom-0 w-72 z-40 lg:hidden',
+                    'fixed top-[var(--crm-chrome-h)] left-0 bottom-0 w-72 z-40 lg:hidden',
                     'flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-white/10',
                     'transform transition-transform duration-300 ease-in-out',
                     mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'

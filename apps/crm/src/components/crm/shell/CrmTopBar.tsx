@@ -136,7 +136,7 @@ export const CrmTopBar = memo(function CrmTopBar({
   };
 
   return (
-    <header className="relative z-40 h-12 flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-slate-200/80 dark:border-white/5 shrink-0">
+    <header className="relative z-40 h-[var(--crm-topbar-h)] flex items-center px-3 sm:px-4 lg:px-5 xl:px-6 glass border-b border-slate-200/80 dark:border-white/5 shrink-0">
       {/* Mobile Menu Toggle */}
       <Button
         variant="ghost"

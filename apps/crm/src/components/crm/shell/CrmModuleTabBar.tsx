@@ -48,7 +48,7 @@ export function CrmModuleTabBar() {
   };
 
   return (
-    <div className="sticky top-12 z-[35] shrink-0 border-b border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-white/5 dark:bg-slate-950/95">
+    <div className="sticky top-[var(--crm-topbar-h)] z-[35] shrink-0 border-b border-slate-200/80 bg-white/95 backdrop-blur-md dark:border-white/5 dark:bg-slate-950/95">
       <div className="flex items-center gap-0 overflow-x-auto scrollbar-thin px-2 sm:px-4 lg:px-5">
         {TOP_MODULES.map((module) => {
           const Icon = getIcon(module.icon);
@@ -63,7 +63,7 @@ export function CrmModuleTabBar() {
               onClick={() => handleClick(module.key)}
               style={isActive ? { color: 'var(--mod-fg)' } : undefined}
               className={cn(
-                'relative flex shrink-0 snap-start items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors sm:text-[13px]',
+                'relative flex shrink-0 snap-start items-center gap-1.5 h-[var(--crm-modulebar-h)] px-3 text-xs font-medium transition-colors sm:text-[13px]',
                 isActive
                   ? ''
                   : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',
@@ -94,7 +94,7 @@ export function CrmModuleTabBar() {
           onClick={() => handleClick('settings')}
           style={activeModule === 'settings' ? { color: 'var(--mod-fg)' } : undefined}
           className={cn(
-            'relative flex shrink-0 snap-start items-center gap-1.5 px-3 py-2.5 text-xs font-medium transition-colors sm:text-[13px]',
+            'relative flex shrink-0 snap-start items-center gap-1.5 h-[var(--crm-modulebar-h)] px-3 text-xs font-medium transition-colors sm:text-[13px]',
             activeModule === 'settings'
               ? ''
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white',

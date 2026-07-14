@@ -136,8 +136,8 @@ export function NotificationsPanel() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="w-5 h-5" />
+        <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-md">
+          <Bell className="w-4 h-4" />
           {unreadCount > 0 && (
             <Badge
               variant="destructive"
