@@ -60,18 +60,25 @@ export function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5',
+                'relative flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5',
                 'text-xs font-medium transition-colors',
                 isActive
                   ? 'text-primary'
-                  : 'text-slate-400 active:text-slate-600'
+                  : 'text-slate-500 active:text-slate-700'
               )}
             >
+              {isActive && (
+                <span
+                  aria-hidden
+                  className="absolute top-0 h-0.5 w-8 rounded-full bg-primary"
+                />
+              )}
               <item.icon
                 className={cn(
                   'w-5 h-5',
-                  isActive ? 'text-primary' : 'text-slate-400'
+                  isActive ? 'text-primary' : 'text-slate-500'
                 )}
               />
               <span>{item.label}</span>
