@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { ChevronLeft, FileText, Users, Edit3, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui';
 import {
-  getActiveMembership,
+  getPlanOverview,
   getFamilyCoverageSummary,
   listAgreementSignatures,
   listChangeRequests,
 } from '@/lib/data/member';
+import { PlanCoverageCard } from '@/components/plan/PlanCoverageCard';
 import { formatCoverageDateRange, formatCoverageReason } from '@crm-eco/lib';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
@@ -17,8 +18,8 @@ export default async function PlanOverviewPage() {
   const ctx = await requireActiveMembership();
   const supabase = await createServerSupabaseClient();
 
-  const [membership, familyCoverage, signatures, changeRequests, planDocs] = await Promise.all([
-    getActiveMembership(),
+  const [planOverview, familyCoverage, signatures, changeRequests, planDocs] = await Promise.all([
+    getPlanOverview(),
     getFamilyCoverageSummary(),
     listAgreementSignatures(),
     listChangeRequests(),
@@ -30,8 +31,6 @@ export default async function PlanOverviewPage() {
   ]);
 
   const pendingRequests = changeRequests.filter((r) => r.status === 'pending_review');
-  const planRow = membership?.plans;
-  const planName = Array.isArray(planRow) ? planRow[0]?.name : planRow?.name;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8">
@@ -44,41 +43,18 @@ export default async function PlanOverviewPage() {
         <p className="mt-1 text-sm text-slate-600">Plan details, dependents, documents, and changes.</p>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Current plan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {membership ? (
-            <dl className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <dt className="text-slate-500">Plan</dt>
-                <dd className="font-semibold text-slate-900">{planName ?? '—'}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Status</dt>
-                <dd className="font-semibold text-slate-900 capitalize">{membership.status}</dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Effective</dt>
-                <dd className="font-semibold text-slate-900">
-                  {membership.effective_date
-                    ? new Date(membership.effective_date).toLocaleDateString()
-                    : '—'}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-slate-500">Monthly cost</dt>
-                <dd className="font-semibold text-slate-900">
-                  ${Number(membership.billing_amount ?? 0).toFixed(2)}
-                </dd>
-              </div>
-            </dl>
-          ) : (
+      {planOverview ? (
+        <PlanCoverageCard overview={planOverview} />
+      ) : (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Current plan</CardTitle>
+          </CardHeader>
+          <CardContent>
             <p className="text-sm text-slate-500">No active membership found.</p>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Link

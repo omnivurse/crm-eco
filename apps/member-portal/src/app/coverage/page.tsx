@@ -95,8 +95,8 @@ export default async function CoveragePage() {
   const benefits = planBenefits ?? GENERIC_SHARING_CATEGORIES;
   const benefitsAreGeneric = planBenefits === null;
   const planDescription = plan?.description ?? activeMembership?.plans?.description ?? null;
-  const iuaAmount =
-    activeMembership?.iua_amount ?? plan?.iua_amount ?? plan?.default_iua ?? null;
+  // IUA/deductible lives on the plan, never on the membership row.
+  const iuaAmount = plan?.iua_amount ?? plan?.default_iua ?? null;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -178,7 +178,7 @@ export default async function CoveragePage() {
                   <div>
                     <p className="text-sm text-slate-500">Coverage Type</p>
                     <p className="font-medium">
-                      {activeMembership.coverage_type || 'Individual'}
+                      {member.coverage_type || 'Individual'}
                     </p>
                   </div>
                 </div>

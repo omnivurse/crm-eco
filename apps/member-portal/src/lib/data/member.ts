@@ -55,6 +55,136 @@ export const getActiveMembership = cache(async () => {
   return data;
 });
 
+export interface PlanBenefit {
+  label: string;
+  detail?: string;
+}
+
+/**
+ * A normalized, correctly-sourced coverage summary for the premium "My Plan"
+ * card. Each field comes from its REAL home — premium from
+ * `memberships.billing_amount`, deductible/IUA from the joined `plans`, and the
+ * coverage option + member number from the `members` row (NOT from phantom
+ * columns on `memberships`). Benefits are returned only when the plan actually
+ * has a structured list; they are never fabricated.
+ */
+export interface PlanOverview {
+  planName: string | null;
+  planType: string | null;
+  marketType: string | null;
+  status: string | null;
+  premium: number | null;
+  premiumFrequency: string;
+  deductible: number | null;
+  effectiveDate: string | null;
+  memberNumber: string | null;
+  membershipNumber: string | null;
+  coverageOption: string | null;
+  benefits: PlanBenefit[] | null;
+}
+
+function firstNumber(...values: Array<number | string | null | undefined>): number | null {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue;
+    const n = typeof value === 'number' ? value : Number(value);
+    if (!Number.isNaN(n)) return n;
+  }
+  return null;
+}
+
+/** "member_only" | "Member Only" → "Member Only"; null/blank → null (never a fake default). */
+function humanizeCoverageOption(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  return value
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Read a structured benefits array off plan `metadata`/`custom_fields` jsonb. Returns null when absent. */
+function extractBenefits(source: unknown): PlanBenefit[] | null {
+  const raw =
+    source && typeof source === 'object' && !Array.isArray(source)
+      ? (source as Record<string, unknown>).benefits
+      : undefined;
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out: PlanBenefit[] = [];
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      if (item.trim()) out.push({ label: item.trim() });
+      continue;
+    }
+    if (item && typeof item === 'object') {
+      const o = item as Record<string, unknown>;
+      const label = o.label ?? o.name ?? o.title;
+      if (typeof label === 'string' && label.trim()) {
+        const detailRaw = o.amount ?? o.detail ?? o.description;
+        const detail =
+          typeof detailRaw === 'string' && detailRaw.trim()
+            ? detailRaw.trim()
+            : typeof detailRaw === 'number'
+              ? String(detailRaw)
+              : undefined;
+        out.push({ label: label.trim(), detail });
+      }
+    }
+  }
+  return out.length ? out : null;
+}
+
+export const getPlanOverview = cache(async (): Promise<PlanOverview | null> => {
+  const ctx = await requireActiveMembership();
+  const supabase = await createServerSupabaseClient();
+  const { data } = await supabase
+    .from('memberships')
+    .select(`
+      id, status, billing_amount, billing_frequency, effective_date, end_date, membership_number,
+      plans:plan_id (
+        id, name, brand_name, code, monthly_share, description,
+        iua_amount, default_iua, plan_type, metadata, custom_fields
+      )
+    `)
+    .eq('member_id', ctx.member.id)
+    .eq('organization_id', ctx.member.organization_id)
+    .eq('status', 'active')
+    .order('effective_date', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+
+  type PlanEmbed = {
+    name: string | null;
+    brand_name: string | null;
+    monthly_share: number | null;
+    description: string | null;
+    iua_amount: number | null;
+    default_iua: number | null;
+    plan_type: string | null;
+    metadata: unknown;
+    custom_fields: unknown;
+  };
+  const planRaw = (data as { plans?: PlanEmbed | PlanEmbed[] | null }).plans;
+  const plan = Array.isArray(planRaw) ? planRaw[0] ?? null : planRaw ?? null;
+  const member = ctx.member;
+
+  return {
+    planName: plan?.brand_name || plan?.name || member.plan_name || null,
+    planType: plan?.plan_type ?? member.plan_type ?? null,
+    marketType: member.market_type ?? null,
+    status: data.status ?? null,
+    premium: firstNumber(data.billing_amount, plan?.monthly_share, member.monthly_share),
+    premiumFrequency: data.billing_frequency ?? 'monthly',
+    deductible: firstNumber(plan?.iua_amount, plan?.default_iua),
+    effectiveDate: data.effective_date ?? member.effective_date ?? null,
+    memberNumber: member.member_number ?? null,
+    membershipNumber: data.membership_number ?? null,
+    coverageOption: humanizeCoverageOption(member.coverage_type),
+    benefits: extractBenefits(plan?.metadata) ?? extractBenefits(plan?.custom_fields),
+  };
+});
+
 /** All dependents on the membership (person records), regardless of current coverage. */
 export const listMemberDependents = cache(async (): Promise<DependentWithCoverage[]> => {
   const ctx = await requireActiveMembership();
