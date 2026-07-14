@@ -86,6 +86,41 @@ const MODULE_COLORS: Record<string, { text: string; bg: string }> = {
   prospects: { text: 'text-blue-400', bg: 'bg-blue-500/10' },
 };
 
+const PERSON_MODULES = new Set(['contacts', 'members', 'leads', 'prospects']);
+
+/** Two-letter initials from a record title. */
+function recordInitials(title: string | null | undefined): string {
+  const parts = (title ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '—';
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
+  return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase();
+}
+
+/** Square avatar: initials for people, the module icon for accounts/deals. */
+function RecordAvatar({
+  moduleKey,
+  title,
+}: {
+  moduleKey: string;
+  title: string | null | undefined;
+}) {
+  const colors = MODULE_COLORS[moduleKey] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
+  return (
+    <div
+      className={cn(
+        'flex-none flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold',
+        colors.bg,
+        colors.text,
+      )}
+      aria-hidden
+    >
+      {PERSON_MODULES.has(moduleKey)
+        ? recordInitials(title)
+        : MODULE_ICONS[moduleKey] || <Link2 className="w-4 h-4" />}
+    </div>
+  );
+}
+
 const LINK_TYPE_GROUPS: { label: string; items: { value: string; label: string }[] }[] = [
   {
     label: 'Family / household',
@@ -410,8 +445,6 @@ function LinkRecordDialog({
           <div className="max-h-60 overflow-y-auto space-y-1.5">
             {recordsToShow.length > 0 ? (
               recordsToShow.map((record) => {
-                const icon = MODULE_ICONS[record.module_key] || <Link2 className="w-4 h-4" />;
-                const colors = MODULE_COLORS[record.module_key] || { text: 'text-slate-400', bg: 'bg-slate-500/10' };
                 const isSelected = selectedRecords.some((r) => r.id === record.id);
 
                 return (
@@ -425,7 +458,7 @@ function LinkRecordDialog({
                         : 'border-slate-200 dark:border-white/10 hover:border-teal-300 dark:hover:border-teal-500/30 bg-white dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/60'
                     )}
                   >
-                    <div className={cn('p-1.5 rounded-lg', colors.bg, colors.text)}>{icon}</div>
+                    <RecordAvatar moduleKey={record.module_key} title={record.title} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
                         {record.title || 'Untitled'}
