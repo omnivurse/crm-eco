@@ -70,7 +70,7 @@ import {
 import {
   shouldShowEndDateFieldInSection,
 } from '@/lib/crm/coverage-end-date-fields';
-import { ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, ShieldCheck } from 'lucide-react';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
@@ -1114,37 +1114,40 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                       </div>
                     </div>
                     <div className="md:col-span-1">
-                      <div
-                        className={cn(
-                          'rounded-lg border p-4 h-full space-y-3 ring-1',
-                          getAccent('emerald').border,
-                          getAccent('emerald').header,
-                          getAccent('emerald').ring,
-                        )}
-                      >
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                          Membership Snapshot
-                        </p>
-                        {heroSharingFieldForDisplay ? (
-                          renderFieldCell(heroSharingFieldForDisplay)
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
-                            No carrier or sharing entity field configured
-                          </p>
-                        )}
-                        {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
-                        {heroStartDateField ? (
-                          renderFieldCell(heroStartDateField)
-                        ) : (
-                          <p className="text-xs text-muted-foreground">
-                            No effective date field configured
-                          </p>
-                        )}
-                        {heroReferralSnapshotFields.length > 0 && (
-                          <div className="pt-2 mt-1 border-t border-emerald-600/20 dark:border-emerald-400/20 space-y-3">
-                            {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
-                          </div>
-                        )}
+                      {/* Membership Snapshot — premium coverage card. Header strip
+                          + gradient give it hierarchy; fields still render via
+                          renderFieldCell so inline editing is unchanged. */}
+                      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-emerald-200/70 bg-gradient-to-b from-emerald-50/80 to-transparent shadow-sm ring-1 ring-emerald-500/10 dark:border-emerald-500/20 dark:from-emerald-500/[0.07] dark:ring-emerald-400/10">
+                        <div className="flex items-center gap-2 border-b border-emerald-200/60 px-4 pb-2.5 pt-3 dark:border-emerald-500/15">
+                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                          </span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
+                            Membership Snapshot
+                          </span>
+                        </div>
+                        <div className="flex-1 space-y-3 p-4">
+                          {heroSharingFieldForDisplay ? (
+                            renderFieldCell(heroSharingFieldForDisplay)
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              No carrier or sharing entity field configured
+                            </p>
+                          )}
+                          {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
+                          {heroStartDateField ? (
+                            renderFieldCell(heroStartDateField)
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              No effective date field configured
+                            </p>
+                          )}
+                          {heroReferralSnapshotFields.length > 0 && (
+                            <div className="mt-1 space-y-3 border-t border-emerald-600/20 pt-2 dark:border-emerald-400/20">
+                              {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
