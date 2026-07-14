@@ -5,7 +5,7 @@ import { getMemberForUser } from '@crm-eco/lib';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
-// Types
+// Types — mirror the "Sharing Request" form
 // ============================================================================
 
 interface ActionResult {
@@ -15,76 +15,99 @@ interface ActionResult {
   errors?: Record<string, string[]>;
 }
 
-interface NeedBasicsData {
-  needType: string;
-  description: string;
-  incidentDate: string;
-  facilityName: string;
-}
+type YesNo = 'yes' | 'no' | '';
 
-interface BillsAndCashPayData {
-  hasPaidProvider: boolean;
-  amountPaid?: number;
-  paymentMethod?: string;
-  paymentDate?: string;
-  billedAmount?: number;
-}
+export interface ShareRequestData {
+  /** "I have read the instructions above." */
+  acknowledgedInstructions: boolean;
 
-interface ConsentData {
-  hasConsent: boolean;
+  // Member Information (pre-filled from the member record, editable).
+  firstName: string;
+  lastName: string;
+  memberIdCard: string;
+  dateOfBirth: string;
+  email: string;
+  phone: string;
+  otherInsurance: YesNo;
+
+  // Optional patient attribution (member self or a dependent).
+  patientType?: 'self' | 'dependent';
+  patientDependentId?: string;
+  patientName?: string;
+
+  // Request details.
+  requestType: string;
+  treatmentType?: string;
+  usedAmbulance: YesNo;
+  initialDateOfService: string;
+  symptomsBeforeService: YesNo;
+  facilityName?: string;
+  primaryCare?: string;
+  detailedDescription: string;
+  hasItemizedSelfPayStatement: YesNo;
+  inquiredFinancialAssistance: YesNo;
 }
 
 // ============================================================================
-// Server Actions
+// Create the sharing request (single submit at the end of the details step)
 // ============================================================================
 
-/**
- * Create a new need from basics (Step 1)
- */
-export async function createNeedFromBasics(data: NeedBasicsData): Promise<ActionResult> {
+export async function createShareRequest(data: ShareRequestData): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { success: false, message: 'Authentication required.' };
   }
 
   const context = await getMemberForUser(supabase, user.id);
-
   if (!context) {
     return { success: false, message: 'Member profile not found.' };
   }
 
   const { member, profile } = context;
-
   if (!member.organization_id) {
     return { success: false, message: 'Organization not found.' };
   }
 
-  // Validate required fields
+  // ── Validation (mirrors the form's required * fields) ──
   const errors: Record<string, string[]> = {};
-  if (!data.needType || data.needType.trim().length === 0) {
-    errors.needType = ['Need type is required.'];
+  const requireText = (key: keyof ShareRequestData, label: string) => {
+    const v = data[key];
+    if (typeof v !== 'string' || v.trim().length === 0) errors[key] = [`${label} is required.`];
+  };
+  const requireAnswer = (key: keyof ShareRequestData, label: string) => {
+    if (data[key] !== 'yes' && data[key] !== 'no') errors[key] = [`${label} is required.`];
+  };
+
+  if (!data.acknowledgedInstructions) {
+    errors.acknowledgedInstructions = ['Please confirm you have read the instructions.'];
   }
-  if (!data.description || data.description.trim().length === 0) {
-    errors.description = ['Description is required.'];
-  }
-  if (!data.incidentDate) {
-    errors.incidentDate = ['Service date is required.'];
-  }
+  requireText('firstName', 'First name');
+  requireText('lastName', 'Last name');
+  requireText('memberIdCard', 'Member ID');
+  requireText('dateOfBirth', 'Date of birth');
+  requireText('email', 'Preferred email');
+  requireText('phone', 'Preferred phone');
+  requireText('requestType', 'Request type');
+  requireText('initialDateOfService', 'Initial date of service');
+  requireText('detailedDescription', 'Detailed description');
+  requireAnswer('hasItemizedSelfPayStatement', 'Itemized statement question');
+  requireAnswer('inquiredFinancialAssistance', 'Financial assistance question');
 
   if (Object.keys(errors).length > 0) {
-    return { success: false, message: 'Validation failed.', errors };
+    return { success: false, message: 'Please complete the required fields.', errors };
   }
 
-  // Create the need
-  // Note: Using type assertion because some columns are from a newer migration
+  // Extended share-request fields live in `custom_fields` JSONB (no migration).
   const needInsert = {
     organization_id: member.organization_id,
     member_id: member.id,
-    need_type: data.needType.trim(),
-    description: data.description.trim(),
-    incident_date: data.incidentDate,
+    need_type: data.requestType.trim(),
+    description: data.detailedDescription.trim(),
+    incident_date: data.initialDateOfService,
     facility_name: data.facilityName?.trim() || null,
     status: 'open',
     urgency_light: 'green',
@@ -94,7 +117,35 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
     iua_amount: 0,
     payment_status: 'not_paid',
     reimbursement_status: 'not_requested',
-    has_member_consent: false,
+    // The instructions acknowledgement doubles as the member's consent.
+    has_member_consent: true,
+    custom_fields: {
+      share_request: {
+        acknowledged_instructions: true,
+        member_info: {
+          first_name: data.firstName.trim(),
+          last_name: data.lastName.trim(),
+          member_id_card: data.memberIdCard.trim(),
+          date_of_birth: data.dateOfBirth,
+          email: data.email.trim(),
+          phone: data.phone.trim(),
+        },
+        patient: {
+          type: data.patientType || 'self',
+          dependent_id: data.patientType === 'dependent' ? data.patientDependentId || null : null,
+          name: data.patientName?.trim() || null,
+        },
+        other_insurance: data.otherInsurance || '',
+        request_type: data.requestType.trim(),
+        treatment_type: data.treatmentType?.trim() || null,
+        used_ambulance: data.usedAmbulance || '',
+        symptoms_before_service: data.symptomsBeforeService || '',
+        primary_care: data.primaryCare?.trim() || null,
+        detailed_description: data.detailedDescription.trim(),
+        has_itemized_self_pay_statement: data.hasItemizedSelfPayStatement,
+        inquired_financial_assistance: data.inquiredFinancialAssistance,
+      },
+    },
   };
 
   const { data: newNeed, error: needError } = await (supabase as any)
@@ -104,225 +155,48 @@ export async function createNeedFromBasics(data: NeedBasicsData): Promise<Action
     .single();
 
   if (needError || !newNeed) {
-    return { success: false, message: 'Failed to create need. Please try again.' };
+    return { success: false, message: 'Failed to create your request. Please try again.' };
   }
 
-  // Create the initial event
-  const { error: eventError } = await (supabase as any)
-    .from('need_events')
-    .insert({
-      need_id: newNeed.id,
-      organization_id: member.organization_id,
-      event_type: 'created',
-      description: 'Need created by member',
-      created_by_profile_id: profile.id,
-    });
-
-  if (eventError) {
-    // Don't fail the whole operation, just log
-  }
+  // Initial audit event (best-effort).
+  await (supabase as any).from('need_events').insert({
+    need_id: newNeed.id,
+    organization_id: member.organization_id,
+    event_type: 'created',
+    description: 'Sharing request created by member',
+    created_by_profile_id: profile.id,
+  });
 
   revalidatePath('/needs');
   revalidatePath('/');
 
-  return {
-    success: true,
-    message: 'Need created successfully.',
-    needId: newNeed.id,
-  };
+  return { success: true, message: 'Request created.', needId: newNeed.id };
 }
 
-/**
- * Update need with bills and cash pay info (Step 2)
- */
-export async function updateNeedBillsAndCashPay(
-  needId: string,
-  data: BillsAndCashPayData
-): Promise<ActionResult> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// ============================================================================
+// Final submission (after documents are attached)
+// ============================================================================
 
-  if (!user) {
-    return { success: false, message: 'Authentication required.' };
-  }
-
-  const context = await getMemberForUser(supabase, user.id);
-
-  if (!context) {
-    return { success: false, message: 'Member profile not found.' };
-  }
-
-  const { member, profile } = context;
-
-  if (!member.organization_id) {
-    return { success: false, message: 'Organization not found.' };
-  }
-
-  // Verify ownership
-  const { data: existingNeed, error: fetchError } = await supabase
-    .from('needs')
-    .select('id, member_id, organization_id')
-    .eq('id', needId)
-    .eq('member_id', member.id)
-    .eq('organization_id', member.organization_id)
-    .single();
-
-  if (fetchError || !existingNeed) {
-    return { success: false, message: 'Need not found or access denied.' };
-  }
-
-  // Build update object
-  const updateData: Record<string, unknown> = {
-    updated_at: new Date().toISOString(),
-  };
-
-  if (data.hasPaidProvider) {
-    updateData.payment_status = 'paid';
-    updateData.amount_paid = data.amountPaid || 0;
-    updateData.payment_method = data.paymentMethod || null;
-    updateData.payment_date = data.paymentDate || null;
-    updateData.total_amount = data.amountPaid || data.billedAmount || 0;
-  } else {
-    updateData.payment_status = 'not_paid';
-    updateData.total_amount = data.billedAmount || 0;
-  }
-
-  // Update the need
-  const { error: updateError } = await (supabase as any)
-    .from('needs')
-    .update(updateData)
-    .eq('id', needId);
-
-  if (updateError) {
-    return { success: false, message: 'Failed to update need. Please try again.' };
-  }
-
-  // Create event for the update
-  const eventDescription = data.hasPaidProvider
-    ? `Member reported payment of $${data.amountPaid?.toFixed(2) || '0.00'} via ${data.paymentMethod || 'unknown method'}`
-    : data.billedAmount
-      ? `Bill amount of $${data.billedAmount.toFixed(2)} recorded`
-      : 'Payment information updated';
-
-  await (supabase as any)
-    .from('need_events')
-    .insert({
-      need_id: needId,
-      organization_id: member.organization_id,
-      event_type: 'payment_recorded',
-      description: eventDescription,
-      created_by_profile_id: profile.id,
-    });
-
-  return {
-    success: true,
-    message: 'Payment information saved.',
-    needId,
-  };
-}
-
-/**
- * Update need with consent and documents info (Step 3)
- */
-export async function updateNeedConsentAndDocs(
-  needId: string,
-  data: ConsentData
-): Promise<ActionResult> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { success: false, message: 'Authentication required.' };
-  }
-
-  const context = await getMemberForUser(supabase, user.id);
-
-  if (!context) {
-    return { success: false, message: 'Member profile not found.' };
-  }
-
-  const { member, profile } = context;
-
-  if (!member.organization_id) {
-    return { success: false, message: 'Organization not found.' };
-  }
-
-  // Verify ownership
-  const { data: existingNeed, error: fetchError } = await supabase
-    .from('needs')
-    .select('id, member_id, organization_id')
-    .eq('id', needId)
-    .eq('member_id', member.id)
-    .eq('organization_id', member.organization_id)
-    .single();
-
-  if (fetchError || !existingNeed) {
-    return { success: false, message: 'Need not found or access denied.' };
-  }
-
-  if (!data.hasConsent) {
-    return {
-      success: false,
-      message: 'You must provide consent to proceed.',
-      errors: { hasConsent: ['Consent is required to submit your need.'] },
-    };
-  }
-
-  // Update the need
-  const { error: updateError } = await (supabase as any)
-    .from('needs')
-    .update({
-      has_member_consent: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', needId);
-
-  if (updateError) {
-    return { success: false, message: 'Failed to save consent. Please try again.' };
-  }
-
-  // Create event
-  await (supabase as any)
-    .from('need_events')
-    .insert({
-      need_id: needId,
-      organization_id: member.organization_id,
-      event_type: 'consent_recorded',
-      description: 'Member consent recorded for medical records access',
-      created_by_profile_id: profile.id,
-    });
-
-  return {
-    success: true,
-    message: 'Consent recorded.',
-    needId,
-  };
-}
-
-/**
- * Submit need for review (Step 4 final submission)
- */
 export async function submitNeedForReview(needId: string): Promise<ActionResult> {
   const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     return { success: false, message: 'Authentication required.' };
   }
 
   const context = await getMemberForUser(supabase, user.id);
-
   if (!context) {
     return { success: false, message: 'Member profile not found.' };
   }
 
   const { member, profile } = context;
-
   if (!member.organization_id) {
     return { success: false, message: 'Organization not found.' };
   }
 
-  // Verify ownership and get current status
   const { data: existingNeed, error: fetchError } = await (supabase as any)
     .from('needs')
     .select('id, member_id, organization_id, status, has_member_consent')
@@ -332,51 +206,38 @@ export async function submitNeedForReview(needId: string): Promise<ActionResult>
     .single();
 
   if (fetchError || !existingNeed) {
-    return { success: false, message: 'Need not found or access denied.' };
+    return { success: false, message: 'Request not found or access denied.' };
   }
 
-  // Validate consent
   if (!existingNeed.has_member_consent) {
     return {
       success: false,
-      message: 'You must provide consent before submitting your need.',
+      message: 'Please confirm you have read the instructions before submitting.',
     };
   }
 
-  // Update status to in_review
   const { error: updateError } = await (supabase as any)
     .from('needs')
-    .update({
-      status: 'in_review',
-      updated_at: new Date().toISOString(),
-    })
+    .update({ status: 'in_review', updated_at: new Date().toISOString() })
     .eq('id', needId);
 
   if (updateError) {
-    return { success: false, message: 'Failed to submit need. Please try again.' };
+    return { success: false, message: 'Failed to submit your request. Please try again.' };
   }
 
-  // Create submission event
-  await (supabase as any)
-    .from('need_events')
-    .insert({
-      need_id: needId,
-      organization_id: member.organization_id,
-      event_type: 'submitted',
-      description: 'Need submitted for review by member',
-      old_status: existingNeed.status,
-      new_status: 'in_review',
-      created_by_profile_id: profile.id,
-    });
+  await (supabase as any).from('need_events').insert({
+    need_id: needId,
+    organization_id: member.organization_id,
+    event_type: 'submitted',
+    description: 'Sharing request submitted for review by member',
+    old_status: existingNeed.status,
+    new_status: 'in_review',
+    created_by_profile_id: profile.id,
+  });
 
   revalidatePath('/needs');
   revalidatePath(`/needs/${needId}`);
   revalidatePath('/');
 
-  return {
-    success: true,
-    message: 'Your need has been submitted for review!',
-    needId,
-  };
+  return { success: true, message: 'Your request has been submitted for review!', needId };
 }
-

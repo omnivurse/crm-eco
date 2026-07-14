@@ -17,6 +17,29 @@ interface PendingUpload {
   error?: string;
 }
 
+/**
+ * Document categories. The chosen label is prepended to the stored file name
+ * (e.g. "Itemized bill — receipt.pdf") so the type is captured without a schema
+ * change. 'other' uploads keep their original name.
+ */
+const DOCUMENT_TYPES = [
+  { value: 'itemized_bill', label: 'Itemized bill' },
+  { value: 'medical_records', label: 'Medical records' },
+  { value: 'other', label: 'General / other' },
+] as const;
+
+/** Prefix a file's name with its document-type label (no-op for 'other'). */
+function withDocumentType(file: File, typeValue: string): File {
+  const label = DOCUMENT_TYPES.find((t) => t.value === typeValue)?.label;
+  if (!label || typeValue === 'other') return file;
+  // Avoid double-prefixing if the user re-selects the same file.
+  if (file.name.startsWith(`${label} — `)) return file;
+  return new File([file], `${label} — ${file.name}`, {
+    type: file.type,
+    lastModified: file.lastModified,
+  });
+}
+
 interface NeedDocumentUploadProps {
   needId: string | null;
   attachments: NeedAttachmentRecord[];
@@ -41,6 +64,7 @@ export function NeedDocumentUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [documentType, setDocumentType] = useState<string>(DOCUMENT_TYPES[0].value);
 
   const uploadFiles = async (files: FileList | File[]) => {
     if (!needId || disabled) return;
@@ -48,7 +72,9 @@ export function NeedDocumentUpload({
     const list = Array.from(files);
     if (list.length === 0) return;
 
-    for (const file of list) {
+    for (const rawFile of list) {
+      // Tag the upload with the selected document category via its file name.
+      const file = withDocumentType(rawFile, documentType);
       const key = `${file.name}-${file.size}-${file.lastModified}`;
       setPending((prev) => [...prev, { key, file, status: 'uploading' }]);
 
@@ -88,6 +114,28 @@ export function NeedDocumentUpload({
 
   return (
     <div className="space-y-4">
+      <div className="space-y-1.5">
+        <label htmlFor="need-document-type" className="text-sm font-medium text-slate-900">
+          Document type
+        </label>
+        <select
+          id="need-document-type"
+          value={documentType}
+          onChange={(e) => setDocumentType(e.target.value)}
+          disabled={!canUpload}
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {DOCUMENT_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-slate-500">
+          Choose a category, then upload the matching file. You can change it between uploads.
+        </p>
+      </div>
+
       <input
         ref={inputRef}
         type="file"

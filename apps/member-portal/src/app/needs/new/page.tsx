@@ -30,6 +30,26 @@ export default async function SubmitNeedPage() {
     );
   }
 
+  const { member } = context;
+
+  // Pre-fill Member Information from the member record (editable in the form).
+  const m = member as {
+    first_name?: string | null;
+    last_name?: string | null;
+    member_number?: string | null;
+    date_of_birth?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  };
+  const memberPrefill = {
+    firstName: m.first_name ?? '',
+    lastName: m.last_name ?? '',
+    memberIdCard: m.member_number ?? '',
+    dateOfBirth: m.date_of_birth ?? '',
+    email: m.email ?? '',
+    phone: m.phone ?? '',
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* Back link */}
@@ -39,14 +59,14 @@ export default async function SubmitNeedPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">Submit a Need</h1>
+        <h1 className="text-3xl font-bold text-slate-900">Sharing Request</h1>
         <p className="text-slate-600 mt-2">
-          Tell us about your medical expense and we&apos;ll help you submit it for sharing.
+          Complete the form below to submit your request for sharing.
         </p>
       </div>
 
       {/* Wizard */}
-      <SubmitNeedWizard />
+      <SubmitNeedWizard memberPrefill={memberPrefill} />
     </div>
   );
 }
