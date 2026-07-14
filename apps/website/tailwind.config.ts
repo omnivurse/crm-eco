@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss';
 import preset from '@crm-eco/ui/tailwind.preset';
+import tailwindcssAnimate from 'tailwindcss-animate';
 
 // Pay It Forward Health brand palette (from the logo). Applied LOCALLY to this
 // app only — the shared @crm-eco/ui preset is left untouched so CRM/admin/portal
@@ -79,7 +80,7 @@ const config: Config = {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;

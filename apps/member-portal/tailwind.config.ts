@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss';
 import preset from '@crm-eco/ui/tailwind.preset';
+import tailwindcssAnimate from 'tailwindcss-animate';
 
 const config: Config = {
   presets: [preset as Config],
@@ -8,7 +9,7 @@ const config: Config = {
     '../../packages/ui/src/**/*.{ts,tsx}',
     '../../packages/enrollment/src/**/*.{ts,tsx}',
   ],
-  plugins: [require('tailwindcss-animate')],
+  plugins: [tailwindcssAnimate],
 };
 
 export default config;
