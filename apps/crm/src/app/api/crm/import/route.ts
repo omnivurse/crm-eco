@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
 import {
+  buildNormalizedRecordWrite,
   mergeCrmDataJsonIntoRowColumns,
+  pickUpdateMirrorColumns,
   sanitizeCrmDataJsonPatch,
 } from '@/lib/crm/merge-crm-data-json-to-row';
 
@@ -19,6 +21,14 @@ interface ImportRequest {
   fileName?: string;
   saveMappingAs?: string; // Optional: save mapping template for reuse
   skipDuplicates?: boolean; // Skip records that already exist (by email/phone)
+  /**
+   * What to do when an incoming row matches an existing record:
+   *   - 'skip'   (default) — leave the existing record untouched.
+   *   - 'update' — merge the row's mapped fields into the existing record
+   *                (upsert). Only non-empty mapped values are written, and
+   *                out-of-band-owned columns are never reverted.
+   */
+  onDuplicate?: 'skip' | 'update';
 }
 
 // ── Market type classification for CSV imports ──
@@ -115,7 +125,13 @@ export async function POST(request: NextRequest) {
 
   try {
     const body: ImportRequest = await request.json();
-    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates = true } = body;
+    const { moduleId, organizationId, mappings, data, fileName, saveMappingAs, skipDuplicates = true, onDuplicate = 'skip' } = body;
+
+    // Upsert mode updates existing matches instead of skipping them. Both skip
+    // and update modes need the duplicate lookup to run; only "create all"
+    // (skipDuplicates=false, onDuplicate='skip') bypasses it.
+    const wantUpdate = onDuplicate === 'update';
+    const dedupeEnabled = skipDuplicates || wantUpdate;
 
     // Verify org matches
     if (organizationId !== profile.organization_id) {
@@ -177,6 +193,35 @@ export async function POST(request: NextRequest) {
         normalized_advisor_name: advisorName,
         normalized_agent_name: agentName,
         normalization_status: mType !== 'unknown' ? 'normalized' : 'needs_review',
+      };
+    };
+
+    /**
+     * Build the UPDATE payload for an upsert-matched record: merge the row's
+     * mapped (non-empty) fields into the existing JSONB, then mirror the
+     * canonical values onto indexed columns — excluding the out-of-band-owned
+     * columns (advisor attribution / status / normalization) so an import can
+     * never silently revert a manual owner reassignment. Only fields present in
+     * the CSV row are added; existing values are never wiped.
+     */
+    const buildUpdateRecord = (
+      row: TransformedRow,
+      existing: { data: Record<string, unknown> | null; title: string | null },
+    ): Record<string, unknown> => {
+      const cleanPatch = sanitizeCrmDataJsonPatch(row.recordData);
+      const prevData =
+        existing.data && typeof existing.data === 'object' && !Array.isArray(existing.data)
+          ? (existing.data as Record<string, unknown>)
+          : {};
+      const mergedData = { ...prevData, ...cleanPatch };
+      const norm = buildNormalizedRecordWrite(mergedData, {
+        moduleKey,
+        previousTitle: existing.title,
+      });
+      return {
+        ...pickUpdateMirrorColumns(norm.columns),
+        data: norm.data,
+        updated_at: new Date().toISOString(),
       };
     };
 
@@ -256,12 +301,14 @@ export async function POST(request: NextRequest) {
       return { index: i, raw: row, recordData, email, phone, title, status };
     });
 
-    // PHASE 2: Batch duplicate check (single query instead of N queries)
-    let duplicateEmails = new Set<string>();
-    let duplicatePhones = new Set<string>();
-    const duplicateNameDob = new Set<string>();
+    // PHASE 2: Batch duplicate check (single query instead of N queries).
+    // Maps resolve a match to the existing record id so upsert mode can UPDATE
+    // it; skip mode only needs `.has()`.
+    const emailToId = new Map<string, string>();
+    const phoneToId = new Map<string, string>();
+    const nameDobToId = new Map<string, string>();
 
-    if (skipDuplicates) {
+    if (dedupeEnabled) {
       // Normalize emails to lowercase for case-insensitive matching
       const emailsToCheck = transformedRows
         .map(r => r.email?.toLowerCase())
@@ -272,16 +319,14 @@ export async function POST(request: NextRequest) {
         // Query all existing emails for this org+module, then compare lowercased
         const { data: existingByEmail } = await supabase
           .from('crm_records')
-          .select('email')
+          .select('id, email')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId)
           .not('email', 'is', null);
 
-        if (existingByEmail) {
-          const existingLower = new Set(
-            existingByEmail.map(r => r.email?.toLowerCase()).filter((e): e is string => !!e)
-          );
-          duplicateEmails = existingLower;
+        for (const r of existingByEmail ?? []) {
+          const key = (r.email as string | null)?.toLowerCase();
+          if (key) emailToId.set(key, r.id as string);
         }
       }
 
@@ -294,17 +339,14 @@ export async function POST(request: NextRequest) {
       if (hasPhoneCandidates) {
         const { data: existingByPhone } = await supabase
           .from('crm_records')
-          .select('phone')
+          .select('id, phone')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId)
           .not('phone', 'is', null);
 
-        if (existingByPhone) {
-          duplicatePhones = new Set(
-            existingByPhone
-              .map((r) => normalizePhoneDigits(r.phone))
-              .filter((p): p is string => !!p),
-          );
+        for (const r of existingByPhone ?? []) {
+          const key = normalizePhoneDigits(r.phone);
+          if (key) phoneToId.set(key, r.id as string);
         }
       }
 
@@ -319,7 +361,7 @@ export async function POST(request: NextRequest) {
       if (hasNameDobCandidates) {
         const { data: existingByNameDob, error: nameDobError } = await supabase
           .from('crm_records')
-          .select('fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
+          .select('id, fn:data->>first_name, ln:data->>last_name, dob:data->>date_of_birth')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId);
 
@@ -327,41 +369,63 @@ export async function POST(request: NextRequest) {
           // Surface rather than swallow: a PostgREST/schema regression here must
           // not silently disable the name+DOB guard and let duplicates back in.
           console.error('Import name+DOB dedup lookup failed:', nameDobError.message);
-        } else if (existingByNameDob) {
-          for (const r of existingByNameDob as Array<{ fn: string | null; ln: string | null; dob: string | null }>) {
+        } else {
+          for (const r of (existingByNameDob ?? []) as Array<{ id: string; fn: string | null; ln: string | null; dob: string | null }>) {
             const key = nameDobKey(r.fn, r.ln, r.dob);
-            if (key) duplicateNameDob.add(key);
+            if (key) nameDobToId.set(key, r.id);
           }
         }
       }
     }
 
-    // PHASE 3: Categorize rows into duplicates, valid, and errors
+    // PHASE 3: Categorize rows into insert / update (upsert) / skip / error.
     const duplicateRows: TransformedRow[] = [];
     const validRows: TransformedRow[] = [];
+    const updateRows: Array<{ row: TransformedRow; existingId: string }> = [];
     const seenNameDob = new Set<string>();
 
     for (const row of transformedRows) {
-      if (skipDuplicates) {
+      if (dedupeEnabled) {
         const ndKey = nameDobKey(
           row.recordData.first_name,
           row.recordData.last_name,
           row.recordData.date_of_birth,
         );
-        const isDuplicateByEmail = !!(row.email && duplicateEmails.has(row.email.toLowerCase()));
         const rowPhoneDigits = normalizePhoneDigits(row.phone);
-        const isDuplicateByPhone = !!(!row.email && rowPhoneDigits && duplicatePhones.has(rowPhoneDigits));
-        // Match against existing DB records AND earlier rows in this same file.
-        const isDuplicateByNameDob = !!ndKey && (duplicateNameDob.has(ndKey) || seenNameDob.has(ndKey));
+        // Resolve which existing DB record this row matches (email > phone > name+DOB).
+        const emailMatchId = row.email ? emailToId.get(row.email.toLowerCase()) : undefined;
+        const phoneMatchId = !row.email && rowPhoneDigits ? phoneToId.get(rowPhoneDigits) : undefined;
+        const nameDobMatchId = ndKey ? nameDobToId.get(ndKey) : undefined;
+        const matchedId = emailMatchId ?? phoneMatchId ?? nameDobMatchId;
+        const dupReason: 'email' | 'phone' | 'name_dob' | null = emailMatchId
+          ? 'email'
+          : phoneMatchId
+            ? 'phone'
+            : nameDobMatchId
+              ? 'name_dob'
+              : null;
 
-        if (isDuplicateByEmail || isDuplicateByPhone || isDuplicateByNameDob) {
-          row.dupReason = isDuplicateByEmail ? 'email' : isDuplicateByPhone ? 'phone' : 'name_dob';
+        if (matchedId && dupReason) {
+          row.dupReason = dupReason;
+          if (wantUpdate) {
+            updateRows.push({ row, existingId: matchedId });
+          } else {
+            duplicateRows.push(row);
+          }
+          continue;
+        }
+
+        // No pre-existing DB record, but an earlier row in THIS file already
+        // claimed this identity — skip the in-file duplicate (there is no DB
+        // record to update yet, and we must not insert a second copy).
+        if (ndKey && seenNameDob.has(ndKey)) {
+          row.dupReason = 'name_dob';
           duplicateRows.push(row);
           continue;
         }
 
         // Remember this identity so a later identical row in the same upload
-        // is also caught (the email/phone sets only reflect pre-existing rows).
+        // is also caught (the id maps only reflect pre-existing rows).
         if (ndKey) seenNameDob.add(ndKey);
       }
       validRows.push(row);
@@ -432,6 +496,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // PHASE 4b: Upsert — update the existing record for each matched row.
+    let updated = 0;
+    const updatedRecords: Array<{ rowIndex: number; recordId: string; row: TransformedRow }> = [];
+
+    if (updateRows.length > 0) {
+      // Fetch current data + title for every matched record so the merge fills
+      // fields without wiping existing values.
+      const idsToFetch = [...new Set(updateRows.map((u) => u.existingId))];
+      const existingById = new Map<
+        string,
+        { data: Record<string, unknown> | null; title: string | null }
+      >();
+      for (let i = 0; i < idsToFetch.length; i += BATCH_SIZE) {
+        const chunk = idsToFetch.slice(i, i + BATCH_SIZE);
+        const { data: existingRecs } = await supabase
+          .from('crm_records')
+          .select('id, data, title')
+          .eq('org_id', organizationId)
+          .in('id', chunk);
+        for (const r of existingRecs ?? []) {
+          existingById.set(r.id as string, {
+            data: (r.data as Record<string, unknown> | null) ?? null,
+            title: (r.title as string | null) ?? null,
+          });
+        }
+      }
+
+      for (const { row, existingId } of updateRows) {
+        const existing = existingById.get(existingId);
+        if (!existing) continue; // record vanished between lookup and update
+        const { error: upErr } = await supabase
+          .from('crm_records')
+          .update(buildUpdateRecord(row, existing))
+          .eq('id', existingId)
+          .eq('org_id', organizationId);
+
+        if (upErr) {
+          errors++;
+          errorDetails.push({ row: row.index + 1, error: upErr.message });
+          row.error = upErr.message;
+        } else {
+          updated++;
+          updatedRecords.push({ rowIndex: row.index, recordId: existingId, row });
+        }
+      }
+    }
+
     // PHASE 5: Batch insert import rows (tracking records)
     const importRowsToInsert = [
       // Duplicate rows
@@ -455,14 +566,26 @@ export async function POST(request: NextRequest) {
         record_id: recordId,
         status: 'inserted' as const,
       })),
-      // Error rows
-      ...validRows.filter(r => r.error).map(row => ({
+      // Successfully updated (upserted) rows
+      ...updatedRecords.map(({ rowIndex, recordId, row }) => ({
         job_id: importJob.id,
-        row_index: row.index,
+        row_index: rowIndex,
         raw: row.raw,
-        status: 'error' as const,
-        error: row.error,
+        normalized: row.recordData,
+        record_id: recordId,
+        status: 'updated' as const,
+        match_type: 'exact_match' as const,
       })),
+      // Error rows (from both inserts and updates)
+      ...[...validRows, ...updateRows.map(u => u.row)]
+        .filter(r => r.error)
+        .map(row => ({
+          job_id: importJob.id,
+          row_index: row.index,
+          raw: row.raw,
+          status: 'error' as const,
+          error: row.error,
+        })),
     ];
 
     // Insert import rows in batches
@@ -478,6 +601,7 @@ export async function POST(request: NextRequest) {
         status: 'completed',
         processed_rows: data.length,
         inserted_count: success,
+        updated_count: updated,
         skipped_count: skipped,
         error_count: errors,
         completed_at: new Date().toISOString(),
@@ -529,6 +653,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success,
+      updated,
       skipped,
       skippedByReason,
       errors,
