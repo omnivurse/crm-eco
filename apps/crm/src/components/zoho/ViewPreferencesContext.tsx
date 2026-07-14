@@ -8,7 +8,6 @@ export type Density = 'compact' | 'default' | 'comfortable';
 export interface ViewPreferences {
   viewId: string | null;
   columns: string[];
-  density: Density;
   sortField: string | null;
   sortDirection: 'asc' | 'desc';
   viewMode: ViewMode;
@@ -19,7 +18,6 @@ interface ViewPreferencesContextValue {
   getPreferences: (moduleKey: string) => ViewPreferences;
   setViewId: (moduleKey: string, viewId: string | null) => void;
   setColumns: (moduleKey: string, columns: string[]) => void;
-  setDensity: (moduleKey: string, density: Density) => void;
   setSort: (moduleKey: string, field: string | null, direction: 'asc' | 'desc') => void;
   setViewMode: (moduleKey: string, viewMode: ViewMode) => void;
   savePreferences: (moduleKey: string) => Promise<void>;
@@ -28,7 +26,6 @@ interface ViewPreferencesContextValue {
 const defaultPreferences: ViewPreferences = {
   viewId: null,
   columns: ['title', 'status', 'email', 'created_at'],
-  density: 'default',
   sortField: null,
   sortDirection: 'asc',
   viewMode: 'table',
@@ -111,10 +108,6 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
     updatePreferences(moduleKey, { columns });
   }, [updatePreferences]);
 
-  const setDensity = useCallback((moduleKey: string, density: Density) => {
-    updatePreferences(moduleKey, { density });
-  }, [updatePreferences]);
-
   const setSort = useCallback((moduleKey: string, field: string | null, direction: 'asc' | 'desc') => {
     updatePreferences(moduleKey, { sortField: field, sortDirection: direction });
   }, [updatePreferences]);
@@ -153,7 +146,6 @@ export function ViewPreferencesProvider({ children }: ViewPreferencesProviderPro
         getPreferences,
         setViewId,
         setColumns,
-        setDensity,
         setSort,
         setViewMode,
         savePreferences,
