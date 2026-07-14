@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
+import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import { createClient } from '@crm-eco/lib/supabase/client';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { format } from 'date-fns';
@@ -52,18 +53,18 @@ interface BillingSchedule {
   };
 }
 
-function getStatusBadge(status: string) {
+function getStatusLabel(status: string) {
   switch (status) {
     case 'active':
-      return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      return 'Active';
     case 'paused':
-      return <Badge className="bg-yellow-100 text-yellow-800">Paused</Badge>;
+      return 'Paused';
     case 'cancelled':
-      return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+      return 'Cancelled';
     case 'completed':
-      return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
+      return 'Completed';
     default:
-      return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+      return status;
   }
 }
 
@@ -394,7 +395,7 @@ export default function BillingSchedulesPage() {
                         )}
                       </td>
                       <td className="py-3 text-sm">
-                        {getStatusBadge(schedule.status)}
+                        <StatusBadge status={schedule.status} label={getStatusLabel(schedule.status)} />
                         {schedule.retry_count > 0 && (
                           <p className="text-xs text-red-500 mt-1">
                             {schedule.retry_count}/{schedule.max_retries} retries

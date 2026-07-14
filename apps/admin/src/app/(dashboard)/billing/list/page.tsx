@@ -35,6 +35,7 @@ import {
   Calendar,
   X,
 } from 'lucide-react';
+import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import Link from 'next/link';
 import { format, subDays, startOfMonth, startOfDay, endOfDay } from 'date-fns';
 import { toast } from 'sonner';
@@ -112,17 +113,6 @@ function getStatusIcon(status: string) {
       return <RefreshCw className="h-4 w-4 text-blue-500" />;
     default:
       return <Clock className="h-4 w-4 text-yellow-500" />;
-  }
-}
-
-function getStatusBadgeColor(status: string) {
-  switch (status) {
-    case 'success': return 'bg-green-100 text-green-800';
-    case 'failed': return 'bg-red-100 text-red-800';
-    case 'refunded': return 'bg-blue-100 text-blue-800';
-    case 'pending':
-    case 'processing': return 'bg-yellow-100 text-yellow-800';
-    default: return 'bg-gray-100 text-gray-800';
   }
 }
 
@@ -478,7 +468,7 @@ export default function BillingListPage() {
                       <td className="py-3 text-sm">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(txn.status)}
-                          <Badge className={getStatusBadgeColor(txn.status)}>{txn.status}</Badge>
+                          <StatusBadge status={txn.status} />
                         </div>
                       </td>
                       <td className="py-3 text-sm text-right">
@@ -533,7 +523,7 @@ export default function BillingListPage() {
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Status</p>
-                  <Badge className={getStatusBadgeColor(selectedTransaction.status)}>{selectedTransaction.status}</Badge>
+                  <StatusBadge status={selectedTransaction.status} />
                 </div>
                 <div>
                   <p className="text-sm text-slate-500">Payment Method</p>

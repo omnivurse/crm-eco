@@ -97,6 +97,13 @@ const STATUS_TONE: Record<string, Tone> = {
   refunded: 'neutral',
   success: 'success',
   processing: 'progress',
+  // invoices
+  sent: 'info',
+  partial: 'attention',
+  overdue: 'danger',
+  pastdue: 'danger',
+  void: 'neutral',
+  uncollectible: 'danger',
 };
 
 const normalize = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]/g, '');

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Badge, Button, Checkbox } from '@crm-eco/ui';
+import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import { Eye, Users, Mail, Phone, MapPin, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -46,20 +47,6 @@ function getMarketBadge(member: MemberWithAdvisor): { label: string; className: 
 interface MemberTableProps {
   members: MemberWithAdvisor[];
   orgId: string;
-}
-
-function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  switch (status) {
-    case 'active':
-      return 'default';
-    case 'pending':
-      return 'secondary';
-    case 'inactive':
-    case 'terminated':
-      return 'destructive';
-    default:
-      return 'outline';
-  }
 }
 
 function getStatusLabel(status: string): string {
@@ -112,9 +99,7 @@ function MemberCard({
             <h3 className="font-semibold text-slate-900 truncate">
               {member.first_name} {member.last_name}
             </h3>
-            <Badge variant={getStatusBadgeVariant(member.status)} className="mt-1">
-              {getStatusLabel(member.status)}
-            </Badge>
+            <StatusBadge status={member.status} label={getStatusLabel(member.status)} className="mt-1" />
           </div>
           <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
         </div>
@@ -310,9 +295,7 @@ export function MemberTable({ members, orgId }: MemberTableProps) {
                   )}
                 </td>
                 <td className="py-3">
-                  <Badge variant={getStatusBadgeVariant(member.status)}>
-                    {getStatusLabel(member.status)}
-                  </Badge>
+                  <StatusBadge status={member.status} label={getStatusLabel(member.status)} />
                 </td>
                 <td className="py-3 text-sm text-slate-500">
                   {format(new Date(member.created_at), 'MMM d, yyyy')}

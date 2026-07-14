@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@crm-eco/ui';
+import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import {
   FileText,
   Search,
@@ -184,49 +185,11 @@ export default function InvoicesPage() {
   };
 
   const getStatusBadge = (status: string, dueDate: string | null) => {
+    // "overdue" is derived (unpaid + past due date), not a stored status.
     const isOverdue = status !== 'paid' && dueDate && new Date(dueDate) < new Date();
-
-    if (isOverdue) {
-      return (
-        <Badge className="bg-red-100 text-red-700">
-          <AlertTriangle className="w-3 h-3 mr-1" />
-          Overdue
-        </Badge>
-      );
-    }
-
-    switch (status) {
-      case 'paid':
-        return (
-          <Badge className="bg-emerald-100 text-emerald-700">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Paid
-          </Badge>
-        );
-      case 'sent':
-        return (
-          <Badge className="bg-blue-100 text-blue-700">
-            <Send className="w-3 h-3 mr-1" />
-            Sent
-          </Badge>
-        );
-      case 'draft':
-        return (
-          <Badge className="bg-slate-100 text-slate-700">
-            <FileText className="w-3 h-3 mr-1" />
-            Draft
-          </Badge>
-        );
-      case 'partial':
-        return (
-          <Badge className="bg-amber-100 text-amber-700">
-            <Clock className="w-3 h-3 mr-1" />
-            Partial
-          </Badge>
-        );
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
-    }
+    const effective = isOverdue ? 'overdue' : status;
+    const label = effective ? effective.charAt(0).toUpperCase() + effective.slice(1) : status;
+    return <StatusBadge status={effective} label={label} />;
   };
 
   const handleSendInvoice = async (invoice: InvoiceView) => {
