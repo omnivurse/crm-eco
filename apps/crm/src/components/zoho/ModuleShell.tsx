@@ -26,7 +26,7 @@ import { SavedViewsBar } from '@/components/crm/views/SavedViewsBar';
 import { MobileToolbarDrawer } from './MobileToolbarDrawer';
 import { ModuleLiveSearchDropdown, type ModuleLiveSearchResult } from './ModuleLiveSearchDropdown';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import type { Density } from './ViewPreferencesContext';
+import { useCrmDensity } from '@/lib/crm/density';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
 
@@ -94,7 +94,9 @@ export const ModuleShell = memo(function ModuleShell({
     }
     return [];
   });
-  const [density, setDensity] = useState<Density>('default');
+  // Global, persisted display density — drives html[data-density] (chrome
+  // tokens) and the table padding variants below. Was ephemeral local state.
+  const { density, setDensity } = useCrmDensity();
   const [visibleColumns, setVisibleColumns] = useState<string[]>(
     views.find(v => v.id === activeViewId)?.columns || fields.map(f => f.key)
   );
@@ -1413,7 +1415,7 @@ export const ModuleShell = memo(function ModuleShell({
                 },
                 {
                   id: 'density',
-                  label: 'Row density',
+                  label: 'Display density',
                   content: <DensityToggle value={density} onChange={setDensity} />,
                 },
               ]

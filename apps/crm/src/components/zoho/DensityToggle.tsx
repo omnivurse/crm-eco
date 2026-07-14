@@ -36,7 +36,10 @@ export function DensityToggle({ value, onChange, className }: DensityToggleProps
           )}
         >
           <AlignJustify className="w-4 h-4" />
-          <span className="hidden sm:inline text-xs capitalize">{value}</span>
+          {/* Fixed min-width + left align so the label never reflows the toolbar
+              when the density word changes (default <-> comfortable) — including
+              the one-frame post-hydration adoption of a persisted value. */}
+          <span className="hidden sm:inline-block min-w-[4.5rem] text-left text-xs capitalize">{value}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -44,7 +47,7 @@ export function DensityToggle({ value, onChange, className }: DensityToggleProps
         className="w-48 bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10"
       >
         <div className="px-2 py-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-          Row Density
+          Display density
         </div>
         {DENSITY_OPTIONS.map((option) => (
           <DropdownMenuItem

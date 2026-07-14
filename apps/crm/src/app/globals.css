@@ -325,7 +325,9 @@
   --tone-special-fg:#f472b6;   --tone-special-bg:#f472b61f;   --tone-special-border:#f472b640;
 }
 
-/* Density modes — set data-density on <html> (persisted via ViewPreferences later) */
+/* Density modes — html[data-density] is set pre-paint by the layout.tsx theme
+   script and persisted in localStorage 'crm-density' (see lib/crm/density.ts,
+   useCrmDensity, driven by the DensityToggle). 'default' = no attribute. */
 :root[data-density='compact'] {
   --crm-row-h: 34px; --crm-toolbar-h: 42px;
   --crm-topbar-h: 38px; --crm-modulebar-h: 32px;

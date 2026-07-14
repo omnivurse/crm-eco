@@ -80,6 +80,15 @@ const themeScript = `
     html.style.colorScheme = resolved;
     // Set background immediately to prevent white flash
     document.documentElement.style.backgroundColor = resolved === 'dark' ? '#0f172a' : '#ffffff';
+    // Display density: apply the persisted choice pre-paint so the chrome
+    // tokens (top bar / module bar heights, gutters, section gaps) render at
+    // the chosen scale with no flash. 'default' = no attribute = base scale.
+    var density = localStorage.getItem('crm-density');
+    if (density === 'compact' || density === 'comfortable') {
+      html.setAttribute('data-density', density);
+    } else {
+      html.removeAttribute('data-density');
+    }
   } catch (e) {
     document.documentElement.classList.add('light');
     document.documentElement.style.backgroundColor = '#ffffff';
