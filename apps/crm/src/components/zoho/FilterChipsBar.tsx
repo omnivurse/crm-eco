@@ -168,7 +168,7 @@ export function FilterChipsBar({
 
   return (
     <div className={cn(
-      'flex items-center gap-2 py-2 px-1 flex-wrap',
+      'flex items-center gap-2 py-1.5 px-1 flex-wrap',
       className
     )}>
       {/* Filter Chips -- supports field, system, and related categories */}
