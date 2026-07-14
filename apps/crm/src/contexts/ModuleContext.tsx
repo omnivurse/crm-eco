@@ -169,12 +169,16 @@ export const CRM_NAV_ITEMS: NavItem[] = [
     { key: 'activities', label: 'Activities', icon: 'activity', href: '/crm/activities' },
     { key: 'tasks', label: 'Tasks', icon: 'check-square', href: '/crm/tasks' },
     { key: 'calendar', label: 'Calendar', icon: 'calendar', href: '/crm/calendar' },
+    { key: 'tickets', label: 'Tickets', icon: 'ticket', href: '/crm/tickets' },
+    { key: 'organizer', label: 'Organizer', icon: 'layout', href: '/crm/organizer' },
 
     { key: 'sec-health', separator: true, sectionTitle: 'Health Intelligence' },
     { key: 'lifecycle', label: 'Lifecycle Events', icon: 'heart-pulse', href: '/crm/modules/contacts?tab=lifecycle' },
     { key: 'medicaid', label: 'Medicaid Tracker', icon: 'shield-plus', href: '/crm/modules/contacts?tab=medicaid' },
     { key: 'carriers', label: 'Carriers & Plans', icon: 'building-2', href: '/crm/modules/contacts?tab=carriers' },
     { key: 'premium-compare', label: 'Premium Compare', icon: 'calculator', href: '/crm/modules/contacts?tab=premiums' },
+    { key: 'healthcare-networks', label: 'Provider Networks', icon: 'building-2', href: '/crm/healthcare/networks' },
+    { key: 'provider-search', label: 'Provider Search', icon: 'search', href: '/crm/healthcare/search' },
 
     { key: 'sec-insights', separator: true, sectionTitle: 'Insights' },
     { key: 'reports', label: 'Reports', icon: 'pie-chart', href: '/crm/reports' },
