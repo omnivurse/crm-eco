@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
+import { useState, useMemo, useRef, useEffect, useLayoutEffect, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useCrmDensity } from '@/lib/crm/density';
 import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -76,6 +77,11 @@ import {
   parseCurrencyInput,
   CURRENCY_INPUT_STEP,
 } from '@/lib/crm/currency-input';
+
+// Layout effect on the client (matches @tanstack/react-virtual's own
+// useIsomorphicLayoutEffect), plain effect on the server to avoid the SSR
+// warning — used to re-lay the virtual rows before paint when density changes.
+const useIsomorphicLayoutEffect = typeof document !== 'undefined' ? useLayoutEffect : useEffect;
 
 interface RecordTableProps {
   records: CrmRecord[];
@@ -640,14 +646,36 @@ export const RecordTable = memo(function RecordTable({
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Virtualization setup - estimate row height at 56px (h-14)
-  const ROW_HEIGHT = 44; // comfortable-dense default (was 56); measureElement refines per row
+  // Virtualization row height — density-aware. Mirrors the global display
+  // density (html[data-density] via useCrmDensity): compact packs more rows on
+  // screen, comfortable gives them room; default stays 44 so the default view is
+  // unchanged. This value sizes the virtual rows (estimateSize + each row's
+  // explicit height below), and the cell padding uses --crm-cell-py so content
+  // fits the shorter/taller rows.
+  const { density } = useCrmDensity();
+  const ROW_HEIGHT = density === 'compact' ? 38 : density === 'comfortable' ? 52 : 44;
   const rowVirtualizer = useVirtualizer({
     count: records.length,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 5,
   });
+  // When density flips ROW_HEIGHT, re-lay the virtual rows. Run it in a LAYOUT
+  // effect (before paint) so the new cell padding never sits in the old row box
+  // for a frame; skip the initial mount (height unchanged — avoids a redundant
+  // re-render); and re-anchor the scroll on the row the user is viewing, since
+  // measure() does no scroll compensation and the rows are exact-fit — otherwise
+  // a mid-scroll density toggle would snap the list to a different record set.
+  const prevRowHeightRef = useRef(ROW_HEIGHT);
+  useIsomorphicLayoutEffect(() => {
+    const prevRowHeight = prevRowHeightRef.current;
+    if (prevRowHeight === ROW_HEIGHT) return;
+    const scrollEl = tableContainerRef.current;
+    const anchorIndex = scrollEl ? Math.round(scrollEl.scrollTop / prevRowHeight) : 0;
+    prevRowHeightRef.current = ROW_HEIGHT;
+    rowVirtualizer.measure();
+    if (anchorIndex > 0) rowVirtualizer.scrollToIndex(anchorIndex, { align: 'start' });
+  }, [ROW_HEIGHT, rowVirtualizer]);
 
   // Create field lookup map
   const fieldMap = useMemo(() => {
@@ -1260,7 +1288,7 @@ export const RecordTable = memo(function RecordTable({
                   <TableCell
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      'w-12 flex-shrink-0 flex items-center sticky left-0 z-10 !py-2',
+                      'w-12 flex-shrink-0 flex items-center sticky left-0 z-10 !py-[var(--crm-cell-py)]',
                       selectedIds.has(record.id)
                         ? 'bg-teal-50 dark:bg-teal-500/5'
                         : 'bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-white/5'
@@ -1277,7 +1305,7 @@ export const RecordTable = memo(function RecordTable({
                     <TableCell
                       key={col}
                       className={cn(
-                        'text-sm flex-shrink-0 flex items-center overflow-hidden !py-2',
+                        'text-sm flex-shrink-0 flex items-center overflow-hidden !py-[var(--crm-cell-py)]',
                         colIndex === 0 && 'sticky z-10 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]',
                         colIndex === 0 && (
                           selectedIds.has(record.id)
@@ -1307,7 +1335,7 @@ export const RecordTable = memo(function RecordTable({
                       )}
                     </TableCell>
                   ))}
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center !py-2" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center !py-[var(--crm-cell-py)]" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
                     {/* Row Quick Actions - visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                       {/* Call - only if phone exists */}
