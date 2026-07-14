@@ -26,6 +26,7 @@ import {
 export function NeedInvoicePanel({ needId }: { needId: string }) {
   const [loading, setLoading] = useState(true);
   const [exists, setExists] = useState(false);
+  const [orgId, setOrgId] = useState<string | null>(null);
   const [inv, setInv] = useState<NeedInvoice>(emptyNeedInvoice());
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
@@ -35,7 +36,7 @@ export function NeedInvoicePanel({ needId }: { needId: string }) {
     (async () => {
       const { data, error } = await supabase
         .from('needs')
-        .select('id, custom_fields')
+        .select('id, organization_id, custom_fields')
         .eq('id', needId)
         .maybeSingle();
       if (cancelled) return;
@@ -43,6 +44,7 @@ export function NeedInvoicePanel({ needId }: { needId: string }) {
         setExists(false);
       } else {
         setExists(true);
+        setOrgId((data as { organization_id?: string }).organization_id ?? null);
         setInv(parseNeedInvoice((data as { custom_fields?: unknown }).custom_fields));
       }
       setLoading(false);
@@ -131,11 +133,16 @@ export function NeedInvoicePanel({ needId }: { needId: string }) {
       return;
     }
 
-    await supabase.from('need_events').insert({
-      need_id: needId,
-      event_type: 'invoice_updated',
-      description: `Invoice updated by staff (${cleanInvoice.line_items.length} line items)`,
-    });
+    // need_events.organization_id is NOT NULL and RLS-checked — include it, and
+    // skip the (best-effort) audit insert if we somehow don't have it.
+    if (orgId) {
+      await supabase.from('need_events').insert({
+        need_id: needId,
+        organization_id: orgId,
+        event_type: 'invoice_updated',
+        description: `Invoice updated by staff (${cleanInvoice.line_items.length} line items)`,
+      });
+    }
 
     setSaving(false);
     setMessage({ kind: 'ok', text: 'Invoice saved.' });

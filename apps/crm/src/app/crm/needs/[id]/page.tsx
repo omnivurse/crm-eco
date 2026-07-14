@@ -89,13 +89,24 @@ interface NeedRecord {
   updated_at: string;
 }
 
+// Keys MUST cover ALL values of the `needs.status` check constraint so every
+// real status renders a correct badge and appears in the status dropdown.
 const NEED_STATUSES = [
+  { key: 'new', label: 'New', color: 'bg-slate-500/10 text-slate-400 border-slate-500/30' },
+  { key: 'open', label: 'Open', color: 'bg-slate-500/10 text-slate-400 border-slate-500/30' },
   { key: 'submitted', label: 'Submitted', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+  { key: 'intake', label: 'Intake', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
+  { key: 'awaiting_member_docs', label: 'Awaiting Member Docs', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' },
+  { key: 'awaiting_provider_docs', label: 'Awaiting Provider Docs', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' },
   { key: 'in_review', label: 'In Review', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
-  { key: 'pending_docs', label: 'Pending Docs', color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' },
+  { key: 'pricing', label: 'Pricing', color: 'bg-blue-500/10 text-blue-400 border-blue-500/30' },
   { key: 'approved', label: 'Approved', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' },
+  { key: 'reimbursement_pending', label: 'Reimbursement Pending', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
+  { key: 'processing', label: 'Processing', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' },
   { key: 'paid', label: 'Paid', color: 'bg-teal-500/10 text-teal-400 border-teal-500/30' },
+  { key: 'closed', label: 'Closed', color: 'bg-slate-500/10 text-slate-400 border-slate-500/30' },
   { key: 'denied', label: 'Denied', color: 'bg-red-500/10 text-red-400 border-red-500/30' },
+  { key: 'cancelled', label: 'Cancelled', color: 'bg-slate-500/10 text-slate-400 border-slate-500/30' },
 ];
 
 const URGENCY_LEVELS = [
@@ -122,52 +133,74 @@ export default function NeedDetailPage() {
     if (!authProfile) return;
 
     try {
-      // For demo, we'll use a mock need if none exists
-      // In production, this would be a real database query
-      // RLS scopes org/access; mirroring edit/drawer (no redundant org filter).
-      const { data: needData, error } = await supabase
-        .from('crm_records')
-        .select('*')
+      // Read the real member Need (RLS scopes to the caller's org). The member
+      // (name/contact) is embedded via the member_id FK. Extended share-request
+      // fields, notes, and the saved pricing estimate live in `custom_fields`.
+      const { data: row, error } = await supabase
+        .from('needs')
+        .select(
+          `id, organization_id, status, need_type, description, incident_date,
+           facility_name, billed_amount, total_amount, approved_amount,
+           urgency_light, custom_fields, created_at, updated_at,
+           members ( first_name, last_name, email, phone, member_number, state )`,
+        )
         .eq('id', needId)
         .maybeSingle();
 
-      if (error || !needData) {
-        // Demo data for showcase
-        setNeed({
-          id: needId,
-          org_id: authProfile.organization_id,
-          title: 'Emergency Room Visit',
-          status: 'in_review',
-          data: {
-            need_type: 'emergency',
-            description: 'Emergency room visit for acute abdominal pain. CT scan and lab work performed.',
-            billed_amount: 4500,
-            amount_requested: 4500,
-            urgency: 'high',
-            facility_type: 'hospital',
-            facility_name: 'General Hospital',
-            in_network: true,
-            incident_date: '2026-01-08',
-            procedure_codes: ['99285', '74177'],
-            member_name: 'Robert Williams',
-            member_id: 'MBR-001234',
-            member_state: 'TX',
-            member_email: 'robert.williams@email.com',
-            member_phone: '(555) 123-4567',
-            notes: 'Member has met their annual responsibility. Prior approval obtained.',
-          },
-          created_at: '2026-01-09T10:30:00Z',
-          updated_at: '2026-01-10T14:20:00Z',
-        });
-      } else {
-        setNeed(needData as NeedRecord);
+      if (error || !row) {
+        setNeed(null);
+        setLoading(false);
+        return;
       }
 
-      if (needData?.data?.pricing_estimate) {
-        setActiveEstimate(needData.data.pricing_estimate);
-      }
+      const cf =
+        row.custom_fields && typeof row.custom_fields === 'object'
+          ? (row.custom_fields as Record<string, any>)
+          : {};
+      const sr = (cf.share_request as Record<string, any> | undefined) ?? {};
+      const memberInfo = (sr.member_info as Record<string, any> | undefined) ?? {};
+      const memberEmbed = Array.isArray(row.members) ? row.members[0] : (row.members as any);
+
+      const memberName =
+        (memberEmbed
+          ? `${memberEmbed.first_name ?? ''} ${memberEmbed.last_name ?? ''}`.trim()
+          : `${memberInfo.first_name ?? ''} ${memberInfo.last_name ?? ''}`.trim()) || '';
+
+      const urgencyMap: Record<string, string> = { green: 'low', orange: 'medium', red: 'high' };
+
+      const adapted: NeedRecord = {
+        id: row.id,
+        org_id: row.organization_id,
+        title: memberName ? `${memberName} — ${row.need_type}` : row.need_type,
+        status: row.status,
+        data: {
+          need_type: row.need_type ?? undefined,
+          description: row.description ?? undefined,
+          billed_amount: row.billed_amount ?? undefined,
+          amount_requested: row.total_amount ?? row.billed_amount ?? undefined,
+          amount_approved: row.approved_amount ?? undefined,
+          urgency: urgencyMap[row.urgency_light] ?? 'medium',
+          facility_name: row.facility_name ?? undefined,
+          facility_type: sr.treatment_type ?? undefined,
+          incident_date: row.incident_date ?? undefined,
+          procedure_codes: [],
+          member_name: memberName || undefined,
+          member_id: memberEmbed?.member_number ?? memberInfo.member_id_card ?? undefined,
+          member_state: memberEmbed?.state ?? undefined,
+          member_email: memberEmbed?.email ?? memberInfo.email ?? undefined,
+          member_phone: memberEmbed?.phone ?? memberInfo.phone ?? undefined,
+          notes: (cf.notes as string | undefined) ?? undefined,
+          pricing_estimate: (cf.pricing_estimate as PricingEstimate | undefined) ?? undefined,
+        },
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      };
+
+      setNeed(adapted);
+      if (cf.pricing_estimate) setActiveEstimate(cf.pricing_estimate as PricingEstimate);
     } catch (err) {
       console.error('Failed to fetch need:', err);
+      setNeed(null);
     } finally {
       setLoading(false);
     }
@@ -190,14 +223,45 @@ export default function NeedDetailPage() {
     setSaving(true);
 
     try {
-      const updatedData = { ...need.data, ...editForm };
+      const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (editForm.description !== undefined) updates.description = editForm.description;
+      // Guard against NaN (empty/partly-deleted number input) nulling a real
+      // financial column — a blank field clears to null, invalid stays out.
+      if (editForm.billed_amount !== undefined) {
+        updates.billed_amount = Number.isFinite(editForm.billed_amount) ? editForm.billed_amount : null;
+      }
+      if (editForm.amount_approved !== undefined) {
+        updates.approved_amount = Number.isFinite(editForm.amount_approved) ? editForm.amount_approved : null;
+      }
 
-      await supabase
-        .from('crm_records')
-        .update({ data: updatedData })
-        .eq('id', need.id);
+      // `notes` lives in custom_fields — read-modify-write so we don't clobber
+      // the share-request data stored alongside it.
+      if (editForm.notes !== undefined) {
+        const { data: cur } = await supabase
+          .from('needs')
+          .select('custom_fields')
+          .eq('id', need.id)
+          .maybeSingle();
+        const cf =
+          cur && typeof (cur as { custom_fields?: unknown }).custom_fields === 'object'
+            ? ((cur as { custom_fields?: Record<string, unknown> }).custom_fields as Record<string, unknown>)
+            : {};
+        updates.custom_fields = { ...cf, notes: editForm.notes };
+      }
 
-      setNeed({ ...need, data: updatedData });
+      const { data: updatedRows, error } = await supabase
+        .from('needs')
+        .update(updates)
+        .eq('id', need.id)
+        .select('id');
+      if (error) throw error;
+      // 0 rows means RLS blocked the write (or the row is gone) — don't show success.
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error('You do not have permission to edit this need.');
+      }
+
+      setNeed({ ...need, data: { ...need.data, ...editForm } });
+      setEditForm({});
       setEditing(false);
       toast.success('Need updated successfully');
     } catch (err) {
@@ -212,36 +276,53 @@ export default function NeedDetailPage() {
     if (!need) return;
 
     try {
-      await supabase
-        .from('crm_records')
-        .update({ status: newStatus })
-        .eq('id', need.id);
+      const { data: updatedRows, error } = await supabase
+        .from('needs')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', need.id)
+        .select('id');
+      if (error) throw error;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new Error('You do not have permission to change this status.');
+      }
 
       setNeed({ ...need, status: newStatus });
-      toast.success(`Status updated to ${newStatus}`);
+      toast.success(`Status updated to ${getStatusConfig(newStatus).label}`);
     } catch (err) {
       console.error('Failed to update status:', err);
+      toast.error('Failed to update status');
     }
   };
 
   const handleEstimateGenerated = async (estimate: PricingEstimate) => {
     setActiveEstimate(estimate);
+    if (!need) return;
 
-    // Save estimate to the need record
-    if (need) {
-      try {
-        await supabase
-          .from('crm_records')
-          .update({
-            data: {
-              ...need.data,
-              pricing_estimate: estimate,
-            },
-          })
-          .eq('id', need.id);
-      } catch (err) {
-        console.error('Failed to save estimate:', err);
+    // Persist the estimate into custom_fields (read-modify-write).
+    try {
+      const { data: cur } = await supabase
+        .from('needs')
+        .select('custom_fields')
+        .eq('id', need.id)
+        .maybeSingle();
+      const cf =
+        cur && typeof (cur as { custom_fields?: unknown }).custom_fields === 'object'
+          ? ((cur as { custom_fields?: Record<string, unknown> }).custom_fields as Record<string, unknown>)
+          : {};
+      const { data: rows, error } = await supabase
+        .from('needs')
+        .update({
+          custom_fields: { ...cf, pricing_estimate: estimate },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', need.id)
+        .select('id');
+      if (error) throw error;
+      if (rows && rows.length > 0) {
+        setNeed((prev) => (prev ? { ...prev, data: { ...prev.data, pricing_estimate: estimate } } : prev));
       }
+    } catch (err) {
+      console.error('Failed to save estimate:', err);
     }
   };
 
