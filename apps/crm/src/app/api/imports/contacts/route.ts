@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { transformCsvRowToRecord, validateCsvRow } from '@/lib/imports/contacts-mapping';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
+import { buildNormalizedRecordWrite } from '@/lib/crm/merge-crm-data-json-to-row';
 
 // Type for CRM module
 interface CrmModule {
@@ -111,17 +112,27 @@ export async function POST(request: NextRequest) {
           }
         }
         
+        // Normalize JSONB + mirror canonical values onto indexed columns so the
+        // imported contact displays/filters like a form-created one. Spread the
+        // mirrored columns first, then keep the transform's extracted
+        // title/status/email/phone authoritative (purely additive).
+        const norm = buildNormalizedRecordWrite(data, {
+          moduleKey: 'contacts',
+          previousTitle: title,
+        });
+
         // Insert record
         const { error: insertError } = await supabase
           .from('crm_records')
           .insert({
             org_id: profile.organization_id,
             module_id: contactsModule.id,
+            ...norm.columns,
             title,
             status,
             email,
             phone,
-            data,
+            data: norm.data,
             created_by: profile.id
           });
         

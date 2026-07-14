@@ -3,6 +3,8 @@
  * Maps CSV columns from Zoho CRM export to internal CRM field keys
  */
 
+import { normalizeDateColumnValue } from '@/lib/crm/merge-crm-data-json-to-row';
+
 export interface FieldMapping {
   csvColumn: string;
   crmKey: string;
@@ -11,17 +13,17 @@ export interface FieldMapping {
   transform?: (value: string) => unknown;
 }
 
-// Helper functions for data transformation
-const parseDate = (value: string): string | null => {
-  if (!value || value === '' || value === '0000-00-00') return null;
-  try {
-    const date = new Date(value);
-    if (isNaN(date.getTime())) return null;
-    return date.toISOString().split('T')[0];
-  } catch {
-    return null;
-  }
-};
+// Helper functions for data transformation.
+// Dates go through the canonical normalizer so Zoho's 2-digit years pivot
+// correctly ("6/1/26" → "2026-06-01", "1/1/68" → "1968-01-01") instead of the
+// timezone-sensitive, Y2K-ambiguous `new Date(...)` path used previously.
+// We take the date portion first (splitting on space/T) so a slash date that
+// carries a trailing time ("6/1/2024 08:30") still parses — the canonical
+// normalizer's slash pattern is end-anchored and would otherwise return null.
+const parseDate = (value: string): string | null =>
+  normalizeDateColumnValue(
+    typeof value === 'string' ? value.trim().split(/[ T]/)[0] : value,
+  );
 
 const parseDateTime = (value: string): string | null => {
   if (!value || value === '') return null;

@@ -4,6 +4,10 @@ import { z } from 'zod';
 import crypto from 'crypto';
 import { executeMatchingWorkflows } from '@/lib/automation';
 import type { CrmRecord } from '@/lib/crm/types';
+import {
+  buildNormalizedRecordWrite,
+  pickUpdateMirrorColumns,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 
 
 /** Generic 401 response — identical regardless of rejection reason */
@@ -130,6 +134,8 @@ export async function POST(request: NextRequest) {
     // Get the target module
     const targetWorkflow = targetWorkflows[0];
     const moduleId = targetWorkflow.module_id;
+    const resolvedModuleKey =
+      (targetWorkflow.module as { key?: string } | null)?.key ?? moduleKey ?? null;
 
     // Create or find a record to run the workflow against
     let record: CrmRecord | null = null;
@@ -184,12 +190,21 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (existingByEmail) {
-          // Update existing record with new data instead of creating duplicate
+          // Update existing record with new data instead of creating duplicate.
+          // Normalize the merged JSONB and mirror canonical values onto indexed
+          // columns so external updates display/filter like form edits.
           const mergedData = { ...(existingByEmail.data as Record<string, unknown> || {}), ...customData };
+          const norm = buildNormalizedRecordWrite(mergedData, {
+            moduleKey: resolvedModuleKey,
+            previousTitle: (existingByEmail.title as string | null) ?? null,
+          });
           await supabase
             .from('crm_records')
             .update({
-              data: mergedData,
+              // On update, don't re-mirror out-of-band-owned columns (advisor /
+              // normalization / status) from possibly-stale JSONB.
+              ...pickUpdateMirrorColumns(norm.columns),
+              data: norm.data,
               ...(systemData.phone ? { phone: systemData.phone } : {}),
               ...(systemData.status ? { status: systemData.status } : {}),
               system: {
@@ -206,13 +221,18 @@ export async function POST(request: NextRequest) {
 
       // Create new record if no existing match
       if (!record) {
+        const norm = buildNormalizedRecordWrite(customData, {
+          moduleKey: resolvedModuleKey,
+          previousTitle: (systemData.title as string | null) ?? null,
+        });
         const { data: newRecord, error: createError } = await supabase
           .from('crm_records')
           .insert({
             org_id: workflow.org_id,
             module_id: moduleId,
+            ...norm.columns,
             ...systemData,
-            data: customData,
+            data: norm.data,
             system: {
               ...metadata,
               source: 'webhook',

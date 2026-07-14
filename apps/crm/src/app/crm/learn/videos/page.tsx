@@ -13,7 +13,18 @@ import {
   Rocket,
 } from 'lucide-react';
 
-const VIDEOS = [
+interface VideoTutorial {
+  title: string;
+  description: string;
+  duration: string;
+  category: string;
+  icon: React.ReactNode;
+  thumbnail: string;
+  /** When set, the card opens this video; otherwise it renders as "Coming soon". */
+  url?: string;
+}
+
+const VIDEOS: VideoTutorial[] = [
   {
     title: 'Getting Started with Double Helix Hub',
     description: 'A complete walkthrough of setting up your account and navigating the CRM.',
@@ -100,43 +111,80 @@ export default function VideosPage() {
 
       {/* Video Grid */}
       <div className="grid gap-6">
-        {VIDEOS.map((video) => (
-          <div
-            key={video.title}
-            className="group flex flex-col sm:flex-row gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:shadow-lg transition-all cursor-pointer"
-          >
-            {/* Thumbnail */}
-            <div className={`relative flex-shrink-0 w-full sm:w-48 h-32 rounded-xl ${video.thumbnail} flex items-center justify-center`}>
-              <div className="absolute inset-0 bg-black/20 rounded-xl" />
-              <PlayCircle className="w-12 h-12 text-white relative z-10 group-hover:scale-110 transition-transform" />
-              <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs">
-                {video.duration}
-              </div>
-            </div>
+        {VIDEOS.map((video) => {
+          const playable = Boolean(video.url);
 
-            {/* Content */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium">
-                  {video.icon}
-                  {video.category}
-                </span>
+          const cardBody = (
+            <>
+              {/* Thumbnail */}
+              <div className={`relative flex-shrink-0 w-full sm:w-48 h-32 rounded-xl ${video.thumbnail} flex items-center justify-center`}>
+                <div className="absolute inset-0 bg-black/20 rounded-xl" />
+                <PlayCircle
+                  className={`w-12 h-12 text-white relative z-10 transition-transform ${
+                    playable ? 'group-hover:scale-110' : 'opacity-70'
+                  }`}
+                />
+                {playable ? (
+                  <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-xs">
+                    {video.duration}
+                  </div>
+                ) : (
+                  <div className="absolute bottom-2 right-2 px-2 py-1 rounded bg-black/60 text-white text-[10px] font-medium uppercase tracking-wide">
+                    Coming soon
+                  </div>
+                )}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                {video.title}
-              </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                {video.description}
-              </p>
-              <div className="flex items-center gap-4 mt-3 text-sm text-slate-500">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {video.duration}
-                </span>
+
+              {/* Content */}
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium">
+                    {video.icon}
+                    {video.category}
+                  </span>
+                </div>
+                <h3
+                  className={`text-lg font-semibold text-slate-900 dark:text-white mb-2 transition-colors ${
+                    playable ? 'group-hover:text-teal-600 dark:group-hover:text-teal-400' : ''
+                  }`}
+                >
+                  {video.title}
+                </h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  {video.description}
+                </p>
+                <div className="flex items-center gap-4 mt-3 text-sm text-slate-500">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {video.duration}
+                  </span>
+                </div>
               </div>
+            </>
+          );
+
+          // Only render as an interactive link when there is a real video to
+          // open — otherwise it's an honest, non-clickable "Coming soon" tile
+          // (no cursor-pointer / hover affordance masquerading as playable).
+          return playable ? (
+            <a
+              key={video.title}
+              href={video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col sm:flex-row gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 hover:shadow-lg transition-all cursor-pointer"
+            >
+              {cardBody}
+            </a>
+          ) : (
+            <div
+              key={video.title}
+              className="flex flex-col sm:flex-row gap-4 p-4 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700"
+            >
+              {cardBody}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Request a Tutorial */}

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 import { z } from 'zod';
 import { withIdempotency } from '@/lib/server/idempotency';
+import {
+  buildNormalizedRecordWrite,
+  pickUpdateMirrorColumns,
+} from '@/lib/crm/merge-crm-data-json-to-row';
 
 /**
  * Bulk record endpoint.
@@ -141,7 +145,7 @@ async function runBulkPatch({
     // the response (RLS / wrong-org / deleted).
     const { data: existing, error: fetchError } = await supabase
       .from('crm_records')
-      .select('id, market_type, data, module_id')
+      .select('id, market_type, data, module_id, title')
       .in('id', requestedIds)
       .eq('org_id', profile.organization_id);
 
@@ -158,6 +162,7 @@ async function runBulkPatch({
       market_type: string | null;
       data: Record<string, unknown> | null;
       module_id: string;
+      title: string | null;
     };
     const resolved = (existing ?? []) as ExistingRow[];
     const resolvedIds = new Set(resolved.map((r) => r.id));
@@ -277,6 +282,23 @@ async function runBulkPatch({
       (updates.remove_tags && updates.remove_tags.length > 0) ||
       (updates.data_patch && Object.keys(updates.data_patch).length > 0);
 
+    // When `data_patch` is present we mirror canonical values onto indexed
+    // columns (carrier/market/dates/group_name/name-derived title) exactly like
+    // the single-record PATCH — otherwise bulk-patched fields would live in
+    // JSONB only and not display/filter. Tag-only ops keep the lighter path.
+    const moduleKeyById = new Map<string, string>();
+    if (updates.data_patch && working.length > 0) {
+      const moduleIds = [...new Set(working.map((r) => r.module_id))];
+      const { data: mods } = await supabase
+        .from('crm_modules')
+        .select('id, key')
+        .in('id', moduleIds)
+        .eq('org_id', profile.organization_id);
+      (mods ?? []).forEach((m: { id: string; key: string }) =>
+        moduleKeyById.set(m.id, m.key),
+      );
+    }
+
     if (hasJsonbOp) {
       for (const row of working) {
         const currentData = (row.data ?? {}) as Record<string, unknown>;
@@ -301,9 +323,28 @@ async function runBulkPatch({
           }
         }
 
+        // Build the update payload. With data_patch, normalize + mirror to
+        // indexed columns; tag-only ops just persist the JSONB.
+        const rowUpdate: Record<string, unknown> = updates.data_patch
+          ? (() => {
+              const norm = buildNormalizedRecordWrite(nextData, {
+                moduleKey: moduleKeyById.get(row.module_id) ?? null,
+                previousTitle: row.title,
+              });
+              // Exclude out-of-band-owned columns so this per-row write can't
+              // clobber Step 1's explicit status or Step 2's owner-normalization
+              // (both run in earlier, separate UPDATE statements).
+              return {
+                ...pickUpdateMirrorColumns(norm.columns),
+                data: norm.data,
+                updated_at: updatedAt,
+              };
+            })()
+          : { data: nextData, updated_at: updatedAt };
+
         const { error: rowError } = await supabase
           .from('crm_records')
-          .update({ data: nextData, updated_at: updatedAt })
+          .update(rowUpdate)
           .eq('id', row.id)
           .eq('org_id', profile.organization_id);
 

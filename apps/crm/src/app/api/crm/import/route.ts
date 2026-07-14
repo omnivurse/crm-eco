@@ -90,6 +90,17 @@ function nameDobKey(first: unknown, last: unknown, dob: unknown): string | null 
   return `${f}|${l}|${d}`;
 }
 
+/**
+ * Reduce a phone to comparable digits so formatting differences dedupe
+ * ("(303) 555-1212" and "303-555-1212" both → "3035551212"). Returns null when
+ * there aren't enough digits to be a real phone, so blanks/garbage never match.
+ */
+function normalizePhoneDigits(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15 ? digits : null;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   
@@ -255,7 +266,6 @@ export async function POST(request: NextRequest) {
       const emailsToCheck = transformedRows
         .map(r => r.email?.toLowerCase())
         .filter((e): e is string => !!e);
-      const phonesToCheck = transformedRows.map(r => r.phone).filter((p): p is string => !!p);
 
       // Batch check emails (case-insensitive via lowercase comparison)
       if (emailsToCheck.length > 0) {
@@ -275,17 +285,26 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Batch check phones (only for rows without email)
-      if (phonesToCheck.length > 0) {
+      // Batch check phones (only for rows without email). Compare on digits so
+      // formatting differences still dedupe — an exact-string `.in('phone', …)`
+      // missed "(303) 555-1212" vs "3035551212".
+      const hasPhoneCandidates = transformedRows.some(
+        (r) => !r.email && normalizePhoneDigits(r.phone),
+      );
+      if (hasPhoneCandidates) {
         const { data: existingByPhone } = await supabase
           .from('crm_records')
           .select('phone')
           .eq('org_id', organizationId)
           .eq('module_id', moduleId)
-          .in('phone', phonesToCheck);
+          .not('phone', 'is', null);
 
         if (existingByPhone) {
-          duplicatePhones = new Set(existingByPhone.map(r => r.phone).filter((p): p is string => !!p));
+          duplicatePhones = new Set(
+            existingByPhone
+              .map((r) => normalizePhoneDigits(r.phone))
+              .filter((p): p is string => !!p),
+          );
         }
       }
 
@@ -330,7 +349,8 @@ export async function POST(request: NextRequest) {
           row.recordData.date_of_birth,
         );
         const isDuplicateByEmail = !!(row.email && duplicateEmails.has(row.email.toLowerCase()));
-        const isDuplicateByPhone = !!(!row.email && row.phone && duplicatePhones.has(row.phone));
+        const rowPhoneDigits = normalizePhoneDigits(row.phone);
+        const isDuplicateByPhone = !!(!row.email && rowPhoneDigits && duplicatePhones.has(rowPhoneDigits));
         // Match against existing DB records AND earlier rows in this same file.
         const isDuplicateByNameDob = !!ndKey && (duplicateNameDob.has(ndKey) || seenNameDob.has(ndKey));
 

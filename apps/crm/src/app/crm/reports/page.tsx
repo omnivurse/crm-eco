@@ -66,7 +66,7 @@ function QuickStatCard({
   const colors = colorClasses[color];
 
   const content = (
-    <div className={`glass-card rounded-xl p-4 border ${colors.border} hover:border-opacity-50 transition-all group cursor-pointer`}>
+    <div className={`glass-card rounded-xl p-4 border ${colors.border} transition-all group ${href ? 'hover:border-opacity-50 cursor-pointer' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className={`p-2 rounded-lg ${colors.bg}`}>

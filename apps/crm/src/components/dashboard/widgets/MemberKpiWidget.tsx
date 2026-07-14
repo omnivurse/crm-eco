@@ -31,13 +31,40 @@ interface DashboardStats {
   updated_last_7d: number;
 }
 
+/**
+ * A structured list filter matching `ViewFilter` (category defaults to
+ * 'field'). Encoded into the module list's `?filters=` param so a KPI click
+ * lands on the same filtered set the number counts. NOTE: a bare
+ * `?market_type=…` query string is NOT read by the list page — only the
+ * structured `filters` param is — which is why the old links didn't filter.
+ */
+type CardFilter = {
+  field: string;
+  operator: 'equals' | 'is_null';
+  value: string | boolean | null;
+};
+
 interface KpiCard {
   label: string;
   value: number;
   icon: React.ElementType;
   color: string;
-  href?: string;
+  /** Field filters (ANDed) that reproduce this card's count on the list. */
+  filters?: CardFilter[];
   subtitle?: string;
+}
+
+/**
+ * Build a contacts-list URL that filters to exactly what a KPI counts. An empty
+ * filter list links to the unfiltered module.
+ */
+function contactsHref(filters?: CardFilter[]): string | undefined {
+  if (!filters) return undefined;
+  if (filters.length === 0) return '/crm/modules/contacts';
+  const encoded = encodeURIComponent(
+    JSON.stringify(filters.map((f) => ({ ...f, category: 'field' as const }))),
+  );
+  return `/crm/modules/contacts?filters=${encoded}`;
 }
 
 export default function MemberKpiWidget() {
@@ -69,13 +96,15 @@ export default function MemberKpiWidget() {
 
   if (!stats) return null;
 
+  // Filters below mirror the exact predicates in the `get_crm_dashboard_stats`
+  // RPC so each card's number matches the filtered list it opens.
   const cards: KpiCard[] = [
     {
       label: 'Total Members',
       value: stats.total_individual,
       icon: Users,
       color: 'text-teal-600 bg-teal-50 dark:text-teal-400 dark:bg-teal-500/10',
-      href: '/crm/modules/contacts',
+      filters: [{ field: 'record_type', operator: 'equals', value: 'individual' }],
     },
     {
       label: 'HealthShare',
@@ -83,14 +112,16 @@ export default function MemberKpiWidget() {
       icon: Heart,
       color:
         'text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10',
-      href: '/crm/modules/contacts?market_type=healthshare',
+      filters: [{ field: 'market_type', operator: 'equals', value: 'healthshare' }],
     },
     {
       label: 'Traditional Insurance',
       value: stats.traditional_insurance,
       icon: Shield,
       color: 'text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-500/10',
-      href: '/crm/modules/contacts?market_type=traditional_insurance',
+      filters: [
+        { field: 'market_type', operator: 'equals', value: 'traditional_insurance' },
+      ],
     },
     {
       label: 'Tobacco Users',
@@ -99,6 +130,10 @@ export default function MemberKpiWidget() {
       color:
         'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10',
       subtitle: `${stats.tobacco_unknown.toLocaleString()} unknown`,
+      filters: [
+        { field: 'tobacco_user', operator: 'equals', value: true },
+        { field: 'record_type', operator: 'equals', value: 'individual' },
+      ],
     },
     {
       label: 'Needs Review',
@@ -108,6 +143,9 @@ export default function MemberKpiWidget() {
         stats.needs_review > 0
           ? 'text-orange-600 bg-orange-50 dark:text-orange-400 dark:bg-orange-500/10'
           : 'text-slate-500 bg-slate-50 dark:text-slate-400 dark:bg-slate-500/10',
+      filters: [
+        { field: 'normalization_status', operator: 'equals', value: 'needs_review' },
+      ],
     },
     {
       label: 'Needs Classification',
@@ -117,6 +155,9 @@ export default function MemberKpiWidget() {
         stats.needs_classification > 0
           ? 'text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10'
           : 'text-slate-500 bg-slate-50 dark:text-slate-400 dark:bg-slate-500/10',
+      // Stat counts `market_type = 'unknown' OR IS NULL`; the list can only AND
+      // field filters, so we target the dominant post-import 'unknown' case.
+      filters: [{ field: 'market_type', operator: 'equals', value: 'unknown' }],
     },
     {
       label: 'Missing Carrier',
@@ -124,6 +165,10 @@ export default function MemberKpiWidget() {
       icon: Building2,
       color:
         'text-slate-600 bg-slate-50 dark:text-slate-400 dark:bg-slate-500/10',
+      filters: [
+        { field: 'carrier_id', operator: 'is_null', value: null },
+        { field: 'record_type', operator: 'equals', value: 'individual' },
+      ],
     },
     {
       label: 'Unassigned Advisor',
@@ -133,6 +178,11 @@ export default function MemberKpiWidget() {
         stats.unassigned_advisor > 0
           ? 'text-red-600 bg-red-50 dark:text-red-400 dark:bg-red-500/10'
           : 'text-slate-500 bg-slate-50 dark:text-slate-400 dark:bg-slate-500/10',
+      filters: [
+        { field: 'canonical_advisor_id', operator: 'is_null', value: null },
+        { field: 'normalized_advisor_name', operator: 'is_null', value: null },
+        { field: 'record_type', operator: 'equals', value: 'individual' },
+      ],
     },
   ];
 
@@ -170,8 +220,9 @@ export default function MemberKpiWidget() {
           </div>
         );
 
-        return card.href ? (
-          <Link key={card.label} href={card.href}>
+        const href = contactsHref(card.filters);
+        return href ? (
+          <Link key={card.label} href={href}>
             {content}
           </Link>
         ) : (

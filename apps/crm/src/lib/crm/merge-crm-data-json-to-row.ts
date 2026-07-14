@@ -206,6 +206,75 @@ export function normalizeDateColumnValue(value: unknown): string | null {
 }
 
 /**
+ * The single entry point EVERY `crm_records` write path should use so JSONB
+ * `data` and the indexed row columns never drift apart. It:
+ *   1. Sanitizes date-like JSONB keys (Zoho "6/1/26" → "2026-06-01", strips
+ *      sentinels), returning the cleaned object to store in `data`.
+ *   2. Mirrors canonical values onto their indexed columns (email, phone,
+ *      title, status, market_type, carrier_id, *_date, group_name, advisor_id,
+ *      normalized_* …) so lists, filters, RPCs, and reports see them.
+ *
+ * Callers spread `columns` onto the insert/update, then apply any authoritative
+ * overrides of their own AFTER the spread (e.g. owner_id, created_by, or a
+ * status/title the endpoint owns). This mirrors exactly what
+ * `record-create-service` and `record-patch-service` already do — use this
+ * everywhere else (clone, imports, webforms, webhooks, bulk) instead of
+ * hand-rolling a partial column set, which strands data in JSONB only.
+ *
+ * Pure and side-effect free; does not read or write the database.
+ */
+export function buildNormalizedRecordWrite(
+  data: Record<string, unknown> | null | undefined,
+  ctx: MergeCrmDataJsonContext = {},
+): { data: Record<string, unknown>; columns: Record<string, unknown> } {
+  const source = data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+  const cleanData = sanitizeCrmDataJsonPatch(source);
+  const columns = mergeCrmDataJsonIntoRowColumns(cleanData, ctx);
+  return { data: cleanData, columns };
+}
+
+/**
+ * Columns an UPDATE path must NOT re-mirror from (possibly stale) JSONB, because
+ * a *separate* writer owns them:
+ *   - `status` / `stage` — set explicitly by the endpoint / transition API.
+ *   - the owner-assignment + normalization attribution columns — set as
+ *     COLUMNS ONLY (not JSONB) by owner reassignment (single + bulk PATCH) and
+ *     the normalization job.
+ * A record's JSONB can legitimately hold stale copies of these (e.g. a full-form
+ * edit persists the row-column mirror back into `data`). Re-mirroring them on an
+ * UNRELATED field update would silently revert the out-of-band column change —
+ * e.g. an inbound webhook reverting a manager's advisor reassignment. Creates are
+ * unaffected (nothing is out-of-band yet); only updates strip these.
+ */
+export const CRM_UPDATE_MIRROR_EXCLUDE_KEYS: readonly string[] = [
+  'status',
+  'stage',
+  'normalization_status',
+  'canonical_advisor_id',
+  'normalized_advisor_name',
+  'normalized_agent_name',
+  'advisor_id',
+];
+
+/**
+ * Filter a mirrored-columns object down to the subset that is safe to write on
+ * an UPDATE (see {@link CRM_UPDATE_MIRROR_EXCLUDE_KEYS}). `extraExclude` lets a
+ * caller drop additional keys it owns authoritatively (e.g. the CSV-update path
+ * owns title/email/phone via its own diff).
+ */
+export function pickUpdateMirrorColumns(
+  columns: Record<string, unknown>,
+  extraExclude: readonly string[] = [],
+): Record<string, unknown> {
+  const exclude = new Set<string>([...CRM_UPDATE_MIRROR_EXCLUDE_KEYS, ...extraExclude]);
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(columns)) {
+    if (!exclude.has(key)) out[key] = value;
+  }
+  return out;
+}
+
+/**
  * Maps JSONB `data` onto indexed `crm_records` columns (shared by POST and PATCH).
  */
 export function mergeCrmDataJsonIntoRowColumns(
