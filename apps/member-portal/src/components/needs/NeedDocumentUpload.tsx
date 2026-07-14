@@ -24,6 +24,8 @@ interface PendingUpload {
  */
 const DOCUMENT_TYPES = [
   { value: 'itemized_bill', label: 'Itemized bill' },
+  { value: 'receipt', label: 'Receipt' },
+  { value: 'lab_result', label: 'Lab result' },
   { value: 'medical_records', label: 'Medical records' },
   { value: 'other', label: 'General / other' },
 ] as const;

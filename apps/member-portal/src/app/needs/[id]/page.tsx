@@ -1,5 +1,10 @@
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
-import { getMemberForUser, getNeedForMember, getNeedEvents } from '@crm-eco/lib';
+import {
+  getMemberForUser,
+  getNeedForMember,
+  getNeedEvents,
+  parseNeedInvoice,
+} from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@crm-eco/ui';
@@ -10,7 +15,10 @@ import {
   NeedTimelineCard,
   NeedAttachmentsCard,
   NeedAddDocumentsPanel,
+  NeedInvoiceCard,
 } from '../../../components/needs';
+
+const INVOICE_LOCKED_STATUSES = new Set(['closed', 'paid', 'denied', 'cancelled']);
 import { listNeedAttachmentsForMember } from '@/lib/data/need-attachments';
 
 export default async function NeedDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -94,6 +102,13 @@ export default async function NeedDetailPage({ params }: { params: Promise<{ id:
       <NeedAttachmentsCard attachments={attachments} />
 
       <NeedAddDocumentsPanel needId={needId} status={need.status} />
+
+      {/* Itemized invoice — the member breaks a receipt/bill into line items */}
+      <NeedInvoiceCard
+        needId={needId}
+        invoice={parseNeedInvoice(need.custom_fields)}
+        canEdit={!INVOICE_LOCKED_STATUSES.has(need.status)}
+      />
 
       {/* Activity Timeline Card */}
       <NeedTimelineCard events={events} />

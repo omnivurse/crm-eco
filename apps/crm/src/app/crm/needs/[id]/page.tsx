@@ -54,7 +54,7 @@ import {
   Edit,
   XCircle,
 } from 'lucide-react';
-import { PricingEstimator } from '@/components/needs';
+import { PricingEstimator, NeedInvoicePanel } from '@/components/needs';
 import type { PricingEstimate } from '@/lib/pricing/types';
 import { toast } from 'sonner';
 
@@ -490,7 +490,9 @@ export default function NeedDetailPage() {
               />
             </TabsContent>
 
-            <TabsContent value="documents">
+            <TabsContent value="documents" className="space-y-4">
+              {/* Itemized invoice — reads/writes the real need; hidden for the demo record. */}
+              <NeedInvoicePanel needId={needId} />
               <Card>
                 <CardContent className="py-12 text-center">
                   <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />

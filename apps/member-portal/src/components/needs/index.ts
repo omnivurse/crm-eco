@@ -8,6 +8,7 @@ export { NeedTimelineCard } from './NeedTimelineCard';
 export { NeedAttachmentsCard } from './NeedAttachmentsCard';
 export { NeedAddDocumentsPanel } from './NeedAddDocumentsPanel';
 export { NeedDocumentUpload } from './NeedDocumentUpload';
+export { NeedInvoiceCard } from './NeedInvoiceCard';
 export { SubmitNeedWizard } from './SubmitNeedWizard';
 export { SLALegend } from './SLALegend';
 
