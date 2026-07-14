@@ -100,6 +100,8 @@ export function SignaturePad({
       <div className="relative rounded-lg border-2 border-dashed border-gray-300 bg-white">
         <canvas
           ref={canvasRef}
+          role="img"
+          aria-label="Signature pad — draw your signature"
           width={width}
           height={height}
           className="w-full cursor-crosshair touch-none rounded-lg"

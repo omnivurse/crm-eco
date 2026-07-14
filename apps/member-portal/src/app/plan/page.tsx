@@ -59,7 +59,7 @@ export default async function PlanOverviewPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Link
           href="/dependents"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Users className="mb-3 h-6 w-6 text-primary" />
           <p className="font-semibold text-slate-900">Dependents</p>
@@ -69,7 +69,7 @@ export default async function PlanOverviewPage() {
         </Link>
         <Link
           href="/plan/change"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <Edit3 className="mb-3 h-6 w-6 text-amber-600" />
           <p className="font-semibold text-slate-900">Request a change</p>
@@ -77,7 +77,7 @@ export default async function PlanOverviewPage() {
         </Link>
         <Link
           href="/plan/cancel"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-slate-300 hover:shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <XCircle className="mb-3 h-6 w-6 text-red-600" />
           <p className="font-semibold text-slate-900">Cancel membership</p>

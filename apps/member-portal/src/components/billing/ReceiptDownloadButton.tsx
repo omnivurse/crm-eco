@@ -70,7 +70,7 @@ export function ReceiptDownloadButton({ receipt }: { receipt: ReceiptData }) {
   };
 
   return (
-    <Button variant="ghost" size="icon" title="Download Receipt" onClick={handleDownload}>
+    <Button variant="ghost" size="icon" className="h-11 w-11" title="Download Receipt" onClick={handleDownload}>
       <Download className="h-4 w-4" />
     </Button>
   );

@@ -29,8 +29,8 @@ export default async function MemberDashboard() {
     // User is authenticated but has no member record
     return (
       <div className="max-w-2xl mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-blue-100 flex items-center justify-center">
-          <Heart className="w-8 h-8 text-blue-600" />
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+          <Heart className="w-8 h-8 text-primary" aria-hidden />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-4">Welcome to Double Helix Hub</h1>
         <p className="text-slate-600 mb-8">

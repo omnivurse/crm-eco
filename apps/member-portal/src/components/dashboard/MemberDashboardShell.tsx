@@ -131,9 +131,9 @@ export function MemberDashboardShell({
       <Card className="border-amber-200 bg-amber-50">
         <CardContent className="pt-6">
           <div className="flex gap-4">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden />
             <div>
-              <h4 className="font-medium text-amber-900 mb-1">Important Reminder</h4>
+              <h3 className="font-medium text-amber-900 mb-1">Important Reminder</h3>
               <p className="text-sm text-amber-700">
                 Double Helix Hub is a health sharing ministry, not insurance. Members share each other&apos;s 
                 medical expenses according to program guidelines. Sharing is voluntary and not guaranteed. 

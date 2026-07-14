@@ -80,22 +80,34 @@ export default function SecurityPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={changePassword} className="space-y-3">
-            <input
-              type="password"
-              placeholder="New password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              autoComplete="new-password"
-            />
-            <input
-              type="password"
-              placeholder="Confirm new password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              autoComplete="new-password"
-            />
+            <div>
+              <label htmlFor="new-password" className="block text-sm font-medium text-slate-700 mb-1">
+                New password
+              </label>
+              <input
+                id="new-password"
+                type="password"
+                placeholder="New password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                autoComplete="new-password"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirm-new-password" className="block text-sm font-medium text-slate-700 mb-1">
+                Confirm new password
+              </label>
+              <input
+                id="confirm-new-password"
+                type="password"
+                placeholder="Confirm new password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                autoComplete="new-password"
+              />
+            </div>
             {pwMessage && (
               <div
                 className={`rounded-lg border p-3 text-sm ${
@@ -110,7 +122,7 @@ export default function SecurityPage() {
             <button
               type="submit"
               disabled={pwSubmitting}
-              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+              className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
             >
               {pwSubmitting ? 'Updating...' : 'Update password'}
             </button>
@@ -127,14 +139,20 @@ export default function SecurityPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={changeEmail} className="space-y-3">
-            <input
-              type="email"
-              placeholder="new@example.com"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-              autoComplete="email"
-            />
+            <div>
+              <label htmlFor="new-email" className="block text-sm font-medium text-slate-700 mb-1">
+                New email
+              </label>
+              <input
+                id="new-email"
+                type="email"
+                placeholder="new@example.com"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                autoComplete="email"
+              />
+            </div>
             {emailMessage && (
               <div
                 className={`rounded-lg border p-3 text-sm ${
@@ -149,7 +167,7 @@ export default function SecurityPage() {
             <button
               type="submit"
               disabled={emailSubmitting || !newEmail}
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
             >
               {emailSubmitting ? 'Sending...' : 'Send verification email'}
             </button>

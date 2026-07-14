@@ -203,11 +203,13 @@ export function PortalHeader() {
           </div>
 
           {/* Mobile Menu Button */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="md:hidden hover:bg-slate-100 rounded-lg"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden hover:bg-slate-100 rounded-lg h-11 w-11"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </Button>
