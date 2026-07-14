@@ -193,7 +193,6 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
 
   const recordCommandContext = useMemo(
     () => getRecordCommandContext(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- version bump re-reads store
     [recordContextVersion],
   );
 
