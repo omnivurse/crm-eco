@@ -60,6 +60,8 @@ const STATUS_TONE: Record<string, Tone> = {
   cancelled: 'neutral',
   canceled: 'neutral',
   // leads
+  prospect: 'info',
+  hotprospectreadytomove: 'attention',
   contacted: 'progress',
   working: 'progress',
   nurturing: 'progress',

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback, memo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { StatusBadge } from '@/components/ui/status-badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -640,7 +641,7 @@ export const RecordTable = memo(function RecordTable({
   }, []);
 
   // Virtualization setup - estimate row height at 56px (h-14)
-  const ROW_HEIGHT = 56;
+  const ROW_HEIGHT = 44; // comfortable-dense default (was 56); measureElement refines per row
   const rowVirtualizer = useVirtualizer({
     count: records.length,
     getScrollElement: () => tableContainerRef.current,
@@ -920,13 +921,7 @@ export const RecordTable = memo(function RecordTable({
         : String(rawStatus);
       if (!status) return <span className="text-slate-400 dark:text-slate-600">—</span>;
 
-      const style = STATUS_STYLES[status] || { bg: 'bg-slate-500/10', text: 'text-slate-600 dark:text-slate-400', border: 'border-slate-500/30' };
-
-      const content = (
-        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border}`}>
-          {status}
-        </span>
-      );
+      const content = <StatusBadge status={status} />;
 
       if (enableInlineEdit && onRecordUpdate) {
         return (
@@ -1265,7 +1260,7 @@ export const RecordTable = memo(function RecordTable({
                   <TableCell
                     onClick={(e) => e.stopPropagation()}
                     className={cn(
-                      'w-12 flex-shrink-0 flex items-center sticky left-0 z-10',
+                      'w-12 flex-shrink-0 flex items-center sticky left-0 z-10 !py-2',
                       selectedIds.has(record.id)
                         ? 'bg-teal-50 dark:bg-teal-500/5'
                         : 'bg-white dark:bg-slate-900 group-hover:bg-slate-50 dark:group-hover:bg-white/5'
@@ -1282,7 +1277,7 @@ export const RecordTable = memo(function RecordTable({
                     <TableCell
                       key={col}
                       className={cn(
-                        'text-sm flex-shrink-0 flex items-center overflow-hidden',
+                        'text-sm flex-shrink-0 flex items-center overflow-hidden !py-2',
                         colIndex === 0 && 'sticky z-10 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]',
                         colIndex === 0 && (
                           selectedIds.has(record.id)
@@ -1312,7 +1307,7 @@ export const RecordTable = memo(function RecordTable({
                       )}
                     </TableCell>
                   ))}
-                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
+                  <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center !py-2" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
                     {/* Row Quick Actions - visible on hover */}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                       {/* Call - only if phone exists */}
