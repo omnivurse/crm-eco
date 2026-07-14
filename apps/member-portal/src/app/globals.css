@@ -87,3 +87,19 @@
     @apply border-white/40 bg-white/10 text-white hover:bg-white/20 hover:text-white;
   }
 }
+
+/* ── Premium, accessible brand tokens (member-portal scope) ───────────────
+   The shared theme's --primary is bright cyan (#06b6d4); white text on it is
+   only ~2.1:1, so primary buttons/links read as washed-out — the "text is the
+   same colour as the button" complaint. Deepen it to an AA-compliant teal
+   (white on #0b6d85 ≈ 5.9:1) and darken the rarely-used secondary. Foregrounds
+   are forced to pure white for crisp labels. This is placed AFTER the theme
+   import so it becomes the portal default; a white-label tenant's
+   `organizations.branding` still overrides it (injected in the layout <head>). */
+:root {
+  --primary: 192 85% 28%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 224 71% 42%;
+  --secondary-foreground: 0 0% 100%;
+  --ring: 192 85% 34%;
+}
