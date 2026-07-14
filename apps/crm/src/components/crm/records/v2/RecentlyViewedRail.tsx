@@ -117,7 +117,7 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
       <div
         className={cn(
           'px-3 flex items-center gap-2 border-b border-slate-100 dark:border-white/5',
-          isInline ? 'py-1.5' : 'py-2 px-4',
+          isInline ? 'py-1.5' : 'py-1.5 px-4',
         )}
       >
         <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -130,14 +130,14 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
           </span>
         )}
       </div>
-      <div className={cn('flex gap-2 overflow-x-auto [scrollbar-width:thin]', isInline ? 'px-2 py-2' : 'px-3 py-3')}>
+      <div className={cn('flex gap-2 overflow-x-auto [scrollbar-width:thin]', isInline ? 'px-2 py-2' : 'px-3 py-2')}>
         {loading
           ? Array.from({ length: isInline ? 4 : 5 }).map((_, i) => (
               <div
                 key={i}
                 className={cn(
                   'rounded-xl bg-slate-100 dark:bg-slate-800/50 animate-pulse',
-                  isInline ? 'min-w-[160px] h-[52px]' : 'min-w-[180px] h-[60px]',
+                  isInline ? 'min-w-[160px] h-[52px]' : 'min-w-[180px] h-[52px]',
                 )}
               />
             ))
@@ -150,7 +150,7 @@ export const RecentlyViewedRail = memo(function RecentlyViewedRail({
                   'group shrink-0 rounded-xl border border-slate-200 dark:border-white/10',
                   'bg-white dark:bg-slate-900/60 hover:border-teal-400 dark:hover:border-teal-500/60 hover:shadow-sm',
                   'flex items-center gap-2 transition-colors',
-                  isInline ? 'min-w-[160px] max-w-[220px] px-2.5 py-1.5' : 'min-w-[180px] max-w-[240px] px-3 py-2',
+                  isInline ? 'min-w-[160px] max-w-[220px] px-2.5 py-1.5' : 'min-w-[180px] max-w-[240px] px-3 py-1.5',
                 )}
               >
                 <div

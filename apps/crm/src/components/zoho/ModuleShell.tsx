@@ -929,7 +929,7 @@ export const ModuleShell = memo(function ModuleShell({
   }), [selectedIds, density, visibleColumns, sortField, sortDirection, handleSortChange, module.key, effectiveViewMode, handleViewModeChange, requestDelete]);
 
   return (
-    <div className={cn('w-full space-y-4', className)}>
+    <div className={cn('w-full space-y-3', className)}>
       {/* Header */}
       <ModuleHeader
         module={module}
@@ -941,7 +941,7 @@ export const ModuleShell = memo(function ModuleShell({
       <RecentlyViewedRail moduleKey={module.key} />
 
       {/* Toolbar */}
-      <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 p-3">
+      <div className="glass-card rounded-xl border border-slate-200 dark:border-white/10 p-2.5">
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Left: Views + Search */}
           <div className="flex items-center gap-2 flex-1">

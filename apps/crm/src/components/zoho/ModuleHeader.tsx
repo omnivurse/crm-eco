@@ -124,7 +124,7 @@ export function ModuleHeader({
   };
 
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    <div className={cn('flex flex-col gap-2', className)}>
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm">
         <Link
@@ -142,7 +142,7 @@ export function ModuleHeader({
       {/* Title Row */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className={cn('p-2.5 rounded-xl', colors.bg, colors.text)}>
+          <div className={cn('p-2 rounded-xl', colors.bg, colors.text)}>
             {icon}
           </div>
           <div>
