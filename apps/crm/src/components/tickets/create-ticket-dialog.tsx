@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@crm-eco/lib/supabase/client';
@@ -112,6 +113,9 @@ export function CreateTicketDialog() {
         });
       }
 
+      const newTicketId = insertedTicket
+        ? (insertedTicket as { id: string }).id
+        : null;
       setOpen(false);
       setFormData({
         subject: '',
@@ -120,7 +124,12 @@ export function CreateTicketDialog() {
         priority: 'medium',
         memberId: '',
       });
-      router.refresh();
+      toast.success('Ticket created');
+      if (newTicketId) {
+        router.push(`/crm/tickets/${newTicketId}`);
+      } else {
+        router.refresh();
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to create ticket';
       setError(message);

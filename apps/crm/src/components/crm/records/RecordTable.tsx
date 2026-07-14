@@ -1139,20 +1139,38 @@ export const RecordTable = memo(function RecordTable({
           <TableRow className="border-b border-slate-200 dark:border-white/5 hover:bg-transparent flex" style={{ minWidth: totalMinWidth }}>
             <TableHead className="w-12 flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm sticky left-0 z-20" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
               <Checkbox
-                checked={allSelected}
-                ref={(el) => {
-                  if (el) (el as HTMLButtonElement).dataset.state = someSelected ? 'indeterminate' : allSelected ? 'checked' : 'unchecked';
-                }}
+                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
                 onCheckedChange={handleSelectAll}
-                className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                aria-label="Select all rows"
+                className="border-slate-400 dark:border-slate-600 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500 data-[state=indeterminate]:bg-teal-500 data-[state=indeterminate]:border-teal-500"
               />
             </TableHead>
             {visibleColumns.map((col, colIndex) => (
               <TableHead
                 key={col}
+                aria-sort={
+                  !onSort
+                    ? undefined
+                    : currentSort?.field === col
+                      ? currentSort.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : 'none'
+                }
+                tabIndex={onSort ? 0 : undefined}
+                onKeyDown={
+                  onSort
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSort(col);
+                        }
+                      }
+                    : undefined
+                }
                 className={cn(
                   'relative flex-shrink-0 flex items-center bg-slate-50 dark:bg-slate-900/80 backdrop-blur-sm text-slate-600 dark:text-slate-400 font-medium text-xs uppercase tracking-wider',
-                  onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none',
+                  onSort && 'cursor-pointer hover:text-slate-900 dark:hover:text-white transition-colors select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   colIndex === 0 && 'sticky z-20 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-[3px] after:bg-gradient-to-r after:from-black/[0.06] after:to-transparent dark:after:from-white/[0.08]'
                 )}
                 style={{
@@ -1296,7 +1314,7 @@ export const RecordTable = memo(function RecordTable({
                   ))}
                   <TableCell onClick={(e) => e.stopPropagation()} className="w-28 flex-shrink-0 flex items-center" style={{ width: 112, minWidth: 112, maxWidth: 112 }}>
                     {/* Row Quick Actions - visible on hover */}
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                       {/* Call - only if phone exists */}
                       {record.phone && (
                         <Button
