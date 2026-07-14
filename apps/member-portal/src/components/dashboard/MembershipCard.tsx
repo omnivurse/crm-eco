@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@crm-eco/ui';
 import { Heart, ArrowRight, Calendar, DollarSign, Hash } from 'lucide-react';
 import { format } from 'date-fns';
-import { StatusBadge } from './StatusBadge';
+import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 
 interface MembershipWithPlan {
   id: string;
@@ -62,7 +62,7 @@ export function MembershipCard({ membership }: MembershipCardProps) {
             <Heart className="w-5 h-5 text-blue-600" />
             Your Membership
           </CardTitle>
-          <StatusBadge status={membership.status} />
+          <StatusBadge status={membership.status} className="capitalize" />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

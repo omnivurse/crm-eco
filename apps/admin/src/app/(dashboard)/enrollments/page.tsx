@@ -1,4 +1,5 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button, Badge } from '@crm-eco/ui';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@crm-eco/ui';
+import { StatusBadge } from '@crm-eco/ui/components/status-badge';
 import { FileText, Eye, Inbox } from 'lucide-react';
 import Link from 'next/link';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
@@ -30,21 +31,6 @@ async function getEnrollments() {
     .limit(100) as any);
 
   return enrollments ?? [];
-}
-
-function getStatusBadgeVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  switch (status) {
-    case 'approved':
-      return 'default';
-    case 'submitted':
-    case 'in_progress':
-      return 'secondary';
-    case 'rejected':
-    case 'cancelled':
-      return 'destructive';
-    default:
-      return 'outline';
-  }
 }
 
 function getStatusLabel(status: string): string {
@@ -146,9 +132,10 @@ export default async function EnrollmentsPage() {
                         )}
                       </td>
                       <td className="py-3">
-                        <Badge variant={getStatusBadgeVariant(enrollment.status)}>
-                          {getStatusLabel(enrollment.status)}
-                        </Badge>
+                        <StatusBadge
+                          status={enrollment.status}
+                          label={getStatusLabel(enrollment.status)}
+                        />
                       </td>
                       <td className="py-3 text-sm">
                         {enrollment.effective_date

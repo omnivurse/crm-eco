@@ -42,8 +42,8 @@ Durable style rules for the suite (CRM · Admin · Member Portal). Source of tru
 
 ## Repo conventions
 - **Styling:** Tailwind + shadcn HSL tokens; shared primitives in `packages/ui/src/components` imported via `@crm-eco/ui/components/*`.
-- **Existing primitives:** `Button` (variants incl. `destructive`), `Input`, `AlertDialog`, `Dialog`, `ConfirmDialogHost`/`confirmDialog`, `PromptDialogHost`/`promptDialog`.
-- **Coordinate** shared-token/tone-system changes with the in-flight RecordTable "tone system" work before app-wide rollout.
+- **Existing primitives:** `Button` (variants incl. `destructive`), `Input`, `AlertDialog`, `Dialog`, `ConfirmDialogHost`/`confirmDialog`, `PromptDialogHost`/`promptDialog`, `StatusBadge`/`statusToTone`.
+- **Status colours = one shared tone system** in `@crm-eco/ui` (`StatusBadge` + `statusToTone`, `--tone-*` tokens in `theme.css`). CRM, Admin, and Portal all route status / stage / priority pills through it — one hue = one meaning, everywhere. The CRM `@/components/ui/status-badge` now re-exports it.
 
 ---
 *Established via the Design Lab exploration. Update as directions land.*

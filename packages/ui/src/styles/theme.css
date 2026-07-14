@@ -101,6 +101,16 @@
   --sidebar-accent: #3dd6ff;
   --sidebar-gradient: linear-gradient(135deg, #030712 0%, #0a1628 100%);
   --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+
+  /* Semantic status tones — one hue = one meaning, shared across all apps.
+     Consumed by <StatusBadge> / statusToTone() in @crm-eco/ui. */
+  --tone-neutral-fg:#64748b;   --tone-neutral-bg:#64748b14;   --tone-neutral-border:#64748b40;
+  --tone-info-fg:#2563eb;      --tone-info-bg:#2563eb14;      --tone-info-border:#2563eb40;
+  --tone-progress-fg:#7c3aed;  --tone-progress-bg:#7c3aed14;  --tone-progress-border:#7c3aed40;
+  --tone-attention-fg:#c2740a; --tone-attention-bg:#c2740a16; --tone-attention-border:#c2740a40;
+  --tone-success-fg:#0e9f6e;   --tone-success-bg:#0e9f6e16;   --tone-success-border:#0e9f6e40;
+  --tone-danger-fg:#dc2626;    --tone-danger-bg:#dc262614;    --tone-danger-border:#dc262640;
+  --tone-special-fg:#db2777;   --tone-special-bg:#db277714;   --tone-special-border:#db277740;
 }
 
 .dark {
@@ -150,6 +160,15 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --glass-blur: 20px;
+
+  /* Semantic status tones — dark variants. */
+  --tone-neutral-fg:#94a3b8;   --tone-neutral-bg:#94a3b81f;   --tone-neutral-border:#94a3b840;
+  --tone-info-fg:#60a5fa;      --tone-info-bg:#60a5fa1f;      --tone-info-border:#60a5fa40;
+  --tone-progress-fg:#a78bfa;  --tone-progress-bg:#a78bfa1f;  --tone-progress-border:#a78bfa40;
+  --tone-attention-fg:#fbbf24; --tone-attention-bg:#fbbf241f; --tone-attention-border:#fbbf2440;
+  --tone-success-fg:#34d399;   --tone-success-bg:#34d3991f;   --tone-success-border:#34d39940;
+  --tone-danger-fg:#f87171;    --tone-danger-bg:#f871711f;    --tone-danger-border:#f8717140;
+  --tone-special-fg:#f472b6;   --tone-special-bg:#f472b61f;   --tone-special-border:#f472b640;
 }
 
 /* ============================================================
