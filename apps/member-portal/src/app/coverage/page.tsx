@@ -2,20 +2,18 @@ import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { getMemberForUser, getMemberMemberships } from '@crm-eco/lib';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  Shield, 
-  CheckCircle, 
-  Clock, 
+import {
+  Shield,
+  CheckCircle,
+  Clock,
   AlertCircle,
-  Calendar,
-  DollarSign,
-  Users,
-  FileText,
   ArrowRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-eco/ui/components/card';
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
+import { PlanCoverageCard } from '@/components/plan/PlanCoverageCard';
+import type { PlanOverview } from '@/lib/data/member';
 
 export default async function CoveragePage() {
   const supabase = await createServerSupabaseClient();
@@ -98,6 +96,42 @@ export default async function CoveragePage() {
   // IUA/deductible lives on the plan, never on the membership row.
   const iuaAmount = plan?.iua_amount ?? plan?.default_iua ?? null;
 
+  // Premium coverage summary for the shared PlanCoverageCard — built from the
+  // data already fetched on this page (no extra query, no change to gating).
+  const am = activeMembership as {
+    status?: string | null;
+    billing_amount?: number | null;
+    membership_number?: string | null;
+    effective_date?: string | null;
+    plans?: { name?: string | null; monthly_share?: number | null } | null;
+  } | undefined;
+  const humanizeCoverage = (value: unknown): string | null =>
+    typeof value === 'string' && value.trim()
+      ? value.trim().replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+      : null;
+  const firstNum = (...vals: Array<number | string | null | undefined>): number | null => {
+    for (const v of vals) {
+      if (v === null || v === undefined || v === '') continue;
+      const n = typeof v === 'number' ? v : Number(v);
+      if (!Number.isNaN(n)) return n;
+    }
+    return null;
+  };
+  const coverageOverview: PlanOverview = {
+    planName: am?.plans?.name ?? member.plan_name ?? null,
+    planType: member.plan_type ?? null,
+    marketType: member.market_type ?? null,
+    status: am?.status ?? null,
+    premium: firstNum(am?.billing_amount, am?.plans?.monthly_share, member.monthly_share),
+    premiumFrequency: 'monthly',
+    deductible: iuaAmount,
+    effectiveDate: am?.effective_date ?? member.effective_date ?? null,
+    memberNumber: member.member_number ?? null,
+    membershipNumber: am?.membership_number ?? null,
+    coverageOption: humanizeCoverage(member.coverage_type),
+    benefits: null,
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'active': return <CheckCircle className="h-5 w-5 text-green-500" />;
@@ -125,77 +159,8 @@ export default async function CoveragePage() {
 
       {activeMembership ? (
         <>
-          {/* Active Plan Card */}
-          <Card className="border-2 border-green-200 bg-green-50/30">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(activeMembership.status)}
-                  <div>
-                    <CardTitle className="text-xl">
-                      {activeMembership.plans?.name || 'Health Sharing Plan'}
-                    </CardTitle>
-                    <CardDescription>
-                      {activeMembership.plans?.description || 'Your active health sharing membership'}
-                    </CardDescription>
-                  </div>
-                </div>
-                <Badge className={getStatusColor(activeMembership.status)}>
-                  {activeMembership.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Effective Date</p>
-                    <p className="font-medium">
-                      {activeMembership.effective_date 
-                        ? new Date(activeMembership.effective_date).toLocaleDateString()
-                        : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                    <DollarSign className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Monthly Share</p>
-                    <p className="font-medium">
-                      ${activeMembership.plans?.monthly_share?.toFixed(2) || '0.00'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Coverage Type</p>
-                    <p className="font-medium">
-                      {member.coverage_type || 'Individual'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">IUA (Deductible)</p>
-                    <p className="font-medium">
-                      {iuaAmount != null ? `$${iuaAmount.toLocaleString()}` : 'See plan'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Premium coverage summary — benefits are shown in "What's Covered" below. */}
+          <PlanCoverageCard overview={coverageOverview} showBenefits={false} />
 
           {/* Benefits */}
           <Card>
