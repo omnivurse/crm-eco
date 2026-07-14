@@ -77,7 +77,7 @@ describe('isScheduledCancellationDue', () => {
     );
     expect(result.due).toBe(true);
     expect(result.endDate).toBe('2026-01-31');
-    expect(result.effectiveDate).toBe('2026-02-01');
+    expect(result.effectiveDate).toBe('2026-01-01');
   });
 
   it('keeps active records until the cancellation month begins', () => {

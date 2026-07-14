@@ -37,6 +37,12 @@ function buildMockSupabase(overrides?: {
   for (const m of methods) {
     chainable[m] = vi.fn(() => chainable);
   }
+  // Module resolution now terminates in .maybeSingle() (see route.ts).
+  chainable.maybeSingle = vi.fn(() =>
+    Promise.resolve(
+      overrides?.moduleResult ?? { data: { id: 'mod-1', org_id: VALID_ORG_ID }, error: null }
+    )
+  );
   // Determine which result to return based on call sequence
   let callCount = 0;
   chainable.single = vi.fn(() => {
@@ -103,8 +109,11 @@ describe('GET /api/crm/records', () => {
 
   it('returns 404 when module belongs to different org', async () => {
     mockGetAuthProfile.mockResolvedValue(mockProfile);
+    // The route now scopes module resolution in SQL via .eq('org_id', ...), so a
+    // module owned by another org is filtered out entirely and the query returns
+    // no row. maybeSingle() therefore yields { data: null }.
     const sb = buildMockSupabase({
-      moduleResult: { data: { id: 'mod-1', org_id: 'different-org' }, error: null },
+      moduleResult: { data: null, error: null },
     });
     mockCreateClient.mockResolvedValue(sb);
     const req = buildRequest('http://localhost:3000/api/crm/records?module_key=contacts');

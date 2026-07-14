@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildRequest } from '@/test/helpers';
+import { buildRequest, buildProfile } from '@/test/helpers';
 
 const mockGetConversations = vi.fn();
 const mockCreateConversation = vi.fn();
 const mockGetInboxStats = vi.fn();
 const mockGetUnifiedMessages = vi.fn();
+const mockGetAuthProfile = vi.fn();
 
 vi.mock('@/lib/inbox', () => ({
   getConversations: (...args: unknown[]) => mockGetConversations(...args),
@@ -13,11 +14,19 @@ vi.mock('@/lib/inbox', () => ({
   getUnifiedMessages: (...args: unknown[]) => mockGetUnifiedMessages(...args),
 }));
 
+// The route now verifies authentication via getAuthProfile. Mock the module
+// so the real supabase-server (which imports 'server-only') is not loaded and
+// each test starts authenticated by default.
+vi.mock('@/lib/supabase-server', () => ({
+  getAuthProfile: () => mockGetAuthProfile(),
+}));
+
 import { GET, POST } from './route';
 
 describe('GET /api/inbox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAuthProfile.mockResolvedValue(buildProfile());
   });
 
   it('returns stats when stats=true', async () => {
@@ -108,6 +117,7 @@ describe('GET /api/inbox', () => {
 describe('POST /api/inbox', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetAuthProfile.mockResolvedValue(buildProfile());
   });
 
   it('returns 400 when missing required fields', async () => {
