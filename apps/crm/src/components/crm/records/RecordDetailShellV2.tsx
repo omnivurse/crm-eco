@@ -42,6 +42,7 @@ import {
   Check,
   CheckCircle,
   ChevronDown,
+  PanelRightClose,
   Shield,
   Clock as ClockIcon,
 } from 'lucide-react';
@@ -1809,9 +1810,23 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 </button>
               ) : (
               <div
-                className="hidden xl:block sticky self-start"
+                className="hidden xl:flex xl:flex-col gap-1.5 sticky self-start"
                 style={{ top: 'var(--record-sticky-offset, 11rem)' }}
               >
+              {/* Always-visible collapse control at the top of the rail so it can
+                  be closed without hunting for the small link at the bottom. */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setInsightsCollapsed(true)}
+                  aria-label="Collapse insights panel"
+                  title="Hide insights"
+                  className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-slate-500 hover:text-teal-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/5 transition-colors"
+                >
+                  Hide insights
+                  <PanelRightClose className="h-3.5 w-3.5" />
+                </button>
+              </div>
               <RecordInsightsPanel
                 className="flex"
                 lastUpdatedAt={insights?.lastInteractionAt ?? record.updated_at}

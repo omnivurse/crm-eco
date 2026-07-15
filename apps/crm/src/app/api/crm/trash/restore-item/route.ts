@@ -17,10 +17,23 @@ const ENTITY_TABLES: Record<string, string> = {
   note: 'crm_notes',
   sticky_note: 'notes',
   attachment: 'crm_attachments',
+  record_link: 'crm_record_links',
+  contact_group: 'crm_contact_groups',
+  saved_view: 'saved_views',
+  carrier_contact: 'carrier_contacts',
 };
 
 const schema = z.object({
-  entity: z.enum(['task', 'note', 'sticky_note', 'attachment']),
+  entity: z.enum([
+    'task',
+    'note',
+    'sticky_note',
+    'attachment',
+    'record_link',
+    'contact_group',
+    'saved_view',
+    'carrier_contact',
+  ]),
   id: z.string().uuid(),
 });
 

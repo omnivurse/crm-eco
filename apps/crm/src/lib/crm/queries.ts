@@ -1558,7 +1558,8 @@ export async function getRecordLinks(recordId: string): Promise<CrmLinkedRecord[
           )
         )
       `)
-      .eq('source_record_id', recordId),
+      .eq('source_record_id', recordId)
+      .is('deleted_at' as never, null),
     // Get inbound links (other -> this record)
     supabase
       .from('crm_record_links')
@@ -1576,7 +1577,8 @@ export async function getRecordLinks(recordId: string): Promise<CrmLinkedRecord[
           )
         )
       `)
-      .eq('target_record_id', recordId),
+      .eq('target_record_id', recordId)
+      .is('deleted_at' as never, null),
   ]);
 
   if (outboundResult.error) throw outboundResult.error;

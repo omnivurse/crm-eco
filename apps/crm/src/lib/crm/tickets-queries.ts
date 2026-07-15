@@ -58,6 +58,7 @@ export const getTicketsBoardData = cache(async (): Promise<TicketsBoardData | nu
       .eq('organization_id', orgId)
       .eq('owner_profile_id', profile.id)
       .eq('context', TICKETS_BOARD_CONTEXT)
+      .is('deleted_at' as never, null)
       .order('name'),
     supabase
       .from('profiles')

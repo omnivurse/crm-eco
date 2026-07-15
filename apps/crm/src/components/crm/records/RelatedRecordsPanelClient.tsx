@@ -20,6 +20,7 @@
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CrmLinkedRecord } from '@/lib/crm/types';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import {
   RelatedRecordsPanel,
   type LinkCandidate,
@@ -117,6 +118,15 @@ export function RelatedRecordsPanelClient({ recordId, initialLinkedRecords, clas
       }
       await refresh();
       router.refresh();
+      toastItemDeletedWithUndo({
+        entity: 'record_link',
+        id: linkId,
+        label: 'Link',
+        onUndo: () => {
+          void refresh();
+          router.refresh();
+        },
+      });
     },
     [refresh, router]
   );

@@ -35,6 +35,8 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { CarrierContact, CarrierContactRole } from '@/lib/crm/types';
 
@@ -182,14 +184,30 @@ export function CarrierContactsPanel({ carrierId, className }: CarrierContactsPa
 
   // ---- Delete ----
   const handleDelete = async (contactId: string) => {
+    if (
+      !(await confirmDialog({
+        title: 'Delete this carrier contact?',
+        description:
+          'This contact stores carrier login credentials. It will be moved to Trash — you can restore it for 30 days before it is permanently deleted.',
+        confirmLabel: 'Move to Trash',
+        destructive: true,
+      }))
+    ) {
+      return;
+    }
     try {
       const res = await fetch(
         `/api/crm/carriers/${carrierId}/contacts?contact_id=${contactId}`,
         { method: 'DELETE' },
       );
       if (!res.ok) throw new Error((await res.json()).error || 'Delete failed');
-      toast.success('Contact removed');
       await fetchContacts();
+      toastItemDeletedWithUndo({
+        entity: 'carrier_contact',
+        id: contactId,
+        label: 'Contact',
+        onUndo: fetchContacts,
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Delete failed');
     }

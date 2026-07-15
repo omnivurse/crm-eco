@@ -256,6 +256,7 @@ export default async function NeedsCommandCenterPage() {
     .eq('organization_id', profile.organization_id)
     .eq('owner_profile_id', profile.id)
     .eq('context', NEEDS_COMMAND_CENTER_CONTEXT)
+    .is('deleted_at' as never, null)
     .order('created_at', { ascending: true });
 
   // Parse saved views

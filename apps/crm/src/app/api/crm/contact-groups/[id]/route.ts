@@ -143,18 +143,20 @@ export async function DELETE(
       );
     }
 
-    const { error } = await supabase
+    // Soft-delete (move to Trash) so the group can be restored via Undo.
+    const { error } = await (supabase as any)
       .from('crm_contact_groups')
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: profile.id, deleted_origin: 'user' })
       .eq('id', id)
-      .eq('organization_id', profile.organization_id);
+      .eq('organization_id', profile.organization_id)
+      .is('deleted_at', null);
 
     if (error) {
       console.error('[ContactGroups DELETE]', error);
       return NextResponse.json({ error: 'Failed to delete group' }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, trashed: true });
   } catch (error) {
     console.error('[ContactGroups DELETE]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

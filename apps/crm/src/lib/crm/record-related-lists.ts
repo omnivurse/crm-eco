@@ -439,6 +439,7 @@ export async function fetchRecordProducts(
     )
     .eq('source_record_id', recordId)
     .ilike('link_type', '%product%')
+    .is('deleted_at' as never, null)
     .limit(50);
 
   if (!outError && outLinks?.length) {

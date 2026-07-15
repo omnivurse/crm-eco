@@ -63,6 +63,7 @@ async function fetchUndirectedLinkPeers(
     .from('crm_record_links')
     .select('source_record_id, target_record_id')
     .in('link_type', [...linkTypes])
+    .is('deleted_at' as never, null)
     .or(`source_record_id.eq.${recordId},target_record_id.eq.${recordId}`);
 
   if (error || !data?.length) return [];
@@ -118,6 +119,7 @@ async function addLeadContactNeighborhood(
     .from('crm_record_links')
     .select('source_record_id, target_record_id')
     .eq('link_type', LINK_LEAD_CONTACT)
+    .is('deleted_at' as never, null)
     .or(orParts);
 
   for (const row of links || []) {

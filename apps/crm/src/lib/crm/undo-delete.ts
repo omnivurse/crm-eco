@@ -64,7 +64,15 @@ export function toastDeletedWithUndo({ batchId, count = 1, onUndo }: DeletedToas
 
 // ── Phase 2: child entities (tasks, notes, sticky notes, attachments) ────────
 
-export type TrashItemEntity = 'task' | 'note' | 'sticky_note' | 'attachment';
+export type TrashItemEntity =
+  | 'task'
+  | 'note'
+  | 'sticky_note'
+  | 'attachment'
+  | 'record_link'
+  | 'contact_group'
+  | 'saved_view'
+  | 'carrier_contact';
 
 /** Restore a single soft-deleted child entity (the Undo action). */
 export async function restoreTrashItem(entity: TrashItemEntity, id: string): Promise<boolean> {

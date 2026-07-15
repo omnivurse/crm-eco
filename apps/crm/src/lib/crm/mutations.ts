@@ -938,11 +938,13 @@ export async function updateRecordLink(
 
 export async function deleteRecordLink(linkId: string): Promise<void> {
   const supabase = await createCrmClient();
-  
-  const { error } = await supabase
+
+  // Soft-delete (move to Trash) so an unlinked relationship can be restored.
+  const { error } = await (supabase as any)
     .from('crm_record_links')
-    .delete()
-    .eq('id', linkId);
+    .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
+    .eq('id', linkId)
+    .is('deleted_at', null);
 
   if (error) throw error;
 }

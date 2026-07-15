@@ -23,6 +23,7 @@ export async function GET(
       .select('*')
       .eq('carrier_id', carrierId)
       .eq('organization_id', profile.organization_id)
+      .is('deleted_at' as never, null)
       .order('sort_order', { ascending: true })
       .order('contact_role', { ascending: true });
 
@@ -169,18 +170,21 @@ export async function DELETE(
 
     const supabase = await createClient();
 
-    const { error } = await supabase
+    // Soft-delete (move to Trash) so deleted carrier credentials can be restored
+    // via Undo rather than being irrecoverably destroyed by a mis-click.
+    const { error } = await (supabase as any)
       .from('carrier_contacts')
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: profile.id, deleted_origin: 'user' })
       .eq('id', contactId)
       .eq('carrier_id', carrierId)
-      .eq('organization_id', profile.organization_id);
+      .eq('organization_id', profile.organization_id)
+      .is('deleted_at', null);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ deleted: true });
+    return NextResponse.json({ deleted: true, trashed: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

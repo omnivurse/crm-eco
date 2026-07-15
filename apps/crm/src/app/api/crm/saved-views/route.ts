@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('organization_id', profile.organization_id)
       .eq('page_key', pageKey)
+      .is('deleted_at', null)
       .order('is_default', { ascending: false })
       .order('name', { ascending: true });
 
@@ -229,11 +230,13 @@ export async function DELETE(request: NextRequest) {
 
     const supabase = await createClient();
 
-    const { error } = await supabase
-      .from('saved_views' as any)
-      .delete()
+    // Soft-delete (move to Trash) so a removed view can be restored via Undo.
+    const { error } = await (supabase as any)
+      .from('saved_views')
+      .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
       .eq('id', id)
-      .eq('organization_id', profile.organization_id);
+      .eq('organization_id', profile.organization_id)
+      .is('deleted_at', null);
 
     if (error) {
       console.error('[SavedViews DELETE]', error);

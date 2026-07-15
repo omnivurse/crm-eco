@@ -26,6 +26,7 @@ import {
   DialogFooter,
 } from '@crm-eco/ui/components/dialog';
 import { toast } from 'sonner';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 
 interface SavedView {
   id: string;
@@ -151,9 +152,9 @@ export function SavedViewsBar({
         { method: 'DELETE' },
       );
       if (!res.ok) throw new Error('Failed to delete');
-      toast.success(`View "${name}" deleted`);
       if (activeViewId === id) setActiveViewId(null);
       fetchViews();
+      toastItemDeletedWithUndo({ entity: 'saved_view', id, label: 'View', onUndo: fetchViews });
     } catch {
       toast.error('Failed to delete view');
     }

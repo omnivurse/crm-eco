@@ -1116,7 +1116,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
     return (
       <div className={cn('rounded-2xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}>
-        <div className="flex flex-col gap-x-6 gap-y-4 p-4 lg:flex-row lg:items-stretch">
+        <div className="flex flex-col gap-x-6 gap-y-4 p-4 lg:flex-row lg:flex-wrap lg:items-stretch">
           {/* Identity rail — coverage type + carrier / sharing entity */}
           <div className="flex items-start gap-3 lg:w-64 lg:shrink-0">
             <span
@@ -1165,7 +1165,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               )}
               {hasReferral && (
                 <>
-                  {divider}
+                  {/* No divider before the referral cluster: with lg:flex-wrap it
+                      may wrap to its own row when the column is narrow (e.g. the
+                      insights rail is open), and a stray vertical rule would hang
+                      off the end of the previous row. */}
                   <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-2 lg:w-52 lg:shrink-0 lg:grid-cols-1 lg:border-0 lg:pt-0">
                     {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
                   </div>
