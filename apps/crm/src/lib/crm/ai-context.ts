@@ -42,6 +42,8 @@ export async function loadAiRecordContext({
     .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
     .eq('id', recordId)
     .eq('org_id', orgId)
+    // A trashed (soft-deleted / merged-away) record must not feed the AI prompt.
+    .is('deleted_at', null)
     .maybeSingle();
 
   if (!record) return null;
@@ -63,12 +65,16 @@ export async function loadAiRecordContext({
       .from('crm_notes')
       .select('body, created_at')
       .in('record_id', noteIds)
+      // Exclude trashed notes/tasks — the AI context must mirror the record's
+      // live timeline, not resurrect soft-deleted content into the prompt.
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit),
     supabase
       .from('crm_tasks')
       .select('title, status, activity_type, created_at')
       .eq('record_id', recordId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(limit),
   ]);

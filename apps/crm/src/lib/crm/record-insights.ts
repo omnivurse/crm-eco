@@ -139,12 +139,15 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
     ] = await Promise.allSettled([
       countAggregatedNotes(supabase, noteSourceIds),
       headCount(supabase, 'crm_messages', { record_id: recordId }),
-      // Anything not completed / cancelled counts as "open"
-      headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['open', 'in_progress']),
-      headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['completed']),
-      headCount(supabase, 'crm_attachments', { record_id: recordId }),
-      headCount(supabase, 'crm_record_links', { source_record_id: recordId }),
-      headCount(supabase, 'crm_record_links', { target_record_id: recordId }),
+      // Anything not completed / cancelled counts as "open". Tasks, attachments
+      // and record links are soft-deletable (Phases 2–3), so these badges pass
+      // liveOnly:true — a trashed row must not inflate the count over the list
+      // it labels (which already hides trashed rows).
+      headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['open', 'in_progress'], true),
+      headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['completed'], true),
+      headCount(supabase, 'crm_attachments', { record_id: recordId }, true),
+      headCount(supabase, 'crm_record_links', { source_record_id: recordId }, true),
+      headCount(supabase, 'crm_record_links', { target_record_id: recordId }, true),
       countRecordCampaigns(supabase, recordId),
       countRecordCadences(supabase, recordId),
       countRecordMeetings(supabase, recordId, recordEmail),
@@ -288,10 +291,13 @@ async function headCount(
   supabase: Client,
   table: string,
   eqs: Record<string, string>,
+  /** When true, exclude soft-deleted (trashed) rows via `deleted_at IS NULL`. */
+  liveOnly = false,
 ): Promise<number> {
   try {
     let q = supabase.from(table).select('*', { count: 'exact', head: true });
     for (const [k, v] of Object.entries(eqs)) q = q.eq(k, v);
+    if (liveOnly) q = q.is('deleted_at' as never, null);
     const { count, error } = await q;
     if (error) {
       if (error.code === '42P01') return 0; // table missing
@@ -309,12 +315,15 @@ async function headCountIn(
   eqs: Record<string, string>,
   field: string,
   values: string[],
+  /** When true, exclude soft-deleted (trashed) rows via `deleted_at IS NULL`. */
+  liveOnly = false,
 ): Promise<number> {
   if (values.length === 0) return 0;
   try {
     let q = supabase.from(table).select('*', { count: 'exact', head: true });
     for (const [k, v] of Object.entries(eqs)) q = q.eq(k, v);
     q = q.in(field, values);
+    if (liveOnly) q = q.is('deleted_at' as never, null);
     const { count, error } = await q;
     if (error) {
       if (error.code === '42P01') return 0;
@@ -338,6 +347,8 @@ async function bestTimeForChannel(
       .eq('record_id', recordId)
       .eq('activity_type', channel)
       .eq('status', 'completed')
+      // Trashed tasks must not skew the "best time to call/email" heuristic.
+      .is('deleted_at' as never, null)
       .limit(200);
 
     if (error || !data?.length) {
