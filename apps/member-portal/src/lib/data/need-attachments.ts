@@ -35,6 +35,7 @@ export const listNeedAttachmentsForMember = cache(
       .from('need_attachments')
       .select('id, file_name, mime_type, size_bytes, storage_path, created_at')
       .eq('need_id', needId)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false });
 
     if (!rows?.length) return [];

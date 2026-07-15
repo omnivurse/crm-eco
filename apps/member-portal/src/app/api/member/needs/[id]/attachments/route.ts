@@ -35,6 +35,10 @@ function resolveContentType(file: File): string | null {
   return EXT_TO_MIME[ext] ?? null;
 }
 
+// Statuses where the member can no longer remove supporting documents (the need
+// is settled/closed). Mirrors INVOICE_LOCKED_STATUSES on the need detail page.
+const DOCUMENT_LOCKED_STATUSES = new Set(['closed', 'paid', 'denied', 'cancelled']);
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -56,6 +60,7 @@ export async function GET(
     .from('need_attachments')
     .select('*')
     .eq('need_id', needId)
+    .is('deleted_at' as never, null)
     .order('created_at', { ascending: false });
 
   const attachments = await Promise.all(
@@ -149,4 +154,125 @@ export async function POST(
   });
 
   return NextResponse.json({ attachment: data }, { headers: limited.headers });
+}
+
+/**
+ * DELETE /api/member/needs/[id]/attachments?attachment_id=…
+ * Soft-delete (remove) a document the member uploaded. Reversible via PATCH.
+ * The storage blob is kept until purge. Members could not remove documents at
+ * all before this handler existed.
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: needId } = await params;
+  const ctx = await requireActiveMembership();
+
+  const limited = memberRateLimit(ctx.member.id, 'need-attachments:remove', { limit: 30, windowMs: 60_000 });
+  if (!limited.ok) return limited.response!;
+
+  const supabase = await createServerSupabaseClient();
+
+  const attachmentId = new URL(request.url).searchParams.get('attachment_id');
+  if (!attachmentId) {
+    return NextResponse.json({ error: 'missing_attachment_id' }, { status: 400 });
+  }
+
+  // Verify the need (and thus its attachments) belongs to this member.
+  const { data: need } = await supabase
+    .from('needs')
+    .select('id, status')
+    .eq('id', needId)
+    .eq('member_id', ctx.member.id)
+    .eq('organization_id', ctx.member.organization_id)
+    .maybeSingle();
+  if (!need) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  // Enforce the same status lock the UI shows — documents can't be removed once
+  // the request is settled/closed (server-side, not just client-side).
+  if (DOCUMENT_LOCKED_STATUSES.has((need as { status?: string }).status ?? '')) {
+    return NextResponse.json({ error: 'need_locked' }, { status: 409 });
+  }
+
+  const { data: updated, error } = await (supabase as any)
+    .from('need_attachments')
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: ctx.profile.id,
+      deleted_origin: 'member',
+    })
+    .eq('id', attachmentId)
+    .eq('need_id', needId)
+    .is('deleted_at', null)
+    .select('id');
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated || (updated as unknown[]).length === 0) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+
+  await supabase.from('need_events').insert({
+    need_id: needId,
+    organization_id: ctx.member.organization_id,
+    event_type: 'document_removed',
+    description: 'Member removed a supporting document',
+    created_by_profile_id: ctx.profile.id,
+  });
+
+  return NextResponse.json({ removed: true });
+}
+
+/**
+ * PATCH /api/member/needs/[id]/attachments?attachment_id=…
+ * Restore a soft-deleted document (the Undo action).
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: needId } = await params;
+  const ctx = await requireActiveMembership();
+
+  const limited = memberRateLimit(ctx.member.id, 'need-attachments:restore', { limit: 30, windowMs: 60_000 });
+  if (!limited.ok) return limited.response!;
+
+  const supabase = await createServerSupabaseClient();
+
+  const attachmentId = new URL(request.url).searchParams.get('attachment_id');
+  if (!attachmentId) {
+    return NextResponse.json({ error: 'missing_attachment_id' }, { status: 400 });
+  }
+
+  const { data: need } = await supabase
+    .from('needs')
+    .select('id')
+    .eq('id', needId)
+    .eq('member_id', ctx.member.id)
+    .eq('organization_id', ctx.member.organization_id)
+    .maybeSingle();
+  if (!need) return NextResponse.json({ error: 'not_found' }, { status: 404 });
+
+  const { data: updated, error } = await (supabase as any)
+    .from('need_attachments')
+    .update({ deleted_at: null, deleted_by: null, deleted_origin: null })
+    .eq('id', attachmentId)
+    .eq('need_id', needId)
+    .not('deleted_at', 'is', null)
+    .select('id');
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!updated || (updated as unknown[]).length === 0) {
+    return NextResponse.json({ error: 'not_found' }, { status: 404 });
+  }
+
+  await supabase.from('need_events').insert({
+    need_id: needId,
+    organization_id: ctx.member.organization_id,
+    event_type: 'document_restored',
+    description: 'Member restored a supporting document',
+    created_by_profile_id: ctx.profile.id,
+  });
+
+  return NextResponse.json({ restored: true });
 }

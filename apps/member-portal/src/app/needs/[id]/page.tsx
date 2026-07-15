@@ -99,7 +99,11 @@ export default async function NeedDetailPage({ params }: { params: Promise<{ id:
       {/* Amounts & Reimbursement Card */}
       <NeedAmountsCard need={need} />
 
-      <NeedAttachmentsCard attachments={attachments} />
+      <NeedAttachmentsCard
+        needId={needId}
+        attachments={attachments}
+        canRemove={!INVOICE_LOCKED_STATUSES.has(need.status)}
+      />
 
       <NeedAddDocumentsPanel needId={needId} status={need.status} />
 

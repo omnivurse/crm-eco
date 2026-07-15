@@ -71,3 +71,25 @@ export async function uploadNeedAttachment(
 
   return { attachment: body.attachment };
 }
+
+/** Soft-delete (remove) an uploaded document. Reversible via {@link restoreNeedAttachment}. */
+export async function removeNeedAttachment(needId: string, attachmentId: string): Promise<void> {
+  const res = await fetch(
+    `/api/member/needs/${needId}/attachments?attachment_id=${encodeURIComponent(attachmentId)}`,
+    { method: 'DELETE' },
+  );
+  if (!res.ok) {
+    throw new Error('Could not remove the document. Please try again.');
+  }
+}
+
+/** Restore a removed document (the Undo action). */
+export async function restoreNeedAttachment(needId: string, attachmentId: string): Promise<void> {
+  const res = await fetch(
+    `/api/member/needs/${needId}/attachments?attachment_id=${encodeURIComponent(attachmentId)}`,
+    { method: 'PATCH' },
+  );
+  if (!res.ok) {
+    throw new Error('Could not restore the document.');
+  }
+}
