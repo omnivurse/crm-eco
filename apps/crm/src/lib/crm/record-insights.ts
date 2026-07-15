@@ -221,15 +221,37 @@ function settleOrZero(result: PromiseSettledResult<number>): number {
 const NOTES_COUNT_LIMIT = 500;
 
 /**
- * Count the notes that actually render on the record — i.e. the same deduped
- * set `getNotesForRecords` returns, so the sidebar / section-pill badge never
- * disagrees with the Notes list.
+ * Exact head count of live (non-trashed) crm_notes for the given record ids.
+ * `headCountIn` can't express `deleted_at IS NULL`, so notes get their own
+ * helper that always excludes soft-deleted rows.
+ */
+async function headCountLiveNotes(supabase: Client, ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  try {
+    const { count, error } = await supabase
+      .from('crm_notes')
+      .select('*', { count: 'exact', head: true })
+      .in('record_id', ids)
+      .is('deleted_at' as never, null);
+    if (error) return 0;
+    return count ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Count the notes that actually render on the record — i.e. the same deduped,
+ * non-trashed set `getNotesForRecords` returns, so the sidebar / section-pill
+ * badge never disagrees with the Notes list.
  *
- * When notes come from a single record there are no cross-record duplicates,
- * so an exact head count is correct and cheapest. When they're aggregated
- * across a lead→contact→member lineage (or deal links), the same imported
- * Zoho note can exist under several `record_id`s, so we dedup by
- * body+timestamp using the identical key as `getNotesForRecords`.
+ * Excludes soft-deleted (trashed) notes to match `getNotesForRecords`, which
+ * filters `deleted_at IS NULL` (crm_notes gained soft-delete in
+ * 202607140005_phase2_soft_delete). When notes come from a single record there
+ * are no cross-record duplicates, so an exact head count is correct and
+ * cheapest. When aggregated across a lead→contact→member lineage (or deal
+ * links), the same imported Zoho note can exist under several `record_id`s, so
+ * we dedup by body+timestamp using the identical key as `getNotesForRecords`.
  */
 async function countAggregatedNotes(
   supabase: Client,
@@ -237,19 +259,20 @@ async function countAggregatedNotes(
 ): Promise<number> {
   if (noteSourceIds.length === 0) return 0;
   if (noteSourceIds.length === 1) {
-    return headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds);
+    return headCountLiveNotes(supabase, noteSourceIds);
   }
   try {
     const { data, error } = await supabase
       .from('crm_notes')
       .select('body, created_at')
       .in('record_id', noteSourceIds)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false })
       .limit(NOTES_COUNT_LIMIT);
-    // Any read failure falls back to the raw head count so the badge is never
-    // silently zeroed by a transient error.
+    // Any read failure falls back to the (still trash-filtered) head count so
+    // the badge is never silently zeroed by a transient error.
     if (error || !data) {
-      return headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds);
+      return headCountLiveNotes(supabase, noteSourceIds);
     }
     const seen = new Set<string>();
     for (const row of data as Array<{ body: string | null; created_at: string }>) {
@@ -257,7 +280,7 @@ async function countAggregatedNotes(
     }
     return seen.size;
   } catch {
-    return headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds);
+    return headCountLiveNotes(supabase, noteSourceIds);
   }
 }
 
@@ -369,23 +392,28 @@ async function lastInteractionFor(
 ): Promise<string | null> {
   try {
     const noteIds = noteRecordIds.length > 0 ? noteRecordIds : [recordId];
+    // Trashed (soft-deleted) tasks/notes/attachments must not count as the last
+    // interaction — filter deleted_at IS NULL to match the record's live lists.
     const [tasks, notes, attachments] = await Promise.allSettled([
       supabase
         .from('crm_tasks')
         .select('created_at')
         .eq('record_id', recordId)
+        .is('deleted_at' as never, null)
         .order('created_at', { ascending: false })
         .limit(1),
       supabase
         .from('crm_notes')
         .select('created_at')
         .in('record_id', noteIds)
+        .is('deleted_at' as never, null)
         .order('created_at', { ascending: false })
         .limit(1),
       supabase
         .from('crm_attachments')
         .select('created_at')
         .eq('record_id', recordId)
+        .is('deleted_at' as never, null)
         .order('created_at', { ascending: false })
         .limit(1),
     ]);

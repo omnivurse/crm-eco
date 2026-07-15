@@ -21,18 +21,16 @@
 
 ---
 
-## 🔧 Still open — verify / finish
+## ✅ Follow-up applied (later commit — closes residuals 1 & 3, plus a Phase-2 regression)
 
-1. **🟠 Search ilike-fallback path is unfiltered.**
-   `apps/crm/src/app/api/crm/search/route.ts` falls back to direct `.from('crm_records')` selects (~L334 and ~L389) when the `crm_smart_search` RPC errors. Those selects have **no** `deleted_at IS NULL` filter, so a trashed record can resurface in search results whenever the RPC path fails. Add `.is('deleted_at', null)` to both fallback selects.
+- **Search ilike-fallback now filtered.** `apps/crm/src/app/api/crm/search/route.ts` — both `phoneIlikeFallback` and `ilikeFallback` add `.is('deleted_at' as never, null)`, so trashed records stay out of search even when the `crm_smart_search` RPC falls back.
+- **Notes-count sync preserved under Phase 2.** Phase 2 (`202607140005`) added `deleted_at` to `crm_notes`, and `getNotesForRecords` now filters it — which would have made `record-insights.ts` over-count (trashed notes) vs. the list, reopening the original sidebar/chip mismatch. Fixed: `countAggregatedNotes` now filters `deleted_at IS NULL` (single-source head count + multi-source dedup), and `lastInteractionFor` excludes trashed tasks/notes/attachments.
+- **Migration-rename drift = benign.** `202607140002_contacts_identity_field_cleanup.sql` is idempotent — the `crm_fields` INSERT uses `ON CONFLICT (module_id, key) DO UPDATE` (L112) and the rest are UPDATEs, so a re-apply from any ledger drift produces the same end state with no error. Ledger reconciliation itself is the team's process (see commit `097f0a01`).
 
-2. **🟡 Trash-batch ledger not updated on single-record restore/purge.**
-   In `supabase/migrations/202607140003_crm_records_soft_delete.sql`:
-   - `crm_restore_batch` correctly sets `crm_trash_batches.restored_at` (L195–197).
-   - `crm_restore_record` (L203) and `crm_purge_record` (L234) flip/delete the record but **don't** touch `crm_trash_batches` (no `restored_at` / `purged_at`, no `item_count` adjustment). Single-record actions leave the batch row stale — a batch can still read as "un-restored/full count" after all its members were restored/purged individually. Fine for Phase 1 if intentional; note it or reconcile.
+## 🔧 Still open — for the soft-delete owner
 
-3. **🟡 Migration-rename drift (verify only).**
-   The identity-cleanup migration was renamed across pushed history (`…140001 → …140002`), and soft-delete/search-exclude were renumbered too. If any environment (teammate local, CI, preview/staging) applied an **older** file number before the rename, its `supabase_migrations` ledger records a version whose file no longer exists → drift, and the renamed file re-applies as "new." Confirm nothing applied the pre-rename numbers, and that the SQL is idempotent if it does re-run. (Local/dev that never applied the old numbers is unaffected.)
+- **🟡 Trash-batch ledger not updated on single-record restore/purge.**
+  In `supabase/migrations/202607140003_crm_records_soft_delete.sql`, `crm_restore_batch` sets `crm_trash_batches.restored_at` (L195–197), but `crm_restore_record` (L203) and `crm_purge_record` (L234) don't touch the ledger — single-record actions leave the batch row stale (reads "un-restored / full count" after all members were individually restored/purged). Cosmetic for Phase 1. **Deliberately not injected here:** it needs a new forward `CREATE OR REPLACE` migration, and a parallel session is actively adding soft-delete migrations — a competing migration risks a version collision. Fold it into the next soft-delete phase.
 
 ---
 

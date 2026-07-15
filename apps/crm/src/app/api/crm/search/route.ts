@@ -339,6 +339,9 @@ async function phoneIlikeFallback(
     `,
     )
     .eq('org_id', orgId)
+    // Keep soft-deleted (trashed) records out of the phone fallback — the
+    // smart-search RPC already excludes them; this path must match.
+    .is('deleted_at' as never, null)
     .or(filter)
     .limit(opts.limit);
 
@@ -394,6 +397,9 @@ async function ilikeFallback(
     `,
     )
     .eq('org_id', orgId)
+    // Last-resort ilike path must also hide trashed records, matching the
+    // crm_smart_search RPC (202607140004_crm_search_exclude_trashed).
+    .is('deleted_at' as never, null)
     .limit(opts.limit);
 
   if (opts.moduleFilter) {
