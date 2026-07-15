@@ -149,7 +149,11 @@ export default function DependentsPage() {
         first_name: dependent.first_name,
         last_name: dependent.last_name,
         date_of_birth: dependent.date_of_birth || '',
-        gender: dependent.gender || '',
+        // Gender is Male/Female only (biological sex, for medical/eligibility).
+        // Coerce any legacy value (e.g. an imported "Other") to empty so editing
+        // forces a valid re-pick and never re-submits a value the tightened
+        // dependents_gender_check would now reject.
+        gender: dependent.gender === 'Male' || dependent.gender === 'Female' ? dependent.gender : '',
         relationship: dependent.relationship,
         coverage_start_date: new Date().toISOString().slice(0, 10),
       });
