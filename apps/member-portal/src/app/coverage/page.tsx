@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@crm-
 import { Button } from '@crm-eco/ui/components/button';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { PlanCoverageCard } from '@/components/plan/PlanCoverageCard';
-import type { PlanOverview } from '@/lib/data/member';
+import { enrichWithInsurance, type PlanOverview } from '@/lib/data/member';
 
 export default async function CoveragePage() {
   const supabase = await createServerSupabaseClient();
@@ -130,7 +130,9 @@ export default async function CoveragePage() {
     membershipNumber: am?.membership_number ?? null,
     coverageOption: humanizeCoverage(member.coverage_type),
     benefits: null,
+    carrier: null,
   };
+  await enrichWithInsurance(coverageOverview, member.id);
 
   const getStatusIcon = (status: string) => {
     switch (status) {

@@ -3,6 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 import { createServerSupabaseClient } from '@crm-eco/lib/supabase/server';
 import { requireActiveMembership } from '@/lib/auth/require-active-membership';
+import { getMemberInsuranceDetails } from './insurance';
 import {
   countCurrentlyCoveredDependents,
   summarizeRecentCoverageChanges,
@@ -81,6 +82,8 @@ export interface PlanOverview {
   membershipNumber: string | null;
   coverageOption: string | null;
   benefits: PlanBenefit[] | null;
+  /** Insurance carrier name, when the member is insurance-market and the CRM record has it. */
+  carrier: string | null;
 }
 
 function firstNumber(...values: Array<number | string | null | undefined>): number | null {
@@ -169,7 +172,7 @@ export const getPlanOverview = cache(async (): Promise<PlanOverview | null> => {
   const plan = Array.isArray(planRaw) ? planRaw[0] ?? null : planRaw ?? null;
   const member = ctx.member;
 
-  return {
+  const overview: PlanOverview = {
     planName: plan?.brand_name || plan?.name || member.plan_name || null,
     planType: plan?.plan_type ?? member.plan_type ?? null,
     marketType: member.market_type ?? null,
@@ -182,8 +185,31 @@ export const getPlanOverview = cache(async (): Promise<PlanOverview | null> => {
     membershipNumber: data.membership_number ?? null,
     coverageOption: humanizeCoverageOption(member.coverage_type),
     benefits: extractBenefits(plan?.metadata) ?? extractBenefits(plan?.custom_fields),
+    carrier: null,
   };
+
+  await enrichWithInsurance(overview, ctx.member.id);
+  return overview;
 });
+
+/**
+ * For insurance-market members, fill the carrier (and, when present, the
+ * insurance premium/deductible/plan name) from their CRM record — the only
+ * place those live. Read-only + member-scoped; a no-op for health-sharing
+ * members and when no insurance data exists. Mutates `overview` in place.
+ */
+async function enrichWithInsurance(overview: PlanOverview, memberId: string): Promise<void> {
+  const isInsurance = overview.marketType === 'insurance' || overview.planType === 'insurance';
+  if (!isInsurance) return;
+  const ins = await getMemberInsuranceDetails(memberId);
+  if (!ins) return;
+  overview.carrier = ins.carrier;
+  if (ins.premium !== null) overview.premium = ins.premium;
+  if (ins.deductible !== null) overview.deductible = ins.deductible;
+  overview.planName = overview.planName ?? ins.planName;
+}
+
+export { enrichWithInsurance };
 
 /** All dependents on the membership (person records), regardless of current coverage. */
 export const listMemberDependents = cache(async (): Promise<DependentWithCoverage[]> => {

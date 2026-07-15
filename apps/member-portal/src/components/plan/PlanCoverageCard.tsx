@@ -33,7 +33,9 @@ export function PlanCoverageCard({
   const deductible = formatMoney(overview.deductible);
   const statusKey = (overview.status ?? '').toLowerCase();
   const statusStyle = STATUS_STYLES[statusKey] ?? 'bg-slate-100 text-slate-700';
-  const coverageLine = [overview.coverageOption, isInsurance ? 'Health insurance' : 'Health sharing']
+  const marketLabel = isInsurance ? 'Health insurance' : 'Health sharing';
+  // Show the real carrier (e.g. "Cigna") when we have it; otherwise the market label.
+  const coverageLine = [overview.coverageOption, overview.carrier ?? marketLabel]
     .filter(Boolean)
     .join(' · ');
   const benefits = showBenefits ? overview.benefits : null;
@@ -56,7 +58,7 @@ export function PlanCoverageCard({
               Your coverage
             </p>
             <h2 className="mt-1.5 truncate text-2xl font-bold leading-tight">
-              {overview.planName ?? 'Your plan'}
+              {overview.planName ?? overview.carrier ?? 'Your plan'}
             </h2>
             {coverageLine ? <p className="mt-1.5 text-sm text-white/85">{coverageLine}</p> : null}
           </div>
