@@ -42,6 +42,10 @@ async function recordExistsForUser(recordId: string): Promise<boolean> {
   const { data, error } = await supabase
     .from('crm_records')
     .select('id')
+    // A soft-deleted (e.g. merged-away) record must NOT count as "exists" — it's
+    // hidden everywhere else, so the caller should fall through to the audit log
+    // and redirect a stale URL to the surviving keeper.
+    .is('deleted_at' as never, null)
     .eq('id', recordId)
     .maybeSingle();
   if (error) return false;
