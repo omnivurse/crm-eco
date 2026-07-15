@@ -1154,7 +1154,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               {hasDetail && (
                 <>
                   {divider}
-                  <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-3 lg:border-0 lg:pt-0 xl:grid-cols-4">
+                  <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-2 lg:border-0 lg:pt-0">
                     {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
                     {showDate && heroStartDateField && renderFieldCell(heroStartDateField)}
                   </div>
@@ -1275,7 +1275,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   // (the full-width banner pinned to the top of the record).
                   // Auto-pack into as many ~220px columns as the width allows.
                   // ──────────────────────────────────────────────────────────
-                  <div className="grid gap-x-5 gap-y-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+                  <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
                     {sectionFields.map(renderFieldCell)}
                   </div>
                 ) : sectionFields.length === 0 ? (
