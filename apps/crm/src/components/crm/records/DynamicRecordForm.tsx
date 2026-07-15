@@ -1136,13 +1136,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   //   Right column → Carrier / sharing + plan/product lines + dates,
                   //                  editable inline via the same form state.
                   // ──────────────────────────────────────────────────────────
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-2">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+                    <div className="min-w-0 flex-1">
+                      {/* Auto-pack into as many ~220px columns as the (flexible)
+                          field area allows, so the fields fill the width the
+                          fixed-width snapshot sidebar leaves — no dead gutter. */}
+                      <div className="grid gap-x-5 gap-y-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
                         {sectionFields.map(renderFieldCell)}
                       </div>
                     </div>
-                    <div className="md:col-span-1">
+                    <div className="w-full lg:w-80 lg:shrink-0">
                       {/* Membership Snapshot — premium coverage card. Header strip
                           + gradient give it hierarchy; fields still render via
                           renderFieldCell so inline editing is unchanged. */}
