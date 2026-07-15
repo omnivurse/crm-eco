@@ -79,6 +79,7 @@ function LiveSectionOverview({
     <OverviewLayout
       recordId={recordId}
       sections={sections}
+      showSectionNav={!layoutV2Shell}
       fieldContent={
         <>
           <RecordOverviewFields

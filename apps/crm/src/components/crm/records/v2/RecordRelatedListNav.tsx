@@ -20,6 +20,7 @@ import {
   Link as LinkIcon,
   ExternalLink,
   FileText,
+  PanelLeftClose,
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 
@@ -47,6 +48,8 @@ export interface RecordRelatedListNavProps {
   onSelect: (id: string) => void;
   onAddRelatedList?: () => void;
   onAddLink?: () => void;
+  /** When provided, renders a collapse control in the header. */
+  onCollapse?: () => void;
   className?: string;
 }
 
@@ -81,6 +84,7 @@ export const RecordRelatedListNav = memo(function RecordRelatedListNav({
   onSelect,
   onAddRelatedList,
   onAddLink,
+  onCollapse,
   className,
 }: RecordRelatedListNavProps) {
   return (
@@ -94,8 +98,19 @@ export const RecordRelatedListNav = memo(function RecordRelatedListNav({
       )}
       style={{ top: 'var(--record-sticky-offset, 11rem)' }}
     >
-      <header className="px-2.5 pt-0.5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-        Related List
+      <header className="flex items-center justify-between px-2.5 pt-0.5 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        <span>Related List</span>
+        {onCollapse && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            aria-label="Collapse related list"
+            title="Collapse"
+            className="-mr-0.5 rounded p-0.5 text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+          >
+            <PanelLeftClose className="h-3.5 w-3.5" />
+          </button>
+        )}
       </header>
 
       <ul className="space-y-0.5 px-0.5">

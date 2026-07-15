@@ -105,7 +105,6 @@ import {
 import { RecordRelatedListChips } from './v2/RecordRelatedListChips';
 import { MobileActionBar } from './v2/MobileActionBar';
 import { RecordInsightsPanel } from './v2/RecordInsightsPanel';
-import { CollapsibleSection } from './v2/CollapsibleSection';
 import { InlineRecordSearch, type NavigateToMatchArgs } from './v2/InlineRecordSearch';
 import { SendEmailDialog } from './v2/SendEmailDialog';
 import {
@@ -409,7 +408,13 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
 
   // Right rail can be collapsed when the screen is tight or the user wants
   // the main panel to take the full width.
-  const [insightsCollapsed, setInsightsCollapsed] = useState(false);
+  // Default the right insights rail collapsed so the coverage snapshot + fields
+  // get the full main-column width (the approved redesign has no right gutter).
+  // Users can re-open it via the vertical "Insights" tab.
+  const [insightsCollapsed, setInsightsCollapsed] = useState(true);
+  // Left related-list rail is collapsible too, so reps can give the record body
+  // the full width when they don't need the related-list switcher.
+  const [railCollapsed, setRailCollapsed] = useState(false);
   // Mobile-only: insights panel opens in a bottom sheet from the action bar.
   const [insightsSheetOpen, setInsightsSheetOpen] = useState(false);
 
@@ -1086,13 +1091,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
       case 'details':
         return (
           <>
-            <CollapsibleSection
-              title={<span>Lead Information</span>}
-              persistKey={`record.${record.id}.details`}
-              action={null}
-            >
-              {children.overview}
-            </CollapsibleSection>
+            {/* The coverage snapshot + field sections render directly at the top
+                of the pane (no "Lead Information" collapsible wrapper) so the
+                full-width banner leads the record, matching the approved
+                redesign. */}
+            {children.overview}
 
             {showChangeHistory && (
               <MembershipChangeHistory
@@ -1758,15 +1761,32 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
         <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
           <TabsContent value="overview" className="mt-0">
             <div className="flex gap-3 xl:gap-5 px-4 xl:px-6 py-4 pb-24 lg:pb-4">
-              <RecordRelatedListNav
-                items={navItems}
-                links={links}
-                activeId={overviewPane}
-                onSelect={(id) => setOverviewPane(id as OverviewPane)}
-                onAddRelatedList={() => setShowCustomizeDialog(true)}
-                onAddLink={() => setShowLinksEditor(true)}
-                className="sticky self-start hidden lg:flex"
-              />
+              {railCollapsed ? (
+                <button
+                  type="button"
+                  onClick={() => setRailCollapsed(false)}
+                  className="hidden lg:flex sticky self-start items-center gap-1 px-1 py-3 rounded-r-lg border border-l-0 border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-500 hover:text-teal-600 transition-colors"
+                  style={{ top: 'var(--record-sticky-offset, 11rem)' }}
+                  aria-label="Expand related list"
+                  title="Show related list"
+                >
+                  <ChevronDown className="w-4 h-4 -rotate-90" />
+                  <span className="[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider font-semibold">
+                    Related
+                  </span>
+                </button>
+              ) : (
+                <RecordRelatedListNav
+                  items={navItems}
+                  links={links}
+                  activeId={overviewPane}
+                  onSelect={(id) => setOverviewPane(id as OverviewPane)}
+                  onAddRelatedList={() => setShowCustomizeDialog(true)}
+                  onAddLink={() => setShowLinksEditor(true)}
+                  onCollapse={() => setRailCollapsed(true)}
+                  className="sticky self-start hidden lg:flex"
+                />
+              )}
 
               <div className="flex-1 min-w-0">{renderOverviewPane()}</div>
 

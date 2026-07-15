@@ -11,9 +11,20 @@ interface OverviewLayoutProps {
   recordId: string;
   sections: SectionMeta[];
   fieldContent: React.ReactNode;
+  /**
+   * Show the horizontal section-pill navigator. The V2 shell has its own
+   * navigation chrome and a full-width coverage banner that should lead the
+   * pane, so it hides these pills for the cleaner redesign layout.
+   */
+  showSectionNav?: boolean;
 }
 
-export function OverviewLayout({ recordId, sections, fieldContent }: OverviewLayoutProps) {
+export function OverviewLayout({
+  recordId,
+  sections,
+  fieldContent,
+  showSectionNav = true,
+}: OverviewLayoutProps) {
   const [activeSectionKey, setActiveSectionKey] = useState(() => {
     const persisted = getPersistedActiveSection(recordId);
     if (persisted && sections.some((s) => s.key === persisted)) return persisted;
@@ -75,11 +86,13 @@ export function OverviewLayout({ recordId, sections, fieldContent }: OverviewLay
   return (
     <div ref={containerRef}>
       {/* Section pill navigator */}
-      <SectionNav
-        sections={sections}
-        activeSectionKey={activeSectionKey}
-        onSectionClick={handleSectionClick}
-      />
+      {showSectionNav && (
+        <SectionNav
+          sections={sections}
+          activeSectionKey={activeSectionKey}
+          onSectionClick={handleSectionClick}
+        />
+      )}
 
       {/* Full-width field sections */}
       <div className="mt-3">
