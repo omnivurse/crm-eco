@@ -74,6 +74,32 @@ const emptyForm = {
   carrier_type: 'insurance',
 };
 
+/**
+ * Read an API error body into a display string. Server error payloads can be a
+ * string, a Zod issue array, or an object — coerce them all to text so a toast
+ * never shows "[object Object]".
+ */
+async function readApiError(res: Response, fallback: string): Promise<string> {
+  const body = await res.json().catch(() => null);
+  const raw = (body as { error?: unknown } | null)?.error;
+  if (typeof raw === 'string') return raw || fallback;
+  if (Array.isArray(raw)) {
+    const msg = raw
+      .map((e) =>
+        e && typeof e === 'object' && 'message' in e
+          ? String((e as { message: unknown }).message)
+          : String(e),
+      )
+      .filter(Boolean)
+      .join('; ');
+    return msg || fallback;
+  }
+  if (raw && typeof raw === 'object' && 'message' in raw) {
+    return String((raw as { message: unknown }).message) || fallback;
+  }
+  return fallback;
+}
+
 export default function CarrierManagementPage() {
   return (
     <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading…</div>}>
@@ -109,11 +135,12 @@ function CarrierManagementContent() {
       // Fetch active + optionally archived
       const res = await fetch(`/api/crm/carriers?${params.toString()}&limit=500`);
       const data = await res.json();
-      if (Array.isArray(data)) {
-        setCarriers(data);
-      } else if (data.carriers) {
-        setCarriers(data.carriers);
-      }
+      // The API returns `{ data: [...], total }`; tolerate a bare array or a
+      // legacy `{ carriers }` shape too so the list always populates.
+      const list = Array.isArray(data)
+        ? data
+        : (data?.data ?? data?.carriers ?? []);
+      setCarriers(list);
     } catch {
       toast.error('Failed to load carriers');
     } finally {
@@ -136,7 +163,7 @@ function CarrierManagementContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form),
         });
-        if (!res.ok) throw new Error((await res.json()).error);
+        if (!res.ok) throw new Error(await readApiError(res, 'Update failed'));
         toast.success(`${termForType(editingCarrier.carrier_type)} updated`);
       } else {
         const res = await fetch('/api/crm/carriers', {
@@ -144,7 +171,7 @@ function CarrierManagementContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(form),
         });
-        if (!res.ok) throw new Error((await res.json()).error);
+        if (!res.ok) throw new Error(await readApiError(res, 'Create failed'));
         toast.success(`${termForType(form.carrier_type)} created`);
       }
       setDialogOpen(false);
@@ -161,7 +188,7 @@ function CarrierManagementContent() {
   const handleArchive = async (carrier: Carrier) => {
     try {
       const res = await fetch(`/api/crm/carriers/${carrier.id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new Error(await readApiError(res, 'Archive failed'));
       toast.success(`${carrier.carrier_name} archived`);
       fetchCarriers();
     } catch (err) {
@@ -176,7 +203,7 @@ function CarrierManagementContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: true }),
       });
-      if (!res.ok) throw new Error((await res.json()).error);
+      if (!res.ok) throw new Error(await readApiError(res, 'Reactivate failed'));
       toast.success(`${carrier.carrier_name} reactivated`);
       fetchCarriers();
     } catch (err) {

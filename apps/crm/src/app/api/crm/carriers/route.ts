@@ -70,14 +70,22 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// The carrier form always POSTs its optional inputs as empty strings when left
+// blank. `z.string().url()/.email()` reject '' (and `.optional()` only permits
+// `undefined`), so a carrier added with a blank Website/Email would fail
+// validation — the reported "can't add LifeX / Object Error" bug. Treat blank
+// strings as "not provided" so only actually-entered values are format-checked.
+const emptyToUndefined = (v: unknown) =>
+  typeof v === 'string' && v.trim() === '' ? undefined : v;
+
 const createCarrierSchema = z.object({
   carrier_name: z.string().min(1).max(255),
-  naic_code: z.string().max(20).optional(),
-  website: z.string().url().optional(),
-  logo_url: z.string().url().optional(),
+  naic_code: z.preprocess(emptyToUndefined, z.string().max(20).optional()),
+  website: z.preprocess(emptyToUndefined, z.string().url().optional()),
+  logo_url: z.preprocess(emptyToUndefined, z.string().url().optional()),
   carrier_type: z.enum(['insurance', 'healthshare', 'medicaid', 'short_term', 'dental', 'vision', 'life', 'other']).default('insurance'),
-  phone: z.string().max(20).optional(),
-  email: z.string().email().optional(),
+  phone: z.preprocess(emptyToUndefined, z.string().max(20).optional()),
+  email: z.preprocess(emptyToUndefined, z.string().email().optional()),
 });
 
 /**
@@ -98,7 +106,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = createCarrierSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.errors }, { status: 400 });
+      // Return a human-readable string, not the raw ZodIssue array — a client
+      // that does `throw new Error(json.error)` would otherwise surface it as
+      // "[object Object]".
+      const message = parsed.error.errors
+        .map((e) => `${e.path.join('.') || 'field'}: ${e.message}`)
+        .join('; ');
+      return NextResponse.json(
+        { error: message || 'Invalid carrier data' },
+        { status: 400 },
+      );
     }
 
     const supabase = await createClient();
