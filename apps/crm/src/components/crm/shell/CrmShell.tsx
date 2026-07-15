@@ -78,9 +78,9 @@ export function CrmShell({
     <ModuleProvider>
       <ModulePathSync />
       <GizmoProvider profileId={profile.id}>
-        <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+        <div className="relative flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 [scrollbar-gutter:stable]">
           {/* Content Container */}
-          <div className="relative flex flex-col w-full h-full">
+          <div className="relative flex flex-col w-full h-full min-h-0">
             {/* Offline banner — sits above the topbar so the user
                 notices it immediately when connectivity drops. Returns
                 null when navigator.onLine is true, so there's zero
@@ -122,7 +122,7 @@ export function CrmShell({
                 onMobileClose={handleMobileClose}
               />
 
-              <main className="flex-1 min-w-0 overflow-auto px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-5 lg:py-2 scrollbar-thin">
+              <main className="flex-1 min-w-0 min-h-0 overflow-auto [scrollbar-gutter:stable] px-2 py-1.5 sm:px-3 sm:py-1.5 lg:px-5 lg:py-2 scrollbar-thin">
                 <div className="w-full max-w-[1920px] mx-auto pb-10">
                   {children}
                 </div>

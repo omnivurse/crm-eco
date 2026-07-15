@@ -35,9 +35,9 @@ export const GizmoWidget = memo(function GizmoWidget() {
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <motion.button
-            initial={{ scale: 0, opacity: 0 }}
+            // Avoid spring re-entry on every parent re-render (looks like UI shake).
+            initial={false}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 1 }}
             className={cn(
               'relative flex items-center justify-center w-10 h-10 rounded-full shadow-lg transition-colors',
               'bg-teal-600 hover:bg-teal-700 text-white',

@@ -65,11 +65,11 @@ function getSnapshot(): Density {
 }
 
 function getServerSnapshot(): Density {
-  // The server can't know the client's localStorage; it always renders as the
-  // base scale. useSyncExternalStore uses this during hydration (matching SSR),
-  // then adopts the real client value — set pre-hydration on <html> — without a
-  // hydration mismatch.
-  return 'default';
+  // Match the pre-paint default in app/layout.tsx: new users (no saved
+  // preference) get 'compact'. Returning 'default' here caused a one-frame
+  // density flip on hydrate that reflowed the whole CRM chrome and looked
+  // like the dashboard was shaking after login.
+  return 'compact';
 }
 
 /**

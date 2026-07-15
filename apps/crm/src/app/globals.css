@@ -65,10 +65,12 @@
   }
 }
 
-/* Preserve loading spinner — essential UX feedback */
+/* Preserve loading spinners — essential UX feedback.
+   Keep this selector NARROW: a prior `[class*="spinner"]` match was too broad
+   and could force unrelated animated elements into an infinite loop (visible
+   as a "shaking" dashboard until the tab lost focus). */
 .enterprise-spinner,
-.animate-spin,
-[class*="spinner"] {
+.animate-spin {
   animation-duration: 0.8s !important;
   animation-iteration-count: infinite !important;
 }

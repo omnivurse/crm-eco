@@ -30,7 +30,7 @@ export function DashboardToolbar() {
         {isEditMode ? (
           <>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-100 dark:bg-teal-800/50 text-teal-700 dark:text-teal-300">
-              <Settings2 className="w-4 h-4 animate-spin-slow" />
+              <Settings2 className="w-4 h-4" />
               <span className="text-sm font-medium">Edit Mode</span>
             </div>
             <WidgetCatalog />

@@ -80,15 +80,20 @@ interface DashboardHeroProps {
 // ============================================================================
 
 /**
- * HeroCard - Clean card wrapper with entry animation
+ * HeroCard - Clean card wrapper.
+ *
+ * Intentionally NO entry animation: `opacity-0` + `animate-fadeSlideUp` was
+ * restarting whenever the dashboard re-rendered/streamed widgets, which made
+ * the whole hero look like it was shaking/jittering until the user navigated
+ * away (or the tab lost focus during a screenshot). Static cards are stable.
  */
 function HeroCard({
   children,
   className = '',
-  delay = 0,
 }: {
   children: React.ReactNode;
   className?: string;
+  /** Kept for call-site compatibility; entry animation removed. */
   delay?: number;
 }) {
   return (
@@ -101,11 +106,8 @@ function HeroCard({
         hover:shadow-[0_1px_4px_rgba(0,0,0,0.06)]
         transition-shadow duration-200
         group
-        animate-fadeSlideUp
-        opacity-0
         ${className}
       `}
-      style={{ animationDelay: `${delay}ms` }}
     >
       <div className="relative z-10 h-full">{children}</div>
     </div>
