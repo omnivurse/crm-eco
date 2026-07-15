@@ -10,6 +10,7 @@ import {
   staffEndDependentCoverage,
   staffLogHistoricalCoveragePeriod,
   staffPurgeDependentRecord,
+  staffRestoreDependentRecord,
   type StaffCoverageContext,
   type StaffActionResult,
 } from '@crm-eco/lib';
@@ -181,6 +182,19 @@ export async function purgeDependentRecord(dependentId: string): Promise<StaffAc
   if ('error' in resolved) return { success: false, error: resolved.error };
 
   const result = await staffPurgeDependentRecord(resolved.ctx, {
+    member_id: resolved.memberId,
+    dependent_id: dependentId,
+  });
+  if (result.success) revalidateDependentSurfaces();
+  return result;
+}
+
+/** Restore a soft-deleted dependent (the Undo for a removed dependent). */
+export async function restoreDependentRecord(dependentId: string): Promise<StaffActionResult> {
+  const resolved = await resolvePortalCoverageContext();
+  if ('error' in resolved) return { success: false, error: resolved.error };
+
+  const result = await staffRestoreDependentRecord(resolved.ctx, {
     member_id: resolved.memberId,
     dependent_id: dependentId,
   });

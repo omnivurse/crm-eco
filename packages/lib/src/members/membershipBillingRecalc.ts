@@ -79,7 +79,10 @@ export async function recalculateMemberBillingFromCoverage(
       .from('dependents')
       .select('id, first_name, last_name, relationship, included_in_enrollment')
       .eq('member_id', memberId)
-      .eq('organization_id', organizationId),
+      .eq('organization_id', organizationId)
+      // A removed (soft-deleted) dependent must not be billed — matches the
+      // previous hard-delete behavior exactly (billing is driven by this list).
+      .is('deleted_at', null),
     supabase
       .from('dependent_coverage_periods')
       .select('dependent_id, effective_from, effective_to')
@@ -137,6 +140,12 @@ export async function recalculateMemberBillingFromCoverage(
 
   let dependentUnitCost = Number(custom.dependent_unit_cost ?? 0);
 
+  // Live (non-removed) dependent ids — dependentList is already filtered by
+  // deleted_at, so this excludes soft-deleted dependents.
+  const liveDependentIds = new Set<string>(
+    dependentList.map((d: (typeof dependentList)[number]) => d.id),
+  );
+
   const additionalCostByDependent = new Map<string, number>();
   if (enrollmentId) {
     const { data: enrollmentDependents } = await supabase
@@ -146,6 +155,11 @@ export async function recalculateMemberBillingFromCoverage(
 
     const unitCosts: number[] = [];
     for (const row of enrollmentDependents ?? []) {
+      // Skip enrollment rows for a removed (soft-deleted) dependent. The old
+      // hard-delete cascade-removed these rows, so excluding them keeps the
+      // unit-cost average — and thus every dependent's fallback price —
+      // identical to the previous behavior.
+      if (row.dependent_id && !liveDependentIds.has(row.dependent_id)) continue;
       const cost = Number(row.additional_cost);
       if (Number.isFinite(cost) && cost > 0) {
         unitCosts.push(cost);

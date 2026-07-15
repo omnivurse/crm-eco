@@ -109,6 +109,7 @@ async function findRecentDuplicateDependent(
     .eq('first_name', args.first_name)
     .eq('last_name', args.last_name)
     .eq('date_of_birth', args.date_of_birth)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -413,6 +414,43 @@ export async function staffPurgeDependentRecord(
   ctx: StaffCoverageContext,
   input: { member_id: string; dependent_id: string },
 ): Promise<StaffActionResult> {
+  const { supabase, organizationId, profileId } = ctx;
+
+  const depCheck = await assertDependentForMember(
+    supabase,
+    input.dependent_id,
+    input.member_id,
+    organizationId,
+  );
+  if (!depCheck.success) return { success: false, error: depCheck.error };
+
+  // Soft-delete (move to Trash) instead of a physical delete: the dependent and
+  // its coverage history stay recoverable via Undo. Because the billing recalc
+  // and every dependent list exclude soft-deleted rows, the member is no longer
+  // billed for the removed dependent — matching the old hard-delete behavior.
+  const { data: updated, error } = await supabase
+    .from('dependents')
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: profileId,
+      deleted_origin: 'member',
+    })
+    .eq('id', input.dependent_id)
+    .is('deleted_at', null)
+    .select('id');
+  if (error) return { success: false, error: error.message };
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Dependent not found or already removed' };
+  }
+
+  const billingSync = await syncBillingAfterCoverageChange(supabase, input.member_id, organizationId);
+  return { success: true, ...billingSync };
+}
+
+export async function staffRestoreDependentRecord(
+  ctx: StaffCoverageContext,
+  input: { member_id: string; dependent_id: string },
+): Promise<StaffActionResult> {
   const { supabase, organizationId } = ctx;
 
   const depCheck = await assertDependentForMember(
@@ -423,10 +461,18 @@ export async function staffPurgeDependentRecord(
   );
   if (!depCheck.success) return { success: false, error: depCheck.error };
 
-  // dependent_coverage_periods cascade-delete via FK on dependent_id.
-  const { error } = await supabase.from('dependents').delete().eq('id', input.dependent_id);
+  const { data: updated, error } = await supabase
+    .from('dependents')
+    .update({ deleted_at: null, deleted_by: null, deleted_origin: null })
+    .eq('id', input.dependent_id)
+    .not('deleted_at', 'is', null)
+    .select('id');
   if (error) return { success: false, error: error.message };
+  if (!updated || updated.length === 0) {
+    return { success: false, error: 'Dependent not found or already active' };
+  }
 
+  // Re-bill now that the dependent is covered again.
   const billingSync = await syncBillingAfterCoverageChange(supabase, input.member_id, organizationId);
   return { success: true, ...billingSync };
 }

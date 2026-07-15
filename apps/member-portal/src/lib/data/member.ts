@@ -222,6 +222,7 @@ export const listMemberDependents = cache(async (): Promise<DependentWithCoverag
     )
     .eq('member_id', ctx.member.id)
     .eq('organization_id', ctx.member.organization_id)
+    .is('deleted_at' as never, null)
     .order('created_at', { ascending: false });
   return (data ?? []) as DependentWithCoverage[];
 });

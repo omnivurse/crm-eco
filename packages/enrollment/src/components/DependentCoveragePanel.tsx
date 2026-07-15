@@ -263,6 +263,7 @@ export const DependentCoveragePanel = memo(function DependentCoveragePanel({
         .from('dependents')
         .select('id, first_name, last_name, relationship, date_of_birth, included_in_enrollment')
         .eq('member_id', memberId)
+        .is('deleted_at' as never, null)
         .order('first_name'),
     ]);
 

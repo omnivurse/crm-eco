@@ -16,6 +16,7 @@ import {
   endDependentCoverage,
   logHistoricalCoveragePeriod,
   purgeDependentRecord,
+  restoreDependentRecord,
 } from './actions';
 import {
   Users,
@@ -114,6 +115,7 @@ export default function DependentsPage() {
           'id, first_name, last_name, date_of_birth, gender, relationship, included_in_enrollment, created_at, updated_at',
         )
         .eq('member_id', profile.member_id)
+        .is('deleted_at' as never, null)
         .order('created_at', { ascending: false }),
       supabase
         .from('dependent_coverage_periods')
@@ -313,9 +315,10 @@ export default function DependentsPage() {
       !(await confirmDialog({
         title: 'Purge dependent record',
         description:
-          `Permanently delete the record for ${dependent.first_name} ${dependent.last_name}? ` +
-          `This removes the person and ALL their coverage history. Prefer "End coverage" for normal use.`,
-        confirmLabel: 'Purge record',
+          `Remove ${dependent.first_name} ${dependent.last_name} from this membership? ` +
+          `This moves the dependent (and their coverage history) to Trash — you can undo it. ` +
+          `Prefer "End coverage" to stop billing while keeping the record.`,
+        confirmLabel: 'Remove dependent',
         destructive: true,
       }))
     ) {
@@ -326,8 +329,23 @@ export default function DependentsPage() {
     if (!result.success) {
       toast.error(result.error ?? 'Failed to remove dependent record');
     } else {
-      toast.success('Dependent record purged (including history)');
       fetchDependents();
+      const depId = dependent.id;
+      toast.success('Dependent removed', {
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            const restored = await restoreDependentRecord(depId);
+            if (restored.success) {
+              toast.success('Dependent restored');
+              fetchDependents();
+            } else {
+              toast.error(restored.error ?? 'Could not restore the dependent.');
+            }
+          },
+        },
+      });
     }
   };
 

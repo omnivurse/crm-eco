@@ -79,6 +79,7 @@ export async function loadMemberCommandCenterData(
       .select('*')
       .eq('member_id', memberId)
       .eq('organization_id', orgId)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: true }),
     supabase
       .from('dependent_coverage_periods')
