@@ -1125,11 +1125,6 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   <ChevronDown className="w-3.5 h-3.5" />
                 )}
                 {section.label}
-                {sectionFields.length > 0 && (
-                  <span className="text-muted-foreground font-normal text-xs">
-                    ({sectionFields.length})
-                  </span>
-                )}
               </CardTitle>
             </CardHeader>
             {!isCollapsed && (
