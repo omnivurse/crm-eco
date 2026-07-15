@@ -5,7 +5,7 @@
  * updates as reps save coverage fields (no full page refresh required).
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { CrmField, CrmLayout, CrmRecord } from '@/lib/crm/types';
 import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
 import { getSectionMeta, isPersonModuleKey } from './section-utils';
@@ -42,27 +42,24 @@ function LiveSectionOverview({
   belowFields,
 }: RecordOverviewPanelProps) {
   const saveCtx = useRecordFieldSaveOptional();
-  const [liveValues, setLiveValues] = useState(defaultValues);
 
-  useEffect(() => {
-    setLiveValues(defaultValues);
-  }, [record.updated_at, defaultValues]);
-
-  useEffect(() => {
-    if (!saveCtx) return;
-    setLiveValues((prev) => {
-      let changed = false;
-      const next = { ...prev };
+  // Live field values = record defaults overlaid with any values the rep has
+  // inline-saved this session (tracked in the save context). Derived during
+  // render so section fill-counts stay current without a useState + two syncing
+  // effects — which triggered cascading-render lint and left the badges a frame
+  // behind. defaultValues gets a fresh reference on every record refresh, so it
+  // alone captures server updates.
+  const liveValues = useMemo(() => {
+    const next: Record<string, unknown> = { ...defaultValues };
+    if (saveCtx) {
       for (const [key, state] of Object.entries(saveCtx.fields)) {
-        if (state.status !== 'saved' || state.lastValue === undefined) continue;
-        if (next[key] !== state.lastValue) {
+        if (state.status === 'saved' && state.lastValue !== undefined) {
           next[key] = state.lastValue;
-          changed = true;
         }
       }
-      return changed ? next : prev;
-    });
-  }, [saveCtx?.fields]);
+    }
+    return next;
+  }, [defaultValues, saveCtx]);
 
   const inlineEditable = layoutV2Shell || isPersonModuleKey(moduleKey);
 
@@ -79,7 +76,8 @@ function LiveSectionOverview({
     <OverviewLayout
       recordId={recordId}
       sections={sections}
-      showSectionNav={!layoutV2Shell}
+      showSectionNav
+      navVariant={layoutV2Shell ? 'compact' : 'pills'}
       fieldContent={
         <>
           <RecordOverviewFields

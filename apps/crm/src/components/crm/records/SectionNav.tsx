@@ -12,9 +12,21 @@ interface SectionNavProps {
   sections: SectionMeta[];
   activeSectionKey: string;
   onSectionClick: (key: string) => void;
+  /**
+   * 'pills' (classic) renders large rounded pills. 'compact' (Layout V2 power
+   * cockpit) renders slim underline-tab jump links so the bar reads as a dense
+   * field-band navigator that pins directly beneath the header strip.
+   */
+  variant?: 'pills' | 'compact';
 }
 
-export function SectionNav({ sections, activeSectionKey, onSectionClick }: SectionNavProps) {
+export function SectionNav({
+  sections,
+  activeSectionKey,
+  onSectionClick,
+  variant = 'pills',
+}: SectionNavProps) {
+  const compact = variant === 'compact';
   const handleClick = useCallback(
     (section: SectionMeta) => {
       // Notes-group pills open the Notes related list (the source of truth for
@@ -51,24 +63,29 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
 
   if (sections.length <= 1) return null;
 
-  let lastGroup = sections[0]?.navGroup;
-
   return (
-    <div className="sticky top-[180px] z-[5] -mx-1 border-b border-slate-200 bg-white/95 px-1 shadow-sm backdrop-blur-lg dark:border-white/5 dark:bg-slate-950/95">
+    <div
+      className={cn(
+        'sticky z-[5] -mx-1 border-b border-slate-200 bg-white/95 px-1 backdrop-blur-lg dark:border-white/5 dark:bg-slate-950/95',
+        compact ? 'shadow-none' : 'shadow-sm',
+      )}
+      style={{ top: 'var(--record-sticky-offset, 180px)' }}
+    >
       <div
-        className="flex items-center gap-2 overflow-x-auto py-2.5 scrollbar-thin"
+        className={cn(
+          'flex overflow-x-auto scrollbar-thin',
+          compact ? 'items-stretch gap-1 py-1' : 'items-center gap-2 py-2.5',
+        )}
         role="tablist"
         aria-label="Record sections"
       >
         {sections.map((s, index) => {
           const isActive = s.key === activeSectionKey;
           const navAccent = getSectionNavAccent(s.accent);
-          const showGroupDivider = index > 0 && s.navGroup !== lastGroup;
-          if (showGroupDivider) {
-            lastGroup = s.navGroup;
-          } else if (index === 0) {
-            lastGroup = s.navGroup;
-          }
+          // A group divider starts wherever this section's band differs from the
+          // previous section's — computed from the array (no render-time mutation).
+          const showGroupDivider =
+            index > 0 && s.navGroup !== sections[index - 1]?.navGroup;
 
           // Notes pills show the real note-record count (mirrors the sidebar);
           // every other pill shows how many of its fields are filled in.
@@ -97,8 +114,18 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
                 aria-selected={isActive}
                 onClick={() => handleClick(s)}
                 className={cn(
-                  'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
-                  isActive ? navAccent.active : navAccent.inactive,
+                  'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap transition-colors',
+                  compact
+                    ? cn(
+                        'border-b-2 px-2 py-1 text-xs font-medium',
+                        isActive
+                          ? 'border-teal-500 text-slate-900 dark:text-white'
+                          : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                      )
+                    : cn(
+                        'rounded-full px-3.5 py-1.5 text-xs font-medium',
+                        isActive ? navAccent.active : navAccent.inactive,
+                      ),
                 )}
               >
                 {s.label}
@@ -106,7 +133,11 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
                   title={badgeTitle}
                   className={cn(
                     'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold',
-                    isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
+                    compact
+                      ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                      : isActive
+                        ? navAccent.activeBadge
+                        : navAccent.inactiveBadge,
                   )}
                 >
                   {badgeValue}

@@ -337,7 +337,6 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       // mount, visually overriding our masked `value` until the field is edited —
       // so a saved DOB displayed as "1982-02-25" instead of "02/25/1982". Drop
       // the ref; the field stays in form state via setValue (below) + register().
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { ref: _dateRef, ...dateCommon } = commonProps;
       input = (
         <Input
@@ -762,7 +761,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
   // Helper: a single field cell (label + input or read-only renderer)
   const renderFieldCell = useCallback(
-    (field: CrmField, opts?: { row?: boolean }) => {
+    (field: CrmField, opts?: { row?: boolean; tightLabel?: boolean }) => {
       const denseRow = Boolean(opts?.row) && readOnly;
 
       const valueNode = readOnly ? (
@@ -797,7 +796,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           >
             <Label
               htmlFor={field.key}
-              className="w-36 shrink-0 text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide"
+              className={cn(
+                'shrink-0 text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide',
+                opts?.tightLabel ? 'w-24' : 'w-36',
+              )}
             >
               {field.label}
             </Label>
@@ -1138,8 +1140,8 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     );
 
     return (
-      <div className={cn('rounded-2xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}>
-        <div className="flex flex-col gap-x-6 gap-y-3 p-3.5 lg:flex-row lg:flex-wrap lg:items-stretch">
+      <div className={cn('rounded-xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}>
+        <div className="flex flex-col gap-x-6 gap-y-3 p-3 lg:flex-row lg:flex-wrap lg:items-stretch">
           {/* Identity rail — coverage type + carrier / sharing entity */}
           <div className="flex items-start gap-3 lg:w-64 lg:shrink-0">
             <span
@@ -1178,11 +1180,15 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                 <>
                   {divider}
                   <div
-                    className="grid flex-1 gap-x-6 gap-y-2 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
-                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
+                    className="grid flex-1 gap-x-6 gap-y-0 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
+                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}
                   >
-                    {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
-                    {showDate && heroStartDateField && renderFieldCell(heroStartDateField)}
+                    {heroProductPlanSnapshotFields.map((field) =>
+                      renderFieldCell(field, { row: true, tightLabel: true }),
+                    )}
+                    {showDate &&
+                      heroStartDateField &&
+                      renderFieldCell(heroStartDateField, { row: true, tightLabel: true })}
                   </div>
                 </>
               )}
@@ -1192,8 +1198,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                       may wrap to its own row when the column is narrow (e.g. the
                       insights rail is open), and a stray vertical rule would hang
                       off the end of the previous row. */}
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-2 lg:w-52 lg:shrink-0 lg:grid-cols-1 lg:border-0 lg:pt-0">
-                    {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-0 border-t border-dashed pt-3 sm:grid-cols-2 lg:w-56 lg:shrink-0 lg:grid-cols-1 lg:border-0 lg:pt-0">
+                    {heroReferralSnapshotFields.map((field) =>
+                      renderFieldCell(field, { row: true, tightLabel: true }),
+                    )}
                   </div>
                 </>
               )}
@@ -1310,10 +1318,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   // Auto-pack into as many ~220px columns as the width allows.
                   // ──────────────────────────────────────────────────────────
                   <div
-                    className={cn('grid', readOnly ? 'gap-x-8' : 'gap-x-5 gap-y-3')}
+                    className={cn('grid', readOnly ? 'gap-x-6' : 'gap-x-5 gap-y-3')}
                     style={{
                       gridTemplateColumns: readOnly
-                        ? 'repeat(auto-fit, minmax(280px, 1fr))'
+                        ? 'repeat(auto-fit, minmax(220px, 1fr))'
                         : 'repeat(auto-fit, minmax(230px, 1fr))',
                     }}
                   >
@@ -1329,14 +1337,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     className={cn(
                       'grid',
                       readOnly
-                        ? 'gap-x-8'
+                        ? 'gap-x-6'
                         : 'gap-4',
                       !readOnly &&
                         (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
                     )}
                     style={
                       readOnly
-                        ? { gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }
+                        ? { gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }
                         : undefined
                     }
                   >

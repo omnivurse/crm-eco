@@ -45,6 +45,9 @@ import {
   PanelRightClose,
   Shield,
   Clock as ClockIcon,
+  Link2,
+  ExternalLink,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
@@ -104,7 +107,6 @@ import { getRecordDisplayName } from '@/lib/crm/display-name';
 import { RecordAvatarTile } from './v2/RecordAvatarTile';
 import { RecordTagsRow } from './v2/RecordTagsRow';
 import {
-  RecordRelatedListNav,
   type RelatedListNavItem,
   type RecordRelatedListLink,
 } from './v2/RecordRelatedListNav';
@@ -419,9 +421,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // get the full main-column width (the approved redesign has no right gutter).
   // Users can re-open it via the vertical "Insights" tab.
   const [insightsCollapsed, setInsightsCollapsed] = useState(true);
-  // Left related-list rail is collapsible too, so reps can give the record body
-  // the full width when they don't need the related-list switcher.
-  const [railCollapsed, setRailCollapsed] = useState(false);
   // Mobile-only: insights panel opens in a bottom sheet from the action bar.
   const [insightsSheetOpen, setInsightsSheetOpen] = useState(false);
 
@@ -1198,10 +1197,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             headerCompact && 'shadow-md shadow-slate-200/50 dark:shadow-black/20',
           )}
         >
-          <div className={cn('w-full px-4 xl:px-6', headerCompact ? 'py-2' : 'py-3')}>
+          <div className={cn('w-full px-4 xl:px-6', headerCompact ? 'py-2' : 'py-2.5')}>
             {/* Breadcrumb + search */}
             {!headerCompact && (
-            <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center justify-between gap-4 mb-2">
               <div className="flex items-center gap-2 min-w-0">
                 <Link
                   href={backUrl}
@@ -1691,7 +1690,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             </div>
 
             {/* Top tabs: Overview / Timeline / Data Privacy */}
-            <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-5')}>
+            <div className={cn('-mb-px', headerCompact ? 'mt-2' : 'mt-3')}>
               <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
                 <TabsList className="bg-transparent border-b border-slate-200 dark:border-white/5 w-full justify-start gap-0 h-auto p-0">
                   <TabsTrigger
@@ -1728,6 +1727,64 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
               </Tabs>
             </div>
           </div>
+
+          {/* Related-list + Links cockpit strip — replaces the wide left rail.
+              Lives inside the measured sticky header so --record-sticky-offset
+              accounts for it and the section jump bar pins directly beneath. */}
+          {topTab === 'overview' && (
+            <div className="flex items-stretch border-t border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-950/80 backdrop-blur">
+              <RecordRelatedListChips
+                items={navItems}
+                activeId={overviewPane}
+                onSelect={(id) => setOverviewPane(id as OverviewPane)}
+                onMore={() => setShowCustomizeDialog(true)}
+                className="flex-1 border-b-0 bg-transparent dark:bg-transparent backdrop-blur-none"
+              />
+              <div className="flex items-center border-l border-slate-200 dark:border-white/5 px-1">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-teal-600 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-teal-400 transition-colors"
+                      aria-label="Record links"
+                      title="Links"
+                    >
+                      <Link2 className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Links</span>
+                      {links.length > 0 && (
+                        <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-slate-100 px-1 text-[10px] font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                          {links.length}
+                        </span>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 w-60"
+                  >
+                    <DropdownMenuLabel className="text-xs text-slate-500">Links</DropdownMenuLabel>
+                    {links.length > 0 ? (
+                      links.map((link) => (
+                        <DropdownMenuItem key={link.id} asChild>
+                          <a href={link.href} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="mr-2 h-3.5 w-3.5 text-slate-400" />
+                            <span className="truncate">{link.label}</span>
+                          </a>
+                        </DropdownMenuItem>
+                      ))
+                    ) : (
+                      <DropdownMenuItem disabled>No links yet</DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator className="bg-slate-200 dark:bg-white/10" />
+                    <DropdownMenuItem onClick={() => setShowLinksEditor(true)}>
+                      <Plus className="mr-2 h-3.5 w-3.5" />
+                      Manage links…
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Context banners scroll away so the compact header stays lean */}
@@ -1765,56 +1822,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
             />
         </div>
 
-        {/* Mobile-only horizontal related-list chip rail. Sits directly
-            under the sticky header and scrolls the active chip into view
-            when the pane changes. Hidden at lg where the vertical nav
-            takes over. */}
-        <RecordRelatedListChips
-          items={navItems}
-          activeId={overviewPane}
-          onSelect={(id) => {
-            // The chip rail lives outside the top <Tabs>, so a section tap
-            // must also return to the Overview tab — otherwise the pane
-            // changes invisibly while Timeline/Privacy stays on screen.
-            setTopTab('overview');
-            setOverviewPane(id as OverviewPane);
-          }}
-          onMore={() => setShowCustomizeDialog(true)}
-          className="lg:hidden sticky z-[5]"
-          style={{ top: 'var(--record-sticky-offset, 11rem)' }}
-        />
-
         {/* Body -------------------------------------------------------------- */}
         <Tabs value={topTab} onValueChange={(v) => setTopTab(v as TopTab)}>
           <TabsContent value="overview" className="mt-0">
-            <div className="flex gap-3 xl:gap-5 px-4 xl:px-6 py-4 pb-24 lg:pb-4">
-              {railCollapsed ? (
-                <button
-                  type="button"
-                  onClick={() => setRailCollapsed(false)}
-                  className="hidden lg:flex sticky self-start items-center gap-1 px-1 py-3 rounded-r-lg border border-l-0 border-slate-200 dark:border-white/10 bg-white/60 dark:bg-slate-900/60 text-slate-500 hover:text-teal-600 transition-colors"
-                  style={{ top: 'var(--record-sticky-offset, 11rem)' }}
-                  aria-label="Expand related list"
-                  title="Show related list"
-                >
-                  <ChevronDown className="w-4 h-4 -rotate-90" />
-                  <span className="[writing-mode:vertical-rl] text-[10px] uppercase tracking-wider font-semibold">
-                    Related
-                  </span>
-                </button>
-              ) : (
-                <RecordRelatedListNav
-                  items={navItems}
-                  links={links}
-                  activeId={overviewPane}
-                  onSelect={(id) => setOverviewPane(id as OverviewPane)}
-                  onAddRelatedList={() => setShowCustomizeDialog(true)}
-                  onAddLink={() => setShowLinksEditor(true)}
-                  onCollapse={() => setRailCollapsed(true)}
-                  className="sticky self-start hidden lg:flex"
-                />
-              )}
-
+            <div
+              className="flex py-3 pb-24 lg:pb-4"
+              style={{
+                paddingInline: 'var(--crm-gutter, 20px)',
+                columnGap: 'var(--crm-section-gap, 24px)',
+              }}
+            >
+              {/* Fields dominate the full viewport — the related-list switcher
+                  now lives in the sticky header strip, not a wide left rail. */}
               <div className="flex-1 min-w-0">{renderOverviewPane()}</div>
 
               {/* Right insights rail — collapsible via the chevron tab so the

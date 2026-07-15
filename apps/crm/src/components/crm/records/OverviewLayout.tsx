@@ -12,11 +12,12 @@ interface OverviewLayoutProps {
   sections: SectionMeta[];
   fieldContent: React.ReactNode;
   /**
-   * Show the horizontal section-pill navigator. The V2 shell has its own
-   * navigation chrome and a full-width coverage banner that should lead the
-   * pane, so it hides these pills for the cleaner redesign layout.
+   * Show the section navigator. Both classic (pills) and the V2 power cockpit
+   * (compact underline jump bar) render it; only single-section records hide it.
    */
   showSectionNav?: boolean;
+  /** Nav style — 'compact' for the V2 cockpit jump bar, 'pills' for classic. */
+  navVariant?: 'pills' | 'compact';
 }
 
 export function OverviewLayout({
@@ -24,6 +25,7 @@ export function OverviewLayout({
   sections,
   fieldContent,
   showSectionNav = true,
+  navVariant = 'pills',
 }: OverviewLayoutProps) {
   const [activeSectionKey, setActiveSectionKey] = useState(() => {
     const persisted = getPersistedActiveSection(recordId);
@@ -85,17 +87,18 @@ export function OverviewLayout({
 
   return (
     <div ref={containerRef}>
-      {/* Section pill navigator */}
+      {/* Section navigator — field-band jump bar */}
       {showSectionNav && (
         <SectionNav
           sections={sections}
           activeSectionKey={activeSectionKey}
           onSectionClick={handleSectionClick}
+          variant={navVariant}
         />
       )}
 
       {/* Full-width field sections */}
-      <div className="mt-3">
+      <div className={navVariant === 'compact' ? 'mt-2' : 'mt-3'}>
         {fieldContent}
       </div>
     </div>

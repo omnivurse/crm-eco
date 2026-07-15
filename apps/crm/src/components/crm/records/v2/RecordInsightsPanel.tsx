@@ -55,7 +55,7 @@ export const RecordInsightsPanel = memo(function RecordInsightsPanel({
     <aside
       aria-label="Record insights"
       className={cn(
-        'w-72 xl:w-80 shrink-0 flex flex-col gap-4 text-sm',
+        'w-64 shrink-0 flex flex-col gap-4 text-sm',
         className,
       )}
     >
