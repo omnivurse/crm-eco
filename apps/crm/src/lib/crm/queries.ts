@@ -2259,7 +2259,9 @@ export async function getGroupsForRecord(recordId: string) {
   const { data, error } = await supabase
     .from('crm_contact_group_members')
     .select('group_id, added_at, crm_contact_groups(id, group_name, group_type, color, icon)')
-    .eq('record_id', recordId);
+    .eq('record_id', recordId)
+    // Don't surface memberships whose group has been trashed.
+    .is('crm_contact_groups.deleted_at' as never, null);
 
   if (error) {
     console.error('Error fetching groups for record:', error);

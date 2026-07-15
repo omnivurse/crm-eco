@@ -231,18 +231,27 @@ export async function DELETE(request: NextRequest) {
     const supabase = await createClient();
 
     // Soft-delete (move to Trash) so a removed view can be restored via Undo.
-    const { error } = await (supabase as any)
+    const { data: updated, error } = await (supabase as any)
       .from('saved_views')
       .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
       .eq('id', id)
       .eq('organization_id', profile.organization_id)
-      .is('deleted_at', null);
+      .is('deleted_at', null)
+      .select('id');
 
     if (error) {
       console.error('[SavedViews DELETE]', error);
       return NextResponse.json(
         { error: 'Failed to delete view' },
         { status: 500 },
+      );
+    }
+
+    // 0 rows = not found / not the owner (RLS) — don't report a false success.
+    if (!updated || (updated as unknown[]).length === 0) {
+      return NextResponse.json(
+        { error: 'View not found or not permitted' },
+        { status: 404 },
       );
     }
 

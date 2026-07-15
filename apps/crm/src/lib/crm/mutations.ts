@@ -940,13 +940,18 @@ export async function deleteRecordLink(linkId: string): Promise<void> {
   const supabase = await createCrmClient();
 
   // Soft-delete (move to Trash) so an unlinked relationship can be restored.
-  const { error } = await (supabase as any)
+  const { data, error } = await (supabase as any)
     .from('crm_record_links')
     .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
     .eq('id', linkId)
-    .is('deleted_at', null);
+    .is('deleted_at', null)
+    .select('id');
 
   if (error) throw error;
+  // 0 rows = RLS blocked or already trashed — surface it, don't claim success.
+  if (!data || (data as unknown[]).length === 0) {
+    throw new Error('Link could not be removed — not found or not permitted.');
+  }
 }
 
 // ============================================================================
