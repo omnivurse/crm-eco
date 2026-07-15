@@ -20,6 +20,12 @@ export interface RecordOverviewPanelProps {
   defaultValues: Record<string, unknown>;
   moduleKey: string;
   layoutV2Shell: boolean;
+  /**
+   * Real note-record count (crm_notes + legacy entries). Feeds the notes-group
+   * section pill so it mirrors the sidebar's Notes count instead of a field-fill
+   * count. Same value passed as the shell's `noteCount`.
+   */
+  noteCount?: number;
   /** Optional content below the field stack (e.g. legacy notes). */
   belowFields?: ReactNode;
 }
@@ -32,6 +38,7 @@ function LiveSectionOverview({
   defaultValues,
   moduleKey,
   layoutV2Shell,
+  noteCount,
   belowFields,
 }: RecordOverviewPanelProps) {
   const saveCtx = useRecordFieldSaveOptional();
@@ -63,8 +70,9 @@ function LiveSectionOverview({
     () =>
       getSectionMeta(fields, layout, liveValues, moduleKey, {
         inlineEditable,
+        noteCount,
       }),
-    [fields, layout, liveValues, moduleKey, inlineEditable],
+    [fields, layout, liveValues, moduleKey, inlineEditable, noteCount],
   );
 
   return (

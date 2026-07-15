@@ -238,6 +238,7 @@ async function RecordDetailContent({ params }: PageProps) {
             defaultValues={defaultValues}
             moduleKey={module.key}
             layoutV2Shell={useLayoutV2}
+            noteCount={notes.length + legacyNoteCount}
             belowFields={
               legacyNotes ? (
                 <div className="mt-4">

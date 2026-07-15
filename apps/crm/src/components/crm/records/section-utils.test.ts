@@ -119,6 +119,64 @@ describe('section-utils person coverage visibility', () => {
     ]);
   });
 
+  it('syncs the notes pill to the real note count and links it to the Notes list', () => {
+    const meta = getSectionMeta(
+      [field('first_name', 'core'), field('notes_history', 'notes_history')],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: {
+          sections: [
+            { key: 'core', label: 'Lead Information', columns: 2 },
+            { key: 'notes_history', label: 'Notes History', columns: 1 },
+          ],
+        },
+        created_at: '',
+        updated_at: '',
+      },
+      // Legacy notes_history textarea is empty, but 6 note records exist.
+      { first_name: 'Andrea' },
+      'leads',
+      { inlineEditable: true, noteCount: 6 },
+    );
+
+    const notes = meta.find((s) => s.key === 'notes_history');
+    expect(notes?.label).toBe('Notes');
+    expect(notes?.badgeCount).toBe(6);
+    expect(notes?.navAction).toBe('open-notes');
+    // Non-notes sections are untouched by the note-count sync.
+    const core = meta.find((s) => s.key === 'core');
+    expect(core?.badgeCount).toBeUndefined();
+    expect(core?.navAction).toBeUndefined();
+  });
+
+  it('leaves the notes pill as a field-fill count when no note count is supplied', () => {
+    const meta = getSectionMeta(
+      [field('notes_history', 'notes_history')],
+      {
+        id: 'layout',
+        org_id: 'org',
+        module_id: 'mod',
+        name: 'Default',
+        is_default: true,
+        config: { sections: [{ key: 'notes_history', label: 'Notes History', columns: 1 }] },
+        created_at: '',
+        updated_at: '',
+      },
+      {},
+      'leads',
+      { inlineEditable: true },
+    );
+
+    const notes = meta.find((s) => s.key === 'notes_history');
+    expect(notes?.label).toBe('Notes History');
+    expect(notes?.badgeCount).toBeUndefined();
+    expect(notes?.navAction).toBeUndefined();
+  });
+
   it('applies semantic accent colors by section key', () => {
     expect(resolveSectionAccent('core')).toBe('blue');
     expect(resolveSectionAccent('health_sharing')).toBe('emerald');

@@ -16,7 +16,16 @@ interface SectionNavProps {
 
 export function SectionNav({ sections, activeSectionKey, onSectionClick }: SectionNavProps) {
   const handleClick = useCallback(
-    (key: string) => {
+    (section: SectionMeta) => {
+      // Notes-group pills open the Notes related list (the source of truth for
+      // note records) rather than scrolling to the legacy notes_history field
+      // section, so the pill and the sidebar count point at the same place.
+      if (section.navAction === 'open-notes') {
+        window.dispatchEvent(new CustomEvent('crm:switch-tab', { detail: 'notes' }));
+        return;
+      }
+
+      const key = section.key;
       onSectionClick(key);
 
       window.dispatchEvent(
@@ -61,6 +70,14 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
             lastGroup = s.navGroup;
           }
 
+          // Notes pills show the real note-record count (mirrors the sidebar);
+          // every other pill shows how many of its fields are filled in.
+          const badgeValue = s.badgeCount ?? s.filledCount;
+          const badgeTitle =
+            s.badgeCount !== undefined
+              ? `${s.badgeCount} note${s.badgeCount === 1 ? '' : 's'}`
+              : `${s.filledCount} of ${s.fieldCount} fields filled in`;
+
           return (
             <Fragment key={s.key}>
               {showGroupDivider && (
@@ -78,7 +95,7 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
                 type="button"
                 role="tab"
                 aria-selected={isActive}
-                onClick={() => handleClick(s.key)}
+                onClick={() => handleClick(s)}
                 className={cn(
                   'inline-flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
                   isActive ? navAccent.active : navAccent.inactive,
@@ -86,13 +103,13 @@ export function SectionNav({ sections, activeSectionKey, onSectionClick }: Secti
               >
                 {s.label}
                 <span
-                  title={`${s.filledCount} of ${s.fieldCount} fields filled in`}
+                  title={badgeTitle}
                   className={cn(
                     'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold',
                     isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
                   )}
                 >
-                  {s.filledCount}
+                  {badgeValue}
                 </span>
               </button>
             </Fragment>

@@ -70,8 +70,10 @@ export const CONTACTS_FIELD_MAPPING: FieldMapping[] = [
   { csvColumn: 'Work Phone', crmKey: 'work_phone', type: 'phone', section: 'core' },
   { csvColumn: 'Fax', crmKey: 'fax', type: 'phone', section: 'core' },
   { csvColumn: 'Date of Birth', crmKey: 'date_of_birth', type: 'date', section: 'core', transform: parseDate },
-  { csvColumn: 'Birth Month', crmKey: 'birth_month', type: 'text', section: 'core' },
-  { csvColumn: 'Primary Member Gender', crmKey: 'primary_member_gender', type: 'text', section: 'core' },
+  // 'Birth Month' retired (migration 202607140001): derivable from Date of Birth; no longer mapped.
+  // Gender consolidated onto the canonical `gender` key (was primary_member_gender) so imports
+  // populate the field the app's member-sync logic actually reads.
+  { csvColumn: 'Primary Member Gender', crmKey: 'gender', type: 'text', section: 'core' },
   { csvColumn: 'Marital Status', crmKey: 'marital_status', type: 'text', section: 'core' },
   { csvColumn: 'Primary S.S Number', crmKey: 'primary_ss_number', type: 'text', section: 'core' },
 

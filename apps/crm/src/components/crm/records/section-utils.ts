@@ -316,6 +316,21 @@ export interface SectionMeta {
    * because reps care about what's actually filled in, not what's possible.
    */
   filledCount: number;
+  /**
+   * When set, the nav pill shows this number instead of {@link filledCount}.
+   * The notes group uses it so the pill mirrors the real note-record count
+   * (the sidebar related list's source of truth) rather than form-field fill
+   * state — otherwise a "Notes History" section with an empty legacy textarea
+   * reads "0" next to a sidebar "Notes 6" and looks broken to clients.
+   */
+  badgeCount?: number;
+  /**
+   * Optional non-scroll click behavior for the nav pill. `'open-notes'`
+   * switches the record shell to the Notes related list instead of scrolling
+   * to the (legacy, often-empty) `notes_history` field section, so the pill
+   * and sidebar point at the same data.
+   */
+  navAction?: 'open-notes';
   accent?: LayoutSectionAccent;
   variant?: LayoutSectionVariant;
   navGroup: SectionNavGroup;
@@ -324,6 +339,13 @@ export interface SectionMeta {
 export interface SectionMetaOptions {
   /** When true, nav includes empty editable sections (matches inline overview). */
   inlineEditable?: boolean;
+  /**
+   * Real note-record count (crm_notes + parsed legacy `notes_history` entries)
+   * for this record. When provided, the notes-group nav pill mirrors this
+   * number and links to the Notes related list so it agrees with the sidebar
+   * instead of showing a confusing field-fill count.
+   */
+  noteCount?: number;
 }
 
 /** Whether a section should appear in nav + on-page stack for this record. */
@@ -433,6 +455,7 @@ export function getSectionMeta(
   options?: SectionMetaOptions,
 ): SectionMeta[] {
   const inlineEditable = options?.inlineEditable ?? false;
+  const noteCount = options?.noteCount;
   const layoutConfig: LayoutConfig = layout?.config || { sections: [{ key: 'main', label: 'Information', columns: 2 }] };
 
   // Group fields by section
@@ -461,14 +484,23 @@ export function getSectionMeta(
       const filledCount = recordData
         ? sectionFields.filter((f) => isPopulated(recordData[f.key])).length
         : fieldCount;
+      const navGroup = getSectionNavGroup(s.key);
+      // Notes-group pills mirror the sidebar's note-record count and link to
+      // the Notes related list, so the top nav and the sidebar never disagree.
+      const syncsNoteCount = navGroup === 'notes' && typeof noteCount === 'number';
       return {
         key: s.key,
-        label: normalizeLegacySectionHeading(s.key, s.label),
+        // Notes pills read "Notes" to match the sidebar related list; the
+        // on-page section card keeps its own heading (rendered separately in
+        // DynamicRecordForm, so this relabel doesn't touch the form).
+        label: syncsNoteCount ? 'Notes' : normalizeLegacySectionHeading(s.key, s.label),
         fieldCount,
         filledCount,
+        badgeCount: syncsNoteCount ? noteCount : undefined,
+        navAction: syncsNoteCount ? ('open-notes' as const) : undefined,
         accent: resolveSectionAccent(s.key, s.accent),
         variant: s.variant,
-        navGroup: getSectionNavGroup(s.key),
+        navGroup,
       };
     });
 }
