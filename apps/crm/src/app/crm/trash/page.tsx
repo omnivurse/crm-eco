@@ -4,9 +4,11 @@ import { TrashClient } from './TrashClient';
 export const dynamic = 'force-dynamic';
 
 /**
- * CRM Recycle Bin — records moved to Trash (soft-deleted). Admins/managers can
- * restore them or delete them permanently. Access is enforced by the underlying
- * /api/crm/records/trash endpoints (crm_admin / crm_manager).
+ * CRM Recycle Bin — a unified Trash console across every soft-deletable entity
+ * (records, tasks, notes, attachments, record links, contact groups, carrier
+ * contacts, plus the admin's own sticky notes and saved views). Admins/managers
+ * restore or permanently delete. Access is enforced by the underlying
+ * /api/crm/trash + restore endpoints (crm_admin / crm_manager).
  */
 export default function CrmTrashPage() {
   return (
@@ -18,7 +20,8 @@ export default function CrmTrashPage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Trash</h1>
           <p className="text-sm text-slate-500">
-            Deleted records are kept for 30 days. Restore them, or delete them permanently.
+            Deleted records, tasks, notes, attachments and more are kept for 30 days. Restore them,
+            or delete them permanently.
           </p>
         </div>
       </div>
