@@ -762,40 +762,63 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
   // Helper: a single field cell (label + input or read-only renderer)
   const renderFieldCell = useCallback(
-    (field: CrmField) => (
-      <div
-        key={field.key}
-        className={cn(field.width === 'full' && 'md:col-span-2')}
-      >
-        <Label
-          htmlFor={field.key}
-          className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider"
-        >
-          {field.label}
-          {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
-        </Label>
-        {readOnly ? (
-          <div className="py-0.5 text-sm min-h-[24px]">
-            {inlineEditable ? (
-              <InlineFieldCell
-                field={field}
-                value={defaultValues[field.key]}
-              />
-            ) : (
-              <FieldRenderer field={field} value={defaultValues[field.key]} />
+    (field: CrmField, opts?: { row?: boolean }) => {
+      const denseRow = Boolean(opts?.row) && readOnly;
+
+      const valueNode = readOnly ? (
+        <div className={cn('text-sm', denseRow ? 'min-h-[20px]' : 'py-0.5 min-h-[24px]')}>
+          {inlineEditable ? (
+            <InlineFieldCell field={field} value={defaultValues[field.key]} />
+          ) : (
+            <FieldRenderer field={field} value={defaultValues[field.key]} />
+          )}
+        </div>
+      ) : (
+        <FormFieldRenderer
+          field={field}
+          control={control}
+          register={register}
+          setValue={setValue}
+          error={errors[field.key]?.message as string | undefined}
+        />
+      );
+
+      // Dense "line" layout for read-only records: label on the left, value on
+      // the right, hairline separators, minimal vertical rhythm. Packs far more
+      // fields per screen so reps scan and find things without scrolling.
+      if (denseRow) {
+        return (
+          <div
+            key={field.key}
+            className={cn(
+              'flex items-baseline gap-3 border-b border-border/40 py-1.5',
+              field.width === 'full' && 'md:col-span-2',
             )}
+          >
+            <Label
+              htmlFor={field.key}
+              className="w-36 shrink-0 text-muted-foreground text-[11px] font-medium uppercase leading-snug tracking-wide"
+            >
+              {field.label}
+            </Label>
+            <div className="min-w-0 flex-1">{valueNode}</div>
           </div>
-        ) : (
-          <FormFieldRenderer
-            field={field}
-            control={control}
-            register={register}
-            setValue={setValue}
-            error={errors[field.key]?.message as string | undefined}
-          />
-        )}
-      </div>
-    ),
+        );
+      }
+
+      return (
+        <div key={field.key} className={cn(field.width === 'full' && 'md:col-span-2')}>
+          <Label
+            htmlFor={field.key}
+            className="mb-1 block text-muted-foreground text-xs uppercase tracking-wider"
+          >
+            {field.label}
+            {!readOnly && field.required && <span className="text-destructive ml-1">*</span>}
+          </Label>
+          {valueNode}
+        </div>
+      );
+    },
     [control, defaultValues, errors, inlineEditable, readOnly, register, setValue],
   );
 
@@ -1116,7 +1139,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
 
     return (
       <div className={cn('rounded-2xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}>
-        <div className="flex flex-col gap-x-6 gap-y-4 p-4 lg:flex-row lg:flex-wrap lg:items-stretch">
+        <div className="flex flex-col gap-x-6 gap-y-3 p-3.5 lg:flex-row lg:flex-wrap lg:items-stretch">
           {/* Identity rail — coverage type + carrier / sharing entity */}
           <div className="flex items-start gap-3 lg:w-64 lg:shrink-0">
             <span
@@ -1155,7 +1178,7 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                 <>
                   {divider}
                   <div
-                    className="grid flex-1 gap-x-6 gap-y-3 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
+                    className="grid flex-1 gap-x-6 gap-y-2 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
                     style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
                   >
                     {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
@@ -1287,10 +1310,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   // Auto-pack into as many ~220px columns as the width allows.
                   // ──────────────────────────────────────────────────────────
                   <div
-                    className="grid gap-x-5 gap-y-3"
-                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
+                    className={cn('grid', readOnly ? 'gap-x-8' : 'gap-x-5 gap-y-3')}
+                    style={{
+                      gridTemplateColumns: readOnly
+                        ? 'repeat(auto-fit, minmax(280px, 1fr))'
+                        : 'repeat(auto-fit, minmax(230px, 1fr))',
+                    }}
                   >
-                    {sectionFields.map(renderFieldCell)}
+                    {sectionFields.map((f) => renderFieldCell(f, { row: true }))}
                   </div>
                 ) : sectionFields.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
@@ -1302,18 +1329,18 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     className={cn(
                       'grid',
                       readOnly
-                        ? 'gap-x-5 gap-y-1.5'
+                        ? 'gap-x-8'
                         : 'gap-4',
                       !readOnly &&
                         (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
                     )}
                     style={
                       readOnly
-                        ? { gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }
+                        ? { gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }
                         : undefined
                     }
                   >
-                    {sectionFields.map(renderFieldCell)}
+                    {sectionFields.map((f) => renderFieldCell(f, { row: true }))}
                   </div>
                 )}
               </CardContent>
