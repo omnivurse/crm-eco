@@ -115,11 +115,17 @@ async function addLeadContactNeighborhood(
     ...unique.map((id) => `target_record_id.eq.${id}`),
   ].join(',');
 
+  // NOTE: `lead_to_contact` links are conversion lineage — the SAME person before
+  // and after a lead→contact/member conversion. We intentionally DO NOT filter out
+  // soft-deleted links here: when a converted lead is trashed (or the link itself is
+  // soft-deleted by the undo-delete flow), the person's note history must still
+  // surface on their surviving record. Trashing a record hides the record, it must
+  // not orphan the person's notes. (The notes fetch still filters deleted_at on the
+  // notes themselves, so genuinely-deleted notes stay hidden.)
   const { data: links } = await supabase
     .from('crm_record_links')
     .select('source_record_id, target_record_id')
     .eq('link_type', LINK_LEAD_CONTACT)
-    .is('deleted_at' as never, null)
     .or(orParts);
 
   for (const row of links || []) {
