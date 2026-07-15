@@ -77,7 +77,7 @@ import {
   SheetDescription,
 } from '@crm-eco/ui/components/sheet';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { supabase } from '@/lib/supabase-client';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
@@ -1478,7 +1478,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   <span className="hidden min-[380px]:inline">Edit</span>
                 </Button>
 
-                {!headerCompact && (
+                {/* Note Template stays visible even in the compact sticky
+                    header — notes are a per-client, high-frequency action. */}
                 <div className="flex items-stretch shrink-0">
                   <Button
                     variant="outline"
@@ -1583,7 +1584,6 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                )}
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -2056,10 +2056,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       {getNoteAuthorDisplay(note, { showHistorical: true })}
                     </span>
                     <span
-                      className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0"
+                      className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0"
+                      title={formatNoteRelative(note.created_at)}
                       suppressHydrationWarning
                     >
-                      {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                      {formatNoteTimestamp(note.created_at)}
                     </span>
                   </div>
                   {/<[a-z][\s\S]*>/i.test(note.body) ? (
@@ -2152,7 +2153,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           <DialogHeader>
             <DialogTitle className="text-slate-900 dark:text-white">Add Note</DialogTitle>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              You can paste formatted text, tables, and images directly.
+              You can paste formatted text, tables, and images directly. The date and time are
+              stamped automatically when the note is saved.
             </p>
           </DialogHeader>
           <div className="space-y-4 mt-2">

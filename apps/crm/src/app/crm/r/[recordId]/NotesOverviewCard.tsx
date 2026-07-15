@@ -22,7 +22,7 @@ import { Input } from '@crm-eco/ui/components/input';
 import { sanitizeNoteHtml, getNoteAuthorDisplay, getNoteAuthorName, stripLegacyAuthorAttribution } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
-import { formatDistanceToNow } from 'date-fns';
+import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
 import { toast } from 'sonner';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
@@ -99,8 +99,12 @@ function NotePreviewItem({
             );
           })()}
         </span>
-        <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0">
-          {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+        <span
+          className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0"
+          title={formatNoteRelative(note.created_at)}
+          suppressHydrationWarning
+        >
+          {formatNoteTimestamp(note.created_at)}
         </span>
         {note.is_pinned && <Pin className="w-3 h-3 text-amber-500 fill-amber-500 flex-shrink-0" />}
         <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -292,6 +296,9 @@ export function NotesOverviewCard({ notes, recordId, onViewAll }: NotesOverviewC
       {isAdding && (
         <div className="mb-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/40 border border-teal-200 dark:border-teal-500/30">
           <NoteRichArea key={`overview-${composeEpoch}`} value={newNote} onChange={setNewNote} />
+          <p className="mt-1.5 text-[11px] text-slate-400 dark:text-slate-500">
+            Date and time are stamped automatically when the note is saved.
+          </p>
           <div className="flex justify-end gap-2 mt-2">
             <Button
               variant="ghost"

@@ -31,7 +31,7 @@ export const DEFAULT_NOTE_TEMPLATES: CrmNoteTemplate[] = [
     description: 'Intro conversation with a new contact',
     category: 'call',
     body: [
-      'Discovery call with {{name}} on {{today}}.',
+      'Discovery call with {{name}} on {{now}}.',
       '',
       'Current situation:',
       '- ',
@@ -47,14 +47,14 @@ export const DEFAULT_NOTE_TEMPLATES: CrmNoteTemplate[] = [
     label: 'Voicemail Left',
     description: 'Quick log for an unanswered call',
     category: 'call',
-    body: 'Called {{name}} at {{phone}} on {{today}} — left voicemail. Will follow up in 2 business days.',
+    body: 'Called {{name}} at {{phone}} on {{now}} — left voicemail. Will follow up in 2 business days.',
   },
   {
     id: 'no-answer',
     label: 'No Answer',
     description: 'Attempted to reach but no response',
     category: 'call',
-    body: 'Attempted to reach {{name}} at {{phone}} on {{today}} — no answer, no voicemail option. Retry tomorrow.',
+    body: 'Attempted to reach {{name}} at {{phone}} on {{now}} — no answer, no voicemail option. Retry tomorrow.',
   },
   {
     id: 'meeting-recap',
@@ -62,7 +62,7 @@ export const DEFAULT_NOTE_TEMPLATES: CrmNoteTemplate[] = [
     description: 'Summary of a scheduled meeting',
     category: 'meeting',
     body: [
-      'Meeting with {{name}} on {{today}}.',
+      'Meeting with {{name}} on {{now}}.',
       '',
       'Attendees:',
       '- ',
@@ -126,10 +126,15 @@ export function renderNoteTemplate(
   template: CrmNoteTemplate,
   ctx: NoteTemplateContext,
 ): string {
-  const today = new Date().toLocaleDateString(undefined, {
+  const nowDate = new Date();
+  const today = nowDate.toLocaleDateString(undefined, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+  });
+  const time = nowDate.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
   });
 
   const values: Record<string, string> = {
@@ -138,6 +143,8 @@ export function renderNoteTemplate(
     phone: ctx.phone?.trim() || '—',
     owner: ctx.owner?.trim() || 'unassigned',
     today,
+    time,
+    now: `${today} at ${time}`,
   };
 
   return template.body.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (match, key) => {

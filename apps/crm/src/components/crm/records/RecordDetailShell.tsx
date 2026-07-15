@@ -60,7 +60,7 @@ import { cn } from '@crm-eco/ui/lib/utils';
 import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
 import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } from '@/lib/crm/types';
 import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisplay, getOwnerLabel } from '@/components/shared/crm-lane-badges';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
@@ -842,8 +842,12 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
                       {note.body}
                     </p>
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 block" suppressHydrationWarning>
-                      {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                    <span
+                      className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 block"
+                      title={formatNoteRelative(note.created_at)}
+                      suppressHydrationWarning
+                    >
+                      {formatNoteTimestamp(note.created_at)}
                     </span>
                   </button>
                 ))}
@@ -992,8 +996,12 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">
                       {getNoteAuthorDisplay(note, { showHistorical: true })}
                     </span>
-                    <span className="text-xs text-slate-400 dark:text-slate-500 flex-shrink-0" suppressHydrationWarning>
-                      {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                    <span
+                      className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0"
+                      title={formatNoteRelative(note.created_at)}
+                      suppressHydrationWarning
+                    >
+                      {formatNoteTimestamp(note.created_at)}
                     </span>
                   </div>
                   <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">

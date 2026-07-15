@@ -8,7 +8,7 @@ import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
 import { Dialog, DialogContent, DialogTitle } from '@crm-eco/ui/components/dialog';
 import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize';
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
-import { formatDistanceToNow } from 'date-fns';
+import { formatNoteTimestamp, formatNoteRelative } from '@/lib/crm/note-timestamp';
 import { toast } from 'sonner';
 import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
@@ -83,8 +83,13 @@ function NoteCard({
                 );
               })()}
             </p>
-            <p className="text-xs text-slate-500">
-              {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+            <p
+              className="text-xs text-slate-500"
+              title={formatNoteRelative(note.created_at)}
+              suppressHydrationWarning
+            >
+              {formatNoteTimestamp(note.created_at)}
+              <span className="text-slate-400 dark:text-slate-500"> · {formatNoteRelative(note.created_at)}</span>
             </p>
           </div>
         </div>
@@ -233,7 +238,8 @@ export function NotesPanel({ recordId, notes, orgId }: NotesPanelProps) {
             <NoteRichArea key={`compose-${composeEpoch}`} value={newNote} onChange={setNewNote} />
             <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
               Bold, italic, underline, and color from the toolbar; paste from email or Docs keeps
-              formatting when safe.
+              formatting when safe. The date and time are stamped automatically when the note is
+              saved.
             </p>
           </div>
 
