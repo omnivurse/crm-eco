@@ -216,13 +216,7 @@ export const ModuleShell = memo(function ModuleShell({
           return;
         }
         const payload = (await res.json()) as {
-          results?: Array<{
-            id: string;
-            title: string;
-            subtitle?: string;
-            moduleKey: string;
-            matchType?: 'exact' | 'fuzzy';
-          }>;
+          results?: ModuleLiveSearchResult[];
         };
         if (!ctrl.signal.aborted) {
           setLiveResults(payload.results ?? []);

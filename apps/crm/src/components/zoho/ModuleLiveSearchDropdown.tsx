@@ -3,6 +3,8 @@
 import { Popover, PopoverContent, PopoverTrigger } from '@crm-eco/ui';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { Loader2, Search } from 'lucide-react';
+import { SearchMatchChips, HighlightedText } from '@/components/crm/records/SearchMatchChips';
+import type { RecordSearchMatch } from '@/lib/crm/search-match';
 
 /** Result row from `/api/crm/search` (module-scoped spotlight). */
 export type ModuleLiveSearchResult = {
@@ -11,6 +13,8 @@ export type ModuleLiveSearchResult = {
   subtitle?: string;
   moduleKey: string;
   matchType?: 'exact' | 'fuzzy';
+  /** Colour-coded "matched field" chips. */
+  matches?: RecordSearchMatch[];
 };
 
 export interface ModuleLiveSearchDropdownProps {
@@ -128,13 +132,15 @@ export function ModuleLiveSearchDropdown({
                     <Search className="w-3.5 h-3.5 mt-0.5 text-slate-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="truncate text-slate-900 dark:text-white">
-                        {result.title || 'Untitled'}
+                        <HighlightedText text={result.title || 'Untitled'} query={searchQuery} />
                       </div>
-                      {result.subtitle && (
+                      {result.matches && result.matches.length > 0 ? (
+                        <SearchMatchChips matches={result.matches} className="mt-1" />
+                      ) : result.subtitle ? (
                         <div className="truncate text-xs text-slate-500 dark:text-slate-400">
                           {result.subtitle}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     {result.matchType === 'fuzzy' && (
                       <span className="text-[10px] uppercase tracking-wide text-amber-600 dark:text-amber-400 flex-shrink-0">

@@ -6,6 +6,10 @@ import {
   resolveSearchDataJsonKeys,
   isConvertedLeadRow,
 } from '@/lib/crm/record-search';
+import {
+  getRecordSearchMatches,
+  type RecordSearchMatch,
+} from '@/lib/crm/search-match';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +22,8 @@ interface SearchResult {
   url: string;
   /** 'exact' = full-text prefix hit, 'fuzzy' = trigram similarity hit */
   matchType?: 'exact' | 'fuzzy';
+  /** Which field(s) matched, for colour-coded chips (empty for fuzzy-only hits). */
+  matches?: RecordSearchMatch[];
 }
 
 interface SearchResponse {
@@ -161,6 +167,21 @@ export async function GET(request: NextRequest) {
         .join(' ')
         .trim();
 
+      // Attribute the hit to specific field(s) so the UI can show colour-coded
+      // "matched field" chips. Derived from the columns the RPC returns; a
+      // fuzzy/typo-tolerant hit with no literal substring simply yields none.
+      const matches = getRecordSearchMatches(
+        {
+          title: record.title,
+          email: record.email,
+          phone: record.phone,
+          status: record.status,
+          data,
+        },
+        searchQuery,
+        { maxMatches: 3 },
+      );
+
       return {
         id: record.id,
         title: record.title?.trim() || fallbackName || 'Untitled',
@@ -169,6 +190,7 @@ export async function GET(request: NextRequest) {
         moduleKey: record.module_key,
         url: `/crm/r/${record.id}`,
         matchType: record.match_type,
+        matches: matches.length > 0 ? matches : undefined,
       };
     });
 

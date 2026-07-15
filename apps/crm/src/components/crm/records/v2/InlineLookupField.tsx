@@ -31,6 +31,8 @@ import {
   useFieldLockOwner,
 } from '@/hooks/useRecordFieldLocks';
 import { LockedFieldBadge } from './LockedFieldBadge';
+import { SearchMatchChips } from '@/components/crm/records/SearchMatchChips';
+import { getRecordSearchMatches, type RecordSearchMatch } from '@/lib/crm/search-match';
 
 export type InlineLookupKind = 'lookup' | 'user';
 
@@ -53,6 +55,8 @@ export interface InlineLookupFieldProps {
 interface SearchItem {
   id: string;
   title: string;
+  /** Colour-coded "matched field" chips (lookup records only). */
+  matches?: RecordSearchMatch[];
 }
 
 // Resolve UUID → title for values we've already fetched. Keyed by
@@ -128,11 +132,23 @@ async function runSearch(
     const records = (json.records || []) as Array<{
       id: string;
       title?: string | null;
-      data?: { name?: string; email?: string } | null;
+      email?: string | null;
+      phone?: string | null;
+      status?: string | null;
+      data?: Record<string, unknown> | null;
     }>;
     return records.map((r) => ({
       id: r.id,
-      title: r.title || r.data?.name || r.data?.email || r.id,
+      title:
+        r.title ||
+        (r.data?.name as string | undefined) ||
+        (r.data?.email as string | undefined) ||
+        r.id,
+      matches: getRecordSearchMatches(
+        { title: r.title, email: r.email, phone: r.phone, status: r.status, data: r.data },
+        q,
+        { maxMatches: 2 },
+      ),
     }));
   } catch {
     return [];
@@ -168,15 +184,15 @@ export const InlineLookupField = memo(function InlineLookupField({
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Resolve a stale label whenever the UUID changes.
+  // Resolve a stale label whenever the UUID changes. Route both the empty and
+  // resolved cases through the same async continuation so we never call setState
+  // synchronously in the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {
-    if (!value) {
-      setLabel(null);
-      return;
-    }
     let cancelled = false;
-    void resolveLabel(kind, value).then((l) => {
-      if (!cancelled) setLabel(l ?? value);
+    const pending = value ? resolveLabel(kind, value) : Promise.resolve(null);
+    void pending.then((l) => {
+      if (cancelled) return;
+      setLabel(value ? l ?? value : null);
     });
     return () => {
       cancelled = true;
@@ -358,9 +374,13 @@ export const InlineLookupField = memo(function InlineLookupField({
                   )}
                 >
                   <span className="font-medium truncate w-full">{item.title}</span>
-                  <span className="text-[10px] text-slate-400">
-                    {item.id.slice(0, 8)}…
-                  </span>
+                  {item.matches && item.matches.length > 0 ? (
+                    <SearchMatchChips matches={item.matches} className="mt-0.5" />
+                  ) : (
+                    <span className="text-[10px] text-slate-400">
+                      {item.id.slice(0, 8)}…
+                    </span>
+                  )}
                 </button>
               ))
             )}

@@ -52,6 +52,8 @@ import {
   getRecordCommandContext,
   subscribeRecordCommandContext,
 } from '@/lib/crm/record-command-context';
+import { SearchMatchChips, HighlightedText } from '@/components/crm/records/SearchMatchChips';
+import type { RecordSearchMatch } from '@/lib/crm/search-match';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -67,6 +69,10 @@ interface CommandItem {
   action: () => void;
   category: string;
   keywords?: string[];
+  /** Colour-coded "matched field" chips for record search results. */
+  matches?: RecordSearchMatch[];
+  /** Module name shown alongside chips (chips replace the description line). */
+  moduleLabel?: string;
   /** Optional secondary action shown as a small sparkle chip. */
   secondary?: {
     label: string;
@@ -82,6 +88,7 @@ interface RecordSearchResult {
   module: string;
   moduleKey: string;
   url: string;
+  matches?: RecordSearchMatch[];
 }
 
 interface RecentlyViewedApiItem {
@@ -296,6 +303,8 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
       action: () => navigate(r.url),
       category: 'Records',
       keywords: [r.title.toLowerCase(), r.module.toLowerCase(), r.moduleKey],
+      matches: r.matches,
+      moduleLabel: r.module,
       secondary: {
         label: 'Draft AI email',
         icon: <Sparkles className="w-3.5 h-3.5" />,
@@ -642,12 +651,27 @@ export function CommandPalette({ open, onOpenChange, modules }: CommandPalettePr
                         {cmd.icon}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{cmd.label}</p>
-                        {cmd.description && (
+                        <p className="text-sm font-medium truncate">
+                          {cmd.matches && cmd.matches.length > 0 ? (
+                            <HighlightedText text={cmd.label} query={query} />
+                          ) : (
+                            cmd.label
+                          )}
+                        </p>
+                        {cmd.matches && cmd.matches.length > 0 ? (
+                          <>
+                            {cmd.moduleLabel ? (
+                              <p className="text-[11px] text-muted-foreground truncate">
+                                {cmd.moduleLabel}
+                              </p>
+                            ) : null}
+                            <SearchMatchChips matches={cmd.matches} className="mt-1" />
+                          </>
+                        ) : cmd.description ? (
                           <p className="text-xs text-muted-foreground truncate">
                             {cmd.description}
                           </p>
-                        )}
+                        ) : null}
                       </div>
                       {cmd.secondary ? (
                         <span
