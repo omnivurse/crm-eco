@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from '@crm-eco/ui/components/button';
 import { confirmDialog } from '@crm-eco/ui/components/confirm-dialog';
+import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { Card, CardContent, CardHeader, CardTitle } from '@crm-eco/ui/components/card';
 import { Badge } from '@crm-eco/ui/components/badge';
 import { Textarea } from '@crm-eco/ui/components/textarea';
@@ -119,7 +120,14 @@ export function RecordDetailClient({
   };
 
   const handleDelete = async () => {
-    if (!(await confirmDialog({ title: 'Delete this record?', description: 'This action cannot be undone.', confirmLabel: 'Delete', destructive: true }))) {
+    if (
+      !(await confirmDialog({
+        title: 'Move this record to Trash?',
+        description: 'You can restore it from Trash for 30 days before it is permanently deleted.',
+        confirmLabel: 'Move to Trash',
+        destructive: true,
+      }))
+    ) {
       return;
     }
 
@@ -140,7 +148,7 @@ export function RecordDetailClient({
         return;
       }
 
-      toast.success('Record deleted successfully');
+      toastDeletedWithUndo({ batchId: result.batchId });
       router.push(`/modules/${module.key}`);
     } catch (error) {
       console.error('Failed to delete record:', error);

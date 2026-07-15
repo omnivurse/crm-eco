@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createCrmClient, getCurrentProfile } from '@/lib/crm/queries';
 import { z } from 'zod';
 import { withIdempotency } from '@/lib/server/idempotency';
+import { logPHIAccess } from '@/lib/security';
 import {
   buildNormalizedRecordWrite,
   pickUpdateMirrorColumns,
@@ -76,6 +77,10 @@ interface BulkDeleteResult {
   skipped_ids: string[];
   failed: Array<{ id: string; reason: string }>;
   deleted_count: number;
+  /** Records were moved to Trash (soft-deleted), not physically removed. */
+  trashed?: boolean;
+  /** Trash batch id — pass to the restore endpoint to undo. */
+  batch_id?: string | null;
 }
 
 export async function PATCH(request: NextRequest) {
@@ -441,7 +446,8 @@ async function runBulkDelete({
       .from('crm_records')
       .select('id, module_id')
       .in('id', requestedIds)
-      .eq('org_id', profile.organization_id);
+      .eq('org_id', profile.organization_id)
+      .is('deleted_at' as never, null);
 
     if (fetchError) {
       console.error('[bulk DELETE] preflight SELECT failed:', fetchError);
@@ -469,24 +475,39 @@ async function runBulkDelete({
 
     const failed: Array<{ id: string; reason: string }> = [];
     const deletedIds = new Set<string>();
+    let batchId: string | null = null;
 
     if (resolvedIds.size > 0) {
-      const { data: deletedRows, error: deleteError } = await supabase
-        .from('crm_records')
-        .delete()
-        .in('id', Array.from(resolvedIds))
-        .eq('org_id', profile.organization_id)
-        .select('id');
+      // Soft-delete the batch (one trash batch → one undo). The RPC re-checks
+      // crm_admin/crm_manager and org, and skips any already-trashed rows.
+      const { data, error: deleteError } = await (supabase as any).rpc(
+        'crm_soft_delete_records_bulk',
+        { p_record_ids: Array.from(resolvedIds), p_origin: 'bulk' },
+      );
 
       if (deleteError) {
-        console.error('[bulk DELETE] failed:', deleteError);
+        console.error('[bulk DELETE] soft-delete failed:', deleteError);
         Array.from(resolvedIds).forEach((id) =>
           failed.push({ id, reason: deleteError.message }),
         );
       } else {
-        ((deletedRows ?? []) as { id: string }[]).forEach((r) =>
-          deletedIds.add(r.id),
-        );
+        batchId = (data as string | null) ?? null;
+        Array.from(resolvedIds).forEach((id) => deletedIds.add(id));
+
+        // PHI audit-log parity with the single-record delete path (was missing).
+        try {
+          await logPHIAccess({
+            userId: profile.id,
+            organizationId: profile.organization_id,
+            action: 'delete',
+            resourceType: 'record',
+            resourceId: `bulk:${batchId ?? 'none'}`,
+            recordName: `${deletedIds.size} records (bulk)`,
+            metadata: { bulk: true, count: deletedIds.size, batch_id: batchId },
+          });
+        } catch (err) {
+          console.error('PHI audit logging error (bulk delete):', err);
+        }
       }
     }
 
@@ -496,6 +517,8 @@ async function runBulkDelete({
       skipped_ids: skippedIds,
       failed,
       deleted_count: deletedIds.size,
+      trashed: true,
+      batch_id: batchId,
     };
 
     return NextResponse.json(result);

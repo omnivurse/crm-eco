@@ -70,7 +70,9 @@ export async function GET(request: NextRequest) {
       .from('crm_records')
       .select('id', { count: 'exact' })
       .eq('module_id', moduleRow.id)
-      .eq('org_id', profile.organization_id);
+      .eq('org_id', profile.organization_id)
+      // "Select all" must not include trashed rows (would bulk-mutate them).
+      .is('deleted_at' as never, null);
 
     if (groupId) {
       const { data: members } = await supabase

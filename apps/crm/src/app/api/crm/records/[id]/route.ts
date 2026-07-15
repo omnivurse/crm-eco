@@ -33,6 +33,8 @@ export async function GET(
       .select('id, title, module_id, data, updated_at')
       .eq('id', id)
       .eq('org_id', profile.organization_id)
+      // Trashed records read as not-found (they must not resolve in pickers).
+      .is('deleted_at' as never, null)
       .maybeSingle();
 
     if (error) {
@@ -202,13 +204,21 @@ export async function DELETE(
           { status: 202 }
         );
       }
+      // Deletion requires approval but we could NOT record the request — do not
+      // fall through and delete the record anyway (that would bypass approval).
+      return NextResponse.json(
+        { error: 'Could not submit the approval request; the record was not deleted.' },
+        { status: 500 }
+      );
     }
 
-    const { error } = await supabase
-      .from('crm_records')
-      .delete()
-      .eq('id', id)
-      .eq('org_id', profile.organization_id);
+    // Soft-delete: stamp deleted_at instead of a physical DELETE so the record
+    // (and everything the cascade would have taken) can be restored from Trash.
+    // The RPC re-checks org + crm_admin/crm_manager and returns the trash batch id.
+    const { data: batchId, error } = await (supabase as any).rpc('crm_soft_delete_record', {
+      p_record_id: id,
+      p_origin: 'user',
+    });
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -229,7 +239,7 @@ export async function DELETE(
       console.error('PHI audit logging error:', err);
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, trashed: true, batchId: batchId ?? null });
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
        module_id,
        last_viewed_at,
        view_count,
-       record:crm_records ( id, title, module_id, data, updated_at ),
+       record:crm_records ( id, title, module_id, data, updated_at, deleted_at ),
        module:crm_modules ( key, name )`,
     )
     .eq('user_id', user.id)
@@ -116,7 +116,8 @@ export async function GET(request: NextRequest) {
   }
 
   const rows = ((data ?? []) as unknown as RecentlyViewedJoinedRow[])
-    .filter((row) => row.record != null)
+    // Drop entries whose record has been trashed (soft-deleted).
+    .filter((row) => row.record != null && !(row.record as { deleted_at?: string | null }).deleted_at)
     .map((row) => ({
       recordId: row.record_id,
       moduleId: row.module_id,

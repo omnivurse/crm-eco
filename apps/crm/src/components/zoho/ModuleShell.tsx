@@ -29,6 +29,7 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCrmDensity } from '@/lib/crm/density';
 import type { CrmModule, CrmField, CrmView, CrmRecord, CrmTerritory, ViewFilter, ViewMode } from '@/lib/crm/types';
 import { CRM_SPOTLIGHT_SEARCH_LIMIT } from '@/lib/crm/search-limits';
+import { toastDeletedWithUndo } from '@/lib/crm/undo-delete';
 
 export type RecordScope = 'all' | 'mine' | 'downline';
 
@@ -721,7 +722,20 @@ export const ModuleShell = memo(function ModuleShell({
 
     if (sendResult.ok) {
       const result = await sendResult.response.json();
-      reportBulkResult(result, 'Records deleted');
+      const deletedCount: number = result.deleted_count ?? 0;
+      const hadProblems =
+        (result.failed?.length ?? 0) > 0 || (result.skipped_ids?.length ?? 0) > 0;
+      if (result.trashed && result.batch_id && deletedCount > 0 && !hadProblems) {
+        // Clean success → Gmail-style "moved to Trash · Undo".
+        toastDeletedWithUndo({
+          batchId: result.batch_id,
+          count: deletedCount,
+          onUndo: () => router.refresh(),
+        });
+      } else {
+        // Partial failure/skip → keep the detailed counts toast.
+        reportBulkResult(result, 'Records moved to Trash');
+      }
       setShowDeleteDialog(false);
       setSelectedIds(new Set());
       router.refresh();
@@ -1175,9 +1189,9 @@ export const ModuleShell = memo(function ModuleShell({
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {selectedIds.size} {module.name_plural || 'Records'}?</DialogTitle>
+            <DialogTitle>Move {selectedIds.size} {module.name_plural || 'Records'} to Trash?</DialogTitle>
             <DialogDescription>
-              This action cannot be undone. The selected {selectedIds.size} {selectedIds.size === 1 ? 'record' : 'records'} will be permanently removed.
+              The selected {selectedIds.size} {selectedIds.size === 1 ? 'record' : 'records'} will be moved to Trash. You can restore {selectedIds.size === 1 ? 'it' : 'them'} for 30 days before permanent deletion.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

@@ -323,7 +323,6 @@ export const getCachedModules = cache(
 export async function getTerritories(orgId: string): Promise<CrmTerritory[]> {
   const supabase = await createCrmClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('crm_territories')
     .select('*')
@@ -534,6 +533,12 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     query = query.eq('org_id', orgId);
   }
 
+  // Hide soft-deleted (trashed) records from every list view. They remain
+  // restorable from Trash until purged. See migration 202607140002.
+  // `deleted_at` isn't in the generated types until they're regenerated
+  // post-migration, so cast the column name.
+  query = query.is('deleted_at' as never, null);
+
   if (shouldHideConvertedLeads) {
     query = applyHideConvertedLeadsFilter(query);
   }
@@ -604,7 +609,6 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     if (needsUser) {
       const { user } = await getCachedAuthUser();
       if (user) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: prof } = await (supabase as any)
           .from('profiles').select('id').eq('user_id', user.id).single();
         userProfileId = prof?.id ?? null;
@@ -614,7 +618,6 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     // Parallelize system filter RPCs for performance
     const systemRpcResults = await Promise.allSettled(
       systemFilters.map((sf) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).rpc('filter_records_by_system_preset', {
           p_module_id: moduleId,
           p_preset: sf.systemPreset,
@@ -684,7 +687,6 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
     // Parallelize related filter RPCs for performance
     const relatedRpcResults = await Promise.all(
       relatedRpcCalls.map(({ filter: rf, mapping }) =>
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any).rpc('filter_records_by_related', {
           p_module_id: moduleId,
           p_related_type: mapping.relatedType,
@@ -868,11 +870,13 @@ export async function getRecords(options: RecordQueryOptions): Promise<RecordQue
 
 export async function getRecordById(recordId: string): Promise<CrmRecord | null> {
   const supabase = await createCrmClient();
-  
+
   const { data, error } = await supabase
     .from('crm_records')
     .select('*')
     .eq('id', recordId)
+    // Trashed records read as "not found" (PGRST116) so they can't be opened.
+    .is('deleted_at' as never, null)
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
@@ -891,6 +895,8 @@ export async function getRecordWithModule(recordId: string): Promise<{ record: C
     .from('crm_records')
     .select('*, module:crm_modules!crm_records_module_id_fkey(*)')
     .eq('id', recordId)
+    // Trashed records are treated as not-found so the detail page 404s.
+    .is('deleted_at' as never, null)
     .single();
 
   if (error || !data) return null;
@@ -1259,6 +1265,7 @@ export async function getAtRiskDeals(orgId: string, limit: number = 5): Promise<
     `)
     .eq('crm_modules.org_id', orgId)
     .eq('crm_modules.key', 'deals')
+    .is('deleted_at' as never, null)
     .lt('stage_updated_at', sevenDaysAgo.toISOString())
     .not('data->stage', 'in', '("Closed Won","Closed Lost","closed_won","closed_lost")')
     .order('stage_updated_at', { ascending: true })

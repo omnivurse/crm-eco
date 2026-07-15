@@ -28,6 +28,8 @@ async function fetchRecord(recordId: string): Promise<RecordRow | null> {
     .from('crm_records')
     .select('*, module:crm_modules!crm_records_module_id_fkey(key)')
     .eq('id', recordId)
+    // A trashed record reads as not-found so the drawer won't open it.
+    .is('deleted_at' as never, null)
     .maybeSingle();
 
   if (error) throw error;

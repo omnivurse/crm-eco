@@ -742,12 +742,17 @@ export async function applyApprovedAction(
       }
       
       case 'delete': {
-        // Delete the record
-        const { error } = await supabase
+        // Soft-delete (move to Trash) instead of a physical delete so an
+        // *approved* deletion is still restorable within the retention window.
+        // Direct UPDATE (not the RPC) because this engine may run without the
+        // requester's auth context. deleted_at/deleted_origin aren't in the
+        // generated types yet (see migration 202607140003), hence the cast.
+        const { error } = await (supabase as any)
           .from('crm_records')
-          .delete()
-          .eq('id', payload.record_id);
-        
+          .update({ deleted_at: new Date().toISOString(), deleted_origin: 'approval' })
+          .eq('id', payload.record_id)
+          .is('deleted_at', null);
+
         if (error) {
           return { success: false, applied: false, error: error.message };
         }

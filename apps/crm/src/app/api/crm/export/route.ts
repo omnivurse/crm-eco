@@ -243,7 +243,9 @@ async function processExportInline(
       .from('crm_records')
       .select('id, title, status, stage, owner_id, data, created_at, updated_at')
       .eq('org_id', orgId)
-      .eq('module_id', job.module_id);
+      .eq('module_id', job.module_id)
+      // Never export trashed (soft-deleted) records.
+      .is('deleted_at' as never, null);
 
     if (filters.status && typeof filters.status === 'string') {
       query = query.eq('status', filters.status);

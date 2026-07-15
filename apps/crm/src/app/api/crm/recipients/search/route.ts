@@ -48,6 +48,8 @@ export async function GET(request: NextRequest) {
       .in('module_id', moduleIds)
       .or(`title.ilike.%${safeQuery}%,email.ilike.%${safeQuery}%`)
       .not('email', 'is', null)
+      // Don't offer trashed records as message/campaign recipients.
+      .is('deleted_at' as never, null)
       .order('updated_at', { ascending: false })
       .limit(15);
 

@@ -52,7 +52,9 @@ export async function GET(request: NextRequest) {
       .from('crm_records')
       .select('*', { count: 'exact' })
       .eq('module_id', module.id)
-      .eq('org_id', profile.organization_id);
+      .eq('org_id', profile.organization_id)
+      // Exclude trashed (soft-deleted) records from lookup pickers & lists.
+      .is('deleted_at' as never, null);
 
     // Apply group filter — fetch record IDs in the group, then filter
     if (groupId) {
