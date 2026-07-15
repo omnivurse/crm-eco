@@ -1154,7 +1154,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               {hasDetail && (
                 <>
                   {divider}
-                  <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-2 lg:border-0 lg:pt-0">
+                  <div
+                    className="grid flex-1 gap-x-6 gap-y-3 border-t border-dashed pt-3 lg:border-0 lg:pt-0"
+                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}
+                  >
                     {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
                     {showDate && heroStartDateField && renderFieldCell(heroStartDateField)}
                   </div>
@@ -1263,6 +1266,11 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   <ChevronDown className="w-3.5 h-3.5" />
                 )}
                 {section.label}
+                {sectionFields.length > 0 && (
+                  <span className="ml-auto text-[11px] font-normal tabular-nums text-muted-foreground">
+                    {sectionFields.filter((f) => hasValue(f.key)).length} of {sectionFields.length} filled
+                  </span>
+                )}
               </CardTitle>
             </CardHeader>
             {!isCollapsed && (
@@ -1275,7 +1283,10 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                   // (the full-width banner pinned to the top of the record).
                   // Auto-pack into as many ~220px columns as the width allows.
                   // ──────────────────────────────────────────────────────────
-                  <div className="grid grid-cols-1 gap-x-5 gap-y-3 sm:grid-cols-2">
+                  <div
+                    className="grid gap-x-5 gap-y-3"
+                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }}
+                  >
                     {sectionFields.map(renderFieldCell)}
                   </div>
                 ) : sectionFields.length === 0 ? (
@@ -1288,11 +1299,16 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
                     className={cn(
                       'grid',
                       readOnly
-                        ? 'grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-1.5'
+                        ? 'gap-x-5 gap-y-1.5'
                         : 'gap-4',
                       !readOnly &&
                         (section.columns === 2 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'),
                     )}
+                    style={
+                      readOnly
+                        ? { gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))' }
+                        : undefined
+                    }
                   >
                     {sectionFields.map(renderFieldCell)}
                   </div>
