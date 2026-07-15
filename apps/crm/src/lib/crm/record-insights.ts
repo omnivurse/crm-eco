@@ -137,7 +137,7 @@ export async function getRecordInsights(recordId: string): Promise<RecordInsight
       emailSignal,
       recentInteractions,
     ] = await Promise.allSettled([
-      headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds),
+      countAggregatedNotes(supabase, noteSourceIds),
       headCount(supabase, 'crm_messages', { record_id: recordId }),
       // Anything not completed / cancelled counts as "open"
       headCountIn(supabase, 'crm_tasks', { record_id: recordId }, 'status', ['open', 'in_progress']),
@@ -215,6 +215,50 @@ type Client = Awaited<ReturnType<typeof createCrmClient>>;
 
 function settleOrZero(result: PromiseSettledResult<number>): number {
   return result.status === 'fulfilled' ? result.value : 0;
+}
+
+/** Mirror of `DEFAULT_NOTES_LIMIT` in queries.ts so the count caps identically. */
+const NOTES_COUNT_LIMIT = 500;
+
+/**
+ * Count the notes that actually render on the record — i.e. the same deduped
+ * set `getNotesForRecords` returns, so the sidebar / section-pill badge never
+ * disagrees with the Notes list.
+ *
+ * When notes come from a single record there are no cross-record duplicates,
+ * so an exact head count is correct and cheapest. When they're aggregated
+ * across a lead→contact→member lineage (or deal links), the same imported
+ * Zoho note can exist under several `record_id`s, so we dedup by
+ * body+timestamp using the identical key as `getNotesForRecords`.
+ */
+async function countAggregatedNotes(
+  supabase: Client,
+  noteSourceIds: string[],
+): Promise<number> {
+  if (noteSourceIds.length === 0) return 0;
+  if (noteSourceIds.length === 1) {
+    return headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds);
+  }
+  try {
+    const { data, error } = await supabase
+      .from('crm_notes')
+      .select('body, created_at')
+      .in('record_id', noteSourceIds)
+      .order('created_at', { ascending: false })
+      .limit(NOTES_COUNT_LIMIT);
+    // Any read failure falls back to the raw head count so the badge is never
+    // silently zeroed by a transient error.
+    if (error || !data) {
+      return headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds);
+    }
+    const seen = new Set<string>();
+    for (const row of data as Array<{ body: string | null; created_at: string }>) {
+      seen.add(`${(row.body || '').trim().slice(0, 200)}|${row.created_at}`);
+    }
+    return seen.size;
+  } catch {
+    return headCountIn(supabase, 'crm_notes', {}, 'record_id', noteSourceIds);
+  }
 }
 
 async function headCount(
