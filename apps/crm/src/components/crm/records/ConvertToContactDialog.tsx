@@ -20,6 +20,7 @@ import {
   getConvertedContactId,
   isLeadRecordConverted,
 } from '@/lib/crm/lead-conversion-result';
+import { getConvertActionLabel } from '@/lib/crm/member-terminology';
 
 interface ConvertToContactDialogProps {
   open: boolean;
@@ -27,6 +28,7 @@ interface ConvertToContactDialogProps {
   recordId: string;
   recordTitle: string;
   recordData: Record<string, unknown>;
+  marketType?: string | null;
 }
 
 export function ConvertToContactDialog({
@@ -35,7 +37,9 @@ export function ConvertToContactDialog({
   recordId,
   recordTitle,
   recordData,
+  marketType,
 }: ConvertToContactDialogProps) {
+  const enrollActionLabel = getConvertActionLabel(marketType);
   const [isConverting, setIsConverting] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [result, setResult] = useState<{
@@ -216,10 +220,11 @@ export function ConvertToContactDialog({
                     The original lead will be preserved and linked.
                   </p>
                   <p className="text-xs text-amber-600 dark:text-amber-400/90 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5">
-                    <strong className="font-medium">Contact vs member:</strong> this action creates a{' '}
+                    <strong className="font-medium">Contact vs enrollment:</strong> this action creates a{' '}
                     <strong>CRM contact</strong> (someone you track in Contacts). It is not the same as
-                    the green <strong>Convert to Member</strong> button, which enrolls someone in the member system.
-                    Use this when they should appear in your Contacts list.
+                    the green <strong>{enrollActionLabel}</strong> button, which enrolls someone in the member system.
+                    Use this when they should appear in your Contacts list — including future-dated plans that should stay{' '}
+                    <strong>Pending</strong> until the start date.
                   </p>
                   </>
                   )}

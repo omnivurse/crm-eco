@@ -84,7 +84,11 @@ import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { ConvertLeadButton } from '@/components/crm/records/ConvertLeadButton';
-import { relabelStatusForMarket } from '@/lib/crm/member-terminology';
+import {
+  getCoreStatusPickerItems,
+  isActiveCoverageStatus,
+  relabelStatusForMarket,
+} from '@/lib/crm/member-terminology';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
   MarketTypeBadge,
@@ -150,6 +154,7 @@ import { useRecentlyViewedTracker } from '@/hooks/useRecentlyViewedTracker';
 import { useLiveRecord, type LiveRecordEvent } from '@/hooks/useLiveRecord';
 import { useClientAuth } from '@/hooks/useClientAuth';
 import { isLeadRecordConverted, getConvertedContactId } from '@/lib/crm/lead-conversion-result';
+import { resolveEffectiveStartDate } from '@/lib/crm/resolve-effective-start-date';
 import {
   buildRecordFieldSearchHits,
   buildRecordSearchableRows,
@@ -532,9 +537,18 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   const isContacts = module.key === 'contacts';
   const isDeals = module.key === 'deals';
   const isAlreadyConverted = isLeadRecordConverted(record);
+  const linkedEnrollmentMemberId = (() => {
+    const data = (record.data ?? {}) as Record<string, unknown>;
+    for (const key of ['converted_member_id', 'linked_member_id'] as const) {
+      const v = data[key];
+      if (typeof v === 'string' && v.trim().length > 0) return v.trim();
+    }
+    return null;
+  })();
   const canConvertToContact = isLeads && !isAlreadyConverted;
-  // "Convert to Member" is available from both Leads and Contacts
-  const canConvertToMember = (isLeads || isContacts) && !isAlreadyConverted;
+  // Enrollment convert is available from Leads and Contacts (not after contact/member link).
+  const canConvertToMember =
+    (isLeads || isContacts) && !isAlreadyConverted && !linkedEnrollmentMemberId;
 
   const backUrl = `/crm/modules/${module.key}`;
 
@@ -1082,6 +1096,11 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
   // Render helpers
   // -------------------------------------------------------------------------
   const recordMarketType = (record as any).market_type as string | undefined;
+  const recordEffectiveStartDate = resolveEffectiveStartDate({
+    current_year_start_date: (record as any).current_year_start_date,
+    original_start_date: (record as any).original_start_date,
+    data: (record.data as Record<string, unknown> | null) ?? null,
+  });
   const showChangeHistory =
     recordMarketType === 'healthshare' || recordMarketType === 'traditional_insurance';
   const linkedMemberId = (record.data as Record<string, unknown> | null)?.linked_member_id as
@@ -1314,7 +1333,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                               variant="outline"
                               className={cn(
                                 'border text-xs font-medium transition-colors',
-                                displayStatus === 'Active' || displayStatus === 'Active HS Member' || displayStatus === 'Active Member'
+                                isActiveCoverageStatus(displayStatus)
                                   ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
                                   : displayStatus === 'Inactive' ||
                                     displayStatus === 'Terminated' ||
@@ -1332,7 +1351,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                           className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[200px] max-h-80 overflow-y-auto"
                         >
                           {[
-                            { label: 'Status', items: ['Active', 'Active HS Member', 'Active Member', 'Inactive', 'In-Active', 'Pending', 'Hold'] },
+                            { label: 'Status', items: getCoreStatusPickerItems(recordMarketType) },
                             { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled Member', 'Approved Pending'] },
                             { label: 'Close', items: ['Cancelled', 'Cancellation Pending', 'Terminated', 'Suspended', 'Archived', 'Converted'] },
                           ].map((group) => (
@@ -1410,6 +1429,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                     recordId={record.id}
                     recordTitle={getRecordDisplayName(record)}
                     marketType={recordMarketType}
+                    effectiveStartDate={recordEffectiveStartDate}
+                    showContactAlternative={isLeads}
                   />
                 )}
 
@@ -1637,6 +1658,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                             recordId={record.id}
                             recordTitle={getRecordDisplayName(record)}
                             marketType={recordMarketType}
+                            effectiveStartDate={recordEffectiveStartDate}
+                            showContactAlternative={isLeads}
                           />
                         </DropdownMenuItem>
                       </>
@@ -2205,6 +2228,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
           recordId={record.id}
           recordTitle={getRecordDisplayName(record)}
           recordData={(record.data || {}) as Record<string, unknown>}
+          marketType={recordMarketType}
         />
       )}
 
@@ -2384,6 +2408,8 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                         recordId={record.id}
                         recordTitle={getRecordDisplayName(record)}
                         marketType={recordMarketType}
+                        effectiveStartDate={recordEffectiveStartDate}
+                        showContactAlternative={isLeads}
                       />
                     </div>
                   )}

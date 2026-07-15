@@ -1,0 +1,50 @@
+import { describe, expect, it } from 'vitest';
+import {
+  ACTIVE_INSURANCE_CLIENT_STATUS,
+  getConvertActionLabel,
+  getCoreStatusPickerItems,
+  getMemberNoun,
+  isActiveCoverageStatus,
+  isInsuranceMarket,
+  relabelStatusForMarket,
+} from './member-terminology';
+
+describe('member-terminology', () => {
+  it('detects insurance markets', () => {
+    expect(isInsuranceMarket('traditional_insurance')).toBe(true);
+    expect(isInsuranceMarket('insurance')).toBe(true);
+    expect(isInsuranceMarket('healthshare')).toBe(false);
+  });
+
+  it('relabels Active Member / Active for insurance only', () => {
+    expect(relabelStatusForMarket('Active Member', 'traditional_insurance')).toBe(
+      ACTIVE_INSURANCE_CLIENT_STATUS,
+    );
+    expect(relabelStatusForMarket('Active', 'traditional_insurance')).toBe(
+      ACTIVE_INSURANCE_CLIENT_STATUS,
+    );
+    expect(relabelStatusForMarket('Active Member', 'healthshare')).toBe('Active Member');
+    expect(relabelStatusForMarket('Active HS Member', 'traditional_insurance')).toBe(
+      'Active HS Member',
+    );
+  });
+
+  it('uses insurance convert labels', () => {
+    expect(getConvertActionLabel('traditional_insurance')).toBe('Convert to Insurance Client');
+    expect(getConvertActionLabel('healthshare')).toBe('Convert to Member');
+    expect(getMemberNoun('traditional_insurance')).toBe('insurance client');
+  });
+
+  it('exposes Active Insurance Client in the status picker', () => {
+    expect(getCoreStatusPickerItems('traditional_insurance')).toContain(
+      ACTIVE_INSURANCE_CLIENT_STATUS,
+    );
+    expect(getCoreStatusPickerItems('healthshare')).toContain(ACTIVE_INSURANCE_CLIENT_STATUS);
+    expect(getCoreStatusPickerItems('healthshare')).toContain('Active Member');
+  });
+
+  it('treats Active Insurance Client as an active coverage status', () => {
+    expect(isActiveCoverageStatus(ACTIVE_INSURANCE_CLIENT_STATUS)).toBe(true);
+    expect(isActiveCoverageStatus('Pending')).toBe(false);
+  });
+});

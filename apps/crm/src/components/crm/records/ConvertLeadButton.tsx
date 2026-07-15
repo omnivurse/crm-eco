@@ -22,12 +22,36 @@ interface ConvertLeadButtonProps {
   disabled?: boolean;
   /** Drives Member vs Insurance-Client terminology (display only). */
   marketType?: string | null;
+  /**
+   * ISO date (YYYY-MM-DD) when coverage starts. When in the future, the dialog
+   * steers reps toward Convert to Contact (Pending) instead of enrollment.
+   */
+  effectiveStartDate?: string | null;
+  /** When true, show Contact-vs-enrollment guidance (lead records). */
+  showContactAlternative?: boolean;
 }
 
-export function ConvertLeadButton({ recordId, recordTitle, disabled, marketType }: ConvertLeadButtonProps) {
+function isFutureDate(isoDate?: string | null): boolean {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}/.test(isoDate)) return false;
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number);
+  const startUtc = Date.UTC(y, (m ?? 1) - 1, d ?? 1);
+  return startUtc > todayUtc;
+}
+
+export function ConvertLeadButton({
+  recordId,
+  recordTitle,
+  disabled,
+  marketType,
+  effectiveStartDate,
+  showContactAlternative = true,
+}: ConvertLeadButtonProps) {
   const convertLabel = getConvertActionLabel(marketType);
   const noun = getMemberNoun(marketType);
   const nounTitle = noun.replace(/\b\w/g, (c) => c.toUpperCase());
+  const futureStart = isFutureDate(effectiveStartDate);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string; memberId?: string } | null>(null);
@@ -62,7 +86,7 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled, marketType 
           message: data.error || 'Failed to convert lead',
         });
       }
-    } catch (error) {
+    } catch {
       setResult({
         success: false,
         message: 'An error occurred during conversion',
@@ -91,14 +115,32 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled, marketType 
                 <AlertDialogTitle className="text-slate-900 dark:text-white">
                   Convert Lead to {nounTitle}?
                 </AlertDialogTitle>
-                <AlertDialogDescription className="text-slate-500">
-                  This will create a new <strong>{noun}</strong> (enrollment) record for{' '}
-                  <strong>{recordTitle}</strong> and mark this lead as converted. To add them to the CRM{' '}
-                  <strong>Contacts</strong> module only, use <strong>Convert to Contact</strong> instead.
+                <AlertDialogDescription className="text-slate-500 space-y-2">
+                  <span className="block">
+                    This enrolls <strong>{recordTitle}</strong> in the member system as a{' '}
+                    <strong>{noun}</strong> and marks this lead as converted.
+                  </span>
+                  {showContactAlternative && (
+                    <span className="block text-amber-700 dark:text-amber-400/90 rounded-md border border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5 text-xs">
+                      {futureStart ? (
+                        <>
+                          Coverage starts <strong>{effectiveStartDate}</strong> (still in the future).
+                          If they should appear in <strong>Contacts</strong> as{' '}
+                          <strong>Pending</strong> until that date, cancel and use{' '}
+                          <strong>Convert to Contact</strong> instead.
+                        </>
+                      ) : (
+                        <>
+                          To add them to the CRM <strong>Contacts</strong> module only (e.g. Pending
+                          until a future plan start), use <strong>Convert to Contact</strong> instead.
+                        </>
+                      )}
+                    </span>
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel 
+                <AlertDialogCancel
                   disabled={isConverting}
                   className="border-slate-200 dark:border-white/10"
                 >
@@ -155,7 +197,7 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled, marketType 
                 </div>
               </AlertDialogHeader>
               <AlertDialogFooter className="justify-center">
-                <AlertDialogCancel 
+                <AlertDialogCancel
                   onClick={() => {
                     setResult(null);
                     setShowConfirm(false);

@@ -44,13 +44,23 @@ describe('resolveActiveStatusForMarket', () => {
     expect(resolveActiveStatusForMarket(null, 'Pending HS Member')).toBe('Active HS Member');
   });
 
+  it('maps traditional_insurance to Active Insurance Client', () => {
+    expect(resolveActiveStatusForMarket('traditional_insurance')).toBe('Active Insurance Client');
+  });
+
   it('market_type wins over old status', () => {
     expect(resolveActiveStatusForMarket('traditional_insurance', 'Pending HS Member')).toBe(
-      'Active',
+      'Active Insurance Client',
     );
   });
 
-  it('plain pending member without HS taxonomy becomes Active', () => {
-    expect(resolveActiveStatusForMarket(null, 'Pending Member')).toBe('Active');
+  it('plain pending member without market_type stays in Member taxonomy', () => {
+    expect(resolveActiveStatusForMarket(null, 'Pending Member')).toBe('Active Member');
+  });
+
+  it('keeps Insurance Client taxonomy from the old status when market_type is null', () => {
+    expect(resolveActiveStatusForMarket(null, 'Pending Insurance Client')).toBe(
+      'Active Insurance Client',
+    );
   });
 });

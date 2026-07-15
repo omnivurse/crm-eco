@@ -5,12 +5,15 @@
  * insurance clients are NOT members of anything shared, so calling them "Member"
  * conflates the two products. For insurance we say "Insurance Client".
  *
- * This is DISPLAY-ONLY: it never changes stored `status` / `market_type` values,
- * so filters, tone mappings, the activation cron, and analytics are untouched.
- * Only the label a rep reads changes.
+ * Display helpers never invent filters/cron behavior — stored values for the
+ * insurance active status are canonicalized as "Active Insurance Client".
+ * Legacy rows still stored as "Active Member" on insurance records are
+ * relabeled on read.
  */
 
 const INSURANCE_MARKETS = new Set(['traditional_insurance', 'insurance']);
+
+export const ACTIVE_INSURANCE_CLIENT_STATUS = 'Active Insurance Client';
 
 export function isInsuranceMarket(marketType?: string | null): boolean {
   return INSURANCE_MARKETS.has((marketType ?? '').trim().toLowerCase());
@@ -24,7 +27,8 @@ export function isInsuranceMarket(marketType?: string | null): boolean {
  * community terminology.
  */
 const INSURANCE_STATUS_RELABEL: Record<string, string> = {
-  'Active Member': 'Active Insurance Client',
+  'Active Member': ACTIVE_INSURANCE_CLIENT_STATUS,
+  Active: ACTIVE_INSURANCE_CLIENT_STATUS,
 };
 
 /**
@@ -51,4 +55,34 @@ export function getConvertActionLabel(marketType?: string | null): string {
 /** Noun for the person, lowercase for use mid-sentence. */
 export function getMemberNoun(marketType?: string | null): string {
   return isInsuranceMarket(marketType) ? 'insurance client' : 'member';
+}
+
+/** Core status options shown in the record header picker. */
+export function getCoreStatusPickerItems(marketType?: string | null): string[] {
+  if (isInsuranceMarket(marketType)) {
+    return ['Active', ACTIVE_INSURANCE_CLIENT_STATUS, 'Inactive', 'In-Active', 'Pending', 'Hold'];
+  }
+  return [
+    'Active',
+    'Active HS Member',
+    'Active Member',
+    ACTIVE_INSURANCE_CLIENT_STATUS,
+    'Inactive',
+    'In-Active',
+    'Pending',
+    'Hold',
+  ];
+}
+
+/** Whether a status should use the green "active coverage" badge styling. */
+export function isActiveCoverageStatus(status?: string | null): boolean {
+  const s = (status ?? '').trim();
+  return (
+    s === 'Active' ||
+    s === 'Active HS Member' ||
+    s === 'Active Member' ||
+    s === ACTIVE_INSURANCE_CLIENT_STATUS ||
+    s === 'Active DPC' ||
+    s === 'Active ADVISOR'
+  );
 }

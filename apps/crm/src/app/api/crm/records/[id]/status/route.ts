@@ -12,7 +12,8 @@ export const dynamic = 'force-dynamic';
 
 const ALLOWED_STATUSES = [
   // Core operational
-  'Active', 'Active HS Member', 'Active Member', 'Active DPC', 'Active ADVISOR',
+  'Active', 'Active HS Member', 'Active Member', 'Active Insurance Client',
+  'Active DPC', 'Active ADVISOR',
   'Inactive', 'In-Active', 'Pending', 'Cancelled', 'Cancellation Pending',
   'Terminated', 'Converted', 'Deceased', 'Hold', 'Archived', 'Suspended',
   // Enrollment

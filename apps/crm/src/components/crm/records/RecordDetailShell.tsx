@@ -65,6 +65,11 @@ import type { CrmRecord, CrmModule, CrmField, CrmDealStage, CrmNoteWithAuthor } 
 import { MarketTypeBadge, NormalizationBadge, NormalizationBanner, OwnershipDisplay, getOwnerLabel } from '@/components/shared/crm-lane-badges';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { isLeadRecordConverted, getConvertedContactId } from '@/lib/crm/lead-conversion-result';
+import {
+  getCoreStatusPickerItems,
+  isActiveCoverageStatus,
+  relabelStatusForMarket,
+} from '@/lib/crm/member-terminology';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import { CapacityBadges } from '@/components/shared/capacity-badge';
 import { getRecordDisplayName } from '@/lib/crm/display-name';
@@ -463,20 +468,20 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                               variant="outline"
                               className={cn(
                                 'border text-xs font-medium transition-colors',
-                                displayStatus === 'Active' || displayStatus === 'Active HS Member' || displayStatus === 'Active Member'
+                                isActiveCoverageStatus(displayStatus)
                                   ? 'bg-emerald-100 dark:bg-emerald-500/20 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
                                   : displayStatus === 'Inactive' || displayStatus === 'Terminated' || displayStatus === 'Cancelled'
                                   ? 'bg-red-100 dark:bg-red-500/20 border-red-300 dark:border-red-500/30 text-red-700 dark:text-red-400'
                                   : 'bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300'
                               )}
                             >
-                              {displayStatus}
+                              {relabelStatusForMarket(displayStatus, (record as any).market_type)}
                             </Badge>
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 min-w-[200px] max-h-80 overflow-y-auto">
                           {[
-                            { label: 'Status', items: ['Active', 'Active HS Member', 'Active Member', 'Inactive', 'In-Active', 'Pending', 'Hold'] },
+                            { label: 'Status', items: getCoreStatusPickerItems((record as any).market_type) },
                             { label: 'Enrollment', items: ['Enrolled - 2025', 'Enrolled - 2026', 'Enrolled Member', 'Approved Pending'] },
                             { label: 'Close', items: ['Cancelled', 'Cancellation Pending', 'Terminated', 'Suspended', 'Archived', 'Converted'] },
                           ].map((group) => (
@@ -504,7 +509,9 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                                         const err = await res.json();
                                         throw new Error(err.error || 'Failed');
                                       }
-                                      toast.success(`Status changed to ${s}`);
+                                      toast.success(
+                                        `Status changed to ${relabelStatusForMarket(s, (record as any).market_type)}`,
+                                      );
                                       router.refresh();
                                     } catch (err) {
                                       setOptimisticStatus(null);
@@ -512,7 +519,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                                     }
                                   }}
                                 >
-                                  {s}
+                                  {relabelStatusForMarket(s, (record as any).market_type)}
                                 </DropdownMenuItem>
                               ))}
                             </div>
@@ -1190,6 +1197,7 @@ export const RecordDetailShell = memo(function RecordDetailShell({
           recordId={record.id}
           recordTitle={getRecordDisplayName(record)}
           recordData={(record.data || {}) as Record<string, unknown>}
+          marketType={(record as any).market_type}
         />
       )}
 

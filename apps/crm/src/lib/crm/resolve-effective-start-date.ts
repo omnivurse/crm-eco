@@ -13,7 +13,7 @@ export const PENDING_CONTACT_STATUSES = [
 /** Map market_type → active status after the start date arrives. */
 export const ACTIVE_STATUS_BY_MARKET: Record<string, string> = {
   healthshare: 'Active HS Member',
-  traditional_insurance: 'Active',
+  traditional_insurance: 'Active Insurance Client',
 };
 
 const JSONB_START_DATE_KEYS = [
@@ -68,11 +68,22 @@ export function resolveActiveStatusForMarket(
   marketType: string | null | undefined,
   oldStatus?: string | null,
 ): string {
-  if (marketType && ACTIVE_STATUS_BY_MARKET[marketType]) {
-    return ACTIVE_STATUS_BY_MARKET[marketType];
+  const normalizedMarket = (marketType ?? '').trim().toLowerCase();
+  if (normalizedMarket === 'insurance') {
+    return ACTIVE_STATUS_BY_MARKET.traditional_insurance;
+  }
+  if (normalizedMarket && ACTIVE_STATUS_BY_MARKET[normalizedMarket]) {
+    return ACTIVE_STATUS_BY_MARKET[normalizedMarket];
   }
   if (oldStatus && oldStatus.includes('HS Member')) {
     return 'Active HS Member';
+  }
+  if (oldStatus && /insurance client/i.test(oldStatus)) {
+    return 'Active Insurance Client';
+  }
+  if (oldStatus === 'Pending Member' || oldStatus === 'Active Member') {
+    // Ambiguous without market_type — keep Member taxonomy rather than demoting.
+    return 'Active Member';
   }
   return 'Active';
 }

@@ -6,6 +6,7 @@ export const ACTIVE_CONTACT_STATUSES = [
   'Active',
   'Active HS Member',
   'Active Member',
+  'Active Insurance Client',
   'Active DPC',
 ] as const;
 
