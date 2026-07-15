@@ -401,7 +401,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
               <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
             </SelectTrigger>
             <SelectContent>
-              {getFieldOptions(field.options).map((option) => (
+              {getFieldOptions(field.options, field.key).map((option) => (
                 <SelectItem key={option} value={option}>
                   {option}
                 </SelectItem>
@@ -417,7 +417,7 @@ const FormFieldRenderer = memo(function FormFieldRenderer({
       const selectedValues = (value as string[]) || [];
       input = (
         <div className="space-y-2 border rounded-md p-3 max-h-40 overflow-y-auto">
-          {getFieldOptions(field.options).map((option) => (
+          {getFieldOptions(field.options, field.key).map((option) => (
             <div key={option} className="flex items-center space-x-2">
               <Checkbox
                 id={`${field.key}-${option}`}

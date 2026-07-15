@@ -371,7 +371,7 @@ function FieldFilterRow({
                 <SelectValue placeholder="Select..." />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-900 max-h-60">
-                {getFieldOptions(field.options).map((opt) => (
+                {getFieldOptions(field.options, field.key).map((opt) => (
                   <SelectItem key={opt} value={opt} className="text-xs">{opt}</SelectItem>
                 ))}
               </SelectContent>

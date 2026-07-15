@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { ChevronLeft, ChevronRight, Filter, X, Plus, Search } from 'lucide-react';
+import { getFieldOptions } from '@/lib/crm/utils';
 
 interface CrmField {
   id: string;
@@ -131,14 +132,10 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
     return OPERATORS[type] || OPERATORS.text;
   };
 
-  const getFieldOptions = (fieldKey: string): string[] => {
-    const field = fields.find(f => f.key === fieldKey);
+  const optionsForField = (fieldKey: string): string[] => {
+    const field = fields.find((f) => f.key === fieldKey);
     if (!field?.options) return [];
-    try {
-      return JSON.parse(field.options);
-    } catch {
-      return [];
-    }
+    return getFieldOptions(field.options, fieldKey);
   };
 
   // Collapsed state - desktop only button
@@ -281,7 +278,7 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
                           <SelectValue placeholder="Select value" />
                         </SelectTrigger>
                         <SelectContent>
-                          {getFieldOptions(filter.field).map((option) => (
+                          {optionsForField(filter.field).map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}
                             </SelectItem>

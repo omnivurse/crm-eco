@@ -135,7 +135,7 @@ export function InlineField({
             <SelectValue placeholder="Select..." />
           </SelectTrigger>
           <SelectContent>
-            {getFieldOptions(field.options).map((option) => (
+            {getFieldOptions(field.options, field.key).map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>

@@ -696,7 +696,8 @@ function BulkUpdatePageContent() {
                       </SelectTrigger>
                       <SelectContent>
                         {getFieldOptions(
-                          selectFields.find(f => f.key === selectedFieldKey)?.options
+                          selectFields.find(f => f.key === selectedFieldKey)?.options,
+                          selectedFieldKey,
                         ).map((option) => (
                             <SelectItem key={option} value={option}>
                               {option}

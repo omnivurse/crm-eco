@@ -52,7 +52,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
 }: InlineFieldCellProps) {
   const selectOptions = useMemo(() => {
     if (field.type !== 'select' && field.type !== 'picklist') return [];
-    const raw = getFieldOptions(field.options);
+    const raw = getFieldOptions(field.options, field.key);
     return raw.map((v) => ({ value: v, label: v }));
   }, [field]);
 
@@ -145,7 +145,7 @@ export const InlineFieldCell = memo(function InlineFieldCell({
         <InlineMultiSelectField
           {...common}
           value={Array.isArray(value) ? (value as string[]) : value == null ? [] : [String(value)]}
-          options={getFieldOptions(field.options)}
+          options={getFieldOptions(field.options, field.key)}
           placeholder={`Add ${field.label.toLowerCase()}`}
         />
       );

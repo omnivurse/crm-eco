@@ -127,7 +127,7 @@ function BlockerItem({
             <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
           </SelectTrigger>
           <SelectContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10">
-            {getFieldOptions(field.options).map((option) => (
+            {getFieldOptions(field.options, field.key).map((option) => (
               <SelectItem key={option} value={option}>
                 {option}
               </SelectItem>

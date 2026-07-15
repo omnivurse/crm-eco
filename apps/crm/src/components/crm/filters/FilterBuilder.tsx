@@ -84,7 +84,7 @@ function FilterRow({
             <SelectValue placeholder="Select value" />
           </SelectTrigger>
           <SelectContent className="glass-card border-slate-200 dark:border-white/10">
-            {getFieldOptions(field.options).map((option) => (
+            {getFieldOptions(field.options, field.key).map((option) => (
               <SelectItem 
                 key={option} 
                 value={option}

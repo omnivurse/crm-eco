@@ -241,7 +241,7 @@ function ConditionRow({
                         <SelectValue placeholder="Select value" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-slate-900">
-                        {getFieldOptions(selectedField.options).map((option) => (
+                        {getFieldOptions(selectedField.options, selectedField.key).map((option) => (
                             <SelectItem key={option} value={option}>
                                 {option}
                             </SelectItem>
