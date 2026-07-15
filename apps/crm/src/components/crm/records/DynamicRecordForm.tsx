@@ -70,7 +70,7 @@ import {
 import {
   shouldShowEndDateFieldInSection,
 } from '@/lib/crm/coverage-end-date-fields';
-import { ChevronDown, ChevronRight, Loader2, ShieldCheck } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, ShieldCheck, Heart, Shield } from 'lucide-react';
 
 // Section accent palette — see section-accent-tokens.ts (shared with SectionNav).
 
@@ -84,11 +84,20 @@ const getAccent = (accent?: LayoutSectionAccent) => getSectionCardAccent(accent)
  * never reads as a "Sharing Entity". The stored value wins over the field's
  * static metadata so a mis-filed value is still labeled correctly.
  */
-function coverageCarrierLabel(field: CrmField, value: unknown): string {
+function coverageCarrierLabel(
+  field: CrmField,
+  value: unknown,
+  planType?: 'healthshare' | 'insurance' | 'unknown',
+): string {
   const byValue = classifyCarrierValue(value);
   const byMeta = field.metadata?.carrier_type;
   if (byValue === 'insurance' || byMeta === 'insurance') return 'Insurance Carrier';
   if (byValue === 'healthshare' || byMeta === 'healthshare') return 'Sharing Entity';
+  // Unrecognized carrier value: fall back to the record's overall coverage type
+  // so a mis-filed insurer (e.g. "Bright Health" stored in sharing_entity) on an
+  // insurance record still reads "Insurance Carrier", not "Sharing Entity".
+  if (planType === 'insurance') return 'Insurance Carrier';
+  if (planType === 'healthshare') return 'Sharing Entity';
   return field.label;
 }
 
@@ -860,34 +869,46 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return candidates.find((f) => hasValue(f.key)) ?? candidates[0];
   }, [findFieldByKey, findFieldInSection, matchByKeyPattern, hasValue]);
 
-  // Relabel the resolved carrier row so insurance vs health sharing read as
-  // distinct (same field key, so inline edit still saves to the right field).
-  const heroSharingFieldForDisplay = useMemo(() => {
-    if (!heroSharingField) return undefined;
-    const label = coverageCarrierLabel(heroSharingField, defaultValues[heroSharingField.key]);
-    return label === heroSharingField.label ? heroSharingField : { ...heroSharingField, label };
-  }, [heroSharingField, defaultValues]);
-
   // Classify the record's coverage as health-sharing vs insurance so the
   // snapshot shows ONE coherent set of terms — never an insurance Monthly
-  // Premium next to a health-share Monthly Contribution. Priority: the resolved
-  // carrier field's value / metadata (the same signal that labels the carrier
-  // row), then a field-presence heuristic. Falls back to 'unknown', in which
-  // case nothing is filtered — we never hide real data when coverage type is
-  // genuinely ambiguous.
+  // Premium next to a health-share Monthly Contribution — and so the carrier
+  // row is labelled correctly. Priority:
+  //   1. an explicit coverage / product / plan-type field — matches the
+  //      "Product: Insurance" the rep sees, and can't be fooled by an
+  //      unrecognized carrier name;
+  //   2. a recognized carrier value / metadata;
+  //   3. a presence heuristic over fields EXCLUSIVE to one type — never
+  //      `sharing_entity`, which can hold a mis-filed insurer like "Bright
+  //      Health" and would otherwise read as health-sharing.
+  // Falls back to 'unknown' (nothing filtered — real data is never hidden).
   const recordPlanType = useMemo<'healthshare' | 'insurance' | 'unknown'>(() => {
+    const norm = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : '');
+    for (const k of ['coverage_type', 'plan_type', 'product_type', 'product', 'coverage_category']) {
+      const v = norm(defaultValues[k]);
+      if (!v) continue;
+      if (/\b(share|sharing|health.?share|ministry|hcsm)\b/.test(v)) return 'healthshare';
+      if (/\b(insurance|major.?medical|aca|marketplace|traditional|ppo|hmo|epo)\b/.test(v)) return 'insurance';
+    }
     if (heroSharingField) {
       const byValue = classifyCarrierValue(defaultValues[heroSharingField.key]);
       if (byValue !== 'unknown') return byValue;
       const byMeta = heroSharingField.metadata?.carrier_type;
       if (byMeta === 'insurance' || byMeta === 'healthshare') return byMeta;
     }
-    const hasSharing = ['sharing_entity', 'monthly_contribution', 'monthly_share', 'iua_amount', 'member_tier', 'sharing_status', 'sharing_member_id'].some((k) => hasValue(k));
-    const hasInsurance = ['health_insurance_carrier', 'monthly_premium', 'health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium', 'coverage_option'].some((k) => hasValue(k));
+    const hasSharing = ['monthly_contribution', 'monthly_share', 'iua_amount', 'member_tier', 'sharing_status', 'sharing_member_id'].some((k) => hasValue(k));
+    const hasInsurance = ['health_insurance_carrier', 'monthly_premium', 'health_insurance_plan_name', 'insurance_plan_name', 'health_insurance_premium'].some((k) => hasValue(k));
     if (hasSharing && !hasInsurance) return 'healthshare';
     if (hasInsurance && !hasSharing) return 'insurance';
     return 'unknown';
   }, [heroSharingField, defaultValues, hasValue]);
+
+  // Relabel the resolved carrier row so insurance vs health sharing read as
+  // distinct (same field key, so inline edit still saves to the right field).
+  const heroSharingFieldForDisplay = useMemo(() => {
+    if (!heroSharingField) return undefined;
+    const label = coverageCarrierLabel(heroSharingField, defaultValues[heroSharingField.key], recordPlanType);
+    return label === heroSharingField.label ? heroSharingField : { ...heroSharingField, label };
+  }, [heroSharingField, defaultValues, recordPlanType]);
 
   const heroStartDateField = useMemo(() => {
     const isDateType = (f: CrmField) => f.type === 'date';
@@ -1039,12 +1060,128 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
     return fields;
   }, [heroReferralSourceField, heroReferringMemberField, hasValue, inlineEditable, readOnly]);
 
+  // ── Coverage Snapshot ─────────────────────────────────────────────────
+  // Lifted OUT of the Lead Information hero (where it crowded the fields as a
+  // narrow right sidebar) into a full-width banner pinned to the top of the
+  // record. Horizontal reading order: identity rail (coverage type + carrier)
+  // │ plan / product / effective date │ referral context. The accent tracks
+  // the record's coverage type so the banner reads as one system with the
+  // Market Type chip in the header (emerald = HealthShare, blue = Insurance,
+  // slate = unclassified). Cells still render through renderFieldCell, so
+  // inline editing is unchanged.
+  const renderCoverageSnapshot = () => {
+    if (!sections.some((s) => s.variant === 'hero')) return null;
+
+    const accent =
+      recordPlanType === 'insurance'
+        ? {
+            Icon: Shield,
+            label: 'Insurance Coverage',
+            wrap: 'border-blue-200/70 from-blue-50/80 ring-blue-500/10 dark:border-blue-500/25 dark:from-blue-500/[0.08] dark:ring-blue-400/10',
+            iconWrap: 'bg-blue-500/15 text-blue-700 dark:bg-blue-400/15 dark:text-blue-300',
+            eyebrow: 'text-blue-700 dark:text-blue-300',
+            divider: 'bg-blue-500/20 dark:bg-blue-400/20',
+          }
+        : recordPlanType === 'healthshare'
+          ? {
+              Icon: Heart,
+              label: 'HealthShare Coverage',
+              wrap: 'border-emerald-200/70 from-emerald-50/80 ring-emerald-500/10 dark:border-emerald-500/25 dark:from-emerald-500/[0.08] dark:ring-emerald-400/10',
+              iconWrap: 'bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300',
+              eyebrow: 'text-emerald-700 dark:text-emerald-300',
+              divider: 'bg-emerald-500/20 dark:bg-emerald-400/20',
+            }
+          : {
+              Icon: ShieldCheck,
+              label: 'Coverage',
+              wrap: 'border-slate-200/80 from-slate-50/70 ring-slate-500/5 dark:border-slate-700/60 dark:from-slate-800/40 dark:ring-slate-400/5',
+              iconWrap: 'bg-slate-500/10 text-slate-600 dark:bg-slate-400/15 dark:text-slate-300',
+              eyebrow: 'text-slate-600 dark:text-slate-300',
+              divider: 'bg-slate-400/20 dark:bg-slate-500/30',
+            };
+    const AccentIcon = accent.Icon;
+
+    const staticView = readOnly && !inlineEditable;
+    const carrierHasValue = heroSharingField ? hasValue(heroSharingField.key) : false;
+    const showDate =
+      Boolean(heroStartDateField) &&
+      (!staticView || (heroStartDateField ? hasValue(heroStartDateField.key) : false));
+    const hasDetail = heroProductPlanSnapshotFields.length > 0 || showDate;
+    const hasReferral = heroReferralSnapshotFields.length > 0;
+    const isEmpty = staticView && !carrierHasValue && !hasDetail && !hasReferral;
+
+    const divider = (
+      <div className={cn('hidden w-px self-stretch lg:block', accent.divider)} aria-hidden />
+    );
+
+    return (
+      <div className={cn('rounded-2xl border bg-gradient-to-br to-transparent shadow-sm ring-1', accent.wrap)}>
+        <div className="flex flex-col gap-x-6 gap-y-4 p-4 lg:flex-row lg:items-stretch">
+          {/* Identity rail — coverage type + carrier / sharing entity */}
+          <div className="flex items-start gap-3 lg:w-64 lg:shrink-0">
+            <span
+              className={cn(
+                'mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                accent.iconWrap,
+              )}
+            >
+              <AccentIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className={cn('text-[10px] font-semibold uppercase tracking-[0.16em]', accent.eyebrow)}>
+                {accent.label}
+              </div>
+              <div className="mt-1.5">
+                {heroSharingFieldForDisplay && (carrierHasValue || !staticView) ? (
+                  renderFieldCell(heroSharingFieldForDisplay)
+                ) : (
+                  <p className="text-sm text-muted-foreground">Not set</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {isEmpty ? (
+            <div className="flex flex-1 items-center border-t border-dashed pt-3 lg:border-0 lg:pt-0">
+              {divider}
+              <p className="text-sm text-muted-foreground lg:pl-6">
+                No coverage details on file yet — add a carrier, plan, and effective date to
+                complete this member&apos;s snapshot.
+              </p>
+            </div>
+          ) : (
+            <>
+              {hasDetail && (
+                <>
+                  {divider}
+                  <div className="grid flex-1 grid-cols-2 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-3 lg:border-0 lg:pt-0 xl:grid-cols-4">
+                    {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
+                    {showDate && heroStartDateField && renderFieldCell(heroStartDateField)}
+                  </div>
+                </>
+              )}
+              {hasReferral && (
+                <>
+                  {divider}
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 border-t border-dashed pt-3 sm:grid-cols-2 lg:w-52 lg:shrink-0 lg:grid-cols-1 lg:border-0 lg:pt-0">
+                    {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderSections = () => {
     /** Clears sticky overview pills + approximate shell header when scrolling from section nav. */
     const overviewScrollAid = readOnly ? 'scroll-mt-[175px]' : '';
 
     return (
     <>
+      {renderCoverageSnapshot()}
       {sections.map((section) => {
         const sectionFields = fieldsBySection[section.key] || [];
         const isHero = section.variant === 'hero';
@@ -1053,11 +1190,12 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
           section.key,
           inlineEditable,
         );
-        // Hero is allowed to render even with zero fields (e.g. lean Members
-        // module) because it always shows the right-hand summary.
+        // The coverage summary now lives in the top banner, so a hero with no
+        // fields of its own has nothing left to show — let it collapse like any
+        // other empty section.
         // Person-module coverage sections must never disappear — reps add insurance
         // here immediately after lead → contact conversion.
-        if (sectionFields.length === 0 && !isHero && !forceCoverageSection) return null;
+        if (sectionFields.length === 0 && !forceCoverageSection) return null;
 
         // In static read-only mode, omit full cards where every field is empty —
         // keep a cross-column anchor so section pills still scroll (IDs match
@@ -1131,61 +1269,14 @@ export const DynamicRecordForm = forwardRef<DynamicRecordFormHandle, DynamicReco
               <CardContent className={readOnly ? 'pt-3 pb-3 px-4' : undefined}>
                 {isHero ? (
                   // ──────────────────────────────────────────────────────────
-                  // HERO LAYOUT
-                  //   Left column  → the section's own fields (Name, etc.)
-                  //   Right column → Carrier / sharing + plan/product lines + dates,
-                  //                  editable inline via the same form state.
+                  // HERO LAYOUT — the section's own fields (Name, etc.) now get
+                  // the full width. The coverage summary that used to sit in a
+                  // narrow right sidebar here has moved to renderCoverageSnapshot()
+                  // (the full-width banner pinned to the top of the record).
+                  // Auto-pack into as many ~220px columns as the width allows.
                   // ──────────────────────────────────────────────────────────
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-                    <div className="min-w-0 flex-1">
-                      {/* Auto-pack into as many ~220px columns as the (flexible)
-                          field area allows, so the fields fill the width the
-                          fixed-width snapshot sidebar leaves — no dead gutter. */}
-                      <div className="grid gap-x-5 gap-y-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
-                        {sectionFields.map(renderFieldCell)}
-                      </div>
-                    </div>
-                    <div className="w-full lg:w-80 lg:shrink-0">
-                      {/* Membership Snapshot — premium coverage card. Header strip
-                          + gradient give it hierarchy; fields still render via
-                          renderFieldCell so inline editing is unchanged. */}
-                      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-emerald-200/70 bg-gradient-to-b from-emerald-50/80 to-transparent shadow-sm ring-1 ring-emerald-500/10 dark:border-emerald-500/20 dark:from-emerald-500/[0.07] dark:ring-emerald-400/10">
-                        <div className="flex items-center gap-2 border-b border-emerald-200/60 px-4 pb-2.5 pt-3 dark:border-emerald-500/15">
-                          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300">
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                          </span>
-                          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
-                            {recordPlanType === 'insurance'
-                              ? 'Insurance Snapshot'
-                              : recordPlanType === 'healthshare'
-                                ? 'HealthShare Snapshot'
-                                : 'Coverage Snapshot'}
-                          </span>
-                        </div>
-                        <div className="flex-1 space-y-3 p-4">
-                          {heroSharingFieldForDisplay ? (
-                            renderFieldCell(heroSharingFieldForDisplay)
-                          ) : (
-                            <p className="text-xs text-muted-foreground">
-                              No carrier or sharing entity field configured
-                            </p>
-                          )}
-                          {heroProductPlanSnapshotFields.map((field) => renderFieldCell(field))}
-                          {heroStartDateField ? (
-                            renderFieldCell(heroStartDateField)
-                          ) : (
-                            <p className="text-xs text-muted-foreground">
-                              No effective date field configured
-                            </p>
-                          )}
-                          {heroReferralSnapshotFields.length > 0 && (
-                            <div className="mt-1 space-y-3 border-t border-emerald-600/20 pt-2 dark:border-emerald-400/20">
-                              {heroReferralSnapshotFields.map((field) => renderFieldCell(field))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  <div className="grid gap-x-5 gap-y-3 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+                    {sectionFields.map(renderFieldCell)}
                   </div>
                 ) : sectionFields.length === 0 ? (
                   <p className="text-sm text-muted-foreground">

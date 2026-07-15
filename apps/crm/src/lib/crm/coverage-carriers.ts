@@ -26,6 +26,8 @@ export const KNOWN_INSURANCE_CARRIERS = [
   'Florida Blue',
   'Select Health',
   'RMHP',
+  'Bright Health',
+  'Bright HealthCare',
 ] as const;
 
 /** Health-sharing ministries. Excludes the ambiguous "Other". */
