@@ -1,14 +1,12 @@
 -- =============================================================================
--- Migration: Contacts / Leads identity-section cleanup  (Phase 1)
+-- Migration: Contacts / Leads identity-section cleanup  (Phase 1 + 2a)
 -- =============================================================================
 --
 -- Client feedback: the contact/member record form's identity section is
 -- cluttered with redundant fields and confusingly named ones. This migration
--- ships the SAFE, reversible portion of the cleanup (audited 2026-07-14). The
--- one load-bearing redundancy — `contact_name` (still the display-title source
--- for imported records + wired into full-text search) — is intentionally left
--- for a separate, coordinated Phase 2 migration and is only DEMOTED here, not
--- removed.
+-- ships the full SAFE, reversible cleanup (audited 2026-07-14). Every change is
+-- either a label/order update or a field-definition removal whose stored JSONB
+-- values are retained — nothing is destructively deleted from record data.
 --
 -- What this does, on the `contacts` and `leads` modules:
 --
@@ -28,19 +26,36 @@
 --      (apps/crm/src/lib/imports/contacts-mapping.ts) so imports keep populating
 --      the surviving field.
 --
---   3. HIDE `birth_month` — a legacy free-text helper fully derivable from
---      `date_of_birth` and read by nothing. Removing the field row stops it
---      rendering; its stored values remain in `crm_records.data` for traceability.
+--   3. HIDE derivable / redundant fields by removing their definition rows
+--      (their stored values remain in `crm_records.data` for traceability):
+--        - birth_month   — a free-text helper fully derivable from date_of_birth,
+--                          read by nothing.
+--        - contact_name  — a legacy Zoho "First Last" concatenation that renders
+--                          as a redundant fourth name field. Safe to remove the
+--                          DEFINITION because every live consumer reads the JSONB
+--                          VALUE `data->>'contact_name'`, not this row:
+--                            * ongoing title: generate_record_title() derives from
+--                              preferred_name/first_name + last_name, never
+--                              contact_name (202606060001);
+--                            * import title: reads the staging column v_row.contact_name;
+--                            * full-text search: the generated `search` tsvector +
+--                              trigger read data->>'contact_name';
+--                            * list column: RecordTable reads data.contact_name.
+--                          The value stays, so title/search/import are unchanged;
+--                          only the form stops showing the field. (Fully purging
+--                          the stored duplicate is a separate, riskier Phase 2b.)
 --
 --   4. REORDER the identity cluster so the name parts are contiguous
 --      (Salutation, First, Middle, Last, Preferred) and the demographics group
---      at the end (Date of Birth, Gender, Marital Status). `contact_name` is
---      parked at the bottom of the section (pending Phase 2 removal) so it stops
---      wedging between Last Name and Salutation.
+--      at the end (Date of Birth, Gender, Marital Status).
 --
 --   5. CONFIRM two already-retired leftovers are gone: `middle_initial`
 --      (merged into `middle_name` by 202604160002) and `record_id` (phantom
 --      Zoho id, superseded by `zoho_record_id`). Defensive DELETE IF EXISTS.
+--
+-- DO NOT confuse `contact_name` here with the unrelated `contact_name` COLUMNS
+-- on `vendors`, `carrier_contacts`, and `inbox_conversations` — different
+-- entities on different tables, untouched by this module-scoped migration.
 --
 -- Idempotent and reversible: renames/reorders are UPDATEs; deleted field rows
 -- can be re-inserted and their JSONB data is untouched. Safe to re-run.
@@ -136,15 +151,12 @@ BEGIN
           'work_phone','fax','date_of_birth','gender','marital_status'
         );
 
-    -- Park the still-live (Phase 2) contact_name at the bottom of the section so
-    -- it stops interrupting the name cluster. Its data + search wiring are
-    -- untouched; only its position changes.
-    UPDATE crm_fields SET display_order = 90
-      WHERE module_id = v_mod.id AND key = 'contact_name';
-
-    -- (3) Hide birth_month (derivable from date_of_birth). JSONB values retained.
+    -- (3) Remove redundant field definitions (JSONB values retained).
+    --   birth_month:  derivable from date_of_birth, read by nothing.
+    --   contact_name: derived First+Last dup; data + search + title wiring all
+    --                 read the retained JSONB value, so only the form field goes.
     DELETE FROM crm_fields
-      WHERE module_id = v_mod.id AND key = 'birth_month';
+      WHERE module_id = v_mod.id AND key IN ('birth_month', 'contact_name');
 
     -- (2 cont.) Remove the duplicate gender key now that gender is ensured +
     -- backfilled.
