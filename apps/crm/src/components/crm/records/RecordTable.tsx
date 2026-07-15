@@ -708,6 +708,15 @@ export const RecordTable = memo(function RecordTable({
     };
   }, [density]);
 
+  // Power-user keyboard navigation state (declared here with the other hooks so
+  // it precedes any early return). The handler + active-descendant id live down
+  // near the render where `handleRowClick` is in scope.
+  const [activeRowIndex, setActiveRowIndex] = useState(-1);
+  // Keep the active row in range if the record set shrinks (filter / sort).
+  useEffect(() => {
+    setActiveRowIndex((i) => (i >= records.length ? -1 : i));
+  }, [records.length]);
+
   // Create field lookup map
   const fieldMap = useMemo(() => {
     return fields.reduce((acc, field) => {
@@ -1118,15 +1127,10 @@ export const RecordTable = memo(function RecordTable({
 
   // ── Power-user keyboard navigation ──────────────────────────────────────
   // Focus stays on the scroll container (an aria-activedescendant grid), which
-  // survives virtualized rows unmounting on scroll; `activeRowIndex` drives the
-  // focus ring + the active descendant. Arrows / j·k move, Enter (or o) opens,
-  // Space (or x) toggles selection, Home/End jump, PageUp/Down page, Esc clears.
-  const [activeRowIndex, setActiveRowIndex] = useState(-1);
-  // Keep the active row in range if the record set shrinks (filter / sort).
-  useEffect(() => {
-    setActiveRowIndex((i) => (i >= records.length ? -1 : i));
-  }, [records.length]);
-
+  // survives virtualized rows unmounting on scroll; `activeRowIndex` (declared
+  // with the other hooks above) drives the focus ring + the active descendant.
+  // Arrows / j·k move, Enter (or o) opens, Space (or x) toggles selection,
+  // Home/End jump, PageUp/Down page, Esc clears.
   const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Defer to inline-edit inputs and any focused interactive control (buttons,
     // links, checkboxes) — nav keys only act when the grid container itself is
