@@ -17,8 +17,12 @@ import { DynamicRecordForm } from './DynamicRecordForm';
  * dropped in favour of the server value. Treats null / undefined / '' as one
  * equivalent "empty" so a field cleared to '' converges once the server
  * returns null, and compares arrays (multiselect) element-wise.
+ *
+ * Exported so every surface that overlays inline saves on server props
+ * (form values, section fill badges, header fields) shares one convergence
+ * rule instead of drifting apart.
  */
-function serverHasCaughtUp(serverValue: unknown, savedValue: unknown): boolean {
+export function serverHasCaughtUp(serverValue: unknown, savedValue: unknown): boolean {
   if (serverValue === savedValue) return true;
   if (Array.isArray(serverValue) && Array.isArray(savedValue)) {
     return (

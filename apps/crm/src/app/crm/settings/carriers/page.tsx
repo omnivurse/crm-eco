@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
 import Link from 'next/link';
 import { CarrierContactsPanel } from '@/components/crm/carriers/CarrierContactsPanel';
 import { Button } from '@crm-eco/ui/components/button';
@@ -127,10 +128,14 @@ function CarrierManagementContent() {
   const termForType = (type: string) => isMinistry(type) ? 'Ministry' : 'Carrier';
   const addButtonLabel = typeFilter === 'healthshare' ? 'Add Ministry' : typeFilter === 'all' ? 'Add Carrier / Ministry' : 'Add Carrier';
 
+  // Debounced — the raw `search` state changes per keystroke and this fetch
+  // pulls up to 500 rows; refetching per character made the box feel sluggish.
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const fetchCarriers = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
+      if (debouncedSearch) params.set('search', debouncedSearch);
       if (typeFilter !== 'all') params.set('carrier_type', typeFilter);
       // Fetch active + optionally archived
       const res = await fetch(`/api/crm/carriers?${params.toString()}&limit=500`);
@@ -146,7 +151,7 @@ function CarrierManagementContent() {
     } finally {
       setLoading(false);
     }
-  }, [search, typeFilter]);
+  }, [debouncedSearch, typeFilter]);
 
   useEffect(() => { fetchCarriers(); }, [fetchCarriers]);
 

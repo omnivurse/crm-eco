@@ -39,6 +39,7 @@ import {
   useRecordFieldLocks,
   useFieldLockOwner,
 } from '@/hooks/useRecordFieldLocks';
+import { serverHasCaughtUp } from '../InlineEditableRecordForm';
 import { LockedFieldBadge } from './LockedFieldBadge';
 import { AiSuggestChip } from './AiSuggestChip';
 import { useRecordAiContext } from './RecordAiContext';
@@ -154,26 +155,43 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
     setDraft(stringify(value));
   }
 
+  // Surface global save errors for this field.
+  const externalError = fieldState?.status === 'error' ? fieldState.error : null;
+  const isSaving = fieldState?.status === 'saving';
+  const isPending = fieldState?.status === 'pending';
+  const isSaved = fieldState?.status === 'saved';
+  // Durable optimistic overlay: the save provider flips 'saved' → 'idle' ~4s
+  // after the PATCH, but the `value` prop (server RSC data, e.g. record.email
+  // in the header) only updates on a full refresh — which the field-save path
+  // deliberately doesn't trigger. Keying only on the transient statuses made
+  // header fields snap back to the stale server value 4s after every edit.
+  // Keep showing the last successfully saved value until the prop reflects it.
+  const displayValue: string | number | null | undefined =
+    fieldState?.lastValue !== undefined &&
+    (isSaving || isPending || isSaved || !serverHasCaughtUp(value, fieldState.lastValue))
+      ? (fieldState.lastValue as string | number | null)
+      : value;
+
   const enterEdit = useCallback(() => {
     if (readOnly || lockOwner) return;
-    setDraft(stringify(value));
+    setDraft(stringify(displayValue));
     setLocalError(null);
     setEditing(true);
     onEditStart?.();
     void acquireFieldLock(field);
-  }, [readOnly, lockOwner, value, onEditStart, acquireFieldLock, field]);
+  }, [readOnly, lockOwner, displayValue, onEditStart, acquireFieldLock, field]);
 
   const cancelEdit = useCallback(() => {
     setEditing(false);
     setLocalError(null);
-    setDraft(stringify(value));
+    setDraft(stringify(displayValue));
     onEditEnd?.();
     void releaseFieldLock(field);
-  }, [value, onEditEnd, releaseFieldLock, field]);
+  }, [displayValue, onEditEnd, releaseFieldLock, field]);
 
   const commit = useCallback(async () => {
     const trimmed = draft.trim();
-    if (trimmed === stringify(value).trim()) {
+    if (trimmed === stringify(displayValue).trim()) {
       setEditing(false);
       onEditEnd?.();
       return;
@@ -200,7 +218,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
     onEditEnd?.();
     void releaseFieldLock(field);
     await save(field, payload, target ? { target } : undefined);
-  }, [draft, value, validate, type, moneyDecimals, save, field, onEditEnd, target, releaseFieldLock]);
+  }, [draft, displayValue, validate, type, moneyDecimals, save, field, onEditEnd, target, releaseFieldLock]);
 
   const onKey = (
     e: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -218,17 +236,6 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
       cancelEdit();
     }
   };
-
-  // Surface global save errors for this field.
-  const externalError = fieldState?.status === 'error' ? fieldState.error : null;
-  const isSaving = fieldState?.status === 'saving';
-  const isPending = fieldState?.status === 'pending';
-  const isSaved = fieldState?.status === 'saved';
-  const displayValue: string | number | null | undefined =
-    fieldState?.lastValue !== undefined &&
-    (isSaving || isPending || isSaved)
-      ? (fieldState.lastValue as string | number | null)
-      : value;
 
   if (readOnly) {
     return (

@@ -8,6 +8,7 @@
 import { useMemo, type ReactNode } from 'react';
 import type { CrmField, CrmLayout, CrmRecord } from '@/lib/crm/types';
 import { RecordFieldSaveProvider, useRecordFieldSaveOptional } from '@/hooks/useRecordFieldSave';
+import { serverHasCaughtUp } from './InlineEditableRecordForm';
 import { getSectionMeta, isPersonModuleKey } from './section-utils';
 import { OverviewLayout } from './OverviewLayout';
 import { RecordOverviewFields } from './RecordOverviewFields';
@@ -46,14 +47,21 @@ function LiveSectionOverview({
   // Live field values = record defaults overlaid with any values the rep has
   // inline-saved this session (tracked in the save context). Derived during
   // render so section fill-counts stay current without a useState + two syncing
-  // effects — which triggered cascading-render lint and left the badges a frame
-  // behind. defaultValues gets a fresh reference on every record refresh, so it
-  // alone captures server updates.
+  // effects. The overlay is *durable* (same rule as InlineEditableRecordForm):
+  // the save provider flips a field from 'saved' → 'idle' ~4s after the PATCH,
+  // but the server props only update on a full refresh — keying on
+  // status === 'saved' made fill badges bump then snap back 4s later. Keep the
+  // last-saved value until the server prop actually reflects it.
   const liveValues = useMemo(() => {
     const next: Record<string, unknown> = { ...defaultValues };
     if (saveCtx) {
       for (const [key, state] of Object.entries(saveCtx.fields)) {
-        if (state.status === 'saved' && state.lastValue !== undefined) {
+        if (state.lastValue === undefined) continue;
+        if (
+          state.status === 'pending' ||
+          state.status === 'saving' ||
+          !serverHasCaughtUp(defaultValues[key], state.lastValue)
+        ) {
           next[key] = state.lastValue;
         }
       }

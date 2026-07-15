@@ -76,7 +76,9 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
   const searchParams = useSearchParams();
   
   const [filters, setFilters] = useState<FilterCondition[]>([]);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  // The module list page reads `search` (not `q`) — writing `q` here made
+  // this panel's search box silently do nothing.
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,9 +89,9 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
     const params = new URLSearchParams(searchParams.toString());
     
     if (searchQuery.trim()) {
-      params.set('q', searchQuery.trim());
+      params.set('search', searchQuery.trim());
     } else {
-      params.delete('q');
+      params.delete('search');
     }
 
     if (filters.length > 0) {
@@ -106,7 +108,7 @@ export function FiltersPanel({ fields, moduleKey, isOpen, onToggle }: FiltersPan
     setFilters([]);
     setSearchQuery('');
     const params = new URLSearchParams(searchParams.toString());
-    params.delete('q');
+    params.delete('search');
     params.delete('filters');
     params.delete('page');
     router.push(`/crm/modules/${moduleKey}?${params.toString()}`);

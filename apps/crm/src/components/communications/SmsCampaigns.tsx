@@ -136,7 +136,12 @@ export default function SmsCampaigns() {
     const timer = setTimeout(async () => {
       setSearchingContacts(true);
       try {
-        const res = await fetch(`/api/crm/records?q=${encodeURIComponent(contactSearch)}&limit=8`);
+        // The records API requires `module_key` and reads `search` (the old
+        // `?q=&limit=` call 400'd on every keystroke, so this picker never
+        // returned results).
+        const res = await fetch(
+          `/api/crm/records?module_key=contacts&search=${encodeURIComponent(contactSearch)}&page_size=8`,
+        );
         if (res.ok) {
           const data = await res.json();
           const records = data.records || data.data || [];

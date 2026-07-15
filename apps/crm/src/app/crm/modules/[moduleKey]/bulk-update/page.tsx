@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
 import {
   ArrowLeft,
   Pencil,
@@ -96,6 +97,9 @@ function BulkUpdatePageContent() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(preselectedIds));
   const [searchQuery, setSearchQuery] = useState('');
+  // Debounced — fetchData refetches modules + records + fields + team members
+  // on every change; per-keystroke server hits made this search feel slow.
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
@@ -145,7 +149,7 @@ function BulkUpdatePageContent() {
 
       // Fetch records
       const recordsRes = await fetch(
-        `/api/crm/records?module_key=${moduleKey}&page=${page}&page_size=${pageSize}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
+        `/api/crm/records?module_key=${moduleKey}&page=${page}&page_size=${pageSize}${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}`
       );
       if (!recordsRes.ok) throw new Error('Failed to fetch records');
       const recordsData = await recordsRes.json();
@@ -177,7 +181,7 @@ function BulkUpdatePageContent() {
     } finally {
       setLoading(false);
     }
-  }, [moduleKey, page, searchQuery, module?.id]);
+  }, [moduleKey, page, debouncedSearch, module?.id]);
 
   useEffect(() => {
     fetchData();

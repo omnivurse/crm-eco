@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
 import {
   ArrowLeft,
   Trash2,
@@ -67,6 +68,9 @@ function MassDeletePageContent() {
   const [records, setRecords] = useState<CrmRecord[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set(preselectedIds));
   const [searchQuery, setSearchQuery] = useState('');
+  // Debounced — fetchData refetches modules + a full records page on every
+  // change; per-keystroke server hits made this search feel slow.
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -101,7 +105,7 @@ function MassDeletePageContent() {
 
       // Fetch records
       const recordsRes = await fetch(
-        `/api/crm/records?module_key=${moduleKey}&page=${page}&page_size=${pageSize}${searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : ''}`
+        `/api/crm/records?module_key=${moduleKey}&page=${page}&page_size=${pageSize}${debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : ''}`
       );
       if (!recordsRes.ok) throw new Error('Failed to fetch records');
       const recordsData = await recordsRes.json();
@@ -116,7 +120,7 @@ function MassDeletePageContent() {
     } finally {
       setLoading(false);
     }
-  }, [moduleKey, page, searchQuery, module?.id]);
+  }, [moduleKey, page, debouncedSearch, module?.id]);
 
   useEffect(() => {
     fetchData();

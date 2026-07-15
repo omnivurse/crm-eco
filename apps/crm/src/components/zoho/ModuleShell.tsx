@@ -166,8 +166,14 @@ export const ModuleShell = memo(function ModuleShell({
     setFilters((prev) => (prev.length === 0 ? prev : []));
   }, [searchParams]);
 
+  // Set when the user picks a spotlight result: we're navigating to that
+  // record, so a deferred search flush must not fire and push the module-list
+  // URL over the in-flight record navigation.
+  const suppressSearchFlushRef = useRef(false);
+
   /** Push current search box value to the URL if it differs (same logic as debounced + Enter submit). */
   const flushSearchToUrl = useCallback(() => {
+    if (suppressSearchFlushRef.current) return;
     const params = new URLSearchParams(searchParamsRef.current.toString());
     const trimmed = searchQuery.trim();
     const urlSearch = (params.get('search') || '').trim();
@@ -183,11 +189,22 @@ export const ModuleShell = memo(function ModuleShell({
     router.push(`/crm/modules/${module.key}?${params.toString()}`, { scroll: false });
   }, [searchQuery, router, module.key]);
 
-  // Debounced live search — first keystroke must update the URL (do not skip initial effect).
+  // Debounced URL flush — this is what drives the *heavy* server-side list
+  // refetch (full RSC page render + wide ILIKE search). While the spotlight
+  // dropdown is visible it already gives keystroke-level feedback from the
+  // indexed smart-search RPC, so flushing per pause doubled every request and
+  // made typing feel slow. Defer the table refetch to Enter (handleSearch) or
+  // dropdown dismiss (onOpenChange below); still flush when the box is
+  // cleared so the table restores promptly. Single-char queries also wait —
+  // they'd scan the widest ILIKE set without usefully narrowing the list.
+  const trimmedSearchQuery = searchQuery.trim();
+  const liveDropdownVisible = liveOpen && trimmedSearchQuery.length >= 2;
   useEffect(() => {
+    if (liveDropdownVisible) return;
+    if (trimmedSearchQuery.length === 1) return;
     const timer = window.setTimeout(flushSearchToUrl, 300);
     return () => window.clearTimeout(timer);
-  }, [flushSearchToUrl]);
+  }, [flushSearchToUrl, liveDropdownVisible, trimmedSearchQuery]);
 
   // Live smart-search dropdown — debounced fetch + AbortController, same
   // pattern as GlobalSearchOverlay so the toolbar feels identical to the
@@ -258,6 +275,19 @@ export const ModuleShell = memo(function ModuleShell({
       e.preventDefault();
       // Enter should search immediately instead of waiting on the 300ms debounce.
       flushSearchToUrl();
+    },
+    [flushSearchToUrl],
+  );
+
+  // While the dropdown is up we defer the table refetch (see the flush effect
+  // above), so commit the pending search when the dropdown is dismissed —
+  // unless it closed because the rep picked a result and is navigating away.
+  const handleLiveOpenChange = useCallback(
+    (open: boolean) => {
+      setLiveOpen(open);
+      if (!open && !suppressSearchFlushRef.current) {
+        flushSearchToUrl();
+      }
     },
     [flushSearchToUrl],
   );
@@ -964,7 +994,7 @@ export const ModuleShell = memo(function ModuleShell({
 
             <ModuleLiveSearchDropdown
               open={liveOpen}
-              onOpenChange={setLiveOpen}
+              onOpenChange={handleLiveOpenChange}
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               onSubmit={handleSearch}
@@ -974,6 +1004,7 @@ export const ModuleShell = memo(function ModuleShell({
               selectedIndex={liveSelectedIdx}
               onSelectedIndexChange={setLiveSelectedIdx}
               onSelectResult={(target) => {
+                suppressSearchFlushRef.current = true;
                 setLiveOpen(false);
                 router.push(`/crm/r/${target.id}`);
               }}
@@ -988,10 +1019,12 @@ export const ModuleShell = memo(function ModuleShell({
                 } else if (e.key === 'Enter' && liveResults[liveSelectedIdx]) {
                   e.preventDefault();
                   const target = liveResults[liveSelectedIdx];
+                  suppressSearchFlushRef.current = true;
                   setLiveOpen(false);
                   router.push(`/crm/r/${target.id}`);
                 } else if (e.key === 'Escape') {
                   setLiveOpen(false);
+                  flushSearchToUrl();
                 }
               }}
             />

@@ -4,7 +4,7 @@ import { Fragment, useCallback } from 'react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import type { SectionMeta } from './section-utils';
 import { CRM_SECTION_NAV_EVENT, getSectionNavGroupLabel } from './section-utils';
-import { getSectionNavAccent } from './section-accent-tokens';
+import { getSectionCompactNavAccent, getSectionNavAccent } from './section-accent-tokens';
 
 export type { SectionMeta };
 
@@ -82,6 +82,7 @@ export function SectionNav({
         {sections.map((s, index) => {
           const isActive = s.key === activeSectionKey;
           const navAccent = getSectionNavAccent(s.accent);
+          const compactAccent = getSectionCompactNavAccent(s.accent);
           // A group divider starts wherever this section's band differs from the
           // previous section's — computed from the array (no render-time mutation).
           const showGroupDivider =
@@ -118,9 +119,7 @@ export function SectionNav({
                   compact
                     ? cn(
                         'border-b-2 px-2 py-1 text-xs font-medium',
-                        isActive
-                          ? 'border-teal-500 text-slate-900 dark:text-white'
-                          : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+                        isActive ? compactAccent.active : compactAccent.inactive,
                       )
                     : cn(
                         'rounded-full px-3.5 py-1.5 text-xs font-medium',
@@ -133,11 +132,7 @@ export function SectionNav({
                   title={badgeTitle}
                   className={cn(
                     'inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-semibold',
-                    compact
-                      ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      : isActive
-                        ? navAccent.activeBadge
-                        : navAccent.inactiveBadge,
+                    isActive ? navAccent.activeBadge : navAccent.inactiveBadge,
                   )}
                 >
                   {badgeValue}

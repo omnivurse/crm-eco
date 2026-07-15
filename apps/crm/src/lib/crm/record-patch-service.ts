@@ -330,6 +330,11 @@ export async function executeCrmRecordPatch(params: {
   try {
     revalidatePath('/crm');
     revalidatePath(`/crm/r/${id}`);
+    // Module list pages render from their own RSC payload; without this,
+    // navigating back to e.g. /crm/modules/leads showed the pre-edit row
+    // (stale FIRST NAME / EMAIL / STATUS) until a hard refresh. We only have
+    // module_id here, so revalidate the dynamic route as a whole.
+    revalidatePath('/crm/modules/[moduleKey]', 'page');
   } catch (err) {
     console.error('[Records] revalidatePath error (record already saved):', err);
   }

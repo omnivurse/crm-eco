@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { useClientAuth } from '@/hooks/useClientAuth';
+import { useDebouncedValue } from '@/hooks/useDebouncedSearch';
 import type { DocFolder, Document, DocumentAuditEntry, SortField, SortDir, BreadcrumbItem } from './types';
 
 const PAGE_SIZE = 50;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// Supabase rows are untyped here.
 type AnyRow = Record<string, any>;
 
 export function useDocuments(
@@ -17,6 +18,10 @@ export function useDocuments(
   searchQuery: string
 ) {
   const { profile } = useClientAuth();
+  // Debounce the search term — the toolbar passes it per keystroke and this
+  // hook refetches folders + documents + favorites on every change, which
+  // hammered Supabase with a query per character typed.
+  const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [folders, setFolders] = useState<DocFolder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,8 +69,8 @@ export function useDocuments(
         folderQuery = folderQuery.is('parent_id', null);
       }
 
-      if (searchQuery) {
-        folderQuery = folderQuery.ilike('name', `%${searchQuery}%`);
+      if (debouncedSearch) {
+        folderQuery = folderQuery.ilike('name', `%${debouncedSearch}%`);
       }
 
       folderQuery = folderQuery.order('name', { ascending: true });
@@ -95,8 +100,8 @@ export function useDocuments(
         docQuery = docQuery.is('folder_id', null);
       }
 
-      if (searchQuery) {
-        docQuery = docQuery.ilike('name', `%${searchQuery}%`);
+      if (debouncedSearch) {
+        docQuery = docQuery.ilike('name', `%${debouncedSearch}%`);
       }
 
       docQuery = docQuery
@@ -123,7 +128,7 @@ export function useDocuments(
     } finally {
       setLoading(false);
     }
-  }, [profile?.organization_id, currentFolderId, sortBy, sortDir, searchQuery, page]);
+  }, [profile?.organization_id, currentFolderId, sortBy, sortDir, debouncedSearch, page]);
 
   useEffect(() => {
     fetchData();
@@ -131,7 +136,7 @@ export function useDocuments(
 
   useEffect(() => {
     setPage(0);
-  }, [currentFolderId, searchQuery]);
+  }, [currentFolderId, debouncedSearch]);
 
   return { folders, documents, loading, page, setPage, hasMore, breadcrumbs, refetch: fetchData };
 }
@@ -141,16 +146,21 @@ export function useFolderTree() {
   const [allFolders, setAllFolders] = useState<DocFolder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTree = useCallback(async () => {
-    if (!profile?.organization_id) return;
-    setLoading(true);
-    const { data } = await supabase
+  // setState only inside microtask/promise callbacks so mount-effect callers
+  // don't set state synchronously in the effect body
+  // (react-hooks/set-state-in-effect); same pattern as useDebouncedSearch.
+  const fetchTree = useCallback(() => {
+    if (!profile?.organization_id) return Promise.resolve();
+    queueMicrotask(() => setLoading(true));
+    return supabase
       .from('doc_folders')
       .select('*')
       .is('deleted_at', null)
-      .order('name', { ascending: true });
-    setAllFolders((data || []) as DocFolder[]);
-    setLoading(false);
+      .order('name', { ascending: true })
+      .then(({ data }: { data: AnyRow[] | null }) => {
+        setAllFolders((data || []) as DocFolder[]);
+        setLoading(false);
+      });
   }, [profile?.organization_id]);
 
   useEffect(() => { fetchTree(); }, [fetchTree]);
@@ -164,18 +174,18 @@ export function useTrash() {
   const [trashedFolders, setTrashedFolders] = useState<DocFolder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTrash = useCallback(async () => {
-    if (!profile?.organization_id) return;
-    setLoading(true);
+  const fetchTrash = useCallback(() => {
+    if (!profile?.organization_id) return Promise.resolve();
+    queueMicrotask(() => setLoading(true));
 
-    const [docsRes, foldersRes] = await Promise.all([
+    return Promise.all([
       supabase.from('documents').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
       supabase.from('doc_folders').select('*').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }),
-    ]);
-
-    setTrashedDocs((docsRes.data || []) as Document[]);
-    setTrashedFolders((foldersRes.data || []) as DocFolder[]);
-    setLoading(false);
+    ]).then(([docsRes, foldersRes]) => {
+      setTrashedDocs((docsRes.data || []) as Document[]);
+      setTrashedFolders((foldersRes.data || []) as DocFolder[]);
+      setLoading(false);
+    });
   }, [profile?.organization_id]);
 
   useEffect(() => { fetchTrash(); }, [fetchTrash]);
@@ -189,33 +199,35 @@ export function useFavorites() {
   const [favFolders, setFavFolders] = useState<DocFolder[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchFavs = useCallback(async () => {
-    if (!profile?.organization_id) return;
-    setLoading(true);
+  const fetchFavs = useCallback(() => {
+    if (!profile?.organization_id) return Promise.resolve();
+    queueMicrotask(() => setLoading(true));
 
-    const { data: favs } = await supabase
+    return supabase
       .from('document_favorites')
-      .select('document_id, folder_id');
+      .select('document_id, folder_id')
+      .then(({ data: favs }: { data: AnyRow[] | null }) => {
+        const favsArr = (favs || []) as AnyRow[];
+        const docIds = favsArr.filter((f: AnyRow) => f.document_id).map((f: AnyRow) => f.document_id as string);
+        const folderIds = favsArr.filter((f: AnyRow) => f.folder_id).map((f: AnyRow) => f.folder_id as string);
 
-    const favsArr = (favs || []) as AnyRow[];
-    const docIds = favsArr.filter((f: AnyRow) => f.document_id).map((f: AnyRow) => f.document_id as string);
-    const folderIds = favsArr.filter((f: AnyRow) => f.folder_id).map((f: AnyRow) => f.folder_id as string);
+        return Promise.all([
+          docIds.length > 0
+            ? supabase.from('documents').select('*').in('id', docIds).is('deleted_at', null)
+            : Promise.resolve({ data: [] as AnyRow[] }),
+          folderIds.length > 0
+            ? supabase.from('doc_folders').select('*').in('id', folderIds).is('deleted_at', null)
+            : Promise.resolve({ data: [] as AnyRow[] }),
+        ]);
+      })
+      .then(([docsRes, foldersRes]: Array<{ data: AnyRow[] | null }>) => {
+        const docs = ((docsRes.data || []) as Document[]).map((d: Document) => ({ ...d, is_favorite: true as const }));
+        const folders = ((foldersRes.data || []) as DocFolder[]).map((f: DocFolder) => ({ ...f, is_favorite: true as const }));
 
-    const [docsRes, foldersRes] = await Promise.all([
-      docIds.length > 0
-        ? supabase.from('documents').select('*').in('id', docIds).is('deleted_at', null)
-        : Promise.resolve({ data: [] as AnyRow[] }),
-      folderIds.length > 0
-        ? supabase.from('doc_folders').select('*').in('id', folderIds).is('deleted_at', null)
-        : Promise.resolve({ data: [] as AnyRow[] }),
-    ]);
-
-    const docs = ((docsRes.data || []) as Document[]).map((d: Document) => ({ ...d, is_favorite: true as const }));
-    const folders = ((foldersRes.data || []) as DocFolder[]).map((f: DocFolder) => ({ ...f, is_favorite: true as const }));
-
-    setFavDocs(docs);
-    setFavFolders(folders);
-    setLoading(false);
+        setFavDocs(docs);
+        setFavFolders(folders);
+        setLoading(false);
+      });
   }, [profile?.organization_id]);
 
   useEffect(() => { fetchFavs(); }, [fetchFavs]);
@@ -228,18 +240,19 @@ export function useAuditLog() {
   const [entries, setEntries] = useState<DocumentAuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchLog = useCallback(async () => {
-    if (!profile?.organization_id) return;
-    setLoading(true);
+  const fetchLog = useCallback(() => {
+    if (!profile?.organization_id) return Promise.resolve();
+    queueMicrotask(() => setLoading(true));
 
-    const { data } = await supabase
+    return supabase
       .from('document_audit_log')
       .select('*, profiles:document_audit_log_user_id_profiles_fkey(full_name)')
       .order('created_at', { ascending: false })
-      .limit(100);
-
-    setEntries((data || []) as DocumentAuditEntry[]);
-    setLoading(false);
+      .limit(100)
+      .then(({ data }: { data: AnyRow[] | null }) => {
+        setEntries((data || []) as DocumentAuditEntry[]);
+        setLoading(false);
+      });
   }, [profile?.organization_id]);
 
   useEffect(() => { fetchLog(); }, [fetchLog]);

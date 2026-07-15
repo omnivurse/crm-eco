@@ -18,6 +18,12 @@ export interface CardAccentClassSet {
   ring: string;
 }
 
+/** Underline-tab styling for the compact (Layout V2) section jump bar. */
+export interface CompactNavAccentClassSet {
+  active: string;
+  inactive: string;
+}
+
 export const SECTION_NAV_ACCENT_CLASSES: Record<LayoutSectionAccent, NavAccentClassSet> = {
   slate: {
     inactive:
@@ -219,8 +225,99 @@ export const SECTION_CARD_ACCENT_CLASSES: Record<LayoutSectionAccent, CardAccent
   },
 };
 
+/**
+ * Compact (underline-tab) variant keeps the per-section color coding without
+ * the pill chrome: accent-tinted label, colored underline when active.
+ */
+export const SECTION_COMPACT_NAV_ACCENT_CLASSES: Record<
+  LayoutSectionAccent,
+  CompactNavAccentClassSet
+> = {
+  slate: {
+    active: 'border-slate-500 text-slate-900 dark:text-slate-100',
+    inactive:
+      'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white',
+  },
+  emerald: {
+    active: 'border-emerald-500 text-emerald-700 dark:text-emerald-300',
+    inactive:
+      'border-transparent text-emerald-600/80 hover:text-emerald-700 dark:text-emerald-400/80 dark:hover:text-emerald-300',
+  },
+  blue: {
+    active: 'border-blue-500 text-blue-700 dark:text-blue-300',
+    inactive:
+      'border-transparent text-blue-600/80 hover:text-blue-700 dark:text-blue-400/80 dark:hover:text-blue-300',
+  },
+  cyan: {
+    active: 'border-cyan-500 text-cyan-700 dark:text-cyan-300',
+    inactive:
+      'border-transparent text-cyan-600/80 hover:text-cyan-700 dark:text-cyan-400/80 dark:hover:text-cyan-300',
+  },
+  purple: {
+    active: 'border-purple-500 text-purple-700 dark:text-purple-300',
+    inactive:
+      'border-transparent text-purple-600/80 hover:text-purple-700 dark:text-purple-400/80 dark:hover:text-purple-300',
+  },
+  amber: {
+    active: 'border-amber-500 text-amber-700 dark:text-amber-300',
+    inactive:
+      'border-transparent text-amber-600/80 hover:text-amber-700 dark:text-amber-400/80 dark:hover:text-amber-300',
+  },
+  rose: {
+    active: 'border-rose-500 text-rose-700 dark:text-rose-300',
+    inactive:
+      'border-transparent text-rose-600/80 hover:text-rose-700 dark:text-rose-400/80 dark:hover:text-rose-300',
+  },
+  pink: {
+    active: 'border-pink-500 text-pink-700 dark:text-pink-300',
+    inactive:
+      'border-transparent text-pink-600/80 hover:text-pink-700 dark:text-pink-400/80 dark:hover:text-pink-300',
+  },
+  indigo: {
+    active: 'border-indigo-500 text-indigo-700 dark:text-indigo-300',
+    inactive:
+      'border-transparent text-indigo-600/80 hover:text-indigo-700 dark:text-indigo-400/80 dark:hover:text-indigo-300',
+  },
+  teal: {
+    active: 'border-teal-500 text-teal-700 dark:text-teal-300',
+    inactive:
+      'border-transparent text-teal-600/80 hover:text-teal-700 dark:text-teal-400/80 dark:hover:text-teal-300',
+  },
+  sky: {
+    active: 'border-sky-500 text-sky-700 dark:text-sky-300',
+    inactive:
+      'border-transparent text-sky-600/80 hover:text-sky-700 dark:text-sky-400/80 dark:hover:text-sky-300',
+  },
+  violet: {
+    active: 'border-violet-500 text-violet-700 dark:text-violet-300',
+    inactive:
+      'border-transparent text-violet-600/80 hover:text-violet-700 dark:text-violet-400/80 dark:hover:text-violet-300',
+  },
+  orange: {
+    active: 'border-orange-500 text-orange-700 dark:text-orange-300',
+    inactive:
+      'border-transparent text-orange-600/80 hover:text-orange-700 dark:text-orange-400/80 dark:hover:text-orange-300',
+  },
+  fuchsia: {
+    active: 'border-fuchsia-500 text-fuchsia-700 dark:text-fuchsia-300',
+    inactive:
+      'border-transparent text-fuchsia-600/80 hover:text-fuchsia-700 dark:text-fuchsia-400/80 dark:hover:text-fuchsia-300',
+  },
+  lime: {
+    active: 'border-lime-500 text-lime-700 dark:text-lime-300',
+    inactive:
+      'border-transparent text-lime-600/80 hover:text-lime-700 dark:text-lime-400/80 dark:hover:text-lime-300',
+  },
+};
+
 export function getSectionNavAccent(accent?: LayoutSectionAccent): NavAccentClassSet {
   return SECTION_NAV_ACCENT_CLASSES[accent ?? 'slate'];
+}
+
+export function getSectionCompactNavAccent(
+  accent?: LayoutSectionAccent,
+): CompactNavAccentClassSet {
+  return SECTION_COMPACT_NAV_ACCENT_CLASSES[accent ?? 'slate'];
 }
 
 export function getSectionCardAccent(accent?: LayoutSectionAccent): CardAccentClassSet {

@@ -28,6 +28,7 @@ import {
   useRecordFieldLocks,
   useFieldLockOwner,
 } from '@/hooks/useRecordFieldLocks';
+import { serverHasCaughtUp } from '../InlineEditableRecordForm';
 import { LockedFieldBadge } from './LockedFieldBadge';
 
 export interface InlineDateFieldProps {
@@ -105,12 +106,16 @@ export const InlineDateField = memo(function InlineDateField({
   );
   const [localError, setLocalError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!editing) {
-      setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
-      setLocalError(null);
-    }
-  }, [value, mode, editing]);
+  // Keep the local draft in sync when the parent value changes (e.g. realtime
+  // update from another user). Uses React's "storing information from previous
+  // renders" pattern (same as InlineFieldEditor) instead of an effect, so we
+  // never trigger a cascading render after commit.
+  const [lastSyncedValue, setLastSyncedValue] = useState(value);
+  if (!editing && value !== lastSyncedValue) {
+    setLastSyncedValue(value);
+    setDraft(mode === 'date' ? dateValueToMaskedDraft(value) : toInputValue(value, mode));
+    setLocalError(null);
+  }
 
   const commit = useCallback(
     async (nextRaw: string, opts?: { closeEditor?: boolean }) => {
@@ -198,19 +203,20 @@ export const InlineDateField = memo(function InlineDateField({
     );
   }
 
-  const displayLabel = toDisplay(
+  // Durable optimistic overlay (same rule as InlineFieldEditor): keep the
+  // last-saved value visible after the save status settles back to 'idle',
+  // until the server prop actually reflects the new date — otherwise the
+  // field snaps back to the stale server value ~4s after every edit.
+  const optimisticValue =
     state?.lastValue !== undefined &&
-      (state.status === 'saved' || state.status === 'pending' || state.status === 'saving')
+    (state.status === 'saved' ||
+      state.status === 'pending' ||
+      state.status === 'saving' ||
+      !serverHasCaughtUp(value, state.lastValue))
       ? (state.lastValue as string | null)
-      : value,
-    mode,
-  );
-  const pickerValue = normalizeDateColumnValue(
-    state?.lastValue !== undefined &&
-      (state.status === 'saved' || state.status === 'pending' || state.status === 'saving')
-      ? (state.lastValue as string | null)
-      : value,
-  ) ?? '';
+      : value;
+  const displayLabel = toDisplay(optimisticValue, mode);
+  const pickerValue = normalizeDateColumnValue(optimisticValue) ?? '';
 
   if (editing) {
     return (
