@@ -422,7 +422,7 @@ export const SplitView = memo(function SplitView({
     <div
       ref={containerRef}
       className="glass-card rounded-2xl border border-slate-200 dark:border-white/10 overflow-hidden flex"
-      style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}
+      style={{ height: 'calc(100vh - var(--crm-view-offset) - 60px)', minHeight: '500px' }}
     >
       {/* Left Panel - Compact List */}
       <div

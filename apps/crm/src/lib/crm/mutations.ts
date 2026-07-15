@@ -259,11 +259,13 @@ export async function toggleNotePin(noteId: string, isPinned: boolean): Promise<
 
 export async function deleteNote(noteId: string): Promise<void> {
   const supabase = await createCrmClient();
-  
-  const { error } = await supabase
+
+  // Soft-delete (move to Trash) to stay consistent with the undo-delete system.
+  const { error } = await (supabase as any)
     .from('crm_notes')
-    .delete()
-    .eq('id', noteId);
+    .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
+    .eq('id', noteId)
+    .is('deleted_at', null);
 
   if (error) throw error;
 }
@@ -358,11 +360,13 @@ export async function completeTask(taskId: string): Promise<void> {
 
 export async function deleteTask(taskId: string): Promise<void> {
   const supabase = await createCrmClient();
-  
-  const { error } = await supabase
+
+  // Soft-delete (move to Trash) to stay consistent with the undo-delete system.
+  const { error } = await (supabase as any)
     .from('crm_tasks')
-    .delete()
-    .eq('id', taskId);
+    .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
+    .eq('id', taskId)
+    .is('deleted_at', null);
 
   if (error) throw error;
 }
@@ -1003,26 +1007,22 @@ export async function updateAttachment(
 
 export async function deleteAttachment(attachmentId: string): Promise<void> {
   const supabase = await createCrmClient();
-  
-  // Get attachment info first for storage cleanup
-  const { data: attachment } = await supabase
+
+  // Soft-delete (move to Trash). The storage blob is intentionally KEPT so the
+  // attachment can be restored via Undo; the blob is removed only on purge
+  // (retention cron / permanent delete). This also stops the long-standing
+  // orphaning where record-cascade deletes the row but never the blob.
+  const { data, error } = await (supabase as any)
     .from('crm_attachments')
-    .select('bucket_path, storage_bucket')
+    .update({ deleted_at: new Date().toISOString(), deleted_origin: 'user' })
     .eq('id', attachmentId)
-    .single();
-  
-  // Delete from storage if bucket_path exists
-  if (attachment?.bucket_path) {
-    await supabase.storage
-      .from(attachment.storage_bucket || 'crm-attachments')
-      .remove([attachment.bucket_path]);
-  }
-  
-  // Delete the record
-  const { error } = await supabase
-    .from('crm_attachments')
-    .delete()
-    .eq('id', attachmentId);
+    .is('deleted_at', null)
+    .select('id');
 
   if (error) throw error;
+  // 0 rows = RLS blocked or already trashed. Surface it instead of a silent
+  // no-op (a caller showing an undo toast must not claim success falsely).
+  if (!data || (data as unknown[]).length === 0) {
+    throw new Error('Attachment could not be deleted — not found or not permitted.');
+  }
 }

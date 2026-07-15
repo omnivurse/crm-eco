@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import {
   StickyNote,
   Plus,
@@ -52,6 +53,7 @@ function NotePreviewItem({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
   const plainPreview = stripLegacyAuthorAttribution(stripNotePlain(note.body));
   const isTruncated = plainPreview.length > TRUNCATE_LENGTH;
 
@@ -61,8 +63,8 @@ function NotePreviewItem({
     try {
       const res = await fetch(`/api/crm/notes/${note.id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete note');
-      toast.success('Note deleted');
       onDelete(note.id);
+      toastItemDeletedWithUndo({ entity: 'note', id: note.id, label: 'Note', onUndo: () => router.refresh() });
     } catch {
       toast.error('Failed to delete note');
     } finally {

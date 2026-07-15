@@ -10,6 +10,7 @@ import { sanitizeNoteHtml, getNoteAuthorDisplay } from '@/lib/crm/note-sanitize'
 import { NoteRichArea } from '@/components/crm/notes/NoteRichArea';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmNoteWithAuthor } from '@/lib/crm/types';
 
 interface NotesPanelProps {
@@ -28,6 +29,7 @@ function NoteCard({
   onEdit: (note: CrmNoteWithAuthor) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
 
   const handleDelete = async () => {
     if (!(await confirmDialog({ title: 'Delete this note?', confirmLabel: 'Delete', destructive: true }))) return;
@@ -42,8 +44,8 @@ function NoteCard({
         throw new Error('Failed to delete note');
       }
 
-      toast.success('Note deleted successfully');
       onDelete(note.id);
+      toastItemDeletedWithUndo({ entity: 'note', id: note.id, label: 'Note', onUndo: () => router.refresh() });
     } catch (error) {
       console.error('Failed to delete note:', error);
       toast.error('Failed to delete note');

@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@crm-eco/ui/lib/utils';
 import { toast } from 'sonner';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import type { CrmProfile } from '@/lib/crm/types';
 
 interface StickyNoteData {
@@ -251,6 +252,7 @@ export function StickyNotesPanel({ profile, onClose }: StickyNotesPanelProps) {
         throw new Error(data?.error || 'Failed to delete note');
       }
       fetchNotes();
+      toastItemDeletedWithUndo({ entity: 'sticky_note', id, label: 'Note', onUndo: fetchNotes });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete note');
     }

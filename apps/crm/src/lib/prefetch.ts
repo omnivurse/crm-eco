@@ -66,12 +66,14 @@ export async function prefetchRecordForDrawer(recordId: string) {
             .from('crm_notes')
             .select('id, body, created_at, created_by')
             .in('record_id', noteIds)
+            .is('deleted_at' as never, null)
             .order('created_at', { ascending: false })
             .limit(5),
           supabase
             .from('crm_tasks')
             .select('id, title, status, due_at, created_at')
             .eq('record_id', recordId)
+            .is('deleted_at' as never, null)
             .order('created_at', { ascending: false })
             .limit(5),
         ]);

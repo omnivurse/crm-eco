@@ -9,7 +9,6 @@ import {
   Upload,
   Download,
   MoreHorizontal,
-  ChevronRight,
   Users,
   UserPlus,
   UserCheck,
@@ -124,34 +123,22 @@ export function ModuleHeader({
   };
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm">
-        <Link
-          href="/crm"
-          className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-        >
-          CRM
-        </Link>
-        <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-600" />
-        <span className="font-medium text-slate-900 dark:text-white">
-          {module.name_plural || module.name}
-        </span>
-      </nav>
-
-      {/* Title Row */}
+    <div className={cn('flex flex-col', className)}>
+      {/* Title Row — the module name lives here and in the tab bar; the old
+          "CRM › Module" breadcrumb was a third redundant echo and a wasted row,
+          so it's dropped on the module list to reclaim vertical space. */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className={cn('p-2 rounded-xl', colors.bg, colors.text)}>
             {icon}
           </div>
-          <div>
+          <div className="flex items-baseline gap-2.5">
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">
               {module.name_plural || module.name}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <span className="text-sm text-slate-500 dark:text-slate-400 tabular-nums">
               {totalCount.toLocaleString()} {totalCount === 1 ? 'record' : 'records'}
-            </p>
+            </span>
           </div>
         </div>
 

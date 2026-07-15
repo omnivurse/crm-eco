@@ -14,6 +14,7 @@ import {
   Badge
 } from '@crm-eco/ui';
 import { Activity } from 'lucide-react';
+import { useCrmDensity } from '@/lib/crm/density';
 
 interface ActivityItem {
   id: string;
@@ -75,8 +76,8 @@ function getTypeLabel(type: string): string {
   return labels[type] || type.replace(/_/g, ' ');
 }
 
-// Row height for virtualization
-const ROW_HEIGHT = 56;
+// Density-aware row height for virtualization (mirrors the main RecordTable scale).
+const ROW_HEIGHT_BY_DENSITY = { compact: 44, default: 56, comfortable: 64 } as const;
 
 // Threshold for enabling virtualization (only virtualize for large lists)
 const VIRTUALIZATION_THRESHOLD = 50;
@@ -87,6 +88,8 @@ export function ActivityTable({
   emptyMessage = 'No activity recorded'
 }: ActivityTableProps) {
   const tableContainerRef = useRef<HTMLDivElement>(null);
+  const { density } = useCrmDensity();
+  const rowHeight = ROW_HEIGHT_BY_DENSITY[density];
 
   // Use virtualization for large lists
   const shouldVirtualize = activities.length > VIRTUALIZATION_THRESHOLD;
@@ -95,7 +98,7 @@ export function ActivityTable({
   const rowVirtualizer = useVirtualizer({
     count: activities.length,
     getScrollElement: () => tableContainerRef.current,
-    estimateSize: () => ROW_HEIGHT,
+    estimateSize: () => rowHeight,
     overscan: 5,
     enabled: shouldVirtualize,
   });

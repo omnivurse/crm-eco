@@ -946,6 +946,7 @@ export async function getNotesForRecords(
       )
     `)
     .in('record_id', uniqueIds)
+    .is('deleted_at' as never, null)
     .order('created_at', { ascending: false })
     .limit(limit));
 
@@ -962,6 +963,7 @@ export async function getNotesForRecords(
         )
       `)
       .in('record_id', uniqueIds)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false })
       .limit(limit));
   }
@@ -1018,6 +1020,7 @@ export async function getTasksForRecord(recordId: string, limit = 100): Promise<
     .from('crm_tasks')
     .select('*')
     .eq('record_id', recordId)
+    .is('deleted_at' as never, null)
     .order('due_at', { ascending: true, nullsFirst: false })
     .limit(limit);
 
@@ -1031,7 +1034,8 @@ export async function getMyTasks(profileId: string, includeCompleted = false, li
   let query = supabase
     .from('crm_tasks')
     .select('*')
-    .eq('assigned_to', profileId);
+    .eq('assigned_to', profileId)
+    .is('deleted_at' as never, null);
 
   if (!includeCompleted) {
     query = query.neq('status', 'completed');
@@ -1056,6 +1060,7 @@ export async function getUpcomingTasks(profileId: string, days = 7, limit = 100)
     .select('*')
     .eq('assigned_to', profileId)
     .neq('status', 'completed')
+    .is('deleted_at' as never, null)
     .lte('due_at', futureDate.toISOString())
     .order('due_at', { ascending: true })
     .limit(limit);
@@ -1087,6 +1092,7 @@ export async function getCalendarEvents(orgId: string, days = 14): Promise<Calen
     .eq('org_id', orgId)
     .in('activity_type', ['meeting', 'call'])
     .neq('status', 'completed')
+    .is('deleted_at' as never, null)
     .gte('due_at', now.toISOString())
     .lte('due_at', futureDate.toISOString())
     .order('due_at', { ascending: true })
@@ -1310,6 +1316,7 @@ export async function getTodaysTasks(userId: string, limit = 100): Promise<CrmTa
     .select('*')
     .eq('assigned_to', userId)
     .neq('status', 'completed')
+    .is('deleted_at' as never, null)
     .gte('due_at', today.toISOString())
     .lt('due_at', tomorrow.toISOString())
     .order('due_at', { ascending: true })
@@ -1635,6 +1642,7 @@ export async function getAttachmentsForRecord(recordId: string): Promise<CrmAtta
       )
     `)
     .eq('record_id', recordId)
+    .is('deleted_at' as never, null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -1688,6 +1696,7 @@ export async function getTimelineForRecord(
         )
       `)
       .eq('record_id', recordId)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(limit),
@@ -1704,6 +1713,7 @@ export async function getTimelineForRecord(
         )
       `)
       .in('record_id', noteIds)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(limit),
@@ -1720,6 +1730,7 @@ export async function getTimelineForRecord(
         )
       `)
       .eq('record_id', recordId)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(limit),
@@ -1853,6 +1864,7 @@ export async function getActivitiesForRecord(recordId: string): Promise<CrmTaskW
       )
     `)
     .eq('record_id', recordId)
+    .is('deleted_at' as never, null)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -1876,7 +1888,8 @@ export async function getAllActivities(orgId: string, options?: {
         avatar_url
       )
     `)
-    .eq('org_id', orgId);
+    .eq('org_id', orgId)
+    .is('deleted_at' as never, null);
 
   if (options?.activityType) {
     query = query.eq('activity_type', options.activityType);

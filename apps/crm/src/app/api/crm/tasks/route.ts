@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       .from('crm_tasks')
       .select('*')
       .eq('org_id', profile.organization_id)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false });
 
     if (recordId) {

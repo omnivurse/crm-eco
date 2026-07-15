@@ -17,9 +17,18 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
+        // Semantic solid variants for status actions (approve / caution). Colors
+        // chosen for AA-passing contrast with their foreground in light + dark.
+        success: 'bg-emerald-600 text-white hover:bg-emerald-600/90',
+        warning: 'bg-amber-500 text-amber-950 hover:bg-amber-500/90',
+        // Soft "tonal" fill — a low-emphasis primary that reads as branded
+        // without competing with the solid default CTA. Token-based, so it
+        // adapts to light/dark automatically.
+        tonal: 'bg-primary/10 text-primary hover:bg-primary/20',
       },
       size: {
         default: 'h-10 px-4 py-2',
+        xs: 'h-8 rounded-md px-2.5 text-xs',
         sm: 'h-9 rounded-md px-3',
         lg: 'h-11 rounded-md px-8',
         icon: 'h-10 w-10',

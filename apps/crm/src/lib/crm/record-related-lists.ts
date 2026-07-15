@@ -199,6 +199,7 @@ export async function fetchRecordMeetings(
     .select('id, title, due_at, status, completed_at')
     .eq('record_id', recordId)
     .eq('activity_type', 'meeting')
+    .is('deleted_at' as never, null)
     .order('due_at', { ascending: false })
     .limit(50);
 

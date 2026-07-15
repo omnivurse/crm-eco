@@ -305,6 +305,11 @@
   --crm-gutter: 20px;
   --crm-section-gap: 24px;
   --crm-cell-py: 8px;
+  /* Viewport offset for scroll-container max-heights (records table + views).
+     Approximates chrome + module header + toolbar so the table body fills the
+     space below without overflowing the shell. Density-aware: compact chrome +
+     header are shorter, so a compact power-user gets more rows for free. */
+  --crm-view-offset: 220px;
 }
 
 .dark {
@@ -332,11 +337,13 @@
   --crm-row-h: 34px; --crm-toolbar-h: 42px;
   --crm-topbar-h: 38px; --crm-modulebar-h: 32px;
   --crm-gutter: 14px; --crm-section-gap: 16px; --crm-cell-py: 5px;
+  --crm-view-offset: 184px;
 }
 :root[data-density='comfortable'] {
   --crm-row-h: 52px; --crm-toolbar-h: 56px;
   --crm-topbar-h: 52px; --crm-modulebar-h: 44px;
   --crm-gutter: 28px; --crm-section-gap: 32px; --crm-cell-py: 12px;
+  --crm-view-offset: 248px;
 }
 
 /* ============================================================

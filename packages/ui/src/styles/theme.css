@@ -27,17 +27,22 @@
   --popover: 0 0% 100%;               /* #FFFFFF */
   --popover-foreground: 220 49% 8%;   /* #0B1220 */
 
-  /* Semantic - Primary (Cyan) */
-  --primary: 187 94% 43%;             /* #06b6d4 */
+  /* Semantic - Primary (Spruce Teal) — darkened from cyan #06b6d4 (which was
+     2.43:1 on white, a WCAG AA fail) to #0E7C86 ≈ 4.95:1. Matches the CRM app. */
+  --primary: 187 81% 29%;             /* #0E7C86 */
   --primary-foreground: 210 40% 98%;  /* #F8FAFC */
 
   /* Semantic - Secondary (Deep Blue) */
   --secondary: 217 91% 60%;           /* #3b82f6 */
   --secondary-foreground: 210 40% 98%; /* #F8FAFC */
 
-  /* Semantic - Accent (Purple) */
-  --accent: 263 70% 66%;              /* #8b5cf6 */
-  --accent-foreground: 210 40% 98%;   /* #F8FAFC */
+  /* Semantic - Accent (neutral surface). shadcn uses --accent as the hover /
+     selected surface for dropdowns, selects, command palette and ghost buttons,
+     so it must be a subtle neutral — not a saturated purple (which made all of
+     them flash violet). Deliberate purple now lives in --brand-purple. */
+  --accent: 210 40% 96%;              /* slate-100 hover surface */
+  --accent-foreground: 222 47% 11%;   /* dark ink on the light accent surface */
+  --brand-purple: 263 70% 60%;        /* #7c3aed — for intentional purple only */
 
   /* Semantic - Destructive */
   --destructive: 0 84% 60%;
@@ -58,7 +63,7 @@
   /* Form elements */
   --border: 214 32% 91%;              /* #E2E8F0 slate-200-ish */
   --input: 214 32% 91%;
-  --ring: 187 94% 43%;                /* Cyan focus ring */
+  --ring: 187 81% 29%;                /* Spruce-teal focus ring (matches --primary) */
 
   /* Brand tokens (HEX via HSL reference) */
   --brand-navy-500: 222 47% 11%;      /* #0f172a */
@@ -123,7 +128,7 @@
   --popover-foreground: 210 40% 98%;
 
   /* Semantic - Primary (Cyan - vibrant in dark mode) */
-  --primary: 187 94% 50%;             /* Brighter cyan */
+  --primary: 187 72% 46%;             /* Brighter spruce teal for dark grounds */
   --primary-foreground: 220 49% 8%;
 
   /* Semantic - Secondary (Blue - lifts in dark mode) */
@@ -131,8 +136,9 @@
   --secondary-foreground: 210 40% 98%;
 
   /* Semantic - Accent (Purple - brighter) */
-  --accent: 263 70% 72%;
-  --accent-foreground: 220 49% 8%;
+  --accent: 220 40% 14%;              /* dark neutral hover surface */
+  --accent-foreground: 210 40% 98%;
+  --brand-purple: 263 70% 72%;        /* for intentional purple only */
 
   /* Semantic - Destructive */
   --destructive: 0 72% 51%;
@@ -153,7 +159,7 @@
   /* Form elements */
   --border: 220 30% 16%;
   --input: 220 30% 14%;
-  --ring: 187 94% 50%;
+  --ring: 187 72% 46%;
 
   /* Glassmorphism - Dark Mode */
   --glass-bg: rgba(15, 23, 42, 0.6);

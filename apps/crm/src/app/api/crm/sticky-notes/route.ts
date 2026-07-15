@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact' })
       .eq('owner_id', profile.id)
       .eq('organization_id', profile.organization_id)
+      .is('deleted_at' as never, null)
       .order('is_pinned', { ascending: false })
       .order('updated_at', { ascending: false })
       .range(offset, offset + limit - 1);

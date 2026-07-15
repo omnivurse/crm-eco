@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('org_id', profile.organization_id)
         .in('activity_type', ['meeting', 'call'])
+        .is('deleted_at' as never, null)
         .gte('due_at', startDate)
         .lte('due_at', endDate)
         .neq('status', 'cancelled')

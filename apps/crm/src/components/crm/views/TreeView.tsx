@@ -817,7 +817,7 @@ export const TreeView = memo(function TreeView({
       </div>
 
       {/* Tree content */}
-      <div className="max-h-[calc(100vh-320px)] overflow-auto scrollbar-thin">
+      <div className="max-h-[calc(100vh-var(--crm-view-offset)-100px)] overflow-auto scrollbar-thin">
         {treeGroupBy === 'advisor' ? (
           advisorTree.length === 0 ? (
             <div className="py-12 text-center">

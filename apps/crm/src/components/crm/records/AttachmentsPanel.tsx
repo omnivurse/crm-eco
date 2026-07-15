@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { 
+import { useRouter } from 'next/navigation';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
+import {
   Upload, 
   File, 
   FileText, 
@@ -69,6 +71,7 @@ function AttachmentRow({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const router = useRouter();
 
   const handleDownload = async () => {
     if (!onDownload) return;
@@ -91,6 +94,12 @@ function AttachmentRow({
     setIsDeleting(true);
     try {
       await onDelete();
+      toastItemDeletedWithUndo({
+        entity: 'attachment',
+        id: attachment.id,
+        label: 'Attachment',
+        onUndo: () => router.refresh(),
+      });
     } catch (error) {
       console.error('Delete failed:', error);
       setIsDeleting(false);

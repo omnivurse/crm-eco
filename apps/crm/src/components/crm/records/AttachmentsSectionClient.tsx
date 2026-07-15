@@ -76,7 +76,8 @@ export function AttachmentsSectionClient({
           const message = await parseErrorMessage(response, 'Failed to delete attachment');
           throw new Error(message);
         }
-        toast.success('Attachment removed');
+        // The undo toast is shown by AttachmentsPanel after this resolves — no
+        // second success toast here (that would compete with the Undo one).
         router.refresh();
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Failed to delete attachment');

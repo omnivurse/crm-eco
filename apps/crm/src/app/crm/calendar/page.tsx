@@ -131,6 +131,7 @@ export default function CalendarPage() {
                     .eq('org_id', profile.organization_id)
                     .eq('activity_type', 'task')
                     .neq('status', 'completed')
+                    .is('deleted_at' as never, null)
                     .order('due_at', { ascending: true })
                     .limit(10);
 
@@ -154,6 +155,7 @@ export default function CalendarPage() {
                     .eq('org_id', profile.organization_id)
                     .in('activity_type', ['meeting', 'call'])
                     .neq('status', 'completed')
+                    .is('deleted_at' as never, null)
                     .not('due_at', 'is', null)
                     .order('due_at', { ascending: true });
 

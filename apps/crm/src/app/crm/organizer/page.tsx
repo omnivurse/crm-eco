@@ -82,6 +82,7 @@ export default function OrganizerPage() {
                         .gte('due_at', today)
                         .lte('due_at', today + 'T23:59:59')
                         .neq('status', 'completed')
+                        .is('deleted_at' as never, null)
                         .limit(5),
                     // Get overdue tasks count
                     supabase
@@ -89,7 +90,8 @@ export default function OrganizerPage() {
                         .select('*', { count: 'exact', head: true })
                         .eq('org_id', authProfile.organization_id)
                         .lt('due_at', today)
-                        .neq('status', 'completed'),
+                        .neq('status', 'completed')
+                        .is('deleted_at' as never, null),
                     // Get both modules in one query
                     supabase
                         .from('crm_modules')
@@ -101,6 +103,7 @@ export default function OrganizerPage() {
                         .from('notes')
                         .select('id, title, content, created_at')
                         .eq('user_id', authUser.id)
+                        .is('deleted_at' as never, null)
                         .order('created_at', { ascending: false })
                         .limit(5),
                 ]);

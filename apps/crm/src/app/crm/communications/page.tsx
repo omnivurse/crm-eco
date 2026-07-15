@@ -244,6 +244,7 @@ function CommunicationsPageContent() {
           .select('activity_type, status, call_type')
           .eq('org_id', authProfile.organization_id)
           .in('activity_type', ['email', 'call', 'meeting'])
+          .is('deleted_at' as never, null)
           .gte('created_at', sevenDaysAgo.toISOString());
 
         const activities = (activitiesData || []) as { activity_type: string; status: string; call_type: string | null }[];
@@ -334,6 +335,7 @@ function CommunicationsPageContent() {
           `)
           .eq('org_id', authProfile.organization_id)
           .in('activity_type', ['email', 'call', 'meeting'])
+          .is('deleted_at' as never, null)
           .order('created_at', { ascending: false })
           .limit(10);
 

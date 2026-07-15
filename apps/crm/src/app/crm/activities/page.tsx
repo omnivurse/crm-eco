@@ -33,6 +33,7 @@ import {
   SelectValue,
 } from '@crm-eco/ui/components/select';
 import { toast } from 'sonner';
+import { toastItemDeletedWithUndo } from '@/lib/crm/undo-delete';
 import { formatDistanceToNow } from 'date-fns';
 
 type ActivityType = 'task' | 'call' | 'meeting' | 'email';
@@ -255,7 +256,12 @@ function ActivitiesPageContent() {
         throw new Error(typeof err?.error === 'string' ? err.error : 'Delete failed');
       }
       setActivities((cur) => cur.filter((a) => a.id !== target.id));
-      toast.success('Activity deleted');
+      toastItemDeletedWithUndo({
+        entity: 'task',
+        id: target.id,
+        label: 'Activity',
+        onUndo: () => setActivities((cur) => (cur.some((a) => a.id === target.id) ? cur : [target, ...cur])),
+      });
       setDeleteTarget(null);
     } catch (error) {
       console.error('Delete activity error:', error);
@@ -446,14 +452,14 @@ function ActivitiesPageContent() {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete this activity?</DialogTitle>
+            <DialogTitle>Move this activity to Trash?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            This permanently deletes{' '}
+            This moves{' '}
             <span className="font-medium text-slate-900 dark:text-white">
               {deleteTarget?.title}
             </span>
-            . This action cannot be undone.
+            {' '}to Trash. You can undo it right after.
           </p>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>

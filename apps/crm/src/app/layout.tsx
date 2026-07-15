@@ -82,12 +82,17 @@ const themeScript = `
     document.documentElement.style.backgroundColor = resolved === 'dark' ? '#0f172a' : '#ffffff';
     // Display density: apply the persisted choice pre-paint so the chrome
     // tokens (top bar / module bar heights, gutters, section gaps) render at
-    // the chosen scale with no flash. 'default' = no attribute = base scale.
+    // the chosen scale with no flash. New users with no saved preference get
+    // the power-user dense scale ('compact') out of the box — this is a
+    // data-heavy CRM, so more rows/columns per screen is the default; the
+    // roomier 'default' and 'comfortable' scales remain one click away.
     var density = localStorage.getItem('crm-density');
     if (density === 'compact' || density === 'comfortable') {
       html.setAttribute('data-density', density);
-    } else {
+    } else if (density === 'default') {
       html.removeAttribute('data-density');
+    } else {
+      html.setAttribute('data-density', 'compact');
     }
   } catch (e) {
     document.documentElement.classList.add('light');

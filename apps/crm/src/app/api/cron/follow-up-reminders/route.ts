@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       `)
       .eq('activity_type', 'follow_up')
       .in('status', ['open', 'in_progress'])
+      .is('deleted_at' as never, null)
       .lte('due_at', new Date().toISOString())
       .order('due_at', { ascending: true })
       .limit(200);

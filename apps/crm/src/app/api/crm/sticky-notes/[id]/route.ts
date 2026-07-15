@@ -118,17 +118,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: only the owner can delete this note' }, { status: 403 });
     }
 
-    const { error: deleteError } = await supabase
+    // Soft-delete (move to Trash) so the sticky note can be restored via Undo.
+    const { error: deleteError } = await (supabase as any)
       .from('notes')
-      .delete()
-      .eq('id', id);
+      .update({ deleted_at: new Date().toISOString(), deleted_by: profile.id, deleted_origin: 'user' })
+      .eq('id', id)
+      .is('deleted_at', null);
 
     if (deleteError) {
       console.error('Error deleting sticky note:', deleteError);
       return NextResponse.json({ error: 'Failed to delete note' }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, trashed: true });
   } catch (error) {
     console.error('Error in DELETE /api/crm/sticky-notes/[id]:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

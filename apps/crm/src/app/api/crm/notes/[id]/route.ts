@@ -93,11 +93,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden: only the author or an admin can delete this note' }, { status: 403 });
     }
 
-    const { data: deleted, error: deleteError } = await supabase
+    // Soft-delete (move to Trash) so the note can be restored via Undo.
+    const { data: deleted, error: deleteError } = await (supabase as any)
       .from('crm_notes')
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: profile.id, deleted_origin: 'user' })
       .eq('id', id)
       .eq('org_id', profile.organization_id)
+      .is('deleted_at', null)
       .select('id')
       .single();
 
@@ -108,7 +110,7 @@ export async function DELETE(
       return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, id: deleted.id });
+    return NextResponse.json({ success: true, id: deleted.id, trashed: true });
   } catch (error) {
     console.error('Error deleting note:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

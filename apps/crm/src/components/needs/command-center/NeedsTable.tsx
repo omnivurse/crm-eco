@@ -20,6 +20,7 @@ import { NeedStatusBadge } from '@/components/shared/status-badge';
 import { UrgencyBadge } from '@/components/shared/urgency-badge';
 import { NeedActionsMenu } from './NeedActionsMenu';
 import type { AssignableProfile } from '@/app/crm/needs/command-center/page';
+import { useCrmDensity } from '@/lib/crm/density';
 
 export interface NeedWithMember {
   id: string;
@@ -61,8 +62,9 @@ function formatCurrency(amount: number | null | undefined): string {
 
 export function NeedsTable({ needs, assignableProfiles, currentProfileId }: NeedsTableProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const ROW_HEIGHT = 72; // Estimated row height
+  const { density } = useCrmDensity();
+  // Density-aware estimated row height (needs rows are taller than the base scale).
+  const ROW_HEIGHT = density === 'compact' ? 60 : density === 'comfortable' ? 84 : 72;
   // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const rowVirtualizer = useVirtualizer({
     count: needs.length,

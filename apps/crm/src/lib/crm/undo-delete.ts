@@ -61,3 +61,51 @@ export function toastDeletedWithUndo({ batchId, count = 1, onUndo }: DeletedToas
     },
   });
 }
+
+// ── Phase 2: child entities (tasks, notes, sticky notes, attachments) ────────
+
+export type TrashItemEntity = 'task' | 'note' | 'sticky_note' | 'attachment';
+
+/** Restore a single soft-deleted child entity (the Undo action). */
+export async function restoreTrashItem(entity: TrashItemEntity, id: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/crm/trash/restore-item', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ entity, id }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+export interface ItemDeletedToastOptions {
+  entity: TrashItemEntity;
+  id: string;
+  /** Human label for the toast, e.g. "Task", "Note", "Attachment". */
+  label?: string;
+  /** Called after a successful Undo (e.g. to refetch). */
+  onUndo?: () => void;
+}
+
+/** "<Label> deleted · Undo" toast that restores one child entity on Undo. */
+export function toastItemDeletedWithUndo({ entity, id, label, onUndo }: ItemDeletedToastOptions) {
+  const noun = label ?? 'Item';
+  toast.success(`${noun} deleted`, {
+    duration: 8000,
+    action: {
+      label: 'Undo',
+      onClick: async () => {
+        const ok = await restoreTrashItem(entity, id);
+        if (ok) {
+          toast.success(`${noun} restored`);
+          onUndo?.();
+        } else {
+          toast.error(`Could not restore the ${noun.toLowerCase()}.`);
+        }
+      },
+    },
+  });
+}

@@ -146,11 +146,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { data: deleted, error } = await supabase
+    // Soft-delete (move to Trash) instead of a physical delete so it can be
+    // restored via Undo. Because this is an UPDATE (not DELETE) it is governed
+    // by the task UPDATE policy, which resolves the old agent-vs-RLS mismatch.
+    const { data: deleted, error } = await (supabase as any)
       .from('crm_tasks')
-      .delete()
+      .update({ deleted_at: new Date().toISOString(), deleted_by: profile.id, deleted_origin: 'user' })
       .eq('id', taskId)
       .eq('org_id', profile.organization_id)
+      .is('deleted_at', null)
       .select('id');
 
     if (error) {
@@ -162,7 +166,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, id: taskId });
+    return NextResponse.json({ success: true, id: taskId, trashed: true });
   } catch (error) {
     console.error('Delete task error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

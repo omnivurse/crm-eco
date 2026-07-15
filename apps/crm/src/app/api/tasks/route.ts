@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         created_by_profile:profiles!crm_tasks_created_by_fkey(id, full_name, avatar_url)
       `)
       .eq('org_id', profile.organization_id)
+      .is('deleted_at' as never, null)
       .order('created_at', { ascending: false });
 
     if (status) {

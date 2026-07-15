@@ -155,6 +155,7 @@ export default function DealWarRoomPage() {
           .from('crm_tasks')
           .select('id, title, description, due_at, priority, status, activity_type, completed_at, created_at, assignee:profiles!crm_tasks_assigned_to_fkey(full_name)')
           .eq('record_id', id)
+          .is('deleted_at' as never, null)
           .order('created_at', { ascending: false })
           .limit(50),
         supabase
@@ -185,16 +186,13 @@ export default function DealWarRoomPage() {
         .from('crm_notes')
         .select('id, body, is_pinned, created_at, author:profiles!crm_notes_created_by_fkey(full_name)')
         .in('record_id', noteSourceIds)
+        .is('deleted_at' as never, null)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setDeal(dealRow as any);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setNotes((notesRes.data as any) || []);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setTasks((tasksRes.data as any) || []);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setStageHistory((stageRes.data as any) || []);
       setError(null);
     } catch (err) {

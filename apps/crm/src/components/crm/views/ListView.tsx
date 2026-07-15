@@ -271,6 +271,7 @@ export const ListView = memo(function ListView({
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- @tanstack/react-virtual returns mutable virtualizer by design
   const virtualizer = useVirtualizer({
     count: records.length,
     getScrollElement: () => containerRef.current,
@@ -341,7 +342,7 @@ export const ListView = memo(function ListView({
       {/* Virtualized List */}
       <div
         ref={containerRef}
-        className="overflow-auto max-h-[calc(100vh-320px)] scrollbar-thin"
+        className="overflow-auto max-h-[calc(100vh-var(--crm-view-offset)-100px)] scrollbar-thin"
       >
         <div
           style={{

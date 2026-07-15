@@ -677,6 +677,37 @@ export const RecordTable = memo(function RecordTable({
     if (anchorIndex > 0) rowVirtualizer.scrollToIndex(anchorIndex, { align: 'start' });
   }, [ROW_HEIGHT, rowVirtualizer]);
 
+  // Fill-to-viewport table height. A fixed `--crm-view-offset` guess under-counts
+  // the multi-row toolbar (+ SavedViews/QuickFilter/FilterChips) and the
+  // recently-viewed rail, so the table runs past the fold and the shell's <main>
+  // scrolls *as well as* the table — the "double scrollbar". Instead, measure the
+  // container's live top edge and cap its height to reach the shell's bottom
+  // padding: the table fills exactly the space left below whatever chrome sits
+  // above it (max rows) and <main> never needs to scroll (single scrollbar). It
+  // self-corrects via ResizeObserver when anything above reflows (rail appears,
+  // chips wrap, mass-actions bar shows) and re-runs when density flips the chrome.
+  const [measuredMaxH, setMeasuredMaxH] = useState<number | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    const el = tableContainerRef.current;
+    if (!el || typeof window === 'undefined') return;
+    const BOTTOM_GAP = 56; // shell bottom padding (pb-10) + <main> padding + breathing room
+    const measure = () => {
+      const top = el.getBoundingClientRect().top;
+      const next = Math.max(240, Math.round(window.innerHeight - top - BOTTOM_GAP));
+      setMeasuredMaxH((prev) => (prev === next ? prev : next));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    // `top` depends only on chrome above the table, not the table's own height,
+    // so observing body layout converges without a feedback loop.
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    return () => {
+      window.removeEventListener('resize', measure);
+      ro.disconnect();
+    };
+  }, [density]);
+
   // Create field lookup map
   const fieldMap = useMemo(() => {
     return fields.reduce((acc, field) => {
@@ -1085,6 +1116,93 @@ export const RecordTable = memo(function RecordTable({
     }
   };
 
+  // ── Power-user keyboard navigation ──────────────────────────────────────
+  // Focus stays on the scroll container (an aria-activedescendant grid), which
+  // survives virtualized rows unmounting on scroll; `activeRowIndex` drives the
+  // focus ring + the active descendant. Arrows / j·k move, Enter (or o) opens,
+  // Space (or x) toggles selection, Home/End jump, PageUp/Down page, Esc clears.
+  const [activeRowIndex, setActiveRowIndex] = useState(-1);
+  // Keep the active row in range if the record set shrinks (filter / sort).
+  useEffect(() => {
+    setActiveRowIndex((i) => (i >= records.length ? -1 : i));
+  }, [records.length]);
+
+  const handleGridKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Defer to inline-edit inputs and any focused interactive control (buttons,
+    // links, checkboxes) — nav keys only act when the grid container itself is
+    // focused (the aria-activedescendant pattern keeps focus there).
+    if (editingCell) return;
+    const t = e.target as HTMLElement;
+    if (
+      t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' ||
+      t.tagName === 'BUTTON' || t.tagName === 'A' || t.isContentEditable
+    ) {
+      return;
+    }
+    if (records.length === 0) return;
+
+    const cur = activeRowIndex < 0 ? 0 : activeRowIndex;
+    const go = (next: number) => {
+      const clamped = Math.max(0, Math.min(records.length - 1, next));
+      setActiveRowIndex(clamped);
+      rowVirtualizer.scrollToIndex(clamped, { align: 'auto' });
+    };
+    const inRange = activeRowIndex >= 0 && activeRowIndex < records.length;
+
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'j':
+        e.preventDefault();
+        go(activeRowIndex < 0 ? 0 : cur + 1);
+        break;
+      case 'ArrowUp':
+      case 'k':
+        e.preventDefault();
+        go(activeRowIndex < 0 ? 0 : cur - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        go(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        go(records.length - 1);
+        break;
+      case 'PageDown':
+        e.preventDefault();
+        go(cur + 12);
+        break;
+      case 'PageUp':
+        e.preventDefault();
+        go(cur - 12);
+        break;
+      case 'Enter':
+      case 'o':
+        if (inRange) {
+          e.preventDefault();
+          handleRowClick(records[activeRowIndex]);
+        }
+        break;
+      case ' ':
+      case 'x':
+        if (inRange) {
+          e.preventDefault();
+          handleSelectRow(records[activeRowIndex].id);
+        }
+        break;
+      case 'Escape':
+        setActiveRowIndex(-1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const activeDescId =
+    activeRowIndex >= 0 && activeRowIndex < records.length
+      ? `crm-row-${records[activeRowIndex].id}`
+      : undefined;
+
   return (
     <>
       {/* Mobile Card View */}
@@ -1149,10 +1267,24 @@ export const RecordTable = memo(function RecordTable({
             tableContainerRef.current.scrollLeft += e.deltaY;
           }
         }}
+        // Keyboard-navigable grid: Tab or click into it, then arrows / j·k to
+        // move, Enter to open, Space to select. Focus stays here (survives
+        // virtualized row remount) and the active row is announced via
+        // aria-activedescendant.
+        role="grid"
+        tabIndex={0}
+        aria-label="Records — arrow keys to move, Enter to open, Space to select"
+        aria-rowcount={records.length}
+        aria-activedescendant={activeDescId}
+        onKeyDown={handleGridKeyDown}
         className={cn(
-          'hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-220px)] scrollbar-thin sticky-scrollbar',
+          'hidden md:block glass-card rounded-lg border border-slate-200 dark:border-white/10 overflow-auto max-h-[calc(100vh-var(--crm-view-offset))] scrollbar-thin sticky-scrollbar',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-500/40',
           isResizing && 'select-none'
         )}
+        // Measured cap wins once mounted; the CSS max-h above is the pre-measure
+        // (SSR / first-paint) fallback so the table is never briefly unbounded.
+        style={measuredMaxH ? { maxHeight: `${measuredMaxH}px` } : undefined}
       >
       <Table style={{ minWidth: totalMinWidth }}>
         <TableHeader className={cn(
@@ -1266,7 +1398,9 @@ export const RecordTable = memo(function RecordTable({
               return (
                 <TableRow
                   key={record.id}
+                  id={`crm-row-${record.id}`}
                   data-index={virtualRow.index}
+                  aria-selected={selectedIds.has(record.id)}
                   ref={rowVirtualizer.measureElement}
                   style={{
                     position: 'absolute',
@@ -1279,9 +1413,16 @@ export const RecordTable = memo(function RecordTable({
                   className={cn(
                     'group border-b border-slate-100 dark:border-white/5 cursor-pointer transition-colors flex',
                     'hover:bg-slate-50 dark:hover:bg-white/5',
-                    selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5'
+                    selectedIds.has(record.id) && 'bg-teal-50 dark:bg-teal-500/5',
+                    // Keyboard-focused row: stronger tint + inset ring, distinct
+                    // from hover (subtle) and selected (checkbox teal).
+                    virtualRow.index === activeRowIndex &&
+                      'bg-teal-100/70 dark:bg-teal-500/15 ring-2 ring-inset ring-teal-500/60'
                   )}
-                  onClick={() => handleRowClick(record)}
+                  onClick={() => {
+                    setActiveRowIndex(virtualRow.index);
+                    handleRowClick(record);
+                  }}
                   onMouseEnter={() => handleRowMouseEnter(record.id)}
                   onMouseLeave={handleRowMouseLeave}
                 >

@@ -17,13 +17,17 @@ interface DensityToggleProps {
   className?: string;
 }
 
+// 'compact' is the out-of-box default (power-user dense). The value 'default'
+// stays as the internal key for the middle scale but is labelled "Cozy" so it
+// doesn't read as the app default (which it no longer is).
 const DENSITY_OPTIONS: { value: Density; label: string; description: string }[] = [
-  { value: 'compact', label: 'Compact', description: 'More rows, less spacing' },
-  { value: 'default', label: 'Default', description: 'Balanced view' },
-  { value: 'comfortable', label: 'Comfortable', description: 'More spacing' },
+  { value: 'compact', label: 'Compact', description: 'Most rows — default' },
+  { value: 'default', label: 'Cozy', description: 'Balanced spacing' },
+  { value: 'comfortable', label: 'Comfortable', description: 'Most spacing' },
 ];
 
 export function DensityToggle({ value, onChange, className }: DensityToggleProps) {
+  const activeLabel = DENSITY_OPTIONS.find((o) => o.value === value)?.label ?? value;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -39,7 +43,7 @@ export function DensityToggle({ value, onChange, className }: DensityToggleProps
           {/* Fixed min-width + left align so the label never reflows the toolbar
               when the density word changes (default <-> comfortable) — including
               the one-frame post-hydration adoption of a persisted value. */}
-          <span className="hidden sm:inline-block min-w-[4.5rem] text-left text-xs capitalize">{value}</span>
+          <span className="hidden sm:inline-block min-w-[4.5rem] text-left text-xs">{activeLabel}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
