@@ -31,6 +31,19 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
+      // A batch restore is one UPDATE, so a single re-created (email + name) slot
+      // (the index excludes trashed rows since Phase 6a-2) fails the whole undo.
+      // Surface it clearly rather than as a raw 500.
+      if ((error as { code?: string }).code === '23505') {
+        return NextResponse.json(
+          {
+            error:
+              'Cannot restore — one or more of these records conflict with an existing record (same email and name). Resolve the conflict, then try again.',
+            code: 'RESTORE_CONFLICT',
+          },
+          { status: 409 },
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

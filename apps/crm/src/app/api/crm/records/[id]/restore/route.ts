@@ -28,6 +28,19 @@ export async function POST(
     });
 
     if (error) {
+      // The email/name uniqueness index excludes trashed rows (Phase 6a-2), so a
+      // record whose (email + name) was re-created while it sat in Trash can no
+      // longer be restored into that slot. Report the conflict instead of a raw 500.
+      if ((error as { code?: string }).code === '23505') {
+        return NextResponse.json(
+          {
+            error:
+              'Cannot restore — a record with this email and name already exists. Merge or rename that record first, then restore.',
+            code: 'RESTORE_CONFLICT',
+          },
+          { status: 409 },
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     if (!data) {
