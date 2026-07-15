@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, getAuthProfile } from '@/lib/supabase-server';
-import { z } from 'zod';
+import {
+  createCarrierSchema,
+  formatZodError,
+} from '@/lib/crm/carrier-create-schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,24 +73,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// The carrier form always POSTs its optional inputs as empty strings when left
-// blank. `z.string().url()/.email()` reject '' (and `.optional()` only permits
-// `undefined`), so a carrier added with a blank Website/Email would fail
-// validation — the reported "can't add LifeX / Object Error" bug. Treat blank
-// strings as "not provided" so only actually-entered values are format-checked.
-const emptyToUndefined = (v: unknown) =>
-  typeof v === 'string' && v.trim() === '' ? undefined : v;
-
-const createCarrierSchema = z.object({
-  carrier_name: z.string().min(1).max(255),
-  naic_code: z.preprocess(emptyToUndefined, z.string().max(20).optional()),
-  website: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  logo_url: z.preprocess(emptyToUndefined, z.string().url().optional()),
-  carrier_type: z.enum(['insurance', 'healthshare', 'medicaid', 'short_term', 'dental', 'vision', 'life', 'other']).default('insurance'),
-  phone: z.preprocess(emptyToUndefined, z.string().max(20).optional()),
-  email: z.preprocess(emptyToUndefined, z.string().email().optional()),
-});
-
 /**
  * POST /api/crm/carriers
  * Create a new carrier
@@ -106,16 +91,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = createCarrierSchema.safeParse(body);
     if (!parsed.success) {
-      // Return a human-readable string, not the raw ZodIssue array — a client
-      // that does `throw new Error(json.error)` would otherwise surface it as
-      // "[object Object]".
-      const message = parsed.error.errors
-        .map((e) => `${e.path.join('.') || 'field'}: ${e.message}`)
-        .join('; ');
-      return NextResponse.json(
-        { error: message || 'Invalid carrier data' },
-        { status: 400 },
-      );
+      // Human-readable string — never return the raw ZodIssue array (that becomes
+      // "[object Object]" when a client does `throw new Error(json.error)`).
+      return NextResponse.json({ error: formatZodError(parsed.error) }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -129,11 +107,14 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
-      if ((error as any).code === '23505') {
+      if ((error as { code?: string }).code === '23505') {
         return NextResponse.json({ error: 'Carrier already exists' }, { status: 409 });
       }
       console.error('[Carriers POST]', error);
-      return NextResponse.json({ error: 'Failed to create carrier' }, { status: 500 });
+      return NextResponse.json(
+        { error: error.message || 'Failed to create carrier' },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ data }, { status: 201 });

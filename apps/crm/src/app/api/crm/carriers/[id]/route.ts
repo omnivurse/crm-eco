@@ -55,11 +55,35 @@ export async function PATCH(
     const body = await request.json();
     const supabase = await createClient();
 
-    // Only allow safe fields to be updated
-    const allowedFields = ['carrier_name', 'naic_code', 'website', 'logo_url', 'carrier_type', 'phone', 'email', 'is_active', 'metadata'];
+    // Only allow safe fields to be updated. Blank strings → null so clearing
+    // website/email in the form does not store invalid empty values.
+    const allowedFields = [
+      'carrier_name',
+      'naic_code',
+      'website',
+      'logo_url',
+      'carrier_type',
+      'phone',
+      'email',
+      'is_active',
+      'metadata',
+    ];
+    const nullableTextFields = new Set([
+      'naic_code',
+      'website',
+      'logo_url',
+      'phone',
+      'email',
+    ]);
     const updateData: Record<string, unknown> = {};
     for (const key of allowedFields) {
-      if (body[key] !== undefined) updateData[key] = body[key];
+      if (body[key] === undefined) continue;
+      const value = body[key];
+      if (nullableTextFields.has(key) && typeof value === 'string' && value.trim() === '') {
+        updateData[key] = null;
+      } else {
+        updateData[key] = value;
+      }
     }
 
     const { data, error } = await supabase

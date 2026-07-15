@@ -140,7 +140,7 @@ function CarrierManagementContent() {
       const list = Array.isArray(data)
         ? data
         : (data?.data ?? data?.carriers ?? []);
-      setCarriers(list);
+      setCarriers(Array.isArray(list) ? list : []);
     } catch {
       toast.error('Failed to load carriers');
     } finally {
@@ -150,6 +150,20 @@ function CarrierManagementContent() {
 
   useEffect(() => { fetchCarriers(); }, [fetchCarriers]);
 
+  /** Drop blank optional fields so create/update don't send "" for URL/email. */
+  const payloadFromForm = () => {
+    const out: Record<string, unknown> = {
+      carrier_name: form.carrier_name.trim(),
+      carrier_type: form.carrier_type,
+    };
+    for (const key of ['naic_code', 'website', 'phone', 'email'] as const) {
+      const v = form[key].trim();
+      if (v) out[key] = v;
+      else if (editingCarrier) out[key] = null; // clear on edit
+    }
+    return out;
+  };
+
   const handleSave = async () => {
     if (!form.carrier_name.trim()) {
       toast.error('Carrier name is required');
@@ -157,11 +171,12 @@ function CarrierManagementContent() {
     }
     setSaving(true);
     try {
+      const body = payloadFromForm();
       if (editingCarrier) {
         const res = await fetch(`/api/crm/carriers/${editingCarrier.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error(await readApiError(res, 'Update failed'));
         toast.success(`${termForType(editingCarrier.carrier_type)} updated`);
@@ -169,7 +184,7 @@ function CarrierManagementContent() {
         const res = await fetch('/api/crm/carriers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error(await readApiError(res, 'Create failed'));
         toast.success(`${termForType(form.carrier_type)} created`);
@@ -179,7 +194,11 @@ function CarrierManagementContent() {
       setForm(emptyForm);
       fetchCarriers();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Save failed');
+      const message =
+        err instanceof Error && err.message && err.message !== '[object Object]'
+          ? err.message
+          : 'Save failed';
+      toast.error(message);
     } finally {
       setSaving(false);
     }
