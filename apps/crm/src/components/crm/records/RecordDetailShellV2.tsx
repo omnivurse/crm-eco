@@ -84,6 +84,7 @@ import { StageSelector } from '@/components/crm/blueprints';
 import { ComposerBar } from '@/components/zoho/ComposerBar';
 import { ConvertToContactDialog } from '@/components/crm/records/ConvertToContactDialog';
 import { ConvertLeadButton } from '@/components/crm/records/ConvertLeadButton';
+import { relabelStatusForMarket } from '@/lib/crm/member-terminology';
 import { MergeRecordDialog } from '@/components/crm/records/MergeRecordDialog';
 import {
   MarketTypeBadge,
@@ -1322,7 +1323,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                                     : 'bg-slate-100 dark:bg-slate-800/50 border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300',
                               )}
                             >
-                              {displayStatus}
+                              {relabelStatusForMarket(displayStatus, recordMarketType)}
                             </Badge>
                           </button>
                         </DropdownMenuTrigger>
@@ -1352,7 +1353,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                                   )}
                                   onSelect={() => handleStatusChange(s)}
                                 >
-                                  {s}
+                                  {relabelStatusForMarket(s, recordMarketType)}
                                 </DropdownMenuItem>
                               ))}
                             </div>
@@ -1408,6 +1409,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   <ConvertLeadButton
                     recordId={record.id}
                     recordTitle={getRecordDisplayName(record)}
+                    marketType={recordMarketType}
                   />
                 )}
 
@@ -1634,6 +1636,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                           <ConvertLeadButton
                             recordId={record.id}
                             recordTitle={getRecordDisplayName(record)}
+                            marketType={recordMarketType}
                           />
                         </DropdownMenuItem>
                       </>
@@ -2380,6 +2383,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                       <ConvertLeadButton
                         recordId={record.id}
                         recordTitle={getRecordDisplayName(record)}
+                        marketType={recordMarketType}
                       />
                     </div>
                   )}

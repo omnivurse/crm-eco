@@ -14,14 +14,20 @@ import {
   AlertDialogTitle,
 } from '@crm-eco/ui/components/alert-dialog';
 import { UserCheck, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { getConvertActionLabel, getMemberNoun } from '@/lib/crm/member-terminology';
 
 interface ConvertLeadButtonProps {
   recordId: string;
   recordTitle: string;
   disabled?: boolean;
+  /** Drives Member vs Insurance-Client terminology (display only). */
+  marketType?: string | null;
 }
 
-export function ConvertLeadButton({ recordId, recordTitle, disabled }: ConvertLeadButtonProps) {
+export function ConvertLeadButton({ recordId, recordTitle, disabled, marketType }: ConvertLeadButtonProps) {
+  const convertLabel = getConvertActionLabel(marketType);
+  const noun = getMemberNoun(marketType);
+  const nounTitle = noun.replace(/\b\w/g, (c) => c.toUpperCase());
   const [showConfirm, setShowConfirm] = useState(false);
   const [isConverting, setIsConverting] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string; memberId?: string } | null>(null);
@@ -43,7 +49,7 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled }: ConvertLe
       if (data.success) {
         setResult({
           success: true,
-          message: 'Lead converted to member successfully!',
+          message: `Lead converted to ${noun} successfully!`,
           memberId: data.member_id,
         });
         // Refresh the page after a short delay
@@ -74,7 +80,7 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled }: ConvertLe
         className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white"
       >
         <UserCheck className="w-4 h-4 mr-2" />
-        Convert to Member
+        {convertLabel}
       </Button>
 
       <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
@@ -83,10 +89,10 @@ export function ConvertLeadButton({ recordId, recordTitle, disabled }: ConvertLe
             <>
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-slate-900 dark:text-white">
-                  Convert Lead to Member?
+                  Convert Lead to {nounTitle}?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-slate-500">
-                  This will create a new <strong>member</strong> (enrollment) record for{' '}
+                  This will create a new <strong>{noun}</strong> (enrollment) record for{' '}
                   <strong>{recordTitle}</strong> and mark this lead as converted. To add them to the CRM{' '}
                   <strong>Contacts</strong> module only, use <strong>Convert to Contact</strong> instead.
                 </AlertDialogDescription>
