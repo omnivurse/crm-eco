@@ -33,7 +33,8 @@ function buildMockSupabase(overrides?: {
   insertResult?: { data: unknown; error: unknown };
 }) {
   const chainable: Record<string, any> = {};
-  const methods = ['select', 'eq', 'or', 'order', 'range', 'insert'];
+  // `is` covers the soft-delete filter `.is('deleted_at', null)` the GET route adds.
+  const methods = ['select', 'eq', 'or', 'order', 'range', 'insert', 'is'];
   for (const m of methods) {
     chainable[m] = vi.fn(() => chainable);
   }

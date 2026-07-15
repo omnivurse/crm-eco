@@ -84,6 +84,7 @@ import {
     Puzzle,
     Code,
     SlidersHorizontal,
+    Trash2,
     type LucideIcon,
 } from 'lucide-react';
 import { Lightbulb, Search, LogOut } from 'lucide-react';
@@ -207,6 +208,7 @@ const iconMap: Record<string, LucideIcon> = {
     'puzzle': Puzzle,
     'code': Code,
     'sliders': SlidersHorizontal,
+    'trash-2': Trash2,
 };
 
 function getIcon(iconName: string): LucideIcon {

@@ -344,6 +344,7 @@ export const SETTINGS_NAV_ITEMS: NavItem[] = [
     { key: 'export', label: 'Export', icon: 'download', href: '/crm/settings/system-health?tab=export' },
     { key: 'data-admin', label: 'Data Admin', icon: 'database', href: '/crm/settings/system-health' },
     { key: 'audit-logs', label: 'Audit Logs', icon: 'scroll-text', href: '/crm/settings/system-health?tab=audit' },
+    { key: 'trash', label: 'Recycle Bin', icon: 'trash-2', href: '/crm/trash' },
 
     { key: 'sec-advanced', separator: true, sectionTitle: 'Advanced' },
     { key: 'configuration', label: 'Configuration', icon: 'sliders', href: '/crm/settings/configuration' },

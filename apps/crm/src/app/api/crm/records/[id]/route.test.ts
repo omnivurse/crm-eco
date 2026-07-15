@@ -205,30 +205,17 @@ describe('DELETE /api/crm/records/[id]', () => {
     vi.mocked(checkApprovalRequired).mockResolvedValue(null as any);
     vi.mocked(createApprovalRequest).mockResolvedValue({ success: false } as any);
 
-    // Build chainable: select().eq().eq().single() then delete().eq().eq() → Promise
-    let isDeletePath = false;
-    let deleteEqStep = 0;
+    // Soft-delete path: the route fetches the record (select().eq().eq().single())
+    // then stamps deleted_at via the crm_soft_delete_record RPC (returns a batch id) —
+    // no physical DELETE. See apps/crm/src/app/api/crm/records/[id]/route.ts.
     const c: Record<string, any> = {};
-    c.select = vi.fn(() => c);
-    c.eq = vi.fn(() => {
-      if (isDeletePath) {
-        deleteEqStep++;
-        // PostgREST: delete().eq('id').eq('org_id') — second eq completes the request
-        if (deleteEqStep >= 2) {
-          return Promise.resolve({ error: null });
-        }
-        return c;
-      }
-      return c;
-    });
-    c.delete = vi.fn(() => {
-      isDeletePath = true;
-      deleteEqStep = 0;
-      return c;
-    });
+    ['select', 'eq'].forEach((m) => { c[m] = vi.fn(() => c); });
     c.single = vi.fn(() => Promise.resolve({ data: record, error: null }));
 
-    mockCreateClient.mockResolvedValue({ from: vi.fn(() => c) });
+    mockCreateClient.mockResolvedValue({
+      from: vi.fn(() => c),
+      rpc: vi.fn(() => Promise.resolve({ data: 'batch-1', error: null })),
+    });
 
     const req = buildRequest('http://localhost:3000/api/crm/records/rec-1', { method: 'DELETE' });
     const res = await DELETE(req, makeParams('rec-1'));
