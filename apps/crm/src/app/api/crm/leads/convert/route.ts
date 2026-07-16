@@ -28,6 +28,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Defense in depth: constrain the route to the active tenant before
+    // invoking the SECURITY DEFINER conversion RPC. The RPC repeats this
+    // authorization check so direct PostgREST calls cannot bypass it.
+    const { data: targetRecord, error: targetError } = await supabase
+      .from('crm_records')
+      .select('id')
+      .eq('id', recordId)
+      .eq('org_id', profile.organization_id)
+      .maybeSingle();
+
+    if (targetError) {
+      console.error('Lead conversion target lookup error:', targetError);
+      return NextResponse.json(
+        { success: false, error: 'Unable to validate conversion target' },
+        { status: 500 }
+      );
+    }
+
+    if (!targetRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Record not found' },
+        { status: 404 }
+      );
+    }
+
     const { data, error } = await supabase.rpc('convert_lead_to_member', {
       p_lead_record_id: recordId,
       p_user_id: profile.id,
