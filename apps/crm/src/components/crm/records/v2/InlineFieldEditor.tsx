@@ -277,7 +277,7 @@ export const InlineFieldEditor = memo(function InlineFieldEditor({
         }}
         aria-label={`Edit ${ariaLabel ?? field}`}
         className={cn(
-          'group inline-flex items-center gap-1 rounded-md px-1 -mx-1 cursor-text',
+          'group inline-flex items-center gap-1 rounded-md px-1 -mx-1 pr-px cursor-text',
           'hover:bg-slate-100/70 dark:hover:bg-white/5 transition-colors',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500',
           (isSaving || isPending) && 'opacity-80',
@@ -410,7 +410,7 @@ function DisplayValue({
       </span>
     );
   }
-  return <span>{s}</span>;
+  return <span title={s}>{s}</span>;
 }
 
 function stringify(v: unknown): string {

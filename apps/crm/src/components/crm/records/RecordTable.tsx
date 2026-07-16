@@ -381,6 +381,7 @@ const RecordCard = memo(function RecordCard({
           <Link
             href={`/crm/r/${record.id}`}
             className="font-semibold text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors block truncate"
+            title={displayName}
             onClick={(e) => e.stopPropagation()}
           >
             {displayName}
@@ -932,6 +933,7 @@ export const RecordTable = memo(function RecordTable({
         <Link
           href={`/crm/r/${record.id}`}
           className="font-medium text-slate-900 dark:text-white hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate block"
+          title={displayName}
           onClick={(e) => e.stopPropagation()}
         >
           {displayName}

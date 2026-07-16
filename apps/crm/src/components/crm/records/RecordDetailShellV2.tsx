@@ -1210,7 +1210,10 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                   {module.name_plural || module.name}
                 </Link>
                 <span className="text-slate-300 dark:text-slate-600 shrink-0">/</span>
-                <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
+                <span
+                  className="text-sm text-slate-900 dark:text-white truncate max-w-xs"
+                  title={getRecordDisplayName(record)}
+                >
                   {getRecordDisplayName(record)}
                 </span>
               </div>
@@ -1237,7 +1240,7 @@ export const RecordDetailShellV2 = memo(function RecordDetailShellV2({
                 <div className="min-w-0 flex-1">
                   <h1
                     className={cn(
-                      'font-bold text-slate-900 dark:text-white truncate flex items-center gap-2',
+                      'font-bold text-slate-900 dark:text-white flex flex-wrap items-center gap-x-2 gap-y-0 min-w-0',
                       headerCompact ? 'text-base' : 'text-2xl',
                     )}
                   >

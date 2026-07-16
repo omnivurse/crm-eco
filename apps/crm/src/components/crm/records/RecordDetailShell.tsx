@@ -418,7 +418,10 @@ export const RecordDetailShell = memo(function RecordDetailShell({
                   {module.name_plural || module.name}
                 </Link>
                 <span className="text-slate-300 dark:text-slate-600 shrink-0">/</span>
-                <span className="text-sm text-slate-900 dark:text-white truncate max-w-xs">
+                <span
+                  className="text-sm text-slate-900 dark:text-white truncate max-w-xs"
+                  title={getRecordDisplayName(record)}
+                >
                   {getRecordDisplayName(record)}
                 </span>
               </div>

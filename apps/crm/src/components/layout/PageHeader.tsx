@@ -48,7 +48,7 @@ export function PageHeader({
         )}
         <div className="min-w-0">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white truncate">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white break-words min-w-0" title={title}>
               {title}
             </h1>
             {badge}

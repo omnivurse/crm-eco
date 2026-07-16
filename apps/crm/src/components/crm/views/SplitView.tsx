@@ -175,7 +175,7 @@ const DetailPanel = memo(function DetailPanel({
       <div className="flex items-start justify-between p-5 border-b border-slate-200 dark:border-white/10">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white truncate">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white break-words min-w-0" title={displayName}>
               {displayName}
             </h2>
             {status && (
