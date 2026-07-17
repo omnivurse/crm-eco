@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
         .select('*')
         .eq('id', data.id)
         .eq('org_id', workflow.org_id)
+        .is('deleted_at' as never, null)
         .single();
 
       if (!recordError && existingRecord) {
@@ -185,6 +186,7 @@ export async function POST(request: NextRequest) {
           .select('*')
           .eq('org_id', workflow.org_id)
           .eq('module_id', moduleId)
+          .is('deleted_at' as never, null)
           .ilike('email', incomingEmail)
           .limit(1)
           .single();
@@ -198,7 +200,7 @@ export async function POST(request: NextRequest) {
             moduleKey: resolvedModuleKey,
             previousTitle: (existingByEmail.title as string | null) ?? null,
           });
-          await supabase
+          const { data: updatedRecord, error: updateError } = await supabase
             .from('crm_records')
             .update({
               // On update, don't re-mirror out-of-band-owned columns (advisor /
@@ -213,9 +215,23 @@ export async function POST(request: NextRequest) {
                 last_webhook_at: new Date().toISOString(),
               },
             })
-            .eq('id', existingByEmail.id);
+            .eq('id', existingByEmail.id)
+            .is('deleted_at' as never, null)
+            .select()
+            .maybeSingle();
 
-          record = existingByEmail as CrmRecord;
+          if (updateError) {
+            return NextResponse.json(
+              { error: 'Failed to update webhook record' },
+              { status: 500 },
+            );
+          }
+
+          // If the record was trashed after the lookup, treat it as no match
+          // and continue into the live-record insert path below.
+          if (updatedRecord) {
+            record = updatedRecord as CrmRecord;
+          }
         }
       }
 
@@ -251,6 +267,7 @@ export async function POST(request: NextRequest) {
               .select('*')
               .eq('org_id', workflow.org_id)
               .eq('module_id', moduleId)
+              .is('deleted_at' as never, null)
               .ilike('email', incomingEmail!)
               .limit(1)
               .single();

@@ -203,6 +203,7 @@ export async function POST(req: NextRequest) {
       .select('id, title, email, phone, status, stage, data')
       .eq('org_id', orgId)
       .eq('module_id', moduleRow.id)
+      .is('deleted_at' as never, null)
       .in('data->>zoho_id', plan.zohoIds);
     if (error && error.code !== 'PGRST204') {
       return NextResponse.json(
@@ -240,6 +241,7 @@ export async function POST(req: NextRequest) {
       .select('id, title, email, phone, status, stage, data')
       .eq('org_id', orgId)
       .eq('module_id', moduleRow.id)
+      .is('deleted_at' as never, null)
       .in('email', dedupeCaseVariants(emails));
     if (error) {
       return NextResponse.json(
@@ -438,14 +440,22 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error: upErr } = await supabase
+    const { data: updatedRecord, error: upErr } = await supabase
       .from('crm_records')
       .update(updatePatch)
       .eq('id', resolution.record.id)
-      .eq('org_id', orgId);
+      .eq('org_id', orgId)
+      .is('deleted_at' as never, null)
+      .select('id')
+      .maybeSingle();
 
     if (upErr) {
       errors.push({ rowIndex: row.index, error: upErr.message });
+      continue;
+    }
+
+    if (!updatedRecord) {
+      errors.push({ rowIndex: row.index, error: 'Matched record is no longer available' });
       continue;
     }
 
