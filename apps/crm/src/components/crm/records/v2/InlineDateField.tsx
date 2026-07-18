@@ -219,7 +219,7 @@ export const InlineDateField = memo(function InlineDateField({
   }, []);
 
   if (readOnly || lockOwner) {
-    const display = toDisplay(optimisticValue, mode);
+    const display = toDisplay(value, mode);
     return (
       <span
         className={cn('inline-flex items-center gap-1.5', className)}
