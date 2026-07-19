@@ -1,0 +1,113 @@
+{
+  "lead": {
+    "purpose": "Unqualified prospect",
+    "converts_to": [
+      "contact",
+      "account",
+      "deal",
+      "enrollment"
+    ],
+    "must_not_be": "permanent customer record"
+  },
+  "contact": {
+    "purpose": "Known person",
+    "relationships": [
+      "accounts",
+      "households",
+      "deals",
+      "tickets",
+      "enrollments",
+      "activities"
+    ]
+  },
+  "account": {
+    "purpose": "Company/group/customer organization",
+    "relationships": [
+      "contacts",
+      "deals",
+      "tickets",
+      "subscriptions",
+      "activities"
+    ]
+  },
+  "deal": {
+    "purpose": "Revenue/conversion opportunity",
+    "required": [
+      "pipeline_id",
+      "stage_id",
+      "amount",
+      "close_date",
+      "owner_id"
+    ]
+  },
+  "ticket": {
+    "purpose": "Service/support request",
+    "required": [
+      "status",
+      "priority",
+      "owner_or_queue",
+      "requester"
+    ]
+  },
+  "product": {
+    "purpose": "Sellable offering",
+    "relationships": [
+      "prices",
+      "quotes",
+      "orders",
+      "subscriptions",
+      "enrollments"
+    ]
+  },
+  "enrollment": {
+    "purpose": "Accepted/application/activation lifecycle",
+    "relationships": [
+      "contacts",
+      "products",
+      "dependents",
+      "billing",
+      "documents"
+    ]
+  },
+  "activity": {
+    "purpose": "Timeline event",
+    "examples": [
+      "call",
+      "email",
+      "sms",
+      "meeting",
+      "note",
+      "task",
+      "system_event"
+    ]
+  },
+  "pipeline": {
+    "purpose": "Configurable process",
+    "relationships": [
+      "stages",
+      "required_fields",
+      "automations"
+    ]
+  },
+  "custom_field_definition": {
+    "purpose": "Tenant-configurable field metadata",
+    "must_include": [
+      "organization_id",
+      "object_type",
+      "field_key",
+      "data_type",
+      "validation"
+    ]
+  },
+  "audit_log": {
+    "purpose": "Immutable material change history",
+    "required": [
+      "actor_id",
+      "organization_id",
+      "object_type",
+      "object_id",
+      "action",
+      "timestamp"
+    ]
+  }
+}

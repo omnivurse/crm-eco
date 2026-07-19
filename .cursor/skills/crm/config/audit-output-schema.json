@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CRM Master Architect Audit Output",
+  "type": "object",
+  "required": [
+    "executive_verdict",
+    "scores",
+    "findings",
+    "required_fixes",
+    "final_verdict"
+  ],
+  "properties": {
+    "executive_verdict": {
+      "type": "string"
+    },
+    "scores": {
+      "type": "object",
+      "properties": {
+        "crm_maturity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "saas_readiness": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "production_risk": {
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      }
+    },
+    "current_state_map": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source_of_truth_findings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "duplicate_field_findings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "vertical_slice_findings": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "severity",
+          "area",
+          "finding",
+          "impact",
+          "recommendation"
+        ],
+        "properties": {
+          "severity": {
+            "enum": [
+              "P0_CRITICAL",
+              "P1_HIGH",
+              "P2_MEDIUM",
+              "P3_LOW",
+              "INFO"
+            ]
+          },
+          "area": {
+            "type": "string"
+          },
+          "finding": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "impact": {
+            "type": "string"
+          },
+          "recommendation": {
+            "type": "string"
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "required_fixes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "test_plan": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "final_verdict": {
+      "enum": [
+        "APPROVED",
+        "APPROVED_WITH_CONDITIONS",
+        "NOT_APPROVED"
+      ]
+    }
+  }
+}

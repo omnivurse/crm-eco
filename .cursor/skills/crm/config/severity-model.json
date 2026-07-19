@@ -1,0 +1,45 @@
+{
+  "P0_CRITICAL": {
+    "meaning": "Blocks production or SaaS rollout",
+    "examples": [
+      "cross-tenant exposure",
+      "auth bypass",
+      "wrong canonical data writes",
+      "destructive migration without approval"
+    ]
+  },
+  "P1_HIGH": {
+    "meaning": "Must fix before broad release",
+    "examples": [
+      "duplicate source of truth",
+      "frontend/backend mismatch",
+      "workflow creates duplicates",
+      "reports do not reconcile"
+    ]
+  },
+  "P2_MEDIUM": {
+    "meaning": "Should fix before scale",
+    "examples": [
+      "missing indexes",
+      "incomplete admin settings",
+      "weak observability",
+      "manual-only process"
+    ]
+  },
+  "P3_LOW": {
+    "meaning": "Improvement or polish",
+    "examples": [
+      "UI label inconsistency",
+      "empty states",
+      "minor documentation gaps"
+    ]
+  },
+  "INFO": {
+    "meaning": "Context or future consideration",
+    "examples": [
+      "future AI feature",
+      "possible connector",
+      "optional dashboard"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "0_absent": "Module does not exist.",
+  "1_mock_ui": "UI exists but is static, mocked, or not wired to canonical data.",
+  "2_partial_data": "Some data exists, but source of truth, validation, permissions, or reports are incomplete.",
+  "3_working_vertical_slice": "Database/API/frontend work end-to-end for core use cases.",
+  "4_governed_module": "Permissions, audit logs, workflows, tests, and reports are complete.",
+  "5_configurable_saas_ready": "Tenant-configurable, secure, tested, observable, and ready for external SaaS tenants."
+}

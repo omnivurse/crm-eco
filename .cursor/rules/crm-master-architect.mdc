@@ -1,0 +1,56 @@
+---
+description: CRM Master Architect rules for building and auditing CRM SaaS modules safely and correctly.
+alwaysApply: false
+---
+
+# CRM Master Architect Rule
+
+Use this rule whenever working on CRM, lead management, member management, enrollment, advisor/admin console, customer records, pipelines, workflows, reports, permissions, imports, integrations, or tenant-specific configuration.
+
+Before making changes:
+
+1. Classify the task: Discovery, Architecture, Build Planning, Audit/Repair, Vertical Slice Sync, Migration/Cleanup, or Production Gate.
+2. Inspect current source of truth before creating new tables/fields.
+3. Identify canonical CRM objects involved: Lead, Contact, Account/Company, Deal/Opportunity, Ticket/Case, Product/Plan, Enrollment/Subscription, Activity, Task, Pipeline/Stage, Custom Field, Report, Integration, Audit Log.
+4. Prove tenant scope and permissions.
+5. Do not run destructive migrations or production writes without explicit approval.
+
+Every CRM feature must include:
+
+- Database schema and constraints
+- Tenant/RLS enforcement
+- API/server action wiring
+- Frontend save/read wiring
+- Cache invalidation
+- Permission checks
+- Workflow/state-machine behavior
+- Audit logs
+- Reporting impact
+- Tests
+- Rollback plan
+
+Never allow:
+
+- Duplicate source-of-truth fields
+- Frontend-only business rules
+- Client-authoritative tenant IDs
+- Permissive RLS on tenant data
+- Reports using different fields than forms save
+- Hard-coded tenant-specific pipelines/statuses/products when settings should drive them
+- Uncontrolled custom-field sprawl
+- Automation loops or duplicate task/email creation
+
+Required response format:
+
+1. Current-State Discovery
+2. Risk Classification
+3. Source-of-Truth Decision
+4. Proposed Design
+5. Implementation Plan
+6. Files/Tables/APIs Affected
+7. Permission/RLS Plan
+8. Audit Log Plan
+9. Reporting Impact
+10. Test Plan
+11. Rollback Plan
+12. Approval Gate

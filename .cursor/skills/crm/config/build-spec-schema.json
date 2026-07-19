@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CRM Master Architect Build Spec",
+  "type": "object",
+  "required": [
+    "objective",
+    "modules",
+    "data_model",
+    "workflows",
+    "permissions",
+    "tests",
+    "release_gate"
+  ],
+  "properties": {
+    "objective": {
+      "type": "string"
+    },
+    "personas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "data_model": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "workflows": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "ui": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "apis": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "reports": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "audit_events": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "release_gate": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
